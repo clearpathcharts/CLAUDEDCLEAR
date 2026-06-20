@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sector blueprint | ClearPath Learn</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/learn/assets/css/style.css">
+</head>
+<body>
+  <div class="financial-grid"></div>
+
+  <!-- Mobile sticky navigation bar -->
+  <header class="mobile-nav-bar">
+    <div class="brand">
+      <h1 class="brand-title">ClearPath Learn</h1>
+      <p class="brand-subtitle font-mono">Sector Blueprint</p>
+    </div>
+    <button class="btn-hamburger" id="hamburgerBtn" aria-label="Toggle navigation menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+
+  <div class="layout-wrapper">
+    <!-- Left Sidebar Column -->
+    <nav class="sidebar" id="sidebar">
+      <div class="brand">
+        <h1 class="brand-title">ClearPath Learn</h1>
+        <p class="brand-subtitle font-mono">Public Encyclopedia</p>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="/learn/index.html">
+            <i class="fa-solid fa-house-chimney text-[#00D9FF]"></i>
+            <span>Main Console</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/stock-template.html">
+            <i class="fa-solid fa-chart-line text-[#00D9FF]"></i>
+            <span>Stocks Grid</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/economy-template.html">
+            <i class="fa-solid fa-landmark text-[#7A3BFF]"></i>
+            <span>Central Bank Desk</span>
+          </a>
+        </li>
+        <li class="nav-item active">
+          <a href="/learn/sector-template.html">
+            <i class="fa-solid fa-microchip text-[#FF00C8]"></i>
+            <span>Sector Intelligence</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/glossary-template.html">
+            <i class="fa-solid fa-book-open text-yellow-500"></i>
+            <span>Glossaries</span>
+          </a>
+        </li>
+        <li class="nav-item" style="margin-top: 1.5rem; opacity: 0.7;">
+          <a href="/" style="border: 1px dashed rgba(239, 68, 68, 0.4); color: #f87171;">
+            <i class="fa-solid fa-arrow-left-long"></i>
+            <span>Exit Learn Shell</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="mode-controls">
+        <span class="mode-title">Cognitive Complexity</span>
+        <div class="mode-selector">
+          <button class="btn-mode active" data-mode="beginner"><span>Beginner Level</span></button>
+          <button class="btn-mode" data-mode="kids"><span>Kids mode 🎈</span></button>
+          <button class="btn-mode" data-mode="highSchool"><span>High School Level</span></button>
+          <button class="btn-mode" data-mode="college"><span>College Level</span></button>
+          <button class="btn-mode" data-mode="researcher"><span>Researcher Mode 🔬</span></button>
+          <button class="btn-mode" data-mode="accessible"><span>Accessible Mode</span></button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <div class="status-banner" id="offlineBanner" role="alert">
+        <div>
+          <i class="fa-solid fa-cloud-bolt-flash mr-2"></i>
+          <span><strong>Offline mode active.</strong> Caching sector indexes.</span>
+        </div>
+      </div>
+
+      <section class="hero">
+        <span class="hero-sub font-mono">SECTORS & INDUSTRIES INDEX</span>
+        <h1 class="hero-title" style="text-transform: uppercase;">SECTOR INTELLIGENCE BLUEPRINT</h1>
+        <p class="hero-desc">
+          Identify sector rotations, correlation indexes, input-supply channels, capital expenditure (CapEx) trends, and competitive moats across global industries.
+        </p>
+      </section>
+
+      <div class="card-grid">
+        <article class="card">
+          <div class="card-header-flex">
+            <div class="card-icon"><i class="fa-solid fa-server text-[#FF00C8]"></i></div>
+            <span class="card-tag">SYSTEMS</span>
+          </div>
+          <h2 class="card-title">Technology & Machinery</h2>
+          <p class="card-desc">Analyzing semiconductor fabrication bottlenecks, software-as-a-service margin metrics, cloud database frameworks, and consumer electronics lifecycles.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-header-flex">
+            <div class="card-icon"><i class="fa-solid fa-heart-pulse text-[#00D9FF]"></i></div>
+            <span class="card-tag">LIFE SCIENCES</span>
+          </div>
+          <h2 class="card-title">Biomedical & Biotech</h2>
+          <p class="card-desc">Mapping clinical trial timelines, FDA approvals, therapeutics intellectual property portfolios, and medical device systems.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" style="margin-bottom: 1rem;"><i class="fa-solid fa-bolt"></i></div>
+          <h2 class="card-title">Clean Energy Grid</h2>
+          <p class="card-desc">Harnessing solar, wind, lithium-rich dry cells, capital-expenditure transmission infrastructure, and global decarbonization targets.</p>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script src="/learn/assets/js/main.js"></script>
+</body>
+</html>

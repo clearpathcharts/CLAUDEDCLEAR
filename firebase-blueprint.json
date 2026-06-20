@@ -1,0 +1,332 @@
+{
+  "entities": {
+    "ConnectedCalendar": {
+      "title": "Connected Calendar",
+      "description": "Represents a synchronization hook for a third-party calendar system",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of connected handle"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Provider key (e.g. google, apple, outlook, yahoo, other)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human readable title of provider system"
+        },
+        "emailOrUrl": {
+          "type": "string",
+          "description": "Account email address or endpoint sync URL"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Pointer to owner account uid"
+        },
+        "connectedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of setup confirmation"
+        }
+      },
+      "required": ["id", "provider", "name", "userId", "connectedAt"]
+    },
+    "CalendarEvent": {
+      "title": "Normalized Calendar Event",
+      "description": "Secure normalized event summary used for economic indicator overlapping",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Source unique identifier or random key"
+        },
+        "title": {
+          "type": "string",
+          "description": "Summary title of scheduled event"
+        },
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of event start"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of event end"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Event timezone label"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Pointer to of owner uid"
+        },
+        "calendarId": {
+          "type": "string",
+          "description": "Link to parent connected calendar record"
+        },
+        "sourceProvider": {
+          "type": "string",
+          "description": "Source provider key"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of synchronization run"
+        }
+      },
+      "required": ["id", "title", "start", "end", "userId", "calendarId"]
+    },
+    "ApiHealthLog": {
+      "title": "API Health Monitor Log",
+      "description": "Records status metrics, latency times, and handshake logs for third-party clearpath APIs",
+      "type": "object",
+      "properties": {
+        "api_name": {
+          "type": "string",
+          "description": "The exact name of the monitored public or third-party service"
+        },
+        "status": {
+          "type": "string",
+          "description": "Probe state (ONLINE, DEGRADED, OFFLINE, MOCK_FALLBACK)"
+        },
+        "response_time": {
+          "type": "number",
+          "description": "Response time latency calculation in milliseconds"
+        },
+        "message": {
+          "type": "string",
+          "description": "Returned debug code or diagnostic trace logs"
+        },
+        "checked_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ServerTimestamp of safety check cycle execution"
+        }
+      },
+      "required": ["api_name", "status", "response_time", "checked_at"]
+    },
+    "GlobeCountryConfig": {
+      "title": "Global Rollout Country Configuration",
+      "description": "Firestore-driven rollout nodes settings managed by the CEO containing launch waves, statuses, coloring, and signup telemetry",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Assigned country ISO3 code or customized identity string"
+        },
+        "countryName": {
+          "type": "string",
+          "description": "Standard display title of the target country"
+        },
+        "launchPhase": {
+          "type": "string",
+          "description": "Launch phase tag (e.g. Stage 1: Active Mainframe, Stage 2: Sandbox Warmup)"
+        },
+        "launchColor": {
+          "type": "string",
+          "description": "Theme color configuration (e.g. #FF1493, #00FFFF, #B026FF)"
+        },
+        "signupGoal": {
+          "type": "number",
+          "description": "Hard-target signup capacity allocation"
+        },
+        "currentSignupCount": {
+          "type": "number",
+          "description": "Real-time count of registered users"
+        },
+        "highlightEnabled": {
+          "type": "boolean",
+          "description": "Flag configuration to trigger highlighting and glowing overlays"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Standard latitude mapping position"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Standard longitude mapping position"
+        }
+      },
+      "required": ["id", "countryName", "launchPhase", "launchColor", "signupGoal", "currentSignupCount", "highlightEnabled"]
+    },
+    "SyncedForm": {
+      "title": "Synced Google Form",
+      "description": "Represents a Google Form configuration synchronized with Firestore",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique Google Form ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the form"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the form"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Pointer to the owner account uid"
+        },
+        "syncedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of sync action"
+        }
+      },
+      "required": ["id", "title", "userId", "syncedAt"]
+    },
+    "FormResponse": {
+      "title": "Synced Form Response",
+      "description": "Represents a response/submission for a synced Google Form, stored in Firestore",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique Google Form response ID"
+        },
+        "formId": {
+          "type": "string",
+          "description": "Link to parent synced form ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Pointer to the owner account uid"
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of form submission"
+        },
+        "answers": {
+          "type": "object",
+          "description": "The answers content map"
+        },
+        "syncedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of sync action"
+        }
+      },
+      "required": ["id", "formId", "userId", "submittedAt", "answers", "syncedAt"]
+    },
+    "CpmsVideo": {
+      "title": "CPMS Streaming Video Metadata",
+      "description": "Stores user and system uploaded video media, channels, metadata on CPMS APK screen",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique video ID identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Video Title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation and indicator notes"
+        },
+        "category": {
+          "type": "string",
+          "description": "Channel or video category row"
+        },
+        "videoUrl": {
+          "type": "string",
+          "description": "Remote public or Storage stream path link"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Asset or Storage image representation"
+        },
+        "uploadedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ServerTimestamp of publish execution"
+        },
+        "uploadedBy": {
+          "type": "string",
+          "description": "Founder credentials identification"
+        },
+        "relatedIndicatorId": {
+          "type": "string",
+          "description": "Optional matched indicator code in the Encyclopedia"
+        }
+      },
+      "required": ["id", "title", "category", "videoUrl", "uploadedAt"]
+    },
+    "CpmsChannel": {
+      "title": "CPMS Custom Channel",
+      "description": "Represents custom dynamic television channels created inside CPMS Channel Manager",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique format id for the custom channel"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name or category text of the channel"
+        },
+        "description": {
+          "type": "string",
+          "description": "Short summary or purpose notes"
+        },
+        "thumbnailUrl": {
+          "type": "string",
+          "description": "Channel thumbnail image link or generic neon gradient styling"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when channel was setup"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Founder email index who made this entry"
+        }
+      },
+      "required": ["id", "name", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/cpms_channels/{channelId}": {
+      "schema": "CpmsChannel",
+      "description": "Collection of dynamic television channels managed by CPMS Channel Manager"
+    },
+    "/cpms_videos/{videoId}": {
+      "schema": "CpmsVideo",
+      "description": "CPMS video contents, categories, and indicator bindings"
+    },
+    "/users/{userId}/synced_forms/{formId}": {
+      "schema": "SyncedForm",
+      "description": "User Google Forms connected and tracked in Firestore"
+    },
+    "/users/{userId}/synced_forms/{formId}/responses/{responseId}": {
+      "schema": "FormResponse",
+      "description": "User Google Form responses synced and archived in Firestore"
+    },
+    "/connected_calendars/{calendarId}": {
+      "schema": "ConnectedCalendar",
+      "description": "Stored user calendar subscription connections"
+    },
+    "/calendar_events/{eventId}": {
+      "schema": "CalendarEvent",
+      "description": "Stored synchronized secure event summaries"
+    },
+    "/api_health_logs/{logId}": {
+      "schema": "ApiHealthLog",
+      "description": "Stored API connection trace logs and diagnostic indicators"
+    },
+    "/globe_country_configs/{configId}": {
+      "schema": "GlobeCountryConfig",
+      "description": "CEO managed real-time Global wave coordinates and dynamic country configurations"
+    }
+  }
+}

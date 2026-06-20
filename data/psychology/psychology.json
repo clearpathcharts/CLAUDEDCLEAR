@@ -1,0 +1,20 @@
+[
+  {
+    "emotion": "Fear",
+    "description": "Fear causes investors to rapidly sell assets during periods of macroeconomic uncertainty, leading to deep liqudiation slides.",
+    "effects": [
+      "Volatility",
+      "Flight to safety",
+      "Gold buying"
+    ]
+  },
+  {
+    "emotion": "Greed",
+    "description": "Greed drives intense speculative bubbles, overvaluation, and rapid FOMO momentum buying.",
+    "effects": [
+      "FOMO",
+      "Momentum rallies",
+      "Leverage"
+    ]
+  }
+]

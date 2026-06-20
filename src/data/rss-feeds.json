@@ -1,0 +1,39 @@
+{
+  "Federal Reserve": [
+    "https://www.federalreserve.gov/feeds/press_all.xml",
+    "https://www.federalreserve.gov/feeds/press_monetary.xml",
+    "https://www.federalreserve.gov/feeds/data/h15.xml"
+  ],
+  "ECB": [
+    "https://www.ecb.europa.eu/home/html/rss.xml",
+    "https://www.ecb.europa.eu/press/shared/pdf/ecbxmlpress.xml"
+  ],
+  "GDP": [
+    "https://www.bea.gov/rss/national_xml.xml",
+    "https://fred.stlouisfed.org/graph/fredgraph.xml?id=GDPC1"
+  ],
+  "CPI": [
+    "https://fred.stlouisfed.org/graph/fredgraph.xml?id=CPIAUCSL",
+    "https://www.bls.gov/feed/cpi.xml"
+  ],
+  "Gold": [
+    "https://www.marketwatch.com/rss/newsviewer?type=gold",
+    "https://www.kitco.com/feed/news"
+  ],
+  "Geopolitics": [
+    "https://reuters.com/rss/geopolitics",
+    "https://cnbc.com/rss/geopolitics"
+  ],
+  "Forex": [
+    "https://www.fxstreet.com/rss/news",
+    "https://www.dailyfx.com/feeds/forex-market-news"
+  ],
+  "Crypto": [
+    "https://cointelegraph.com/rss",
+    "https://coindesk.com/arc/outboundfeeder/rss"
+  ],
+  "Corporate": [
+    "https://www.earningswhispers.com/feed",
+    "https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=10-K&XML=yes"
+  ]
+}

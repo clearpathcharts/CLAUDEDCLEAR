@@ -1,0 +1,14 @@
+{
+  "Markets": ["Global Markets", "US Markets", "International Markets"],
+  "Forex": ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "CNY"],
+  "Commodities": ["Gold", "Silver", "Platinum", "Palladium", "Copper", "Nickel", "Zinc", "Aluminum", "Iron Ore", "Lithium"],
+  "Energy": ["WTI", "Brent", "Natural Gas", "LNG", "Uranium", "Renewables"],
+  "Agriculture": ["Corn", "Wheat", "Soybeans", "Rice", "Coffee", "Sugar", "Cocoa", "Livestock"],
+  "Crypto": ["Bitcoin", "Ethereum", "Stablecoins", "Altcoins", "DeFi", "NFTs", "Mining", "Regulation"],
+  "Economics": ["GDP", "CPI", "Core CPI", "PPI", "Retail Sales", "Housing", "NFP", "Employment", "PMI", "Trade Balance"],
+  "Central Banks": ["Federal Reserve", "ECB", "BOJ", "BOE"],
+  "Corporate": ["Earnings", "Mergers", "IPOs", "Dividends", "Buybacks", "Stock Splits"],
+  "Risk": ["Recession", "Inflation", "Deflation", "Credit", "Liquidity"],
+  "Sentiment": ["Fear & Greed", "Smart Money", "Hedge Funds", "Institutional Flows"],
+  "Alerts": ["Breaking News", "Economic Alerts", "Forex Alerts", "Commodity Alerts", "Crypto Alerts", "Regulatory Alerts"]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "cal-1",
+    "time": "08:30 AM",
+    "currency": "USD",
+    "event": "Core CPI (MoM) (May)",
+    "importance": "High",
+    "actual": "0.3%",
+    "forecast": "0.2%",
+    "previous": "0.3%",
+    "impact": "Bullish USD"
+  },
+  {
+    "id": "cal-2",
+    "time": "08:30 AM",
+    "currency": "USD",
+    "event": "CPI (YoY) (May)",
+    "importance": "High",
+    "actual": "3.3%",
+    "forecast": "3.4%",
+    "previous": "3.4%",
+    "impact": "Bullish USD"
+  },
+  {
+    "id": "cal-3",
+    "time": "10:00 AM",
+    "currency": "CAD",
+    "event": "BOC Rate Statement",
+    "importance": "High",
+    "actual": "4.75%",
+    "forecast": "4.75%",
+    "previous": "5.00%",
+    "impact": "Neutral CAD"
+  },
+  {
+    "id": "cal-4",
+    "time": "02:00 PM",
+    "currency": "USD",
+    "event": "FOMC Economic Projections",
+    "importance": "High",
+    "actual": "Released",
+    "forecast": "--",
+    "previous": "--",
+    "impact": "High Volatility"
+  },
+  {
+    "id": "cal-5",
+    "time": "02:15 PM",
+    "currency": "EUR",
+    "event": "ECB Press Conference",
+    "importance": "High",
+    "actual": "Active",
+    "forecast": "--",
+    "previous": "--",
+    "impact": "Bearish EUR"
+  },
+  {
+    "id": "cal-6",
+    "time": "Tomorrow",
+    "currency": "GBP",
+    "event": "GDP (MoM) (MoM)",
+    "importance": "Medium",
+    "actual": "--",
+    "forecast": "0.1%",
+    "previous": "-0.1%",
+    "impact": "Pending"
+  }
+]

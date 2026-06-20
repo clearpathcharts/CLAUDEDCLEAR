@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Global Financial Encyclopedia | ClearPath Learn</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Cinematic financial education platform from ClearPath. Learn how stocks, forex, global commodities, inflation, central banking and global economic systems actually function.">
+  <meta name="theme-color" content="#00D9FF">
+  
+  <!-- PWA Specific Headers -->
+  <link rel="manifest" href="/learn/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ClearPath Learn">
+  
+  <!-- FontAwesome & Custom CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/learn/assets/css/style.css">
+</head>
+<body>
+
+  <!-- Background Atmosphere Grids -->
+  <div class="financial-grid" id="gridBg"></div>
+  <div class="space-dust"></div>
+
+  <!-- Mobile sticky navigation bar -->
+  <header class="mobile-nav-bar">
+    <div class="brand">
+      <h1 class="brand-title">ClearPath Learn</h1>
+      <p class="brand-subtitle font-mono">Encyclopedia Shell</p>
+    </div>
+    <button class="btn-hamburger" id="hamburgerBtn" aria-label="Toggle navigation menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+
+  <div class="layout-wrapper">
+    
+    <!-- Left Sidebar Column - Grouped Navigation Structure -->
+    <nav class="sidebar" id="sidebar">
+      <div class="brand">
+        <h1 class="brand-title">ClearPath Learn</h1>
+        <p class="brand-subtitle font-mono">Public Encyclopedia</p>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item active">
+          <a href="/learn/index.html">
+            <i class="fa-solid fa-square-poll-vertical text-[#00D9FF]"></i>
+            <span>Main Console</span>
+          </a>
+        </li>
+
+        <!-- MARKETS SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: rgba(0, 217, 255, 0.82); text-transform: uppercase;">
+          Markets
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=stocks_cat">
+            <i class="fa-solid fa-chart-line text-[#00D9FF]"></i>
+            <span>├ Stocks</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=forex_cat">
+            <i class="fa-solid fa-circle-nodes text-[#00D9FF]"></i>
+            <span>├ Forex</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=commodities_cat">
+            <i class="fa-solid fa-droplet text-[#00D9FF]"></i>
+            <span>├ Commodities</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=sectors_cat">
+            <i class="fa-solid fa-cubes text-[#00D9FF]"></i>
+            <span>└ Sectors</span>
+          </a>
+        </li>
+
+        <!-- ECONOMY SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: rgba(255, 0, 150, 0.82); text-transform: uppercase;">
+          Economy
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=economy_cat">
+            <i class="fa-solid fa-landmark text-[#7A3BFF]"></i>
+            <span>├ Inflation</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=rates_stocks">
+            <i class="fa-solid fa-percent text-[#7A3BFF]"></i>
+            <span>├ Interest Rates</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=banking_cat">
+            <i class="fa-solid fa-building-columns text-[#7A3BFF]"></i>
+            <span>├ Federal Reserve</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=banking_cat">
+            <i class="fa-solid fa-vault text-[#7A3BFF]"></i>
+            <span>└ Banking</span>
+          </a>
+        </li>
+
+        <!-- LEARNING SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 950; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase;">
+          Learning Link
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=beginner]').click(); return false;">
+            <i class="fa-solid fa-user-graduate text-green-400"></i>
+            <span>├ Beginner</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=highSchool]').click(); return false;">
+            <i class="fa-solid fa-school text-yellow-400"></i>
+            <span>├ High School</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=college]').click(); return false;">
+            <i class="fa-solid fa-graduation-cap text-[#00D9FF]"></i>
+            <span>├ College</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=researcher]').click(); return false;">
+            <i class="fa-solid fa-flask text-[#FF00C8]"></i>
+            <span>└ Research</span>
+          </a>
+        </li>
+
+        <!-- DISCOVERY SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: #ef4444; text-transform: uppercase;">
+          Discovery
+        </li>
+        <li class="nav-item">
+          <a href="/learn/sector-template.html">
+            <i class="fa-solid fa-microchip text-teal-400"></i>
+            <span>├ Sector Maps</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/index.html">
+            <i class="fa-solid fa-earth-americas text-emerald-400"></i>
+            <span>├ Global Markets</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/glossary-template.html">
+            <i class="fa-solid fa-brain text-purple-400"></i>
+            <span>└ Market Psychology</span>
+          </a>
+        </li>
+
+        <li class="nav-item" style="margin-top: 1.5rem; opacity: 0.7;">
+          <a href="/" style="border: 1px dashed rgba(239, 68, 68, 0.4); color: #f87171;">
+            <i class="fa-solid fa-arrow-left-long"></i>
+            <span>Exit Learn Shell</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Interactive Education Levels Dashboard Mode -->
+      <div class="mode-controls">
+        <span class="mode-title">Cognitive Complexity</span>
+        <div class="mode-selector">
+          <button class="btn-mode active" data-mode="beginner" aria-label="Beginner Education Explainer Mode">
+            <span>Beginner Level</span>
+          </button>
+          <button class="btn-mode" data-mode="kids" aria-label="Kids Playground Explainer Mode">
+            <span>Kids mode 🎈</span>
+          </button>
+          <button class="btn-mode" data-mode="highSchool" aria-label="High School Level Explainer Mode">
+            <span>High School Level</span>
+          </button>
+          <button class="btn-mode" data-mode="college" aria-label="College Level Explainer Mode">
+            <span>College Level</span>
+          </button>
+          <button class="btn-mode" data-mode="researcher" aria-label="Quantitative Researcher Explainer Mode">
+            <span>Researcher Mode 🔬</span>
+          </button>
+          <button class="btn-mode" data-mode="accessible" aria-label="Accessible High Contrast Mode">
+            <span>Accessible Mode</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Workspace Column -->
+    <main class="workspace">
+      
+      <!-- Network State Banner -->
+      <div class="status-banner" id="offlineBanner" role="alert">
+        <div>
+          <i class="fa-solid fa-cloud-bolt-flash mr-2"></i>
+          <span><strong>Offline mode detected.</strong> Browsing local cached educational catalog.</span>
+        </div>
+      </div>
+
+      <!-- Core Cinematic Hero Section -->
+      <section class="hero">
+        <!-- SVG glowing world map overlay -->
+        <svg class="hero-map-overlay" viewBox="0 0 1000 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="150" r="1.5" fill="#00D9FF" opacity="0.3"></circle>
+          <circle cx="150" cy="120" r="2" fill="#00D9FF" opacity="0.4"></circle>
+          <circle cx="200" cy="100" r="1.5" fill="#FF00C8" opacity="0.2"></circle>
+          <circle cx="210" cy="110" r="1" fill="#00D9FF" opacity="0.3"></circle>
+          <circle cx="250" cy="130" r="2.5" fill="#00D9FF" opacity="0.5"></circle>
+          <circle cx="300" cy="200" r="2" fill="#7A3BFF" opacity="0.4"></circle>
+          <circle cx="350" cy="220" r="1.5" fill="#00D9FF" opacity="0.3"></circle>
+          <circle cx="450" cy="150" r="2.5" fill="#00D9FF" opacity="0.5"></circle>
+          <circle cx="500" cy="120" r="1" fill="#FF00C8" opacity="0.3"></circle>
+          <circle cx="550" cy="110" r="2" fill="#00D9FF" opacity="0.4"></circle>
+          <circle cx="600" cy="180" r="1.5" fill="#00D9FF" opacity="0.2"></circle>
+          <circle cx="650" cy="250" r="3" fill="#7A3BFF" opacity="0.6"></circle>
+          <circle cx="700" cy="300" r="2" fill="#00D9FF" opacity="0.4"></circle>
+          <circle cx="750" cy="150" r="1.5" fill="#FF00C8" opacity="0.3"></circle>
+          <circle cx="800" cy="120" r="2.5" fill="#00D9FF" opacity="0.5"></circle>
+          <circle cx="820" cy="140" r="1" fill="#00D9FF" opacity="0.3"></circle>
+          <circle cx="850" cy="110" r="2.5" fill="#7A3BFF" opacity="0.4"></circle>
+          <circle cx="900" cy="160" r="1.5" fill="#00D9FF" opacity="0.3"></circle>
+          
+          <!-- Abstract animated financial vector connection lines -->
+          <path d="M 150 120 Q 300 180 450 150 T 800 120" stroke="rgba(0, 217, 255, 0.15)" stroke-width="1.5" stroke-dasharray="4 4" fill="none"></path>
+          <path d="M 250 130 Q 550 80 850 110" stroke="rgba(255, 0, 200, 0.15)" stroke-width="1" stroke-dasharray="6 3" fill="none"></path>
+          <path d="M 300 200 Q 475 250 650 250" stroke="rgba(122, 59, 255, 0.12)" stroke-width="2" fill="none"></path>
+        </svg>
+
+        <div class="hero-content">
+          <span class="hero-sub font-mono">STANDALONE LEARNING PLATFORM</span>
+          <h1 class="hero-title">GLOBAL FINANCIAL ENCYCLOPEDIA</h1>
+          <p class="hero-desc">
+            Learn how the economy actually works. From stocks and inflation to global markets and interactive currency systems. Toggle cognitive levels on the left to adapt explanations instantly.
+          </p>
+
+          <!-- Search HUD bar -->
+          <div class="search-hud-container">
+            <i class="fa-solid fa-magnifying-glass search-hud-icon"></i>
+            <input 
+              type="text" 
+              id="searchBar" 
+              placeholder="Search economic terms, stocks or currency loops..." 
+              aria-label="Search financial catalog terms"
+            >
+            <div class="search-hud-actions">
+              <button type="button" id="micBtn" class="search-hud-action-btn mic-btn" title="Voice Search">
+                <i class="fa-solid fa-microphone"></i>
+              </button>
+              <button type="button" id="clearBtn" class="search-hud-action-btn clear-btn" title="Clear Search & Stop Listening">
+                <i class="fa-solid fa-xmark" style="stroke-width: 3px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- SECTION 1: EDUCATIONAL CATEGORIES -->
+      <section style="margin-top: 3rem; margin-bottom: 3.5rem;">
+        <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--color-neon-cyan); text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+          <span style="display:inline-block; width: 6px; height: 18px; background: var(--color-neon-cyan); border-radius: 4px; box-shadow: 0 0 10px var(--color-neon-cyan);"></span>
+          I. Educational Category Blocks
+        </h3>
+        
+        <div class="card-grid" aria-label="Educational Category Blocks">
+          <!-- Card: Stocks -->
+          <article class="card" data-module="stocks_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-chart-line text-[#00D9FF]"></i></div>
+              <span class="card-tag">STOCKS</span>
+            </div>
+            <h2 class="card-title">Stocks & Equity Systems</h2>
+            <p class="card-desc">10,000+ Public Companies</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Forex -->
+          <article class="card" data-module="forex_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-circle-nodes text-[#00D9FF]"></i></div>
+              <span class="card-tag">FOREX</span>
+            </div>
+            <h2 class="card-title">Forex & Currency Networks</h2>
+            <p class="card-desc">Global Currency Systems</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Commodities -->
+          <article class="card" data-module="commodities_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-droplet text-[#00D9FF]"></i></div>
+              <span class="card-tag">COMMODITIES</span>
+            </div>
+            <h2 class="card-title">Commodities & Real Assets</h2>
+            <p class="card-desc">Oil, Gold, Silver, Agriculture</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Economy -->
+          <article class="card" data-module="economy_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-landmark text-[#7A3BFF]"></i></div>
+              <span class="card-tag">ECONOMY</span>
+            </div>
+            <h2 class="card-title">Economy & Indicators</h2>
+            <p class="card-desc">Inflation, GDP, Interest Rates</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Banking -->
+          <article class="card" data-module="banking_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-building-columns text-[#7A3BFF]"></i></div>
+              <span class="card-tag">BANKING</span>
+            </div>
+            <h2 class="card-title">Central Banking & Reserves</h2>
+            <p class="card-desc">Federal Reserve, Central Banks</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Sectors -->
+          <article class="card" data-module="sectors_cat" data-tag="category" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-puzzle-piece text-[#7A3BFF]"></i></div>
+              <span class="card-tag">SECTORS</span>
+            </div>
+            <h2 class="card-title">Industrial Sectors & Moats</h2>
+            <p class="card-desc">AI, Energy, Defense, Biotech</p>
+            <span class="card-action-btn">Explore Spectrum <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+        </div>
+      </section>
+
+      <!-- SECTION 2: COMPANY EXPLORERS PORTAL (DOMINANT SHIFT) -->
+      <section style="margin-top: 3rem; margin-bottom: 3.5rem; background: rgba(255,255,255,0.01); border: 1px solid rgba(0, 217, 255, 0.08); padding: 2.5rem; border-radius: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+          <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.25rem; letter-spacing: 2px; color: var(--color-neon-pink); text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin: 0;">
+            <span style="display:inline-block; width: 6px; height: 18px; background: var(--color-neon-pink); border-radius: 4px; box-shadow: 0 0 10px var(--color-neon-pink);"></span>
+            II. Global Corporate Anchors
+          </h3>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.725rem; color: rgba(255,255,255,0.4); text-transform: uppercase; background: rgba(255,0,200,0.05); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,0,200,0.15);">
+            Company Cards Dominate
+          </span>
+        </div>
+        
+        <p style="font-size: 0.875rem; color: rgba(255,255,255,0.6); max-width: 720px; line-height: 1.6; margin-bottom: 2rem;">
+          Analyze the foundational operations, strategic supply networks, and economic drivers of the five most critical global corporate anchors on earth. Expand each module to explore how physical resource limitations interact with active software platform rents.
+        </p>
+
+        <div class="card-grid" aria-label="Company Explorers">
+          <!-- Card: NVDA -->
+          <article class="card" data-module="nvda" data-tag="company" role="button" tabindex="0" style="border: 1px solid rgba(255, 0, 200, 0.15); background: rgba(255,0,200,0.02);">
+            <div class="card-header-flex">
+              <div class="card-icon" style="background: rgba(255,0,200,0.04); border-color: rgba(255,0,200,0.15);"><i class="fa-solid fa-microchip text-[#FF00C8]"></i></div>
+              <span class="card-tag" style="color: #FF00C8; border-color: rgba(255,0,200,0.25);">NVDA</span>
+            </div>
+            <h2 class="card-title">NVIDIA</h2>
+            <p class="card-desc">AI Platforms & GPU Compute Engines</p>
+            <span class="card-action-btn" style="color: #FF00C8;">Verify Moat <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: AAPL -->
+          <article class="card" data-module="aapl" data-tag="company" role="button" tabindex="0" style="border: 1px solid rgba(255, 0, 200, 0.15); background: rgba(255,0,200,0.02);">
+            <div class="card-header-flex">
+              <div class="card-icon" style="background: rgba(255,0,200,0.04); border-color: rgba(255,0,200,0.15);"><i class="fa-solid fa-mobile-screen-button text-[#FF00C8]"></i></div>
+              <span class="card-tag" style="color: #FF00C8; border-color: rgba(255,0,200,0.25);">AAPL</span>
+            </div>
+            <h2 class="card-title">APPLE</h2>
+            <p class="card-desc">Premium Hardware & Closed Services Ecosystems</p>
+            <span class="card-action-btn" style="color: #FF00C8;">Verify Moat <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: MSFT -->
+          <article class="card" data-module="msft" data-tag="company" role="button" tabindex="0" style="border: 1px solid rgba(255, 0, 200, 0.15); background: rgba(255,0,200,0.02);">
+            <div class="card-header-flex">
+              <div class="card-icon" style="background: rgba(255,0,200,0.04); border-color: rgba(255,0,200,0.15);"><i class="fa-solid fa-laptop text-[#FF00C8]"></i></div>
+              <span class="card-tag" style="color: #FF00C8; border-color: rgba(255,0,200,0.25);">MSFT</span>
+            </div>
+            <h2 class="card-title">MICROSOFT</h2>
+            <p class="card-desc">Enterprise Operating Systems & Azure Cloud Core</p>
+            <span class="card-action-btn" style="color: #FF00C8;">Verify Moat <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: TSLA -->
+          <article class="card" data-module="tsla" data-tag="company" role="button" tabindex="0" style="border: 1px solid rgba(255, 0, 200, 0.15); background: rgba(255,0,200,0.02);">
+            <div class="card-header-flex">
+              <div class="card-icon" style="background: rgba(255,0,200,0.04); border-color: rgba(255,0,200,0.15);"><i class="fa-solid fa-car-on text-[#FF00C8]"></i></div>
+              <span class="card-tag" style="color: #FF00C8; border-color: rgba(255,0,200,0.25);">TSLA</span>
+            </div>
+            <h2 class="card-title">TESLA</h2>
+            <p class="card-desc">Electric Transportation & Autonomous Systems</p>
+            <span class="card-action-btn" style="color: #FF00C8;">Verify Moat <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: AMZN -->
+          <article class="card" data-module="amzn" data-tag="company" role="button" tabindex="0" style="border: 1px solid rgba(255, 0, 200, 0.15); background: rgba(255,0,200,0.02);">
+            <div class="card-header-flex">
+              <div class="card-icon" style="background: rgba(255,0,200,0.04); border-color: rgba(255,0,200,0.15);"><i class="fa-solid fa-truck text-[#FF00C8]"></i></div>
+              <span class="card-tag" style="color: #FF00C8; border-color: rgba(255,0,200,0.25);">AMZN</span>
+            </div>
+            <h2 class="card-title">AMAZON</h2>
+            <p class="card-desc">E-Commerce Networks & AWS Distributed Servers</p>
+            <span class="card-action-btn" style="color: #FF00C8;">Verify Moat <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+        </div>
+      </section>
+
+      <!-- SECTION 3: MARKET RELATIONSHIP EXPLORERS -->
+      <section style="margin-top: 3rem; margin-bottom: 3.5rem;">
+        <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: var(--color-neon-cyan); text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+          <span style="display:inline-block; width: 6px; height: 18px; background: var(--color-neon-cyan); border-radius: 4px; box-shadow: 0 0 10px var(--color-neon-cyan);"></span>
+          III. Market Relationship Futures
+        </h3>
+        
+        <div class="card-grid" aria-label="Market Relationship Explorers">
+          <!-- Card: Oil -> Airlines -->
+          <article class="card" data-module="oil_airlines" data-tag="relationship" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-plane text-[#FF5E00]"></i></div>
+              <span class="card-tag">RESOURCE RELATIONSHIP</span>
+            </div>
+            <h2 class="card-title">How Oil Affects Airlines</h2>
+            <p class="card-desc">Analyzing input commodity fuel overhead exposures.</p>
+            <span class="card-action-btn">Trace Connections <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Inflation -> Housing -->
+          <article class="card" data-module="inflation_housing" data-tag="relationship" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-house-chimney text-[#FF5E00]"></i></div>
+              <span class="card-tag">ASSET VELOCITY</span>
+            </div>
+            <h2 class="card-title">How Inflation Affects Housing</h2>
+            <p class="card-desc">Rent index appreciations vs construction material loops.</p>
+            <span class="card-action-btn">Trace Connections <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Rates -> Stocks -->
+          <article class="card" data-module="rates_stocks" data-tag="relationship" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-scale-balanced text-[#FF5E00]"></i></div>
+              <span class="card-tag">DISCOUNT TRANSMISSION</span>
+            </div>
+            <h2 class="card-title">How Interest Rates Affect Stocks</h2>
+            <p class="card-desc">Sovereign premium hurdle models compressing stock multiples.</p>
+            <span class="card-action-btn">Trace Connections <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+        </div>
+      </section>
+
+      <!-- SECTION 4: GLOSSARY SYSTEMS -->
+      <section style="margin-top: 3rem; margin-bottom: 3.5rem;">
+        <h3 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+          <span style="display:inline-block; width: 6px; height: 18px; background: #a78bfa; border-radius: 4px; box-shadow: 0 0 10px #a78bfa;"></span>
+          IV. Key Monetary Glossary Indexes
+        </h3>
+        
+        <div class="card-grid" aria-label="Key Monetary Glossary Indexes">
+          <!-- Card: Market Cap -->
+          <article class="card" data-module="market_cap" data-tag="glossary" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-tags text-yellow-500"></i></div>
+              <span class="card-tag">EQUITY SIZE</span>
+            </div>
+            <h2 class="card-title">Market Cap</h2>
+            <p class="card-desc">Total residual cash buyout costs of outstanding stock claims.</p>
+            <span class="card-action-btn">Examine Blueprint <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Liquidity -->
+          <article class="card" data-module="liquidity" data-tag="glossary" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-water text-yellow-500"></i></div>
+              <span class="card-tag">MARKET DEPTH</span>
+            </div>
+            <h2 class="card-title">Liquidity</h2>
+            <p class="card-desc">How fast real capital transforms to physical currency bills.</p>
+            <span class="card-action-btn">Examine Blueprint <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Recession -->
+          <article class="card" data-module="recession_glossary" data-tag="glossary" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-clock text-yellow-500"></i></div>
+              <span class="card-tag">BUSINESS CRUNCH</span>
+            </div>
+            <h2 class="card-title">Recession</h2>
+            <p class="card-desc">Sustained negative quarterly GDP growth squeezes.</p>
+            <span class="card-action-btn">Examine Blueprint <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Fed Funds -->
+          <article class="card" data-module="fed_funds" data-tag="glossary" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-traffic-light text-yellow-500"></i></div>
+              <span class="card-tag">COLLATERAL CORE</span>
+            </div>
+            <h2 class="card-title">Federal Funds Rate</h2>
+            <p class="card-desc">The sovereign borrowing target interest set by central banks.</p>
+            <span class="card-action-btn">Examine Blueprint <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+
+          <!-- Card: Yield Curve -->
+          <article class="card" data-module="yield_curve" data-tag="glossary" role="button" tabindex="0">
+            <div class="card-header-flex">
+              <div class="card-icon"><i class="fa-solid fa-chart-area text-yellow-500"></i></div>
+              <span class="card-tag">FORWARD PREDICTOR</span>
+            </div>
+            <h2 class="card-title">Yield Curve</h2>
+            <p class="card-desc">Comparing term structures of short and long run sovereign debt pricing.</p>
+            <span class="card-action-btn">Examine Blueprint <i class="fa-solid fa-arrow-right-long"></i></span>
+          </article>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Custom PWA Install Toast Prompt -->
+  <aside class="pwa-hud-toast" id="installToast" role="dialog" aria-labelledby="toastTitle">
+    <h3 id="toastTitle" style="font-family: var(--font-display); font-size: 0.95rem; color: #fff; margin-bottom: 8px;">Install ClearPath Encyclopedia</h3>
+    <p style="font-size: 0.775rem; color: rgba(255,255,255,0.6); margin-bottom: 16px;">Add this library directly to your display screen for instant, offline educational access.</p>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+      <button id="btnInstallDecline" style="background: none; border: var(--hud-border); color: #fff; font-size: 0.725rem; font-family: var(--font-mono); padding: 6px 12px; border-radius: 6px; cursor: pointer;">Not Now</button>
+      <button id="btnInstallAccept" style="background: var(--color-neon-cyan); border: none; color: #000; font-weight: bold; font-size: 0.725rem; font-family: var(--font-mono); padding: 6px 12px; border-radius: 6px; cursor: pointer;">Install App</button>
+    </div>
+  </aside>
+
+  <!-- Interactive Slide Drawer (Modal Overlay) -->
+  <div class="drawer-backdrop" id="drawerBackdrop" role="dialog" aria-modal="true">
+    <article class="drawer-content">
+      <button class="drawer-close" id="drawerClose" aria-label="Close details dialog">&times;</button>
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+        <span id="drawerIcon" style="font-size: 2.5rem;">💸</span>
+        <div>
+          <h2 id="drawerTitle" style="font-family: var(--font-display); font-size: 1.8rem; letter-spacing: -0.5px; font-weight: 900; background: linear-gradient(90deg, #fff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">What Is Inflation?</h2>
+          <p id="drawerSubtitle" class="font-mono text-[10px] tracking-widest text-[#00D9FF]" style="font-size: 10px; letter-spacing: 2px;">MODE: BEGINNER</p>
+        </div>
+      </div>
+      <div id="drawerContentText">
+        <!-- Live JS Populated -->
+      </div>
+    </article>
+  </div>
+
+  <script src="/learn/assets/js/main.js"></script>
+</body>
+</html>

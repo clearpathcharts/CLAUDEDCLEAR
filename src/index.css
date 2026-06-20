@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "./styles/codepen.css";
+
+
+html, body {
+  width: 100% !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: #050505 !important;
+  -webkit-text-size-adjust: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+}

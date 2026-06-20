@@ -1,0 +1,13 @@
+[
+  { "id": "EURUSD", "symbol": "EUR/USD", "price": "1.0842", "change": "-0.0018", "pct": "-0.17%", "category": "Forex", "direction": "down" },
+  { "id": "GBPUSD", "symbol": "GBP/USD", "price": "1.2755", "change": "+0.0022", "pct": "+0.17%", "category": "Forex", "direction": "up" },
+  { "id": "USDJPY", "symbol": "USD/JPY", "price": "156.88", "change": "+0.45", "pct": "+0.29%", "category": "Forex", "direction": "up" },
+  { "id": "AUDUSD", "symbol": "AUD/USD", "price": "0.6624", "change": "-0.0012", "pct": "-0.18%", "category": "Forex", "direction": "down" },
+  { "id": "USDCAD", "symbol": "USD/CAD", "price": "1.3712", "change": "+0.0031", "pct": "+0.23%", "category": "Forex", "direction": "up" },
+  { "id": "GC1!", "symbol": "GOLD", "price": "2312.40", "change": "+14.80", "pct": "+0.64%", "category": "Commodities", "direction": "up" },
+  { "id": "SI1!", "symbol": "SILVER", "price": "29.42", "change": "+0.38", "pct": "+1.31%", "category": "Commodities", "direction": "up" },
+  { "id": "CL1!", "symbol": "WTI CRUDE", "price": "77.58", "change": "-0.95", "pct": "-1.21%", "category": "Energy", "direction": "down" },
+  { "id": "NG1!", "symbol": "NATURAL GAS", "price": "2.91", "change": "+0.08", "pct": "+2.83%", "category": "Energy", "direction": "up" },
+  { "id": "BTC", "symbol": "BITCOIN", "price": "67420.50", "change": "-1820.00", "pct": "-2.63%", "category": "Crypto", "direction": "down" },
+  { "id": "ETH", "symbol": "ETHEREUM", "price": "3515.20", "change": "-98.15", "pct": "-2.72%", "category": "Crypto", "direction": "down" }
+]

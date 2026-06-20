@@ -1,0 +1,17 @@
+[
+  {
+    "asset": "Gold",
+    "direction": "UP",
+    "reasons": [
+      "Inflation fears increased",
+      "Bond yields weakened",
+      "Safe haven demand increased",
+      "USD weakened"
+    ],
+    "historicalPatterns": [
+      "Banking stress",
+      "Economic uncertainty",
+      "Currency instability"
+    ]
+  }
+]

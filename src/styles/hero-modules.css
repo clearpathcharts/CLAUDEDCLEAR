@@ -1,0 +1,57 @@
+/* /src/styles/hero-modules.css */
+.hero-modules {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(260px, 1fr));
+
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.hero-module {
+  position: relative;
+  overflow: hidden;
+
+  padding: 40px;
+  min-height: 240px;
+
+  border-radius: 28px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0.03)
+    );
+
+  transition: all 0.35s ease;
+}
+
+.hero-module:hover {
+  transform:
+    translateY(-8px)
+    scale(1.02);
+
+  box-shadow:
+    0 0 30px rgba(255, 0, 200, 0.35),
+    0 0 60px rgba(0, 220, 255, 0.18);
+}
+
+.module-glow {
+  position: absolute;
+
+  width: 300px;
+  height: 300px;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255, 0, 200, 0.18),
+      transparent 70%
+    );
+
+  top: -120px;
+  right: -120px;
+}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Path Markets Science TV Network</title>
+  <link rel="stylesheet" href="./css/netflix-style.css">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            cinzel: ["Cinzel", "serif"],
+            mono: ["JetBrains Mono", "monospace"],
+            sans: ["Space Grotesk", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#020205] text-white font-sans p-0 m-0 min-h-screen flex flex-col selection:bg-[#FF00C8] selection:text-white">
+
+  <!-- TOP HEADER MENU -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-white/5 py-4 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-black/95">
+    <div class="flex items-center gap-3">
+      <img src="./assets/1000231340.jpg" alt="Clear Path" class="w-10 h-10 object-cover rounded-lg border border-[#00D9FF]/30 shadow-[0_0_10px_rgba(0,217,255,0.3)]">
+      <div>
+        <h1 class="font-cinzel text-xl md:text-2xl font-black uppercase tracking-wider text-white">
+          CPMS <span class="text-[#FF00C8]">TV</span>
+        </h1>
+        <span class="text-[8px] font-mono text-zinc-400 block tracking-[0.2em] uppercase">FALCON HOUSE PROTOCOL</span>
+      </div>
+    </div>
+
+    <!-- MAIN NAV LINKS -->
+    <nav class="flex items-center gap-2 md:gap-5 text-xs font-mono font-bold tracking-widest text-zinc-300">
+      <a href="./index.html" class="px-3.5 py-1.5 bg-white/5 text-[#00D9FF] border-b-2 border-[#00D9FF] rounded-sm transition-all text-[10px]">HOME</a>
+      <a href="./about.html" class="px-3.5 py-1.5 hover:text-[#00D9FF] transition-all text-[10px]">ABOUT</a>
+      <a href="./download.html" class="px-3.5 py-1.5 hover:text-[#00D9FF] transition-all text-[10px]">APP STORE</a>
+      
+      <!-- Native PWA Install Button -->
+      <button id="pwa-install-btn" class="hidden bg-gradient-to-r from-[#FF00C8] to-[#00D9FF] hover:from-[#ff1493] hover:to-[#00ffff] font-mono font-bold text-white px-4 py-1.5 rounded-full text-[10px] items-center gap-1.5 shadow-[0_0_15px_rgba(0,217,255,0.3)] transition-all uppercase">
+        <i class="fas fa-download"></i> INSTALL MOBILE TV
+      </button>
+    </nav>
+  </header>
+
+  <!-- IMMERSIVE SUBHEADER ALERT BANNER -->
+  <div class="bg-gradient-to-r from-[#FF00C8]/10 via-black to-[#00D9FF]/5 px-4 md:px-12 py-3 border-b border-white/5 flex items-center justify-between font-mono text-[9px] text-zinc-400">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-[ping_2s_infinite]"></span>
+      <span>SYSTEM STATUS: <span class="text-emerald-400 font-bold">FALCON NET_ONLINE</span></span>
+    </div>
+    <div class="hidden md:flex items-center gap-4">
+      <span>CH 01: TV SATELLITE ENGINE</span>
+      <span>|</span>
+      <span>CUSTOM STREAM LOAD SUPPORTED</span>
+      <span>|</span>
+      <span class="text-[#00D9FF]">SECURE LEVEL A CLEARANCE</span>
+    </div>
+  </div>
+
+  <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-12 py-8 space-y-12">
+    
+    <!-- HIGH-INTENSITY HERO INTEL BLOCK -->
+    <div id="hero-intel-block" class="relative rounded-3xl overflow-hidden glass-panel border border-white/5 p-8 md:p-12 flex flex-col justify-between space-y-8 bg-zinc-950/60 shadow-2xl">
+      <div id="hero-banner-bg" class="absolute inset-0 bg-cover bg-center opacity-40 transition-all duration-500" style="background-image: url('https://i.postimg.cc/vZrRkXsh/Firefly-Gemini-Flash-COMPRESS-MY-IMAGE-TO-A-YOUTUBE-BANNER-SIZE-315308.png');"></div>
+      
+      <div class="relative space-y-4 max-w-2xl text-left">
+        <span class="text-[#FF00C8] text-[10px] font-mono font-black uppercase tracking-[0.25em] bg-[#FF00C8]/10 border border-[#FF00C8]/20 px-3 py-1 rounded-full w-fit block">
+          INSTITUTIONAL CORE SATELLITE
+        </span>
+        <h2 id="hero-banner-title" class="text-3xl md:text-5xl font-cinzel font-black uppercase tracking-tight text-white leading-tight">
+          Sovereign Liquidity & Technical Feeds
+        </h2>
+        <p class="text-sm text-zinc-400 font-mono leading-relaxed">
+          Unlock high-fidelity educational modules, sovereign forex bonds, dynamic orderbook setups, and direct technical live streams. The CPMS stream platform operates natively in-browser with zero external tracking logs.
+        </p>
+      </div>
+
+      <!-- KEY DISPATCH CTA BUTTONS -->
+      <div class="relative flex flex-wrap gap-4 pt-4">
+        <button id="watch-now" class="bg-gradient-to-r from-[#FF00C8] to-[#00D9FF] hover:brightness-110 text-white font-mono font-black text-xs px-8 py-4 rounded-full shadow-[0_0_20px_rgba(255,0,200,0.4)] transition-all uppercase flex items-center gap-2">
+          <i class="fas fa-play text-[10px]"></i> Launch Standalone Player
+        </button>
+        <button id="play-custom-url" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-white/15 font-mono font-bold text-xs px-6 py-4 rounded-full transition-all uppercase flex items-center gap-2">
+          <i class="fas fa-link text-[10px]"></i> Play Custom Stream URL
+        </button>
+        <button id="change-banner-btn" class="bg-zinc-950/80 hover:bg-zinc-900 text-[#00D9FF] border border-[#00D9FF]/30 font-mono font-bold text-xs px-6 py-4 rounded-full transition-all uppercase flex items-center gap-2">
+          <i class="fas fa-image text-[10px]"></i> Customize Banner
+        </button>
+      </div>
+    </div>
+
+    <!-- STREAM DIRECTORY TOOLBAR AND WAVE FEED SELECTION -->
+    <div class="space-y-6 text-left">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-white/5 pb-4">
+        <div>
+          <h3 class="text-lg font-cinzel font-black uppercase tracking-wider text-white">
+            Available Broadcast Stations
+          </h3>
+          <p class="text-[10px] font-mono text-zinc-500 mt-0.5 uppercase">Choose dynamic pipelines or click custom station links to load</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <!-- Live Stream Search Input -->
+          <div class="relative flex items-center flex-grow lg:flex-grow-0 lg:w-64">
+            <span class="absolute left-3.5 text-xs text-zinc-500"><i class="fas fa-search"></i></span>
+            <input type="text" id="search-input" placeholder="Type station name to filter..." class="w-full bg-zinc-950 border border-white/10 text-xs font-mono py-2.5 pl-9 pr-4 rounded-full text-white placeholder-zinc-500 focus:outline-none focus:border-[#00D9FF] transition-colors">
+          </div>
+
+          <!-- M3U Playlist Source Selector -->
+          <div class="flex items-center gap-2 bg-zinc-950 py-2 px-3.5 rounded-full border border-white/10 shrink-0">
+            <span class="text-[9px] font-mono text-zinc-500 uppercase">STREAM CATEGORY:</span>
+            <select id="home-playlist-select" class="bg-transparent text-[10px] font-mono font-bold text-[#00D9FF] uppercase outline-none cursor-pointer">
+              <option value="clearpath" class="bg-black text-white">CH: TECHNICAL NEWS</option>
+              <option value="global" class="bg-black text-white">CH: GLOBAL SATELLITE (M3U)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- DYNAMIC CHANNELS GRID CONTAINER -->
+      <div id="all-channels" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <!-- Will be dynamically populated via homepage.js -->
+      </div>
+
+      <!-- LOAD MORE FOOTER CONTROL -->
+      <div class="pt-6 text-center">
+        <button id="load-more-home" class="hidden bg-zinc-950 hover:bg-zinc-900 text-zinc-400 hover:text-[#00D9FF] border border-white/10 font-mono font-bold text-xs px-8 py-3 rounded-full tracking-wider transition-all uppercase items-center gap-2">
+          Load Next Stations <i class="fas fa-arrow-down text-[10px]"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="mt-auto py-8 bg-black border-t border-white/5 text-center text-xs font-mono text-zinc-650">
+    <p>&copy; 2026 Clear Path Markets Science & Falcon House. All Rights Reserved. Secure AES protection.</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="./js/pwa-register.js"></script>
+  <script src="./js/ai-studio.js"></script>
+  <script src="./js/homepage.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Clear Path Trader",
+  "short_name": "CP Trader",
+  "description": "Professional Master Pattern Trading Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0e11",
+  "theme_color": "#0b0e11",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=clearpath&backgroundColor=4D00FF",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=clearpath&backgroundColor=4D00FF",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

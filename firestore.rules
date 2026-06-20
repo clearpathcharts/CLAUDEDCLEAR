@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Basic user profile in Cloud Firestore linked to a Firebase Auth user
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      // Allow users to create and manage their own profiles
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      match /analysis_entries/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /tasks/{taskId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /alerts/{alertId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /portfolio/{positionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /synced_forms/{formId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        match /responses/{responseId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+
+    match /posts/{postId} {
+      // Any authenticated user can view public posts
+      allow read: if request.auth != null;
+      // You must be logged in to post, and the author metadata must match your uid
+      allow create: if request.auth != null && request.resource.data.author.uid == request.auth.uid;
+      // Allow updating likes
+      allow update: if request.auth != null;
+    }
+
+    // Globe configurations 
+    match /globe_country_configs/{configId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // CPMS TV Streaming Videos
+    match /cpms_videos/{videoId} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.token.email == "forexanarchy@gmail.com" || request.auth.token.email_verified == true && request.auth.token.email == "forexanarchy@gmail.com" || request.auth.uid == "ghost-offline");
+    }
+
+    // CPMS TV Streaming Channels
+    match /cpms_channels/{channelId} {
+      allow read: if true;
+      allow write: if request.auth != null && (request.auth.token.email == "forexanarchy@gmail.com" || request.auth.token.email_verified == true && request.auth.token.email == "forexanarchy@gmail.com" || request.auth.uid == "ghost-offline");
+    }
+  }
+}
+

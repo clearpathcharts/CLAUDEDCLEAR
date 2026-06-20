@@ -1,0 +1,194 @@
+:root {
+    /* ==========================================================================
+       PRIMARY CORE PALETTE
+       ========================================================================== */
+    --cyber-pink:      #FF00C8;
+    --electric-blue:   #00D9FF;
+    --deep-purple:     #2A003F;
+    --neon-pink:       #FF00AA;
+    --chart-blue:      #0047FF;
+    --cyan-glow:       #00FFFF;
+    --sunset-orange:   #FF5E00;
+    --hot-pink:        #FF00D4;
+    --dark-space:      #0B0E54;
+    --pure-black:      #000000;
+    --pure-white:      #FFFFFF;
+
+    /* ==========================================================================
+       PRE-BAKED INSTITUTIONAL GRADIENTS
+       ========================================================================== */
+    /* Used for Main Title, Brain Lighting, Roads, and Market Effects */
+    --gradient-neon-hero: linear-gradient(90deg, #FF00C8 0%, #7A3BFF 50%, #00D9FF 100%);
+    
+    /* Used for Main Background Atmosphere and Shadows */
+    --gradient-cyberpunk-bg: linear-gradient(180deg, #000000 0%, #090427 35%, #2A003F 70%, #FF00AA 100%);
+    
+    /* Used for Bull Glow, Horizon Lighting, and Active Cards */
+    --gradient-bull-glow: radial-gradient(circle, #FF00AA 0%, #7A3BFF 45%, #00D9FF 100%);
+
+    /* Used for CLEAR PATH Text and Chrome Elements */
+    --gradient-metallic-logo: linear-gradient(135deg, #FFFFFF 0%, #7FDBFF 50%, #FF4FD8 100%);
+
+    /* ==========================================================================
+       STANDARD INTERFACE MAPPINGS (PREVENTS INTERFACE CRASHES)
+       ========================================================================== */
+    --bg: #000000;
+    --bg-soft: #03010C;
+    --bg-card: #090427;
+    --bg-elevated: #0B0E54;
+    --text: #FFFFFF;
+    --text-soft: #00D9FF;  /* Electric Blue font accents */
+    --brand: #FF00C8;      /* Cyber Pink primary highlights */
+    --brand-soft: #FF5E00; /* Sunset Orange secondary highlights */
+    --line: rgba(0, 217, 255, 0.15); /* Electric Blue borders */
+    --overlay: rgba(0, 0, 0, 0.85);
+    --radius: 10px;
+    --radius-sm: 7px;
+    --shadow: 0 10px 35px rgba(255, 0, 200, 0.25); /* Cyber Pink glow shadow */
+    --ease: 220ms ease;
+
+    /* RECOVERY MAPPINGS FOR LEGACY CLASSES */
+    --neon-cyan: var(--electric-blue);
+    --lava-orange: var(--sunset-orange);
+    --lava-orange-glow: rgba(255, 94, 0, 0.4);
+    --hot-fuchsia: var(--cyber-pink);
+    --dark-bg: var(--pure-black);
+    --panel-bg: rgba(9, 4, 39, 0.85);
+    --glass-border: rgba(0, 217, 255, 0.15);
+}
+
+/* ==========================================================================
+   HIGH-INTENSITY CLASS EXTENSIONS (APPLIED TO TEXT & HEADERS)
+   ========================================================================== */
+.brand-logo, .nav-logo h1, .splash-title {
+    background: var(--gradient-metallic-logo) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    font-weight: 700 !important;
+}
+
+.homepage-nav {
+    background: linear-gradient(to bottom, #000000 0%, rgba(9, 4, 39, 0.8) 50%, rgba(0, 0, 0, 0) 100%) !important;
+    border-bottom: 1px solid var(--line) !important;
+}
+
+.channel-card:hover, .channel-list-item.active {
+    border-color: var(--cyan-glow) !important;
+    box-shadow: 0 0 15px var(--cyan-glow) !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #020205 !important;
+  background-image: linear-gradient(to bottom, rgba(4, 4, 12, 0.90) 0%, rgba(2, 2, 5, 0.97) 100%), 
+                    url('https://i.postimg.cc/vZrRkXsh/Firefly-Gemini-Flash-COMPRESS-MY-IMAGE-TO-A-YOUTUBE-BANNER-SIZE-315308.png') !important;
+  background-size: cover !important;
+  background-position: center top !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Glassmorphic Panels */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+/* Customized Neon Glow Buttons */
+.btn-lava {
+  background: var(--lava-orange);
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px var(--lava-orange-glow);
+}
+.btn-lava:hover {
+  background: #ff5511;
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 69, 0, 0.7);
+}
+
+.btn-cyan {
+  background: transparent;
+  color: var(--neon-cyan);
+  border: 2px solid var(--neon-cyan);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+}
+.btn-cyan:hover {
+  background: rgba(0, 255, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+/* High Intensity Brand Header */
+.brand-glow {
+  text-shadow: 0 0 10px var(--lava-orange-glow), 0 0 20px var(--hot-fuchsia);
+}
+
+/* Vertical Scrolling Track for Channels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Carousel/Grid Cards */
+.media-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  background: #000;
+  cursor: pointer;
+}
+.media-card:hover {
+  transform: scale(1.05) translateY(-5px);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 10px 25px rgba(0, 255, 255, 0.15), 0 0 15px rgba(255, 20, 147, 0.1);
+}
+
+.media-card img {
+  width: 100%;
+  height: auto;
+  transition: transform 0.5s ease;
+}
+.media-card:hover img {
+  transform: scale(1.08);
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.9) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 15px;
+}
+
+/* Audio Waveform style pulsers */
+.pulse-emerald {
+  animation: pulse-active 2s infinite ease-in-out;
+}
+
+@keyframes pulse-active {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}

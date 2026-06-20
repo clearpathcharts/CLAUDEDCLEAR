@@ -1,0 +1,62 @@
+[
+  {
+    "pair": "EUR/USD",
+    "type": "Major",
+    "description": "Euro versus U.S. Dollar.",
+    "countries": [
+      "European Union",
+      "United States"
+    ],
+    "affectedBy": [
+      "ECB",
+      "Federal Reserve",
+      "Inflation",
+      "Interest Rates"
+    ],
+    "education": {
+      "whatMovesThis": [
+        "Rate Differentials",
+        "GDP",
+        "War",
+        "Inflation"
+      ],
+      "relatedAssets": [
+        "Gold",
+        "DXY",
+        "Bonds"
+      ]
+    }
+  },
+  {
+    "pair": "USD/JPY",
+    "type": "Major",
+    "description": "U.S. Dollar versus Japanese Yen.",
+    "affectedBy": [
+      "Bank of Japan",
+      "Federal Reserve",
+      "Bond Yields"
+    ]
+  },
+  {
+    "pair": "GBP/USD",
+    "type": "Major",
+    "description": "Great British Pound versus U.S. Dollar.",
+    "affectedBy": [
+      "Bank of England",
+      "Federal Reserve",
+      "UK GDP data",
+      "Inflation"
+    ]
+  },
+  {
+    "pair": "AUD/USD",
+    "type": "Major",
+    "description": "Australian Dollar versus U.S. Dollar.",
+    "affectedBy": [
+      "Reserve Bank of Australia",
+      "China Commodity Demand",
+      "Inflation",
+      "U.S. Dollar Index"
+    ]
+  }
+]

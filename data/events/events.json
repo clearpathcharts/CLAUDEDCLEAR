@@ -1,0 +1,78 @@
+[
+  {
+    "title": "2008 Financial Crisis",
+    "year": 2008,
+    "description": "Collapse of the global banking system caused by subprime mortgage-backed securities, extreme institutional leverage, and systemic credit default swap default bands.",
+    "affectedMarkets": [
+      "Stocks",
+      "Real Estate",
+      "Banking",
+      "Forex"
+    ],
+    "lessons": [
+      "Debt risk",
+      "Liquidity collapse",
+      "Bank contagion"
+    ]
+  },
+  {
+    "title": "Dot-Com Bubble",
+    "year": 2000,
+    "description": "Massive speculative technology bubble burst where high valuations of internet startups led to extensive equity liquidation.",
+    "affectedMarkets": [
+      "NASDAQ",
+      "Technology",
+      "Venture Capital"
+    ],
+    "lessons": [
+      "Valuation limits",
+      "Irrational enthusiasm",
+      "Liquidity preservation"
+    ]
+  },
+  {
+    "title": "Volcker Shock",
+    "year": 1980,
+    "description": "Federal Reserve Chairman Paul Volcker raised the Fed Funds rate to 20% to break double-digit consumer price hyperinflation.",
+    "affectedMarkets": [
+      "Bonds",
+      "Equities",
+      "Global Sovereign Debt"
+    ],
+    "lessons": [
+      "Hyperinflation breaks",
+      "Sovereign interest pains",
+      "Central bank determination"
+    ]
+  },
+  {
+    "title": "Black Wednesday",
+    "year": 1992,
+    "description": "George Soros broke the Bank of England's Sterling peg to the European Exchange Rate Mechanism (ERM) via massive leveraged short selling.",
+    "affectedMarkets": [
+      "Forex (Sterling)",
+      "Sovereign Reserve Currencies",
+      "Bilateral Swaps"
+    ],
+    "lessons": [
+      "Peg defenses",
+      "Asymmetric speculative bets",
+      "FX reserves exhaust boundaries"
+    ]
+  },
+  {
+    "title": "Nixon Shock",
+    "year": 1971,
+    "description": "President Richard Nixon unilaterally closed the gold window, ending direct unilateral dollar-to-gold convertibility and breaking the Bretton Woods system.",
+    "affectedMarkets": [
+      "Sovereign FX",
+      "Gold Spot Bullion",
+      "Treasury Debt"
+    ],
+    "lessons": [
+      "Unbacked fiat creation",
+      "Monetary regime shifts",
+      "Floating bilateral rates"
+    ]
+  }
+]

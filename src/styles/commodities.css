@@ -1,0 +1,161 @@
+/* ========================================================
+CLEARPATH COMMODITIES INTELLIGENCE
+FILE:
+/src/styles/commodities.css
+======================================================== */
+
+.commodities-universe-page {
+  min-height: 100vh;
+  padding: 40px;
+}
+
+/* ========================================================
+HERO
+======================================================== */
+
+.commodities-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 560px;
+  border-radius: 40px;
+  padding: 60px;
+  margin-bottom: 50px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.commodities-hero-left {
+  max-width: 680px;
+  z-index: 10;
+}
+
+.commodities-badge {
+  display: inline-flex;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFB347;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .12em;
+  margin-bottom: 26px;
+  border: 1px solid rgba(255, 179, 71, 0.22);
+}
+
+.commodities-hero h1 {
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: .92;
+  margin-bottom: 30px;
+  text-shadow: 0 0 40px rgba(255, 179, 71, 0.35);
+}
+
+.commodities-hero p {
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 40px;
+}
+
+/* ========================================================
+BUTTONS
+======================================================== */
+
+.commodities-primary-btn {
+  background: linear-gradient(90deg, #FFB347, #FF5E00);
+}
+
+/* ========================================================
+VISUAL SYSTEM
+======================================================== */
+
+.commodities-hero-right {
+  position: relative;
+  width: 480px;
+  height: 480px;
+  margin-right: -40px;
+}
+
+.commodities-core-image {
+  position: absolute;
+  width: 520px;
+  right: -20px;
+  top: -20px;
+  z-index: 5;
+  filter: drop-shadow(0 0 80px rgba(255, 179, 71, 0.45));
+}
+
+.commodity-orb {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 179, 71, 0.24), transparent 70%);
+  filter: blur(80px);
+  top: 40px;
+  left: 40px;
+}
+
+.resource-wave {
+  position: absolute;
+  width: 120%;
+  height: 8px;
+  background: linear-gradient(90deg, #FFB347, #FF5E00, #FF00C8);
+  bottom: 80px;
+  left: -10%;
+  transform: rotate(-4deg);
+  box-shadow: 0 0 35px #FFB347, 0 0 70px #FF5E00;
+}
+
+.industrial-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: .25;
+}
+
+/* ========================================================
+CARDS
+======================================================== */
+
+.commodities-universe-page .commodity-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(255, 179, 71, 0.4);
+  box-shadow: 0 15px 40px rgba(255, 179, 71, 0.25);
+}
+
+.commodity-card-glow {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 179, 71, 0.15), transparent 70%);
+  top: -100px;
+  right: -100px;
+  pointer-events: none;
+}
+
+/* ========================================================
+WHY IT MOVED
+======================================================== */
+
+.commodities-universe-page .commodity-reason-node {
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  transition: all .3s ease;
+}
+
+.commodities-universe-page .commodity-reason-node:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 179, 71, 0.3);
+  box-shadow: 0 10px 25px rgba(255, 179, 71, 0.2);
+}
