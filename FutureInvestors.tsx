@@ -117,10 +117,9 @@ export default function FutureInvestors() {
             THE MISSION
           </h2>
           <p style={{ color: '#ccc', lineHeight: 1.8, fontSize: '15px' }}>
-            TradingView built a platform that serves institutions. ClearPath builds for humans. 
-            90% of every subscription funds educational programs for neurodivergent youth and 
-            at-risk communities. We never sell signals, never sell user data, never take broker kickbacks. 
-            We profit from clarity — not from confusion.
+            The largest platforms are built to serve institutions and Marketing firms . ClearPath builds for humans. 
+             We never sell signals, never sell user data, never take broker kickbacks. 
+            We profit from clarity — not from confusion. 
           </p>
           <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {['No signals ever', 'No ads ever', 'No data selling', 'No broker kickbacks'].map(rule => (
