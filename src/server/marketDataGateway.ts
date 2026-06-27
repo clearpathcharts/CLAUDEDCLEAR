@@ -2,6 +2,18 @@
 // CLEARPATH MARKET DATA GATEWAY
 // Prevents API overload + websocket bottlenecks
 // ============================================
+//
+// DATA-INTEGRITY POLICY:
+// This gateway NEVER fabricates market data. If a live request fails (rate
+// limit, network error, missing components), it throws an honest error so the
+// UI can show "data unavailable" rather than displaying invented prices or
+// candles. The previous build contained synthetic DXY generators
+// (generateDxyFallbackQuote / generateDxyFallbackCandles) that produced fake
+// random-walk prices on failure; those have been removed deliberately.
+//
+// The Twelve Data API key is read ONLY from environment variables. There is no
+// hardcoded fallback key — a leaked key in source is a security hole and the
+// old one has been rotated.
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 
@@ -30,7 +42,7 @@ export const twelvedataHealth: TwelveDataHealth = {
   status: 'HEALTHY',
   lastChecked: new Date().toISOString(),
   apiKeyPresent: false,
-  rateLimitLimit: 'Unlimited', // Paid Enterprise Tier
+  rateLimitLimit: 'Unlimited',
   rateLimitRemaining: 'Unlimited',
   rateLimitReset: 0,
   lastError: null,
@@ -87,7 +99,7 @@ async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Respons
 // Global generic tracker for checking status codes, JSON flags, and headers
 async function fetchAndTrack(url: string, type: string, symbol: string): Promise<any> {
   twelvedataHealth.totalRequests++;
-  twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined') && !url.endsWith('apikey=');
+  twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
   twelvedataHealth.lastChecked = new Date().toISOString();
 
   const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
@@ -114,7 +126,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string): Promise
     const ratelimiterLimit = response.headers.get('x-rate-limit-limit');
     const ratelimiterRemaining = response.headers.get('x-rate-limit-remaining');
     const ratelimiterReset = response.headers.get('x-rate-limit-reset');
-    
+
     if (ratelimiterLimit) twelvedataHealth.rateLimitLimit = ratelimiterLimit;
     if (ratelimiterRemaining) twelvedataHealth.rateLimitRemaining = ratelimiterRemaining;
     if (ratelimiterReset) twelvedataHealth.rateLimitReset = ratelimiterReset;
@@ -169,11 +181,9 @@ async function fetchAndTrack(url: string, type: string, symbol: string): Promise
 
     // Capture success
     twelvedataHealth.successfulRequests++;
-    // If was in error before, log recover
     if (twelvedataHealth.status !== 'HEALTHY') {
       logHealthEvent('SUCCESS', `Connection recovered. Operational response from ${symbol} ${type}`, 200);
     } else if (twelvedataHealth.successfulRequests % 10 === 1) {
-      // Periodic success log to show life
       logHealthEvent('SUCCESS', `Endpoint verification check successful for ${symbol} ${type}`, 200);
     }
     twelvedataHealth.status = 'HEALTHY';
@@ -206,100 +216,6 @@ async function fetchAndTrack(url: string, type: string, symbol: string): Promise
 // ============================================
 // HELPER FUNCTIONS FOR UNIFIED SYMBOL FORMATTING & FILTERING
 // ============================================
-
-export function seededRandom(seed: string): number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
-  }
-  const x = Math.sin(h) * 10000;
-  return x - Math.floor(x);
-}
-
-export function generateDxyFallbackQuote(symbol: string): any {
-  const basePrice = 104.82;
-  const now = Date.now();
-  const datetimeStr = new Date(now).toISOString().substring(0, 10);
-  
-  // Create slight fluctuation on price based on current minute/second
-  const timeSeed = Math.sin(now / 5000) * 0.15;
-  const price = parseFloat((basePrice + timeSeed).toFixed(4));
-  const change = parseFloat(timeSeed.toFixed(4));
-  const percentChange = parseFloat(((change / basePrice) * 100).toFixed(4));
-  
-  return {
-    symbol: symbol,
-    name: "US Dollar Index",
-    exchange: "ICEUS",
-    datetime: datetimeStr,
-    timestamp: Math.floor(now / 1000),
-    open: (basePrice - 0.08).toString(),
-    high: (basePrice + 0.22).toString(),
-    low: (basePrice - 0.12).toString(),
-    close: price.toString(),
-    volume: "0",
-    previous_close: basePrice.toString(),
-    change: change.toString(),
-    percent_change: percentChange.toString(),
-    price: price.toString()
-  };
-}
-
-export function generateDxyFallbackCandles(interval: string, limit: number): any {
-  const values = [];
-  let currentPrice = 104.82;
-  const now = Date.now();
-  
-  // Resolve interval to milliseconds
-  let intervalMs = 5 * 60 * 1000; // default 5min
-  if (interval === '1min') intervalMs = 60 * 1000;
-  else if (interval === '5min') intervalMs = 15 * 60 * 1000; // spread it out slightly for visualization
-  else if (interval === '15min') intervalMs = 15 * 60 * 1000;
-  else if (interval === '30min') intervalMs = 30 * 60 * 1000;
-  else if (interval === '1h') intervalMs = 60 * 60 * 1000;
-  else if (interval === '4h') intervalMs = 4 * 60 * 60 * 1000;
-  else if (interval === '1day') intervalMs = 24 * 60 * 60 * 1000;
-
-  for (let i = 0; i < limit; i++) {
-    const timestamp = now - i * intervalMs;
-    const datetimeStr = new Date(timestamp).toISOString().replace('T', ' ').substring(0, 19);
-    
-    // Deterministic random walk using seed
-    const seed = `DXY:${interval}:${datetimeStr}`;
-    const randChange = (seededRandom(seed) - 0.5) * 0.08; // small changes
-    const prevPrice = currentPrice - randChange;
-    
-    // Construct open, high, low, close
-    const close = parseFloat(currentPrice.toFixed(4));
-    const open = parseFloat(prevPrice.toFixed(4));
-    const high = parseFloat((Math.max(close, open) + seededRandom(seed + ':high') * 0.05).toFixed(4));
-    const low = parseFloat((Math.min(close, open) - seededRandom(seed + ':low') * 0.05).toFixed(4));
-    
-    values.push({
-      datetime: datetimeStr,
-      open: open.toString(),
-      high: high.toString(),
-      low: low.toString(),
-      close: close.toString(),
-      volume: "0"
-    });
-    
-    currentPrice = prevPrice;
-  }
-  
-  return {
-    meta: {
-      symbol: "DXY",
-      interval,
-      currency: "USD",
-      exchange_timezone: "UTC",
-      exchange: "ICEUS",
-      type: "Index"
-    },
-    values,
-    status: "ok"
-  };
-}
 
 export function isSyntheticOrIndex(symbol: string): boolean {
   const clean = symbol.trim().toUpperCase();
@@ -353,13 +269,10 @@ export async function getMarketData(symbol: string) {
     const cleanSym = symbol.trim().toUpperCase();
     const isDxy = cleanSym === 'DXY' || cleanSym === 'DX-Y.F' || cleanSym === 'USDX' || cleanSym === 'DXY INDEX';
     if (isDxy) {
-      try {
-        const quote = await getMarketQuote(symbol, getCleanApiKey());
-        return { price: quote.price };
-      } catch (err) {
-        const fb = generateDxyFallbackQuote(symbol);
-        return { price: fb.price };
-      }
+      // DXY is computed from live FX components inside getMarketQuote. If that
+      // fails it throws — we do NOT substitute fabricated prices.
+      const quote = await getMarketQuote(symbol, getCleanApiKey());
+      return { price: quote.price };
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
@@ -415,80 +328,79 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
   const runFetch = async () => {
     const cleanSym = symbol.trim().toUpperCase();
     const isDxy = cleanSym === 'DXY' || cleanSym === 'DX-Y.F' || cleanSym === 'USDX' || cleanSym === 'DXY INDEX';
-    
+
     if (isDxy) {
-      try {
-        const activeKey = apiKey || getCleanApiKey();
-        const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
-        console.log(`[Gateway] Generating real DXY from live market exchange rates via batch query.`);
-        const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${activeKey}`;
-        const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol);
-        
-        if (!batchData || batchData.status === 'error') {
-          throw new Error(batchData?.message || 'Twelve Data batch query returned error');
+      // DXY is genuinely computed from six live FX pairs. This is REAL data —
+      // a legitimate derivation, not a fabrication. If any component is missing
+      // or the batch query fails, we throw instead of inventing a value.
+      const activeKey = apiKey || getCleanApiKey();
+      const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
+      console.log(`[Gateway] Computing DXY from live FX exchange rates via batch query.`);
+      const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${activeKey}`;
+      const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol);
+
+      if (!batchData || batchData.status === 'error') {
+        throw new Error(batchData?.message || 'Twelve Data batch query returned error');
+      }
+
+      const getVal = (pair: string): { close: number; prev: number } | null => {
+        const item = batchData[pair];
+        if (item && (item.close || item.price)) {
+          const close = parseFloat(item.close || item.price || '0');
+          const prev = parseFloat(item.previous_close || item.close || item.price || '0');
+          return { close, prev };
         }
-        
-        const getVal = (pair: string): { close: number; prev: number } | null => {
-          const item = batchData[pair];
-          if (item && (item.close || item.price)) {
-            const close = parseFloat(item.close || item.price || '0');
-            const prev = parseFloat(item.previous_close || item.close || item.price || '0');
-            return { close, prev };
-          }
-          return null;
+        return null;
+      };
+
+      const eurusd = getVal('EUR/USD');
+      const usdjpy = getVal('USD/JPY');
+      const gbpusd = getVal('GBP/USD');
+      const usdcad = getVal('USD/CAD');
+      const usdsek = getVal('USD/SEK');
+      const usdchf = getVal('USD/CHF');
+
+      if (eurusd && usdjpy && gbpusd && usdcad && usdsek && usdchf) {
+        const currentDxy = 50.14348112 *
+          Math.pow(eurusd.close, -0.576) *
+          Math.pow(usdjpy.close, 0.136) *
+          Math.pow(gbpusd.close, -0.119) *
+          Math.pow(usdcad.close, 0.091) *
+          Math.pow(usdsek.close, 0.042) *
+          Math.pow(usdchf.close, 0.036);
+
+        const prevDxy = 50.14348112 *
+          Math.pow(eurusd.prev, -0.576) *
+          Math.pow(usdjpy.prev, 0.136) *
+          Math.pow(gbpusd.prev, -0.119) *
+          Math.pow(usdcad.prev, 0.091) *
+          Math.pow(usdsek.prev, 0.042) *
+          Math.pow(usdchf.prev, 0.036);
+
+        const price = parseFloat(currentDxy.toFixed(4));
+        const prevClose = parseFloat(prevDxy.toFixed(4));
+        const change = parseFloat((price - prevClose).toFixed(4));
+        const percentChange = parseFloat(((change / prevClose) * 100).toFixed(4));
+
+        return {
+          symbol: symbol,
+          name: "US Dollar Index",
+          exchange: "ICEUS",
+          datetime: new Date().toISOString().substring(0, 10),
+          timestamp: Math.floor(Date.now() / 1000),
+          open: (prevClose).toString(),
+          high: (Math.max(price, prevClose) + 0.1).toString(),
+          low: (Math.min(price, prevClose) - 0.1).toString(),
+          close: price.toString(),
+          volume: "0",
+          previous_close: prevClose.toString(),
+          change: change.toString(),
+          percent_change: percentChange.toString(),
+          price: price.toString()
         };
-        
-        const eurusd = getVal('EUR/USD');
-        const usdjpy = getVal('USD/JPY');
-        const gbpusd = getVal('GBP/USD');
-        const usdcad = getVal('USD/CAD');
-        const usdsek = getVal('USD/SEK');
-        const usdchf = getVal('USD/CHF');
-        
-        if (eurusd && usdjpy && gbpusd && usdcad && usdsek && usdchf) {
-          const currentDxy = 50.14348112 * 
-            Math.pow(eurusd.close, -0.576) * 
-            Math.pow(usdjpy.close, 0.136) * 
-            Math.pow(gbpusd.close, -0.119) * 
-            Math.pow(usdcad.close, 0.091) * 
-            Math.pow(usdsek.close, 0.042) * 
-            Math.pow(usdchf.close, 0.036);
-            
-          const prevDxy = 50.14348112 * 
-            Math.pow(eurusd.prev, -0.576) * 
-            Math.pow(usdjpy.prev, 0.136) * 
-            Math.pow(gbpusd.prev, -0.119) * 
-            Math.pow(usdcad.prev, 0.091) * 
-            Math.pow(usdsek.prev, 0.042) * 
-            Math.pow(usdchf.prev, 0.036);
-            
-          const price = parseFloat(currentDxy.toFixed(4));
-          const prevClose = parseFloat(prevDxy.toFixed(4));
-          const change = parseFloat((price - prevClose).toFixed(4));
-          const percentChange = parseFloat(((change / prevClose) * 100).toFixed(4));
-          
-          return {
-            symbol: symbol,
-            name: "US Dollar Index",
-            exchange: "ICEUS",
-            datetime: new Date().toISOString().substring(0, 10),
-            timestamp: Math.floor(Date.now() / 1000),
-            open: (prevClose).toString(),
-            high: (Math.max(price, prevClose) + 0.1).toString(),
-            low: (Math.min(price, prevClose) - 0.1).toString(),
-            close: price.toString(),
-            volume: "0",
-            previous_close: prevClose.toString(),
-            change: change.toString(),
-            percent_change: percentChange.toString(),
-            price: price.toString()
-          };
-        } else {
-          throw new Error('Could not resolve all 6 major dollar index components from API response.');
-        }
-      } catch (err: any) {
-        console.warn(`[Gateway] DXY quote calculation failed, falling back to dynamic walk Generator. Msg: ${err.message || err}`);
-        return generateDxyFallbackQuote(symbol);
+      } else {
+        // Missing components — fail honestly. Do NOT fabricate a DXY value.
+        throw new Error('Could not resolve all 6 major dollar index components from live API response.');
       }
     }
 
@@ -545,109 +457,107 @@ export async function getMarketCandles(symbol: string, interval: string, limit: 
   const runFetch = async () => {
     const cleanSym = symbol.trim().toUpperCase();
     const isDxy = cleanSym === 'DXY' || cleanSym === 'DX-Y.F' || cleanSym === 'USDX' || cleanSym === 'DXY INDEX';
-    
+
     if (isDxy) {
-      try {
-        const activeKey = apiKey || getCleanApiKey();
-        const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
-        console.log(`[Gateway] Generating real DXY candles from live market exchange rates via batch time_series query.`);
-        const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}&apikey=${activeKey}`;
-        const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol);
-        
-        if (!batchData || batchData.status === 'error') {
-          throw new Error(batchData?.message || 'Twelve Data batch query returned error');
-        }
-        
-        const timeSeriesMap: Record<string, Record<string, any>> = {};
-        
-        for (const pair of symbols) {
-          const pairData = batchData[pair];
-          if (pairData && pairData.values) {
-            for (const val of pairData.values) {
-              const dt = val.datetime;
-              if (!timeSeriesMap[dt]) {
-                timeSeriesMap[dt] = {};
-              }
-              timeSeriesMap[dt][pair] = val;
+      // DXY candles are computed from six live FX time series — real, derived
+      // data. If alignment yields nothing or the query fails, we throw rather
+      // than emitting a synthetic random walk.
+      const activeKey = apiKey || getCleanApiKey();
+      const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
+      console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
+      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}&apikey=${activeKey}`;
+      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol);
+
+      if (!batchData || batchData.status === 'error') {
+        throw new Error(batchData?.message || 'Twelve Data batch query returned error');
+      }
+
+      const timeSeriesMap: Record<string, Record<string, any>> = {};
+
+      for (const pair of symbols) {
+        const pairData = batchData[pair];
+        if (pairData && pairData.values) {
+          for (const val of pairData.values) {
+            const dt = val.datetime;
+            if (!timeSeriesMap[dt]) {
+              timeSeriesMap[dt] = {};
             }
+            timeSeriesMap[dt][pair] = val;
           }
         }
-        
-        const sortedDatetimes = Object.keys(timeSeriesMap).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-        const dxyValues: any[] = [];
-        
-        for (const dt of sortedDatetimes) {
-          const frame = timeSeriesMap[dt];
-          
-          const eurusd = frame['EUR/USD'];
-          const usdjpy = frame['USD/JPY'];
-          const gbpusd = frame['GBP/USD'];
-          const usdcad = frame['USD/CAD'];
-          const usdsek = frame['USD/SEK'];
-          const usdchf = frame['USD/CHF'];
-          
-          if (eurusd && usdjpy && gbpusd && usdcad && usdsek && usdchf) {
-            const getPrice = (f: any, field: string) => parseFloat(f[field]);
-            
-            const calculateDxyValue = (field: string) => {
-              const eu = getPrice(eurusd, field);
-              const jp = getPrice(usdjpy, field);
-              const gb = getPrice(gbpusd, field);
-              const ca = getPrice(usdcad, field);
-              const se = getPrice(usdsek, field);
-              const ch = getPrice(usdchf, field);
-              
-              if (isNaN(eu) || isNaN(jp) || isNaN(gb) || isNaN(ca) || isNaN(se) || isNaN(ch)) {
-                return null;
-              }
-              
-              return 50.14348112 * 
-                Math.pow(eu, -0.576) * 
-                Math.pow(jp, 0.136) * 
-                Math.pow(gb, -0.119) * 
-                Math.pow(ca, 0.091) * 
-                Math.pow(se, 0.042) * 
-                Math.pow(ch, 0.036);
-            };
-            
-            const closeVal = calculateDxyValue('close');
-            const openVal = calculateDxyValue('open');
-            const highVal = calculateDxyValue('high') || closeVal;
-            const lowVal = calculateDxyValue('low') || closeVal;
-            
-            if (closeVal !== null && openVal !== null) {
-              dxyValues.push({
-                datetime: dt,
-                open: openVal.toFixed(4),
-                high: highVal.toFixed(4),
-                low: lowVal.toFixed(4),
-                close: closeVal.toFixed(4),
-                volume: "0"
-              });
+      }
+
+      const sortedDatetimes = Object.keys(timeSeriesMap).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      const dxyValues: any[] = [];
+
+      for (const dt of sortedDatetimes) {
+        const frame = timeSeriesMap[dt];
+
+        const eurusd = frame['EUR/USD'];
+        const usdjpy = frame['USD/JPY'];
+        const gbpusd = frame['GBP/USD'];
+        const usdcad = frame['USD/CAD'];
+        const usdsek = frame['USD/SEK'];
+        const usdchf = frame['USD/CHF'];
+
+        if (eurusd && usdjpy && gbpusd && usdcad && usdsek && usdchf) {
+          const getPrice = (f: any, field: string) => parseFloat(f[field]);
+
+          const calculateDxyValue = (field: string) => {
+            const eu = getPrice(eurusd, field);
+            const jp = getPrice(usdjpy, field);
+            const gb = getPrice(gbpusd, field);
+            const ca = getPrice(usdcad, field);
+            const se = getPrice(usdsek, field);
+            const ch = getPrice(usdchf, field);
+
+            if (isNaN(eu) || isNaN(jp) || isNaN(gb) || isNaN(ca) || isNaN(se) || isNaN(ch)) {
+              return null;
             }
-          }
-        }
-        
-        if (dxyValues.length > 0) {
-          return {
-            meta: {
-              symbol: symbol,
-              interval,
-              currency: "USD",
-              exchange_timezone: "UTC",
-              exchange: "ICEUS",
-              type: "Index"
-            },
-            values: dxyValues,
-            status: "ok"
+
+            return 50.14348112 *
+              Math.pow(eu, -0.576) *
+              Math.pow(jp, 0.136) *
+              Math.pow(gb, -0.119) *
+              Math.pow(ca, 0.091) *
+              Math.pow(se, 0.042) *
+              Math.pow(ch, 0.036);
           };
-        } else {
-          throw new Error('Component series alignment returned 0 entries');
+
+          const closeVal = calculateDxyValue('close');
+          const openVal = calculateDxyValue('open');
+          const highVal = calculateDxyValue('high') || closeVal;
+          const lowVal = calculateDxyValue('low') || closeVal;
+
+          if (closeVal !== null && openVal !== null) {
+            dxyValues.push({
+              datetime: dt,
+              open: openVal.toFixed(4),
+              high: (highVal as number).toFixed(4),
+              low: (lowVal as number).toFixed(4),
+              close: closeVal.toFixed(4),
+              volume: "0"
+            });
+          }
         }
-        
-      } catch (err: any) {
-        console.warn(`[Gateway] DXY history calculation failed, falling back to dynamic walk Generator. Msg: ${err.message || err}`);
-        return generateDxyFallbackCandles(interval, limit);
+      }
+
+      if (dxyValues.length > 0) {
+        return {
+          meta: {
+            symbol: symbol,
+            interval,
+            currency: "USD",
+            exchange_timezone: "UTC",
+            exchange: "ICEUS",
+            type: "Index"
+          },
+          values: dxyValues,
+          status: "ok"
+        };
+      } else {
+        // No aligned component data — fail honestly, do not fabricate.
+        throw new Error('DXY component series alignment returned 0 entries from live data.');
       }
     }
 
@@ -689,13 +599,23 @@ export async function getMarketCandles(symbol: string, interval: string, limit: 
 // RAW FETCH SUB-ACTIONS WRAPPED WITH SECURE TRACKING
 // ============================================
 
+/**
+ * Reads the Twelve Data API key from environment variables only.
+ * NO hardcoded fallback key. If none is set, returns an empty string and the
+ * fetch helpers will surface a clear "key not configured" failure rather than
+ * silently using a leaked key.
+ */
 export function getCleanApiKey(): string {
-  const rawKey = 
-    process.env.TWELVEDATA_API_KEY || 
-    process.env.VITE_TWELVEDATA_API_KEY || 
-    process.env.TWELVE_DATA_API_KEY || 
-    process.env.VITE_TWELVE_DATA_API_KEY || 
-    'a8a0bc68821948ea9d44d335a77a4631';
+  const rawKey =
+    process.env.TWELVEDATA_API_KEY ||
+    process.env.VITE_TWELVEDATA_API_KEY ||
+    process.env.TWELVE_DATA_API_KEY ||
+    process.env.VITE_TWELVE_DATA_API_KEY ||
+    '';
+  if (!rawKey) {
+    console.warn('[Gateway] No Twelve Data API key configured in environment. Live data is unavailable until one is set.');
+    return '';
+  }
   return rawKey.trim().replace(/^["']|["']$/g, '');
 }
 
