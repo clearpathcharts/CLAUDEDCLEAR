@@ -23,6 +23,17 @@ type Candle = {
   close: number;
 };
 
+/**
+ * Oscillator indicators output values on a scale completely unrelated to price
+ * (e.g. RSI is 0-100, MACD oscillates around zero). If they share the candle
+ * price scale, the chart stretches to fit both price (~700) and the oscillator
+ * (~30), crushing the candles into a flat ribbon. These MUST live on their own
+ * separate price scale. Price-based overlays (SMA, EMA, BB, VWAP, Ichimoku,
+ * River) belong ON the candle scale and are deliberately excluded here.
+ */
+const OSCILLATOR_INDICATORS = new Set(["RSI", "MACD", "ATR", "ADX", "OBV", "AO"]);
+const OSCILLATOR_SCALE_ID = "oscillator-scale";
+
 export function LightweightCandles({
   data,
   symbol = "UNKNOWN",
@@ -70,7 +81,7 @@ export function LightweightCandles({
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
   const profile = useMemo(() => themeProfiles[safeProfileId] || themeProfiles.calm_focus, [safeProfileId]);
   const defaultTheme = useMemo(() => lightweightThemeAdapter(profile), [profile]);
-  
+
   // Load globally selected chart theme from localStorage if no customTheme is explicitly provided
   const savedTheme = useMemo(() => {
     try {
@@ -86,7 +97,7 @@ export function LightweightCandles({
 
   // Accessibility / Neuro-adaptive profiles specify their own custom contrast, borders and colors.
   // We should prioritize the active profile's specialized styling instead of let a generic saved custom theme override it.
-  // When returning to'calm_focus', we restore the user's custom-selected chart theme safely.
+  // When returning to 'calm_focus', we restore the user's custom-selected chart theme safely.
   const activeCustomTheme = (safeProfileId === "calm_focus") ? (customTheme || savedTheme) : null;
 
   // Use custom theme if provided, otherwise fallback to profile-based theme
@@ -143,6 +154,10 @@ export function LightweightCandles({
       handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     });
 
+    // Keep the candle series in the top ~70% of the chart so that, when an
+    // oscillator sub-pane is shown at the bottom, the candles aren't squashed.
+    series_priceScaleMargins(chart);
+
     if (takeSnapshotRef) {
       takeSnapshotRef.current = () => {
         try {
@@ -166,16 +181,30 @@ export function LightweightCandles({
       borderDownColor: activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor,
     });
 
+    /**
+     * Adds a line series to its own dedicated oscillator price scale, pinned to
+     * the bottom 25% of the chart. This is what stops RSI/MACD/etc. from
+     * flattening the candles.
+     */
+    const addOscillatorSeries = (opts: { color: string; lineWidth: any; title: string; lineStyle?: any }) => {
+      const s = chart.addSeries(LineSeries, {
+        color: opts.color,
+        lineWidth: opts.lineWidth,
+        title: opts.title,
+        lineStyle: opts.lineStyle,
+        priceScaleId: OSCILLATOR_SCALE_ID,
+      });
+      chart.priceScale(OSCILLATOR_SCALE_ID).applyOptions({
+        scaleMargins: { top: 0.78, bottom: 0 },
+        borderVisible: false,
+      });
+      return s;
+    };
+
     const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
     const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
 
-    let base = 150.0;
     const sym = symbol.toUpperCase();
-    if (sym.includes('GOLD')) base = 2180.50;
-    else if (sym.includes('OIL') || sym.includes('WTI')) base = 81.20;
-    else if (sym.includes('BTC')) base = 65000;
-    else if (sym.includes('EUR') || sym.includes('USD')) base = 1.0850;
-    else if (sym.includes('US10Y')) base = 4.25;
 
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
@@ -191,10 +220,12 @@ export function LightweightCandles({
         } else {
           let fetched: Candle[] | null = null;
           try {
-            // Fetch tiered data from Twelve Data + robust backend proxy + fallback cascade
+            // Fetch real candles via the secure server proxy.
             fetched = await fetchTieredHistoricalData(sym, timeframe, userTier);
           } catch (err) {
-            console.warn("Falling back to adapter / simulation for", sym, err);
+            // ChartFeedAdapter forwards through MarketEngine -> DataRouter, all of
+            // which return real data or empty arrays (never simulated candles).
+            console.warn("Primary fetch failed, trying adapter for", sym, err);
             try {
               if (active) {
                 fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
@@ -222,7 +253,6 @@ export function LightweightCandles({
         series.setData(tierOptimizedData as CandlestickData<Time>[]);
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
-        // Core Mathematical Indicators Plotting (Request 2)
         const COLOR_MAP: Record<string, string> = {
           "SMA": "#00FFFF",
           "EMA": "#FFAA00",
@@ -238,6 +268,7 @@ export function LightweightCandles({
           activeIndicators.forEach((indAbbr) => {
             const color = COLOR_MAP[indAbbr] || "#4DFFFF"; // premium non-magenta cyan fallback
             try {
+              // ---- PRICE-SCALE OVERLAYS (stay on the candle axis) ----
               if (indAbbr === "SMA") {
                 const lineData = IndicatorEngine.calculate("SMA", tierOptimizedData, { period: 20 });
                 const smaLine = chart.addSeries(LineSeries, {
@@ -246,7 +277,7 @@ export function LightweightCandles({
                   title: "SMA (20)",
                 });
                 smaLine.setData(lineData as any[]);
-              } 
+              }
               else if (indAbbr === "EMA") {
                 const lineData = IndicatorEngine.calculate("EMA", tierOptimizedData, { period: 50 });
                 const emaLine = chart.addSeries(LineSeries, {
@@ -263,16 +294,16 @@ export function LightweightCandles({
                 const lowerData = bbData.map((d: any) => ({ time: d.time as Time, value: d.lower }));
 
                 const mLine = chart.addSeries(LineSeries, { color: "#7A3BFF", lineWidth: 1, title: "BB basis" });
-                const uLine = chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 2, title: "BB upper" }); // non-magenta
-                const lLine = chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 2, title: "BB lower" }); // non-magenta
-                
+                const uLine = chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 2, title: "BB upper" });
+                const lLine = chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 2, title: "BB lower" });
+
                 mLine.setData(basisData);
                 uLine.setData(upperData);
                 lLine.setData(lowerData);
               }
               else if (indAbbr === "ICHIMOKU") {
                 const ichiData = IndicatorEngine.calculate("ICHIMOKU", tierOptimizedData, ichimokuSettings);
-                
+
                 const tenkanData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.tenkan }));
                 const kijunData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.kijun }));
                 const spanAData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.spanA }));
@@ -294,7 +325,6 @@ export function LightweightCandles({
                 const spanBLine = chart.addSeries(LineSeries, { color: "#EF9A9A", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span B" });
                 spanBLine.setData(spanBData);
 
-                // Compute exact clouds paths
                 const bullCloudData = ichiData.map((d: any) => {
                   const val = d.spanA >= d.spanB ? d.spanA : null;
                   return { time: d.time as Time, value: val };
@@ -325,36 +355,6 @@ export function LightweightCandles({
                   bearCloud.setData(bearCloudData as any[]);
                 }
               }
-              else if (indAbbr === "RSI") {
-                const rsiData = IndicatorEngine.calculate("RSI", tierOptimizedData, { period: 14 });
-                const rsiLine = chart.addSeries(LineSeries, {
-                  color: "#00FF66",
-                  lineWidth: 2,
-                  title: "RSI (14)",
-                });
-                rsiLine.setData(rsiData as any[]);
-              }
-              else if (indAbbr === "MACD") {
-                const macdOutput = IndicatorEngine.calculate("MACD", tierOptimizedData, { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 });
-                
-                const macdLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.macd }));
-                const signalLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.signal }));
-
-                const mLine = chart.addSeries(LineSeries, { color: "#3B82F6", lineWidth: 2, title: "MACD Line" });
-                const sLine = chart.addSeries(LineSeries, { color: "#F59E0B", lineWidth: 2, title: "Signal Line" }); // non-magenta
-
-                mLine.setData(macdLineData);
-                sLine.setData(signalLineData);
-              }
-              else if (indAbbr === "ATR") {
-                const atrData = IndicatorEngine.calculate("ATR", tierOptimizedData, { period: 14 });
-                const atrLine = chart.addSeries(LineSeries, {
-                  color: "#FF4500",
-                  lineWidth: 2,
-                  title: "ATR (14)",
-                });
-                atrLine.setData(atrData as any[]);
-              }
               else if (indAbbr === "VWAP") {
                 const vwapData = IndicatorEngine.calculate("VWAP", tierOptimizedData);
                 const vwapLine = chart.addSeries(LineSeries, {
@@ -364,33 +364,46 @@ export function LightweightCandles({
                 });
                 vwapLine.setData(vwapData as any[]);
               }
+              // ---- OSCILLATORS (own separate scale, pinned to bottom) ----
+              else if (indAbbr === "RSI") {
+                const rsiData = IndicatorEngine.calculate("RSI", tierOptimizedData, { period: 14 });
+                const rsiLine = addOscillatorSeries({ color: "#00FF66", lineWidth: 2, title: "RSI (14)" });
+                rsiLine.setData(rsiData as any[]);
+              }
+              else if (indAbbr === "MACD") {
+                const macdOutput = IndicatorEngine.calculate("MACD", tierOptimizedData, { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 });
+                const macdLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.macd }));
+                const signalLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.signal }));
+
+                const mLine = addOscillatorSeries({ color: "#3B82F6", lineWidth: 2, title: "MACD Line" });
+                const sLine = addOscillatorSeries({ color: "#F59E0B", lineWidth: 2, title: "Signal Line" });
+                mLine.setData(macdLineData);
+                sLine.setData(signalLineData);
+              }
+              else if (indAbbr === "ATR") {
+                const atrData = IndicatorEngine.calculate("ATR", tierOptimizedData, { period: 14 });
+                const atrLine = addOscillatorSeries({ color: "#FF4500", lineWidth: 2, title: "ATR (14)" });
+                atrLine.setData(atrData as any[]);
+              }
               else if (indAbbr === "OBV") {
                 const obvData = IndicatorEngine.calculate("OBV", tierOptimizedData);
-                const obvLine = chart.addSeries(LineSeries, {
-                  color: "#118AB2",
-                  lineWidth: 2,
-                  title: "OBV",
-                });
+                const obvLine = addOscillatorSeries({ color: "#118AB2", lineWidth: 2, title: "OBV" });
                 obvLine.setData(obvData as any[]);
               }
               else if (indAbbr === "ADX") {
                 const adxData = IndicatorEngine.calculate("ADX", tierOptimizedData, { period: 14 });
                 const adxValueData = adxData.map((d: any) => ({ time: d.time as Time, value: d.adx }));
-                const adxLine = chart.addSeries(LineSeries, {
-                  color: "#00D9FF",
-                  lineWidth: 2,
-                  title: "ADX (14)",
-                });
+                const adxLine = addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" });
                 adxLine.setData(adxValueData);
               }
               else {
-                // Calculation fallbacks routed via the IndicatorEngine
+                // Unknown indicator: route via the IndicatorEngine. If it's a known
+                // oscillator name, keep it off the price scale; otherwise overlay.
                 const lineData = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
-                const otherLine = chart.addSeries(LineSeries, {
-                  color: color,
-                  lineWidth: 2,
-                  title: `${indAbbr} (Live)`,
-                });
+                const isOscillator = OSCILLATOR_INDICATORS.has(indAbbr);
+                const otherLine = isOscillator
+                  ? addOscillatorSeries({ color, lineWidth: 2, title: `${indAbbr} (Live)` })
+                  : chart.addSeries(LineSeries, { color, lineWidth: 2, title: `${indAbbr} (Live)` });
                 otherLine.setData(lineData as any[]);
               }
             } catch (err) {
@@ -399,7 +412,7 @@ export function LightweightCandles({
           });
         }
 
-        // Plot "The River" (Mine) Custom Indicator if active
+        // Plot "The River" (Mine) Custom Indicator if active (price-based overlay)
         if (showMineIndicator) {
           try {
             const period = 14;
@@ -423,9 +436,8 @@ export function LightweightCandles({
           }
         }
 
-        // Live tick update — pulls a real quote through ChartFeedAdapter (which was
-        // already imported in this file but never actually called). On any failure,
-        // the candle is simply left alone rather than filled in with random noise.
+        // Live tick update — pulls a real quote through ChartFeedAdapter. On any
+        // failure, the candle is left alone rather than filled in with noise.
         let tickDelay = 1500;
         if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 1000;
         else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 3000;
@@ -494,9 +506,9 @@ export function LightweightCandles({
       if (!active || !entries || entries.length === 0) return;
       const { width, height: rectHeight } = entries[0].contentRect;
       if (width > 0) {
-        chart.applyOptions({ 
-          width, 
-          height: rectHeight > 0 ? rectHeight : initialHeight 
+        chart.applyOptions({
+          width,
+          height: rectHeight > 0 ? rectHeight : initialHeight
         });
         setTimeout(() => {
           if (active) chart.timeScale().fitContent();
@@ -552,3 +564,16 @@ export function LightweightCandles({
   );
 }
 
+/**
+ * Reserves the bottom slice of the main price scale so candles occupy the top
+ * ~70% of the chart, leaving visual room for the oscillator sub-pane.
+ */
+function series_priceScaleMargins(chart: any) {
+  try {
+    chart.priceScale("right").applyOptions({
+      scaleMargins: { top: 0.08, bottom: 0.28 },
+    });
+  } catch (e) {
+    console.warn("Could not apply candle price-scale margins:", e);
+  }
+}
