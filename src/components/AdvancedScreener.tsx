@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { 
-  SlidersHorizontal, 
-  Search, 
-  TrendingUp, 
-  BarChart3, 
-  Database, 
-  ChevronRight, 
-  Activity, 
-  Grid, 
-  Tv, 
-  Flame, 
+import {
+  SlidersHorizontal,
+  Search,
+  TrendingUp,
+  BarChart3,
+  Database,
+  ChevronRight,
+  Activity,
+  Grid,
+  Tv,
+  Flame,
   Zap,
   Info
 } from 'lucide-react';
@@ -18,7 +18,14 @@ import { runScreener, ScreenerResult, ScreenerFilters } from '../lib/trading/scr
 import { setClearState } from '../lib/trading/clearState';
 import MarketScanner from './MarketScanner';
 
-const MOCK_DATA: ScreenerResult[] = [
+/**
+ * SAMPLE_DATA — illustrative, non-live data used to demonstrate how the screener
+ * filters work. This is NOT a live market feed. The UI labels below are written
+ * to make that explicit so nothing on the page claims to be real-time when it
+ * isn't. When the live data pipeline is wired in (via fetchTieredHistoricalData),
+ * replace this array with a real fetch and update the labels back to "live".
+ */
+const SAMPLE_DATA: ScreenerResult[] = [
   { symbol: 'AAPL', pe: 28.5, margin: 0.25, volume: 52000000, price: 182.52, change: 1.2 },
   { symbol: 'TSLA', pe: 42.1, margin: 0.12, volume: 85000000, price: 175.05, change: -2.4 },
   { symbol: 'MSFT', pe: 35.8, margin: 0.32, volume: 22000000, price: 415.10, change: 0.8 },
@@ -31,16 +38,16 @@ const MOCK_DATA: ScreenerResult[] = [
 
 export default function AdvancedScreener() {
   const [activeLayout, setActiveLayout] = useState<'grid' | 'screener' | 'scanner' | 'movers'>('grid');
-  
+
   const [filters, setFilters] = useState<ScreenerFilters>({
     maxPe: 60,
     minMargin: 0.1,
     minVolume: 10000000
   });
-  const [results, setResults] = useState<ScreenerResult[]>(MOCK_DATA);
+  const [results, setResults] = useState<ScreenerResult[]>(SAMPLE_DATA);
 
   useEffect(() => {
-    setResults(runScreener(MOCK_DATA, filters));
+    setResults(runScreener(SAMPLE_DATA, filters));
   }, [filters]);
 
   // Renders the Stock Screener inner UI
@@ -57,6 +64,14 @@ export default function AdvancedScreener() {
           </div>
         </div>
 
+        {/* Demo-data notice so the sample values are never mistaken for a live feed */}
+        <div className="mb-4 bg-amber-500/5 border border-amber-500/20 px-3 py-2 rounded-lg flex items-center gap-2">
+          <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="text-[9px] font-mono uppercase tracking-wider text-amber-300/90">
+            Sample data — demonstrates filter behavior. Not a live market feed.
+          </span>
+        </div>
+
         {/* Sliders Grid */}
         <div className={`grid ${isCompact ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-3'} gap-4 mb-4`}>
           <div className="space-y-1 bg-white/[0.01] p-2.5 rounded-xl border border-white/[0.03]">
@@ -64,7 +79,7 @@ export default function AdvancedScreener() {
               <span>Max P/E Ratio</span>
               <span className="text-white">{filters.maxPe}</span>
             </label>
-            <input 
+            <input
               type="range" min="10" max="100" step="5"
               value={filters.maxPe}
               onChange={e => setFilters({...filters, maxPe: parseInt(e.target.value)})}
@@ -76,7 +91,7 @@ export default function AdvancedScreener() {
               <span>Min Margin</span>
               <span className="text-white">{(filters.minMargin * 100).toFixed(0)}%</span>
             </label>
-            <input 
+            <input
               type="range" min="0" max="0.5" step="0.05"
               value={filters.minMargin}
               onChange={e => setFilters({...filters, minMargin: parseFloat(e.target.value)})}
@@ -88,7 +103,7 @@ export default function AdvancedScreener() {
               <span>Min Volume</span>
               <span className="text-white">{(filters.minVolume / 1000000).toFixed(0)}M</span>
             </label>
-            <input 
+            <input
               type="range" min="0" max="100000000" step="10000000"
               value={filters.minVolume}
               onChange={e => setFilters({...filters, minVolume: parseInt(e.target.value)})}
@@ -100,7 +115,7 @@ export default function AdvancedScreener() {
         {/* Results table-style rows scroll container */}
         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1.5 custom-scrollbar min-h-[300px]">
           {results.sort((a,b) => b.change - a.change).map((asset, i) => (
-            <motion.div 
+            <motion.div
               key={asset.symbol}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -136,7 +151,7 @@ export default function AdvancedScreener() {
           ))}
           {results.length === 0 && (
             <div className="text-center py-12 text-xs font-mono text-zinc-500 border border-white/5 rounded-2xl bg-black/10">
-              No matching assets discovered with active parameters.
+              No matching assets with the current filter parameters.
             </div>
           )}
         </div>
@@ -155,55 +170,55 @@ export default function AdvancedScreener() {
           <div>
             <h2 className="text-base md:text-lg font-black uppercase tracking-widest text-white italic">Clear Path Market Screener Suite</h2>
             <p className="text-[10px] md:text-xs text-indigo-300 font-mono uppercase tracking-wider">
-              REAL-TIME MARKET SCANNING, SYSTEMATIC SCREENING & STATISTICAL INSIGHTS
+              SCREENING & FILTERING TOOLS — SAMPLE DATA PREVIEW
             </p>
           </div>
         </div>
 
         {/* SEGMENTED SWITCH DECK */}
         <div className="flex bg-black border border-white/10 p-1 rounded-xl shrink-0 font-mono text-[10px] items-center gap-1 overflow-x-auto no-scrollbar">
-          <button 
+          <button
             type="button"
             onClick={() => setActiveLayout('grid')}
             className={`px-3 py-1.5 rounded-lg font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 tracking-wider uppercase whitespace-nowrap
-              ${activeLayout === 'grid' 
-                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' 
+              ${activeLayout === 'grid'
+                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
           >
             <Grid className="w-3 h-3" />
             GRID OVERVIEW
           </button>
-          
-          <button 
+
+          <button
             type="button"
             onClick={() => setActiveLayout('screener')}
             className={`px-3 py-1.5 rounded-lg font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 tracking-wider uppercase whitespace-nowrap
-              ${activeLayout === 'screener' 
-                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' 
+              ${activeLayout === 'screener'
+                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
           >
             <SlidersHorizontal className="w-3 h-3" />
             STOCK SCREENER
           </button>
 
-          <button 
+          <button
             type="button"
             onClick={() => setActiveLayout('scanner')}
             className={`px-3 py-1.5 rounded-lg font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 tracking-wider uppercase whitespace-nowrap
-              ${activeLayout === 'scanner' 
-                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' 
+              ${activeLayout === 'scanner'
+                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
           >
             <Activity className="w-3 h-3" />
-            LIVE SCANNER
+            MARKET SCANNER
           </button>
 
-          <button 
+          <button
             type="button"
             onClick={() => setActiveLayout('movers')}
             className={`px-3 py-1.5 rounded-lg font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 tracking-wider uppercase whitespace-nowrap
-              ${activeLayout === 'movers' 
-                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]' 
+              ${activeLayout === 'movers'
+                ? 'bg-indigo-500 text-white shadow-[0_0_12px_rgba(99,102,241,0.5)]'
                 : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
           >
             <Flame className="w-3 h-3" />
@@ -228,22 +243,23 @@ export default function AdvancedScreener() {
                 <MarketScanner />
               </div>
 
-              {/* BOTTOM: Hot Movers Iframe Embedding */}
+              {/* BOTTOM: Hot Movers Iframe Embedding (TradingView public embed widget) */}
               <div className="h-[300px] rounded-2xl overflow-hidden border border-white/5 bg-[#0a0a14]/50 p-4 flex flex-col">
                 <div className="flex items-center justify-between mb-3 shrink-0">
                   <div className="flex items-center gap-2">
                     <Flame className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-black uppercase text-white tracking-wider">TradingView Hot Movers</span>
+                    <span className="text-xs font-black uppercase text-white tracking-wider">Hot Movers</span>
                   </div>
-                  <div className="text-[9px] font-mono text-zinc-500 uppercase">Live Index Feedback</div>
+                  <div className="text-[9px] font-mono text-zinc-500 uppercase">Embedded widget</div>
                 </div>
                 <div className="flex-1 rounded-xl overflow-hidden bg-black/40 border-0">
-                  <iframe 
+                  <iframe
                     src="https://s.tradingview.com/embed-widget/hotlists/?locale=en&colorTheme=dark&isTransparent=true&showSymbolLogo=true"
                     className="w-full h-full min-h-0"
                     frameBorder="0"
                     style={{ border: 'none' }}
                     scrolling="yes"
+                    title="Hot movers embedded widget"
                   />
                 </div>
               </div>
@@ -257,14 +273,14 @@ export default function AdvancedScreener() {
             <div className="mb-4 bg-[#8b5cf6]/5 border border-[#8b5cf6]/10 p-4 rounded-xl flex items-start gap-3">
               <Info className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
               <p className="text-[11px] text-zinc-300 leading-relaxed font-mono uppercase tracking-tight">
-                Stock Screener filters stocks based on live parameters. Use the inputs to tweak your maximum allowed PE Multiple and keep your risk allocation optimal. Clicks on rows update your Clear Path charts.
+                This screener demonstrates how filtering works using sample data. Adjust the inputs to set your maximum allowed P/E multiple, minimum margin, and minimum volume. Clicking a row updates your Clear Path charts. Live data wiring is in progress.
               </p>
             </div>
             {renderScreenerContent(false)}
           </div>
         )}
 
-        {/* Solo View: Live Scanner Only */}
+        {/* Solo View: Market Scanner Only */}
         {activeLayout === 'scanner' && (
           <div className="h-full bg-[#0b0c16]/30 border border-white/5 rounded-3xl overflow-hidden">
             <MarketScanner />
@@ -277,17 +293,18 @@ export default function AdvancedScreener() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Flame className="w-5 h-5 text-amber-500" />
-                <h3 className="text-sm font-bold uppercase tracking-wider text-white">Institutional Hotlist</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">Hot Movers</h3>
               </div>
-              <span className="text-[10px] font-mono text-zinc-400 uppercase">Interactive TradingView Frame</span>
+              <span className="text-[10px] font-mono text-zinc-400 uppercase">Embedded widget</span>
             </div>
             <div className="flex-1 rounded-2xl overflow-hidden bg-black/40">
-              <iframe 
+              <iframe
                 src="https://s.tradingview.com/embed-widget/hotlists/?locale=en&colorTheme=dark&isTransparent=true&showSymbolLogo=true"
                 className="w-full h-full min-h-[500px]"
                 frameBorder="0"
                 style={{ border: 'none' }}
                 scrolling="yes"
+                title="Hot movers embedded widget"
               />
             </div>
           </div>
