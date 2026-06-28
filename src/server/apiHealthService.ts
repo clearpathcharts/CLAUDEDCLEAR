@@ -1,264 +1,368 @@
 import axios from 'axios';
 import { getDb } from '../firebase';
-import { collection, addDoc, serverTimestamp } from '../firebase';
+import { collection, addDoc, serverTimestamp, getDocs, limit, query } from '../firebase';
+
+// ============================================
+// TYPES
+// ============================================
+
+type HealthStatus = 'ONLINE' | 'DEGRADED' | 'OFFLINE' | 'NOT_CONFIGURED';
+
+interface HealthResult {
+  name: string;
+  tier: string;
+  status: HealthStatus;
+  responseTime: number;
+  message: string;
+}
 
 // In-memory cache of the latest status checks
-let latestStatusCache: any[] = [];
-let lastCheckedTimestamp: number = 0;
+let latestStatusCache: HealthResult[] = [];
+let lastCheckedTimestamp = 0;
+const COOLDOWN_MS = 15000;
+
+// ============================================
+// HELPERS
+// ============================================
 
 /**
- * Perform health check probes across all critical ClearPath Trader finance/auth/payments APIs
+ * Times an async probe and normalizes errors into a HealthResult.
+ * Every probe function passed in must actually throw on failure —
+ * there is no separate "fallback" status here. A service is either
+ * ONLINE (responded successfully), DEGRADED (responded, but with an
+ * error payload or unexpected shape), OFFLINE (request failed/timed
+ * out), or NOT_CONFIGURED (no credentials present, so we never tried).
  */
-export async function getLiveApiHealth() {
-  // If checked in the last 15 seconds, return cached value to avoid rate-limiting
-  const COOLDOWN_MS = 15000;
-  if (latestStatusCache.length > 0 && (Date.now() - lastCheckedTimestamp) < COOLDOWN_MS) {
+async function timedProbe(
+  name: string,
+  tier: string,
+  probe: () => Promise<{ degraded?: boolean; detail?: string }>
+): Promise<HealthResult> {
+  const start = Date.now();
+  try {
+    const result = await probe();
+    const responseTime = Date.now() - start;
+    if (result.degraded) {
+      return {
+        name,
+        tier,
+        status: 'DEGRADED',
+        responseTime,
+        message: result.detail || 'Service responded with an unexpected payload.'
+      };
+    }
+    return {
+      name,
+      tier,
+      status: 'ONLINE',
+      responseTime,
+      message: result.detail || 'Probe succeeded.'
+    };
+  } catch (err: any) {
+    const responseTime = Date.now() - start;
+    const isTimeout = err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '');
+    const statusCode = err.response?.status;
+    return {
+      name,
+      tier,
+      status: 'OFFLINE',
+      responseTime,
+      message: isTimeout
+        ? `Request timed out after ${responseTime}ms.`
+        : statusCode
+        ? `Request failed with HTTP ${statusCode}: ${err.response?.data?.message || err.message}`
+        : `Request failed: ${err.message || 'Unknown error'}`
+    };
+  }
+}
+
+function notConfigured(name: string, tier: string, envHint: string): HealthResult {
+  return {
+    name,
+    tier,
+    status: 'NOT_CONFIGURED',
+    responseTime: 0,
+    message: `No credentials found. Set ${envHint} to enable monitoring.`
+  };
+}
+
+// ============================================
+// MAIN ENTRY POINT
+// ============================================
+
+export async function getLiveApiHealth(): Promise<HealthResult[]> {
+  if (latestStatusCache.length > 0 && Date.now() - lastCheckedTimestamp < COOLDOWN_MS) {
     return latestStatusCache;
   }
 
-  const results: any[] = [];
+  const checks: Promise<HealthResult>[] = [];
 
-  // Define API configurations with real/probing urls and credentials checks
-  const monitorConfigs = [
-    {
-      name: "TwelveData",
-      tier: "Market Data",
-      key: process.env.TWELVEDATA_API_KEY || process.env.VITE_TWELVEDATA_API_KEY || process.env.TWELVEDATA_KEY || process.env.TWELVEDATA_API_KEY_PRIMARY || "a8a0bc68821948ea9d44d335a77a4631",
-      url: (key: string) => `https://api.twelvedata.com/time_series?symbol=AAPL&interval=1day&apikey=${key}`
-    },
-    {
-      name: "Finnhub",
-      tier: "Market Data",
-      key: process.env.FINNHUB_API_KEY || process.env.FINNHUB_KEY || process.env.FINNHUB_API_KEY_PRIMARY || "",
-      url: (key: string) => `https://finnhub.io/api/v1/quote?symbol=AAPL&token=${key}`
-    },
-    {
-      name: "Polygon",
-      tier: "Market Data",
-      key: process.env.POLYGON_KEY || process.env.POLYGON_API_KEY || process.env.POLYGON_API_KEY_PRIMARY || "",
-      url: (key: string) => `https://api.polygon.io/v2/aggs/ticker/AAPL/prev?apiKey=${key}`
-    },
-    {
-      name: "Alpha Vantage",
-      tier: "Market Data",
-      key: process.env.ALPHAVANTAGE_KEY || process.env.ALPHAVANTAGE_API_KEY || process.env.ALPHAVANTAGE_API_KEY_PRIMARY || "",
-      url: (key: string) => `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=${key}`
-    },
-    {
-      name: "FRED",
-      tier: "Economic Data",
-      key: process.env.FRED_API_KEY || process.env.FRED_KEY || process.env.VITE_FRED_API_KEY || process.env.FRED_API_KEY_PRIMARY || "",
-      url: (key: string) => `https://api.stlouisfed.org/fred/series?series_id=GNPCA&api_key=${key}&file_type=json`
-    },
-    {
-      name: "NewsData",
-      tier: "News",
-      key: process.env.NEWSDATA_API_KEY || "",
-      url: (key: string) => `https://newsdata.io/api/1/news?apikey=${key}&q=finance&limit=1`
-    },
-    {
-      name: "Benzinga",
-      tier: "News",
-      key: process.env.BENZINGA_API_KEY || "",
-      url: (key: string) => `https://api.benzinga.com/api/v2/news?token=${key}&limit=1`
-    },
-    {
-      name: "MarketWatch",
-      tier: "News",
-      key: "PUBLIC",
-      url: () => `https://www.marketwatch.com`
-    },
-    {
-      name: "Reuters",
-      tier: "News",
-      key: "PUBLIC",
-      url: () => `https://www.reuters.com`
-    },
-    {
-      name: "Google Calendar",
-      tier: "Calendar",
-      key: "INTEGRATION",
-      checkType: "workspace"
-    },
-    {
-      name: "Apple Calendar",
-      tier: "Calendar",
-      key: "INTEGRATION",
-      checkType: "workspace"
-    },
-    {
-      name: "Outlook",
-      tier: "Calendar",
-      key: "INTEGRATION",
-      checkType: "workspace"
-    },
-    {
-      name: "Firebase Auth",
-      tier: "Authentication",
-      key: "INTEGRATION",
-      checkType: "firebase"
-    },
-    {
-      name: "Firestore",
-      tier: "Database",
-      key: "INTEGRATION",
-      checkType: "firebase"
-    },
-    {
-      name: "Firebase Storage",
-      tier: "Storage",
-      key: "INTEGRATION",
-      checkType: "firebase"
-    },
-    {
-      name: "SendGrid",
-      tier: "Email",
-      key: process.env.SENDGRID_API_KEY || "",
-      checkType: "third-party"
-    },
-    {
-      name: "Twilio",
-      tier: "SMS",
-      key: process.env.TWILIO_ACCOUNT_SID || process.env.TWILIO_API_KEY || process.env.TWILIO_AUTH_TOKEN || "",
-      checkType: "third-party"
-    },
-    {
-      name: "Stripe",
-      tier: "Payments",
-      key: process.env.STRIPE_SECRET_KEY || "",
-      checkType: "third-party"
-    }
-  ];
+  // ---------- Market Data ----------
 
-  // Run probes concurrently with a short, resilient timeout of 2.5 seconds
-  await Promise.all(
-    monitorConfigs.map(async (cfg) => {
-      const start = Date.now();
-
-      // Handle custom local architecture integration checks (Firebase, Calendar OAuth, etc.)
-      if (cfg.checkType === "firebase") {
-        results.push({
-          name: cfg.name,
-          tier: cfg.tier,
-          status: "ONLINE",
-          responseTime: Math.floor(Math.random() * 8) + 2,
-          message: `${cfg.name} workspace adapter initialized and connected.`
-        });
-        return;
-      }
-
-      if (cfg.checkType === "workspace") {
-        const isClientOAuthReady = !!process.env.GEMINI_API_KEY; 
-        results.push({
-          name: cfg.name,
-          tier: cfg.tier,
-          status: isClientOAuthReady ? "ONLINE" : "MOCK_FALLBACK",
-          responseTime: isClientOAuthReady ? 45 : 0,
-          message: isClientOAuthReady 
-            ? "API OAuth connection ready" 
-            : "OAuth parameters pending setup trigger"
-        });
-        return;
-      }
-
-      if (cfg.checkType === "third-party") {
-        const hasKey = cfg.key && cfg.key !== "";
-        results.push({
-          name: cfg.name,
-          tier: cfg.tier,
-          status: hasKey ? "ONLINE" : "MOCK_FALLBACK",
-          responseTime: hasKey ? Math.floor(Math.random() * 80) + 40 : 0,
-          message: hasKey 
-            ? "Service parameters configured" 
-            : `Set ${cfg.name.toUpperCase()}_API_KEY secret to connect`
-        });
-        return;
-      }
-
-      // Handle standard URL probing
-      const keyStr = cfg.key || "";
-      if (!keyStr) {
-        results.push({
-          name: cfg.name,
-          tier: cfg.tier,
-          status: "MOCK_FALLBACK",
-          responseTime: 0,
-          message: `Authentication key missing. Falling back to synthetic telemetry.`
-        });
-        return;
-      }
-
-      const targetUrl = typeof cfg.url === "function" ? cfg.url(keyStr) : "";
-
-      try {
-        const response = await axios.get(targetUrl, {
-          timeout: 2500,
-          headers: {
-            'User-Agent': 'ClearPath-Monitor-Node/1.0'
+  const twelveDataKey =
+    process.env.TWELVEDATA_API_KEY || process.env.VITE_TWELVEDATA_API_KEY || '';
+  checks.push(
+    twelveDataKey
+      ? timedProbe('TwelveData', 'Market Data', async () => {
+          const { data } = await axios.get('https://api.twelvedata.com/price', {
+            params: { symbol: 'AAPL', apikey: twelveDataKey },
+            timeout: 2500
+          });
+          if (data?.status === 'error' || data?.code) {
+            return { degraded: true, detail: data.message || 'TwelveData returned an error payload.' };
           }
-        });
+          if (!data?.price) {
+            return { degraded: true, detail: 'TwelveData response missing expected price field.' };
+          }
+          return { detail: `AAPL last price: ${data.price}` };
+        })
+      : Promise.resolve(notConfigured('TwelveData', 'Market Data', 'TWELVEDATA_API_KEY'))
+  );
 
-        const elapsed = Date.now() - start;
+  const finnhubKey = process.env.FINNHUB_API_KEY || '';
+  checks.push(
+    finnhubKey
+      ? timedProbe('Finnhub', 'Market Data', async () => {
+          const { data } = await axios.get('https://finnhub.io/api/v1/quote', {
+            params: { symbol: 'AAPL', token: finnhubKey },
+            timeout: 2500
+          });
+          if (typeof data?.c !== 'number' || data.c === 0) {
+            return { degraded: true, detail: 'Finnhub response missing a valid current price.' };
+          }
+          return { detail: `AAPL last price: ${data.c}` };
+        })
+      : Promise.resolve(notConfigured('Finnhub', 'Market Data', 'FINNHUB_API_KEY'))
+  );
 
-        // Account for custom API error payloads returned inside 200 OKs (e.g. TwelveData rate limits or error blocks)
-        const responseDataStr = JSON.stringify(response.data || "").toLowerCase();
-        if (responseDataStr.includes("error") || responseDataStr.includes("invalid key") || responseDataStr.includes("unauthorized") || responseDataStr.includes("code: 400")) {
-          results.push({
-            name: cfg.name,
-            tier: cfg.tier,
-            status: "DEGRADED",
-            responseTime: elapsed,
-            message: "API error returned from host: " + (response.data?.message || "Invalid configuration parameters")
+  const polygonKey = process.env.POLYGON_API_KEY || process.env.POLYGON_KEY || '';
+  checks.push(
+    polygonKey
+      ? timedProbe('Polygon', 'Market Data', async () => {
+          const { data } = await axios.get(
+            'https://api.polygon.io/v2/aggs/ticker/AAPL/prev',
+            { params: { apiKey: polygonKey }, timeout: 2500 }
+          );
+          if (data?.status === 'ERROR' || data?.status === 'NOT_AUTHORIZED') {
+            return { degraded: true, detail: data.error || 'Polygon rejected the request.' };
+          }
+          return { detail: `Status: ${data?.status || 'unknown'}` };
+        })
+      : Promise.resolve(notConfigured('Polygon', 'Market Data', 'POLYGON_API_KEY'))
+  );
+
+  const alphaVantageKey =
+    process.env.ALPHAVANTAGE_API_KEY || process.env.ALPHAVANTAGE_KEY || '';
+  checks.push(
+    alphaVantageKey
+      ? timedProbe('Alpha Vantage', 'Market Data', async () => {
+          const { data } = await axios.get('https://www.alphavantage.co/query', {
+            params: { function: 'GLOBAL_QUOTE', symbol: 'AAPL', apikey: alphaVantageKey },
+            timeout: 2500
           });
-        } else {
-          results.push({
-            name: cfg.name,
-            tier: cfg.tier,
-            status: "ONLINE",
-            responseTime: elapsed,
-            message: "Ping handshake completed successfully."
+          if (data?.Note || data?.Information) {
+            return { degraded: true, detail: data.Note || data.Information };
+          }
+          if (!data?.['Global Quote'] || !data['Global Quote']['05. price']) {
+            return { degraded: true, detail: 'Alpha Vantage response missing expected quote data.' };
+          }
+          return { detail: `AAPL last price: ${data['Global Quote']['05. price']}` };
+        })
+      : Promise.resolve(notConfigured('Alpha Vantage', 'Market Data', 'ALPHAVANTAGE_API_KEY'))
+  );
+
+  // ---------- Economic Data ----------
+
+  const fredKey = process.env.FRED_API_KEY || process.env.VITE_FRED_API_KEY || '';
+  checks.push(
+    fredKey
+      ? timedProbe('FRED', 'Economic Data', async () => {
+          const { data } = await axios.get('https://api.stlouisfed.org/fred/series', {
+            params: { series_id: 'GNPCA', api_key: fredKey, file_type: 'json' },
+            timeout: 2500
           });
-        }
-      } catch (err: any) {
-        const elapsed = Date.now() - start;
-        // If a public API or a client request timed out but has active DNS resolution
-        const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
-        
-        results.push({
-          name: cfg.name,
-          tier: cfg.tier,
-          status: "MOCK_FALLBACK",
-          responseTime: isTimeout ? 2500 : Math.floor(Math.random() * 120) + 70,
-          message: `Network fallback channel connected. Code: ${err.code || 'MOCK_OK'}`
-        });
-      }
+          if (!data?.seriess) {
+            return { degraded: true, detail: 'FRED response missing expected series data.' };
+          }
+          return { detail: 'Series lookup succeeded.' };
+        })
+      : Promise.resolve(notConfigured('FRED', 'Economic Data', 'FRED_API_KEY'))
+  );
+
+  // ---------- News ----------
+
+  const newsDataKey = process.env.NEWSDATA_API_KEY || '';
+  checks.push(
+    newsDataKey
+      ? timedProbe('NewsData', 'News', async () => {
+          const { data } = await axios.get('https://newsdata.io/api/1/news', {
+            params: { apikey: newsDataKey, q: 'finance', language: 'en' },
+            timeout: 2500
+          });
+          if (data?.status !== 'success') {
+            return { degraded: true, detail: data?.results?.message || 'NewsData returned a non-success status.' };
+          }
+          return { detail: `${data.results?.length ?? 0} articles returned.` };
+        })
+      : Promise.resolve(notConfigured('NewsData', 'News', 'NEWSDATA_API_KEY'))
+  );
+
+  const benzingaKey = process.env.BENZINGA_API_KEY || '';
+  checks.push(
+    benzingaKey
+      ? timedProbe('Benzinga', 'News', async () => {
+          const { data } = await axios.get('https://api.benzinga.com/api/v2/news', {
+            params: { token: benzingaKey, pagesize: 1 },
+            timeout: 2500
+          });
+          if (!Array.isArray(data)) {
+            return { degraded: true, detail: 'Benzinga response was not in the expected array format.' };
+          }
+          return { detail: `Endpoint reachable, ${data.length} item(s) returned.` };
+        })
+      : Promise.resolve(notConfigured('Benzinga', 'News', 'BENZINGA_API_KEY'))
+  );
+
+  // Public news homepages: a real reachability check (HEAD request), not a
+  // claim about their API since we don't have one for either of these.
+  checks.push(
+    timedProbe('MarketWatch', 'News', async () => {
+      await axios.head('https://www.marketwatch.com', { timeout: 2500 });
+      return { detail: 'Homepage reachable.' };
+    })
+  );
+  checks.push(
+    timedProbe('Reuters', 'News', async () => {
+      await axios.head('https://www.reuters.com', { timeout: 2500 });
+      return { detail: 'Homepage reachable.' };
     })
   );
 
-  // Re-order results to match the original layout configuration
-  const orderedResults = monitorConfigs.map(cfg => results.find(r => r.name === cfg.name) || {
-    name: cfg.name,
-    tier: cfg.tier,
-    status: "OFFLINE",
-    responseTime: 0,
-    message: "System could not map health probe output."
-  });
+  // ---------- Firebase ----------
+  // Real probe: attempt a trivial, cheap Firestore read. If Firestore is
+  // unreachable, misconfigured, or rules reject it, this throws and the
+  // service correctly reports OFFLINE/DEGRADED instead of a fixed "ONLINE".
+
+  checks.push(
+    timedProbe('Firestore', 'Database', async () => {
+      const db = getDb();
+      const q = query(collection(db, 'api_health_logs'), limit(1));
+      await getDocs(q);
+      return { detail: 'Firestore read succeeded.' };
+    })
+  );
+
+  // Firebase Auth and Storage don't have a cheap unauthenticated REST probe
+  // worth calling on a 15s cooldown, so rather than fake their status we
+  // report them as tied to the Firestore check above (same project, same
+  // credentials, same most-likely failure mode: project misconfiguration).
+  checks.push(
+    Promise.resolve<HealthResult>({
+      name: 'Firebase Auth',
+      tier: 'Authentication',
+      status: 'NOT_CONFIGURED',
+      responseTime: 0,
+      message: 'No standalone probe implemented yet. See Firestore status as a proxy for project health.'
+    })
+  );
+  checks.push(
+    Promise.resolve<HealthResult>({
+      name: 'Firebase Storage',
+      tier: 'Storage',
+      status: 'NOT_CONFIGURED',
+      responseTime: 0,
+      message: 'No standalone probe implemented yet. See Firestore status as a proxy for project health.'
+    })
+  );
+
+  // ---------- Calendar Integrations ----------
+  // None of these are wired up to real OAuth yet (see server.ts auth routes).
+  // Reporting them as NOT_CONFIGURED is the honest status until real
+  // provider connections exist to probe.
+
+  for (const name of ['Google Calendar', 'Apple Calendar', 'Outlook']) {
+    checks.push(
+      Promise.resolve<HealthResult>({
+        name,
+        tier: 'Calendar',
+        status: 'NOT_CONFIGURED',
+        responseTime: 0,
+        message: 'Calendar OAuth integration not yet implemented.'
+      })
+    );
+  }
+
+  // ---------- Email / SMS / Payments ----------
+  // Real auth-check calls against each provider's own API, not just an
+  // "env var exists" check. Each uses the lightest-weight authenticated
+  // endpoint available so this is safe to call on a 15s cooldown.
+
+  const sendgridKey = process.env.SENDGRID_API_KEY || '';
+  checks.push(
+    sendgridKey
+      ? timedProbe('SendGrid', 'Email', async () => {
+          await axios.get('https://api.sendgrid.com/v3/user/account', {
+            headers: { Authorization: `Bearer ${sendgridKey}` },
+            timeout: 2500
+          });
+          return { detail: 'Authenticated account lookup succeeded.' };
+        })
+      : Promise.resolve(notConfigured('SendGrid', 'Email', 'SENDGRID_API_KEY'))
+  );
+
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID || '';
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN || '';
+  checks.push(
+    twilioSid && twilioToken
+      ? timedProbe('Twilio', 'SMS', async () => {
+          await axios.get(
+            `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}.json`,
+            {
+              auth: { username: twilioSid, password: twilioToken },
+              timeout: 2500
+            }
+          );
+          return { detail: 'Authenticated account lookup succeeded.' };
+        })
+      : Promise.resolve(
+          notConfigured('Twilio', 'SMS', 'TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN')
+        )
+  );
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY || '';
+  checks.push(
+    stripeKey
+      ? timedProbe('Stripe', 'Payments', async () => {
+          await axios.get('https://api.stripe.com/v1/balance', {
+            headers: { Authorization: `Bearer ${stripeKey}` },
+            timeout: 2500
+          });
+          return { detail: 'Authenticated balance lookup succeeded.' };
+        })
+      : Promise.resolve(notConfigured('Stripe', 'Payments', 'STRIPE_SECRET_KEY'))
+  );
+
+  const orderedResults = await Promise.all(checks);
 
   latestStatusCache = orderedResults;
   lastCheckedTimestamp = Date.now();
 
-  // Commit metrics telemetry to active Firestore logs background collection
+  // Commit metrics telemetry to Firestore. This is now live, not commented
+  // out, so the api_health_logs collection actually accumulates history
+  // you can graph or alert on later.
   try {
-    // const logsRef = collection(getDb(), 'api_health_logs');
-    // for (const result of orderedResults) {
-    //   await addDoc(logsRef, {
-    //     api_name: result.name,
-    //     status: result.status,
-    //     response_time: result.responseTime,
-    //     message: result.message || "",
-    //     checked_at: serverTimestamp()
-    //   });
-    // }
+    const logsRef = collection(getDb(), 'api_health_logs');
+    await Promise.all(
+      orderedResults.map((result) =>
+        addDoc(logsRef, {
+          api_name: result.name,
+          status: result.status,
+          response_time: result.responseTime,
+          message: result.message || '',
+          checked_at: serverTimestamp()
+        })
+      )
+    );
   } catch (firestoreLogErr) {
     console.warn('[apiHealthService] Failed logging telemetry to Firestore:', firestoreLogErr);
   }
