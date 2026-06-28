@@ -13,13 +13,14 @@ export const ClearNav: React.FC<ClearNavProps & { onLogout?: () => void }> = ({ 
   const primaryNavItems = [
     { id: 'Discovery', icon: Home, label: 'HOME' },
     { id: 'Yours', icon: Users, label: 'Y.W.C.' },
-    { id: 'Workspace', icon: Folder, label: 'WORKSPACE' },
+    // Hidden until feature is complete
+    // { id: 'Workspace', icon: Folder, label: 'WORKSPACE' },
     { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
     { id: 'ThemeTerminal', icon: BarChart3, label: 'CHARTS' },
     // Keep in codebase but off the menu for now as requested
     // { id: 'Fundamentals', icon: Landmark, label: 'VALUATION' },
     // { id: 'Macro', icon: Activity, label: 'MACRO' },
-    { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
+    // { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
     { id: 'Journal', icon: BookOpen, label: 'JOURNAL' },
     { id: 'News', icon: Newspaper, label: 'NEWS' },
     { id: 'Membership', icon: Crown, label: 'MEMBERSHIPS' },
@@ -32,9 +33,10 @@ export const ClearNav: React.FC<ClearNavProps & { onLogout?: () => void }> = ({ 
     // { id: 'CapitalFlow', icon: Navigation, label: 'FLOWS' },
     { id: 'Biography', icon: Terminal, label: 'PROFILE' },
     ...(isAdmin ? [{ id: 'Diagnostics', icon: Activity, label: 'DIAGNOSTICS' }] : []),
-    { id: 'ApiMonitor', icon: Activity, label: 'API MONITOR' },
-    { id: 'CpmsApk', icon: Cpu, label: 'CPMS APK' },
-    { id: 'Sentinel', icon: Shield, label: 'SENTINEL' },
+    // Hidden until feature is complete
+    // { id: 'ApiMonitor', icon: Activity, label: 'API MONITOR' },
+    // { id: 'CpmsApk', icon: Cpu, label: 'CPMS APK' },
+    // { id: 'Sentinel', icon: Shield, label: 'SENTINEL' },
     { id: 'Encyclopedia', icon: GraduationCap, label: 'ENCYCLOPEDIA OF FINANCE' },
     { id: 'EncyclopediaOfIndicators', icon: BarChart3, label: 'ENCYCLOPEDIA OF INDICATORS' },
   ];
