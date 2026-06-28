@@ -154,9 +154,11 @@ export function LightweightCandles({
       handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     });
 
-    // Keep the candle series in the top ~70% of the chart so that, when an
-    // oscillator sub-pane is shown at the bottom, the candles aren't squashed.
-    series_priceScaleMargins(chart);
+    // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
+    // sub-pane is actually shown. With no oscillator active, candles use the full
+    // height so they don't get crushed into a detached ribbon.
+    const hasOscillator = activeIndicators.some((i) => OSCILLATOR_INDICATORS.has(i));
+    series_priceScaleMargins(chart, hasOscillator);
 
     if (takeSnapshotRef) {
       takeSnapshotRef.current = () => {
@@ -566,12 +568,17 @@ export function LightweightCandles({
 
 /**
  * Reserves the bottom slice of the main price scale so candles occupy the top
- * ~70% of the chart, leaving visual room for the oscillator sub-pane.
+ * ~70% of the chart, leaving visual room for the oscillator sub-pane — but ONLY
+ * when an oscillator is actually active. With no oscillator, candles use nearly
+ * the full height (symmetric small margins) instead of being squashed into a
+ * detached ribbon with empty space below.
  */
-function series_priceScaleMargins(chart: any) {
+function series_priceScaleMargins(chart: any, hasOscillator: boolean) {
   try {
     chart.priceScale("right").applyOptions({
-      scaleMargins: { top: 0.08, bottom: 0.28 },
+      scaleMargins: hasOscillator
+        ? { top: 0.08, bottom: 0.28 }   // leave room for the oscillator sub-pane
+        : { top: 0.08, bottom: 0.08 },  // no oscillator: candles fill the chart
     });
   } catch (e) {
     console.warn("Could not apply candle price-scale margins:", e);
