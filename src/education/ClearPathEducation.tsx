@@ -1,53 +1,39 @@
 "use client";
 
 // ============================================================================
-// ClearPath Education — Section Component (Layer 1)
+// ClearPath Education — Section Component (Layer 2 — FINAL WIRING)
 // ----------------------------------------------------------------------------
-// Three views, driven by local state:
-//   1. "schools"  — grid of all 9 school cards
-//   2. "units"    — the chosen school's units (this is where unit LOCKING lives)
-//   3. "lessons"  — the chosen unit's lessons
+// This version connects everything:
+//   • useEducationProgress  -> tracks unlocked units, saves progress
+//   • QuizEngine            -> the unit quiz UI
+//   • quizData              -> the questions
 //
-// LAYER 2 (quizzes) plugs in at the two spots marked  // <-- QUIZ HOOK.
-// Nothing here touches Firestore or your live data yet — it's self-contained
-// and safe to drop in and render.
+// Flow: open a school -> locked/unlocked units -> open an unlocked unit ->
+// read lessons -> take the unit quiz -> pass it -> the next unit unlocks.
+//
+// Still no Firestore here. Progress persists via the hook (localStorage for
+// now). Layer 3 swaps storage inside the hook only — this file won't change.
 // ============================================================================
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { CURRICULUM, getSchool, type School } from "./curriculumData";
+import { hasQuiz } from "./quizData";
+import { QuizEngine } from "./QuizEngine";
+import { useEducationProgress } from "./useEducationProgress";
 
 const PAGE_BG = "#0A0E14";
 const BODY = "#E8EDF5";
 const SUBTLE = "#9FB3C8";
+const GOOD = "#00F5D4";
 
 type View =
   | { kind: "schools" }
   | { kind: "units"; schoolId: string }
   | { kind: "lessons"; schoolId: string; unitId: string };
 
-export function ClearPathEducation({
-  // LAYER 2 will pass real unlock state in here. For now it defaults to
-  // "only the first unit of each school is unlocked" so you can SEE the
-  // locked/unlocked UI working without any backend.
-  unlockedUnitIds,
-}: {
-  unlockedUnitIds?: Set<string>;
-}) {
+export function ClearPathEducation() {
   const [view, setView] = useState<View>({ kind: "schools" });
-
-  // --- Default unlock rule (placeholder until Layer 2 / Firestore) ----------
-  // First unit of every school is open; the rest are locked. Layer 2 replaces
-  // this with real saved progress.
-  const defaultUnlocked = useMemo(() => {
-    if (unlockedUnitIds) return unlockedUnitIds;
-    const s = new Set<string>();
-    CURRICULUM.forEach((school) => {
-      if (school.units[0]) s.add(school.units[0].id);
-    });
-    return s;
-  }, [unlockedUnitIds]);
-
-  const isUnlocked = (unitId: string) => defaultUnlocked.has(unitId);
+  const progress = useEducationProgress();
 
   return (
     <div
@@ -69,7 +55,8 @@ export function ClearPathEducation({
       {view.kind === "units" && (
         <UnitList
           schoolId={view.schoolId}
-          isUnlocked={isUnlocked}
+          isUnlocked={progress.isUnlocked}
+          isPassed={progress.isPassed}
           onOpenUnit={(unitId) =>
             setView({ kind: "lessons", schoolId: view.schoolId, unitId })
           }
@@ -77,7 +64,12 @@ export function ClearPathEducation({
       )}
 
       {view.kind === "lessons" && (
-        <LessonList schoolId={view.schoolId} unitId={view.unitId} />
+        <LessonList
+          schoolId={view.schoolId}
+          unitId={view.unitId}
+          isPassed={progress.isPassed}
+          recordQuizPass={progress.recordQuizPass}
+        />
       )}
     </div>
   );
@@ -86,13 +78,7 @@ export function ClearPathEducation({
 // ---------------------------------------------------------------------------
 // Header / breadcrumb
 // ---------------------------------------------------------------------------
-function Header({
-  view,
-  setView,
-}: {
-  view: View;
-  setView: (v: View) => void;
-}) {
+function Header({ view, setView }: { view: View; setView: (v: View) => void }) {
   const school = "schoolId" in view ? getSchool(view.schoolId) : null;
 
   return (
@@ -161,13 +147,7 @@ function SchoolGrid({ onOpen }: { onOpen: (schoolId: string) => void }) {
   );
 }
 
-function SchoolCard({
-  school,
-  onOpen,
-}: {
-  school: School;
-  onOpen: (id: string) => void;
-}) {
+function SchoolCard({ school, onOpen }: { school: School; onOpen: (id: string) => void }) {
   const lessonCount = school.units.reduce((n, u) => n + u.lessons.length, 0);
   return (
     <button
@@ -189,14 +169,7 @@ function SchoolCard({
         e.currentTarget.style.borderColor = `${school.colors.head}55`;
       }}
     >
-      <div
-        style={{
-          fontSize: 19,
-          fontWeight: 800,
-          color: school.colors.head,
-          marginBottom: 6,
-        }}
-      >
+      <div style={{ fontSize: 19, fontWeight: 800, color: school.colors.head, marginBottom: 6 }}>
         {school.name}
       </div>
       <div style={{ fontSize: 13, color: SUBTLE, lineHeight: 1.5, minHeight: 56 }}>
@@ -218,15 +191,17 @@ function SchoolCard({
 }
 
 // ---------------------------------------------------------------------------
-// View 2 — one school's units (LOCKING happens here)
+// View 2 — one school's units (LOCKING)
 // ---------------------------------------------------------------------------
 function UnitList({
   schoolId,
   isUnlocked,
+  isPassed,
   onOpenUnit,
 }: {
   schoolId: string;
   isUnlocked: (unitId: string) => boolean;
+  isPassed: (unitId: string) => boolean;
   onOpenUnit: (unitId: string) => void;
 }) {
   const school = getSchool(schoolId);
@@ -241,6 +216,7 @@ function UnitList({
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {school.units.map((unit, idx) => {
           const unlocked = isUnlocked(unit.id);
+          const passed = isPassed(unit.id);
           return (
             <div
               key={unit.id}
@@ -253,14 +229,9 @@ function UnitList({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-                <div
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: unlocked ? school.colors.unit : SUBTLE,
-                  }}
-                >
+                <div style={{ fontSize: 16, fontWeight: 700, color: unlocked ? school.colors.unit : SUBTLE }}>
                   {unit.title}
+                  {passed && <span style={{ color: GOOD, marginLeft: 10, fontSize: 13 }}>✓ Passed</span>}
                 </div>
 
                 {unlocked ? (
@@ -301,12 +272,7 @@ function UnitList({
 
               <div style={{ fontSize: 12, color: SUBTLE, marginTop: 8 }}>
                 {unit.lessons.length} lessons
-                {!unlocked && idx > 0 && (
-                  // <-- QUIZ HOOK (Layer 2):
-                  // This message will become the real rule once quizzes exist:
-                  // "Pass the Unit N quiz to unlock."
-                  <> · Pass the previous unit's quiz to unlock.</>
-                )}
+                {!unlocked && idx > 0 && <> · Pass the previous unit's quiz to unlock.</>}
               </div>
             </div>
           );
@@ -317,12 +283,28 @@ function UnitList({
 }
 
 // ---------------------------------------------------------------------------
-// View 3 — one unit's lessons
+// View 3 — one unit's lessons + the quiz
 // ---------------------------------------------------------------------------
-function LessonList({ schoolId, unitId }: { schoolId: string; unitId: string }) {
+function LessonList({
+  schoolId,
+  unitId,
+  isPassed,
+  recordQuizPass,
+}: {
+  schoolId: string;
+  unitId: string;
+  isPassed: (unitId: string) => boolean;
+  recordQuizPass: (unitId: string) => string | null;
+}) {
   const school = getSchool(schoolId);
   const unit = school?.units.find((u) => u.id === unitId);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [justPassed, setJustPassed] = useState(false);
+
   if (!school || !unit) return <Empty>That unit could not be found.</Empty>;
+
+  const alreadyPassed = isPassed(unit.id);
+  const quizExists = hasQuiz(unit.id);
 
   return (
     <div>
@@ -352,28 +334,78 @@ function LessonList({ schoolId, unitId }: { schoolId: string; unitId: string }) 
         ))}
       </ol>
 
-      {/* <-- QUIZ HOOK (Layer 2):
-          The "Take the Unit Quiz" button will be rendered here. Passing it
-          will unlock the next unit via saved Firestore progress. */}
-      <div
-        style={{
-          marginTop: 20,
-          padding: 16,
-          border: `1px dashed ${school.colors.head}66`,
-          borderRadius: 12,
-          color: SUBTLE,
-          fontSize: 13,
-        }}
-      >
-        A unit quiz will appear here. Passing it unlocks the next unit.
-        <span style={{ color: SUBTLE, opacity: 0.7 }}> (Coming in the next build step.)</span>
+      {/* --- The quiz section --- */}
+      <div style={{ marginTop: 24 }}>
+        {!quizOpen && (
+          <div
+            style={{
+              padding: 16,
+              border: `1px solid ${school.colors.head}66`,
+              borderRadius: 12,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ color: SUBTLE, fontSize: 13 }}>
+              {alreadyPassed
+                ? "You've passed this unit's quiz. The next unit is unlocked."
+                : quizExists
+                ? "Take the unit quiz. Passing it unlocks the next unit."
+                : "A quiz for this unit is coming soon."}
+            </div>
+            {quizExists && (
+              <button
+                onClick={() => {
+                  setQuizOpen(true);
+                  setJustPassed(false);
+                }}
+                style={{
+                  whiteSpace: "nowrap",
+                  background: school.colors.head,
+                  color: "#06121A",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "10px 16px",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                {alreadyPassed ? "Retake quiz" : "Take the unit quiz"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {quizOpen && (
+          <QuizEngine
+            unitId={unit.id}
+            accent={school.colors.head}
+            onComplete={(passed) => {
+              if (passed) {
+                recordQuizPass(unit.id);
+                setJustPassed(true);
+              }
+            }}
+            onClose={() => setQuizOpen(false)}
+          />
+        )}
+
+        {justPassed && !quizOpen && (
+          <div style={{ marginTop: 12, color: GOOD, fontSize: 14 }}>
+            ✓ Unit passed — the next unit is now unlocked.
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Small helpers
+// Helpers
 // ---------------------------------------------------------------------------
 function Empty({ children }: { children: React.ReactNode }) {
   return <div style={{ color: SUBTLE, padding: 24 }}>{children}</div>;
