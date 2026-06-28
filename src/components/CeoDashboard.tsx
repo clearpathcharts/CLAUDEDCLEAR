@@ -6,11 +6,10 @@ import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
-import KafkaSandbox from './KafkaSandbox';
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'kafka'>('system');
+  const [ceoTab, setCeoTab] = useState<'system'>('system');
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -131,20 +130,9 @@ export default function CeoDashboard() {
         >
           🚨 ALERTS & USER DATABASE
         </button>
-        <button
-          onClick={() => setCeoTab('kafka')}
-          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
-            ceoTab === 'kafka'
-              ? 'text-[#FF00FF] border-[#FF00FF] bg-[#FF00FF]/5 shadow-[0_12px_24px_-12px_rgba(255,0,255,0.4)]'
-              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
-          }`}
-        >
-          ⚙️ KAFKA EVENT STREAM ENGINE
-        </button>
       </div>
 
-      {ceoTab === 'system' ? (
-        <>
+      <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {/* Panel 1: Live Users */}
         <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.3)]">
@@ -519,9 +507,6 @@ export default function CeoDashboard() {
         </div>
       </div>
         </>
-      ) : (
-        <KafkaSandbox />
-      )}
 
       <AnimatePresence>
         {investigatingUser && (
