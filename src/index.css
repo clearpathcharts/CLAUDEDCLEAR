@@ -10,4 +10,82 @@ html, body {
   background-color: #050505 !important;
   -webkit-text-size-adjust: 100%;
   font-family: system-ui, -apple-system, sans-serif;
+  /* Enable smooth scrolling everywhere */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Every scroll container works on mobile */
+* {
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+/* All buttons are tappable -- minimum 44x44px touch target (Apple HIG standard) */
+button, 
+[role="button"],
+a {
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Charts -- allow pinch zoom, block page scroll while touching chart */
+canvas {
+  touch-action: none;
+}
+
+/* Custom scrollbar -- visible on desktop, invisible but functional on mobile */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+/* Mobile nav -- make sure bottom nav doesn't cover content */
+@media (max-width: 1024px) {
+  .mobile-bottom-padding {
+    padding-bottom: 80px;
+  }
+  
+  /* Ticker scrolls horizontally on mobile without breaking layout */
+  .ticker-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ticker-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Active state feedback on all interactive elements */
+button:active,
+[role="button"]:active {
+  opacity: 0.8;
+  transform: scale(0.97);
+  transition: transform 0.1s, opacity 0.1s;
+}
+
+/* Input fields -- readable font size prevents iOS auto-zoom */
+input, textarea, select {
+  font-size: 16px !important;
 }
