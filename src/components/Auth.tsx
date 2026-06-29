@@ -344,7 +344,7 @@ export default function Auth() {
   // Calculate remaining countdown
   useEffect(() => {
     // We aim for an exact futuristic date that tracks June 25, 2026
-    const targetDate = new Date("2026-06-25T09:00:00Z").getTime();
+    const targetDate = Date.now() + (60 * 24 * 60 * 60 * 1000);
     
     const interval = setInterval(() => {
       const now = Date.now();
