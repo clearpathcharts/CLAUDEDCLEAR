@@ -50,11 +50,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "Y.W.C.",
     },
     {
-      id: "Workspace",
-      icon: Folder,
-      label: "WORKSPACE",
-    },
-    {
       id: "TheRiver",
       icon: Cpu,
       label: "THE RIVER",
@@ -109,12 +104,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       : []),
 
     {
-      id: "ApiMonitor",
-      icon: Activity,
-      label: "API MONITOR",
-    },
-
-    {
       id: "CpmsApk",
       icon: Cpu,
       label: "CPMS APK",
@@ -124,18 +113,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "Sentinel",
       icon: Shield,
       label: "SENTINEL",
-    },
-
-    {
-      id: "Encyclopedia",
-      icon: GraduationCap,
-      label: "ENCYCLOPEDIA OF FINANCE",
-    },
-
-    {
-      id: "EncyclopediaOfIndicators",
-      icon: BarChart3,
-      label: "ENCYCLOPEDIA OF INDICATORS",
     },
   ];
   const renderNavButton = (
