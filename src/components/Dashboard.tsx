@@ -118,7 +118,7 @@ const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
 import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
-const BookSeriesClassroom = lazy(() => import('./education/BookSeriesClassroom'));
+const ClearPathEducationPage = lazy(() => import('../education/ClearPathEducation'));
 
 function TabLoading() {
   return (
@@ -417,7 +417,7 @@ const TabContent = ({
       );
       case 'ClearPathEducation': return (
         <Suspense fallback={<TabLoading />}>
-          <BookSeriesClassroom />
+          <ClearPathEducationPage onNavigate={setActiveTab} />
         </Suspense>
       );
       case 'TrainingBoard': return (
