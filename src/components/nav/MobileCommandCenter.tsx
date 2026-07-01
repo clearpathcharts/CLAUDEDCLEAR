@@ -1,369 +1,361 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import {
+  Activity,
+  BarChart3,
+  BookOpen,
+  Cpu,
+  Crown,
+  Folder,
+  GraduationCap,
+  Home,
+  LogOut,
+  Newspaper,
+  Shield,
+  SlidersHorizontal,
+  Terminal,
+  Users,
+  X,
+} from "lucide-react";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
-   Replaces the cramped two-row mobile nav with a 3-button
-   top bar (HOME · CHARTS · Y.W.C.) that opens a full-screen
-   "command center" drawer for everything else.
-
-   Design intent: calm, not casino. Slow motion, no strobing,
-   no flashing — matches ClearPath's "calm for trading" brand.
+   Drop-in replacement for the mobile view of ClearNav.tsx.
+   Top bar: HOME · CHARTS · Y.W.C. (opens this drawer)
+   Uses the exact same nav ids as ClearNav so onNavigate()
+   keeps working with zero changes to your routing.
    ============================================================ */
 
-// ---------- Brand colors (official ClearPath Color System) ----------
-const COLORS = {
-  bg: '#030307',        // Obsidian Black
-  white: '#FFFFFF',      // Pure White
-  secondary: '#AAAAAA',  // Secondary text
-  pink: '#FF1493',       // Fluorescent Pink
-  cyan: '#00FFFF',       // Electric Cyan
-  purple: '#B026FF',     // Neon Purple
-  orange: '#FF7B00',     // Molten Lava Orange
-};
-
-// NOTE: The original spec called for a "gold" section header on ACCOUNT.
-// Gold is not one of the four official brand colors, so ACCOUNT below
-// uses Fluorescent Pink instead. If you'd rather add an official gold
-// hex to the brand system, tell me the code and I'll swap it in.
+interface MobileCommandCenterProps {
+  activeTab: string;
+  onNavigate: (tab: string) => void;
+  isAdmin: boolean;
+  onLogout?: () => void;
+}
 
 interface NavItem {
-  key: string;
-  icon: string;
+  id: string;
+  icon: React.ElementType;
   label: string;
-  adminOnly?: boolean;
+  colorClass: string; // exact match to ClearNav's per-item color
+  glowClass: string; // exact match to ClearNav's active glow
 }
 
-interface NavSection {
-  title: string;
-  color: string;
-  items: NavItem[];
-}
-
-const SECTIONS: NavSection[] = [
+// ---- Section definitions, using the SAME ids/icons/colors as ClearNav.tsx ----
+const WORK_ITEMS: NavItem[] = [
   {
-    title: 'WORK',
-    color: COLORS.orange,
-    items: [
-      { key: 'workspace', icon: '🗂', label: 'Workspace' },
-      { key: 'journal', icon: '📔', label: 'Journal' },
-      { key: 'news', icon: '📰', label: 'News' },
-    ],
+    id: "Yours",
+    icon: Users,
+    label: "Y.W.C. HUB",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
   {
-    title: 'LEARN',
-    color: COLORS.cyan,
-    items: [
-      { key: 'finance-encyclopedia', icon: '📚', label: 'Financial Encyclopedia' },
-      { key: 'indicator-encyclopedia', icon: '📈', label: 'Indicator Encyclopedia' },
-    ],
+    id: "Workspace",
+    icon: Folder,
+    label: "WORKSPACE",
+    colorClass: "text-[#4D00FF] border-[#4D00FF]/25 hover:bg-[#4D00FF]/10",
+    glowClass: "bg-[#4D00FF]/25 text-[#4D00FF] border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]",
   },
   {
-    title: 'TOOLS',
-    color: COLORS.purple,
-    items: [
-      { key: 'river', icon: '🌊', label: 'The River' },
-      { key: 'api-monitor', icon: '📡', label: 'API Monitor' },
-      { key: 'diagnostics', icon: '🖥', label: 'Diagnostics', adminOnly: true },
-      { key: 'sentinel', icon: '🛡', label: 'Sentinel' },
-    ],
+    id: "Journal",
+    icon: BookOpen,
+    label: "JOURNAL",
+    colorClass: "text-[#4D00FF] border-[#4D00FF]/25 hover:bg-[#4D00FF]/10",
+    glowClass: "bg-[#4D00FF]/25 text-[#4D00FF] border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]",
   },
   {
-    title: 'ACCOUNT',
-    color: COLORS.pink,
-    items: [
-      { key: 'profile', icon: '👤', label: 'Profile' },
-      { key: 'membership', icon: '💎', label: 'Membership' },
-      { key: 'founders', icon: '👑', label: 'Founders' },
-      { key: 'exit', icon: '🚪', label: 'Exit' },
-    ],
+    id: "News",
+    icon: Newspaper,
+    label: "NEWS",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
 ];
 
-export interface MobileCommandCenterProps {
-  /** Currently active tab key, so we can highlight it */
-  activeTab: string;
-  /** Called with the item's `key` whenever the user taps something */
-  onNavigate: (key: string) => void;
-  /** Hides Diagnostics unless true */
-  isAdmin?: boolean;
-}
+const LEARN_ITEMS: NavItem[] = [
+  {
+    id: "Encyclopedia",
+    icon: GraduationCap,
+    label: "ENCYCLOPEDIA OF FINANCE",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "EncyclopediaOfIndicators",
+    icon: BarChart3,
+    label: "ENCYCLOPEDIA OF INDICATORS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+];
 
-export default function MobileCommandCenter({
+const TOOLS_ITEMS: NavItem[] = [
+  {
+    id: "TheRiver",
+    icon: Cpu,
+    label: "THE RIVER",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+  {
+    id: "Screener",
+    icon: SlidersHorizontal,
+    label: "SCREENER",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+  {
+    id: "ApiMonitor",
+    icon: Activity,
+    label: "API MONITOR",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+  {
+    id: "CpmsApk",
+    icon: Cpu,
+    label: "CPMS APK",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "Sentinel",
+    icon: Shield,
+    label: "SENTINEL",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+];
+
+// Diagnostics only shows if isAdmin — handled at render time, not in this static array
+const DIAGNOSTICS_ITEM: NavItem = {
+  id: "Diagnostics",
+  icon: Activity,
+  label: "DIAGNOSTICS",
+  colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
+  glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+};
+
+const ACCOUNT_ITEMS: NavItem[] = [
+  {
+    id: "Biography",
+    icon: Terminal,
+    label: "PROFILE",
+    colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
+    glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+  },
+  {
+    id: "Membership",
+    icon: Crown,
+    label: "MEMBERSHIPS",
+    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
+  },
+  {
+    id: "Founders",
+    icon: Crown,
+    label: "FOUNDERS",
+    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
+  },
+];
+
+const SECTION_HEADER_COLORS: Record<string, string> = {
+  WORK: "#FF6A00",
+  LEARN: "#00E5FF",
+  TOOLS: "#4D00FF",
+  ACCOUNT: "#FFD700",
+};
+
+export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
   activeTab,
   onNavigate,
-  isAdmin = false,
-}: MobileCommandCenterProps) {
+  isAdmin,
+  onLogout,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleTopBarTap = (key: string) => {
-    if (key === 'ywc') {
-      setIsOpen((prev) => !prev);
-      return;
-    }
+  const handleItemTap = (id: string) => {
     setIsOpen(false);
-    onNavigate(key);
+    onNavigate(id);
   };
 
-  const handleItemTap = (key: string) => {
-    setIsOpen(false);
-    onNavigate(key);
-  };
+  const toolsItems = isAdmin ? [...TOOLS_ITEMS, DIAGNOSTICS_ITEM] : TOOLS_ITEMS;
+
+  const sections: { title: string; items: NavItem[] }[] = [
+    { title: "WORK", items: WORK_ITEMS },
+    { title: "LEARN", items: LEARN_ITEMS },
+    { title: "TOOLS", items: toolsItems },
+    { title: "ACCOUNT", items: ACCOUNT_ITEMS },
+  ];
 
   return (
-    <div style={styles.wrapper}>
-      {/* ---------- TOP BAR ---------- */}
-      <div style={styles.topBar}>
-        <TopBarButton
-          icon="🏠"
-          label="HOME"
-          active={activeTab === 'home'}
-          onTap={() => handleTopBarTap('home')}
-        />
-        <TopBarButton
-          icon="📈"
-          label="CHARTS"
-          active={activeTab === 'charts'}
-          onTap={() => handleTopBarTap('charts')}
-        />
-        <TopBarButton
-          icon="🌎"
-          label="Y.W.C."
-          active={isOpen}
-          onTap={() => handleTopBarTap('ywc')}
-        />
+    <div id="mobile-nav" className="w-full">
+      {/* ================= TOP BAR ================= */}
+      <div
+        className="
+          sticky top-0 z-[100] w-full
+          border-b border-white/5
+          bg-black/95 backdrop-blur-3xl
+          flex items-center justify-around
+          px-3 py-3
+        "
+      >
+        <button
+          type="button"
+          onClick={() => handleItemTap("Discovery")}
+          className={`
+            flex items-center gap-2 rounded-full px-3 py-2
+            text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+            ${
+              activeTab === "Discovery"
+                ? "bg-[#4D00FF]/25 text-[#4D00FF] border border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]"
+                : "text-[#4D00FF] border border-[#4D00FF]/25 hover:bg-[#4D00FF]/10"
+            }
+          `}
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          <Home className="w-4 h-4" />
+          <span>HOME</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleItemTap("ThemeTerminal")}
+          className={`
+            flex items-center gap-2 rounded-full px-3 py-2
+            text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+            ${
+              activeTab === "ThemeTerminal"
+                ? "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]"
+                : "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10"
+            }
+          `}
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>CHARTS</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className={`
+            flex items-center gap-2 rounded-full px-3 py-2
+            text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+            ${
+              isOpen
+                ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
+                : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
+            }
+          `}
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          <Users className="w-4 h-4" />
+          <span>Y.W.C.</span>
+        </button>
       </div>
 
-      {/* ---------- COMMAND CENTER DRAWER ---------- */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              style={styles.backdrop}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              onClick={() => setIsOpen(false)}
-            />
+      {/* ================= DRAWER ================= */}
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[90] bg-black/75 backdrop-blur-sm"
+            onClick={() => setIsOpen(false)}
+          />
 
-            {/* Drawer panel */}
-            <motion.div
-              style={styles.drawer}
-              initial={{ y: '-100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '-100%', opacity: 0 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-            >
-              <div style={styles.drawerHeader}>
-                <span style={styles.drawerTitle}>YOUR WORLD CONNECTED</span>
-                <span style={styles.drawerSubtitle}>
-                  Everything you need. One place.
-                </span>
-                <button
-                  aria-label="Close menu"
-                  onClick={() => setIsOpen(false)}
-                  style={styles.closeButton}
+          <div
+            className="
+              fixed top-0 left-0 right-0 z-[100]
+              max-h-[90vh] overflow-y-auto
+              bg-black/95 backdrop-blur-3xl
+              border-b border-[#00E5FF]/20
+              px-4 pt-5 pb-3
+            "
+          >
+            <div className="relative text-center mb-4 pb-3 border-b border-white/10">
+              <span
+                className="block text-white text-base font-black tracking-[0.2em]"
+                style={{ fontFamily: "'Cinzel', serif" }}
+              >
+                YOUR WORLD CONNECTED
+              </span>
+              <span className="block text-[#AAAAAA] text-xs mt-1">
+                Everything you need. One place.
+              </span>
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setIsOpen(false)}
+                className="absolute -top-1 right-0 text-[#AAAAAA] p-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {sections.map((section) => (
+              <div key={section.title} className="mb-6">
+                <div
+                  className="text-xs font-black tracking-[0.3em] pb-1.5 mb-2 border-b"
+                  style={{
+                    color: SECTION_HEADER_COLORS[section.title],
+                    borderColor: SECTION_HEADER_COLORS[section.title],
+                    textShadow: `0 0 8px ${SECTION_HEADER_COLORS[section.title]}`,
+                    fontFamily: "'Cinzel', serif",
+                  }}
                 >
-                  ✕
-                </button>
-              </div>
+                  {section.title}
+                </div>
 
-              <div style={styles.sectionsScroll}>
-                {SECTIONS.map((section) => {
-                  const visibleItems = section.items.filter(
-                    (item) => !item.adminOnly || isAdmin
-                  );
-                  if (visibleItems.length === 0) return null;
-
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
                   return (
-                    <div key={section.title} style={{ marginBottom: 24 }}>
-                      <div
-                        style={{
-                          ...styles.sectionHeader,
-                          color: section.color,
-                          borderColor: section.color,
-                          textShadow: `0 0 8px ${section.color}`,
-                        }}
-                      >
-                        {section.title}
-                      </div>
-
-                      {visibleItems.map((item) => (
-                        <button
-                          key={item.key}
-                          onClick={() => handleItemTap(item.key)}
-                          style={{
-                            ...styles.navRow,
-                            borderColor:
-                              activeTab === item.key
-                                ? section.color
-                                : 'rgba(255,255,255,0.08)',
-                          }}
-                        >
-                          <span style={styles.navRowIcon}>{item.icon}</span>
-                          <span style={styles.navRowLabel}>{item.label}</span>
-                          <span style={{ color: section.color }}>›</span>
-                        </button>
-                      ))}
-                    </div>
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleItemTap(item.id)}
+                      className={`
+                        flex items-center w-full min-h-[52px] rounded-xl border
+                        px-4 mb-2 transition-all duration-200 active:scale-[0.98]
+                        ${isActive ? item.glowClass : `bg-white/[0.03] ${item.colorClass}`}
+                      `}
+                      style={{ fontFamily: "'Cinzel', serif" }}
+                    >
+                      <Icon className="w-4 h-4 mr-3 shrink-0" />
+                      <span className="flex-1 text-left text-xs font-black tracking-wider">
+                        {item.label}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            ))}
+
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  onLogout();
+                }}
+                className="
+                  flex items-center w-full min-h-[52px] rounded-xl border
+                  border-red-500/30 text-red-500 px-4 mb-2
+                  hover:bg-red-500 hover:text-white
+                  transition-all duration-200 active:scale-[0.98]
+                "
+                style={{ fontFamily: "'Cinzel', serif" }}
+              >
+                <LogOut className="w-4 h-4 mr-3 shrink-0" />
+                <span className="flex-1 text-left text-xs font-black tracking-wider">
+                  EXIT
+                </span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
-}
-
-// ---------- Small top-bar button subcomponent ----------
-function TopBarButton({
-  icon,
-  label,
-  active,
-  onTap,
-}: {
-  icon: string;
-  label: string;
-  active: boolean;
-  onTap: () => void;
-}) {
-  return (
-    <button
-      onClick={onTap}
-      style={{
-        ...styles.topBarButton,
-        color: active ? COLORS.cyan : COLORS.white,
-      }}
-    >
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <span style={styles.topBarLabel}>{label}</span>
-    </button>
-  );
-}
-
-// ---------- Inline styles (no Tailwind / CSS framework required) ----------
-const styles: Record<string, React.CSSProperties> = {
-  wrapper: {
-    position: 'relative',
-    width: '100%',
-    fontFamily: 'inherit',
-  },
-  topBar: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    height: 56,
-    background: COLORS.bg,
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  topBarButton: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    gap: 2,
-    padding: '4px 12px',
-    cursor: 'pointer',
-  },
-  topBarLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    letterSpacing: 0.5,
-  },
-  backdrop: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(3,3,7,0.75)',
-    backdropFilter: 'blur(6px)',
-    zIndex: 40,
-  },
-  drawer: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    maxHeight: '90vh',
-    background: 'rgba(3,3,7,0.96)',
-    backdropFilter: 'blur(20px)',
-    borderBottom: `1px solid ${COLORS.cyan}33`,
-    boxShadow: `0 10px 40px rgba(0,255,255,0.08)`,
-    zIndex: 50,
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '20px 16px 12px',
-  },
-  drawerHeader: {
-    position: 'relative',
-    textAlign: 'center',
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-  },
-  drawerTitle: {
-    display: 'block',
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 800,
-    letterSpacing: 2,
-  },
-  drawerSubtitle: {
-    display: 'block',
-    color: COLORS.secondary,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: -4,
-    right: 0,
-    background: 'transparent',
-    border: 'none',
-    color: COLORS.secondary,
-    fontSize: 18,
-    cursor: 'pointer',
-    padding: 8,
-  },
-  sectionsScroll: {
-    overflowY: 'auto',
-    paddingBottom: 8,
-  },
-  sectionHeader: {
-    fontSize: 12,
-    fontWeight: 800,
-    letterSpacing: 3,
-    borderBottom: '1px solid',
-    paddingBottom: 6,
-    marginBottom: 8,
-  },
-  navRow: {
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    minHeight: 52,
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 10,
-    padding: '0 14px',
-    marginBottom: 8,
-    cursor: 'pointer',
-  },
-  navRowIcon: {
-    fontSize: 18,
-    marginRight: 12,
-    width: 22,
-    textAlign: 'center',
-  },
-  navRowLabel: {
-    flex: 1,
-    textAlign: 'left',
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: 600,
-  },
 };
