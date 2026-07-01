@@ -56,6 +56,14 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
+  // Lets other components (like the home page quick-nav tile) open this widget
+  // without needing to lift isOpen state up into App.tsx.
+  useEffect(() => {
+    const listener = () => handleOpen();
+    window.addEventListener("open-cpt-buddy", listener);
+    return () => window.removeEventListener("open-cpt-buddy", listener);
+  }, [userName, setupStep, messages]);
+
   const handleNameSubmit = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
