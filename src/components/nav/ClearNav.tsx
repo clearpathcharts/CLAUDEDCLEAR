@@ -1,17 +1,22 @@
-import React from 'react';
+import React from "react";
 import {
   Activity,
   BarChart3,
   BookOpen,
   Cpu,
   Crown,
+  Folder,
   GraduationCap,
   Home,
+  Landmark,
   LogOut,
+  Navigation,
   Newspaper,
+  Shield,
+  SlidersHorizontal,
   Terminal,
   Users,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface ClearNavProps {
   activeTab: string;
@@ -34,146 +39,352 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 }) => {
   const primaryNavItems: NavItem[] = [
     {
-      id: 'Discovery',
+      id: "Discovery",
       icon: Home,
-      label: 'HOME',
+      label: "HOME",
     },
     {
-      id: 'Yours',
+      id: "Yours",
       icon: Users,
-      label: 'Y.W.C.',
+      label: "Y.W.C.",
     },
     {
-      id: 'TheRiver',
+      id: "Workspace",
+      icon: Folder,
+      label: "WORKSPACE",
+    },
+    {
+      id: "TheRiver",
       icon: Cpu,
-      label: 'THE RIVER',
+      label: "THE RIVER",
     },
     {
-      id: 'ThemeTerminal',
+      id: "ThemeTerminal",
       icon: BarChart3,
-      label: 'CHARTS',
+      label: "CHARTS",
     },
     {
-      id: 'Journal',
+      id: "Screener",
+      icon: SlidersHorizontal,
+      label: "SCREENER",
+    },
+    {
+      id: "Journal",
       icon: BookOpen,
-      label: 'JOURNAL',
+      label: "JOURNAL",
     },
     {
-      id: 'News',
+      id: "News",
       icon: Newspaper,
-      label: 'NEWS',
+      label: "NEWS",
     },
     {
-      id: 'Membership',
+      id: "Membership",
       icon: Crown,
-      label: 'MEMBERSHIPS',
+      label: "MEMBERSHIPS",
     },
     {
-      id: 'Founders',
+      id: "Founders",
       icon: Crown,
-      label: 'FOUNDERS',
+      label: "FOUNDERS",
     },
   ];
 
   const secondaryNavItems: NavItem[] = [
     {
-      id: 'Biography',
+      id: "Biography",
       icon: Terminal,
-      label: 'PROFILE',
+      label: "PROFILE",
     },
 
     ...(isAdmin
       ? [
           {
-            id: 'Diagnostics',
+            id: "Diagnostics",
             icon: Activity,
-            label: 'DIAGNOSTICS',
+            label: "DIAGNOSTICS",
           },
         ]
       : []),
 
     {
-      id: 'Encyclopedia',
-      icon: GraduationCap,
-      label: 'ENCYCLOPEDIA OF FINANCE',
+      id: "ApiMonitor",
+      icon: Activity,
+      label: "API MONITOR",
     },
 
     {
-      id: 'EncyclopediaOfIndicators',
+      id: "CpmsApk",
+      icon: Cpu,
+      label: "CPMS APK",
+    },
+
+    {
+      id: "Sentinel",
+      icon: Shield,
+      label: "SENTINEL",
+    },
+
+    {
+      id: "Encyclopedia",
+      icon: GraduationCap,
+      label: "ENCYCLOPEDIA OF FINANCE",
+    },
+
+    {
+      id: "EncyclopediaOfIndicators",
       icon: BarChart3,
-      label: 'ENCYCLOPEDIA OF INDICATORS',
+      label: "ENCYCLOPEDIA OF INDICATORS",
     },
   ];
+  const renderNavButton = (
+    item: NavItem,
+    index: number,
+    isSecondaryGroup: boolean
+  ) => {
+    const Icon = item.icon;
 
-  const renderNavButton = (item: { id: string, icon: any, label: string }, index: number, isSecondaryGroup: boolean) => {
     const isActive = activeTab === item.id;
-    const isGoldGlow = item.id === 'Founders' || item.id === 'Membership';
-    const isCyanGlow = item.id === 'CpmsApk' || item.id === 'Sentinel' || item.id === 'Encyclopedia' || item.id === 'EncyclopediaOfIndicators';
-    const isHotPink = item.id === 'Biography' || item.id === 'Diagnostics';
-    // We alternate colors or apply molten lava theme to secondary items and alternating primary items
-    const isLava = isSecondaryGroup || index % 2 === 1;
 
-    const buttonStyle = isGoldGlow
-      ? isActive
-        ? 'bg-[#FFD700]/30 text-[#FFD700] border border-[#FFD700] shadow-[0_0_20px_rgba(255,215,0,0.8)] font-black'
-        : 'text-[#FFD700] hover:text-[#FFE4B5] hover:bg-[#FFD700]/10 border border-[#FFD700]/35 shadow-[0_0_10px_rgba(255,215,0,0.35)] font-black'
-      : isHotPink
-        ? isActive
-          ? 'bg-[#FF007F]/25 text-[#FF007F] border border-[#FF007F] shadow-[0_0_20px_rgba(255,0,127,0.8)]'
-          : 'text-[#FF007F] hover:text-[#FF66B2] hover:bg-[#FF007F]/10 drop-shadow-[0_0_8px_rgba(255,0,127,0.8)] border border-[#FF007F]/35 shadow-[0_0_10px_rgba(255,0,127,0.35)] font-bold'
-        : isCyanGlow
-          ? isActive
-            ? 'bg-[#00FFFF]/25 text-[#00FFFF] border border-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.8)]'
-            : 'text-[#00FFFF] hover:text-[#80FFFF] hover:bg-[#00FFFF]/10 drop-shadow-[0_0_8px_rgba(0,255,255,0.6)] border border-[#00FFFF]/20'
-          : isLava
-            ? isActive 
-              ? 'bg-[#FF4500]/25 text-[#FF4500] border border-[#FF4500] shadow-[0_0_20px_rgba(255,69,0,0.8)]' 
-              : 'text-[#FF4500] hover:text-[#FFA500] hover:bg-[#FF4500]/10 drop-shadow-[0_0_8px_rgba(255,69,0,0.6)] border border-[#FF4500]/20'
-            : isActive 
-              ? 'bg-[#4D00FF]/25 text-[#4D00FF] border border-[#4D00FF] shadow-[0_0_20px_rgba(77,0,255,0.8)]' 
-              : 'text-[#4D00FF] hover:text-[#8b5cf6] hover:bg-[#4D00FF]/10 drop-shadow-[0_0_8px_rgba(77,0,255,0.6)] border border-[#4D00FF]/20';
+    const isGold =
+      item.id === "Membership" ||
+      item.id === "Founders";
 
-    const handlePress = (e: React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault();
-      onNavigate(item.id);
-    };
+    const isPink =
+      item.id === "Biography" ||
+      item.id === "Diagnostics";
+
+    const isCyan =
+      item.id === "CpmsApk" ||
+      item.id === "Sentinel" ||
+      item.id === "Encyclopedia" ||
+      item.id === "EncyclopediaOfIndicators";
+
+    const isOrange =
+      isSecondaryGroup || index % 2 === 1;
+
+    let classes =
+      "text-[#4D00FF] border border-[#4D00FF]/25 hover:bg-[#4D00FF]/10";
+
+    if (isOrange)
+      classes =
+        "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10";
+
+    if (isPink)
+      classes =
+        "text-[#FF1493] border border-[#FF1493]/30 hover:bg-[#FF1493]/10";
+
+    if (isCyan)
+      classes =
+        "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10";
+
+    if (isGold)
+      classes =
+        "text-[#FFD700] border border-[#FFD700]/35 hover:bg-[#FFD700]/10";
+
+    if (isActive) {
+      if (isGold)
+        classes =
+          "bg-[#FFD700]/25 text-[#FFD700] border border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]";
+      else if (isPink)
+        classes =
+          "bg-[#FF1493]/25 text-[#FF1493] border border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]";
+      else if (isCyan)
+        classes =
+          "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]";
+      else if (isOrange)
+        classes =
+          "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]";
+      else
+        classes =
+          "bg-[#4D00FF]/25 text-[#4D00FF] border border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]";
+    }
 
     return (
       <button
         key={item.id}
-        onClick={handlePress}
-        onTouchEnd={handlePress}
-        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap font-cinzel cursor-pointer active:scale-95 ${buttonStyle}`}
-        style={{ fontFamily: "'Cinzel', serif" }}
+        type="button"
+        onClick={() => onNavigate(item.id)}
+        className={`
+          shrink-0
+          snap-start
+          flex
+          items-center
+          gap-2
+          rounded-full
+
+          px-3
+          py-2
+
+          md:px-4
+          md:py-2
+
+          whitespace-nowrap
+
+          text-[10px]
+          md:text-xs
+
+          font-black
+          tracking-wider
+
+          transition-all
+          duration-200
+
+          active:scale-95
+
+          ${classes}
+        `}
+        style={{
+          fontFamily: "'Cinzel', serif",
+          transform: "translateZ(0)",
+        }}
       >
-        <item.icon className="w-3.5 h-3.5 shrink-0" />
+        <Icon
+          className="
+            w-3
+            h-3
+            md:w-4
+            md:h-4
+            shrink-0
+          "
+        />
+
         <span>{item.label}</span>
       </button>
     );
-  };
+  }; 
+    return (
+    <div
+      id="nav-bar"
+      className="
+        sticky
+        top-0
+        z-[100]
+        w-full
 
-  return (
-    <div id="nav-bar" className="flex flex-col gap-3.5 px-4 py-3 border-b border-white/5 bg-black/94 backdrop-blur-3xl sticky top-0 z-[100] w-full">
-      {/* Row 1: Primary Navigation */}
-      <div className="flex items-center gap-3.5 md:gap-6 overflow-x-auto no-scrollbar w-full">
-        <div className="flex items-center gap-3 md:gap-5 flex-grow">
-          {primaryNavItems.map((item, index) => renderNavButton(item, index, false))}
+        border-b
+        border-white/5
+
+        bg-black/95
+        backdrop-blur-3xl
+
+        px-3
+        py-3
+
+        space-y-3
+      "
+    >
+      {/* ================= PRIMARY NAVIGATION ================= */}
+
+      <div className="w-full overflow-x-auto overflow-y-hidden no-scrollbar touch-pan-x">
+        <div
+          className="
+            flex
+            flex-nowrap
+            w-max
+
+            items-center
+
+            gap-2
+            md:gap-4
+
+            snap-x
+            snap-mandatory
+
+            px-1
+            py-1
+          "
+        >
+          {primaryNavItems.map((item, index) =>
+            renderNavButton(item, index, false)
+          )}
         </div>
       </div>
 
-      {/* Row 2: Secondary sub-menu (FLOWS & CPMS TV & EXIT) under primary */}
-      <div className="flex items-center gap-3 px-2 py-1 md:gap-5 bg-zinc-950/60 rounded-xl border border-white/5 w-full md:w-fit overflow-x-auto no-scrollbar outline-none">
-        <div className="flex items-center gap-2 md:gap-3 overflow-x-auto no-scrollbar flex-grow">
-          {secondaryNavItems.map((item, index) => renderNavButton(item, index, true))}
-          
+      {/* ================= SECONDARY NAVIGATION ================= */}
+
+      <div
+        className="
+          w-full
+
+          rounded-xl
+
+          border
+          border-white/5
+
+          bg-zinc-950/60
+
+          overflow-x-auto
+          overflow-y-hidden
+
+          no-scrollbar
+
+          touch-pan-x
+        "
+      >
+        <div
+          className="
+            flex
+            flex-nowrap
+            w-max
+
+            items-center
+
+            gap-2
+
+            px-2
+            py-2
+
+            snap-x
+            snap-mandatory
+          "
+        >
+          {secondaryNavItems.map((item, index) =>
+            renderNavButton(item, index, true)
+          )}
+
           {onLogout && (
             <button
-              onClick={(e) => { e.preventDefault(); onLogout(); }}
-              onTouchEnd={(e) => { e.preventDefault(); onLogout(); }}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap text-red-500 hover:text-white hover:bg-red-500 border border-red-500/20 font-cinzel cursor-pointer active:scale-95"
-              style={{ fontFamily: "'Cinzel', serif" }}
+              type="button"
+              onClick={onLogout}
+              className="
+                shrink-0
+                snap-start
+
+                flex
+                items-center
+                gap-2
+
+                rounded-full
+
+                px-3
+                py-2
+
+                whitespace-nowrap
+
+                text-[10px]
+                md:text-xs
+
+                font-black
+
+                text-red-500
+
+                border
+                border-red-500/30
+
+                hover:bg-red-500
+                hover:text-white
+
+                transition-all
+                duration-200
+
+                active:scale-95
+              "
+              style={{
+                fontFamily: "'Cinzel', serif",
+              }}
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3 h-3 md:w-4 md:h-4" />
               <span>EXIT</span>
             </button>
           )}
