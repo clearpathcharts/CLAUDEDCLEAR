@@ -4,7 +4,7 @@ import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
-
+import { CptBuddyWidget } from './components/CptBuddyWidget';
 export default function App() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(() => {
@@ -13,7 +13,6 @@ export default function App() {
     }
     return '/';
   });
-
   const [currentProfileId, setCurrentProfileId] = useState(() => {
     // 1. Check URL query parameters
     if (typeof window !== 'undefined') {
@@ -40,7 +39,6 @@ export default function App() {
     }
     return 'calm_focus';
   });
-
   const handleProfileChange = (newProfileId: string) => {
     setCurrentProfileId(newProfileId);
     if (typeof localStorage !== 'undefined') {
@@ -51,7 +49,6 @@ export default function App() {
       }
     }
   };
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
@@ -61,7 +58,6 @@ export default function App() {
       
       // Periodically check path in case hash routing / pushState is triggered from inside code
       const interval = setInterval(handleLocationChange, 500);
-
       try {
         const params = new URLSearchParams(window.location.search);
         if (params.get('profile') !== currentProfileId) {
@@ -72,14 +68,12 @@ export default function App() {
       } catch (e) {
         console.error('Failed to sync profile query param:', e);
       }
-
       return () => {
         window.removeEventListener('popstate', handleLocationChange);
         clearInterval(interval);
       };
     }
   }, [currentProfileId]);
-
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
@@ -88,22 +82,19 @@ export default function App() {
       </div>
     );
   }
-
   // Route: /about should directly load the accessible disclosure page
   if (currentPath === '/about') {
     return <ExternalAboutPage />;
   }
-
   // If there is no authenticated session, render the gorgeous waitlist/external landing page
   if (!user) {
     return <Auth />;
   }
-
   const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
-
   return (
     <div className="clearpath-glass-root">
       <Dashboard profile={profile} onProfileChange={handleProfileChange} />
+      <CptBuddyWidget />
     </div>
   );
 }
