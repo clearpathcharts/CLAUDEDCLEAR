@@ -13,6 +13,11 @@
 //
 // Still no Firestore here. Progress persists via the hook (localStorage for
 // now). Layer 3 swaps storage inside the hook only — this file won't change.
+//
+// ADDED: at the bottom of every book (every school's unit list), a "for a
+// deeper dive" prompt links out to the Encyclopedia of Finance and the
+// Encyclopedia of Indicators. This is what lets those two links come off the
+// home page — a reader who finishes a book naturally gets pointed to them.
 // ============================================================================
 
 import { useState } from "react";
@@ -31,7 +36,14 @@ type View =
   | { kind: "units"; schoolId: string }
   | { kind: "lessons"; schoolId: string; unitId: string };
 
-export function ClearPathEducation() {
+export function ClearPathEducation({
+  onNavigate,
+}: {
+  // Lets this component send the reader to another tab in the main app
+  // (used for the Encyclopedia links at the bottom of each book). Optional
+  // so this component still works fine if it's ever rendered standalone.
+  onNavigate?: (tabId: string) => void;
+}) {
   const [view, setView] = useState<View>({ kind: "schools" });
   const progress = useEducationProgress();
 
@@ -60,6 +72,7 @@ export function ClearPathEducation() {
           onOpenUnit={(unitId) =>
             setView({ kind: "lessons", schoolId: view.schoolId, unitId })
           }
+          onNavigate={onNavigate}
         />
       )}
 
@@ -198,11 +211,13 @@ function UnitList({
   isUnlocked,
   isPassed,
   onOpenUnit,
+  onNavigate,
 }: {
   schoolId: string;
   isUnlocked: (unitId: string) => boolean;
   isPassed: (unitId: string) => boolean;
   onOpenUnit: (unitId: string) => void;
+  onNavigate?: (tabId: string) => void;
 }) {
   const school = getSchool(schoolId);
   if (!school) return <Empty>That school could not be found.</Empty>;
@@ -277,6 +292,34 @@ function UnitList({
             </div>
           );
         })}
+      </div>
+
+      {/* End-of-book resource prompt — points to the two encyclopedias instead
+          of those links needing to live on the home page. */}
+      <div
+        style={{
+          marginTop: 32,
+          paddingTop: 24,
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        <p style={{ color: SUBTLE, fontSize: 13, marginBottom: 12 }}>
+          For a deeper dive into how the financial world works, click one of these links below.
+        </p>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <button
+            onClick={() => onNavigate?.("Encyclopedia")}
+            style={resourceLinkStyle("#00E5FF")}
+          >
+            Encyclopedia of Finance
+          </button>
+          <button
+            onClick={() => onNavigate?.("EncyclopediaOfIndicators")}
+            style={resourceLinkStyle("#00E5FF")}
+          >
+            Encyclopedia of Indicators
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -421,5 +464,18 @@ const crumbStyle: React.CSSProperties = {
   letterSpacing: 2,
   textTransform: "uppercase",
 };
+
+function resourceLinkStyle(color: string): React.CSSProperties {
+  return {
+    background: "rgba(255,255,255,0.03)",
+    border: `1px solid ${color}55`,
+    color: color,
+    borderRadius: 10,
+    padding: "10px 16px",
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+  };
+}
 
 export default ClearPathEducation;
