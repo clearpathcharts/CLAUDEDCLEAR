@@ -150,7 +150,13 @@ export function LightweightCandles({
       rightPriceScale: defaultTheme.rightPriceScale,
       timeScale: defaultTheme.timeScale,
       // PERFORMANCE TWEAKS & OPTIMIZATIONS FOR HIGH-VOLUME DENSITY (40k NODES)
-      handleScroll: { mouseWheel: true, pressedMouseMove: true },
+      // MOBILE SCROLL FIX: vertTouchDrag defaults to true in this library, which
+      // means a one-finger vertical swipe anywhere on the chart gets captured by
+      // the chart itself (to pan/zoom it) instead of being passed through to
+      // scroll the page. That's what was freezing the page at the first chart on
+      // mobile. horzTouchDrag stays on so users can still drag the chart
+      // left/right through time; only vertical drag is released back to the page.
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     });
 
