@@ -1460,7 +1460,7 @@ Not the other way around.`}
                 <span className="clearpath-program-gradient-text">CLEARPATH FOUNDING MEMBER PROGRAM</span>
               </h2>
               <p className="text-xs sm:text-sm max-w-2xl mx-auto uppercase font-bold tracking-wider">
-                <span className="fire-pink-text-subtle">14,000 Tier One Accounts • 1,000 Tier Two Upgrades • 15,000 Members Per Launch Region</span>
+                <span className="fire-pink-text-subtle">500 Tier One Accounts • 1,000 Tier Two Upgrades • 2,500 Members Per Launch Region</span>
               </p>
             </div>
 
