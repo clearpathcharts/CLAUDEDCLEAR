@@ -1,44 +1,108 @@
 import React from 'react';
-import { LayoutDashboard, BarChart3, Landmark, Globe, SlidersHorizontal, Users, Terminal, Grid, Activity, BookOpen, Newspaper, Navigation, Cpu, Shield, LogOut, Home, Tv, GraduationCap, Crown, Folder } from 'lucide-react';
-import { motion } from 'motion/react';
+import {
+  Activity,
+  BarChart3,
+  BookOpen,
+  Cpu,
+  Crown,
+  GraduationCap,
+  Home,
+  LogOut,
+  Newspaper,
+  Terminal,
+  Users,
+} from 'lucide-react';
 
 interface ClearNavProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
   isAdmin: boolean;
+  onLogout?: () => void;
 }
 
-export const ClearNav: React.FC<ClearNavProps & { onLogout?: () => void }> = ({ activeTab, onNavigate, isAdmin, onLogout }) => {
-  // Primary Row items
-  const primaryNavItems = [
-    { id: 'Discovery', icon: Home, label: 'HOME' },
-    { id: 'Yours', icon: Users, label: 'Y.W.C.' },
-    // Hidden until feature is complete
-    // { id: 'Workspace', icon: Folder, label: 'WORKSPACE' },
-    { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
-    { id: 'ThemeTerminal', icon: BarChart3, label: 'CHARTS' },
-    // Keep in codebase but off the menu for now as requested
-    // { id: 'Fundamentals', icon: Landmark, label: 'VALUATION' },
-    // { id: 'Macro', icon: Activity, label: 'MACRO' },
-    // { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
-    { id: 'Journal', icon: BookOpen, label: 'JOURNAL' },
-    { id: 'News', icon: Newspaper, label: 'NEWS' },
-    { id: 'Membership', icon: Crown, label: 'MEMBERSHIPS' },
-    { id: 'Founders', icon: Crown, label: 'FOUNDERS' },
+interface NavItem {
+  id: string;
+  icon: React.ElementType;
+  label: string;
+}
+
+export const ClearNav: React.FC<ClearNavProps> = ({
+  activeTab,
+  onNavigate,
+  isAdmin,
+  onLogout,
+}) => {
+  const primaryNavItems: NavItem[] = [
+    {
+      id: 'Discovery',
+      icon: Home,
+      label: 'HOME',
+    },
+    {
+      id: 'Yours',
+      icon: Users,
+      label: 'Y.W.C.',
+    },
+    {
+      id: 'TheRiver',
+      icon: Cpu,
+      label: 'THE RIVER',
+    },
+    {
+      id: 'ThemeTerminal',
+      icon: BarChart3,
+      label: 'CHARTS',
+    },
+    {
+      id: 'Journal',
+      icon: BookOpen,
+      label: 'JOURNAL',
+    },
+    {
+      id: 'News',
+      icon: Newspaper,
+      label: 'NEWS',
+    },
+    {
+      id: 'Membership',
+      icon: Crown,
+      label: 'MEMBERSHIPS',
+    },
+    {
+      id: 'Founders',
+      icon: Crown,
+      label: 'FOUNDERS',
+    },
   ];
 
-  // Secondary sub-items
-  const secondaryNavItems = [
-    // Keep in codebase but off the menu for now as requested
-    // { id: 'CapitalFlow', icon: Navigation, label: 'FLOWS' },
-    { id: 'Biography', icon: Terminal, label: 'PROFILE' },
-    ...(isAdmin ? [{ id: 'Diagnostics', icon: Activity, label: 'DIAGNOSTICS' }] : []),
-    // Hidden until feature is complete
-    // { id: 'ApiMonitor', icon: Activity, label: 'API MONITOR' },
-    // { id: 'CpmsApk', icon: Cpu, label: 'CPMS APK' },
-    // { id: 'Sentinel', icon: Shield, label: 'SENTINEL' },
-    { id: 'Encyclopedia', icon: GraduationCap, label: 'ENCYCLOPEDIA OF FINANCE' },
-    { id: 'EncyclopediaOfIndicators', icon: BarChart3, label: 'ENCYCLOPEDIA OF INDICATORS' },
+  const secondaryNavItems: NavItem[] = [
+    {
+      id: 'Biography',
+      icon: Terminal,
+      label: 'PROFILE',
+    },
+
+    ...(isAdmin
+      ? [
+          {
+            id: 'Diagnostics',
+            icon: Activity,
+            label: 'DIAGNOSTICS',
+          },
+        ]
+      : []),
+
+    {
+      id: 'Encyclopedia',
+      icon: GraduationCap,
+      label: 'ENCYCLOPEDIA OF FINANCE',
+    },
+
+    {
+      id: 'EncyclopediaOfIndicators',
+      icon: BarChart3,
+      label: 'ENCYCLOPEDIA OF INDICATORS',
+    },
   ];
 
   const renderNavButton = (item: { id: string, icon: any, label: string }, index: number, isSecondaryGroup: boolean) => {
