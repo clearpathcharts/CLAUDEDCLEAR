@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
-import KillZones from './KillZones';
+import React from 'react';
 import ClearPathLiveTicker from './ClearPathLiveTicker';
 import {
   BarChart3,
   Shield,
   BookOpen,
   MessageSquare,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 
 interface DiscoveryFeedProps {
@@ -26,8 +23,6 @@ interface DiscoveryFeedProps {
   showTerminalMatrixNoise?: boolean;
 }
 
-// Opens the floating C.P.T. buddy widget (see CptBuddyWidget.tsx) without needing
-// to lift its open/close state up into App.tsx.
 function openCptBuddy() {
   window.dispatchEvent(new CustomEvent('open-cpt-buddy'));
 }
@@ -49,106 +44,99 @@ export default function DiscoveryFeed({
 
   const initials = (name: string) => name.split(' ').map(p => p[0]).join('');
 
-  return (
-    <div
-      className="w-full text-white font-sans min-h-[90vh] flex justify-center relative p-3 md:p-6"
-      id="super_comb_homepage_root"
-    >
-      <div
-        className="w-full max-w-[720px] bg-[#050505] border border-white/10 rounded-[24px] p-6 md:p-8 relative overflow-hidden"
-        id="glassmorphic_big_sur_inner_shell"
-      >
-        {/* Ambient glow accents, purely decorative */}
-        <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-[#b026ff]/10 blur-[80px] pointer-events-none" />
-        <div className="absolute -bottom-20 -right-16 w-64 h-64 rounded-full bg-[#00f3ff]/8 blur-[90px] pointer-events-none" />
+  const quickTiles = [
+    { id: 'StrictlyCharts', label: 'Charts', icon: BarChart3, color: '#00E5FF' },
+    { id: 'MeetTheBoard', label: 'Board', icon: Shield, color: '#FFD700' },
+    { id: 'TrainingBoard', label: 'Training', icon: BookOpen, color: '#B026FF' },
+  ];
 
-        {/* Greeting */}
-        <div className="relative flex items-center justify-between mb-6">
-          <div>
-            <p className="text-[#555] text-[11px] tracking-widest font-mono mb-1">WELCOME BACK</p>
-            <p className="text-white text-xl font-bold">{profile?.name || 'Trader'}</p>
-          </div>
+  const tickers = ['AAPL', 'BTCUSD', 'MSFT'];
+
+  return (
+    <div className="w-full text-white font-sans min-h-[90vh]" id="super_comb_homepage_root">
+      <div className="max-w-[600px] mx-auto py-8 px-4 space-y-10">
+
+        {/* Profile header, like a social profile top */}
+        <div className="flex flex-col items-center text-center space-y-3">
           <img
-            className="w-9 h-9 rounded-lg object-cover border border-[#b026ff]/40"
+            className="w-20 h-20 rounded-full object-cover border-2 border-[#4D00FF]"
             src={profile?.avatarUrl || profile?.avatar || 'https://i.postimg.cc/Vshdgqvt/83dd53f6-dc2e-475f-854a-b1cfe4b7e8d7.png'}
             alt=""
           />
-        </div>
-
-        {/* Quick navigation - 4 tiles */}
-        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-6">
-          <button
-            onClick={() => onTabChange('StrictlyCharts')}
-            className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-4 text-center transition-all cursor-pointer"
-          >
-            <BarChart3 size={20} className="text-[#00f3ff] mx-auto mb-2" />
-            <p className="text-white text-xs font-medium">Charts</p>
-          </button>
-          <button
-            onClick={() => onTabChange('MeetTheBoard')}
-            className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-4 text-center transition-all cursor-pointer"
-          >
-            <Shield size={20} className="text-[#ff8800] mx-auto mb-2" />
-            <p className="text-white text-xs font-medium">Board</p>
-          </button>
-          <button
-            onClick={() => onTabChange('TrainingBoard')}
-            className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-4 text-center transition-all cursor-pointer"
-          >
-            <BookOpen size={20} className="text-[#b026ff] mx-auto mb-2" />
-            <p className="text-white text-xs font-medium">Training</p>
-          </button>
-          <button
-            onClick={openCptBuddy}
-            className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl p-4 text-center transition-all cursor-pointer"
-          >
-            <MessageSquare size={20} className="text-[#FF1493] mx-auto mb-2" />
-            <p className="text-white text-xs font-medium">C.P.T. buddy</p>
-          </button>
-        </div>
-
-        {/* Live markets */}
-        <div className="relative mb-6">
-          <p className="text-[#555] text-[11px] tracking-widest font-mono mb-2">LIVE MARKETS</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <ClearPathLiveTicker symbol="AAPL" />
-            <ClearPathLiveTicker symbol="BTCUSD" />
-            <ClearPathLiveTicker symbol="MSFT" />
+          <div>
+            <p className="text-[#888] text-xs tracking-[0.2em] font-mono">WELCOME BACK</p>
+            <h1 className="text-white text-2xl font-black uppercase tracking-wide mt-1">
+              {profile?.name || 'Trader'}
+            </h1>
           </div>
         </div>
 
-        {/* Kill Zones - real trading session widget */}
-        <div className="relative mb-6">
-          <KillZones />
-        </div>
-
-        {/* Contacts */}
+        {/* Contacts as a "stories" row, if enabled */}
         {showHomepageContacts && (
-          <div className="relative">
-            <p className="text-[#555] text-[11px] tracking-widest font-mono mb-2">CONTACTS</p>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {contacts.map((contact) => (
-                <button
-                  key={contact.id}
-                  onClick={() => onSelectContact && onSelectContact(contact)}
-                  className="flex flex-col items-center gap-1.5 cursor-pointer"
-                >
-                  <div className="relative w-10 h-10 rounded-lg bg-[#b026ff]/10 border border-[#b026ff]/30 flex items-center justify-center text-[#b026ff] text-xs font-bold font-mono">
-                    {initials(contact.name)}
-                    <span
-                      className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#050505] ${
-                        contact.status === 'online' ? 'bg-[#00ff88]' : 'bg-[#555]'
-                      }`}
-                    />
-                  </div>
-                  <span className="text-[#888] text-[10px] truncate max-w-[60px]">
-                    {contact.name.split(' ')[0]}
-                  </span>
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-5 overflow-x-auto pb-2">
+            {contacts.map((contact) => (
+              <button
+                key={contact.id}
+                onClick={() => onSelectContact && onSelectContact(contact)}
+                className="flex flex-col items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <div className="relative w-14 h-14 rounded-full bg-[#4D00FF]/10 border-2 border-[#4D00FF]/50 flex items-center justify-center text-[#B9A6FF] text-sm font-black font-mono">
+                  {initials(contact.name)}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-black ${
+                      contact.status === 'online' ? 'bg-[#00E5FF]' : 'bg-[#555]'
+                    }`}
+                  />
+                </div>
+                <span className="text-[#AAA] text-[11px] font-medium">
+                  {contact.name.split(' ')[0]}
+                </span>
+              </button>
+            ))}
           </div>
         )}
+
+        {/* Quick navigation, spaced as its own card */}
+        <div className="bg-black/30 border border-white/10 rounded-3xl p-6">
+          <p className="text-[#888] text-xs tracking-[0.2em] font-mono mb-4">QUICK ACCESS</p>
+          <div className="grid grid-cols-4 gap-3">
+            {quickTiles.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <button
+                  key={tile.id}
+                  onClick={() => onTabChange(tile.id)}
+                  className="flex flex-col items-center gap-2 py-2 cursor-pointer"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
+                    <Icon size={20} style={{ color: tile.color }} />
+                  </div>
+                  <span className="text-white text-[10px] font-bold uppercase tracking-wide">{tile.label}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={openCptBuddy}
+              className="flex flex-col items-center gap-2 py-2 cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
+                <MessageSquare size={20} style={{ color: '#FF1493' }} />
+              </div>
+              <span className="text-white text-[10px] font-bold uppercase tracking-wide">C.P.T.</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Each market as its own feed-style card, stacked with real spacing */}
+        <div className="space-y-6">
+          <p className="text-[#888] text-xs tracking-[0.2em] font-mono px-1">LIVE MARKETS</p>
+          {tickers.map((symbol) => (
+            <div key={symbol} className="bg-black/30 border border-white/10 rounded-3xl p-6">
+              <ClearPathLiveTicker symbol={symbol} />
+            </div>
+          ))}
+        </div>
+
       </div>
     </div>
   );
