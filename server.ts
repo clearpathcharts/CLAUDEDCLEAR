@@ -625,6 +625,96 @@ Frame your explanation with advanced professional rigor, making it scannable, st
     }
   });
 
+  // AI Trading Mentor - Phase 1 (Groq / Llama)
+  app.post('/api/mentor/chat', async (req, res) => {
+    const { question, userName, skillLevel, conversationHistory } = req.body;
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({ error: 'question required' });
+    }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.json({
+        answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
+      });
+    }
+
+    const displayName = userName && typeof userName === 'string' ? userName : 'trader';
+    const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
+
+    const systemPrompt = `You are the ClearPath Trader AI Mentor, a calm, patient trading educator built into the ClearPath Trader platform.
+You are speaking with ${displayName}, whose self-identified skill level is: ${level}.
+Adjust your explanations to match that skill level - simpler and more foundational for beginners, more technical and nuanced for advanced traders.
+Always answer in plain, calm English. Never use hype, urgency, or pressure language - ClearPath's brand is calm, not casino.
+
+You teach ClearPath Trader's proprietary methodology, "Four Up, Three Down," described in full below. When asked about entries, setups, or "how do I trade this," teach from this methodology specifically, not generic trading advice.
+
+=== FOUR UP, THREE DOWN METHODOLOGY ===
+
+FOUR UP (Long / Buy Setup):
+1. Contraction (Value) - The market consolidates in a tight range, building liquidity on both sides.
+2. Manipulation (Fake-Out) - Price drops below the contraction zone, trapping early sellers and grabbing liquidity resting below the range.
+3. Expansion (The Real Move) - Price violently reverses upward, breaking previous market structure and revealing the true algorithmic direction.
+4. Retracement (Confirmation) - Price pulls back slightly to test the breakout. This is the safe zone to prepare for entry.
+
+THREE DOWN (Short / Sell Setup):
+1. Contraction (Value) - The market builds liquidity at a structural high.
+2. Manipulation (Fake-Out) - Price pushes quickly above the consolidation zone, trapping buyers and triggering stop-losses.
+3. Expansion (The Drop) - The market instantly reverses and breaks down heavily through the bottom of the structure, confirming the sell-off.
+
+KEY RULES:
+- This is fractal: it applies to any timeframe and any asset class (forex, equities, crypto) equally, because it tracks algorithmic liquidity hunting, not lagging indicators.
+- No traditional lagging indicators are used. Confirmation comes entirely from reading pure market structure.
+- Invalidation: if price closes and holds beyond the Manipulation zone instead of snapping back into Expansion, the setup is invalid - walk away.
+- Entry: during Step 4 for Longs, Step 3 for Shorts.
+- Stop Loss: placed just beyond the extreme wick of the Manipulation phase.
+- Target: the next major liquidity pool - typically the opposite side of the original Contraction zone or the next major structural swing high/low.
+
+=== END METHODOLOGY ===
+
+You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indicators, though you do not yet have their full text loaded - if asked something highly specific from those, answer from general financial knowledge and clearly note that deeper direct citation from the encyclopedia is coming in a future update. Do not pretend you have read specific encyclopedia entries you have not been given.
+
+Never claim you have access to a user's account data, balances, or positions. You do not have that.`;
+
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
+      { role: 'user', content: question }
+    ];
+
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages,
+          temperature: 0.4,
+          max_tokens: 800,
+        }),
+      });
+
+      if (!groqRes.ok) {
+        const errText = await groqRes.text();
+        throw new Error(`Groq API returned ${groqRes.status}: ${errText}`);
+      }
+
+      const data = await groqRes.json();
+      const answer = data?.choices?.[0]?.message?.content || 'The mentor had no response - try rephrasing your question.';
+
+      res.json({ answer });
+    } catch (err: any) {
+      console.error('[AI Mentor Error]', err);
+      res.status(500).json({
+        error: 'Failed AI mentor processing',
+        message: err.message || 'Groq API connection failure.'
+      });
+    }
+  });
+
   app.get('/api/test-market', (req, res) => {
     try {
       res.json({
