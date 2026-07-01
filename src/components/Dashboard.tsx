@@ -118,6 +118,7 @@ const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
 import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
+const BookSeriesClassroom = lazy(() => import('./education/BookSeriesClassroom'));
 
 function TabLoading() {
   return (
@@ -413,6 +414,11 @@ const TabContent = ({
           </h1>
           <KillZones />
         </div>
+      );
+      case 'ClearPathEducation': return (
+        <Suspense fallback={<TabLoading />}>
+          <BookSeriesClassroom />
+        </Suspense>
       );
       case 'TrainingBoard': return (
         <div className="min-h-screen bg-[#0a0a1a] flex flex-col items-center justify-center p-4 rounded-3xl border border-[#00FFFF]/10" id="view_training_board">
