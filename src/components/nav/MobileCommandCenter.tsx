@@ -5,7 +5,6 @@ import {
   BookOpen,
   Cpu,
   Crown,
-  Folder,
   GraduationCap,
   Home,
   LogOut,
@@ -50,13 +49,6 @@ const WORK_ITEMS: NavItem[] = [
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
   {
-    id: "Workspace",
-    icon: Folder,
-    label: "WORKSPACE",
-    colorClass: "text-[#4D00FF] border-[#4D00FF]/25 hover:bg-[#4D00FF]/10",
-    glowClass: "bg-[#4D00FF]/25 text-[#4D00FF] border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]",
-  },
-  {
     id: "Journal",
     icon: BookOpen,
     label: "JOURNAL",
@@ -72,23 +64,6 @@ const WORK_ITEMS: NavItem[] = [
   },
 ];
 
-const LEARN_ITEMS: NavItem[] = [
-  {
-    id: "Encyclopedia",
-    icon: GraduationCap,
-    label: "ENCYCLOPEDIA OF FINANCE",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-  {
-    id: "EncyclopediaOfIndicators",
-    icon: BarChart3,
-    label: "ENCYCLOPEDIA OF INDICATORS",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-];
-
 const TOOLS_ITEMS: NavItem[] = [
   {
     id: "TheRiver",
@@ -101,13 +76,6 @@ const TOOLS_ITEMS: NavItem[] = [
     id: "Screener",
     icon: SlidersHorizontal,
     label: "SCREENER",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
-  },
-  {
-    id: "ApiMonitor",
-    icon: Activity,
-    label: "API MONITOR",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
@@ -184,7 +152,6 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const sections: { title: string; items: NavItem[] }[] = [
     { title: "WORK", items: WORK_ITEMS },
-    { title: "LEARN", items: LEARN_ITEMS },
     { title: "TOOLS", items: toolsItems },
     { title: "ACCOUNT", items: ACCOUNT_ITEMS },
   ];
