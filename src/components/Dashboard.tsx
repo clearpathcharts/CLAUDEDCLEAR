@@ -160,7 +160,7 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
           const profileData = Object.values(advancedProfiles).find(p => p.id === id);
           if (profileData) onProfileChange(profileData.id);
         }}
-        className={`px-4 py-3 rounded-xl border transition-all text-xs font-bold uppercase tracking-wider whitespace-nowrap overflow-hidden text-ellipsis shadow-[0_0_10px_rgba(127,0,255,0.15)]
+        className={`px-3 py-3 rounded-xl border transition-all text-[10px] font-bold uppercase tracking-wide leading-tight break-words whitespace-normal text-center min-h-[64px] flex items-center justify-center shadow-[0_0_10px_rgba(127,0,255,0.15)]
           ${active === id 
             ? 'border-[#7F00FF] bg-[#7F00FF]/10 text-white shadow-[0_0_20px_rgba(127,0,255,0.5)]' 
             : 'border-[#7F00FF]/30 bg-black/40 text-[#64677a] hover:border-[#7F00FF]/60 hover:text-white hover:shadow-[0_0_15px_rgba(127,0,255,0.3)]'}`}
