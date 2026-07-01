@@ -3,8 +3,10 @@ import ClearPathLiveTicker from './ClearPathLiveTicker';
 import {
   BarChart3,
   Shield,
-  BookOpen,
+  GraduationCap,
+  Book,
   MessageSquare,
+  ArrowRight,
 } from 'lucide-react';
 
 interface DiscoveryFeedProps {
@@ -27,114 +29,99 @@ function openCptBuddy() {
   window.dispatchEvent(new CustomEvent('open-cpt-buddy'));
 }
 
-export default function DiscoveryFeed({
-  onTabChange,
-  profile,
-  showHomepageContacts = false,
-  onSelectContact,
-}: DiscoveryFeedProps) {
-  const contacts = [
-    { id: 1, name: 'Andrei Mashrin', status: 'online' },
-    { id: 2, name: 'Aryn Jacobssen', status: 'offline' },
-    { id: 3, name: 'Carole Landu', status: 'offline' },
-    { id: 4, name: 'Chineze Afa', status: 'online' },
-    { id: 5, name: 'Mok Kwang', status: 'online' },
-    { id: 6, name: 'Naomi Yepes', status: 'online' },
-  ];
-
-  const initials = (name: string) => name.split(' ').map(p => p[0]).join('');
-
-  const quickTiles = [
-    { id: 'StrictlyCharts', label: 'Charts', icon: BarChart3, color: '#00E5FF' },
-    { id: 'MeetTheBoard', label: 'Board', icon: Shield, color: '#FFD700' },
-    { id: 'TrainingBoard', label: 'Training', icon: BookOpen, color: '#B026FF' },
-  ];
-
-  const tickers = ['AAPL', 'BTCUSD', 'MSFT'];
-
+export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedProps) {
   return (
-    <div className="w-full text-white font-sans min-h-[90vh]" id="super_comb_homepage_root">
-      <div className="max-w-[600px] mx-auto py-8 px-4 space-y-10">
+    <div className="w-full text-white font-sans min-h-[90vh] relative" id="super_comb_homepage_root">
+      <div className="max-w-[1100px] mx-auto space-y-5">
 
-        {/* Profile header, like a social profile top */}
-        <div className="flex flex-col items-center text-center space-y-3">
-          <img
-            className="w-20 h-20 rounded-full object-cover border-2 border-[#4D00FF]"
-            src={profile?.avatarUrl || profile?.avatar || 'https://i.postimg.cc/Vshdgqvt/83dd53f6-dc2e-475f-854a-b1cfe4b7e8d7.png'}
-            alt=""
-          />
+        {/* Hero */}
+        <div className="bg-black/70 backdrop-blur-md border border-white/10 rounded-[20px] p-7 backdrop-blur-md">
+          <div className="inline-block bg-[#4D00FF]/15 text-[#B9A6FF] text-[11px] font-bold px-3 py-1.5 rounded-full mb-3.5">
+            Welcome back
+          </div>
+          <div className="text-[26px] font-extrabold text-white mb-2">{profile?.name || 'Trader'}</div>
+          <div className="text-[13px] text-[#AAA] max-w-[420px]">
+            Your markets, your methodology, your pace.
+          </div>
+        </div>
+
+        {/* Charts wide card */}
+        <button
+          onClick={() => onTabChange('StrictlyCharts')}
+          className="w-full bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 flex items-center justify-between transition-all cursor-pointer text-left"
+        >
           <div>
-            <p className="text-[#888] text-xs tracking-[0.2em] font-mono">WELCOME BACK</p>
-            <h1 className="text-white text-2xl font-black uppercase tracking-wide mt-1">
-              {profile?.name || 'Trader'}
-            </h1>
-          </div>
-        </div>
-
-        {/* Contacts as a "stories" row, if enabled */}
-        {showHomepageContacts && (
-          <div className="flex gap-5 overflow-x-auto pb-2">
-            {contacts.map((contact) => (
-              <button
-                key={contact.id}
-                onClick={() => onSelectContact && onSelectContact(contact)}
-                className="flex flex-col items-center gap-2 shrink-0 cursor-pointer"
-              >
-                <div className="relative w-14 h-14 rounded-full bg-[#4D00FF]/10 border-2 border-[#4D00FF]/50 flex items-center justify-center text-[#B9A6FF] text-sm font-black font-mono">
-                  {initials(contact.name)}
-                  <span
-                    className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-black ${
-                      contact.status === 'online' ? 'bg-[#00E5FF]' : 'bg-[#555]'
-                    }`}
-                  />
-                </div>
-                <span className="text-[#AAA] text-[11px] font-medium">
-                  {contact.name.split(' ')[0]}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Quick navigation, spaced as its own card */}
-        <div className="bg-black/30 border border-white/10 rounded-3xl p-6">
-          <p className="text-[#888] text-xs tracking-[0.2em] font-mono mb-4">QUICK ACCESS</p>
-          <div className="grid grid-cols-4 gap-3">
-            {quickTiles.map((tile) => {
-              const Icon = tile.icon;
-              return (
-                <button
-                  key={tile.id}
-                  onClick={() => onTabChange(tile.id)}
-                  className="flex flex-col items-center gap-2 py-2 cursor-pointer"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
-                    <Icon size={20} style={{ color: tile.color }} />
-                  </div>
-                  <span className="text-white text-[10px] font-bold uppercase tracking-wide">{tile.label}</span>
-                </button>
-              );
-            })}
-            <button
-              onClick={openCptBuddy}
-              className="flex flex-col items-center gap-2 py-2 cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
-                <MessageSquare size={20} style={{ color: '#FF1493' }} />
-              </div>
-              <span className="text-white text-[10px] font-bold uppercase tracking-wide">C.P.T.</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Each market as its own feed-style card, stacked with real spacing */}
-        <div className="space-y-6">
-          <p className="text-[#888] text-xs tracking-[0.2em] font-mono px-1">LIVE MARKETS</p>
-          {tickers.map((symbol) => (
-            <div key={symbol} className="bg-black/30 border border-white/10 rounded-3xl p-6">
-              <ClearPathLiveTicker symbol={symbol} />
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center mb-3.5">
+              <BarChart3 size={20} className="text-[#00E5FF]" />
             </div>
-          ))}
+            <div className="text-[17px] font-bold text-white mb-1">Interactive charts</div>
+            <div className="text-xs text-[#AAA]">Live BTC, AAPL, and forex, ready to go.</div>
+          </div>
+          <ArrowRight size={18} className="text-[#00E5FF] shrink-0" />
+        </button>
+
+        {/* Bento grid: Board, Encyclopedia of Finance, Encyclopedia of Indicators, ClearPath Education */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => onTabChange('MeetTheBoard')}
+            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#FFD700]/10 flex items-center justify-center mb-3.5">
+              <Shield size={20} className="text-[#FFD700]" />
+            </div>
+            <div className="text-sm font-bold text-white">Board</div>
+          </button>
+
+          <button
+            onClick={() => onTabChange('Encyclopedia')}
+            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center mb-3.5">
+              <GraduationCap size={20} className="text-[#00E5FF]" />
+            </div>
+            <div className="text-sm font-bold text-white leading-tight">Encyclopedia of finance</div>
+          </button>
+
+          <button
+            onClick={() => onTabChange('EncyclopediaOfIndicators')}
+            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center mb-3.5">
+              <BarChart3 size={20} className="text-[#00E5FF]" />
+            </div>
+            <div className="text-sm font-bold text-white leading-tight">Encyclopedia of indicators</div>
+          </button>
+
+          <button
+            onClick={() => onTabChange('ClearPathEducation')}
+            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#B026FF]/10 flex items-center justify-center mb-3.5">
+              <Book size={20} className="text-[#B026FF]" />
+            </div>
+            <div className="text-sm font-bold text-white">ClearPath education</div>
+          </button>
+        </div>
+
+        {/* C.P.T. buddy tile */}
+        <button
+          onClick={openCptBuddy}
+          className="w-full bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 flex items-center gap-3.5 transition-all cursor-pointer text-left"
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#FF1493]/10 flex items-center justify-center shrink-0">
+            <MessageSquare size={20} className="text-[#FF1493]" />
+          </div>
+          <div className="text-sm font-bold text-white">Ask C.P.T., your personal trading buddy</div>
+        </button>
+
+        {/* Live markets */}
+        <div>
+          <p className="text-[#888] text-xs tracking-[0.2em] font-mono mb-3">LIVE MARKETS</p>
+          <div className="bg-black/70 backdrop-blur-md border border-white/10 rounded-[20px] p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+            <ClearPathLiveTicker symbol="AAPL" />
+            <ClearPathLiveTicker symbol="BTCUSD" />
+            <ClearPathLiveTicker symbol="MSFT" />
+          </div>
         </div>
 
       </div>
