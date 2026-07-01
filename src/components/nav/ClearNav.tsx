@@ -17,6 +17,7 @@ import {
   Terminal,
   Users,
 } from "lucide-react";
+import { MobileCommandCenter } from "./MobileCommandCenter";
 
 interface ClearNavProps {
   activeTab: string;
@@ -252,11 +253,26 @@ export const ClearNav: React.FC<ClearNavProps> = ({
         <span>{item.label}</span>
       </button>
     );
-  }; 
-    return (
-    <div
-      id="nav-bar"
-      className="
+  };
+  return (
+    <>
+      {/* ================= MOBILE NAV (Command Center) ================= */}
+      <div className="md:hidden">
+        <MobileCommandCenter
+          activeTab={activeTab}
+          onNavigate={onNavigate}
+          isAdmin={isAdmin}
+          onLogout={onLogout}
+        />
+      </div>
+
+      {/* ================= DESKTOP NAV (original) ================= */}
+      <div
+        id="nav-bar"
+        className="
+        hidden
+        md:block
+
         sticky
         top-0
         z-[100]
@@ -273,12 +289,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
         space-y-3
       "
-    >
-      {/* ================= PRIMARY NAVIGATION ================= */}
+      >
+        {/* ================= PRIMARY NAVIGATION ================= */}
 
-      <div className="w-full overflow-x-auto overflow-y-hidden no-scrollbar touch-pan-x">
-        <div
-          className="
+        <div className="w-full overflow-x-auto overflow-y-hidden no-scrollbar touch-pan-x">
+          <div
+            className="
             flex
             flex-nowrap
             w-max
@@ -294,17 +310,17 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             px-1
             py-1
           "
-        >
-          {primaryNavItems.map((item, index) =>
-            renderNavButton(item, index, false)
-          )}
+          >
+            {primaryNavItems.map((item, index) =>
+              renderNavButton(item, index, false)
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* ================= SECONDARY NAVIGATION ================= */}
+        {/* ================= SECONDARY NAVIGATION ================= */}
 
-      <div
-        className="
+        <div
+          className="
           w-full
 
           rounded-xl
@@ -321,9 +337,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
           touch-pan-x
         "
-      >
-        <div
-          className="
+        >
+          <div
+            className="
             flex
             flex-nowrap
             w-max
@@ -338,16 +354,16 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             snap-x
             snap-mandatory
           "
-        >
-          {secondaryNavItems.map((item, index) =>
-            renderNavButton(item, index, true)
-          )}
+          >
+            {secondaryNavItems.map((item, index) =>
+              renderNavButton(item, index, true)
+            )}
 
-          {onLogout && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="
                 shrink-0
                 snap-start
 
@@ -380,16 +396,17 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
                 active:scale-95
               "
-              style={{
-                fontFamily: "'Cinzel', serif",
-              }}
-            >
-              <LogOut className="w-3 h-3 md:w-4 md:h-4" />
-              <span>EXIT</span>
-            </button>
-          )}
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                }}
+              >
+                <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+                <span>EXIT</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
