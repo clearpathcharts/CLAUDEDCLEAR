@@ -118,7 +118,6 @@ const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
 import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
-const ApiHealthDashboardActive = lazy(() => import('./ApiHealthDashboardActive'));
 
 function TabLoading() {
   return (
@@ -136,6 +135,7 @@ const CustomNavIcon = ({ size = 16, className = '', style = {} }: { size?: numbe
 import NewsPanel from './NewsPanel';
 import DiscoveryFeed from './DiscoveryFeed';
 import FoundersPortal from './FoundersPortal';
+import KillZones from './KillZones';
 
 const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange }: { chartTheme: any, setChartTheme: (t: any) => void, profile: any, onProfileChange: (p: any) => void }) => {
   const [userTier, setUserTier] = useState<string>(() => {
@@ -382,11 +382,6 @@ const TabContent = ({
       );
       case 'CpmsApk': return <CpmsApk />;
       case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isAdmin ? 'CeoDashboard' : 'StrictlyCharts')} />;
-      case 'ApiMonitor': return (
-        <Suspense fallback={<TabLoading />}>
-          <ApiHealthDashboardActive />
-        </Suspense>
-      );
       case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
@@ -411,6 +406,14 @@ const TabContent = ({
       case 'ShareQR': return <ShareQRCode />;
       case 'CeoDashboard': return <CeoDashboard />;
       case 'MeetTheBoard': return <MeetTheBoard />;
+      case 'GlobalSessions': return (
+        <div className="max-w-4xl mx-auto" id="view_global_trading_sessions">
+          <h1 className="text-white text-2xl font-black uppercase tracking-wide mb-6">
+            Global Trading Sessions
+          </h1>
+          <KillZones />
+        </div>
+      );
       case 'TrainingBoard': return (
         <div className="min-h-screen bg-[#0a0a1a] flex flex-col items-center justify-center p-4 rounded-3xl border border-[#00FFFF]/10" id="view_training_board">
           <div className="w-full max-w-5xl">
