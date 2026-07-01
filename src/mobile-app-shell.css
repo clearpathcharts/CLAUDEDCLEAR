@@ -12,41 +12,55 @@
   --safe-right: env(safe-area-inset-right);
 }
 
-/* RESET */
+/* =========================================
+   GLOBAL RESET
+========================================= */
 
 html,
 body{
   margin:0;
   padding:0;
   width:100%;
-  height:100%;
-  overflow:hidden;
-  overscroll-behavior:none;
+  min-height:100%;
+
+  /* Allow the document to scroll naturally */
+  overflow-x:hidden;
+  overflow-y:auto;
+
+  overscroll-behavior-y:contain;
+
   touch-action:manipulation;
+
   background:#050816;
+
   -webkit-tap-highlight-color:transparent;
+
+  -webkit-text-size-adjust:100%;
 }
 
-/* APP ROOT */
+/* =========================================
+   APPLICATION ROOT
+========================================= */
 
 #root,
 #__next{
   width:100%;
-  height:100%;
-  overflow:hidden;
+  min-height:100%;
 }
 
-/* MAIN APP CONTAINER */
+/* =========================================
+   MAIN APPLICATION SHELL
+========================================= */
 
 .app-shell{
   position:fixed;
   inset:0;
 
-  width:100%;
-  height:var(--app-height);
-
   display:flex;
   flex-direction:column;
+
+  width:100%;
+  height:var(--app-height);
 
   overflow:hidden;
 
@@ -58,7 +72,9 @@ body{
   padding-right:var(--safe-right);
 }
 
-/* SCROLL REGION */
+/* =========================================
+   MAIN SCROLL AREA
+========================================= */
 
 .app-scroll{
   flex:1;
@@ -70,39 +86,49 @@ body{
 
   overscroll-behavior-y:contain;
 
+  touch-action:pan-y pinch-zoom;
+
   transform:translateZ(0);
   will-change:scroll-position;
-
-  touch-action:pan-y pinch-zoom;
 }
 
-/* HORIZONTAL SWIPE AREAS */
+/* =========================================
+   HORIZONTAL SCROLLING
+========================================= */
 
 .horizontal-scroll{
+
   display:flex;
+
   overflow-x:auto;
   overflow-y:hidden;
+
+  gap:16px;
+
+  padding-bottom:10px;
 
   scroll-snap-type:x mandatory;
 
   -webkit-overflow-scrolling:touch;
 
   touch-action:pan-x;
-
-  gap:16px;
-
-  padding-bottom:10px;
 }
 
 .horizontal-scroll > *{
+
   flex-shrink:0;
+
   scroll-snap-align:start;
 }
 
-/* FIX CHART CONTAINERS */
+/* =========================================
+   CHART CONTAINERS
+========================================= */
 
 .chart-wrapper{
+
   position:relative;
+
   width:100%;
   height:100%;
 
@@ -111,57 +137,65 @@ body{
   touch-action:none;
 }
 
-/* PREVENT DOUBLE TAP ZOOM */
+/* =========================================
+   TOUCH INPUTS
+========================================= */
 
 button,
 a,
 input,
 select,
 textarea{
+
   touch-action:manipulation;
 }
 
-/* FIX IOS INPUT ZOOM */
+/* =========================================
+   IOS INPUT ZOOM FIX
+========================================= */
 
 input,
 textarea,
 select{
+
   font-size:16px;
 }
 
-/* GPU ACCELERATION */
+/* =========================================
+   GPU ACCELERATION
+========================================= */
 
 .card,
 .panel,
 .widget,
 .chart-wrapper{
+
   transform:translateZ(0);
+
   backface-visibility:hidden;
 }
 
-/* REMOVE RUBBER BAND EFFECT */
-
-body{
-  position:fixed;
-}
-
-/* MOBILE PERFORMANCE */
+/* =========================================
+   GLOBAL PERFORMANCE
+========================================= */
 
 *{
+
   box-sizing:border-box;
-}
 
-/* SMOOTH ANIMATIONS */
-
-*{
   -webkit-font-smoothing:antialiased;
+
   -moz-osx-font-smoothing:grayscale;
 }
 
-/* APP STYLE */
+/* =========================================
+   MOBILE PANEL
+========================================= */
 
 .mobile-panel{
+
   border-radius:20px;
+
   background:rgba(15,20,35,0.92);
 
   backdrop-filter:blur(20px);
@@ -173,33 +207,50 @@ body{
     0 0 45px rgba(255,0,255,0.08);
 }
 
-/* FIX STICKY HEADERS */
+/* =========================================
+   STICKY HEADERS
+========================================= */
 
 .sticky-top{
+
   position:sticky;
+
   top:0;
+
   z-index:500;
 }
 
-/* FIX FULLSCREEN PANELS */
+/* =========================================
+   FULLSCREEN PANELS
+========================================= */
 
 .fullscreen-view{
+
   position:absolute;
+
   inset:0;
 
   width:100%;
+
   height:100%;
 }
 
-/* NATIVE FEEL */
+/* =========================================
+   NATIVE SCROLL
+========================================= */
 
 .native-scroll{
+
   scroll-behavior:smooth;
 }
 
-/* DISABLE TEXT SELECT */
+/* =========================================
+   DISABLE TEXT SELECTION
+========================================= */
 
 .no-select{
+
   user-select:none;
+
   -webkit-user-select:none;
 }
