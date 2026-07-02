@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
+import { useAuth } from "../contexts/FirebaseContext";
+import { getDb, doc, getDoc, setDoc } from "../firebase";
 
 /* ============================================================
-   C.P.T. - PERSONAL BUDDY
-   A small, friendly, always-visible floating mentor icon.
-   Click it to open a chat window connected to /api/mentor/chat.
-   Remembers the user's name and skill level in this browser
-   (localStorage) so it doesn't ask again on return visits.
+   C.P.T. - PERSONAL BUDDY (with permanent memory)
+
+   HOW MEMORY WORKS NOW:
+   1. Everything C.P.T. knows about a user (name, skill level,
+      personal facts, and the conversation itself) is saved to
+      Firestore at:  users/{uid}/buddy_memory/profile
+   2. Every time the user opens the buddy - on any device -
+      that memory is loaded first, so C.P.T. greets them by
+      name and picks up where they left off.
+   3. After every exchange, the server extracts any NEW lasting
+      facts the user revealed and sends them back. They are
+      merged into the memory and saved. C.P.T. literally gets
+      smarter about each person over time.
+   4. If the user is not signed in, memory falls back to this
+      browser's localStorage (works, but only on this device).
    ============================================================ */
 
 interface ChatMessage {
@@ -16,29 +28,107 @@ interface ChatMessage {
 
 const STORAGE_KEY_NAME = "cpt_buddy_username";
 const STORAGE_KEY_SKILL = "cpt_buddy_skill_level";
+const STORAGE_KEY_FACTS = "cpt_buddy_facts";
+const STORAGE_KEY_MSGS = "cpt_buddy_messages";
+const MAX_SAVED_MESSAGES = 100; // how much conversation history we keep in the database
+const MAX_FACTS = 60;           // how many remembered facts we keep per user
 
 export const CptBuddyWidget: React.FC = () => {
+  const { user } = useAuth() as any;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [facts, setFacts] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [memoryLoaded, setMemoryLoaded] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // On first load, check if we already know this user
+  /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
-    const savedName = localStorage.getItem(STORAGE_KEY_NAME);
-    const savedSkill = localStorage.getItem(STORAGE_KEY_SKILL);
-    if (savedName && savedSkill) {
+    let cancelled = false;
+
+    const loadLocal = () => {
+      const savedName = localStorage.getItem(STORAGE_KEY_NAME);
+      const savedSkill = localStorage.getItem(STORAGE_KEY_SKILL);
+      let savedFacts: string[] = [];
+      let savedMsgs: ChatMessage[] = [];
+      try { savedFacts = JSON.parse(localStorage.getItem(STORAGE_KEY_FACTS) || "[]"); } catch {}
+      try { savedMsgs = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS) || "[]"); } catch {}
+      if (cancelled) return;
       setUserName(savedName);
       setSkillLevel(savedSkill);
-      setSetupStep("done");
-    } else {
-      setSetupStep("name");
+      setFacts(Array.isArray(savedFacts) ? savedFacts : []);
+      setMessages(Array.isArray(savedMsgs) ? savedMsgs : []);
+      setSetupStep(savedName && savedSkill ? "done" : "name");
+      setMemoryLoaded(true);
+    };
+
+    const loadMemory = async () => {
+      if (user?.uid) {
+        try {
+          const snap: any = await getDoc(doc(getDb(), "users", user.uid, "buddy_memory", "profile"));
+          if (!cancelled && snap && typeof snap.exists === "function" && snap.exists()) {
+            const d = snap.data() || {};
+            setUserName(d.userName || null);
+            setSkillLevel(d.skillLevel || null);
+            setFacts(Array.isArray(d.facts) ? d.facts : []);
+            setMessages(Array.isArray(d.messages) ? d.messages : []);
+            setSetupStep(d.userName && d.skillLevel ? "done" : "name");
+            setMemoryLoaded(true);
+            return;
+          }
+        } catch (e) {
+          console.error("[C.P.T.] Failed to load memory from Firestore:", e);
+        }
+      }
+      loadLocal();
+    };
+
+    setMemoryLoaded(false);
+    loadMemory();
+    return () => { cancelled = true; };
+  }, [user?.uid]);
+
+  /* ---------- SAVE MEMORY (both places, every time) ---------- */
+  const saveMemory = async (next: {
+    userName: string | null;
+    skillLevel: string | null;
+    facts: string[];
+    messages: ChatMessage[];
+  }) => {
+    const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
+    const trimmedFacts = next.facts.slice(-MAX_FACTS);
+
+    // Always keep a local copy so signed-out users still get memory on this device
+    try {
+      if (next.userName) localStorage.setItem(STORAGE_KEY_NAME, next.userName);
+      if (next.skillLevel) localStorage.setItem(STORAGE_KEY_SKILL, next.skillLevel);
+      localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(trimmedFacts));
+      localStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(trimmedMsgs));
+    } catch {}
+
+    // The real memory: the user's own document in Firestore
+    if (user?.uid) {
+      try {
+        await setDoc(
+          doc(getDb(), "users", user.uid, "buddy_memory", "profile"),
+          {
+            userName: next.userName || null,
+            skillLevel: next.skillLevel || null,
+            facts: trimmedFacts,
+            messages: trimmedMsgs,
+            updatedAt: Date.now(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error("[C.P.T.] Failed to save memory to Firestore:", e);
+      }
     }
-  }, []);
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -46,43 +136,42 @@ export const CptBuddyWidget: React.FC = () => {
 
   const handleOpen = () => {
     setIsOpen(true);
-    if (messages.length === 0 && setupStep === "done") {
-      setMessages([
-        {
-          role: "assistant",
-          content: `Hey ${userName}! I'm C.P.T., your personal trading buddy. Ask me anything about Four Up Three Down, an indicator, or anything else on ClearPath. I'm always here.`,
-        },
-      ]);
+    if (messages.length === 0 && setupStep === "done" && memoryLoaded) {
+      const greeting: ChatMessage = {
+        role: "assistant",
+        content:
+          facts.length > 0
+            ? `Welcome back, ${userName}! Good to see you again. Ask me anything - about Four Up Three Down, an indicator, or whatever's on your mind. I remember our past conversations.`
+            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. Ask me anything about Four Up Three Down, an indicator, or anything else on ClearPath. I'm always here.`,
+      };
+      setMessages([greeting]);
     }
   };
 
   // Lets other components (like the home page quick-nav tile) open this widget
-  // without needing to lift isOpen state up into App.tsx.
   useEffect(() => {
     const listener = () => handleOpen();
     window.addEventListener("open-cpt-buddy", listener);
     return () => window.removeEventListener("open-cpt-buddy", listener);
-  }, [userName, setupStep, messages]);
+  }, [userName, setupStep, messages, memoryLoaded, facts]);
 
   const handleNameSubmit = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
     setUserName(trimmed);
-    localStorage.setItem(STORAGE_KEY_NAME, trimmed);
     setInput("");
     setSetupStep("skill");
   };
 
   const handleSkillSelect = (level: string) => {
     setSkillLevel(level);
-    localStorage.setItem(STORAGE_KEY_SKILL, level);
     setSetupStep("done");
-    setMessages([
-      {
-        role: "assistant",
-        content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me anything, any time - I'm always here.`,
-      },
-    ]);
+    const intro: ChatMessage = {
+      role: "assistant",
+      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me anything, any time - I'm always here, and I'll remember you from now on.`,
+    };
+    setMessages([intro]);
+    saveMemory({ userName, skillLevel: level, facts, messages: [intro] });
   };
 
   const handleSend = async () => {
@@ -102,14 +191,29 @@ export const CptBuddyWidget: React.FC = () => {
           question,
           userName,
           skillLevel,
-          conversationHistory: newMessages.map((m) => ({ role: m.role, content: m.content })),
+          memoryFacts: facts,
+          conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.answer || "I didn't catch that - try asking again." },
-      ]);
+      const answer: string = data.answer || "I didn't catch that - try asking again.";
+      const updatedMessages: ChatMessage[] = [...newMessages, { role: "assistant", content: answer }];
+
+      // Merge any new facts the server learned about this user (deduplicated)
+      let updatedFacts = facts;
+      if (Array.isArray(data.newFacts) && data.newFacts.length > 0) {
+        const merged = [...facts];
+        for (const f of data.newFacts) {
+          if (typeof f === "string" && f.trim() && !merged.some((x) => x.toLowerCase() === f.toLowerCase())) {
+            merged.push(f.trim());
+          }
+        }
+        updatedFacts = merged.slice(-MAX_FACTS);
+        setFacts(updatedFacts);
+      }
+
+      setMessages(updatedMessages);
+      saveMemory({ userName, skillLevel, facts: updatedFacts, messages: updatedMessages });
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -160,8 +264,8 @@ export const CptBuddyWidget: React.FC = () => {
       {isOpen && (
         <div
           style={{
-            width: 320,
-            maxHeight: 480,
+            width: "min(320px, calc(100vw - 24px))",
+            maxHeight: "min(480px, calc(100dvh - 40px))",
             display: "flex",
             flexDirection: "column",
             background: "rgba(3,3,7,0.97)",
@@ -190,7 +294,9 @@ export const CptBuddyWidget: React.FC = () => {
               <div style={{ color: "#FF1493", fontWeight: 800, fontSize: 13, fontFamily: "'Cinzel', serif" }}>
                 C.P.T. - PERSONAL BUDDY
               </div>
-              <div style={{ color: "#AAAAAA", fontSize: 10 }}>Always here.</div>
+              <div style={{ color: "#AAAAAA", fontSize: 10 }}>
+                {user?.uid ? "Always here. Remembers you." : "Always here."}
+              </div>
             </div>
             <button
               type="button"
@@ -204,13 +310,17 @@ export const CptBuddyWidget: React.FC = () => {
 
           {/* Body */}
           <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 12, minHeight: 200 }}>
-            {setupStep === "name" && (
+            {!memoryLoaded && (
+              <div style={{ color: "#AAAAAA", fontSize: 12, fontStyle: "italic" }}>Waking up...</div>
+            )}
+
+            {memoryLoaded && setupStep === "name" && (
               <div style={{ color: "#FFFFFF", fontSize: 13, lineHeight: 1.5 }}>
                 Hi! I'm C.P.T., your personal trading buddy. What's your name?
               </div>
             )}
 
-            {setupStep === "skill" && (
+            {memoryLoaded && setupStep === "skill" && (
               <div style={{ color: "#FFFFFF", fontSize: 13, lineHeight: 1.5 }}>
                 <div style={{ marginBottom: 10 }}>
                   Nice to meet you, {userName}! How would you describe your trading experience?
@@ -241,7 +351,7 @@ export const CptBuddyWidget: React.FC = () => {
               </div>
             )}
 
-            {setupStep === "done" &&
+            {memoryLoaded && setupStep === "done" &&
               messages.map((m, i) => (
                 <div
                   key={i}
