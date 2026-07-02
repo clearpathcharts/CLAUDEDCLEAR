@@ -1,52 +1,104 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <script>
-      // Force-unregister stale/old service workers that cause frozen black screens
-      try {
-        if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for (var i = 0; i < registrations.length; i++) {
-              registrations[i].unregister().then(function(success) {
-                if (success) console.log('[Purge] Unregistered SW');
-              });
-            }
-          });
-        }
-      } catch (e) {}
-    </script>
-    <meta charset="UTF-8" />
-    <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob: 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src * ws: wss: data: blob: http://0.0.0.0:3000; frame-src *; font-src * data:;" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>CLEAR PATH MARKETS SCIENCE | Market Terminal</title>
-    <meta name="description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta name="keywords" content="analysis, institutional data, market intelligence, clear path markets science, financial terminal, market science" />
-    <link rel="canonical" href="https://clearpathmarkets.com/" />
-    <meta property="og:title" content="Clear Path Markets Science | Market Terminal" />
-    <meta property="og:description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta property="og:image" content="https://i.postimg.cc/q70JSyWy/Gemini-Generated-Image-bztme2bztme2bztm.jpg" />
-    <meta property="og:url" content="https://clearpathmarkets.com/" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Clear Path Markets Science | Market Terminal" />
-    <meta name="twitter:description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta name="twitter:image" content="https://i.postimg.cc/q70JSyWy/Gemini-Generated-Image-bztme2bztme2bztm.jpg" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#0b0e11" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Clear Path Markets Science" />
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  </head>
-  <body>
-    <div id="root">
-      <div style="height: 100vh; width: 100vw; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; font-size: 10px;">
-        <span style="opacity: 0.5; margin-right: 10px;">[</span> 
-        <div id="loader-text">Loading New Architecture...</div> 
-        <span style="opacity: 0.5; margin-left: 10px;">]</span>
-      </div>
-    </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+@import "tailwindcss";
+@import "./styles/codepen.css";
+
+
+html, body {
+  width: 100% !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important; /* true visible height on mobile (excludes URL bar) */
+  overflow-x: hidden;            /* no sideways wiggle on phones */
+  overflow-y: auto;              /* the page itself is always allowed to scroll */
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: #050505 !important;
+  -webkit-text-size-adjust: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+  /* Enable smooth scrolling everywhere */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Every scroll container works on mobile */
+* {
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+/* All buttons are tappable -- minimum 44x44px touch target (Apple HIG standard) */
+button, 
+[role="button"],
+a {
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Charts -- desktop: chart owns all gestures */
+canvas {
+  touch-action: none;
+}
+
+/* Charts on mobile -- FIX: touch-action:none meant that if your finger
+   landed on a chart, the page could never scroll. Now vertical swipes
+   scroll the page and pinch still zooms; the chart library keeps
+   horizontal pan for itself. */
+@media (max-width: 1024px) {
+  canvas {
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
+/* Custom scrollbar -- visible on desktop, invisible but functional on mobile */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+/* Mobile nav -- make sure bottom nav doesn't cover content */
+@media (max-width: 1024px) {
+  .mobile-bottom-padding {
+    padding-bottom: 80px;
+  }
+  
+  /* Ticker scrolls horizontally on mobile without breaking layout */
+  .ticker-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ticker-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Active state feedback on all interactive elements */
+button:active,
+[role="button"]:active {
+  opacity: 0.8;
+  transform: scale(0.97);
+  transition: transform 0.1s, opacity 0.1s;
+}
+
+/* Input fields -- readable font size prevents iOS auto-zoom */
+input, textarea, select {
+  font-size: 16px !important;
+}
