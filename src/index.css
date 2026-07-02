@@ -5,6 +5,9 @@
 html, body {
   width: 100% !important;
   min-height: 100vh !important;
+  min-height: 100dvh !important; /* true visible height on mobile (excludes URL bar) */
+  overflow-x: hidden;            /* no sideways wiggle on phones */
+  overflow-y: auto;              /* the page itself is always allowed to scroll */
   margin: 0 !important;
   padding: 0 !important;
   background-color: #050505 !important;
@@ -38,9 +41,19 @@ a {
   -webkit-user-select: none;
 }
 
-/* Charts -- allow pinch zoom, block page scroll while touching chart */
+/* Charts -- desktop: chart owns all gestures */
 canvas {
   touch-action: none;
+}
+
+/* Charts on mobile -- FIX: touch-action:none meant that if your finger
+   landed on a chart, the page could never scroll. Now vertical swipes
+   scroll the page and pinch still zooms; the chart library keeps
+   horizontal pan for itself. */
+@media (max-width: 1024px) {
+  canvas {
+    touch-action: pan-y pinch-zoom;
+  }
 }
 
 /* Custom scrollbar -- visible on desktop, invisible but functional on mobile */
