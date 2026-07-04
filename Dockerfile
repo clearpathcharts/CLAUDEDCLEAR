@@ -1,5 +1,5 @@
 # Build stage -- installs everything and runs the real build process
-FROM node:20-slim AS build
+FROM node:22-slim AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Run stage -- only what's needed to actually run the server
-FROM node:20-slim
+FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist
