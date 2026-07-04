@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export default function MembershipTab() {
+export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { user, userProfile, updateProfile } = useAuth();
   
   // Toggles for primary view modes
@@ -82,6 +82,42 @@ export default function MembershipTab() {
     `[INFO] Novo Ledger initialized. Connected Routing: ${novoRouting} (Settlement Target: CLEAR PATH MARKETS SCIENCE)`,
   ]);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
+
+  // Soft launch waitlist pre-registration (logged-in users)
+  const [wlFirstName, setWlFirstName] = useState(userProfile?.displayName?.split(' ')[0] || '');
+  const [wlCountry, setWlCountry] = useState('');
+  const [wlExperience, setWlExperience] = useState('Beginner');
+  const [wlSubmitting, setWlSubmitting] = useState(false);
+  const [wlError, setWlError] = useState('');
+  const [wlSuccess, setWlSuccess] = useState<{ activationKey: string; emailSent: boolean } | null>(null);
+
+  const handleWaitlistPreregister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.email) return;
+    setWlError('');
+    setWlSubmitting(true);
+    try {
+      const { submitWaitlistRegistration } = await import('../api/registrations');
+      const result = await submitWaitlistRegistration({
+        firstName: wlFirstName.trim() || userProfile?.displayName || 'Member',
+        emailAddress: user.email,
+        country: wlCountry.trim(),
+        experienceLevel: wlExperience,
+        uid: user.uid,
+      });
+      setWlSuccess({ activationKey: result.activationKey, emailSent: result.emailSent });
+    } catch (err: any) {
+      setWlError(err.message || 'Waitlist registration failed.');
+    } finally {
+      setWlSubmitting(false);
+    }
+  };
+
+  const waitlistCountries = [
+    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
+    'France', 'Japan', 'Singapore', 'Switzerland', 'United Arab Emirates',
+    'South Africa', 'Nigeria', 'India', 'Brazil', 'New Zealand', 'Other',
+  ];
 
   // Sync state if userProfile changes
   useEffect(() => {
@@ -358,6 +394,71 @@ export default function MembershipTab() {
             exit={{ opacity: 0, y: -15 }}
             className="space-y-8"
           >
+            {/* Soft launch waitlist + identity pre-registration */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="p-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-zinc-950 to-black space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <h3 className="text-sm font-black font-mono text-cyan-400 uppercase tracking-widest">Soft Launch Waitlist</h3>
+                </div>
+                {wlSuccess ? (
+                  <div className="space-y-3 text-center py-4">
+                    <Check className="w-8 h-8 text-cyan-400 mx-auto" />
+                    <p className="text-xs text-zinc-300">
+                      {wlSuccess.emailSent ? 'Confirmed! Check your email for your activation key.' : 'Registered! Save your activation key:'}
+                    </p>
+                    <code className="text-lg font-black text-pink-400 font-mono block">{wlSuccess.activationKey}</code>
+                  </div>
+                ) : (
+                  <form onSubmit={handleWaitlistPreregister} className="space-y-3">
+                    <p className="text-zinc-500 text-xs">Lock in your free soft launch account ({user?.email}).</p>
+                    {wlError && <p className="text-red-400 text-xs font-mono">{wlError}</p>}
+                    <input
+                      type="text"
+                      value={wlFirstName}
+                      onChange={(e) => setWlFirstName(e.target.value)}
+                      placeholder="First name"
+                      className="w-full bg-black/60 border border-zinc-800 rounded-xl py-2.5 px-4 text-xs font-mono"
+                    />
+                    <select
+                      value={wlCountry}
+                      onChange={(e) => setWlCountry(e.target.value)}
+                      required
+                      className="w-full bg-black border border-zinc-800 rounded-xl py-2.5 px-4 text-xs font-mono"
+                    >
+                      <option value="">Select country...</option>
+                      {waitlistCountries.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <button
+                      type="submit"
+                      disabled={wlSubmitting || !wlCountry}
+                      className="w-full py-3 bg-gradient-to-r from-cyan-600 to-pink-600 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                    >
+                      {wlSubmitting ? 'Registering...' : 'Pre-Register for Soft Launch'}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              <div className="p-6 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-zinc-950 to-black space-y-4 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                    <h3 className="text-sm font-black font-mono text-indigo-400 uppercase tracking-widest">Identity Verification</h3>
+                  </div>
+                  <p className="text-zinc-500 text-xs leading-relaxed">
+                    Pre-register your verification tier now. Payment gateway goes live within 90 days — lock in your tier today.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onNavigate?.('GetVerified')}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                >
+                  Pre-Register Identity <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
             {/* Live editor drawer segment for customizing Stripe buy buttons in-place */}
             {isEditLinksOpen && (
               <motion.div 

@@ -58,9 +58,8 @@ service cloud.firestore {
     }
 
     // Public soft-launch waitlist signups (landing page "RESERVE MY ACCOUNT" form).
-    // Anonymous visitors must be able to create an entry; the collection is write-only
-    // from the client so submissions cannot be read/enumerated or tampered with.
-    // Admin access (Firebase console / Admin SDK) bypasses these rules.
+    // Prefer the server API (/api/registrations/waitlist) for duplicate checks, activation
+    // keys, and confirmation email. This rule remains as a legacy fallback.
     match /site_registrations/{registrationId} {
       allow create: if request.resource.data.firstName is string
                     && request.resource.data.firstName.size() > 0
@@ -69,6 +68,11 @@ service cloud.firestore {
                     && request.resource.data.emailAddress.matches('.+@.+\\..+')
                     && request.resource.data.emailAddress.size() <= 320;
       allow read, update, delete: if false;
+    }
+
+    // Identity verification pre-registrations (written by server Admin SDK).
+    match /identity_preregistrations/{registrationId} {
+      allow read, write: if false;
     }
 
     // Public community "swarm" waitlist seeds created from the landing page.

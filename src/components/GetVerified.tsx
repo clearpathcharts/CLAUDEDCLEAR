@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { InterfaceProfile } from '../types';
-import { Shield, CheckCircle2, Building2, User, Building, ArrowLeft } from 'lucide-react';
+import { Shield, CheckCircle2, Building2, User, Building, Mail, Copy, Check } from 'lucide-react';
 import { BackToDashboard } from './nav/BackToDashboard';
+import { useAuth } from '../contexts/FirebaseContext';
+import { submitIdentityPreregistration } from '../api/registrations';
 
 interface GetVerifiedProps {
   onBack: () => void;
@@ -9,7 +11,15 @@ interface GetVerifiedProps {
 }
 
 export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
+  const { user, userProfile } = useAuth();
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [email, setEmail] = useState(user?.email || '');
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [activationKey, setActivationKey] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const tiers = [
     {
@@ -66,11 +76,78 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
     }
   ];
 
+  const handlePreregister = async () => {
+    if (!selectedTier) return;
+    setSubmitError('');
+    setIsSubmitting(true);
+
+    try {
+      const result = await submitIdentityPreregistration({
+        emailAddress: email,
+        tierId: selectedTier,
+        displayName: displayName || undefined,
+        uid: user?.uid,
+      });
+      setActivationKey(result.activationKey);
+      setEmailSent(result.emailSent);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Pre-registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const copyKey = async () => {
+    if (!activationKey) return;
+    try {
+      await navigator.clipboard.writeText(activationKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard unavailable
+    }
+  };
+
+  if (activationKey) {
+    return (
+      <div className="w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
+        <div className="max-w-2xl mx-auto space-y-8 text-center">
+          <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto border border-indigo-500/30">
+            <CheckCircle2 className="text-indigo-400" size={40} />
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-black uppercase tracking-tight">Identity Pre-Registered</h1>
+            <p className="text-sm text-gray-400">
+              Your {tiers.find(t => t.id === selectedTier)?.name} tier is reserved.
+              {emailSent
+                ? ' A confirmation email with your reference key has been sent.'
+                : ' Save your reference key below — email delivery is not configured on this server.'}
+            </p>
+          </div>
+          <div className="bg-white/5 border border-indigo-500/30 rounded-2xl p-6 space-y-3">
+            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Pre-Registration Reference</div>
+            <div className="flex items-center justify-center gap-3">
+              <code className="text-2xl font-black text-[#00FFFF] font-mono tracking-wider">{activationKey}</code>
+              <button onClick={copyKey} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" title="Copy key">
+                {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} className="text-gray-400" />}
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={onBack}
+            className="px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm bg-indigo-600 hover:bg-indigo-500 transition-all"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
       <div className="max-w-5xl mx-auto space-y-12">
         
-        {/* Header */}
         <div className="flex items-center space-x-6 border-b border-white/10 pb-6">
           <BackToDashboard onBack={onBack} color="#fff" />
           <div>
@@ -84,7 +161,6 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
           </div>
         </div>
 
-        {/* Tiers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {tiers.map((tier) => (
             <div 
@@ -133,7 +209,6 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
                 </div>
               </div>
 
-              {/* Background gradient glow based on selection */}
               {selectedTier === tier.id && (
                 <div className={`absolute inset-0 ${tier.bgColor} opacity-5 blur-3xl`} />
               )}
@@ -141,27 +216,62 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
           ))}
         </div>
 
-        {/* Action Bottom */}
-        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-sm text-gray-400 font-mono tracking-widest uppercase">
-            {selectedTier 
-              ? `Proceeding with ${tiers.find(t => t.id === selectedTier)?.name} Verification` 
-              : 'Select a verification tier to continue'}
+        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full bg-black/60 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all font-mono"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Display Name (optional)</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Your public name"
+                className="w-full bg-black/60 border border-white/10 rounded-xl py-3 px-4 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all font-mono"
+              />
+            </div>
           </div>
-          <button 
-            disabled={!selectedTier}
-            className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all ${
-              selectedTier 
-                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]' 
-                : 'bg-white/10 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Acknowledge & Setup Payment
-          </button>
+
+          {submitError && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-4 rounded-xl font-mono text-center uppercase">
+              {submitError}
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-sm text-gray-400 font-mono tracking-widest uppercase">
+              {selectedTier 
+                ? `Proceeding with ${tiers.find(t => t.id === selectedTier)?.name} Verification` 
+                : 'Select a verification tier to continue'}
+            </div>
+            <button 
+              disabled={!selectedTier || !email.trim() || isSubmitting}
+              onClick={handlePreregister}
+              className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-sm transition-all ${
+                selectedTier && email.trim() && !isSubmitting
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]' 
+                  : 'bg-white/10 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isSubmitting ? 'Securing Pre-Registration...' : 'Acknowledge & Pre-Register'}
+            </button>
+          </div>
         </div>
         
         <p className="text-center text-[10px] text-gray-600 uppercase tracking-widest font-mono">
-          * Note: Payment gateway integration will be fully active within 90 days. Pre-register your identity now.
+          * Note: Payment gateway integration will be fully active within 90 days. Pre-register your identity now to lock in your tier.
         </p>
 
       </div>
