@@ -5,6 +5,9 @@ import { setupWebSockets } from './websockets';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
+import net from 'node:net';
+import crypto from 'node:crypto';
+import dnsPromises from 'node:dns/promises';
 import RSSParser from 'rss-parser';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
@@ -47,6 +50,72 @@ function getCleanTwelveDataApiKey(): string {
   }
   console.log(`[Gateway] API key found. Length: ${rawKey.length}, Starts: ${rawKey.slice(0, 4)}...`);
   return rawKey.trim().replace(/^["']|["']$/g, '');
+}
+
+// SSRF PROTECTION
+// The stream and RSS proxies fetch caller-supplied URLs. Without validation they
+// can be abused to reach internal-only targets (cloud metadata at 169.254.169.254,
+// loopback services, RFC1918 hosts, etc.). We only allow http(s) and reject any URL
+// whose resolved address falls inside a private/reserved range.
+function isPrivateIp(ip: string): boolean {
+  // Normalise IPv4-mapped IPv6 addresses (e.g. ::ffff:169.254.169.254)
+  const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  const addr = mapped ? mapped[1] : ip;
+
+  if (net.isIPv4(addr)) {
+    const [a, b] = addr.split('.').map(Number);
+    if (a === 10) return true;                       // 10.0.0.0/8
+    if (a === 127) return true;                      // loopback
+    if (a === 0) return true;                         // "this" network
+    if (a === 169 && b === 254) return true;         // link-local / cloud metadata
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true;         // 192.168.0.0/16
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
+    if (a >= 224) return true;                        // multicast / reserved
+    return false;
+  }
+
+  const lower = addr.toLowerCase();
+  if (lower === '::1' || lower === '::') return true; // loopback / unspecified
+  if (lower.startsWith('fe80')) return true;          // link-local
+  if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique-local fc00::/7
+  return false;
+}
+
+async function assertSafePublicUrl(rawUrl: string): Promise<URL> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error('Invalid URL');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Only http(s) URLs are permitted');
+  }
+  const hostname = parsed.hostname.replace(/^\[|\]$/g, '');
+  if (!hostname) {
+    throw new Error('Missing host');
+  }
+  // Block obvious loopback aliases before any DNS work
+  if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+    throw new Error('Blocked host');
+  }
+  // If the host is already a literal IP, validate it directly
+  if (net.isIP(hostname)) {
+    if (isPrivateIp(hostname)) throw new Error('Blocked private address');
+    return parsed;
+  }
+  // Otherwise resolve every A/AAAA record and reject if any points inside a private range
+  const resolved = await dnsPromises.lookup(hostname, { all: true });
+  if (!resolved.length) {
+    throw new Error('Host did not resolve');
+  }
+  for (const { address } of resolved) {
+    if (isPrivateIp(address)) {
+      throw new Error('Blocked private address');
+    }
+  }
+  return parsed;
 }
 
 async function startServer() {
@@ -142,10 +211,29 @@ async function startServer() {
   setupWebSockets(server);
 
   // Passport & Auth Middleware
+  const isProd = process.env.NODE_ENV === 'production';
+  // Never ship the hard-coded fallback secret in production: a publicly known
+  // signing key lets anyone forge session cookies. Prefer SESSION_SECRET; if it
+  // is missing in production fall back to a per-boot random key (and warn loudly)
+  // rather than the guessable literal.
+  let sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) {
+    if (isProd) {
+      console.warn('[Security] SESSION_SECRET is not set in production. Generating an ephemeral random secret; set SESSION_SECRET to keep sessions valid across restarts.');
+      sessionSecret = crypto.randomBytes(32).toString('hex');
+    } else {
+      sessionSecret = 'clear-path-institutional-secret';
+    }
+  }
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'clear-path-institutional-secret',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProd,
+    },
   }));
 
   app.use(passport.initialize());
@@ -1091,6 +1179,12 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'url required' });
     }
     try {
+      await assertSafePublicUrl(url);
+    } catch (guardErr: any) {
+      console.warn('[Stream Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+    try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
@@ -1154,6 +1248,13 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'URL target required' });
+    }
+
+    try {
+      await assertSafePublicUrl(url);
+    } catch (guardErr: any) {
+      console.warn('[RSS Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
 
     let timeoutId: NodeJS.Timeout | undefined;
