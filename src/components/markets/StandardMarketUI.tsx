@@ -198,7 +198,7 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
 
   return (
     <div 
-      className="flex flex-col h-full w-full overflow-hidden transition-all duration-1000"
+      className="flex flex-col min-h-full w-full transition-all duration-1000"
       style={{ background: profile.bgTop }}
     >
       {/* Top Navigation */}
@@ -251,7 +251,8 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-8" style={{ background: '#000000' }}>
+      {/* ONE SCROLLBAR RULE: no private scroller here; the page scrolls. */}
+      <div className="flex-1 p-8" style={{ background: '#000000' }}>
         <div className="max-w-7xl mx-auto w-full space-y-8">
           <div className="flex items-center justify-between border-b border-indigo-500/20 pb-6">
             <h1 className="text-3xl font-black tracking-tighter uppercase italic" style={{ color: profile.text }}>
