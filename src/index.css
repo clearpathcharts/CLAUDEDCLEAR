@@ -6,8 +6,6 @@ html, body {
   width: 100% !important;
   min-height: 100vh !important;
   min-height: 100dvh !important; /* true visible height on mobile (excludes URL bar) */
-  overflow-x: hidden;            /* no sideways wiggle on phones */
-  overflow-y: auto;              /* the page itself is always allowed to scroll */
   margin: 0 !important;
   padding: 0 !important;
   background-color: #050505 !important;
@@ -16,7 +14,26 @@ html, body {
   /* Enable smooth scrolling everywhere */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+}
+
+/* The PAGE (html/viewport) is the one and only vertical scroller.
+   overscroll-behavior-y here only disables pull-to-refresh at the very
+   top edge; it does not affect normal scrolling. */
+html {
+  overflow-x: hidden;  /* no sideways wiggle on phones */
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+/* SCROLL FIX: body must NOT be its own scroll container. When body had
+   overflow-y:auto it became a private scroller with nothing to scroll
+   (it grows with its content), and its overscroll-behavior:contain then
+   blocked every swipe/wheel from chaining up to the page scroller --
+   so Home / Charts / Y.W.C. felt completely frozen on mobile.
+   overflow:visible hands scrolling back to the page; overflow-x is
+   clipped one level up on <html>. */
+body {
+  overflow: visible;
 }
 
 /* Every scroll container works on mobile */

@@ -298,8 +298,6 @@ const TabContent = ({
   isAdmin,
   selectedLightweightSymbol,
   setSelectedLightweightSymbol,
-  isBannerCollapsed,
-  setIsBannerCollapsed,
   leftSide,
   setLeftSide,
   rightSide,
@@ -325,8 +323,6 @@ const TabContent = ({
   isAdmin: boolean,
   selectedLightweightSymbol: string,
   setSelectedLightweightSymbol: (s: string) => void,
-  isBannerCollapsed: boolean,
-  setIsBannerCollapsed: (v: boolean) => void,
   leftSide: boolean,
   setLeftSide: (v: boolean) => void,
   rightSide: boolean,
@@ -441,8 +437,6 @@ const TabContent = ({
     onBack, 
     onProfileChange, 
     isAdmin, 
-    isBannerCollapsed, 
-    setIsBannerCollapsed, 
     leftSide, 
     setLeftSide, 
     rightSide, 
@@ -538,7 +532,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     return 'TheRiver';
   });
-  const [isBannerCollapsed, setIsBannerCollapsed] = useState(() => localStorage.getItem('cp_banner_collapsed') === 'true');
   const [showTicker, setShowTicker] = useState(() => localStorage.getItem('cp_show_ticker') !== 'false');
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');
   const [showTerminalMatrixNoise, setShowTerminalMatrixNoise] = useState(() => localStorage.getItem('cp_terminal_ambient_overlay') === 'true');
@@ -1127,7 +1120,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         animate={{ width: leftSide ? 280 : 84 }}
         className={`
           fixed inset-y-0 left-0 z-50 border-r flex flex-col transition-all duration-300 glass overflow-hidden
-          lg:relative lg:translate-x-0
+          lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0
           ${leftSide ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{ borderColor: `${profile.borderA}22` }}
@@ -1393,12 +1386,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </>
         )}
 
-        {/* Scrollable Container -- MOBILE FIX: on phones this box no longer has
-            its own private scrollbar. Content flows into the page, so the page
-            (the gray bar) is the ONE and only scrollbar. Desktop (lg and up)
-            keeps the original inner scrolling exactly as before. */}
+        {/* Content Container -- ONE SCROLLBAR RULE: this box never has its own
+            private scrollbar on any screen size. Content flows into the page,
+            so the page is the one and only scrollbar, top to footer. */}
         <div 
-          className={`flex-1 overflow-visible lg:overflow-y-auto custom-scrollbar ${
+          className={`flex-1 overflow-visible ${
             activeTab === 'Insights' 
               ? 'p-0 pb-32 md:pb-5' 
               : layoutDensity === 'compact'
@@ -1409,80 +1401,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           }`} 
           style={{ background: profile.bgTop }}
         >
-          {/* Profile Section */}
-          {activeTab !== 'Insights' && activeTab !== 'StrictlyCharts' && activeTab !== 'ThemeTerminal' && activeTab !== 'Encyclopedia' && activeTab !== 'EncyclopediaOfIndicators' && (
-            isBannerCollapsed ? (
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsBannerCollapsed(false);
-                  localStorage.setItem('cp_banner_collapsed', 'false');
-                }}
-                id="expand-dashboard-banner"
-                className="p-3 bg-zinc-950/90 hover:bg-zinc-900 border border-cyan-500/30 rounded-xl flex items-center justify-between mb-5 cursor-pointer select-none transition-all group font-mono text-[10px] tracking-wider text-zinc-300"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse" />
-                  <span className="uppercase font-extrabold text-${profile.borderA}-400" style={{ color: profile.borderA }}>Workspace Banner:</span>
-                  <span className="opacity-60 text-zinc-400">compact view enabled • charts maximum space</span>
-                </div>
-                <button 
-                  type="button"
-                  className="text-cyan-400 hover:text-white font-mono text-[10px] font-black flex items-center gap-1 uppercase bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 px-3 py-1 rounded transition-all"
-                >
-                  <span>Expand Workspace Banner</span>
-                  <span>▲</span>
-                </button>
-              </div>
-            ) : (
-              <div className="relative h-[40vh] min-h-[250px] max-h-[350px] rounded-lg overflow-hidden mb-5 group cursor-pointer" onClick={() => handleTabChange('Biography')}>
-                {user.cover ? (
-                  <img 
-                    src={user.cover} 
-                    referrerPolicy="no-referrer"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    alt="Cover"
-                  />
-                ) : (
-                  <img 
-                    src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80" 
-                    referrerPolicy="no-referrer"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    alt="Default Cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
-                
-                <div 
-                  className="absolute bottom-6 left-12 flex items-end z-10"
-                >
-                  <div className="ml-0 mb-6 font-sans">
-                    <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic flex items-center gap-4 name-text text-white">
-                      {user.name} <CheckCircle2 size={40} className="fill-indigo-500/20 text-indigo-500 drop-shadow-[0_0_10px_#6366f1]" />
-                    </h2>
-                    <p className="text-sm font-mono uppercase tracking-[0.5em] font-black" style={{ color: profile.borderA }}>
-                      @{user.name.toLowerCase().replace(/\s+/g, '_')}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsBannerCollapsed(true);
-                    localStorage.setItem('cp_banner_collapsed', 'true');
-                  }}
-                  id="collapse-dashboard-banner"
-                  className="absolute top-4 right-4 z-20 bg-black/85 hover:bg-black border border-white/20 text-white font-mono text-[9px] tracking-widest font-black px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,0,0,0.6)] transition-all uppercase"
-                >
-                  <span>Collapse Banner</span>
-                  <span>▼</span>
-                </button>
-              </div>
-            )
-          )}
-
+          {/* Hero/cover banner removed per ZERO HERO IMAGES rule --
+              content starts immediately and flows top-to-bottom. */}
           {activeTab !== 'Insights' && activeTab !== 'StrictlyCharts' && activeTab !== 'ThemeTerminal' && activeTab !== 'Encyclopedia' && activeTab !== 'EncyclopediaOfIndicators' && (
             <SystemIntelligencePanel />
           )}
@@ -1509,8 +1429,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         isAdmin={isAdmin()}
                         selectedLightweightSymbol={selectedLightweightSymbol}
                         setSelectedLightweightSymbol={setSelectedLightweightSymbol}
-                        isBannerCollapsed={isBannerCollapsed}
-                        setIsBannerCollapsed={setIsBannerCollapsed}
                         leftSide={leftSide}
                         setLeftSide={setLeftSide}
                         rightSide={rightSide}
@@ -1543,7 +1461,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       {activeTab !== 'StrictlyCharts' && (
       <div className={`
         fixed inset-y-0 right-0 z-50 w-[280px] border-l flex flex-col transition-all duration-300 glass
-        xl:relative xl:translate-x-0
+        xl:sticky xl:top-0 xl:h-dvh xl:translate-x-0
         ${rightSide ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
       `}
       style={{ borderColor: `${profile.borderA}22` }}
