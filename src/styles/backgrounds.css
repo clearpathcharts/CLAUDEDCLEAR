@@ -17,7 +17,6 @@ body {
               radial-gradient(ellipse at bottom right, #02040A 0%, transparent 55%),
               radial-gradient(ellipse at center, #000000 0%, transparent 70%),
               #030307 !important;
-  background-attachment: fixed !important;
   color: white;
   overflow-x: hidden;
 }
