@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { getDb } from "../firebase";
 import { collection, onSnapshot } from "../firebase";
 import { Compass, Users, Target, Activity, Shield, Cpu, RefreshCw, Layers } from "lucide-react";
-import GlobeConstructor from "globe.gl";
 
-const Globe = (GlobeConstructor as any).default || GlobeConstructor;
+// MOBILE FIX: globe.gl (which carries the huge three.js 3D engine inside it)
+// is NO LONGER imported at the top of the file. It used to load and run on
+// every page of the app -- even on phones -- and it choked mobile processors
+// so badly that pages froze and could not scroll. It is now loaded on demand,
+// desktop only, further down inside the component.
 
 interface CountryConfig {
   docId: string;
@@ -103,10 +106,19 @@ export default function GlobalNetworkGlobe() {
   const [countryConfigs, setCountryConfigs] = useState<CountryConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState<CountryConfig | null>(null);
+  // Flips to true the moment the on-demand 3D engine finishes loading (desktop only)
+  const [globeReady, setGlobeReady] = useState(false);
   
   // WebGL support safety flag to prevent browser crash and silent black screen in restrictive sandboxes
   const [webGlSupported, setWebGlSupported] = useState<boolean>(() => {
     try {
+      // MOBILE FIX: phones and tablets (under 1024px wide) get the lightweight
+      // 2D radar schematic instead of the heavy 3D globe. The 3D engine was
+      // choking mobile processors so hard the whole page froze. Desktop
+      // (1024px and wider) keeps the full interactive 3D globe, unchanged.
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        return false;
+      }
       const canvas = document.createElement("canvas");
       const supported = !!(
         window.WebGLRenderingContext &&
@@ -157,53 +169,72 @@ export default function GlobalNetworkGlobe() {
     if (!webGlSupported || !containerRef.current) return;
 
     let MyGlobe: any;
-    try {
-      // Standard high-end vanilla Globe on div ref
-      MyGlobe = Globe()(containerRef.current)
-        .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
-        .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
-        .backgroundColor("rgba(0,0,0,0)")
-        .showAtmosphere(true)
-        .atmosphereColor("#B026FF")
-        .atmosphereAltitude(0.24)
-        .showGraticules(false);
-    } catch (err) {
-      console.warn("[GlobalNetworkGlobe] WebGL Globe constructor aborted due to sandboxed constraints. Engaging 2D schematic fallback.", err);
-      setWebGlSupported(false);
-      return;
-    }
+    let resizeObserver: ResizeObserver | null = null;
+    let cancelled = false;
 
-    // Initial resize if successful
-    const w = containerRef.current.clientWidth || 800;
-    const h = containerRef.current.clientHeight || 750;
-    MyGlobe.width(w).height(h);
+    // MOBILE FIX: the 3D engine is downloaded on demand, desktop only.
+    // Phones never fetch or run this heavy code at all.
+    import("globe.gl")
+      .then((globeModule) => {
+        if (cancelled || !containerRef.current) return;
 
-    // Precise ResizeObserver to always dynamically snap canvas container size perfectly
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const { width, height } = entry.contentRect;
-        if (MyGlobe && width > 0 && height > 0) {
-          MyGlobe.width(width);
-          MyGlobe.height(height);
+        const GlobeConstructor: any = (globeModule as any).default || globeModule;
+        const Globe = (GlobeConstructor as any).default || GlobeConstructor;
+
+        try {
+          // Standard high-end vanilla Globe on div ref
+          MyGlobe = Globe()(containerRef.current)
+            .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
+            .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
+            .backgroundColor("rgba(0,0,0,0)")
+            .showAtmosphere(true)
+            .atmosphereColor("#B026FF")
+            .atmosphereAltitude(0.24)
+            .showGraticules(false);
+        } catch (err) {
+          console.warn("[GlobalNetworkGlobe] WebGL Globe constructor aborted due to sandboxed constraints. Engaging 2D schematic fallback.", err);
+          setWebGlSupported(false);
+          return;
         }
-      }
-    });
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
 
-    // Gentle continuous spin
-    const controls = MyGlobe.controls();
-    if (controls) {
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.85;
-      controls.enableZoom = false; // preserve layout focus boundary
-    }
+        // Initial resize if successful
+        const w = containerRef.current.clientWidth || 800;
+        const h = containerRef.current.clientHeight || 750;
+        MyGlobe.width(w).height(h);
 
-    globeInstanceRef.current = MyGlobe;
+        // Precise ResizeObserver to always dynamically snap canvas container size perfectly
+        resizeObserver = new ResizeObserver((entries) => {
+          for (let entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (MyGlobe && width > 0 && height > 0) {
+              MyGlobe.width(width);
+              MyGlobe.height(height);
+            }
+          }
+        });
+        if (containerRef.current) {
+          resizeObserver.observe(containerRef.current);
+        }
+
+        // Gentle continuous spin
+        const controls = MyGlobe.controls();
+        if (controls) {
+          controls.autoRotate = true;
+          controls.autoRotateSpeed = 0.85;
+          controls.enableZoom = false; // preserve layout focus boundary
+        }
+
+        globeInstanceRef.current = MyGlobe;
+        setGlobeReady(true);
+      })
+      .catch((err) => {
+        console.warn("[GlobalNetworkGlobe] 3D engine failed to load. Engaging 2D schematic fallback.", err);
+        if (!cancelled) setWebGlSupported(false);
+      });
 
     return () => {
-      resizeObserver.disconnect();
+      cancelled = true;
+      if (resizeObserver) resizeObserver.disconnect();
       try {
         if (globeInstanceRef.current) {
           // Forcefully dispose the WebGL context and remove DOM elements to prevent memory leaks during HMR updates
@@ -362,7 +393,7 @@ export default function GlobalNetworkGlobe() {
     // Combine activeCountries and majorCities into HTML elements if possible,
     // or just leave cities out for a moment to prevent crashes.
 
-  }, [countryConfigs, selectedCountry]);
+  }, [countryConfigs, selectedCountry, globeReady]);
 
   // Equirectangular coordinate mapper for 2D fallback layout
   const projectCoordinates = (lat: number, lng: number, w: number, h: number) => {
