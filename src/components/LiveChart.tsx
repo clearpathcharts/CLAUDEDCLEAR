@@ -63,6 +63,10 @@ export default function LiveChart({
       crosshair: {
         mode: 0,
       },
+      // MOBILE FIX: one finger swiping up/down now scrolls the PAGE.
+      // The chart keeps left/right dragging for panning through candles.
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
