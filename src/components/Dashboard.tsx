@@ -1393,9 +1393,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </>
         )}
 
-        {/* Scrollable Container */}
+        {/* Scrollable Container -- MOBILE FIX: on phones this box no longer has
+            its own private scrollbar. Content flows into the page, so the page
+            (the gray bar) is the ONE and only scrollbar. Desktop (lg and up)
+            keeps the original inner scrolling exactly as before. */}
         <div 
-          className={`flex-1 overflow-y-auto custom-scrollbar ${
+          className={`flex-1 overflow-visible lg:overflow-y-auto custom-scrollbar ${
             activeTab === 'Insights' 
               ? 'p-0 pb-32 md:pb-5' 
               : layoutDensity === 'compact'
