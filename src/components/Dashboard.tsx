@@ -366,7 +366,7 @@ const TabContent = ({
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
       case 'Yours': return <YoursPage />;
-      case 'Membership': return <MembershipTab />;
+      case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
       case 'Workspace': return (
         <Suspense fallback={<TabLoading />}>
           <GoogleDesk />

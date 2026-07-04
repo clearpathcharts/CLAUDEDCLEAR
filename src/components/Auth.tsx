@@ -171,6 +171,8 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [activationKey, setActivationKey] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   // Floating live alerts for cinematic immersive feel
   const [announcements, setAnnouncements] = useState<string[]>([
@@ -450,7 +452,7 @@ export default function Auth() {
     }
   };
 
-  // Waitlist form register submit to Firestore for persistent analytics
+  // Waitlist form register submit via server API (duplicate check + activation key + email)
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
@@ -467,17 +469,16 @@ export default function Auth() {
     }
 
     try {
-      // Direct integration into server's FireStore DB using standard rules
-      await addDoc(collection(getDb(), "site_registrations"), {
+      const { submitWaitlistRegistration } = await import('../api/registrations');
+      const result = await submitWaitlistRegistration({
         firstName: fName,
         emailAddress: lEmail,
         country: lCountry,
         experienceLevel: experience,
-        status: "pending",
-        registrationSource: "ClearPath Soft Launch Waitlist Portal",
-        createdAt: new Date().toISOString()
       });
 
+      setActivationKey(result.activationKey);
+      setEmailSent(result.emailSent);
       setIsSubmitted(true);
       setFirstName('');
       setEmail('');
@@ -1636,14 +1637,22 @@ Not the other way around.`}
               </div>
               <div className="space-y-2">
                 <h3 className="text-2xl font-black text-[#00FFFF] uppercase tracking-wide">
-                  ✓ ACCUNT ALLOCATION SECURED
+                  ✓ ACCOUNT ALLOCATION SECURED
                 </h3>
                 <p className="text-xs text-zinc-300 leading-relaxed max-w-md mx-auto">
-                  Thank you! Your allocation credentials have been saved to our secure database. A customized private activation email will be sent straight to you once construction completes and systems open.
+                  {emailSent
+                    ? 'Your allocation credentials have been saved and a confirmation email with your private activation key has been sent.'
+                    : 'Your allocation credentials have been saved. Copy your private activation key below — email delivery is not configured on this server.'}
                 </p>
               </div>
+              {activationKey && (
+                <div className="bg-black/60 border border-[#00FFFF]/30 rounded-2xl p-5 max-w-sm mx-auto space-y-2">
+                  <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Private Activation Key</div>
+                  <code className="text-xl font-black text-[#FF1493] font-mono tracking-wider block">{activationKey}</code>
+                </div>
+              )}
               <button 
-                onClick={() => setIsSubmitted(false)}
+                onClick={() => { setIsSubmitted(false); setActivationKey(''); }}
                 className="px-6 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-mono tracking-wider transition-all cursor-pointer uppercase font-bold"
               >
                 Register another email

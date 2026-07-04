@@ -34,6 +34,7 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
+import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 
 const parser = new RSSParser();
 
@@ -207,6 +208,14 @@ async function startServer() {
   app.set('trust proxy', 1);
   app.use('/api/', limiter);
 
+  const registrationLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
+  });
+
   // Initialize WebSockets
   setupWebSockets(server);
 
@@ -283,6 +292,26 @@ async function startServer() {
       uptime: process.uptime(),
       timestamp: Date.now()
     });
+  });
+
+  app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
+    try {
+      const result = await registerWaitlist(req.body || {});
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof RegistrationError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Waitlist registration failed.' });
+    }
+  });
+
+  app.post('/api/registrations/identity', registrationLimiter, async (req, res) => {
+    try {
+      const result = await registerIdentity(req.body || {});
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof RegistrationError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Identity pre-registration failed.' });
+    }
   });
 
   // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
