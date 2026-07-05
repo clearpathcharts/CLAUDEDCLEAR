@@ -66,4 +66,4 @@ Review **Suspicious Processes** and **Autoruns** in the HTML report. Escalate un
 
 - Expect **long runtime** (30–90+ minutes with SFC, full Defender scan, and large updates).
 - **Reboot** may be scheduled automatically if Windows Update requires it (`-SkipReboot` to disable).
-- First-time Disk Cleanup: run `cleanmgr /sageset:1` once manually to choose all cleanup categories, then `/sagerun:1` in the script will use that profile.
+- For a simpler one-paste fix, use `Fix-My-PC.ps1` instead.

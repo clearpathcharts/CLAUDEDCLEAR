@@ -577,10 +577,9 @@ function Invoke-DeepClean {
         $details.Add('DISM component cleanup finished with warnings.')
     }
 
-    # Disk Cleanup (sagerun preset 1 — extend via cleanmgr /sageset:1 manually once)
-    if (Test-Path "$env:SystemRoot\System32\cleanmgr.exe") {
-        Invoke-External -FilePath 'cleanmgr.exe' -ArgumentList @('/sagerun:1') -Label 'cleanmgr /sagerun:1' | Out-Null
-        $details.Add('Disk Cleanup (sagerun:1) executed.')
+    # Drive error check (helps with crash/freezing issues)
+    if (Invoke-External -FilePath 'chkdsk.exe' -ArgumentList @('C:', '/scan') -Label 'chkdsk C: /scan') {
+        $details.Add('Drive scan (chkdsk) completed.')
     }
 
     # Recycle Bin
