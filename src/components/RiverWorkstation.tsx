@@ -331,19 +331,21 @@ function PastePanel({ onSubmit, onLoadExample }: { onSubmit: (source: string) =>
   const [text, setText] = useState('');
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-white/40 text-xs uppercase tracking-wider">Or paste your Pine Script directly</p>
-        <button onClick={onLoadExample} className="flex items-center gap-1.5 text-[10px] text-[#FFD700]/70 hover:text-[#FFD700] uppercase tracking-wider transition-colors" id="river_load_example_btn">
-          <Zap size={11} /> Try the Gold Bar example
-        </button>
-      </div>
+      <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Or paste your Pine Script directly</p>
       <textarea value={text} onChange={e => setText(e.target.value)}
         placeholder={`//@version=5\nindicator("My Indicator", overlay=true)\n// paste your code here...`}
         className="w-full h-36 bg-black/40 border border-white/10 rounded-lg p-3 text-white/70 text-xs font-mono resize-none focus:outline-none focus:border-[#00D9FF]/30 placeholder:text-white/20" />
-      <button onClick={() => onSubmit(text)} disabled={!text.trim()}
-        className="mt-3 px-5 py-2 bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] rounded-lg text-sm hover:bg-[#00D9FF]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-        Compile Code
-      </button>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button onClick={() => onSubmit(text)} disabled={!text.trim()}
+          className="px-5 py-2 bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] rounded-lg text-sm hover:bg-[#00D9FF]/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+          Compile Code
+        </button>
+        <button onClick={onLoadExample}
+          className="px-5 py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] rounded-lg text-sm hover:bg-[#FFD700]/20 transition-all flex items-center gap-1.5"
+          id="river_load_example_btn">
+          <Zap size={13} /> Try the Gold Bar example
+        </button>
+      </div>
     </div>
   );
 }
