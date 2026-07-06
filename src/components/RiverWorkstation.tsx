@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, CheckCircle, XCircle, AlertTriangle, Zap, BarChart2, FileCode, Waves } from 'lucide-react';
 import { compilePineScript, goldBarParamsFromCompile, PineCompileResult } from '../river/pine';
 import { GOLD_BAR_DEFAULTS, GoldBarParams } from '../river/goldBarIndicator';
+import { activateRirProgram, executeRir, RirExecutionResult, clearActiveRirProgram } from '../river/runtime';
+import { generateSampleCandles } from '../river/runtime/fixtures/sampleCandles';
 
 type WorkflowStep = 'upload' | 'recognizing' | 'recognized' | 'failed' | 'applied';
 
@@ -11,6 +13,7 @@ interface RiverState {
   rawSource: string;
   fileName: string;
   compileResult: PineCompileResult | null;
+  runtimePreview: RirExecutionResult | null;
   errorMessage: string;
   goldBarParams: GoldBarParams;
 }
@@ -20,6 +23,7 @@ const INITIAL_STATE: RiverState = {
   rawSource: '',
   fileName: '',
   compileResult: null,
+  runtimePreview: null,
   errorMessage: '',
   goldBarParams: { ...GOLD_BAR_DEFAULTS },
 };
@@ -54,13 +58,26 @@ export default function RiverWorkstation() {
         (compileResult.summary?.hasGoldBarPattern ?? false) &&
         compileResult.rir !== null &&
         compileResult.rirBytecodeId !== null;
+
+      const params = matched && compileResult.summary
+        ? goldBarParamsFromCompile(compileResult.summary)
+        : GOLD_BAR_DEFAULTS;
+
+      let runtimePreview: RirExecutionResult | null = null;
+      if (matched && compileResult.rir) {
+        runtimePreview = executeRir(compileResult.rir, generateSampleCandles(100), {
+          a: params.sensitivity,
+          c: params.atrPeriod,
+          h: params.useHeikinAshi,
+        }).execution;
+      }
+
       setState(s => ({
         ...s,
         step: matched ? 'recognized' : 'failed',
         compileResult,
-        goldBarParams: matched && compileResult.summary
-          ? goldBarParamsFromCompile(compileResult.summary)
-          : s.goldBarParams,
+        runtimePreview,
+        goldBarParams: matched ? params : s.goldBarParams,
         errorMessage: matched ? '' : UNRECOGNIZED_MESSAGE,
       }));
     } catch (err: any) {
@@ -94,10 +111,19 @@ export default function RiverWorkstation() {
   }, [processFile]);
 
   const applyToCharts = useCallback(() => {
+    if (!state.compileResult?.rir) return;
+    activateRirProgram(state.compileResult.rir, {
+      a: state.goldBarParams.sensitivity,
+      c: state.goldBarParams.atrPeriod,
+      h: state.goldBarParams.useHeikinAshi,
+    });
     setState(s => ({ ...s, step: 'applied' }));
-  }, []);
+  }, [state.compileResult, state.goldBarParams]);
 
-  const reset = useCallback(() => setState(INITIAL_STATE), []);
+  const reset = useCallback(() => {
+    clearActiveRirProgram();
+    setState(INITIAL_STATE);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-mono p-4 md:p-8">
@@ -105,7 +131,7 @@ export default function RiverWorkstation() {
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
           <h1 className="text-2xl font-black tracking-tight uppercase text-white">The River</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 3 — RIR</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 4 — Runtime</span>
         </div>
         <p className="text-sm text-white/40 max-w-xl">
           Bring your Pine Script indicator from TradingView. The River reads it, tells you what it found honestly, and wires real math into your ClearPath charts.
@@ -136,7 +162,7 @@ export default function RiverWorkstation() {
             {state.step === 'recognizing' && (
               <div className="flex items-center gap-3 text-[#00D9FF] text-sm">
                 <div className="w-4 h-4 border-2 border-[#00D9FF] border-t-transparent rounded-full animate-spin" />
-                Layer 1–3: compiling your Pine Script to RIR bytecode...
+                Layer 1–4: compiling Pine Script to live RIR bytecode...
               </div>
             )}
           </motion.div>
@@ -155,7 +181,7 @@ export default function RiverWorkstation() {
               <span className="ml-auto text-xs text-white/30">{state.fileName}</span>
             </div>
 
-            <CompilerStatusPanel compileResult={state.compileResult} />
+            <CompilerStatusPanel compileResult={state.compileResult} runtimePreview={state.runtimePreview} />
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -245,7 +271,9 @@ export default function RiverWorkstation() {
           <motion.div key="applied" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
             <div className="text-6xl mb-6">🥇</div>
             <h2 className="text-2xl font-black text-[#FFD700] mb-3 uppercase tracking-wider">Gold Bar Active</h2>
-            <p className="text-white/40 text-sm mb-8 max-w-md mx-auto">Running on every chart. Signal candles turn gold automatically.</p>
+            <p className="text-white/40 text-sm mb-8 max-w-md mx-auto">
+              {state.compileResult?.rirBytecodeId} is active. Signal candles turn gold on every chart when you load market data.
+            </p>
             <button onClick={reset} className="px-8 py-3 bg-white/5 border border-white/10 text-white/50 rounded-xl hover:bg-white/10 transition-all">
               Import Another Indicator
             </button>
@@ -255,7 +283,7 @@ export default function RiverWorkstation() {
         {state.step === 'failed' && (
           <motion.div key="failed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
             {state.compileResult && state.compileResult.errors.length === 0 && state.compileResult.summary && (
-              <CompilerStatusPanel compileResult={state.compileResult} />
+              <CompilerStatusPanel compileResult={state.compileResult} runtimePreview={state.runtimePreview} />
             )}
             <div className="flex items-start gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
               {state.compileResult?.summary ? <AlertTriangle size={20} className="text-yellow-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
@@ -277,11 +305,17 @@ export default function RiverWorkstation() {
   );
 }
 
-function CompilerStatusPanel({ compileResult }: { compileResult: PineCompileResult }) {
+function CompilerStatusPanel({
+  compileResult,
+  runtimePreview,
+}: {
+  compileResult: PineCompileResult;
+  runtimePreview?: RirExecutionResult | null;
+}) {
   const summary = compileResult.summary;
   const rir = compileResult.rir;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
       <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-3">
           <FileCode size={16} className="text-[#00D9FF]" />
@@ -342,6 +376,31 @@ function CompilerStatusPanel({ compileResult }: { compileResult: PineCompileResu
             <p className="text-white/30 uppercase tracking-wider mb-1">Bytecode</p>
             <p className={`font-bold truncate ${rir ? 'text-green-400' : 'text-red-400'}`}>
               {compileResult.rirBytecodeId ?? 'FAIL'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={16} className="text-emerald-400" />
+          <span className="text-xs text-emerald-400/70 uppercase tracking-wider">Layer 4 — Runtime</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Gold hits</p>
+            <p className="text-white font-bold">{runtimePreview?.goldBarHits ?? '—'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Buy / Sell</p>
+            <p className="text-white font-bold">
+              {runtimePreview ? `${runtimePreview.buySignals} / ${runtimePreview.sellSignals}` : '—'}
+            </p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5 col-span-2">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Status</p>
+            <p className={`font-bold ${runtimePreview?.isLive ? 'text-green-400' : 'text-red-400'}`}>
+              {runtimePreview?.isLive ? 'PASS' : '—'}
             </p>
           </div>
         </div>

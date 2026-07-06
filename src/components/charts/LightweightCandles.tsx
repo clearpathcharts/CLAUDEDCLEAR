@@ -12,6 +12,7 @@ import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapte
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
+import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
 import { Crosshair } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -258,7 +259,15 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        series.setData(tierOptimizedData as CandlestickData<Time>[]);
+        let chartCandles = tierOptimizedData as CandlestickData<Time>[];
+        if (getActiveRirProgram()) {
+          const rirExec = executeActiveRirOnCandles(tierOptimizedData);
+          if (rirExec) {
+            chartCandles = applyRirColorsToCandles(tierOptimizedData, rirExec) as CandlestickData<Time>[];
+          }
+        }
+
+        series.setData(chartCandles);
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
         const COLOR_MAP: Record<string, string> = {

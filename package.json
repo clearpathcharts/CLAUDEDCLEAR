@@ -13,7 +13,8 @@
     "river:lex-test": "tsx src/river/pine/lexer.selftest.ts",
     "river:parse-test": "tsx src/river/pine/parser.selftest.ts",
     "river:rir-test": "tsx src/river/rir/rir.selftest.ts",
-    "river:compile-test": "npm run river:lex-test && npm run river:parse-test && npm run river:rir-test"
+    "river:runtime-test": "tsx src/river/runtime/runtime.selftest.ts",
+    "river:compile-test": "npm run river:lex-test && npm run river:parse-test && npm run river:rir-test && npm run river:runtime-test"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
