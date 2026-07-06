@@ -1,4 +1,5 @@
 import { MarketEngine } from "./MarketEngine";
+import { resolveTwelveDataInterval } from "../services/marketData";
 
 export type Candle = {
   time: number;
@@ -27,7 +28,8 @@ export const ChartFeedAdapter = {
    * Convert MarketEngine → Lightweight Charts format
    */
   async getCandles(symbol: string, interval = "5min") {
-    const raw = await MarketEngine.getCandles(symbol);
+    const resolvedInterval = resolveTwelveDataInterval(interval);
+    const raw = await MarketEngine.getCandles(symbol, resolvedInterval);
 
     // If backend already normalized
     if (Array.isArray(raw?.candles)) {

@@ -17,14 +17,14 @@ export const MarketEngine = {
     return data;
   },
 
-  async getCandles(symbol: string) {
+  async getCandles(symbol: string, interval = "5min") {
     const resolved = SymbolResolver.resolve(symbol);
 
-    const cacheKey = `candles:${resolved.providerSymbol}`;
+    const cacheKey = `candles:${resolved.providerSymbol}:${interval}`;
     const cached = CacheLayer.get(cacheKey);
     if (cached) return cached;
 
-    const data = await DataRouter.fetchCandles(resolved);
+    const data = await DataRouter.fetchCandles(resolved, interval);
 
     CacheLayer.set(cacheKey, data, 5000);
 
