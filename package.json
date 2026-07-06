@@ -9,7 +9,8 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "river:lex-test": "tsx src/river/pine/lexer.selftest.ts"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",

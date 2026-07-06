@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, CheckCircle, XCircle, AlertTriangle, Zap, BarChart2, FileCode, Waves } from 'lucide-react';
 import { recognizePineScript, RecognitionResult } from '../river/pineRecognizer';
-import { calculateGoldBar, GOLD_BAR_DEFAULTS, GoldBarParams } from '../river/goldBarIndicator';
+import { lexPineScript, PineLexResult } from '../river/pine';
+import { GOLD_BAR_DEFAULTS, GoldBarParams } from '../river/goldBarIndicator';
 
 type WorkflowStep = 'upload' | 'recognizing' | 'recognized' | 'failed' | 'applied';
 
@@ -10,6 +11,7 @@ interface RiverState {
   step: WorkflowStep;
   rawSource: string;
   fileName: string;
+  lexResult: PineLexResult | null;
   recognition: RecognitionResult | null;
   errorMessage: string;
   goldBarParams: GoldBarParams;
@@ -19,10 +21,21 @@ const INITIAL_STATE: RiverState = {
   step: 'upload',
   rawSource: '',
   fileName: '',
+  lexResult: null,
   recognition: null,
   errorMessage: '',
   goldBarParams: { ...GOLD_BAR_DEFAULTS },
 };
+
+function goldBarParamsFromInputs(inputs: RecognitionResult['inputs']): GoldBarParams {
+  const params = { ...GOLD_BAR_DEFAULTS };
+  for (const input of inputs) {
+    if (input.name === 'a' && input.type === 'number') params.sensitivity = input.value as number;
+    if (input.name === 'c' && input.type === 'number') params.atrPeriod = input.value as number;
+    if (input.name === 'h' && input.type === 'bool') params.useHeikinAshi = input.value as boolean;
+  }
+  return params;
+}
 
 const PLATFORM_LABELS: Record<string, string> = {
   atr_trailing_stop: 'ATR Trailing Stop / Gold Bar Pattern',
@@ -39,11 +52,28 @@ export default function RiverWorkstation() {
   const processSource = useCallback((source: string, fileName: string) => {
     setState(s => ({ ...s, step: 'recognizing', rawSource: source, fileName }));
     try {
+      const lexResult = lexPineScript(source);
+      if (lexResult.errors.length > 0) {
+        const detail = lexResult.errors.map(e => `line ${e.line}: ${e.message}`).join('\n');
+        setState(s => ({
+          ...s,
+          step: 'failed',
+          lexResult,
+          recognition: null,
+          errorMessage: `Lexer found problems in your Pine Script:\n${detail}`,
+        }));
+        return;
+      }
+
       const recognition = recognizePineScript(source);
       setState(s => ({
         ...s,
         step: recognition.patternMatched ? 'recognized' : 'failed',
+        lexResult,
         recognition,
+        goldBarParams: recognition.patternMatched
+          ? goldBarParamsFromInputs(recognition.inputs)
+          : s.goldBarParams,
         errorMessage: recognition.patternMatched ? '' : UNRECOGNIZED_MESSAGE,
       }));
     } catch (err: any) {
@@ -88,7 +118,7 @@ export default function RiverWorkstation() {
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
           <h1 className="text-2xl font-black tracking-tight uppercase text-white">The River</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">v1 — Pine Script</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 1 — Lexer</span>
         </div>
         <p className="text-sm text-white/40 max-w-xl">
           Bring your Pine Script indicator from TradingView. The River reads it, tells you what it found honestly, and wires real math into your ClearPath charts.
@@ -119,7 +149,7 @@ export default function RiverWorkstation() {
             {state.step === 'recognizing' && (
               <div className="flex items-center gap-3 text-[#00D9FF] text-sm">
                 <div className="w-4 h-4 border-2 border-[#00D9FF] border-t-transparent rounded-full animate-spin" />
-                Reading your script...
+                Layer 1: tokenizing your Pine Script...
               </div>
             )}
           </motion.div>
@@ -135,6 +165,10 @@ export default function RiverWorkstation() {
               </div>
               <span className="ml-auto text-xs text-white/30">{state.fileName}</span>
             </div>
+
+            {state.lexResult && (
+              <LexerStatusPanel lexResult={state.lexResult} />
+            )}
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -225,6 +259,9 @@ export default function RiverWorkstation() {
 
         {state.step === 'failed' && (
           <motion.div key="failed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+            {state.lexResult && state.lexResult.errors.length === 0 && (
+              <LexerStatusPanel lexResult={state.lexResult} />
+            )}
             <div className="flex items-start gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
               {state.recognition ? <AlertTriangle size={20} className="text-yellow-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
               <div>
@@ -241,6 +278,35 @@ export default function RiverWorkstation() {
         )}
 
       </AnimatePresence>
+    </div>
+  );
+}
+
+function LexerStatusPanel({ lexResult }: { lexResult: PineLexResult }) {
+  return (
+    <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <FileCode size={16} className="text-[#00D9FF]" />
+        <span className="text-xs text-[#00D9FF]/70 uppercase tracking-wider">Layer 1 — Lexer</span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+          <p className="text-white/30 uppercase tracking-wider mb-1">Pine Version</p>
+          <p className="text-white font-bold">{lexResult.version ?? 'unknown'}</p>
+        </div>
+        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+          <p className="text-white/30 uppercase tracking-wider mb-1">Tokens</p>
+          <p className="text-white font-bold">{lexResult.significantTokenCount}</p>
+        </div>
+        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+          <p className="text-white/30 uppercase tracking-wider mb-1">Lexer Status</p>
+          <p className="text-green-400 font-bold">{lexResult.errors.length === 0 ? 'PASS' : 'FAIL'}</p>
+        </div>
+        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+          <p className="text-white/30 uppercase tracking-wider mb-1">Next Layer</p>
+          <p className="text-white/50 font-bold">Parser (coming)</p>
+        </div>
+      </div>
     </div>
   );
 }
