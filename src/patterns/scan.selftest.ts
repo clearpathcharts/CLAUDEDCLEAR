@@ -5,6 +5,7 @@
 import { generateSampleCandles } from '../river/runtime/fixtures/sampleCandles';
 import { scanAllPatterns } from './scan';
 import { scanCandlestickPatterns } from './candlesticks';
+import { buildPatternLineOverlays } from './overlay';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -34,6 +35,10 @@ const sample = generateSampleCandles(120);
 const scan = scanAllPatterns(sample);
 assert(scan.scannedBars === 120, 'expected 120 bars scanned');
 assert(scan.swingHighs > 0 && scan.swingLows > 0, 'expected swing points');
+
+const lines = buildPatternLineOverlays(sample, scan.patterns);
+assert(Array.isArray(lines), 'expected line overlays array');
+console.log(`  line overlays: ${lines.length}`);
 
 console.log('PASS: Pattern engine');
 console.log(`  swings: ${scan.swingHighs} highs, ${scan.swingLows} lows`);

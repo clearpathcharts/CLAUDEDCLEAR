@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import {
   themeProfiles,
@@ -13,7 +13,7 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan } from "../../patterns";
+import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers } from "../../patterns";
 import { Crosshair } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -260,7 +260,8 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        setActivePatternScan(scanAllPatterns(tierOptimizedData));
+        const patternScan = scanAllPatterns(tierOptimizedData);
+        setActivePatternScan(patternScan);
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
@@ -271,6 +272,26 @@ export function LightweightCandles({
         }
 
         series.setData(chartCandles);
+
+        // Pattern geometry — trendlines on wedges/triangles, markers on candlestick hits
+        const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns);
+        for (const overlay of patternLines) {
+          const line = chart.addSeries(LineSeries, {
+            color: overlay.color,
+            lineWidth: 2,
+            lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+            title: overlay.label,
+            priceLineVisible: false,
+            lastValueVisible: false,
+          });
+          line.setData(overlay.points);
+        }
+
+        const candleMarkers = buildCandlestickMarkers(tierOptimizedData, patternScan.patterns);
+        if (candleMarkers.length > 0) {
+          createSeriesMarkers(series, candleMarkers as any);
+        }
+
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
         const COLOR_MAP: Record<string, string> = {

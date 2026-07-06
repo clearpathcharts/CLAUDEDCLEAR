@@ -37,6 +37,20 @@ export interface DetectedPattern {
   time: number;
   confidence: number; // 0–1 honest score, never faked as 100%
   detail?: string;
+  /** Drawable geometry for chart overlays */
+  geometry?: PatternGeometry;
+}
+
+export interface PatternLineSegment {
+  role: 'upper' | 'lower' | 'horizontal' | 'neckline' | 'cup';
+  from: { index: number; time: number; price: number };
+  to: { index: number; time: number; price: number };
+}
+
+export interface PatternGeometry {
+  lines: PatternLineSegment[];
+  markerIndex?: number;
+  markerPrice?: number;
 }
 
 export interface PatternScanResult {

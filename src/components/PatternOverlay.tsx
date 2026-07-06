@@ -36,7 +36,7 @@ export default function PatternOverlay() {
         <span className="text-xs text-white/30 ml-auto">{scan.patterns.length} found</span>
       </div>
       <p className="text-[10px] text-white/40 mb-3">
-        Wedges · triangles · teacups · triple tops/bottoms · candlestick formations
+        Trendlines drawn on chart · tap list for confidence
       </p>
       <div className="space-y-1.5 max-h-48 overflow-y-auto">
         {recent.map((p, i) => {

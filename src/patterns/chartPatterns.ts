@@ -1,6 +1,11 @@
 import { Candle } from '../types/indicators';
 import { DetectedPattern } from './types';
 import { findSwingPoints, pricesNear, slope } from './swings';
+import { attachChartGeometry } from './geometry';
+
+function withGeometry(pattern: DetectedPattern, swings: ReturnType<typeof findSwingPoints>, candles: Candle[]): DetectedPattern {
+  return attachChartGeometry(pattern, swings, candles);
+}
 
 function detectTripleTopsBottoms(
   candles: Candle[],
@@ -15,7 +20,7 @@ function detectTripleTopsBottoms(
     const b = highs[i + 1];
     const c = highs[i + 2];
     if (pricesNear(a.price, b.price, 0.02) && pricesNear(b.price, c.price, 0.02) && b.index - a.index >= 5 && c.index - b.index >= 5) {
-      found.push({
+      found.push(withGeometry({
         id: 'triple_top',
         category: 'chart',
         label: 'Triple Top',
@@ -25,7 +30,7 @@ function detectTripleTopsBottoms(
         time: c.time,
         confidence: 0.7,
         detail: `Peaks near ${c.price.toFixed(2)}`,
-      });
+      }, swings, candles));
     }
   }
 
@@ -34,7 +39,7 @@ function detectTripleTopsBottoms(
     const b = lows[i + 1];
     const c = lows[i + 2];
     if (pricesNear(a.price, b.price, 0.02) && pricesNear(b.price, c.price, 0.02) && b.index - a.index >= 5 && c.index - b.index >= 5) {
-      found.push({
+      found.push(withGeometry({
         id: 'triple_bottom',
         category: 'chart',
         label: 'Triple Bottom',
@@ -44,14 +49,14 @@ function detectTripleTopsBottoms(
         time: c.time,
         confidence: 0.7,
         detail: `Lows near ${c.price.toFixed(2)}`,
-      });
+      }, swings, candles));
     }
   }
 
   return found;
 }
 
-function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPattern[] {
+function detectTriangles(swings: ReturnType<typeof findSwingPoints>, candles: Candle[]): DetectedPattern[] {
   const found: DetectedPattern[] = [];
   const highs = swings.filter((s) => s.kind === 'high').slice(-4);
   const lows = swings.filter((s) => s.kind === 'low').slice(-4);
@@ -67,7 +72,7 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
 
     // Ascending triangle — flat top, rising lows
     if (Math.abs(highSlope) < Math.abs(lowSlope) * 0.25 && lowSlope > 0 && pricesNear(h1.price, h2.price, 0.02)) {
-      found.push({
+      found.push(withGeometry({
         id: 'ascending_triangle',
         category: 'chart',
         label: 'Ascending Triangle',
@@ -76,12 +81,12 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
         endIndex: Math.max(h2.index, l2.index),
         time: h2.time,
         confidence: 0.65,
-      });
+      }, swings, candles));
     }
 
     // Descending triangle — flat bottom, falling highs
     if (Math.abs(lowSlope) < Math.abs(highSlope) * 0.25 && highSlope < 0 && pricesNear(l1.price, l2.price, 0.02)) {
-      found.push({
+      found.push(withGeometry({
         id: 'descending_triangle',
         category: 'chart',
         label: 'Descending Triangle',
@@ -90,12 +95,12 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
         endIndex: Math.max(h2.index, l2.index),
         time: h2.time,
         confidence: 0.65,
-      });
+      }, swings, candles));
     }
 
     // Symmetrical — highs falling, lows rising (converging)
     if (highSlope < 0 && lowSlope > 0) {
-      found.push({
+      found.push(withGeometry({
         id: 'symmetrical_triangle',
         category: 'chart',
         label: 'Symmetrical Triangle',
@@ -104,12 +109,12 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
         endIndex: Math.max(h2.index, l2.index),
         time: h2.time,
         confidence: 0.6,
-      });
+      }, swings, candles));
     }
 
     // Rising wedge — both up, highs slope less than lows (converging up)
     if (highSlope > 0 && lowSlope > 0 && highSlope < lowSlope) {
-      found.push({
+      found.push(withGeometry({
         id: 'rising_wedge',
         category: 'chart',
         label: 'Rising Wedge',
@@ -118,12 +123,12 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
         endIndex: Math.max(h2.index, l2.index),
         time: h2.time,
         confidence: 0.62,
-      });
+      }, swings, candles));
     }
 
     // Falling wedge — both down, lows slope steeper (converging down)
     if (highSlope < 0 && lowSlope < 0 && highSlope > lowSlope) {
-      found.push({
+      found.push(withGeometry({
         id: 'falling_wedge',
         category: 'chart',
         label: 'Falling Wedge',
@@ -132,7 +137,7 @@ function detectTriangles(swings: ReturnType<typeof findSwingPoints>): DetectedPa
         endIndex: Math.max(h2.index, l2.index),
         time: h2.time,
         confidence: 0.62,
-      });
+      }, swings, candles));
     }
   }
 
@@ -154,7 +159,7 @@ function detectCupAndHandle(candles: Candle[], swings: ReturnType<typeof findSwi
     const handleEnd = Math.min(candles.length - 1, handleStart + 8);
     const handleLow = Math.min(...candles.slice(handleStart, handleEnd + 1).map((c) => c.low));
     if (handleLow > cupLow.price && handleLow < right.price) {
-      found.push({
+      found.push(withGeometry({
         id: 'cup_and_handle',
         category: 'chart',
         label: 'Cup and Handle',
@@ -164,7 +169,7 @@ function detectCupAndHandle(candles: Candle[], swings: ReturnType<typeof findSwi
         time: candles[handleEnd].time,
         confidence: 0.58,
         detail: 'Teacup / cup-with-handle formation',
-      });
+      }, swings, candles));
     }
   }
 
@@ -175,7 +180,7 @@ export function scanChartPatterns(candles: Candle[]): DetectedPattern[] {
   const swings = findSwingPoints(candles, 3, 3);
   return [
     ...detectTripleTopsBottoms(candles, swings),
-    ...detectTriangles(swings),
+    ...detectTriangles(swings, candles),
     ...detectCupAndHandle(candles, swings),
   ];
 }
