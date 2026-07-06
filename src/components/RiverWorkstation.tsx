@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, CheckCircle, XCircle, AlertTriangle, Zap, BarChart2, FileCode, Waves } from 'lucide-react';
-import { recognizePineScript, RecognitionResult } from '../river/pineRecognizer';
-import { lexPineScript, PineLexResult } from '../river/pine';
+import { compilePineScript, goldBarParamsFromCompile, PineCompileResult } from '../river/pine';
 import { GOLD_BAR_DEFAULTS, GoldBarParams } from '../river/goldBarIndicator';
 
 type WorkflowStep = 'upload' | 'recognizing' | 'recognized' | 'failed' | 'applied';
@@ -11,8 +10,7 @@ interface RiverState {
   step: WorkflowStep;
   rawSource: string;
   fileName: string;
-  lexResult: PineLexResult | null;
-  recognition: RecognitionResult | null;
+  compileResult: PineCompileResult | null;
   errorMessage: string;
   goldBarParams: GoldBarParams;
 }
@@ -21,21 +19,10 @@ const INITIAL_STATE: RiverState = {
   step: 'upload',
   rawSource: '',
   fileName: '',
-  lexResult: null,
-  recognition: null,
+  compileResult: null,
   errorMessage: '',
   goldBarParams: { ...GOLD_BAR_DEFAULTS },
 };
-
-function goldBarParamsFromInputs(inputs: RecognitionResult['inputs']): GoldBarParams {
-  const params = { ...GOLD_BAR_DEFAULTS };
-  for (const input of inputs) {
-    if (input.name === 'a' && input.type === 'number') params.sensitivity = input.value as number;
-    if (input.name === 'c' && input.type === 'number') params.atrPeriod = input.value as number;
-    if (input.name === 'h' && input.type === 'bool') params.useHeikinAshi = input.value as boolean;
-  }
-  return params;
-}
 
 const PLATFORM_LABELS: Record<string, string> = {
   atr_trailing_stop: 'ATR Trailing Stop / Gold Bar Pattern',
@@ -52,32 +39,29 @@ export default function RiverWorkstation() {
   const processSource = useCallback((source: string, fileName: string) => {
     setState(s => ({ ...s, step: 'recognizing', rawSource: source, fileName }));
     try {
-      const lexResult = lexPineScript(source);
-      if (lexResult.errors.length > 0) {
-        const detail = lexResult.errors.map(e => `line ${e.line}: ${e.message}`).join('\n');
+      const compileResult = compilePineScript(source);
+      if (compileResult.errors.length > 0) {
         setState(s => ({
           ...s,
           step: 'failed',
-          lexResult,
-          recognition: null,
-          errorMessage: `Lexer found problems in your Pine Script:\n${detail}`,
+          compileResult,
+          errorMessage: compileResult.errors.join('\n'),
         }));
         return;
       }
 
-      const recognition = recognizePineScript(source);
+      const matched = compileResult.summary?.hasGoldBarPattern ?? false;
       setState(s => ({
         ...s,
-        step: recognition.patternMatched ? 'recognized' : 'failed',
-        lexResult,
-        recognition,
-        goldBarParams: recognition.patternMatched
-          ? goldBarParamsFromInputs(recognition.inputs)
+        step: matched ? 'recognized' : 'failed',
+        compileResult,
+        goldBarParams: matched && compileResult.summary
+          ? goldBarParamsFromCompile(compileResult.summary)
           : s.goldBarParams,
-        errorMessage: recognition.patternMatched ? '' : UNRECOGNIZED_MESSAGE,
+        errorMessage: matched ? '' : UNRECOGNIZED_MESSAGE,
       }));
     } catch (err: any) {
-      setState(s => ({ ...s, step: 'failed', errorMessage: `Recognition error: ${err?.message || 'Unknown error'}` }));
+      setState(s => ({ ...s, step: 'failed', errorMessage: `Compile error: ${err?.message || 'Unknown error'}` }));
     }
   }, []);
 
@@ -118,7 +102,7 @@ export default function RiverWorkstation() {
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
           <h1 className="text-2xl font-black tracking-tight uppercase text-white">The River</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 1 — Lexer</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 2 — Parser</span>
         </div>
         <p className="text-sm text-white/40 max-w-xl">
           Bring your Pine Script indicator from TradingView. The River reads it, tells you what it found honestly, and wires real math into your ClearPath charts.
@@ -149,63 +133,69 @@ export default function RiverWorkstation() {
             {state.step === 'recognizing' && (
               <div className="flex items-center gap-3 text-[#00D9FF] text-sm">
                 <div className="w-4 h-4 border-2 border-[#00D9FF] border-t-transparent rounded-full animate-spin" />
-                Layer 1: tokenizing your Pine Script...
+                Layer 1–2: tokenizing and parsing your Pine Script...
               </div>
             )}
           </motion.div>
         )}
 
-        {state.step === 'recognized' && state.recognition && (
+        {state.step === 'recognized' && state.compileResult?.summary && (
           <motion.div key="recognized" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
             <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
               <CheckCircle size={20} className="text-green-400 shrink-0" />
               <div>
-                <p className="text-green-400 font-bold text-sm uppercase tracking-wider">Pattern Recognized</p>
-                <p className="text-white/60 text-xs mt-0.5">{PLATFORM_LABELS[state.recognition.patternMatched!] || state.recognition.patternMatched}</p>
+                <p className="text-green-400 font-bold text-sm uppercase tracking-wider">Gold Bar Pattern Compiled</p>
+                <p className="text-white/60 text-xs mt-0.5">{state.compileResult.summary.indicatorTitle || PLATFORM_LABELS.atr_trailing_stop}</p>
               </div>
               <span className="ml-auto text-xs text-white/30">{state.fileName}</span>
             </div>
 
-            {state.lexResult && (
-              <LexerStatusPanel lexResult={state.lexResult} />
-            )}
+            <CompilerStatusPanel compileResult={state.compileResult} />
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-4">
                 <FileCode size={16} className="text-[#00D9FF]" />
-                <span className="text-xs text-white/40 uppercase tracking-wider">Extracted Parameters</span>
+                <span className="text-xs text-white/40 uppercase tracking-wider">Extracted Parameters (from AST)</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {state.recognition.inputs.map(input => (
-                  <div key={input.name} className="bg-black/40 rounded-lg p-3 border border-white/5">
-                    <p className="text-white/30 text-xs uppercase tracking-wider mb-1">{input.name}</p>
-                    <p className="text-white font-bold">{String(input.value)}</p>
-                  </div>
-                ))}
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 text-xs uppercase tracking-wider mb-1">a (sensitivity)</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.inputBindings.a ?? state.goldBarParams.sensitivity}</p>
+                </div>
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 text-xs uppercase tracking-wider mb-1">c (ATR period)</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.inputBindings.c ?? state.goldBarParams.atrPeriod}</p>
+                </div>
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 text-xs uppercase tracking-wider mb-1">h (Heikin Ashi)</p>
+                  <p className="text-white font-bold">{String(state.compileResult.summary.inputBindings.h ?? state.goldBarParams.useHeikinAshi)}</p>
+                </div>
               </div>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart2 size={16} className="text-[#FFD700]" />
-                <span className="text-xs text-white/40 uppercase tracking-wider">What The River understood</span>
+                <span className="text-xs text-white/40 uppercase tracking-wider">AST structure</span>
               </div>
-              <div className="flex items-center gap-4 mb-3">
-                <div className="flex-1 bg-black/40 rounded-full h-2">
-                  <div className="bg-[#FFD700] h-2 rounded-full transition-all" style={{ width: `${Math.round((state.recognition.recognizedLines / state.recognition.totalLines) * 100)}%` }} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 uppercase mb-1">Declarations</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.declarationCount}</p>
                 </div>
-                <span className="text-white/50 text-xs">{state.recognition.recognizedLines}/{state.recognition.totalLines} lines</span>
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 uppercase mb-1">Assignments</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.assignmentCount}</p>
+                </div>
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 uppercase mb-1">Reassignments</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.reassignmentCount}</p>
+                </div>
+                <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+                  <p className="text-white/30 uppercase mb-1">Plot calls</p>
+                  <p className="text-white font-bold">{state.compileResult.summary.topLevelCalls.join(', ')}</p>
+                </div>
               </div>
-              {state.recognition.unrecognizedSnippets.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-white/30 text-xs uppercase tracking-wider mb-2">Lines not yet supported — shown honestly:</p>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {state.recognition.unrecognizedSnippets.map((line, i) => (
-                      <p key={i} className="text-yellow-500/60 text-xs font-mono bg-yellow-500/5 px-2 py-1 rounded">{line}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="bg-[#FFD700]/5 border border-[#FFD700]/20 rounded-xl p-5">
@@ -259,14 +249,14 @@ export default function RiverWorkstation() {
 
         {state.step === 'failed' && (
           <motion.div key="failed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-            {state.lexResult && state.lexResult.errors.length === 0 && (
-              <LexerStatusPanel lexResult={state.lexResult} />
+            {state.compileResult && state.compileResult.errors.length === 0 && state.compileResult.summary && (
+              <CompilerStatusPanel compileResult={state.compileResult} />
             )}
             <div className="flex items-start gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
-              {state.recognition ? <AlertTriangle size={20} className="text-yellow-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
+              {state.compileResult?.summary ? <AlertTriangle size={20} className="text-yellow-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
               <div>
-                <p className={`font-bold text-sm uppercase tracking-wider mb-2 ${state.recognition ? 'text-yellow-400' : 'text-red-400'}`}>
-                  {state.recognition ? 'Pattern Not Yet Supported' : 'Could Not Read File'}
+                <p className={`font-bold text-sm uppercase tracking-wider mb-2 ${state.compileResult?.summary ? 'text-yellow-400' : 'text-red-400'}`}>
+                  {state.compileResult?.summary ? 'Pattern Not Yet Supported' : 'Compile Failed'}
                 </p>
                 <p className="text-white/50 text-sm whitespace-pre-line">{state.errorMessage}</p>
               </div>
@@ -282,29 +272,49 @@ export default function RiverWorkstation() {
   );
 }
 
-function LexerStatusPanel({ lexResult }: { lexResult: PineLexResult }) {
+function CompilerStatusPanel({ compileResult }: { compileResult: PineCompileResult }) {
+  const summary = compileResult.summary;
   return (
-    <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <FileCode size={16} className="text-[#00D9FF]" />
-        <span className="text-xs text-[#00D9FF]/70 uppercase tracking-wider">Layer 1 — Lexer</span>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <FileCode size={16} className="text-[#00D9FF]" />
+          <span className="text-xs text-[#00D9FF]/70 uppercase tracking-wider">Layer 1 — Lexer</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Pine Version</p>
+            <p className="text-white font-bold">{compileResult.lex.version ?? 'unknown'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Tokens</p>
+            <p className="text-white font-bold">{compileResult.lex.significantTokenCount}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5 col-span-2">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Status</p>
+            <p className="text-green-400 font-bold">PASS</p>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
-          <p className="text-white/30 uppercase tracking-wider mb-1">Pine Version</p>
-          <p className="text-white font-bold">{lexResult.version ?? 'unknown'}</p>
+
+      <div className="bg-[#FFD700]/5 border border-[#FFD700]/20 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <BarChart2 size={16} className="text-[#FFD700]" />
+          <span className="text-xs text-[#FFD700]/70 uppercase tracking-wider">Layer 2 — Parser</span>
         </div>
-        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
-          <p className="text-white/30 uppercase tracking-wider mb-1">Tokens</p>
-          <p className="text-white font-bold">{lexResult.significantTokenCount}</p>
-        </div>
-        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
-          <p className="text-white/30 uppercase tracking-wider mb-1">Lexer Status</p>
-          <p className="text-green-400 font-bold">{lexResult.errors.length === 0 ? 'PASS' : 'FAIL'}</p>
-        </div>
-        <div className="bg-black/40 rounded-lg p-3 border border-white/5">
-          <p className="text-white/30 uppercase tracking-wider mb-1">Next Layer</p>
-          <p className="text-white/50 font-bold">Parser (coming)</p>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Declarations</p>
+            <p className="text-white font-bold">{summary?.declarationCount ?? '—'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Assignments</p>
+            <p className="text-white font-bold">{summary?.assignmentCount ?? '—'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5 col-span-2">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Status</p>
+            <p className={`font-bold ${summary ? 'text-green-400' : 'text-red-400'}`}>{summary ? 'PASS' : 'FAIL'}</p>
+          </div>
         </div>
       </div>
     </div>

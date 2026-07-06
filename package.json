@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "river:lex-test": "tsx src/river/pine/lexer.selftest.ts"
+    "river:lex-test": "tsx src/river/pine/lexer.selftest.ts",
+    "river:parse-test": "tsx src/river/pine/parser.selftest.ts",
+    "river:compile-test": "npm run river:lex-test && npm run river:parse-test"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
