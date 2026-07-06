@@ -1,9 +1,10 @@
-// The River Pine compile pipeline — layers 1 + 2 entry point.
+// The River Pine compile pipeline — layers 1, 2, and 3 entry point.
 
 import { PineProgram, PineStmt, PineExpr, PineAssignStmt } from './ast';
 import { lexPineScript } from './lexer';
 import { parsePineTokens } from './parser';
 import { PineLexResult } from './token';
+import { lowerPineToRir, RirProgram, RirLowerResult } from '../rir';
 
 export interface PineCompileSummary {
   version: number | null;
@@ -23,6 +24,8 @@ export interface PineCompileSummary {
 export interface PineCompileResult {
   lex: PineLexResult;
   program: PineProgram | null;
+  rir: RirProgram | null;
+  rirBytecodeId: string | null;
   errors: string[];
   summary: PineCompileSummary | null;
 }
@@ -135,21 +138,27 @@ export function compilePineScript(source: string): PineCompileResult {
   const errors: string[] = lex.errors.map((e) => `Lexer line ${e.line}: ${e.message}`);
 
   if (lex.errors.length > 0) {
-    return { lex, program: null, errors, summary: null };
+    return { lex, program: null, rir: null, rirBytecodeId: null, errors, summary: null };
   }
 
   const parseResult = parsePineTokens(lex.tokens, lex.version);
   errors.push(...parseResult.errors.map((e) => `Parser line ${e.line}: ${e.message}`));
 
   if (!parseResult.program || parseResult.errors.length > 0) {
-    return { lex, program: null, errors, summary: null };
+    return { lex, program: null, rir: null, rirBytecodeId: null, errors, summary: null };
   }
+
+  const summary = summarize(parseResult.program);
+  const rirResult: RirLowerResult = lowerPineToRir(parseResult.program);
+  errors.push(...rirResult.errors.map((e) => `RIR line ${e.line}: ${e.message}`));
 
   return {
     lex,
     program: parseResult.program,
+    rir: rirResult.program,
+    rirBytecodeId: rirResult.bytecodeId,
     errors,
-    summary: summarize(parseResult.program),
+    summary,
   };
 }
 

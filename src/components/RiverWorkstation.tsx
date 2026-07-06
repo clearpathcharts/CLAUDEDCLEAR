@@ -50,7 +50,10 @@ export default function RiverWorkstation() {
         return;
       }
 
-      const matched = compileResult.summary?.hasGoldBarPattern ?? false;
+      const matched =
+        (compileResult.summary?.hasGoldBarPattern ?? false) &&
+        compileResult.rir !== null &&
+        compileResult.rirBytecodeId !== null;
       setState(s => ({
         ...s,
         step: matched ? 'recognized' : 'failed',
@@ -102,7 +105,7 @@ export default function RiverWorkstation() {
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
           <h1 className="text-2xl font-black tracking-tight uppercase text-white">The River</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 2 — Parser</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Layer 3 — RIR</span>
         </div>
         <p className="text-sm text-white/40 max-w-xl">
           Bring your Pine Script indicator from TradingView. The River reads it, tells you what it found honestly, and wires real math into your ClearPath charts.
@@ -133,7 +136,7 @@ export default function RiverWorkstation() {
             {state.step === 'recognizing' && (
               <div className="flex items-center gap-3 text-[#00D9FF] text-sm">
                 <div className="w-4 h-4 border-2 border-[#00D9FF] border-t-transparent rounded-full animate-spin" />
-                Layer 1–2: tokenizing and parsing your Pine Script...
+                Layer 1–3: compiling your Pine Script to RIR bytecode...
               </div>
             )}
           </motion.div>
@@ -144,8 +147,10 @@ export default function RiverWorkstation() {
             <div className="flex items-center gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
               <CheckCircle size={20} className="text-green-400 shrink-0" />
               <div>
-                <p className="text-green-400 font-bold text-sm uppercase tracking-wider">Gold Bar Pattern Compiled</p>
-                <p className="text-white/60 text-xs mt-0.5">{state.compileResult.summary.indicatorTitle || PLATFORM_LABELS.atr_trailing_stop}</p>
+                <p className="text-green-400 font-bold text-sm uppercase tracking-wider">Gold Bar Compiled to RIR</p>
+                <p className="text-white/60 text-xs mt-0.5">
+                  {state.compileResult.rirBytecodeId} — {state.compileResult.summary.indicatorTitle || PLATFORM_LABELS.atr_trailing_stop}
+                </p>
               </div>
               <span className="ml-auto text-xs text-white/30">{state.fileName}</span>
             </div>
@@ -274,8 +279,9 @@ export default function RiverWorkstation() {
 
 function CompilerStatusPanel({ compileResult }: { compileResult: PineCompileResult }) {
   const summary = compileResult.summary;
+  const rir = compileResult.rir;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-3">
           <FileCode size={16} className="text-[#00D9FF]" />
@@ -314,6 +320,29 @@ function CompilerStatusPanel({ compileResult }: { compileResult: PineCompileResu
           <div className="bg-black/40 rounded-lg p-3 border border-white/5 col-span-2">
             <p className="text-white/30 uppercase tracking-wider mb-1">Status</p>
             <p className={`font-bold ${summary ? 'text-green-400' : 'text-red-400'}`}>{summary ? 'PASS' : 'FAIL'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#FF007F]/5 border border-[#FF007F]/20 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap size={16} className="text-[#FF007F]" />
+          <span className="text-xs text-[#FF007F]/70 uppercase tracking-wider">Layer 3 — RIR</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Series</p>
+            <p className="text-white font-bold">{rir?.series.length ?? '—'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Outputs</p>
+            <p className="text-white font-bold">{rir?.outputs.length ?? '—'}</p>
+          </div>
+          <div className="bg-black/40 rounded-lg p-3 border border-white/5 col-span-2">
+            <p className="text-white/30 uppercase tracking-wider mb-1">Bytecode</p>
+            <p className={`font-bold truncate ${rir ? 'text-green-400' : 'text-red-400'}`}>
+              {compileResult.rirBytecodeId ?? 'FAIL'}
+            </p>
           </div>
         </div>
       </div>

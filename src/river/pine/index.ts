@@ -8,6 +8,8 @@ export {
   type PineCompileResult,
   type PineCompileSummary,
 } from './compile';
+export type { RirProgram, RirLowerResult } from '../rir';
+export { lowerPineToRir, rirBytecodeId } from '../rir';
 export {
   PineTokenType,
   type PineToken,
