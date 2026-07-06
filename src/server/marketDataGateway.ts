@@ -439,7 +439,10 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
 // ============================================
 // GET TIME SERIES CANDLES (Deduplicated & Cached)
 // ============================================
-export async function getMarketCandles(symbol: string, interval: string, limit: number, apiKey: string) {
+export async function getMarketCandles(symbol: string, interval: string, requestedLimit: number, apiKey: string) {
+  // Twelve Data only accepts outputsize in [1, 5000]; anything larger is
+  // rejected with HTTP 400, which would blank the chart entirely.
+  const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1), 5000);
   const cacheKey = `candles:${symbol}:${interval}:${limit}`
   const now = Date.now()
 

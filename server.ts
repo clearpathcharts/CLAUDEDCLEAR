@@ -1057,7 +1057,10 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
 
     try {
-      const outputsize = Math.max(limit ? Number(limit) : 100, 100);
+      // Twelve Data rejects outputsize outside [1, 5000] with HTTP 400, which
+      // used to blank every chart for tiers whose candle limit exceeds 5000.
+      const requested = limit ? Number(limit) : 100;
+      const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
       const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey);
       
       if (!data.values || !Array.isArray(data.values)) {
