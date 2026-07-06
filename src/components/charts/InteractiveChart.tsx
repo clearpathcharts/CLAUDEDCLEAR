@@ -4,6 +4,7 @@ import React, { useState, useMemo, useRef } from "react";
 import { ChartFrame } from "./ChartFrame";
 import { LightweightCandles } from "./LightweightCandles";
 import { useAuth } from "../../contexts/FirebaseContext";
+import { getActiveRiverIndicator } from "../../river/riverEngine";
 import { 
   Plus, 
   X, 
@@ -107,21 +108,19 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
     setSnapshotCaption(`📊 Operational scan update: $${title.toUpperCase()} live chart perspective (${timeframe} interval). Captured via neuroadaptive terminal feed.`);
   };
   
-  // Custom scanner inputs and states
-  const [showMineIndicator, setShowMineIndicator] = React.useState(false);
-  const [mineIndicatorName, setMineIndicatorName] = React.useState(() => {
-    try {
-      return localStorage.getItem('clearpath_active_river_indicator_name') || "MACD_Cross_Default.pine";
-    } catch {
-      return "MACD_Cross_Default.pine";
-    }
-  });
+  // The River custom indicator: auto-attach when a compiled script is active.
+  const [showMineIndicator, setShowMineIndicator] = React.useState(() => !!getActiveRiverIndicator());
+  const [mineIndicatorName, setMineIndicatorName] = React.useState(() => getActiveRiverIndicator()?.name || "No script imported");
 
   React.useEffect(() => {
     const handleIndicatorUpdate = (e: any) => {
       if (e.detail && e.detail.name) {
         setMineIndicatorName(e.detail.name);
         setShowMineIndicator(true);
+      } else {
+        // Indicator was removed in The River workstation.
+        setMineIndicatorName("No script imported");
+        setShowMineIndicator(false);
       }
     };
     window.addEventListener('river-indicator-updated', handleIndicatorUpdate);

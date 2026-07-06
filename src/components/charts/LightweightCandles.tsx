@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
+import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
   themeProfiles,
   type ThemeProfileId,
@@ -420,27 +421,81 @@ export function LightweightCandles({
           });
         }
 
-        // Plot "The River" (Mine) Custom Indicator if active (price-based overlay)
+        // THE RIVER: execute the user's compiled Pine Script bar-by-bar over the
+        // REAL candles on this chart and render its actual output — plots,
+        // buy/sell shape markers, and signal-colored (gold) candles.
         if (showMineIndicator) {
           try {
-            const period = 14;
-            const lineData = tierOptimizedData.map((d, idx) => {
-              const start = Math.max(0, idx - period + 1);
-              const slice = tierOptimizedData.slice(start, idx + 1);
-              const avg = slice.reduce((acc, curr) => acc + curr.close, 0) / slice.length;
-              const offsetAngle = idx * 0.12;
-              const rirFactor = Math.sin(offsetAngle) * (d.close * 0.0015) + Math.cos(offsetAngle * 0.5) * (d.close * 0.0006);
-              return { time: d.time as Time, value: avg + rirFactor };
-            });
+            const activeScript = getActiveRiverIndicator();
+            if (!activeScript) {
+              console.warn("[The River] MINE is on but no compiled indicator is active. Import one in The River workstation.");
+            } else {
+              const result = runPine(activeScript.source, tierOptimizedData, {
+                inputOverrides: activeScript.inputs,
+                symbol: sym,
+                timeframe,
+              });
 
-            const riverLine = chart.addSeries(LineSeries, {
-              color: "#FF007F",
-              lineWidth: 3,
-              title: (mineIndicatorName || "the river").split('.')[0].toUpperCase(),
-            });
-            riverLine.setData(lineData);
+              const RIVER_PLOT_FALLBACKS = ["#FF007F", "#00D9FF", "#FFD700", "#00FF66", "#FFAA00", "#7A3BFF"];
+              result.plots.forEach((plot, plotIdx) => {
+                const color = plot.color || RIVER_PLOT_FALLBACKS[plotIdx % RIVER_PLOT_FALLBACKS.length];
+                const isHistogram = plot.style === "histogram" || plot.style === "columns";
+                let plotSeries;
+                if (isHistogram) {
+                  plotSeries = chart.addSeries(HistogramSeries, {
+                    color,
+                    title: plot.title,
+                    priceScaleId: result.meta.overlay ? "right" : OSCILLATOR_SCALE_ID,
+                  });
+                } else if (result.meta.overlay) {
+                  plotSeries = chart.addSeries(LineSeries, {
+                    color,
+                    lineWidth: (plot.lineWidth || 2) as any,
+                    title: plot.title,
+                    lineStyle: plot.style === "circles" || plot.style === "cross" ? LineStyle.Dotted : LineStyle.Solid,
+                  });
+                } else {
+                  // Non-overlay scripts (RSI-like) live on the oscillator sub-scale.
+                  plotSeries = addOscillatorSeries({ color, lineWidth: (plot.lineWidth || 2) as any, title: plot.title });
+                  series_priceScaleMargins(chart, true);
+                }
+                // na points become whitespace so warm-up gaps render honestly.
+                const plotData = plot.points.map(p =>
+                  p.value === null ? { time: p.time as Time } : { time: p.time as Time, value: p.value }
+                );
+                plotSeries.setData(plotData as any[]);
+              });
+
+              if (result.markers.length > 0) {
+                const markers: SeriesMarker<Time>[] = result.markers.map(m => ({
+                  time: m.time as Time,
+                  position: m.position,
+                  shape: m.shape,
+                  color: m.color,
+                  text: m.text,
+                }));
+                createSeriesMarkers(series, markers);
+              }
+
+              // barcolor(): repaint the exact candles the script flagged (Gold Bars).
+              if (result.barColors.length > 0) {
+                const colorByTime = new Map(result.barColors.map(bc => [bc.time, bc.color]));
+                series.setData(tierOptimizedData.map(d => {
+                  const c = colorByTime.get(d.time);
+                  return c
+                    ? ({ ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as CandlestickData<Time>)
+                    : (d as CandlestickData<Time>);
+                }));
+              }
+
+              result.hlines.forEach(hl => {
+                series.createPriceLine({ price: hl.value, color: hl.color, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: hl.title });
+              });
+
+              result.warnings.forEach(w => console.warn(`[The River] ${activeScript.name}: ${w}`));
+            }
           } catch (err) {
-            console.error("Error setting custom river indicator line", err);
+            console.error("[The River] Compiled indicator failed on this chart's data:", err);
           }
         }
 
