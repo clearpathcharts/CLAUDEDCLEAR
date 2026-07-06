@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle, XCircle, AlertTriangle, Zap, BarChart2, FileCode, Waves } from 'lucide-react';
+import { Upload, CheckCircle, XCircle, AlertTriangle, Zap, BarChart2, FileCode, Waves, Save } from 'lucide-react';
 import { compilePineScript, goldBarParamsFromCompile, PineCompileResult } from '../river/pine';
 import { GOLD_BAR_DEFAULTS, GoldBarParams } from '../river/goldBarIndicator';
 import { activateRirProgram, executeRir, RirExecutionResult, clearActiveRirProgram } from '../river/runtime';
 import { generateSampleCandles } from '../river/runtime/fixtures/sampleCandles';
+import { saveToCatalog } from '../river/catalog';
+import RiverCatalogPanel from './RiverCatalogPanel';
 
 type WorkflowStep = 'upload' | 'recognizing' | 'recognized' | 'failed' | 'applied';
 
@@ -109,6 +111,26 @@ export default function RiverWorkstation() {
     const file = e.target.files?.[0];
     if (file) processFile(file);
   }, [processFile]);
+
+  const saveToCommunityCatalog = useCallback(() => {
+    if (!state.compileResult?.rir || !state.compileResult.rirBytecodeId) return;
+    saveToCatalog({
+      name: state.compileResult.rir.indicatorName,
+      author: 'Community',
+      description: `Imported via The River from ${state.fileName}`,
+      source: 'pine',
+      bytecodeId: state.compileResult.rirBytecodeId,
+      pineVersion: state.compileResult.rir.pineVersion,
+      pineSource: state.rawSource,
+      rir: state.compileResult.rir,
+      defaultInputs: {
+        a: state.goldBarParams.sensitivity,
+        c: state.goldBarParams.atrPeriod,
+        h: state.goldBarParams.useHeikinAshi,
+      },
+      tags: ['community', 'pine', 'river'],
+    });
+  }, [state.compileResult, state.fileName, state.rawSource, state.goldBarParams]);
 
   const applyToCharts = useCallback(() => {
     if (!state.compileResult?.rir) return;
@@ -258,12 +280,17 @@ export default function RiverWorkstation() {
 
             <div className="flex gap-3">
               <button onClick={applyToCharts} className="flex-1 py-3 bg-[#FFD700] text-black font-black uppercase tracking-widest rounded-xl hover:bg-[#FFE44D] transition-all active:scale-95">
-                Apply Gold Bar to All Charts
+                Apply to All Charts
+              </button>
+              <button onClick={saveToCommunityCatalog} className="px-4 py-3 bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] rounded-xl hover:bg-[#00D9FF]/20 transition-all" title="File in community catalog">
+                <Save size={18} />
               </button>
               <button onClick={reset} className="px-6 py-3 bg-white/5 border border-white/10 text-white/50 rounded-xl hover:bg-white/10 transition-all">
                 Upload Different File
               </button>
             </div>
+
+            <RiverCatalogPanel />
           </motion.div>
         )}
 

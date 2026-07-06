@@ -13,6 +13,7 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
+import { scanAllPatterns, setActivePatternScan } from "../../patterns";
 import { Crosshair } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -258,6 +259,8 @@ export function LightweightCandles({
 
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
+
+        setActivePatternScan(scanAllPatterns(tierOptimizedData));
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {

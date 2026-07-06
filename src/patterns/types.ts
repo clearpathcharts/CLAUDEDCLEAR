@@ -1,0 +1,56 @@
+// Native ClearPath pattern detection — not Pine import, pure OHLC geometry.
+
+import { Candle } from '../types/indicators';
+
+export type PatternCategory = 'candlestick' | 'chart' | 'structure';
+
+export type CandlestickPatternId =
+  | 'doji'
+  | 'hammer'
+  | 'hanging_man'
+  | 'bullish_engulfing'
+  | 'bearish_engulfing'
+  | 'three_white_soldiers'
+  | 'three_black_crows'
+  | 'morning_star'
+  | 'evening_star';
+
+export type ChartPatternId =
+  | 'rising_wedge'
+  | 'falling_wedge'
+  | 'ascending_triangle'
+  | 'descending_triangle'
+  | 'symmetrical_triangle'
+  | 'triple_top'
+  | 'triple_bottom'
+  | 'cup_and_handle';
+
+export type PatternId = CandlestickPatternId | ChartPatternId;
+
+export interface DetectedPattern {
+  id: PatternId;
+  category: PatternCategory;
+  label: string;
+  direction: 'bullish' | 'bearish' | 'neutral';
+  startIndex: number;
+  endIndex: number;
+  time: number;
+  confidence: number; // 0–1 honest score, never faked as 100%
+  detail?: string;
+}
+
+export interface PatternScanResult {
+  scannedBars: number;
+  patterns: DetectedPattern[];
+  swingHighs: number;
+  swingLows: number;
+}
+
+export interface SwingPoint {
+  index: number;
+  time: number;
+  price: number;
+  kind: 'high' | 'low';
+}
+
+export type { Candle };
