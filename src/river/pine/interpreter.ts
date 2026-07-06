@@ -829,17 +829,22 @@ export class PineInterpreter {
         const e = this.argNum(call, 1, "exponent");
         return b === null || e === null ? null : norm(Math.pow(b, e));
       }
+      // Pine semantics: na propagates through max/min/avg — any na argument
+      // makes the result na (it is NOT ignored).
       case "math.max": {
-        const vals = nums().filter((n): n is number => n !== null);
-        return vals.length ? Math.max(...vals) : null;
+        const vals = nums();
+        if (!vals.length || vals.some(n => n === null)) return null;
+        return Math.max(...(vals as number[]));
       }
       case "math.min": {
-        const vals = nums().filter((n): n is number => n !== null);
-        return vals.length ? Math.min(...vals) : null;
+        const vals = nums();
+        if (!vals.length || vals.some(n => n === null)) return null;
+        return Math.min(...(vals as number[]));
       }
       case "math.avg": {
-        const vals = nums().filter((n): n is number => n !== null);
-        return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+        const vals = nums();
+        if (!vals.length || vals.some(n => n === null)) return null;
+        return (vals as number[]).reduce((a, b) => a + b, 0) / vals.length;
       }
       case "math.sum": return this.builtinTa("ta.sum", call, `math.sum:${call.siteId}`);
     }
