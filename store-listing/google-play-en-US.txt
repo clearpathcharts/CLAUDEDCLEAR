@@ -1,0 +1,120 @@
+================================================================================
+CLEARPATH CPMS — GOOGLE PLAY CONSOLE LISTING (en-US)
+Copy each block into Play Console → Grow → Store presence → Main store listing
+Package name (fixed): com.clearpath.cpms
+================================================================================
+
+APP NAME (max 30 characters)
+----------------------------
+ClearPath CPMS
+
+
+SHORT DESCRIPTION (max 80 characters)
+-------------------------------------
+Finance media library + live news TV streams. Educational market intelligence.
+
+
+FULL DESCRIPTION (max 4000 characters)
+--------------------------------------
+ClearPath CPMS is the mobile command center for Clear Path Markets Science — one app with two powerful experiences:
+
+📺 CPMS TV — Live News & Broadcast Directory
+Watch live HLS news and finance streams from a curated global channel directory. Browse by category, search stations, and launch the full-screen theatre player. Includes business news, world news, weather, and documentary feeds.
+
+🎬 CPMS Library — Premium Media Archive
+Stream educational finance and market-intelligence videos organized by category: Finance TV, Indicator TV, Trading Anarchy TV, Market News TV, and Documentary TV. Built-in HLS playback for adaptive live streams and on-demand content.
+
+✓ One install — both CPMS TV and CPMS Media Library
+✓ Seamless navigation between the main ClearPath terminal and TV modes
+✓ Founder media cabinet for authorized content publishing (Firebase)
+✓ Designed for traders, researchers, and macro-focused learners
+
+IMPORTANT DISCLAIMERS
+ClearPath CPMS is an educational technology platform. It does not provide licensed financial advice, brokerage services, guaranteed profits, or investment solicitation. Live streams are third-party broadcast URLs; availability may vary by region and provider. Always verify information independently.
+
+Privacy Policy: https://clearpathtrader.com/privacy.html
+Terms: https://clearpathtrader.com/terms.html
+
+Developed by Clear Path Markets Science / Falcon House Protocol.
+
+
+PRIVACY POLICY URL (required)
+-----------------------------
+https://clearpathtrader.com/privacy.html
+
+
+WEBSITE (optional but recommended)
+----------------------------------
+https://clearpathtrader.com/
+
+
+CONTACT EMAIL (required)
+------------------------
+operator@clearpathtrader.com
+
+
+CATEGORY
+--------
+Primary: News
+Secondary (if offered): Finance
+
+
+TAGS / CONTENT DESCRIPTORS (for questionnaire)
+----------------------------------------------
+- News streaming / IPTV-style live channels
+- Educational video content
+- Finance & markets (educational only, not trading execution)
+- User-generated content: founder-only uploads via secured cabinet
+- Internet permission required for streams and cloud catalog sync
+
+
+CONTENT RATING (IARC questionnaire — suggested answers)
+-------------------------------------------------------
+Violence: None
+Sexuality: None
+Language: Infrequent mild (user-generated streams may vary — third-party)
+Controlled substance: None
+Gambling: No
+User interaction: Yes (optional Firebase auth, founder publishing)
+Shares location: No
+Shares personal info: Email if user signs in via ClearPath account
+
+
+DATA SAFETY (Play Console → App content → Data safety)
+------------------------------------------------------
+Data collected (if Firebase auth enabled):
+  - Email address (account sign-in)
+  - User IDs (Firebase Auth)
+Data not sold. Used for account sync and media cabinet authorization.
+
+Third-party streams: video URLs loaded from external broadcast providers; those providers have their own privacy policies.
+
+Encryption in transit: Yes (HTTPS)
+
+
+STORE ASSETS CHECKLIST
+----------------------
+[ ] App icon: 512×512 PNG (use android/app/src/main/res/ or export from logo)
+[ ] Feature graphic: 1024×500 PNG (banner with CPMS branding)
+[ ] Phone screenshots: 2–8 images, 9:16 recommended (1080×1920 or higher)
+      Suggested captures:
+        1. Main ClearPath home / Discovery
+        2. CPMS APK media library grid
+        3. CPMS TV channel directory
+        4. Full-screen live player with news channel
+        5. Nav showing CPMS APK + CPMS TV buttons
+[ ] Release AAB: npm run cpms:aab → app-release.aab
+
+
+INTERNAL TESTING ROLLOUT (recommended first)
+--------------------------------------------
+1. Play Console → Testing → Internal testing → Create release
+2. Upload app-release.aab
+3. Add tester emails
+4. Verify both CPMS TV and CPMS Library work on physical device
+5. Promote to Closed → Open → Production when ready
+
+
+PLAY STORE LISTING LINK (fill after publish)
+------------------------------------------
+https://play.google.com/store/apps/details?id=com.clearpath.cpms

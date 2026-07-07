@@ -1108,6 +1108,31 @@ export default function CpmsApk() {
 
         </div>
 
+        <footer className="pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <p className="text-[10px] font-mono text-zinc-500">
+            ClearPath CPMS · <code className="text-zinc-600">com.clearpath.cpms</code>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] font-mono font-bold tracking-wider">
+            <a
+              href="https://clearpathtrader.com/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-cyan-400 transition-colors"
+            >
+              Privacy Policy
+            </a>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.clearpath.cpms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400/80 hover:text-cyan-300 transition-colors inline-flex items-center gap-1"
+            >
+              Google Play
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </footer>
+
       </div>
 
       {/* --- CINEMATIC MOVIE THEATRE PLAYBACK OVERLAY --- */}
