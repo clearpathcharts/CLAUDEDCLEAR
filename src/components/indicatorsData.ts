@@ -1,3 +1,5 @@
+import { classifyIndicatorVisual, type IndicatorVisualType } from './indicatorThumbnail';
+
 export const INDICATOR_NAMES = [
   "Acceleration Bands", "Accumulation/Distribution Line", "Advance/Decline Line", "Advance-Decline Ratio",
   "ADX (Average Directional Index)", "Alligator Indicator", "Alpha", "Andrews Pitchfork", "Aroon Indicator",
@@ -73,6 +75,7 @@ export function buildIndicators() {
     
     const hasVideo = i % 5 === 0;
     const videoUrl = hasVideo ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : null;
+    const visualType: IndicatorVisualType = classifyIndicatorVisual(name, category);
     
     let complexity = Math.round(2 + ((i * 13) % 18) / 10);
     if(complexity > 5) complexity = 5;
@@ -92,6 +95,7 @@ export function buildIndicators() {
       complexity,
       hasVideo,
       tags,
+      visualType,
       videoUrl
     });
   }
