@@ -51,8 +51,11 @@ export class IndicatorEngine {
     if (sym === "SUPERTREND") {
       return fn(candles, settings?.period || 10, settings?.multiplier || 3);
     }
-    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF") {
+    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF" || sym === "DPO" || sym === "TRIX") {
       return fn(candles, settings?.period);
+    }
+    if (sym === "PIVOT") {
+      return fn(candles, settings?.lookback || 24);
     }
     if (sym === "AO") {
       return fn(candles, settings?.fastPeriod || 5, settings?.slowPeriod || 34);

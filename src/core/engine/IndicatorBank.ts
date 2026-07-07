@@ -23,6 +23,9 @@ import { calculateVWAP } from "../../indicators/volume/VWAP";
 import { calculateOBV } from "../../indicators/volume/OBV";
 import { calculateMFI } from "../../indicators/volume/MFI";
 import { calculateCMF } from "../../indicators/volume/CMF";
+import { calculateDPO } from "../../indicators/momentum/DPO";
+import { calculateTRIX } from "../../indicators/momentum/TRIX";
+import { calculatePivotPoints } from "../../indicators/trend/PivotPoints";
 
 export const IndicatorBank: Record<string, Function> = {
   EMA: calculateEMA,
@@ -50,4 +53,7 @@ export const IndicatorBank: Record<string, Function> = {
   OBV: calculateOBV,
   MFI: calculateMFI,
   CMF: calculateCMF,
+  DPO: calculateDPO,
+  TRIX: calculateTRIX,
+  PIVOT: calculatePivotPoints,
 };

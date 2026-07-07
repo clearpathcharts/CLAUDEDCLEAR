@@ -226,6 +226,33 @@ export const IndicatorRegistry: IndicatorDefinition[] = [
     activeColor: "#FF0055",
     sourceFile: "indicators/momentum/StochRSI.ts",
     parameters: { rsiPeriod: 14, stochPeriod: 14, kSmooth: 3, dSmooth: 3 }
+  },
+  {
+    id: "dpo",
+    name: "Detrended Price Oscillator",
+    abbr: "DPO",
+    category: IndicatorCategory.Momentum,
+    activeColor: "#3A0CA3",
+    sourceFile: "indicators/momentum/DPO.ts",
+    parameters: { period: 20 }
+  },
+  {
+    id: "trix",
+    name: "Trix",
+    abbr: "TRIX",
+    category: IndicatorCategory.Momentum,
+    activeColor: "#FF7700",
+    sourceFile: "indicators/momentum/TRIX.ts",
+    parameters: { period: 14 }
+  },
+  {
+    id: "pivot",
+    name: "Pivot Points (Classic)",
+    abbr: "PIVOT",
+    category: IndicatorCategory.Trend,
+    activeColor: "#F72585",
+    sourceFile: "indicators/trend/PivotPoints.ts",
+    parameters: { lookback: 24 }
   }
 ];
 

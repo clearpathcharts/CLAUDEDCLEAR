@@ -38,7 +38,7 @@ type Candle = {
  */
 const OSCILLATOR_INDICATORS = new Set([
   "RSI", "MACD", "ATR", "ADX", "OBV", "AO",
-  "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "MFI", "CMF",
+  "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "MFI", "CMF", "DPO", "TRIX",
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
@@ -523,6 +523,25 @@ export function LightweightCandles({
               else if (indAbbr === "SUPERTREND") {
                 const lineData = IndicatorEngine.calculate("SUPERTREND", tierOptimizedData, { period: 10, multiplier: 3 });
                 chart.addSeries(LineSeries, { color: "#00FFCC", lineWidth: 2, title: "Supertrend" }).setData(lineData as any[]);
+              }
+              else if (indAbbr === "PIVOT") {
+                const pivotData = IndicatorEngine.calculate("PIVOT", tierOptimizedData, { lookback: 24 });
+                const levels: { key: keyof typeof pivotData[0]; color: string; title: string }[] = [
+                  { key: "P", color: "#F72585", title: "Pivot P" },
+                  { key: "R1", color: "#22C55E", title: "R1" },
+                  { key: "S1", color: "#EF4444", title: "S1" },
+                  { key: "R2", color: "#86EFAC", title: "R2" },
+                  { key: "S2", color: "#FCA5A5", title: "S2" },
+                ];
+                for (const lvl of levels) {
+                  const pts = pivotData.map((d: any) => ({ time: d.time as Time, value: d[lvl.key] }));
+                  chart.addSeries(LineSeries, {
+                    color: lvl.color,
+                    lineWidth: lvl.key === "P" ? 2 : 1,
+                    lineStyle: lvl.key === "P" ? LineStyle.Solid : LineStyle.Dashed,
+                    title: lvl.title,
+                  }).setData(pts);
+                }
               }
               else {
                 // Unknown indicator: route via the IndicatorEngine. If it's a known
