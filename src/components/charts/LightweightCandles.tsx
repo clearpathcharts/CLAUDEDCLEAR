@@ -13,8 +13,8 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief } from "../../patterns";
-import type { PatternScanResult } from "../../patterns";
+import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
+import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { Crosshair } from "lucide-react";
@@ -81,6 +81,7 @@ export function LightweightCandles({
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
+  const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
   const visible = useVisibilityPause();
 
   const normalizedProfileId = (profileId || "").toLowerCase();
@@ -278,6 +279,7 @@ export function LightweightCandles({
         setActivePatternScan(patternScan);
 
         const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
+        setFormingBrief(formingBrief);
         setActiveFormingBrief(formingBrief);
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
@@ -584,6 +586,7 @@ export function LightweightCandles({
 
     return () => {
       active = false;
+      clearFormingBrief(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }
@@ -615,7 +618,7 @@ export function LightweightCandles({
           {error}
         </div>
       )}
-      <ChartFormingWatch symbol={sym} />
+      <ChartFormingWatch symbol={sym} brief={formingBrief} />
       <ChartPatternHud symbol={sym} scan={patternScan} />
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
