@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
-import { getActiveFormingBrief, subscribeFormingBrief, formatFormingBriefForChat } from "../patterns";
+import { getAllFormingBriefs, subscribeFormingBrief, formatAllFormingBriefsForChat } from "../patterns";
 import type { FormingStructureBrief } from "../patterns";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc } from "../firebase";
@@ -46,10 +46,10 @@ export const CptBuddyWidget: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
-  const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(getActiveFormingBrief());
+  const [formingBriefs, setFormingBriefs] = useState<FormingStructureBrief[]>(getAllFormingBriefs());
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => subscribeFormingBrief(() => setFormingBrief(getActiveFormingBrief())), []);
+  useEffect(() => subscribeFormingBrief(() => setFormingBriefs(getAllFormingBriefs())), []);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -197,7 +197,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
-          chartContext: formatFormingBriefForChat(formingBrief ?? getActiveFormingBrief()),
+          chartContext: formatAllFormingBriefsForChat(formingBriefs),
           conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -357,7 +357,7 @@ export const CptBuddyWidget: React.FC = () => {
               </div>
             )}
 
-            {memoryLoaded && setupStep === "done" && formingBrief && formingBrief.possibilities.length > 0 && (
+            {memoryLoaded && setupStep === "done" && formingBriefs.some((b) => b.possibilities.length > 0) && (
               <div
                 style={{
                   marginBottom: 10,
@@ -371,16 +371,23 @@ export const CptBuddyWidget: React.FC = () => {
                 }}
               >
                 <div style={{ color: "#FF1493", fontWeight: 800, marginBottom: 4, fontSize: 9, letterSpacing: 1 }}>
-                  FORMING WATCH · {formingBrief.symbol} {formingBrief.timeframe}
+                  FORMING WATCH · {formingBriefs.length} CHART{formingBriefs.length === 1 ? "" : "S"}
                 </div>
-                {formingBrief.clock.active && (
-                  <div style={{ marginBottom: 4, color: "#FF00CC" }}>
-                    {formingBrief.clock.type === "16-bar-retrace" ? "16" : "12"}-bar clock: {formingBrief.clock.bar}/{formingBrief.clock.total}
-                  </div>
-                )}
-                {formingBrief.possibilities.slice(0, 3).map((p) => (
-                  <div key={p.id} style={{ color: "#fff" }}>
-                    {p.status.toUpperCase()} {p.label} (~{Math.round(p.probability * 100)}%)
+                {formingBriefs.filter((b) => b.possibilities.length > 0).slice(0, 4).map((brief) => (
+                  <div key={`${brief.symbol}-${brief.timeframe}`} style={{ marginBottom: 6 }}>
+                    <div style={{ color: "#BF00FF", fontWeight: 700, fontSize: 9, marginBottom: 2 }}>
+                      {brief.symbol} · {brief.timeframe}
+                    </div>
+                    {brief.clock.active && (
+                      <div style={{ marginBottom: 2, color: "#FF00CC" }}>
+                        {brief.clock.type === "16-bar-retrace" ? "16" : "12"}-bar clock: {brief.clock.bar}/{brief.clock.total}
+                      </div>
+                    )}
+                    {brief.possibilities.slice(0, 2).map((p) => (
+                      <div key={p.id} style={{ color: "#fff" }}>
+                        {p.status.toUpperCase()} {p.label} (~{Math.round(p.probability * 100)}%)
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

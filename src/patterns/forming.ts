@@ -47,6 +47,23 @@ export interface FormingStructureBrief {
   updatedAt: number;
 }
 
+/** Normalize UI timeframe labels to a stable key (works on every chart interval). */
+export function normalizeTimeframe(tf: string): string {
+  const raw = (tf || '1h').trim();
+  const lower = raw.toLowerCase();
+  const map: Record<string, string> = {
+    '1': '1m', '2': '2m', '3': '3m', '5': '5m', '10': '10m', '15': '15m', '30': '30m',
+    '60': '1h', '120': '2h', '180': '3h', '240': '4h',
+    d: '1d', w: '1w', m: '1M',
+    '12m': 'ytd', ytd: 'ytd',
+  };
+  if (map[lower]) return map[lower];
+  if (/^\d+[mhdw]$/i.test(lower)) return lower;
+  if (lower === '1h' || lower === '2h' || lower === '3h' || lower === '4h') return lower;
+  if (lower === '1d' || lower === '1w') return lower;
+  return lower;
+}
+
 const MAJOR_LABELS: Record<FormingPatternId, string> = {
   rising_wedge: 'Rising Wedge',
   falling_wedge: 'Falling Wedge',
@@ -220,7 +237,7 @@ export function analyzeFormingStructure(
   symbol: string,
   timeframe: string,
 ): FormingStructureBrief | null {
-  if (!candles || candles.length < 24) return null;
+  if (!candles || candles.length < 12) return null;
 
   const swings = findSwingPoints(candles, 3, 3);
   const upLegs = findImpulseLegs(candles, 56);
@@ -260,7 +277,7 @@ export function analyzeFormingStructure(
     const cur = rawScores.falling_wedge?.p ?? 0.35;
     rawScores.falling_wedge = {
       p: clamp01(cur + 0.2 + (clock.bar / clock.total) * 0.15),
-      detail: rawScores.falling_wedge?.detail ?? 'Retrace window active on H1 bar grid',
+      detail: rawScores.falling_wedge?.detail ?? 'Retrace window active on bar grid',
     };
   }
 
@@ -304,9 +321,10 @@ export function analyzeFormingStructure(
     .sort((a, b) => b.probability - a.probability)
     .slice(0, 6);
 
+  const normalizedTf = normalizeTimeframe(timeframe);
   const base = {
     symbol: symbol.toUpperCase(),
-    timeframe,
+    timeframe: normalizedTf,
     scannedBars: candles.length,
     trendBias,
     clock,
@@ -324,8 +342,22 @@ export function analyzeFormingStructure(
 export function formatFormingBriefForChat(brief: FormingStructureBrief | null): string {
   if (!brief) return 'No live chart structure loaded.';
   return [
-    '=== LIVE CHART STRUCTURE (forming possibilities — not confirmed patterns) ===',
+    `=== LIVE CHART STRUCTURE · ${brief.symbol} ${brief.timeframe} (forming possibilities — not confirmed) ===`,
     ...brief.narrativeLines,
+    '=== END LIVE CHART STRUCTURE ===',
+    'Always describe these as possible or forming. Never state certainty. No harmonics.',
+  ].join('\n');
+}
+
+export function formatAllFormingBriefsForChat(briefs: FormingStructureBrief[]): string {
+  if (!briefs.length) return 'No live chart structure loaded on any open chart.';
+  return [
+    '=== LIVE CHART STRUCTURE — ALL OPEN CHARTS (forming possibilities — not confirmed) ===',
+    ...briefs.flatMap((brief, i) => [
+      i > 0 ? '' : undefined,
+      `--- ${brief.symbol} · ${brief.timeframe} (${brief.scannedBars} bars) ---`,
+      ...brief.narrativeLines,
+    ].filter((line): line is string => line !== undefined)),
     '=== END LIVE CHART STRUCTURE ===',
     'Always describe these as possible or forming. Never state certainty. No harmonics.',
   ].join('\n');

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Radio, ChevronRight } from 'lucide-react';
-import { getActiveFormingBrief, subscribeFormingBrief } from '../../patterns/activeForming';
-import type { FormingPossibility } from '../../patterns/forming';
+import type { FormingPossibility, FormingStructureBrief } from '../../patterns/forming';
 
 const STATUS_STYLE: Record<FormingPossibility['status'], string> = {
   forming: 'text-[#FF1493] border-[#FF1493]/50 bg-[#FF1493]/10',
@@ -11,15 +10,12 @@ const STATUS_STYLE: Record<FormingPossibility['status'], string> = {
 
 interface ChartFormingWatchProps {
   symbol: string;
+  brief: FormingStructureBrief | null;
 }
 
-/** Live forming-pattern probabilities — no forced geometry on chart. */
-export function ChartFormingWatch({ symbol }: ChartFormingWatchProps) {
-  const [brief, setBrief] = useState(getActiveFormingBrief());
-
-  useEffect(() => subscribeFormingBrief(() => setBrief(getActiveFormingBrief())), []);
-
-  if (!brief || brief.symbol !== symbol.toUpperCase()) return null;
+/** Live forming-pattern probabilities — per chart, every symbol and timeframe. */
+export function ChartFormingWatch({ symbol, brief }: ChartFormingWatchProps) {
+  if (!brief) return null;
 
   return (
     <div
@@ -29,7 +25,7 @@ export function ChartFormingWatch({ symbol }: ChartFormingWatchProps) {
       <div className="mb-2 flex items-center gap-2 border-b border-[#FF1493]/25 pb-2">
         <Radio size={13} className="text-[#FF1493] animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Forming Watch</span>
-        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.timeframe}</span>
+        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>
       </div>
 
       {brief.clock.active && (
