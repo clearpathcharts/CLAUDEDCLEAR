@@ -135,6 +135,7 @@ const CustomNavIcon = ({ size = 16, className = '', style = {} }: { size?: numbe
 
 import NewsPanel from './NewsPanel';
 import DiscoveryFeed from './DiscoveryFeed';
+import ClearPathChatroom from './chat/ClearPathChatroom';
 import FoundersPortal from './FoundersPortal';
 import KillZones from './KillZones';
 
@@ -1603,7 +1604,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {isEditingIntro && null}
       </AnimatePresence>
 
-      {/* Slide-out Mock Chat Panel */}
+      {/* Live contact chat panel */}
       <AnimatePresence>
         {activeChat && (
           <motion.div 
@@ -1611,54 +1612,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-[360px] bg-black/95 backdrop-blur-xl border-l z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
-            style={{ borderColor: `${profile.borderA}33` }}
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
           >
-            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: `${profile.borderA}22`, background: `${profile.borderA}11` }}>
-              <div className="flex items-center space-x-3">
-                <div className="surfboard-profile-outline border-2" style={{ width: '30px', height: '50px', borderColor: profile.borderA }}>
-                  {activeChat.img ? <img src={activeChat.img} referrerPolicy="no-referrer" className="surfboard-img" /> : <div className="surfboard-img bg-[#111]" />}
-                </div>
-                <div>
-                  <div className="text-sm font-black uppercase tracking-widest" style={{ color: profile.borderA }}>{activeChat.name}</div>
-                  <div className="text-[10px] uppercase font-mono opacity-50 flex items-center gap-1 text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF1493] to-[#4D00FF]"></div> Encrypted Protocol
-                  </div>
-                </div>
-              </div>
-              <button aria-label="Close chat" onClick={() => setActiveChat(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <X size={20} style={{ color: profile.borderA }} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-              <div className="text-center text-[10px] font-mono opacity-30 my-4 uppercase tracking-widest">
-                End-to-End Encrypted Session Started
-              </div>
-              <div className="flex flex-col space-y-4">
-                <div className="bg-white/5 p-3 rounded-tr-xl rounded-b-xl max-w-[85%] self-start border border-white/5">
-                  <p className="text-sm">Signal is clear. Awaiting protocol override on the ETH levels.</p>
-                  <span className="text-[10px] opacity-40 mt-1 block font-mono">08:42 AM</span>
-                </div>
-                <div className="p-3 rounded-tl-xl rounded-b-xl max-w-[85%] self-end shadow-[0_0_15px_rgba(99,102,241,0.2)]" style={{ background: `${profile.borderA}22`, border: `1px solid ${profile.borderA}44` }}>
-                  <p className="text-sm text-white">Monitoring the 4H charts. Will send sequence shortly. Stand by.</p>
-                  <span className="text-[10px] opacity-40 mt-1 block font-mono">08:45 AM</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t bg-black/50" style={{ borderColor: `${profile.borderA}22` }}>
-              <div className="relative flex items-center">
-                <input 
-                  type="text" 
-                  placeholder="Transmit securely..." 
-                  className="w-full bg-white/5 border border-white/10 rounded-full pl-4 pr-12 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-                <button className="absolute right-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-full text-white transition-colors shadow-[0_0_10px_#6366f1]">
-                  <MessageSquare size={14} />
-                </button>
-              </div>
-            </div>
+            <ClearPathChatroom
+              variant="panel"
+              initialRoomId="lobby"
+              title={activeChat.name}
+              subtitle="Direct trader channel"
+              showRoomSidebar={false}
+              accentColor={profile.borderA}
+              onClose={() => setActiveChat(null)}
+              className="rounded-none border-l h-full"
+            />
           </motion.div>
         )}
       </AnimatePresence>
