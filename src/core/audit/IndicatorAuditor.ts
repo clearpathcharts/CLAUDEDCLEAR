@@ -27,8 +27,9 @@ export class IndicatorAuditor {
           const fullPath = path.join(process.cwd(), "src", cleanFile);
           fileExists = fs.existsSync(fullPath);
         } else {
-          // Client mock-proof pass-through (assume true for known validated list to avoid client bundler crashes)
-          fileExists = ["SMA", "EMA", "WMA", "TEMA", "HMA", "DEMA", "KAMA", "SUPERTREND", "PIVOT", "RSI", "MACD", "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "AO", "DPO", "TRIX", "ULTOSC", "AROON", "KST", "ATR", "BB", "DC", "KC", "VWAP", "OBV", "MFI", "CMF", "FI", "ADX", "ICHIMOKU", "PSAR"].includes(ind.abbr);
+          // Client: trust IndicatorBank registration for chart indicators
+          registeredInBank = !!IndicatorBank[ind.abbr.toUpperCase()];
+          fileExists = registeredInBank || ind.sourceFile.startsWith('indicators/oss/');
         }
       } catch (e) {
         fileExists = false;

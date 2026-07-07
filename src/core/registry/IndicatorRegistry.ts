@@ -1,7 +1,8 @@
 import { IndicatorDefinition } from "../../types/indicators";
 import { IndicatorCategory } from "./CategoryRegistry";
+import { buildOssRegistryEntries } from "../../indicators/oss/catalog";
 
-export const IndicatorRegistry: IndicatorDefinition[] = [
+const NATIVE_INDICATORS: IndicatorDefinition[] = [
   {
     id: "sma",
     name: "Simple Moving Average",
@@ -255,42 +256,6 @@ export const IndicatorRegistry: IndicatorDefinition[] = [
     parameters: { lookback: 24 }
   },
   {
-    id: "dema",
-    name: "Double Exponential Moving Average",
-    abbr: "DEMA",
-    category: IndicatorCategory.Trend,
-    activeColor: "#4CC9F0",
-    sourceFile: "indicators/trend/DEMA.ts",
-    parameters: { period: 20 }
-  },
-  {
-    id: "kama",
-    name: "Kaufman Adaptive Moving Average",
-    abbr: "KAMA",
-    category: IndicatorCategory.Trend,
-    activeColor: "#FB8500",
-    sourceFile: "indicators/trend/KAMA.ts",
-    parameters: { period: 20 }
-  },
-  {
-    id: "ultosc",
-    name: "Ultimate Oscillator",
-    abbr: "ULTOSC",
-    category: IndicatorCategory.Momentum,
-    activeColor: "#7209B7",
-    sourceFile: "indicators/momentum/UltimateOscillator.ts",
-    parameters: { period1: 7, period2: 14, period3: 28 }
-  },
-  {
-    id: "aroon",
-    name: "Aroon",
-    abbr: "AROON",
-    category: IndicatorCategory.Momentum,
-    activeColor: "#2A9D8F",
-    sourceFile: "indicators/momentum/Aroon.ts",
-    parameters: { period: 14 }
-  },
-  {
     id: "kst",
     name: "Know Sure Thing",
     abbr: "KST",
@@ -299,15 +264,11 @@ export const IndicatorRegistry: IndicatorDefinition[] = [
     sourceFile: "indicators/momentum/KST.ts",
     parameters: { rocPer1: 10, rocPer2: 15, rocPer3: 20, rocPer4: 30, signalPeriod: 9 }
   },
-  {
-    id: "fi",
-    name: "Force Index",
-    abbr: "FI",
-    category: IndicatorCategory.Volume,
-    activeColor: "#06AED5",
-    sourceFile: "indicators/volume/ForceIndex.ts",
-    parameters: { period: 13 }
-  }
+];
+
+export const IndicatorRegistry: IndicatorDefinition[] = [
+  ...NATIVE_INDICATORS,
+  ...buildOssRegistryEntries(),
 ];
 
 /** Abbreviations that plot on live charts via IndicatorEngine. */

@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
+import { OSS_OSCILLATOR_ABBRS, getOssSpec } from "../../indicators/oss/catalog";
+import { tryRenderOssIndicator } from "../../core/chart/renderOssIndicator";
 import {
   themeProfiles,
   type ThemeProfileId,
@@ -36,11 +38,12 @@ type Candle = {
  * separate price scale. Price-based overlays (SMA, EMA, BB, VWAP, Ichimoku,
  * River) belong ON the candle scale and are deliberately excluded here.
  */
-const OSCILLATOR_INDICATORS = new Set([
+const BASE_OSCILLATOR_INDICATORS = new Set([
   "RSI", "MACD", "ATR", "ADX", "OBV", "AO",
   "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "MFI", "CMF", "DPO", "TRIX",
-  "ULTOSC", "AROON", "KST", "FI",
+  "KST",
 ]);
+const OSCILLATOR_INDICATORS = new Set([...BASE_OSCILLATOR_INDICATORS, ...OSS_OSCILLATOR_ABBRS]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
 export function LightweightCandles({
@@ -544,25 +547,6 @@ export function LightweightCandles({
                   }).setData(pts);
                 }
               }
-              else if (indAbbr === "DEMA") {
-                const lineData = IndicatorEngine.calculate("DEMA", tierOptimizedData, { period: 20 });
-                chart.addSeries(LineSeries, { color: "#4CC9F0", lineWidth: 2, title: "DEMA (20)" }).setData(lineData as any[]);
-              }
-              else if (indAbbr === "KAMA") {
-                const lineData = IndicatorEngine.calculate("KAMA", tierOptimizedData, { period: 20 });
-                chart.addSeries(LineSeries, { color: "#FB8500", lineWidth: 2, title: "KAMA (20)" }).setData(lineData as any[]);
-              }
-              else if (indAbbr === "ULTOSC") {
-                const ultData = IndicatorEngine.calculate("ULTOSC", tierOptimizedData);
-                addOscillatorSeries({ color: "#7209B7", lineWidth: 2, title: "Ultimate Oscillator" }).setData(ultData as any[]);
-              }
-              else if (indAbbr === "AROON") {
-                const aroonData = IndicatorEngine.calculate("AROON", tierOptimizedData, { period: 14 });
-                const upData = aroonData.map((d: any) => ({ time: d.time as Time, value: d.up }));
-                const downData = aroonData.map((d: any) => ({ time: d.time as Time, value: d.down }));
-                addOscillatorSeries({ color: "#2A9D8F", lineWidth: 2, title: "Aroon Up" }).setData(upData);
-                addOscillatorSeries({ color: "#E76F51", lineWidth: 2, title: "Aroon Down" }).setData(downData);
-              }
               else if (indAbbr === "KST") {
                 const kstData = IndicatorEngine.calculate("KST", tierOptimizedData);
                 const kLine = kstData.map((d: any) => ({ time: d.time as Time, value: d.kst }));
@@ -570,9 +554,9 @@ export function LightweightCandles({
                 addOscillatorSeries({ color: "#E63946", lineWidth: 2, title: "KST" }).setData(kLine);
                 addOscillatorSeries({ color: "#F4A261", lineWidth: 2, title: "KST Signal" }).setData(sLine);
               }
-              else if (indAbbr === "FI") {
-                const fiData = IndicatorEngine.calculate("FI", tierOptimizedData, { period: 13 });
-                addOscillatorSeries({ color: "#06AED5", lineWidth: 2, title: "Force Index (13)" }).setData(fiData as any[]);
+              else if (getOssSpec(indAbbr)) {
+                const ossData = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                tryRenderOssIndicator(chart, indAbbr, ossData, addOscillatorSeries, color);
               }
               else {
                 // Unknown indicator: route via the IndicatorEngine. If it's a known

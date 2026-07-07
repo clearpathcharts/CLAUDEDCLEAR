@@ -1,5 +1,6 @@
 import { Candle } from "../../types/indicators";
 import { IndicatorBank } from "./IndicatorBank";
+import { getOssSpec } from "../../indicators/oss/catalog";
 
 export class IndicatorEngine {
   static calculate(indicator: string, candles: Candle[], settings?: any): any {
@@ -10,7 +11,12 @@ export class IndicatorEngine {
       throw new Error(`Indicator calculation function not registered in IndicatorBank: ${indicator}`);
     }
 
-    if (sym === "SMA" || sym === "EMA" || sym === "WMA" || sym === "TEMA" || sym === "HMA" || sym === "DEMA" || sym === "KAMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
+    // OSS catalog indicators accept a merged settings object.
+    if (getOssSpec(sym)) {
+      return fn(candles, settings);
+    }
+
+    if (sym === "SMA" || sym === "EMA" || sym === "WMA" || sym === "TEMA" || sym === "HMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
       return fn(candles, settings?.period);
     }
     if (sym === "ICHIMOKU") {
@@ -51,11 +57,8 @@ export class IndicatorEngine {
     if (sym === "SUPERTREND") {
       return fn(candles, settings?.period || 10, settings?.multiplier || 3);
     }
-    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF" || sym === "DPO" || sym === "TRIX" || sym === "AROON" || sym === "FI") {
+    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF" || sym === "DPO" || sym === "TRIX") {
       return fn(candles, settings?.period);
-    }
-    if (sym === "ULTOSC") {
-      return fn(candles, settings?.period1 || 7, settings?.period2 || 14, settings?.period3 || 28);
     }
     if (sym === "KST") {
       return fn(

@@ -40,3 +40,22 @@ export function alignDualSeriesToTimes(
   }
   return out;
 }
+
+export function alignTripleSeriesToTimes(
+  times: number[],
+  a: number[],
+  b: number[],
+  c: number[],
+): { time: number; a: number; b: number; c: number }[] {
+  const out: { time: number; a: number; b: number; c: number }[] = [];
+  const offset = times.length - a.length;
+  for (let i = 0; i < a.length; i++) {
+    const va = a[i];
+    const vb = b[i];
+    const vc = c[i];
+    if (Number.isFinite(va) && Number.isFinite(vb) && Number.isFinite(vc)) {
+      out.push({ time: times[offset + i], a: va, b: vb, c: vc });
+    }
+  }
+  return out;
+}
