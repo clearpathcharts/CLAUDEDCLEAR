@@ -20,21 +20,24 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
 
   return (
     <div
-      className="absolute top-3 right-3 z-50 w-72 max-h-52 overflow-hidden rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
+      className="absolute top-3 right-3 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
       id={`forming-watch-${symbol}`}
     >
       {onClose && (
         <button
           type="button"
-          onClick={onClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
           aria-label="Close forming watch"
           title="Close forming watch"
-          className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#BF00FF]/50 bg-black/90 text-[#BF00FF] shadow-[0_0_12px_rgba(191,0,255,0.35)] transition-all hover:border-[#BF00FF] hover:bg-[#BF00FF]/20 hover:text-white"
+          className="absolute -top-2.5 -right-2.5 z-[70] flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#BF00FF] bg-[#100018] text-[#BF00FF] shadow-[0_0_18px_rgba(191,0,255,0.55)] transition-all hover:scale-110 hover:bg-[#BF00FF] hover:text-white"
         >
-          <X size={14} strokeWidth={2.5} />
+          <X size={18} strokeWidth={3} />
         </button>
       )}
-      <div className="mb-2 flex items-center gap-2 border-b border-[#FF1493]/25 pb-2 pr-8">
+      <div className="mb-2 flex items-center gap-2 overflow-hidden rounded-t-lg border-b border-[#FF1493]/25 pb-2 pr-10">
         <Radio size={13} className="text-[#FF1493] animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Forming Watch</span>
         <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>

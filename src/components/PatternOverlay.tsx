@@ -56,16 +56,19 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="fixed bottom-24 right-4 z-[120] w-80 rounded-xl border border-[#FF1493]/40 bg-black/92 p-4 pt-5 font-mono shadow-[0_0_32px_rgba(191,0,255,0.3)] backdrop-blur-md"
+      className="fixed bottom-24 right-4 z-[120] w-80 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-4 pt-5 font-mono shadow-[0_0_32px_rgba(191,0,255,0.3)] backdrop-blur-md"
     >
       <button
         type="button"
-        onClick={() => setOpen(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(false);
+        }}
         aria-label="Close pattern scanner"
         title="Close pattern scanner"
-        className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#FF1493]/50 bg-black/90 text-[#FF1493] shadow-[0_0_14px_rgba(255,20,147,0.4)] transition-all hover:border-[#FF1493] hover:bg-[#FF1493]/20 hover:text-white"
+        className="absolute -top-2.5 -right-2.5 z-[130] flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#FF1493] bg-[#1a0010] text-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,0.55)] transition-all hover:scale-110 hover:bg-[#FF1493] hover:text-white"
       >
-        <X size={16} strokeWidth={2.5} />
+        <X size={18} strokeWidth={3} />
       </button>
       <div className="mb-3 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2 pr-10">
         <Scan size={16} className="text-[#FF1493]" />
