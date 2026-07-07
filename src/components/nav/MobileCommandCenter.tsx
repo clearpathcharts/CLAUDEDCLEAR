@@ -12,9 +12,11 @@ import {
   Shield,
   SlidersHorizontal,
   Terminal,
+  Tv,
   Users,
   X,
 } from "lucide-react";
+import { openCpmsTv } from "@/lib/cpms/openCpmsTv";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -87,6 +89,13 @@ const TOOLS_ITEMS: NavItem[] = [
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
   {
+    id: "CpmsTv",
+    icon: Tv,
+    label: "CPMS TV",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
     id: "Sentinel",
     icon: Shield,
     label: "SENTINEL",
@@ -145,6 +154,10 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const handleItemTap = (id: string) => {
     setIsOpen(false);
+    if (id === "CpmsTv") {
+      openCpmsTv("home");
+      return;
+    }
     onNavigate(id);
   };
 

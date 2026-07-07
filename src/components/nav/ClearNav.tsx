@@ -15,9 +15,11 @@ import {
   Shield,
   SlidersHorizontal,
   Terminal,
+  Tv,
   Users,
 } from "lucide-react";
 import { MobileCommandCenter } from "./MobileCommandCenter";
+import { openCpmsTv } from "@/lib/cpms/openCpmsTv";
 
 interface ClearNavProps {
   activeTab: string;
@@ -110,6 +112,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
+      id: "CpmsTv",
+      icon: Tv,
+      label: "CPMS TV",
+    },
+
+    {
       id: "Sentinel",
       icon: Shield,
       label: "SENTINEL",
@@ -134,6 +142,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isCyan =
       item.id === "CpmsApk" ||
+      item.id === "CpmsTv" ||
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators";
@@ -182,7 +191,13 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       <button
         key={item.id}
         type="button"
-        onClick={() => onNavigate(item.id)}
+        onClick={() => {
+          if (item.id === "CpmsTv") {
+            openCpmsTv("home");
+            return;
+          }
+          onNavigate(item.id);
+        }}
         className={`
           shrink-0
           snap-start
