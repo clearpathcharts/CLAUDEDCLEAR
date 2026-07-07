@@ -2,18 +2,11 @@ import React from "react";
 import {
   Activity,
   BarChart3,
-  BookOpen,
   Cpu,
   Crown,
-  Folder,
-  GraduationCap,
   Home,
-  Landmark,
   LogOut,
-  Navigation,
   Newspaper,
-  Shield,
-  SlidersHorizontal,
   Terminal,
   Users,
 } from "lucide-react";
@@ -60,16 +53,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "CHARTS",
     },
     {
-      id: "Screener",
-      icon: SlidersHorizontal,
-      label: "SCREENER",
-    },
-    {
-      id: "Journal",
-      icon: BookOpen,
-      label: "JOURNAL",
-    },
-    {
       id: "News",
       icon: Newspaper,
       label: "NEWS",
@@ -108,12 +91,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Cpu,
       label: "CPMS APK",
     },
-
-    {
-      id: "Sentinel",
-      icon: Shield,
-      label: "SENTINEL",
-    },
   ];
   const renderNavButton = (
     item: NavItem,
@@ -134,7 +111,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isCyan =
       item.id === "CpmsApk" ||
-      item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators";
 

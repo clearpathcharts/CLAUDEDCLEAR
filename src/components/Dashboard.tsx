@@ -24,7 +24,6 @@ import {
   Brain,
   Activity,
   Compass,
-  BookOpen,
   Building2,
   BarChart3,
   Shield,
@@ -47,7 +46,6 @@ import {
   Calendar,
   Map,
   Landmark,
-  SlidersHorizontal,
   ShieldAlert,
   Crown
 } from 'lucide-react';
@@ -84,7 +82,6 @@ import { ClearNav } from './nav/ClearNav';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 
-import TradingJournal from './TradingJournal';
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 
@@ -106,14 +103,12 @@ const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
 const GeographicMap = lazy(() => import('./GeographicMap'));
-const AdvancedScreener = lazy(() => import('./AdvancedScreener'));
 const CapitalFlowMap = lazy(() => import('./CapitalFlowMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
 const Leaderboard = lazy(() => import('./Leaderboard'));
 const CpmsApk = lazy(() => import('./CpmsApk'));
-const ClearPathSentinel = lazy(() => import('./ClearPathSentinel'));
 const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
 import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
@@ -353,13 +348,11 @@ const TabContent = ({
         />
       );
       case 'CapitalFlow': return <CapitalFlowMap />;
-      case 'Screener': return <AdvancedScreener />;
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
       case 'StrictlyCharts': return <LightweightMarketUI profile={profile} onBack={onBack} chartTheme={chartTheme} selectedMarketSymbol={selectedLightweightSymbol} onSelectMarketSymbol={setSelectedLightweightSymbol} />;
       case 'ThemeTerminal': return <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />;
       case 'Macro': return <MacroDashboard />;
       case 'Fundamentals': return <FundamentalsPanel />;
-      case 'Journal': return <TradingJournal />;
       case 'News': return <NewsPanel />;
       case 'Founders': return <FoundersPortal />;
       case 'Intelligence': return <MarketScanner />;
@@ -378,7 +371,6 @@ const TabContent = ({
         </Suspense>
       );
       case 'CpmsApk': return <CpmsApk />;
-      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isAdmin ? 'CeoDashboard' : 'StrictlyCharts')} />;
       case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
@@ -676,13 +668,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         // Map common spoken words to tab IDs
         const targetMap: Record<string, string> = {
           'home': 'Discovery',
-          'sentinel': 'Sentinel',
           'insights': 'Insights',
           'market': 'StrictlyCharts',
           'markets': 'StrictlyCharts',
           'exchange command center': 'StrictlyCharts',
           'standard': 'Standard',
-          'journal': 'Journal',
           'news': 'News',
           'photos': 'Photos',
           'settings': 'Settings',
@@ -890,8 +880,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
-      { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
-      { id: 'Journal', icon: BookOpen, label: 'TRADING JOURNAL', verified: true },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
@@ -1032,6 +1020,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(urlTab);
       } else {
         const hash = window.location.hash.replace('#', '');
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel']);
+        if (retiredTabs.has(hash)) {
+          setActiveTab('Discovery');
+        } else {
         const validHash = menuItems.find(m => m.id === hash) || 
           hash === 'TheRiver' || 
           hash === 'Founders' || 
@@ -1040,9 +1032,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Market' || 
           hash === 'StrictlyCharts' || 
           hash === 'Fundamentals' || 
-          hash === 'Screener' || 
           hash === 'Portfolio' || 
-          hash === 'Journal' || 
           hash === 'News' || 
           hash === 'Biography' || 
           hash === 'CapitalFlow' || 
@@ -1053,10 +1043,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ApiMonitor' || 
-          hash === 'Diagnostics' || 
-          hash === 'Sentinel';
+          hash === 'Diagnostics';
         if (validHash) {
           setActiveTab(hash);
+        }
         }
       }
     }
