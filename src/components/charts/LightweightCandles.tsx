@@ -17,7 +17,7 @@ import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildC
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
-import { Crosshair } from "lucide-react";
+import { Crosshair, Scan, Radio } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
 type Candle = {
@@ -84,6 +84,22 @@ export function LightweightCandles({
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
+  const [showPatternHud, setShowPatternHud] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [showFormingWatch, setShowFormingWatch] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_forming_watch_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
   const visible = useVisibilityPause();
   const sym = symbol.toUpperCase();
 
@@ -624,11 +640,71 @@ export function LightweightCandles({
           {error}
         </div>
       )}
-      <ChartFormingWatch symbol={sym} brief={formingBrief} />
-      <ChartPatternHud symbol={sym} scan={patternScan} />
+      <ChartFormingWatch
+        symbol={sym}
+        brief={showFormingWatch ? formingBrief : null}
+        onClose={() => {
+          setShowFormingWatch(false);
+          try {
+            localStorage.setItem("cp_chart_forming_watch_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!showFormingWatch && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowFormingWatch(true);
+            try {
+              localStorage.setItem("cp_chart_forming_watch_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open forming watch"
+          className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+        >
+          <Radio size={10} className="animate-pulse" />
+          Forming
+        </button>
+      )}
+      <ChartPatternHud
+        symbol={sym}
+        scan={showPatternHud ? patternScan : null}
+        onClose={() => {
+          setShowPatternHud(false);
+          try {
+            localStorage.setItem("cp_chart_pattern_hud_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!showPatternHud && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowPatternHud(true);
+            try {
+              localStorage.setItem("cp_chart_pattern_hud_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open pattern scanner"
+          className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+        >
+          <Scan size={10} />
+          Patterns
+        </button>
+      )}
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-        className="absolute top-3 right-3 z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95"
+        className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+          showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+        }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}
       >

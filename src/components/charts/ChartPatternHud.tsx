@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scan, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import type { PatternScanResult, PatternGroup } from '../../patterns';
 import { PATTERN_GROUP_LABELS } from '../../patterns';
 
@@ -19,10 +19,11 @@ const GROUP_BADGE: Record<PatternGroup, string> = {
 interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
+  onClose?: () => void;
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan }: ChartPatternHudProps) {
+export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
   if (!scan) return null;
 
   const chartPatterns = scan.patterns.filter((p) => p.category === 'chart').slice(-12);
@@ -36,10 +37,21 @@ export function ChartPatternHud({ symbol, scan }: ChartPatternHudProps) {
 
   return (
     <div
-      className="absolute bottom-3 left-3 z-50 w-72 max-h-64 overflow-hidden rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
+      className="absolute bottom-3 left-3 z-50 w-72 max-h-64 overflow-hidden rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
       id={`pattern-hud-${symbol}`}
     >
-      <div className="mb-2 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close pattern scanner"
+          title="Close pattern scanner"
+          className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#FF1493]/50 bg-black/90 text-[#FF1493] shadow-[0_0_12px_rgba(255,20,147,0.35)] transition-all hover:border-[#FF1493] hover:bg-[#FF1493]/20 hover:text-white"
+        >
+          <X size={14} strokeWidth={2.5} />
+        </button>
+      )}
+      <div className="mb-2 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2 pr-8">
         <Scan size={14} className="text-[#FF1493]" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Pattern Scanner</span>
         <span className="ml-auto text-[10px] text-[#BF00FF]">{symbol}</span>

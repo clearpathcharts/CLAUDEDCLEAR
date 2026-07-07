@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Scan, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import { getActivePatternScan, subscribePatternScan, PATTERN_GROUP_LABELS } from '../patterns';
 import type { PatternGroup } from '../patterns';
 
@@ -23,6 +23,7 @@ interface PatternOverlayProps {
 
 export default function PatternOverlay({ chartActive = false }: PatternOverlayProps) {
   const [scan, setScan] = useState(getActivePatternScan());
+  const [open, setOpen] = useState(false);
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
@@ -31,6 +32,20 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
   const patternCount = scan?.patterns.length ?? 0;
 
   if (!chartActive && (!scan || patternCount === 0)) return null;
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-24 right-4 z-[120] flex items-center gap-2 rounded-full border border-[#FF1493]/40 bg-black/90 px-4 py-2 font-mono text-[10px] font-black uppercase tracking-wider text-[#FF1493] shadow-[0_0_20px_rgba(255,20,147,0.25)] backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+        aria-label="Open pattern scanner"
+      >
+        <Scan size={14} />
+        Pattern Scanner
+      </button>
+    );
+  }
 
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
@@ -41,9 +56,18 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="fixed bottom-24 right-4 z-[120] w-80 rounded-xl border border-[#FF1493]/40 bg-black/92 p-4 font-mono shadow-[0_0_32px_rgba(191,0,255,0.3)] backdrop-blur-md"
+      className="fixed bottom-24 right-4 z-[120] w-80 rounded-xl border border-[#FF1493]/40 bg-black/92 p-4 pt-5 font-mono shadow-[0_0_32px_rgba(191,0,255,0.3)] backdrop-blur-md"
     >
-      <div className="mb-3 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2">
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        aria-label="Close pattern scanner"
+        title="Close pattern scanner"
+        className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#FF1493]/50 bg-black/90 text-[#FF1493] shadow-[0_0_14px_rgba(255,20,147,0.4)] transition-all hover:border-[#FF1493] hover:bg-[#FF1493]/20 hover:text-white"
+      >
+        <X size={16} strokeWidth={2.5} />
+      </button>
+      <div className="mb-3 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2 pr-10">
         <Scan size={16} className="text-[#FF1493]" />
         <span className="text-xs font-black uppercase tracking-wider text-white">Pattern Scanner</span>
         <span className="ml-auto text-xs text-[#BF00FF]">

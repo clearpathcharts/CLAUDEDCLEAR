@@ -75,7 +75,6 @@ import { ProfileHub } from './ProfileHub';
 import AffiliateDashboard from './profile/AffiliateDashboard';
 import YoursPage from './yours/YoursPage';
 import MembershipTab from './MembershipTab';
-import PatternOverlay from './PatternOverlay';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
@@ -1356,8 +1355,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {/* PERSISTENT Clear NAV */}
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} />
 
-        {/* Pattern scanner floats on any chart tab (StrictlyCharts, ThemeTerminal, etc.) */}
-        <PatternOverlay chartActive={activeTab === 'StrictlyCharts' || activeTab === 'ThemeTerminal'} />
         
         {/* TOP MARKET TICKER */}
         {showTicker && (
