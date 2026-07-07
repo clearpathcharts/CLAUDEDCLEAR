@@ -3,7 +3,7 @@ import {
   Sliders, Search, RotateCcw, Frown, Info, Calculator, Tag, ArrowDown, 
   TriangleAlert, X, Check, Star, StarHalf, ChevronLeft, Layers, PlayCircle, BookOpen, ArrowRight
 } from 'lucide-react';
-import { buildIndicators } from './indicatorsData';
+import { buildIndicators, LIVE_CHART_INDICATOR_COUNT } from './indicatorsData';
 import { IndicatorThumbnail } from './indicatorThumbnail';
 
 const LS_KEY = "indicator_directory_v1";
@@ -20,12 +20,14 @@ function formatDateMonthDYr(d: Date) {
 }
 
 const INDICATORS = buildIndicators();
+const LIVE_DIRECTORY_COUNT = INDICATORS.filter((p) => p.liveOnChart).length;
 
 const defaultState = {
   search: "",
   categories: [] as string[],
   maxComplexity: 5,
   withVideoOnly: false,
+  liveOnChartOnly: false,
   sort: "nameAsc",
   selectedIndicatorId: "",
   lastSaved: ""
@@ -68,20 +70,27 @@ export default function EncyclopediaOfIndicators() {
     const cats = new Set(state.categories);
     const maxC = state.maxComplexity;
     const videoOnly = state.withVideoOnly;
+    const liveOnly = state.liveOnChartOnly;
 
     let list = INDICATORS.filter(p => {
       if (q) {
-        const hay = `${p.name} ${p.description} ${p.tags.join(" ")} ${p.category}`.toLowerCase();
+        const hay = `${p.name} ${p.description} ${p.tags.join(" ")} ${p.category} ${p.chartAbbr ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       if (cats.size && !cats.has(p.category)) return false;
       if (p.complexity > maxC) return false;
       if (videoOnly && !p.hasVideo) return false;
+      if (liveOnly && !p.liveOnChart) return false;
       return true;
     });
 
     const sort = state.sort;
-    if (sort === "complexityAsc") {
+    if (sort === "liveFirst") {
+      list.sort((a, b) => {
+        if (a.liveOnChart !== b.liveOnChart) return a.liveOnChart ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    } else if (sort === "complexityAsc") {
       list.sort((a, b) => a.complexity - b.complexity);
     } else if (sort === "complexityDesc") {
       list.sort((a, b) => b.complexity - a.complexity);
@@ -94,7 +103,7 @@ export default function EncyclopediaOfIndicators() {
       });
     }
     return list;
-  }, [state.search, state.categories, state.maxComplexity, state.withVideoOnly, state.sort]);
+  }, [state.search, state.categories, state.maxComplexity, state.withVideoOnly, state.liveOnChartOnly, state.sort]);
 
   const selectedIndicator = INDICATORS.find(p => p.id === state.selectedIndicatorId);
 
@@ -113,6 +122,7 @@ export default function EncyclopediaOfIndicators() {
     if (key === "cats") updateState({ categories: [] });
     if (key === "complexity") updateState({ maxComplexity: 5 });
     if (key === "video") updateState({ withVideoOnly: false });
+    if (key === "live") updateState({ liveOnChartOnly: false });
     updateState({ selectedIndicatorId: "" });
   };
   
@@ -142,7 +152,9 @@ export default function EncyclopediaOfIndicators() {
             </div>
             <div className="min-w-0 pr-4">
               <h1 className="m-0 text-base font-semibold tracking-wide truncate mt-1 text-white uppercase font-mono tracking-widest">Indicator Directory</h1>
-              <p className="m-0 mt-0.5 text-xs text-[#00FFFF]/60 truncate uppercase tracking-widest font-mono">Browse mathematical models and technical analysis tools.</p>
+              <p className="m-0 mt-0.5 text-xs text-[#00FFFF]/60 truncate uppercase tracking-widest font-mono">
+                {LIVE_DIRECTORY_COUNT} live on charts · {LIVE_CHART_INDICATOR_COUNT} in registry · {INDICATORS.length} encyclopedia entries
+              </p>
             </div>
           </div>
         </header>
@@ -196,10 +208,19 @@ export default function EncyclopediaOfIndicators() {
                 <span className="text-xs text-white/80 select-none font-mono tracking-widest uppercase">Contains Video</span>
               </label>
 
+              <label className="flex items-center gap-3 p-2.5 border border-[#7CFF00]/20 bg-[#071226]/60 rounded-xl cursor-pointer hover:border-[#7CFF00]/40 hover:bg-[#7CFF00]/5 transition-all">
+                <input type="checkbox" className="hidden" checked={state.liveOnChartOnly} onChange={e => { updateState({liveOnChartOnly: e.target.checked, selectedIndicatorId: ""}); saveStateTime();}} />
+                <div className={`w-11 h-6 rounded-full border relative transition-all ${state.liveOnChartOnly ? "border-[#7CFF00] bg-[#7CFF00]/20 shadow-[0_0_10px_rgba(124,255,0,0.3)]" : "border-[#00B6FF]/30 bg-[#071226]"}`}>
+                  <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full transition-all shadow-[0_0_5px_rgba(124,255,0,0.5)] ${state.liveOnChartOnly ? "left-[22px] bg-[#7CFF00]" : "left-[3px] bg-[#00B6FF]/50"}`}></div>
+                </div>
+                <span className="text-xs text-white/80 select-none font-mono tracking-widest uppercase">✓ Live on Chart</span>
+              </label>
+
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-[#00FFD1]/80 font-mono tracking-widest uppercase">Sort Parameters</label>
                 <select className="w-full bg-[#071226]/80 text-[#00FFD1] border border-[#00B6FF]/30 rounded-xl py-2.5 px-3 text-[12px] font-mono tracking-widest uppercase outline-none focus:border-[#00FFD1] focus:shadow-[0_0_15px_rgba(0,255,209,0.3)] transition-all appearance-none" value={state.sort} onChange={e => { updateState({sort: e.target.value}); saveStateTime();}}>
                     <option value="nameAsc" className="bg-[#071226]">Name - A to Z</option>
+                    <option value="liveFirst" className="bg-[#071226]">Live on Chart First</option>
                     <option value="featured" className="bg-[#071226]">Media Features First</option>
                     <option value="complexityAsc" className="bg-[#071226]">Complexity - Low to High</option>
                     <option value="complexityDesc" className="bg-[#071226]">Complexity - High to Low</option>
@@ -207,7 +228,7 @@ export default function EncyclopediaOfIndicators() {
               </div>
 
               <button 
-                onClick={() => { updateState({search: "", categories: [], maxComplexity: 5, withVideoOnly: false, sort: "nameAsc", selectedIndicatorId: ""}); saveStateTime(); }}
+                onClick={() => { updateState({search: "", categories: [], maxComplexity: 5, withVideoOnly: false, liveOnChartOnly: false, sort: "nameAsc", selectedIndicatorId: ""}); saveStateTime(); }}
                 className="flex items-center justify-center gap-2 px-3 py-2.5 border border-[#FF2D95]/40 text-[#FF2D95] rounded-xl bg-[#071226]/80 hover:bg-[#FF2D95]/10 hover:shadow-[0_0_15px_rgba(255,45,149,0.3)] transition-all text-[11px] font-mono tracking-widest uppercase mt-2"
               >
                 <RotateCcw size={14}/> Reset filters
@@ -239,6 +260,12 @@ export default function EncyclopediaOfIndicators() {
                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-[#FFF000]/40 bg-[#FFF000]/10 text-[#FFF000] text-[10px] text-nowrap font-mono tracking-widest shadow-[0_0_10px_rgba(255,240,0,0.2)]">
                      <span>Level: {'<='} {state.maxComplexity}</span>
                      <button onClick={() => removeChip('complexity')}><X size={12} className="text-[#FFF000] hover:text-white" /></button>
+                   </div>
+                )}
+                {state.liveOnChartOnly && (
+                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-[#7CFF00]/40 bg-[#7CFF00]/10 text-[#7CFF00] text-[10px] text-nowrap font-mono tracking-widest shadow-[0_0_10px_rgba(124,255,0,0.2)]">
+                     <span>Live on Chart</span>
+                     <button onClick={() => removeChip('live')}><X size={12} className="text-[#7CFF00] hover:text-white" /></button>
                    </div>
                 )}
                 {state.withVideoOnly && (
@@ -276,6 +303,12 @@ export default function EncyclopediaOfIndicators() {
                             {p.hasVideo ? <PlayCircle size={12} /> : <BookOpen size={12} />}
                             {p.hasVideo ? "Video Demo" : "Text Guide"}
                          </div>
+                         {p.liveOnChart && (
+                           <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 rounded-full text-[9px] border border-[#7CFF00]/60 bg-[#7CFF00]/15 text-[#7CFF00] backdrop-blur-md font-mono tracking-widest uppercase shadow-[0_0_10px_rgba(124,255,0,0.25)]">
+                             <Check size={10} />
+                             LIVE · {p.chartAbbr}
+                           </div>
+                         )}
                       </div>
                       <div className="p-4 flex flex-col gap-3 flex-1 justify-between bg-[#071226]/80 backdrop-blur-sm">
                          <div className="flex justify-between items-start gap-2">
@@ -333,9 +366,21 @@ export default function EncyclopediaOfIndicators() {
                 
                 <div className="p-6 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
                   <div className="mb-6 shrink-0">
-                    <span className="text-[10px] text-[#00FFD1] border border-[#00FFD1]/30 bg-[#00FFD1]/10 px-2.5 py-1 rounded-sm tracking-widest uppercase font-mono shadow-[0_0_10px_rgba(0,255,209,0.2)]">{selectedIndicator.category}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] text-[#00FFD1] border border-[#00FFD1]/30 bg-[#00FFD1]/10 px-2.5 py-1 rounded-sm tracking-widest uppercase font-mono shadow-[0_0_10px_rgba(0,255,209,0.2)]">{selectedIndicator.category}</span>
+                      {selectedIndicator.liveOnChart && (
+                        <span className="text-[10px] text-[#7CFF00] border border-[#7CFF00]/40 bg-[#7CFF00]/10 px-2.5 py-1 rounded-sm tracking-widest uppercase font-mono shadow-[0_0_10px_rgba(124,255,0,0.2)] flex items-center gap-1">
+                          <Check size={12} /> LIVE ON CHART · {selectedIndicator.chartAbbr}
+                        </span>
+                      )}
+                    </div>
                     <h2 className="text-2xl font-bold mt-4 tracking-tight text-white">{selectedIndicator.name}</h2>
                     <p className="text-sm text-[#00B6FF]/80 leading-relaxed mt-3">{selectedIndicator.description}</p>
+                    {selectedIndicator.liveOnChart && (
+                      <p className="text-xs text-[#7CFF00]/90 leading-relaxed mt-2 font-mono">
+                        This indicator is implemented in ClearPath charts. Add <strong>{selectedIndicator.chartAbbr}</strong> from the Theme Terminal indicator picker.
+                      </p>
+                    )}
                   </div>
                   
                   <div className="bg-[#071226]/60 rounded-xl p-4 border border-[#00B6FF]/20 mb-6 shrink-0 shadow-[inset_0_0_15px_rgba(0,182,255,0.05)]">
