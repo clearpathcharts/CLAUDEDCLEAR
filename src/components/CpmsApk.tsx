@@ -37,6 +37,7 @@ import {
 } from '../cpms/cpmsCatalog';
 import { bindVideoSource } from '../lib/cpms/hlsPlayer';
 import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
+import { openCpmsTv } from '../lib/cpms/openCpmsTv';
 
 type VideoItem = CpmsVideoItem;
 type ChannelItem = CpmsChannelItem;
@@ -474,6 +475,18 @@ export default function CpmsApk() {
                 className="w-full bg-zinc-900/60 border border-white/5 focus:border-amber-500/30 rounded-full pl-10 pr-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none transition-all font-semibold"
               />
             </div>
+
+            {/* LAUNCH FULL IPTV (news / live TV channels) */}
+            <button
+              type="button"
+              onClick={() => openCpmsTv('home')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-cyan-500/40 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 text-xs font-mono font-black tracking-wider transition-all cursor-pointer shadow-[0_0_12px_rgba(0,229,255,0.12)]"
+              title="Open CPMS TV — live news & IPTV channel directory"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Launch CPMS TV</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </button>
 
             {/* SCREEN SCALER */}
             <div className="flex items-center gap-1 bg-zinc-900/60 border border-white/5 rounded-full p-1 select-none text-[10px] font-mono text-zinc-400">
@@ -1094,6 +1107,31 @@ export default function CpmsApk() {
           </div>
 
         </div>
+
+        <footer className="pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <p className="text-[10px] font-mono text-zinc-500">
+            ClearPath CPMS · <code className="text-zinc-600">com.clearpath.cpms</code>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] font-mono font-bold tracking-wider">
+            <a
+              href="https://clearpathtrader.com/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-cyan-400 transition-colors"
+            >
+              Privacy Policy
+            </a>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.clearpath.cpms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400/80 hover:text-cyan-300 transition-colors inline-flex items-center gap-1"
+            >
+              Google Play
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </footer>
 
       </div>
 
