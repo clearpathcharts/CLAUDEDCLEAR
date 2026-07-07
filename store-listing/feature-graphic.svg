@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050508"/>
+      <stop offset="50%" stop-color="#0a0a12"/>
+      <stop offset="100%" stop-color="#050508"/>
+    </linearGradient>
+    <radialGradient id="cyanGlow" cx="80%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="#00FFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#00FFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="amberGlow" cx="15%" cy="70%" r="40%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="55%" stop-color="#E4E4E7"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#cyanGlow)"/>
+  <rect width="1024" height="500" fill="url(#amberGlow)"/>
+
+  <!-- Decorative chart lines -->
+  <polyline points="620,320 680,280 740,300 800,220 860,250 920,180 980,200"
+    fill="none" stroke="#00FFFF" stroke-width="2" stroke-opacity="0.35"/>
+  <polyline points="620,360 700,340 780,350 860,300 940,310 1000,270"
+    fill="none" stroke="#FF4500" stroke-width="2" stroke-opacity="0.3"/>
+
+  <!-- TV icon block -->
+  <g transform="translate(72,130)">
+    <rect x="0" y="0" width="120" height="84" rx="12" fill="#111118" stroke="#F59E0B" stroke-width="2" stroke-opacity="0.6"/>
+    <rect x="10" y="10" width="100" height="58" rx="6" fill="#1a1a24"/>
+    <polygon points="52,28 52,50 72,39" fill="#F59E0B"/>
+    <rect x="48" y="84" width="24" height="14" fill="#333"/>
+    <rect x="30" y="96" width="60" height="6" rx="3" fill="#444"/>
+  </g>
+
+  <!-- Radio waves -->
+  <path d="M 200 250 Q 230 220 260 250" fill="none" stroke="#00FFFF" stroke-width="2" stroke-opacity="0.5"/>
+  <path d="M 185 250 Q 230 200 275 250" fill="none" stroke="#00FFFF" stroke-width="2" stroke-opacity="0.35"/>
+  <path d="M 170 250 Q 230 175 290 250" fill="none" stroke="#00FFFF" stroke-width="2" stroke-opacity="0.2"/>
+
+  <text x="220" y="175" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="bold" fill="url(#titleGrad)" letter-spacing="2">
+    CLEARPATH CPMS
+  </text>
+  <text x="222" y="215" font-family="ui-monospace, 'Courier New', monospace" font-size="18" fill="#00FFFF" letter-spacing="3">
+    FINANCE MEDIA LIBRARY + LIVE NEWS TV
+  </text>
+  <text x="222" y="255" font-family="ui-monospace, monospace" font-size="14" fill="#71717A" letter-spacing="1">
+    Educational market intelligence · Falcon House Protocol
+  </text>
+
+  <!-- Pill badges -->
+  <rect x="222" y="285" width="108" height="32" rx="16" fill="#0c2a2a" stroke="#00FFFF" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="276" y="306" text-anchor="middle" font-family="monospace" font-size="11" fill="#67E8F9" font-weight="bold">CPMS TV</text>
+
+  <rect x="342" y="285" width="128" height="32" rx="16" fill="#2a1f0c" stroke="#F59E0B" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="406" y="306" text-anchor="middle" font-family="monospace" font-size="11" fill="#FCD34D" font-weight="bold">CPMS LIBRARY</text>
+</svg>

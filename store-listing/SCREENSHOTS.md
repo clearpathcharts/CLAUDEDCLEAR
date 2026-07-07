@@ -27,8 +27,14 @@ Capture on a **physical Android device** or emulator after `npm run cpms:apk` (d
 
 - Power + Volume Down (most devices), or developer **Screenshot** in quick settings.
 
+## Feature graphic (required)
+
+Upload **`store-listing/feature-graphic-1024x500.png`** (1024×500) to the same listing page.
+
+Vector source: `store-listing/feature-graphic.svg` (re-export with any SVG tool if you tweak branding).
+
 ## Upload
 
-Play Console → **Grow** → **Store presence** → **Main store listing** → **Phone screenshots**.
+Play Console → **Grow** → **Store presence** → **Main store listing** → **Phone screenshots** + **Feature graphic**.
 
-Paste listing copy from `google-play-en-US.txt`.
+Paste listing copy from `google-play-en-US.txt`. Full publish walkthrough: `INTERNAL_TESTING.md`.

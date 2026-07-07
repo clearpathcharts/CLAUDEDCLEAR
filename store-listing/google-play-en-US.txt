@@ -94,8 +94,10 @@ Encryption in transit: Yes (HTTPS)
 
 STORE ASSETS CHECKLIST
 ----------------------
-[ ] App icon: 512×512 PNG (use android/app/src/main/res/ or export from logo)
-[ ] Feature graphic: 1024×500 PNG (banner with CPMS branding)
+[ ] App icon: 512×512 PNG (use android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
+[ ] Feature graphic: 1024×500 PNG → store-listing/feature-graphic-1024x500.png
+      (alternate vector source: store-listing/feature-graphic.svg)
+[ ] Internal testing steps: store-listing/INTERNAL_TESTING.md
 [ ] Phone screenshots: 2–8 images, 9:16 recommended (1080×1920 or higher)
       Suggested captures:
         1. Main ClearPath home / Discovery
