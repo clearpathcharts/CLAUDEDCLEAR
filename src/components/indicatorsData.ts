@@ -72,7 +72,6 @@ export function buildIndicators() {
     const category = isFundamental ? "Fundamental" : "Technical";
     
     const hasVideo = i % 5 === 0;
-    const img = `https://picsum.photos/800/600?random=${i + 50}`;
     const videoUrl = hasVideo ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : null;
     
     let complexity = Math.round(2 + ((i * 13) % 18) / 10);
@@ -93,7 +92,6 @@ export function buildIndicators() {
       complexity,
       hasVideo,
       tags,
-      img,
       videoUrl
     });
   }

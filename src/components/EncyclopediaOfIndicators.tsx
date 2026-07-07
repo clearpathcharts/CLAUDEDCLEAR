@@ -268,8 +268,9 @@ export default function EncyclopediaOfIndicators() {
                         ${isActive ? "border-[#00FFD1] shadow-[0_0_20px_rgba(0,255,209,0.3)] bg-gradient-to-r from-[#071226] to-[#0A1C3A]" : "border-[#00B6FF]/30 hover:-translate-y-0.5 hover:border-[#00B6FF]/70 hover:shadow-[0_0_15px_rgba(0,182,255,0.3)]"}
                       `}
                     >
-                      <div className="h-[160px] bg-[#071226] relative overflow-hidden shrink-0 group border-b border-[#00B6FF]/30">
-                         <img src={p.img} alt={p.name} className="w-full h-full object-cover saturate-[1.2] contrast-[1.1] transform scale-[1.02] transition-transform duration-500 group-hover:scale-110 opacity-60 mix-blend-screen" loading="lazy" />
+                      <div className="h-[120px] bg-[#071226] relative overflow-hidden shrink-0 group border-b border-[#00B6FF]/30 flex items-center justify-center">
+                         <div className="absolute inset-0 bg-gradient-to-br from-[#00B6FF]/10 via-transparent to-[#8A2EFF]/10" />
+                         <Activity size={36} className="text-[#00B6FF]/40 relative z-10" />
                          <div className={`absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] border backdrop-blur-md font-medium tracking-widest uppercase font-mono shadow-[0_0_10px_rgba(0,0,0,0.5)] ${p.hasVideo ? "bg-[#8A2EFF]/20 border-[#8A2EFF]/50 text-[#8A2EFF]" : "bg-[#071226]/80 border-[#00B6FF]/40 text-[#00B6FF]"}`}>
                             {p.hasVideo ? <PlayCircle size={12} /> : <BookOpen size={12} />}
                             {p.hasVideo ? "Video Demo" : "Text Guide"}
@@ -323,8 +324,9 @@ export default function EncyclopediaOfIndicators() {
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full h-[220px] bg-[#071226] relative border-b border-[#00B6FF]/30 shrink-0">
-                     <img src={selectedIndicator.img} className="w-full h-full object-cover opacity-40 mix-blend-screen saturate-150" alt={selectedIndicator.name} />
+                  <div className="w-full h-[160px] bg-[#071226] relative border-b border-[#00B6FF]/30 shrink-0 flex items-center justify-center">
+                     <div className="absolute inset-0 bg-gradient-to-br from-[#00B6FF]/10 via-transparent to-[#8A2EFF]/10" />
+                     <BookOpen size={40} className="text-[#00B6FF]/40 relative z-10" />
                      <div className="absolute inset-0 bg-gradient-to-t from-[#071226] to-transparent"></div>
                   </div>
                 )}
