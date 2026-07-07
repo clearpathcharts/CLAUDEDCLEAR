@@ -12,6 +12,7 @@ import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
 import { MediaGrid } from './MediaGrid';
+import ClearPathChatroom from './chat/ClearPathChatroom';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -202,7 +203,6 @@ export default function Auth() {
 
   // Immersive consumer redesign states
   const [isCEO, setIsCEO] = useState(false);
-  const [joinedGroups, setJoinedGroups] = useState<string[]>([]);
   const [ywcFilter, setYwcFilter] = useState<'all' | 'news' | 'social' | 'research'>('all');
   const [dbCountries, setDbCountries] = useState<any[]>([]);
 
@@ -1020,48 +1020,18 @@ Not the other way around.`}
                 </span>
               </div>
 
-              {/* List of active real-time groups to explore (Discord vibe) */}
-              <div className="flex-grow space-y-3 max-h-[220px] overflow-y-auto no-scrollbar py-1">
-                {[
-                  { id: 'swarm-1', name: 'SOVEREIGN MACRO MINDS', members: '14.8k members', active: '3.2k active', topic: 'Yield curves looking completely off today...', avatar: '🧬' },
-                  { id: 'swarm-2', name: 'FOREX SWARM SYNDICATE', members: '12.4k members', active: '1.9k active', topic: 'Overnight EURUSD structural liquidity sweep is peaking...', avatar: '🦂' },
-                  { id: 'swarm-3', name: 'LIQUIDITY ALCHEMISTS', members: '8.2k members', active: '940 online', topic: 'Reverse repos down another $12B.', avatar: '🧪' },
-                ].map(group => {
-                  const hasJoined = joinedGroups.includes(group.id);
-                  return (
-                    <div 
-                      key={group.id} 
-                      className="p-3 bg-zinc-950/60 border border-zinc-900 rounded-xl hover:border-[#FF7B00]/40 transition-all duration-300 flex items-center justify-between gap-3 text-left group/item"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xl shrink-0">{group.avatar}</span>
-                        <div className="space-y-0.5 min-w-0">
-                          <h5 className="text-[10px] sm:text-xs font-black text-white uppercase tracking-wide truncate group-hover/item:text-[#FF7B00] transition-colors">{group.name}</h5>
-                          <div className="flex gap-2 text-[8px] font-mono text-zinc-500 font-bold leading-none">
-                            <span>{group.members}</span>
-                            <span>•</span>
-                            <span className="text-emerald-500">{group.active}</span>
-                          </div>
-                          <p className="text-[8px] text-zinc-600 font-sans italic truncate">"{group.topic}"</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (hasJoined) return;
-                          setJoinedGroups([...joinedGroups, group.id]);
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-                          hasJoined 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
-                            : 'bg-[#FF7B00]/10 text-[#FF7B00] border border-[#FF7B00]/20 hover:bg-[#FF7B00] hover:text-white'
-                        }`}
-                      >
-                        {hasJoined ? 'JOINED!' : 'JOIN'}
-                      </button>
-                    </div>
-                  );
-                })}
+              {/* Live lobby preview — full chatroom below the ecosystem grid */}
+              <div className="rounded-2xl border border-[#FF7B00]/25 bg-black/50 p-4 text-left">
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Jump into the <strong className="text-[#FF7B00]">live public lobby</strong> below — no account required. Pick a room, set your trader handle, and chat in real time.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                >
+                  Open Live Chat Lobby ↓
+                </button>
               </div>
 
               {/* Collapsed Seed Engine Form Trigger for CEO Sync (Fulfills the original registration capability) */}
@@ -1143,6 +1113,22 @@ Not the other way around.`}
               </div>
             </div>
 
+          </div>
+
+          {/* LIVE PUBLIC CHATROOM — glass UI inspired by CodePen dark chat patterns */}
+          <div id="clearpath-live-lobby" className="mt-12 scroll-mt-24">
+            <div className="text-center mb-8 space-y-3">
+              <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-[0.3em] bg-[#FF7B00]/5 px-4 py-1.5 rounded-full border border-[#FF7B00]/20 inline-block">
+                Live Before Login
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white">
+                ClearPath <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B00] to-[#FF1493]">Trading Lobby</span>
+              </h2>
+              <p className="text-sm text-zinc-500 max-w-2xl mx-auto">
+                Real-time community chat powered by WebSocket. Join macro, forex, or liquidity rooms — create your free account later for private guilds.
+              </p>
+            </div>
+            <ClearPathChatroom variant="embedded" heightClass="min-h-[580px] md:min-h-[620px]" />
           </div>
 
           {/* ==========================================
