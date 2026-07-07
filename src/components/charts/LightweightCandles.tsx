@@ -84,8 +84,22 @@ export function LightweightCandles({
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
-  const [showPatternHud, setShowPatternHud] = useState(true);
-  const [showFormingWatch, setShowFormingWatch] = useState(true);
+  const [showPatternHud, setShowPatternHud] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [showFormingWatch, setShowFormingWatch] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_forming_watch_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
   const visible = useVisibilityPause();
   const sym = symbol.toUpperCase();
 
@@ -629,12 +643,26 @@ export function LightweightCandles({
       <ChartFormingWatch
         symbol={sym}
         brief={showFormingWatch ? formingBrief : null}
-        onClose={() => setShowFormingWatch(false)}
+        onClose={() => {
+          setShowFormingWatch(false);
+          try {
+            localStorage.setItem("cp_chart_forming_watch_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
       />
       {!showFormingWatch && (
         <button
           type="button"
-          onClick={() => setShowFormingWatch(true)}
+          onClick={() => {
+            setShowFormingWatch(true);
+            try {
+              localStorage.setItem("cp_chart_forming_watch_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
           aria-label="Open forming watch"
           className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
         >
@@ -645,12 +673,26 @@ export function LightweightCandles({
       <ChartPatternHud
         symbol={sym}
         scan={showPatternHud ? patternScan : null}
-        onClose={() => setShowPatternHud(false)}
+        onClose={() => {
+          setShowPatternHud(false);
+          try {
+            localStorage.setItem("cp_chart_pattern_hud_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
       />
       {!showPatternHud && (
         <button
           type="button"
-          onClick={() => setShowPatternHud(true)}
+          onClick={() => {
+            setShowPatternHud(true);
+            try {
+              localStorage.setItem("cp_chart_pattern_hud_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
           aria-label="Open pattern scanner"
           className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
         >
