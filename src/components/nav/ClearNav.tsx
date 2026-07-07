@@ -11,7 +11,6 @@ import {
   LogOut,
   Navigation,
   Newspaper,
-  SlidersHorizontal,
   Terminal,
   Users,
 } from "lucide-react";
@@ -56,11 +55,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "StrictlyCharts",
       icon: BarChart3,
       label: "CHARTS",
-    },
-    {
-      id: "Screener",
-      icon: SlidersHorizontal,
-      label: "SCREENER",
     },
     {
       id: "News",
