@@ -484,7 +484,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     purgeAuthCache
   } = useAuth();
   const [leftSide, setLeftSide] = useState(false);
-  const [rightSide, setRightSide] = useState(false);
+  const [rightSide, setRightSide] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('cp_contacts_sidebar_open');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia('(min-width: 1280px)').matches;
+  });
+
+  const handleSetRightSide = (open: boolean) => {
+    setRightSide(open);
+    localStorage.setItem('cp_contacts_sidebar_open', open ? 'true' : 'false');
+  };
   const [activeTab, setActiveTab ] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1374,13 +1384,16 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                 </form>
               </div>
               <div className="flex items-center space-x-4">
-                <button 
-                  onClick={() => setRightSide(!rightSide)}
-                  className="lg:hidden p-3 transition-colors rounded-full shadow-lg z-[60]"
-                  style={{ background: `${profile.borderA}ee`, color: '#000' }}
-                >
-                  <MessageSquare size={24} />
-                </button>
+                {!rightSide && (
+                  <button 
+                    onClick={() => handleSetRightSide(true)}
+                    aria-label="Open contacts"
+                    className="p-3 transition-colors rounded-full shadow-lg z-[60]"
+                    style={{ background: `${profile.borderA}ee`, color: '#000' }}
+                  >
+                    <MessageSquare size={24} />
+                  </button>
+                )}
               </div>
             </div>
           </>
@@ -1432,7 +1445,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         leftSide={leftSide}
                         setLeftSide={setLeftSide}
                         rightSide={rightSide}
-                        setRightSide={setRightSide}
+                        setRightSide={handleSetRightSide}
                         showTicker={showTicker}
                         setShowTicker={handleSetShowTicker}
                         layoutDensity={layoutDensity}
@@ -1461,39 +1474,49 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       {activeTab !== 'StrictlyCharts' && (
       <div className={`
         fixed inset-y-0 right-0 z-50 w-[280px] border-l flex flex-col transition-all duration-300 glass
-        xl:sticky xl:top-0 xl:h-dvh xl:translate-x-0
-        ${rightSide ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
+        xl:sticky xl:top-0 xl:h-dvh
+        ${rightSide ? 'translate-x-0' : 'translate-x-full'}
       `}
       style={{ borderColor: `${profile.borderA}22` }}
       >
-        <div className="h-[60px] flex items-center justify-around px-4 sticky top-0 z-10" style={{ background: profile.bgBottom }}>
-          <button className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
-            <Mail size={20} />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
-          </button>
-          <button className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
-            <Bell size={20} />
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
-          </button>
-          <div className="flex items-center text-[#64677a] font-semibold text-sm cursor-pointer hover:text-white transition-colors" onClick={() => setIsEditingIntro(true)}>
-            <span className="name-text font-bold" style={{ color: profile.borderA }}>{user.name}</span>
-            <div className="surfboard-profile-outline mx-3 border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] overflow-hidden" style={{ width: '28px', height: '46px' }}>
-              {user.avatar ? (
-                isVideoUrl(user.avatar) ? (
-                  <video src={user.avatar} className="surfboard-img object-cover" autoPlay loop muted playsInline />
-                ) : isAudioUrl(user.avatar) ? (
-                  <div className="surfboard-img bg-[#111] flex items-center justify-center overflow-hidden">
-                    <audio src={user.avatar} className="w-[300%] scale-[0.25] opacity-50" />
-                  </div>
+        <div className="h-[60px] flex items-center justify-between px-4 sticky top-0 z-10" style={{ background: profile.bgBottom }}>
+          <div className="flex items-center justify-around flex-1 min-w-0">
+            <button type="button" aria-label="Mail" className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
+              <Mail size={20} />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
+            </button>
+            <button type="button" aria-label="Notifications" className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
+              <Bell size={20} />
+              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
+            </button>
+            <div className="flex items-center text-[#64677a] font-semibold text-sm cursor-pointer hover:text-white transition-colors min-w-0" onClick={() => setIsEditingIntro(true)}>
+              <span className="name-text font-bold truncate max-w-[60px]" style={{ color: profile.borderA }}>{user.name}</span>
+              <div className="surfboard-profile-outline mx-2 border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] overflow-hidden shrink-0" style={{ width: '28px', height: '46px' }}>
+                {user.avatar ? (
+                  isVideoUrl(user.avatar) ? (
+                    <video src={user.avatar} className="surfboard-img object-cover" autoPlay loop muted playsInline />
+                  ) : isAudioUrl(user.avatar) ? (
+                    <div className="surfboard-img bg-[#111] flex items-center justify-center overflow-hidden">
+                      <audio src={user.avatar} className="w-[300%] scale-[0.25] opacity-50" />
+                    </div>
+                  ) : (
+                    <img src={user.avatar} referrerPolicy="no-referrer" className="surfboard-img object-cover" />
+                  )
                 ) : (
-                  <img src={user.avatar} referrerPolicy="no-referrer" className="surfboard-img object-cover" />
-                )
-              ) : (
-                <div className="surfboard-img bg-[#111]" />
-              )}
+                  <div className="surfboard-img bg-[#111]" />
+                )}
+              </div>
+              <ChevronDown size={10} style={{ color: profile.borderA }} />
             </div>
-            <ChevronDown size={10} style={{ color: profile.borderA }} />
           </div>
+          <button
+            type="button"
+            aria-label="Close contacts"
+            onClick={() => handleSetRightSide(false)}
+            className="ml-2 p-2 hover:bg-white/10 rounded-full transition-colors shrink-0"
+          >
+            <X size={20} style={{ color: profile.borderA }} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
@@ -1515,7 +1538,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </div>
 
           <div className="px-6 py-8">
-            <div className="text-[15px] font-black uppercase tracking-[0.2em] mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">Contacts</div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-[15px] font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">Contacts</div>
+              <button
+                type="button"
+                aria-label="Close contacts"
+                onClick={() => handleSetRightSide(false)}
+                className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X size={18} style={{ color: profile.borderA }} />
+              </button>
+            </div>
             <div className="space-y-6">
               {contacts.map((contact) => (
                 <div key={contact.id} onClick={() => setActiveChat(contact)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
@@ -1556,7 +1589,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => { setLeftSide(false); setRightSide(false); }}
+            onClick={() => { setLeftSide(false); handleSetRightSide(false); }}
             className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           />
         )}
