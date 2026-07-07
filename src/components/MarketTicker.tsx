@@ -134,7 +134,7 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
           return (
             <span
               key={`${asset.symbol}-${i}`}
-              className={`ticker-item font-mono font-bold text-xs tracking-wider flex items-center gap-2 px-2 py-0.5 rounded transition-all duration-300 ${changeClass} ${tickFlashClass}`}
+              className={`ticker-item font-mono font-bold text-sm tracking-wider flex items-center gap-2 px-2 py-0.5 rounded transition-all duration-300 ${changeClass} ${tickFlashClass}`}
               title={asset.isLive ? `Live as of ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Stale — last real quote could not be refreshed"}
             >
               <span
@@ -144,7 +144,7 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
               <span className="text-white/60 font-sans tracking-normal uppercase">{asset.name}</span>
               <span>{priceStr}</span>
               <span>{changeSign}</span>
-              <span className="text-[10px] opacity-90">({isUp ? "+" : ""}{asset.percentChange.toFixed(2)}%)</span>
+              <span className="text-xs opacity-90">({isUp ? "+" : ""}{asset.percentChange.toFixed(2)}%)</span>
             </span>
           );
         })}

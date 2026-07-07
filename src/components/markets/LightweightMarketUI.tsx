@@ -163,7 +163,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({ onBack
 
   return (
     <div 
-      className="flex flex-col min-h-full w-full transition-all duration-1000"
+      className="market-terminal-ui flex flex-col min-h-full w-full transition-all duration-1000"
       style={{ background: profile.bgTop }}
     >
       {/* Top Navigation */}
