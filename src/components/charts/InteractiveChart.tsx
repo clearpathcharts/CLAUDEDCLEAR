@@ -170,7 +170,7 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
         isExpanded={isExpanded}
         onExpandToggle={() => setIsExpanded(!isExpanded)}
       >
-        <div className="w-full flex flex-col h-full bg-[#03030c] rounded-2xl border border-zinc-800/80 overflow-hidden relative">
+        <div className={`w-full flex flex-col bg-[#03030c] rounded-2xl border border-zinc-800/80 overflow-hidden relative ${isExpanded ? "h-full min-h-0" : "h-full"}`}>
           
           {/* Top Panel - Controls & Core indicators menu */}
           <div className="flex flex-wrap items-center justify-between p-3 bg-black/50 border-b border-zinc-900 gap-2 relative z-20">
@@ -224,14 +224,15 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
             </div>
           </div>
 
-          <div className="relative flex-1 min-h-[420px] bg-black">
+          <div className={`relative flex-1 bg-black ${isExpanded ? "min-h-0" : "min-h-[420px]"}`}>
             
             {/* Live Chart Canvas viewport */}
-            <div className="w-full h-full relative z-10">
+            <div className="w-full h-full relative z-10 min-h-0">
               <LightweightCandles 
                 symbol={title}
                 profileId={profileId} 
-                height={isExpanded ? 720 : 420} 
+                height={420}
+                isExpanded={isExpanded}
                 timeframe={timeframe} 
                 theme={theme}
                 userTier={userTier}
