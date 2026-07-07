@@ -9,7 +9,13 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "river:lex-test": "tsx src/river/pine/lexer.selftest.ts",
+    "river:parse-test": "tsx src/river/pine/parser.selftest.ts",
+    "river:rir-test": "tsx src/river/rir/rir.selftest.ts",
+    "river:runtime-test": "tsx src/river/runtime/runtime.selftest.ts",
+    "patterns:scan-test": "tsx src/patterns/scan.selftest.ts",
+    "river:compile-test": "npm run river:lex-test && npm run river:parse-test && npm run river:rir-test && npm run river:runtime-test && npm run patterns:scan-test"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
