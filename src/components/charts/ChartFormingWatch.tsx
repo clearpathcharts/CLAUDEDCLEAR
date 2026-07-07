@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, ChevronRight } from 'lucide-react';
+import { Radio, ChevronRight, X } from 'lucide-react';
 import type { FormingPossibility, FormingStructureBrief } from '../../patterns/forming';
 
 const STATUS_STYLE: Record<FormingPossibility['status'], string> = {
@@ -11,10 +11,11 @@ const STATUS_STYLE: Record<FormingPossibility['status'], string> = {
 interface ChartFormingWatchProps {
   symbol: string;
   brief: FormingStructureBrief | null;
+  onClose?: () => void;
 }
 
 /** Live forming-pattern probabilities — per chart, every symbol and timeframe. */
-export function ChartFormingWatch({ symbol, brief }: ChartFormingWatchProps) {
+export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchProps) {
   if (!brief) return null;
 
   return (
@@ -26,6 +27,16 @@ export function ChartFormingWatch({ symbol, brief }: ChartFormingWatchProps) {
         <Radio size={13} className="text-[#FF1493] animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Forming Watch</span>
         <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close forming watch"
+            className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {brief.clock.active && (

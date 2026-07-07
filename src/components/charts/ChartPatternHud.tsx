@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scan, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import type { PatternScanResult, PatternGroup } from '../../patterns';
 import { PATTERN_GROUP_LABELS } from '../../patterns';
 
@@ -19,10 +19,11 @@ const GROUP_BADGE: Record<PatternGroup, string> = {
 interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
+  onClose?: () => void;
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan }: ChartPatternHudProps) {
+export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
   if (!scan) return null;
 
   const chartPatterns = scan.patterns.filter((p) => p.category === 'chart').slice(-12);
@@ -43,6 +44,16 @@ export function ChartPatternHud({ symbol, scan }: ChartPatternHudProps) {
         <Scan size={14} className="text-[#FF1493]" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Pattern Scanner</span>
         <span className="ml-auto text-[10px] text-[#BF00FF]">{symbol}</span>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close pattern scanner"
+            className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">

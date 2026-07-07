@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Scan, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import { getActivePatternScan, subscribePatternScan, PATTERN_GROUP_LABELS } from '../patterns';
 import type { PatternGroup } from '../patterns';
 
@@ -23,6 +23,7 @@ interface PatternOverlayProps {
 
 export default function PatternOverlay({ chartActive = false }: PatternOverlayProps) {
   const [scan, setScan] = useState(getActivePatternScan());
+  const [open, setOpen] = useState(true);
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
@@ -31,6 +32,20 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
   const patternCount = scan?.patterns.length ?? 0;
 
   if (!chartActive && (!scan || patternCount === 0)) return null;
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-24 right-4 z-[120] flex items-center gap-2 rounded-full border border-[#FF1493]/40 bg-black/90 px-4 py-2 font-mono text-[10px] font-black uppercase tracking-wider text-[#FF1493] shadow-[0_0_20px_rgba(255,20,147,0.25)] backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+        aria-label="Open pattern scanner"
+      >
+        <Scan size={14} />
+        Pattern Scanner
+      </button>
+    );
+  }
 
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
@@ -49,6 +64,14 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
         <span className="ml-auto text-xs text-[#BF00FF]">
           {patternCount > 0 ? `${patternCount} found` : 'active'}
         </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close pattern scanner"
+          className="rounded-md p-1 text-zinc-500 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {patternCount === 0 ? (
