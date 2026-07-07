@@ -41,6 +41,7 @@ export function LightweightCandles({
   symbol = "UNKNOWN",
   profileId,
   height = 520,
+  isExpanded = false,
   timeframe = "1h",
   theme: customTheme,
   userTier = "BRONZE",
@@ -59,6 +60,7 @@ export function LightweightCandles({
   symbol?: string;
   profileId: string;
   height?: number;
+  isExpanded?: boolean;
   timeframe?: string;
   theme?: any;
   userTier?: string;
@@ -158,7 +160,14 @@ export function LightweightCandles({
       // scroll the page. That's what was freezing the page at the first chart on
       // mobile. horzTouchDrag stays on so users can still drag the chart
       // left/right through time; only vertical drag is released back to the page.
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      // When expanded (fullscreen modal), re-enable vertical drag so the chart
+      // can be panned freely — body scroll is locked while the modal is open.
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: isExpanded,
+      },
       handleScale: { axisPressedMouseMove: true, mouseWheel: true },
     });
 
@@ -560,9 +569,6 @@ export function LightweightCandles({
           width,
           height: rectHeight > 0 ? rectHeight : initialHeight
         });
-        setTimeout(() => {
-          if (active) chart.timeScale().fitContent();
-        }, 10);
       }
     });
 
@@ -577,14 +583,15 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
     <div
       ref={containerRef}
       style={{
         width: "100%",
-        height: `${height}px`,
+        height: isExpanded ? "100%" : `${height}px`,
+        minHeight: isExpanded ? 320 : undefined,
         borderRadius: 20,
         overflow: "hidden",
         position: "relative",
