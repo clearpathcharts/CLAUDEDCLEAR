@@ -188,12 +188,12 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
         <button
           type="button"
-          onClick={() => handleItemTap("ThemeTerminal")}
+          onClick={() => handleItemTap("StrictlyCharts")}
           className={`
             flex items-center gap-2 rounded-full px-3 py-2
             text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
             ${
-              activeTab === "ThemeTerminal"
+              activeTab === "StrictlyCharts"
                 ? "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]"
                 : "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10"
             }
