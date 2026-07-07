@@ -85,6 +85,7 @@ export function LightweightCandles({
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
   const visible = useVisibilityPause();
+  const sym = symbol.toUpperCase();
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -227,8 +228,6 @@ export function LightweightCandles({
 
     const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
     const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
-
-    const sym = symbol.toUpperCase();
 
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
