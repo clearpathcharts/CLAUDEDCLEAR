@@ -162,6 +162,17 @@ export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
     uploadedAt: new Date().toISOString(),
     uploadedBy: "Media Archivist",
     relatedIndicatorId: "Trust Protocols"
+  },
+  {
+    title: "NASA TV Live: Space Science & Mission Coverage (HLS)",
+    description: "Live HLS broadcast stream from NASA Television — validates adaptive bitrate playback in the CPMS theater player.",
+    category: "Market News TV",
+    videoUrl: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8",
+    thumbnailUrl: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80",
+    duration: "LIVE",
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: "ClearPath Curator",
+    relatedIndicatorId: "Live Feed"
   }
 ];
 
@@ -195,3 +206,6 @@ export const STATIC_DEFAULT_CHANNELS: CpmsChannelSeed[] = [
 ];
 
 export const CPMS_CURATOR = "ClearPath Curator";
+
+/** Founder account authorized for CPMS admin cabinet + Storage writes. */
+export const CPMS_FOUNDER_EMAIL = "forexanarchy@gmail.com";

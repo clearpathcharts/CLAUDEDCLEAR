@@ -33,8 +33,10 @@ import {
   SAMPLE_LIBRARY_VIDEOS,
   STATIC_DEFAULT_CHANNELS,
   CPMS_CURATOR,
+  CPMS_FOUNDER_EMAIL,
 } from '../cpms/cpmsCatalog';
 import { bindVideoSource } from '../lib/cpms/hlsPlayer';
+import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
 
 type VideoItem = CpmsVideoItem;
 type ChannelItem = CpmsChannelItem;
@@ -87,8 +89,8 @@ export default function CpmsApk() {
   // CHECKS IF USER IS GIVEN ACCESS TO CABINET CREATION
   // SECURITY: locked to the founder's real account only. No client-side bypass exists anymore.
   const isUserAuthorized = () => {
-    if (user?.email === 'forexanarchy@gmail.com') return true;
-    if (userProfile?.email === 'forexanarchy@gmail.com') return true;
+    if (user?.email === CPMS_FOUNDER_EMAIL) return true;
+    if (userProfile?.email === CPMS_FOUNDER_EMAIL) return true;
     return false;
   };
 
@@ -279,6 +281,23 @@ export default function CpmsApk() {
   };
 
   // VIDEO METADATA PUBLISH ACTION
+  const handleMediaFileUpload = async (
+    file: File,
+    folder: 'videos' | 'thumbnails',
+    applyUrl: (url: string) => void
+  ) => {
+    setUploadProgress(0);
+    try {
+      const url = await uploadCpmsMedia(file, folder, setUploadProgress);
+      applyUrl(url);
+      setUploadProgress(null);
+    } catch (err) {
+      console.error(err);
+      setUploadProgress(null);
+      alert('Upload failed. Sign in as the founder account and deploy storage.rules.');
+    }
+  };
+
   const handleAddNewVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newVideoUrl.trim()) {
@@ -592,9 +611,22 @@ export default function CpmsApk() {
                             required
                             value={newVideoUrl}
                             onChange={(e) => setNewVideoUrl(e.target.value)}
-                            placeholder="https://commondatastorage.googleapis.com/..."
+                            placeholder="https://example.com/stream.m3u8 or .mp4"
                             className="w-full bg-zinc-900 border border-zinc-800/80 focus:border-amber-400/30 rounded-xl px-3 py-2 text-xs text-white font-mono text-[11px]"
                           />
+                          <label className="inline-flex items-center gap-2 mt-1 text-[10px] font-mono text-amber-500/80 uppercase cursor-pointer hover:text-amber-400">
+                            <input
+                              type="file"
+                              accept="video/*,video/mp4,video/webm,.m3u8"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) void handleMediaFileUpload(file, 'videos', setNewVideoUrl);
+                                e.target.value = '';
+                              }}
+                            />
+                            <span>↑ Upload video file to Storage</span>
+                          </label>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -607,6 +639,19 @@ export default function CpmsApk() {
                               placeholder="https://unsplash.com/..."
                               className="w-full bg-zinc-900 border border-zinc-800/80 focus:border-amber-400/30 rounded-xl px-3 py-2 text-xs text-white"
                             />
+                            <label className="inline-flex items-center gap-2 mt-1 text-[10px] font-mono text-amber-500/80 uppercase cursor-pointer hover:text-amber-400">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) void handleMediaFileUpload(file, 'thumbnails', setNewThumbnailUrl);
+                                  e.target.value = '';
+                                }}
+                              />
+                              <span>↑ Upload thumbnail</span>
+                            </label>
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-mono text-zinc-500 uppercase block font-bold">Linked Indicator Metric</label>
