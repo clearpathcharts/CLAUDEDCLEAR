@@ -10,12 +10,11 @@ const DIRECTION_ICON = {
   neutral: Minus,
 };
 
-const GROUP_ORDER: PatternGroup[] = ['continuation', 'reversal', 'bilateral'];
+const GROUP_ORDER: PatternGroup[] = ['continuation', 'reversal'];
 
 const GROUP_BADGE: Record<PatternGroup, string> = {
   continuation: 'text-[#FF1493] border-[#FF1493]/40',
   reversal: 'text-[#BF00FF] border-[#BF00FF]/40',
-  bilateral: 'text-[#9D00FF] border-[#9D00FF]/40',
 };
 
 interface PatternOverlayProps {
@@ -61,7 +60,7 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
       ) : (
         <>
           <p className="mb-3 text-[10px] text-[#FF00CC]/80">
-            Neon geometry: hot pink upper · purple lower · magenta necklines
+            Neon geometry · lines never cut through candle bodies
           </p>
 
           {byGroup.map(({ group, items }) => (

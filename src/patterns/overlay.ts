@@ -59,39 +59,15 @@ export interface PatternCandleMarker {
   price?: number;
 }
 
-/** Mark swing peaks for chart patterns */
+/** Mark completion point for chart patterns */
 export function buildPatternPeakMarkers(
   candles: Candle[],
   patterns: DetectedPattern[],
 ): PatternCandleMarker[] {
   const markers: PatternCandleMarker[] = [];
-  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-6);
+  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-3);
 
   for (const pattern of chartPatterns) {
-    const peakIds = new Set([
-      'triple_top',
-      'triple_bottom',
-      'double_top',
-      'double_bottom',
-      'head_and_shoulders',
-      'inverse_head_and_shoulders',
-    ]);
-
-    if (peakIds.has(pattern.id)) {
-      for (const line of pattern.geometry?.lines ?? []) {
-        if (line.role !== 'upper' && line.role !== 'lower') continue;
-        if (line.from.price === line.to.price) continue;
-        markers.push({
-          time: line.from.time as Time,
-          position: line.role === 'upper' ? 'aboveBar' : 'belowBar',
-          shape: 'circle',
-          color: NEON_PATTERN_LINE_COLORS.hotPink,
-          text: 'PK',
-          price: line.from.price,
-        });
-      }
-    }
-
     if (pattern.geometry?.markerIndex != null) {
       const c = candles[pattern.geometry.markerIndex];
       if (c) {
@@ -107,7 +83,7 @@ export function buildPatternPeakMarkers(
     }
   }
 
-  return markers.slice(-20);
+  return markers.slice(-6);
 }
 
 /** Mark recent candlestick pattern hits on the chart (max 12). */

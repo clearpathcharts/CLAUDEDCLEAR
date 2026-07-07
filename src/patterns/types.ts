@@ -16,28 +16,13 @@ export type CandlestickPatternId =
   | 'morning_star'
   | 'evening_star';
 
+/** Major chart patterns only — no harmonic / Fibonacci fiction. */
 export type ChartPatternId =
-  // Continuation
-  | 'bull_flag'
-  | 'bear_flag'
-  | 'bull_pennant'
-  | 'bear_pennant'
-  | 'cup_and_handle'
-  | 'ascending_triangle'
-  | 'descending_triangle'
-  | 'rectangle'
-  // Reversal
-  | 'head_and_shoulders'
-  | 'inverse_head_and_shoulders'
-  | 'double_top'
-  | 'double_bottom'
-  | 'triple_top'
-  | 'triple_bottom'
   | 'rising_wedge'
   | 'falling_wedge'
-  // Bilateral
-  | 'symmetrical_triangle'
-  | 'broadening_wedge';
+  | 'ascending_triangle'
+  | 'descending_triangle'
+  | 'cup_and_handle';
 
 export type PatternId = CandlestickPatternId | ChartPatternId;
 
@@ -46,14 +31,12 @@ export interface DetectedPattern {
   category: PatternCategory;
   label: string;
   direction: 'bullish' | 'bearish' | 'neutral';
-  /** continuation · reversal · bilateral (chart patterns only) */
   patternGroup?: PatternGroup;
   startIndex: number;
   endIndex: number;
   time: number;
-  confidence: number; // 0–1 honest score, never faked as 100%
+  confidence: number;
   detail?: string;
-  /** Drawable geometry for chart overlays */
   geometry?: PatternGeometry;
 }
 

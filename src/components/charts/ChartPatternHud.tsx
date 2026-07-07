@@ -9,12 +9,11 @@ const DIRECTION_ICON = {
   neutral: Minus,
 };
 
-const GROUP_ORDER: PatternGroup[] = ['continuation', 'reversal', 'bilateral'];
+const GROUP_ORDER: PatternGroup[] = ['continuation', 'reversal'];
 
 const GROUP_BADGE: Record<PatternGroup, string> = {
   continuation: 'text-[#FF1493] border-[#FF1493]/40 bg-[#FF1493]/10',
   reversal: 'text-[#BF00FF] border-[#BF00FF]/40 bg-[#BF00FF]/10',
-  bilateral: 'text-[#9D00FF] border-[#9D00FF]/40 bg-[#9D00FF]/10',
 };
 
 interface ChartPatternHudProps {
@@ -48,7 +47,7 @@ export function ChartPatternHud({ symbol, scan }: ChartPatternHudProps) {
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
         {total > 0
-          ? `${total} hits · neon pink/purple geometry on chart`
+          ? `${total} hits · neon lines trace outside candles only`
           : `Scanned ${scan.scannedBars.toLocaleString()} bars · no patterns yet`}
       </p>
 

@@ -13,9 +13,10 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers } from "../../patterns";
+import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief } from "../../patterns";
 import type { PatternScanResult } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
+import { ChartFormingWatch } from "./ChartFormingWatch";
 import { Crosshair } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -275,6 +276,9 @@ export function LightweightCandles({
         const patternScan = scanAllPatterns(tierOptimizedData);
         setPatternScan(patternScan);
         setActivePatternScan(patternScan);
+
+        const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
+        setActiveFormingBrief(formingBrief);
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
@@ -611,6 +615,7 @@ export function LightweightCandles({
           {error}
         </div>
       )}
+      <ChartFormingWatch symbol={sym} />
       <ChartPatternHud symbol={sym} scan={patternScan} />
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}

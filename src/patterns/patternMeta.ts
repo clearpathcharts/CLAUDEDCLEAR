@@ -1,35 +1,21 @@
 import type { ChartPatternId } from './types';
 
-export type PatternGroup = 'continuation' | 'reversal' | 'bilateral';
+export type PatternGroup = 'continuation' | 'reversal';
 
 export const PATTERN_GROUP_LABELS: Record<PatternGroup, string> = {
   continuation: 'Continuation',
   reversal: 'Reversal',
-  bilateral: 'Bilateral',
 };
 
 export const CHART_PATTERN_META: Record<
   ChartPatternId,
   { group: PatternGroup; label: string }
 > = {
-  bull_flag: { group: 'continuation', label: 'Bull Flag' },
-  bear_flag: { group: 'continuation', label: 'Bear Flag' },
-  bull_pennant: { group: 'continuation', label: 'Bull Pennant' },
-  bear_pennant: { group: 'continuation', label: 'Bear Pennant' },
   cup_and_handle: { group: 'continuation', label: 'Cup and Handle' },
   ascending_triangle: { group: 'continuation', label: 'Ascending Triangle' },
   descending_triangle: { group: 'continuation', label: 'Descending Triangle' },
-  rectangle: { group: 'continuation', label: 'Rectangle' },
-  head_and_shoulders: { group: 'reversal', label: 'Head and Shoulders' },
-  inverse_head_and_shoulders: { group: 'reversal', label: 'Inverse Head and Shoulders' },
-  double_top: { group: 'reversal', label: 'Double Top' },
-  double_bottom: { group: 'reversal', label: 'Double Bottom' },
-  triple_top: { group: 'reversal', label: 'Triple Top' },
-  triple_bottom: { group: 'reversal', label: 'Triple Bottom' },
   rising_wedge: { group: 'reversal', label: 'Rising Wedge' },
   falling_wedge: { group: 'reversal', label: 'Falling Wedge' },
-  symmetrical_triangle: { group: 'bilateral', label: 'Symmetrical Triangle' },
-  broadening_wedge: { group: 'bilateral', label: 'Broadening Wedge' },
 };
 
 export function getChartPatternGroup(id: ChartPatternId): PatternGroup {

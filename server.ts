@@ -745,13 +745,21 @@ Frame your explanation with advanced professional rigor, making it scannable, st
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
   app.post('/api/mentor/chat', async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts } = req.body;
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
+      const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
+      const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
+      if (localChart && chartish) {
+        return res.json({
+          answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
+          newFacts: [],
+        });
+      }
       return res.json({
         answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
       });
@@ -832,8 +840,12 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally in conversation, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
       : '';
 
+    const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
+      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART STRUCTURE above. Always say "possible" or "forming" — never claim a pattern is confirmed. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+      : '';
+
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock },
+      { role: 'system', content: systemPrompt + memoryBlock + chartBlock },
       ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
       { role: 'user', content: question }
     ];
