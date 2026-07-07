@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
+import { getActiveFormingBrief, subscribeFormingBrief, formatFormingBriefForChat } from "../patterns";
+import type { FormingStructureBrief } from "../patterns";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc } from "../firebase";
 
@@ -44,7 +46,10 @@ export const CptBuddyWidget: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
+  const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(getActiveFormingBrief());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => subscribeFormingBrief(() => setFormingBrief(getActiveFormingBrief())), []);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -192,6 +197,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
+          chartContext: formatFormingBriefForChat(formingBrief ?? getActiveFormingBrief()),
           conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -348,6 +354,35 @@ export const CptBuddyWidget: React.FC = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {memoryLoaded && setupStep === "done" && formingBrief && formingBrief.possibilities.length > 0 && (
+              <div
+                style={{
+                  marginBottom: 10,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(191,0,255,0.35)",
+                  background: "rgba(191,0,255,0.08)",
+                  fontSize: 10,
+                  lineHeight: 1.45,
+                  color: "#E9D5FF",
+                }}
+              >
+                <div style={{ color: "#FF1493", fontWeight: 800, marginBottom: 4, fontSize: 9, letterSpacing: 1 }}>
+                  FORMING WATCH · {formingBrief.symbol} {formingBrief.timeframe}
+                </div>
+                {formingBrief.clock.active && (
+                  <div style={{ marginBottom: 4, color: "#FF00CC" }}>
+                    {formingBrief.clock.type === "16-bar-retrace" ? "16" : "12"}-bar clock: {formingBrief.clock.bar}/{formingBrief.clock.total}
+                  </div>
+                )}
+                {formingBrief.possibilities.slice(0, 3).map((p) => (
+                  <div key={p.id} style={{ color: "#fff" }}>
+                    {p.status.toUpperCase()} {p.label} (~{Math.round(p.probability * 100)}%)
+                  </div>
+                ))}
               </div>
             )}
 

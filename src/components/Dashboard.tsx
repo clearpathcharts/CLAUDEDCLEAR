@@ -422,7 +422,9 @@ const TabContent = ({
             <h1 className="text-[#FF4500] text-2xl font-bold text-center mb-8 tracking-widest uppercase" id="training_board_main_title">
               Clear Path Trader: Training Board
             </h1>
-            <PatternOverlay />
+            <p className="text-center text-white/40 text-sm font-mono">
+              Open <strong className="text-[#00D9FF]">MARKETS</strong> or <strong className="text-[#00D9FF]">CHARTS</strong> from the nav bar — the Pattern Scanner panel appears on live charts.
+            </p>
           </div>
         </div>
       );
@@ -1352,6 +1354,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
         {/* PERSISTENT Clear NAV */}
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} />
+
+        {/* Pattern scanner floats on any chart tab (StrictlyCharts, ThemeTerminal, etc.) */}
+        <PatternOverlay chartActive={activeTab === 'StrictlyCharts' || activeTab === 'ThemeTerminal'} />
         
         {/* TOP MARKET TICKER */}
         {showTicker && (

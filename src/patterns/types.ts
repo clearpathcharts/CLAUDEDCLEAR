@@ -1,6 +1,7 @@
 // Native ClearPath pattern detection — not Pine import, pure OHLC geometry.
 
 import { Candle } from '../types/indicators';
+import type { PatternGroup } from './patternMeta';
 
 export type PatternCategory = 'candlestick' | 'chart' | 'structure';
 
@@ -15,14 +16,12 @@ export type CandlestickPatternId =
   | 'morning_star'
   | 'evening_star';
 
+/** Major chart patterns only — no harmonic / Fibonacci fiction. */
 export type ChartPatternId =
   | 'rising_wedge'
   | 'falling_wedge'
   | 'ascending_triangle'
   | 'descending_triangle'
-  | 'symmetrical_triangle'
-  | 'triple_top'
-  | 'triple_bottom'
   | 'cup_and_handle';
 
 export type PatternId = CandlestickPatternId | ChartPatternId;
@@ -32,12 +31,12 @@ export interface DetectedPattern {
   category: PatternCategory;
   label: string;
   direction: 'bullish' | 'bearish' | 'neutral';
+  patternGroup?: PatternGroup;
   startIndex: number;
   endIndex: number;
   time: number;
-  confidence: number; // 0–1 honest score, never faked as 100%
+  confidence: number;
   detail?: string;
-  /** Drawable geometry for chart overlays */
   geometry?: PatternGeometry;
 }
 
