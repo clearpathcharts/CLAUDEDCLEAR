@@ -181,6 +181,51 @@ export const IndicatorRegistry: IndicatorDefinition[] = [
     activeColor: "#00E5FF",
     sourceFile: "indicators/volume/CMF.ts",
     parameters: { period: 20 }
+  },
+  {
+    id: "tema",
+    name: "Triple Exponential Moving Average",
+    abbr: "TEMA",
+    category: IndicatorCategory.Trend,
+    activeColor: "#AA00FF",
+    sourceFile: "indicators/trend/TEMA.ts",
+    parameters: { period: 20 }
+  },
+  {
+    id: "hma",
+    name: "Hull Moving Average",
+    abbr: "HMA",
+    category: IndicatorCategory.Trend,
+    activeColor: "#EF476F",
+    sourceFile: "indicators/trend/HMA.ts",
+    parameters: { period: 20 }
+  },
+  {
+    id: "supertrend",
+    name: "Supertrend",
+    abbr: "SUPERTREND",
+    category: IndicatorCategory.Trend,
+    activeColor: "#00FFCC",
+    sourceFile: "indicators/trend/Supertrend.ts",
+    parameters: { period: 10, multiplier: 3 }
+  },
+  {
+    id: "kc",
+    name: "Keltner Channels",
+    abbr: "KC",
+    category: IndicatorCategory.Volatility,
+    activeColor: "#E71D36",
+    sourceFile: "indicators/volatility/KeltnerChannels.ts",
+    parameters: { period: 20, multiplier: 2 }
+  },
+  {
+    id: "stochrsi",
+    name: "Stochastic RSI",
+    abbr: "STOCHRSI",
+    category: IndicatorCategory.Momentum,
+    activeColor: "#FF0055",
+    sourceFile: "indicators/momentum/StochRSI.ts",
+    parameters: { rsiPeriod: 14, stochPeriod: 14, kSmooth: 3, dSmooth: 3 }
   }
 ];
 

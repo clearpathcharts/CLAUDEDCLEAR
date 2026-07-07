@@ -38,7 +38,7 @@ type Candle = {
  */
 const OSCILLATOR_INDICATORS = new Set([
   "RSI", "MACD", "ATR", "ADX", "OBV", "AO",
-  "STOCH", "CCI", "WPR", "ROC", "MFI", "CMF",
+  "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "MFI", "CMF",
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
@@ -495,6 +495,34 @@ export function LightweightCandles({
                 const dData = stochData.map((d: any) => ({ time: d.time as Time, value: d.d }));
                 addOscillatorSeries({ color: "#B5179E", lineWidth: 2, title: "Stoch %K" }).setData(kData);
                 addOscillatorSeries({ color: "#FFAA00", lineWidth: 2, title: "Stoch %D" }).setData(dData);
+              }
+              else if (indAbbr === "STOCHRSI") {
+                const stochRsi = IndicatorEngine.calculate("STOCHRSI", tierOptimizedData);
+                const kData = stochRsi.map((d: any) => ({ time: d.time as Time, value: d.k }));
+                const dData = stochRsi.map((d: any) => ({ time: d.time as Time, value: d.d }));
+                addOscillatorSeries({ color: "#FF0055", lineWidth: 2, title: "StochRSI %K" }).setData(kData);
+                addOscillatorSeries({ color: "#FFAA00", lineWidth: 2, title: "StochRSI %D" }).setData(dData);
+              }
+              else if (indAbbr === "KC") {
+                const kcData = IndicatorEngine.calculate("KC", tierOptimizedData, { period: 20, multiplier: 2 });
+                const upperData = kcData.map((d: any) => ({ time: d.time as Time, value: d.upper }));
+                const lowerData = kcData.map((d: any) => ({ time: d.time as Time, value: d.lower }));
+                const basisData = kcData.map((d: any) => ({ time: d.time as Time, value: d.basis }));
+                chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 2, title: "KC upper" }).setData(upperData);
+                chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 2, title: "KC lower" }).setData(lowerData);
+                chart.addSeries(LineSeries, { color: "#E71D36", lineWidth: 1, title: "KC basis" }).setData(basisData);
+              }
+              else if (indAbbr === "TEMA") {
+                const lineData = IndicatorEngine.calculate("TEMA", tierOptimizedData, { period: 20 });
+                chart.addSeries(LineSeries, { color: "#AA00FF", lineWidth: 2, title: "TEMA (20)" }).setData(lineData as any[]);
+              }
+              else if (indAbbr === "HMA") {
+                const lineData = IndicatorEngine.calculate("HMA", tierOptimizedData, { period: 20 });
+                chart.addSeries(LineSeries, { color: "#EF476F", lineWidth: 2, title: "HMA (20)" }).setData(lineData as any[]);
+              }
+              else if (indAbbr === "SUPERTREND") {
+                const lineData = IndicatorEngine.calculate("SUPERTREND", tierOptimizedData, { period: 10, multiplier: 3 });
+                chart.addSeries(LineSeries, { color: "#00FFCC", lineWidth: 2, title: "Supertrend" }).setData(lineData as any[]);
               }
               else {
                 // Unknown indicator: route via the IndicatorEngine. If it's a known

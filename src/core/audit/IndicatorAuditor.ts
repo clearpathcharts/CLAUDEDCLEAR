@@ -28,7 +28,7 @@ export class IndicatorAuditor {
           fileExists = fs.existsSync(fullPath);
         } else {
           // Client mock-proof pass-through (assume true for known validated list to avoid client bundler crashes)
-          fileExists = ["SMA", "EMA", "WMA", "RSI", "MACD", "STOCH", "CCI", "WPR", "ROC", "AO", "ATR", "BB", "DC", "VWAP", "OBV", "MFI", "CMF", "ADX", "ICHIMOKU", "PSAR"].includes(ind.abbr);
+          fileExists = ["SMA", "EMA", "WMA", "TEMA", "HMA", "SUPERTREND", "RSI", "MACD", "STOCH", "STOCHRSI", "CCI", "WPR", "ROC", "AO", "ATR", "BB", "DC", "KC", "VWAP", "OBV", "MFI", "CMF", "ADX", "ICHIMOKU", "PSAR"].includes(ind.abbr);
         }
       } catch (e) {
         fileExists = false;
