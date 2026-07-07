@@ -26,6 +26,12 @@ import { calculateCMF } from "../../indicators/volume/CMF";
 import { calculateDPO } from "../../indicators/momentum/DPO";
 import { calculateTRIX } from "../../indicators/momentum/TRIX";
 import { calculatePivotPoints } from "../../indicators/trend/PivotPoints";
+import { calculateDEMA } from "../../indicators/trend/DEMA";
+import { calculateKAMA } from "../../indicators/trend/KAMA";
+import { calculateUltimateOscillator } from "../../indicators/momentum/UltimateOscillator";
+import { calculateAroon } from "../../indicators/momentum/Aroon";
+import { calculateKST } from "../../indicators/momentum/KST";
+import { calculateForceIndex } from "../../indicators/volume/ForceIndex";
 
 export const IndicatorBank: Record<string, Function> = {
   EMA: calculateEMA,
@@ -56,4 +62,10 @@ export const IndicatorBank: Record<string, Function> = {
   DPO: calculateDPO,
   TRIX: calculateTRIX,
   PIVOT: calculatePivotPoints,
+  DEMA: calculateDEMA,
+  KAMA: calculateKAMA,
+  ULTOSC: calculateUltimateOscillator,
+  AROON: calculateAroon,
+  KST: calculateKST,
+  FI: calculateForceIndex,
 };
