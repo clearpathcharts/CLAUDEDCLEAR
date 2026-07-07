@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
+import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import TerminalConfigWidget from '../widgets/TerminalConfigWidget';
 import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
@@ -27,7 +28,7 @@ const timeframesMapping: Record<string, string> = {
   '1D': '1d', '1W': '1w', '1M': '1M', '3M': '3M', '6M': '6M', 'YTD': 'ytd'
 };
 
-const ChartWidget = ({ asset, profile, activeTimeframe = '1H', chartTheme }: { asset: typeof ASSETS[0], profile: ThemeProfile, activeTimeframe?: string, chartTheme?: any }) => {
+const ChartWidget = ({ asset, profile, activeTimeframe = '1H', chartTheme, activeIndicators = [] }: { asset: typeof ASSETS[0], profile: ThemeProfile, activeTimeframe?: string, chartTheme?: any, activeIndicators?: string[] }) => {
   return (
     <div className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass" id={`wrapper_${asset.value.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
       {/* Chart Label Header */}
@@ -46,7 +47,7 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H', chartTheme }: { a
         </div>
       </div>
       <div className="flex-1 w-full min-h-0 relative">
-        <LightweightCandles profileId={profile.id} height={440} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={asset.value} theme={chartTheme} />
+        <LightweightCandles profileId={profile.id} height={440} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={asset.value} theme={chartTheme} activeIndicators={activeIndicators} />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
         <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
@@ -79,6 +80,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({ onBack
   const [mainAsset, setMainAsset] = useState({ label: 'XAU/USD', value: 'XAUUSD' });
   const [secondaryAsset, setSecondaryAsset] = useState({ label: 'DXY', value: 'DXY' });
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(['SMA', 'RSI']);
+
+  const toggleIndicator = (abbr: string) => {
+    setActiveIndicators((prev) =>
+      prev.includes(abbr) ? prev.filter((i) => i !== abbr) : [...prev, abbr]
+    );
+  };
 
   useEffect(() => {
     if (selectedMarketSymbol) {
@@ -310,8 +318,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({ onBack
                 </div>
               </div>
               
+              <ChartIndicatorPicker
+                activeIndicators={activeIndicators}
+                onToggle={toggleIndicator}
+                onClear={() => setActiveIndicators([])}
+              />
+
               <div id="master-chart-stack" className="multi-chart-container space-y-6">
-                <ChartWidget key={`${mainAsset.value}-${activeTimeframe}`} asset={mainAsset} profile={profile} activeTimeframe={activeTimeframe} chartTheme={chartTheme} />
+                <ChartWidget key={`${mainAsset.value}-${activeTimeframe}`} asset={mainAsset} profile={profile} activeTimeframe={activeTimeframe} chartTheme={chartTheme} activeIndicators={activeIndicators} />
               </div>
             </div>
           </div>
