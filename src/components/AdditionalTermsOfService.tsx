@@ -12,7 +12,11 @@ import {
   MapPin, 
   Bot, 
   UserPlus, 
-  AlertTriangle 
+  AlertTriangle,
+  Gavel,
+  Lock,
+  Bell,
+  Calendar
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SurfBackground } from './SurfBackground';
@@ -45,6 +49,11 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
     { id: 'maps', label: '9. Clear Path Maps', icon: MapPin },
     { id: 'hardware', label: '10. Hardware Safety', icon: AlertTriangle },
     { id: 'regulatory', label: '11. Regulatory Disclaimer', icon: Scale },
+    { id: 'dpa-compliance', label: '12. Regulatory Compliance', icon: ShieldCheck },
+    { id: 'dpa-confidentiality', label: '13. Confidentiality', icon: Lock },
+    { id: 'dpa-breach', label: '14. Data Breach Notification', icon: Bell },
+    { id: 'dpa-duration', label: '15. Duration', icon: Calendar },
+    { id: 'dpa-governing-law', label: '16. Governing Law', icon: Gavel },
   ];
 
   return (
@@ -443,6 +452,63 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
                 ClearPathTrader.com is not responsible for third-party services, trading losses, account issues, platform outages, regulatory compliance of third parties, actions or omissions of third-party providers. Users engage with third-party providers entirely at their own risk.
               </p>
             </div>
+          </section>
+
+          <section id="dpa-compliance" className="space-y-4 scroll-mt-24 border-t border-white/10 pt-8">
+            <h3 className="text-lg font-black uppercase tracking-wider text-[#FF00C8] flex items-center gap-2">
+              <ShieldCheck className="text-[#FF00C8]" size={18} />
+              12. Assistance with Regulatory Compliance
+            </h3>
+            <p className="text-sm text-zinc-300 font-mono leading-relaxed">
+              Processor will provide reasonable assistance to the Controller to ensure compliance with obligations regarding the security of Processing, data breach notifications, data protection impact assessments (DPIAs), and prior consultations with supervisory authorities, as reasonably required by applicable Data Protection Laws.
+            </p>
+          </section>
+
+          <section id="dpa-confidentiality" className="space-y-4 scroll-mt-24">
+            <h3 className="text-lg font-black uppercase tracking-wider text-[#FF00C8] flex items-center gap-2">
+              <Lock className="text-[#FF00C8]" size={18} />
+              13. Confidentiality of Processing
+            </h3>
+            <p className="text-sm text-zinc-300 font-mono leading-relaxed">
+              Processor will ensure that all persons authorized to process Personal Data are bound by appropriate confidentiality obligations, whether statutory or contractual.
+            </p>
+          </section>
+
+          <section id="dpa-breach" className="space-y-4 scroll-mt-24">
+            <h3 className="text-lg font-black uppercase tracking-wider text-[#FF00C8] flex items-center gap-2">
+              <Bell className="text-[#FF00C8]" size={18} />
+              14. Data Breach Notification
+            </h3>
+            <div className="space-y-4 text-sm text-zinc-300 font-mono leading-relaxed">
+              <p>
+                In the event of a Personal Data Breach affecting Controller's data, Processor will:
+              </p>
+              <ul className="list-disc list-inside pl-4 space-y-2 text-zinc-400">
+                <li>Notify Controller without undue delay upon becoming aware of the breach;</li>
+                <li>Provide information about the nature of the breach, the likely consequences, and any measures taken or proposed to address it;</li>
+                <li>Assist Controller in complying with applicable breach notification requirements.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section id="dpa-duration" className="space-y-4 scroll-mt-24">
+            <h3 className="text-lg font-black uppercase tracking-wider text-[#FF00C8] flex items-center gap-2">
+              <Calendar className="text-[#FF00C8]" size={18} />
+              15. Duration
+            </h3>
+            <p className="text-sm text-zinc-300 font-mono leading-relaxed">
+              The terms of this Addendum are effective for as long as Processor maintains or processes Personal Data on behalf of the Controller.
+            </p>
+          </section>
+
+          <section id="dpa-governing-law" className="space-y-4 scroll-mt-24">
+            <h3 className="text-lg font-black uppercase tracking-wider text-[#FF00C8] flex items-center gap-2">
+              <Gavel className="text-[#FF00C8]" size={18} />
+              16. Governing Law
+            </h3>
+            <p className="text-sm text-zinc-300 font-mono leading-relaxed">
+              This Addendum is governed by the laws that govern the primary service agreement (typically those of Delaware, unless otherwise specified in the Terms of Service).
+            </p>
           </section>
 
           <div className="flex justify-center pt-6 border-t border-white/10">
