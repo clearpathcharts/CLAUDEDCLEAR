@@ -19,60 +19,10 @@ import {
   Camera
 } from "lucide-react";
 
-// TradingView standard technical indicators list (50+)
-const TRADINGVIEW_INDICATORS = [
-  { name: "Accumulation/Distribution", category: "Volume", abbr: "A/D", activeColor: "#FF00AA" },
-  { name: "Average Directional Index", category: "Trend/Momentum", abbr: "ADX", activeColor: "#00D9FF" },
-  { name: "Average True Range", category: "Volatility", abbr: "ATR", activeColor: "#FF4500" },
-  { name: "Awesome Oscillator", category: "Momentum", abbr: "AO", activeColor: "#3E78FF" },
-  { name: "Bollinger Bands", category: "Volatility", abbr: "BB", activeColor: "#7A3BFF" },
-  { name: "Bollinger Bands Width", category: "Volatility", abbr: "BBW", activeColor: "#B91FD6" },
-  { name: "Chaikin Money Flow", category: "Volume", abbr: "CMF", activeColor: "#00E5FF" },
-  { name: "Chaikin Volatility", category: "Volatility", abbr: "CHV", activeColor: "#FF00C8" },
-  { name: "Chande Momentum Oscillator", category: "Momentum", abbr: "CMO", activeColor: "#4DEEEA" },
-  { name: "Commodity Channel Index", category: "Momentum", abbr: "CCI", activeColor: "#9D4EDD" },
-  { name: "Coppock Curve", category: "Momentum", abbr: "CC", activeColor: "#3F37C9" },
-  { name: "Double Exponential Moving Average", category: "Trend", abbr: "DEMA", activeColor: "#4CC9F0" },
-  { name: "Donchian Channels", category: "Volatility", abbr: "DC", activeColor: "#F72585" },
-  { name: "Directional Movement Index", category: "Trend", abbr: "DMI", activeColor: "#7209B7" },
-  { name: "Detrended Price Oscillator", category: "Momentum", abbr: "DPO", activeColor: "#3A0CA3" },
-  { name: "Elder's Force Index", category: "Volume", abbr: "EFI", activeColor: "#00F5D4" },
-  { name: "Exponential Moving Average", category: "Trend", abbr: "EMA", activeColor: "#FFAA00" },
-  { name: "Ease of Movement", category: "Volume", abbr: "EOM", activeColor: "#DEE2E6" },
-  { name: "Fisher Transform", category: "Oscillators", abbr: "FT", activeColor: "#9D4EDD" },
-  { name: "Gann Fan", category: "Drawing", abbr: "GANN", activeColor: "#FFD166" },
-  { name: "Hull Moving Average", category: "Trend", abbr: "HMA", activeColor: "#EF476F" },
-  { name: "Historical Volatility", category: "Volatility", abbr: "HV", activeColor: "#FF9F1C" },
-  { name: "Ichimoku Cloud", category: "Trend", abbr: "ICHIMOKU", activeColor: "#2EC4B6" },
-  { name: "Keltner Channels", category: "Volatility", abbr: "KC", activeColor: "#E71D36" },
-  { name: "Know Sure Thing", category: "Momentum", abbr: "KST", activeColor: "#4361EE" },
-  { name: "Linear Regression Curve", category: "Trend", abbr: "LRC", activeColor: "#3A0CA3" },
-  { name: "Moving Average Convergence Divergence", category: "Momentum", abbr: "MACD", activeColor: "#FF00C8" },
-  { name: "Money Flow Index", category: "Volume", abbr: "MFI", activeColor: "#00D9FF" },
-  { name: "Net Volume", category: "Volume", abbr: "NETVOL", activeColor: "#06D6A0" },
-  { name: "On-Balance Volume", category: "Volume", abbr: "OBV", activeColor: "#118AB2" },
-  { name: "Parabolic SAR", category: "Trend", abbr: "PSAR", activeColor: "#FFD166" },
-  { name: "Pivot Points Standard", category: "Trend", abbr: "PIVOT", activeColor: "#F72585" },
-  { name: "Price Oscillator", category: "Momentum", abbr: "PPO", activeColor: "#7209B7" },
-  { name: "Rate of Change", category: "Momentum", abbr: "ROC", activeColor: "#480CA8" },
-  { name: "Relative Strength Index", category: "Momentum", abbr: "RSI", activeColor: "#00FF66" },
-  { name: "Relative Vigor Index", category: "Momentum", abbr: "RVI", activeColor: "#00D9FF" },
-  { name: "Simple Moving Average", category: "Trend", abbr: "SMA", activeColor: "#00FFFF" },
-  { name: "Stochastic Oscillator", category: "Momentum", abbr: "STOCH", activeColor: "#B5179E" },
-  { name: "Stochastic RSI", category: "Momentum", abbr: "STOCHRSI", activeColor: "#FF0055" },
-  { name: "Supertrend", category: "Trend", abbr: "SUPERTREND", activeColor: "#00FFCC" },
-  { name: "Triple Exponential Moving Average", category: "Trend", abbr: "TEMA", activeColor: "#AA00FF" },
-  { name: "Trix", category: "Momentum", abbr: "TRIX", activeColor: "#FF7700" },
-  { name: "True Strength Index", category: "Momentum", abbr: "TSI", activeColor: "#9D4EDD" },
-  { name: "Ultimate Oscillator", category: "Momentum", abbr: "UO", activeColor: "#3F37C9" },
-  { name: "Volume", category: "Volume", abbr: "VOL", activeColor: "#FF00C8" },
-  { name: "Volume Oscillator", category: "Volume", abbr: "VO", activeColor: "#4CC9F0" },
-  { name: "Volume Weighted Average Price", category: "Volume", abbr: "VWAP", activeColor: "#F72585" },
-  { name: "Volume Weighted Moving Average", category: "Trend", abbr: "VWMA", activeColor: "#7209B7" },
-  { name: "Williams %R", category: "Momentum", abbr: "WPR", activeColor: "#06D6A0" },
-  { name: "Weighted Moving Average", category: "Trend", abbr: "WMA", activeColor: "#3E78FF" },
-  { name: "Zig Zag", category: "Trend", abbr: "ZZ", activeColor: "#FFAA00" }
-];
+import { CHART_INDICATOR_PICKER } from "../../core/registry/chartIndicatorPicker";
+
+// Live chart indicators — synced with IndicatorRegistry / IndicatorBank
+const TRADINGVIEW_INDICATORS = CHART_INDICATOR_PICKER;
 
 export function InteractiveChart({ title, profileId, initialTimeframe = "1h", theme, userTier = "BRONZE" }: { title: string, profileId: string, initialTimeframe?: string, theme?: any, userTier?: string }) {
   const [timeframe, setTimeframe] = useState(initialTimeframe);

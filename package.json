@@ -21,6 +21,7 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@google/genai": "^2.7.0",
+    "@ixjb94/indicators": "^1.2.6",
     "@tailwindcss/vite": "^4.1.14",
     "@types/pg": "^8.20.0",
     "@vitejs/plugin-react": "^5.0.4",
@@ -79,6 +80,7 @@
     "rss-parser": "^3.13.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.1.14",
+    "technicalindicators": "^3.1.0",
     "three": "^0.184.0",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

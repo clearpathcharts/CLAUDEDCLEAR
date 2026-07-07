@@ -1,5 +1,6 @@
 import { Candle } from "../../types/indicators";
 import { IndicatorBank } from "./IndicatorBank";
+import { getOssSpec } from "../../indicators/oss/catalog";
 
 export class IndicatorEngine {
   static calculate(indicator: string, candles: Candle[], settings?: any): any {
@@ -10,7 +11,12 @@ export class IndicatorEngine {
       throw new Error(`Indicator calculation function not registered in IndicatorBank: ${indicator}`);
     }
 
-    if (sym === "SMA" || sym === "EMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
+    // OSS catalog indicators accept a merged settings object.
+    if (getOssSpec(sym)) {
+      return fn(candles, settings);
+    }
+
+    if (sym === "SMA" || sym === "EMA" || sym === "WMA" || sym === "TEMA" || sym === "HMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
       return fn(candles, settings?.period);
     }
     if (sym === "ICHIMOKU") {
@@ -30,8 +36,52 @@ export class IndicatorEngine {
         settings?.signalPeriod || 9
       );
     }
-    if (sym === "BB") {
+    if (sym === "BB" || sym === "KC") {
       return fn(candles, settings?.period || 20, settings?.multiplier || 2);
+    }
+    if (sym === "DC") {
+      return fn(candles, settings?.period || 20);
+    }
+    if (sym === "STOCH") {
+      return fn(candles, settings?.kPeriod || 14, settings?.dPeriod || 3);
+    }
+    if (sym === "STOCHRSI") {
+      return fn(
+        candles,
+        settings?.rsiPeriod || 14,
+        settings?.stochPeriod || 14,
+        settings?.kSmooth || 3,
+        settings?.dSmooth || 3,
+      );
+    }
+    if (sym === "SUPERTREND") {
+      return fn(candles, settings?.period || 10, settings?.multiplier || 3);
+    }
+    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF" || sym === "DPO" || sym === "TRIX") {
+      return fn(candles, settings?.period);
+    }
+    if (sym === "KST") {
+      return fn(
+        candles,
+        settings?.rocPer1 || 10,
+        settings?.rocPer2 || 15,
+        settings?.rocPer3 || 20,
+        settings?.rocPer4 || 30,
+        settings?.smaRocPer1 || 10,
+        settings?.smaRocPer2 || 10,
+        settings?.smaRocPer3 || 10,
+        settings?.smaRocPer4 || 15,
+        settings?.signalPeriod || 9,
+      );
+    }
+    if (sym === "PIVOT") {
+      return fn(candles, settings?.lookback || 24);
+    }
+    if (sym === "AO") {
+      return fn(candles, settings?.fastPeriod || 5, settings?.slowPeriod || 34);
+    }
+    if (sym === "PSAR") {
+      return fn(candles, settings?.step || 0.02, settings?.maxStep || 0.2);
     }
     if (sym === "VWAP" || sym === "OBV") {
       return fn(candles);

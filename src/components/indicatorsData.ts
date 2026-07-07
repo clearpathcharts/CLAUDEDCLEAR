@@ -1,3 +1,8 @@
+import { classifyIndicatorVisual, type IndicatorVisualType } from './indicatorThumbnail';
+import { encyclopediaNameToLiveAbbr, LIVE_CHART_INDICATOR_COUNT } from '../core/registry/encyclopediaLiveMap';
+
+export { LIVE_CHART_INDICATOR_COUNT };
+
 export const INDICATOR_NAMES = [
   "Acceleration Bands", "Accumulation/Distribution Line", "Advance/Decline Line", "Advance-Decline Ratio",
   "ADX (Average Directional Index)", "Alligator Indicator", "Alpha", "Andrews Pitchfork", "Aroon Indicator",
@@ -44,7 +49,16 @@ export const INDICATOR_NAMES = [
   "Weighted Moving Average", "Williams %R", "Williams Accumulation Distribution", "Wolfe Waves",
   "XTL Trend Indicator",
   "Yield Curve", "Yield Spread",
-  "Zig Zag Indicator", "Z-Score", "Zero Lag EMA", "Zero Line Cross", "ZLEMA"
+  "Zig Zag Indicator", "Z-Score", "Zero Lag EMA", "Zero Line Cross", "ZLEMA",
+  // Live-on-chart entries synced from IndicatorRegistry (batch OSS expansion)
+  "Awesome Oscillator", "Trix", "Double Exponential Moving Average (DEMA)",
+  "Kaufman Adaptive Moving Average (KAMA)", "Triangular Moving Average (TRIMA)",
+  "Arnaud Legoux Moving Average (ALMA)", "Linear Regression Slope",
+  "Linear Regression Intercept", "Time Series Forecast (TSF)",
+  "Volume Weighted Moving Average (VWMA)", "Absolute Price Oscillator (APO)",
+  "Rate of Change Ratio (ROCR)", "Relative Momentum Index (RMI)",
+  "Normalized Average True Range (NATR)", "True Range (TR)",
+  "Klinger Volume Oscillator (KVO)",
 ];
 
 const FUNDAMENTAL = new Set([
@@ -72,8 +86,8 @@ export function buildIndicators() {
     const category = isFundamental ? "Fundamental" : "Technical";
     
     const hasVideo = i % 5 === 0;
-    const img = `https://picsum.photos/800/600?random=${i + 50}`;
     const videoUrl = hasVideo ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : null;
+    const visualType: IndicatorVisualType = classifyIndicatorVisual(name, category);
     
     let complexity = Math.round(2 + ((i * 13) % 18) / 10);
     if(complexity > 5) complexity = 5;
@@ -85,6 +99,9 @@ export function buildIndicators() {
       category.toLowerCase()
     ];
 
+    const chartAbbr = encyclopediaNameToLiveAbbr(name);
+    const liveOnChart = chartAbbr !== undefined;
+
     items.push({
       id: `ind${i + 1}`,
       name: name,
@@ -93,8 +110,10 @@ export function buildIndicators() {
       complexity,
       hasVideo,
       tags,
-      img,
-      videoUrl
+      visualType,
+      videoUrl,
+      liveOnChart,
+      chartAbbr: chartAbbr ?? null,
     });
   }
   return items;
