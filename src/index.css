@@ -119,3 +119,26 @@ button:active,
 input, textarea, select {
   font-size: 16px !important;
 }
+
+/* Profile hub — Affiliate Network launcher */
+.cp-affiliate-btn {
+  border-radius: 18px;
+  border: 2px solid rgba(255, 106, 0, 0.45);
+  background: linear-gradient(135deg, rgba(255, 106, 0, 0.18) 0%, rgba(255, 0, 127, 0.12) 100%);
+  color: #ff8c42;
+  box-shadow: 0 0 22px rgba(255, 106, 0, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+
+.cp-affiliate-btn:hover {
+  border-color: rgba(0, 229, 255, 0.55);
+  color: #00e5ff;
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.cp-affiliate-btn:active {
+  transform: translateY(0);
+}
+

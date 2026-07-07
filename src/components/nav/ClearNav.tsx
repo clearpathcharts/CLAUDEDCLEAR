@@ -10,6 +10,7 @@ import {
   Home,
   Landmark,
   LogOut,
+  Network,
   Navigation,
   Newspaper,
   Shield,
@@ -93,6 +94,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "PROFILE",
     },
 
+    {
+      id: "AffiliateNetwork",
+      icon: Network,
+      label: "AFFILIATE",
+    },
+
     ...(isAdmin
       ? [
           {
@@ -130,7 +137,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isPink =
       item.id === "Biography" ||
-      item.id === "Diagnostics";
+      item.id === "Diagnostics" ||
+      item.id === "AffiliateNetwork";
 
     const isCyan =
       item.id === "CpmsApk" ||

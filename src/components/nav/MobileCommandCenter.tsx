@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Home,
   LogOut,
+  Network,
   Newspaper,
   Shield,
   SlidersHorizontal,
@@ -111,6 +112,13 @@ const ACCOUNT_ITEMS: NavItem[] = [
     label: "PROFILE",
     colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
     glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+  },
+  {
+    id: "AffiliateNetwork",
+    icon: Network,
+    label: "AFFILIATE",
+    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
   {
     id: "Membership",
