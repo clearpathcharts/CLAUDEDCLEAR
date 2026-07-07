@@ -13,7 +13,9 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers } from "../../patterns";
+import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers } from "../../patterns";
+import type { PatternScanResult } from "../../patterns";
+import { ChartPatternHud } from "./ChartPatternHud";
 import { Crosshair } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -77,6 +79,7 @@ export function LightweightCandles({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const visible = useVisibilityPause();
 
   const normalizedProfileId = (profileId || "").toLowerCase();
@@ -270,6 +273,7 @@ export function LightweightCandles({
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
         const patternScan = scanAllPatterns(tierOptimizedData);
+        setPatternScan(patternScan);
         setActivePatternScan(patternScan);
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
@@ -282,24 +286,30 @@ export function LightweightCandles({
 
         series.setData(chartCandles);
 
-        // Pattern geometry — trendlines on wedges/triangles, markers on candlestick hits
+        // Pattern geometry — bold trendlines on wedges/triangles/triple tops
         const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns);
         for (const overlay of patternLines) {
           const line = chart.addSeries(LineSeries, {
             color: overlay.color,
-            lineWidth: 2,
+            lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
             lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
-            title: overlay.label,
+            title: '',
             priceLineVisible: false,
             lastValueVisible: false,
+            crosshairMarkerVisible: false,
           });
           line.setData(overlay.points);
         }
 
-        const candleMarkers = buildCandlestickMarkers(tierOptimizedData, patternScan.patterns);
+        const candleMarkers = [
+          ...buildCandlestickMarkers(tierOptimizedData, patternScan.patterns),
+          ...buildPatternPeakMarkers(tierOptimizedData, patternScan.patterns),
+        ];
         if (candleMarkers.length > 0) {
           createSeriesMarkers(series, candleMarkers as any);
         }
+
+        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -601,6 +611,7 @@ export function LightweightCandles({
           {error}
         </div>
       )}
+      <ChartPatternHud symbol={sym} scan={patternScan} />
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className="absolute top-3 right-3 z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95"

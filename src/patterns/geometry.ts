@@ -12,17 +12,49 @@ const CHART_PATTERN_IDS = new Set([
   'cup_and_handle',
 ]);
 
+function priceOnTrendline(
+  from: SwingPoint,
+  to: SwingPoint,
+  targetIndex: number,
+): number {
+  const dx = to.index - from.index;
+  if (dx === 0) return from.price;
+  const t = (targetIndex - from.index) / dx;
+  return from.price + t * (to.price - from.price);
+}
+
 function wedgeTriangleGeometry(
   h1: SwingPoint,
   h2: SwingPoint,
   l1: SwingPoint,
   l2: SwingPoint,
+  startIndex: number,
+  endIndex: number,
+  candles: Candle[],
 ): PatternGeometry {
+  const start = Math.max(0, Math.min(startIndex, h1.index, l1.index));
+  const end = Math.min(candles.length - 1, Math.max(endIndex, h2.index, l2.index));
+
+  const upperStart = priceOnTrendline(h1, h2, start);
+  const upperEnd = priceOnTrendline(h1, h2, end);
+  const lowerStart = priceOnTrendline(l1, l2, start);
+  const lowerEnd = priceOnTrendline(l1, l2, end);
+
   return {
     lines: [
-      { role: 'upper', from: { index: h1.index, time: h1.time, price: h1.price }, to: { index: h2.index, time: h2.time, price: h2.price } },
-      { role: 'lower', from: { index: l1.index, time: l1.time, price: l1.price }, to: { index: l2.index, time: l2.time, price: l2.price } },
+      {
+        role: 'upper',
+        from: { index: start, time: candles[start].time, price: upperStart },
+        to: { index: end, time: candles[end].time, price: upperEnd },
+      },
+      {
+        role: 'lower',
+        from: { index: start, time: candles[start].time, price: lowerStart },
+        to: { index: end, time: candles[end].time, price: lowerEnd },
+      },
     ],
+    markerIndex: end,
+    markerPrice: upperEnd,
   };
 }
 
@@ -48,7 +80,18 @@ export function attachChartGeometry(
     const l1 = lows[lows.length - 2];
     const l2 = lows[lows.length - 1];
     if (h1 && h2 && l1 && l2) {
-      return { ...pattern, geometry: wedgeTriangleGeometry(h1, h2, l1, l2) };
+      return {
+        ...pattern,
+        geometry: wedgeTriangleGeometry(
+          h1,
+          h2,
+          l1,
+          l2,
+          pattern.startIndex,
+          pattern.endIndex,
+          candles,
+        ),
+      };
     }
   }
 
@@ -57,14 +100,33 @@ export function attachChartGeometry(
     const trio = pool.filter((s) => s.index >= pattern.startIndex && s.index <= pattern.endIndex).slice(-3);
     if (trio.length >= 3) {
       const avg = (trio[0].price + trio[1].price + trio[2].price) / 3;
+      const padStart = Math.max(0, trio[0].index - 3);
+      const padEnd = Math.min(candles.length - 1, trio[2].index + 8);
       return {
         ...pattern,
         geometry: {
-          lines: [{
-            role: 'horizontal',
-            from: { index: trio[0].index, time: trio[0].time, price: avg },
-            to: { index: trio[2].index, time: trio[2].time, price: avg },
-          }],
+          lines: [
+            {
+              role: 'horizontal',
+              from: { index: padStart, time: candles[padStart].time, price: avg },
+              to: { index: padEnd, time: candles[padEnd].time, price: avg },
+            },
+            {
+              role: 'upper',
+              from: { index: trio[0].index, time: trio[0].time, price: trio[0].price },
+              to: { index: trio[0].index, time: candles[Math.min(trio[0].index + 1, padEnd)].time, price: avg },
+            },
+            {
+              role: 'upper',
+              from: { index: trio[1].index, time: trio[1].time, price: trio[1].price },
+              to: { index: trio[1].index, time: candles[Math.min(trio[1].index + 1, padEnd)].time, price: avg },
+            },
+            {
+              role: 'upper',
+              from: { index: trio[2].index, time: trio[2].time, price: trio[2].price },
+              to: { index: trio[2].index, time: candles[Math.min(trio[2].index + 1, padEnd)].time, price: avg },
+            },
+          ],
           markerIndex: trio[2].index,
           markerPrice: avg,
         },

@@ -25,8 +25,10 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
-  const recent = getRecentPatterns(6);
+  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart').slice(-5) ?? [];
+  const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick').slice(-5) ?? [];
   const patternCount = scan?.patterns.length ?? 0;
+  const geometryCount = chartPatterns.filter((p) => p.geometry?.lines?.length).length;
 
   if (!chartActive && (!scan || patternCount === 0)) return null;
 
