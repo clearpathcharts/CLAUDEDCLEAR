@@ -1,6 +1,7 @@
 // Native ClearPath pattern detection — not Pine import, pure OHLC geometry.
 
 import { Candle } from '../types/indicators';
+import type { PatternGroup } from './patternMeta';
 
 export type PatternCategory = 'candlestick' | 'chart' | 'structure';
 
@@ -16,14 +17,27 @@ export type CandlestickPatternId =
   | 'evening_star';
 
 export type ChartPatternId =
-  | 'rising_wedge'
-  | 'falling_wedge'
+  // Continuation
+  | 'bull_flag'
+  | 'bear_flag'
+  | 'bull_pennant'
+  | 'bear_pennant'
+  | 'cup_and_handle'
   | 'ascending_triangle'
   | 'descending_triangle'
-  | 'symmetrical_triangle'
+  | 'rectangle'
+  // Reversal
+  | 'head_and_shoulders'
+  | 'inverse_head_and_shoulders'
+  | 'double_top'
+  | 'double_bottom'
   | 'triple_top'
   | 'triple_bottom'
-  | 'cup_and_handle';
+  | 'rising_wedge'
+  | 'falling_wedge'
+  // Bilateral
+  | 'symmetrical_triangle'
+  | 'broadening_wedge';
 
 export type PatternId = CandlestickPatternId | ChartPatternId;
 
@@ -32,6 +46,8 @@ export interface DetectedPattern {
   category: PatternCategory;
   label: string;
   direction: 'bullish' | 'bearish' | 'neutral';
+  /** continuation · reversal · bilateral (chart patterns only) */
+  patternGroup?: PatternGroup;
   startIndex: number;
   endIndex: number;
   time: number;

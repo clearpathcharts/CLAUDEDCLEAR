@@ -1,6 +1,7 @@
 import { Time } from 'lightweight-charts';
 import { Candle } from '../types/indicators';
 import { DetectedPattern } from './types';
+import { neonLineColor, NEON_PATTERN_LINE_COLORS } from './patternMeta';
 
 export interface PatternLineOverlay {
   id: string;
@@ -11,48 +12,33 @@ export interface PatternLineOverlay {
   points: Array<{ time: Time; value: number }>;
 }
 
-const DIRECTION_COLOR = {
-  bullish: '#22C55E',
-  bearish: '#EF4444',
-  neutral: '#EAB308',
-};
-
-const ROLE_COLOR: Record<string, string> = {
-  upper: '#EF4444',
-  lower: '#22C55E',
-  horizontal: '#F59E0B',
-  neckline: '#00D9FF',
-  cup: '#A78BFA',
-};
-
 const CANDLE_MARKER_COLOR = {
   bullish: '#22C55E',
   bearish: '#EF4444',
   neutral: '#00D9FF',
 };
 
-/** Build lightweight-charts line overlays from detected chart patterns (max 8 lines). */
+/** Build lightweight-charts line overlays — hot pink / purple neon geometry */
 export function buildPatternLineOverlays(
   candles: Candle[],
   patterns: DetectedPattern[],
 ): PatternLineOverlay[] {
   const chartPatterns = patterns
     .filter((p) => p.category === 'chart' && p.geometry?.lines.length)
-    .slice(-6);
+    .slice(-8);
 
   const overlays: PatternLineOverlay[] = [];
 
   for (const pattern of chartPatterns) {
-    const baseColor = DIRECTION_COLOR[pattern.direction];
     for (const [i, line] of (pattern.geometry?.lines ?? []).entries()) {
       if (line.from.time === line.to.time && line.from.price === line.to.price) continue;
-      const color = ROLE_COLOR[line.role] ?? baseColor;
+      const color = neonLineColor(line.role, i);
       overlays.push({
         id: `${pattern.id}-${line.role}-${i}`,
         label: pattern.label,
         color,
-        dashed: line.role === 'neckline' || line.role === 'horizontal',
-        lineWidth: line.role === 'horizontal' ? 3 : 2,
+        dashed: line.role === 'neckline',
+        lineWidth: line.role === 'horizontal' || line.role === 'neckline' ? 4 : 3,
         points: [
           { time: line.from.time as Time, value: line.from.price },
           { time: line.to.time as Time, value: line.to.price },
@@ -61,7 +47,7 @@ export function buildPatternLineOverlays(
     }
   }
 
-  return overlays.slice(-12);
+  return overlays.slice(-20);
 }
 
 export interface PatternCandleMarker {
@@ -73,23 +59,33 @@ export interface PatternCandleMarker {
   price?: number;
 }
 
-/** Mark swing peaks for recent chart patterns (triangles, triple tops). */
+/** Mark swing peaks for chart patterns */
 export function buildPatternPeakMarkers(
   candles: Candle[],
   patterns: DetectedPattern[],
 ): PatternCandleMarker[] {
   const markers: PatternCandleMarker[] = [];
-  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-4);
+  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-6);
 
   for (const pattern of chartPatterns) {
-    if (pattern.id === 'triple_top' || pattern.id === 'triple_bottom') {
+    const peakIds = new Set([
+      'triple_top',
+      'triple_bottom',
+      'double_top',
+      'double_bottom',
+      'head_and_shoulders',
+      'inverse_head_and_shoulders',
+    ]);
+
+    if (peakIds.has(pattern.id)) {
       for (const line of pattern.geometry?.lines ?? []) {
-        if (line.role !== 'upper' || line.from.price === line.to.price) continue;
+        if (line.role !== 'upper' && line.role !== 'lower') continue;
+        if (line.from.price === line.to.price) continue;
         markers.push({
           time: line.from.time as Time,
-          position: pattern.id === 'triple_top' ? 'aboveBar' : 'belowBar',
+          position: line.role === 'upper' ? 'aboveBar' : 'belowBar',
           shape: 'circle',
-          color: pattern.id === 'triple_top' ? '#EF4444' : '#22C55E',
+          color: NEON_PATTERN_LINE_COLORS.hotPink,
           text: 'PK',
           price: line.from.price,
         });
@@ -103,7 +99,7 @@ export function buildPatternPeakMarkers(
           time: c.time as Time,
           position: pattern.direction === 'bullish' ? 'belowBar' : 'aboveBar',
           shape: 'circle',
-          color: DIRECTION_COLOR[pattern.direction],
+          color: NEON_PATTERN_LINE_COLORS.purple,
           text: pattern.label.slice(0, 4),
           price: pattern.geometry.markerPrice,
         });
@@ -111,7 +107,7 @@ export function buildPatternPeakMarkers(
     }
   }
 
-  return markers.slice(-16);
+  return markers.slice(-20);
 }
 
 /** Mark recent candlestick pattern hits on the chart (max 12). */

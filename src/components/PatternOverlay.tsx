@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Scan, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { getActivePatternScan, getRecentPatterns, subscribePatternScan } from '../patterns';
+import { getActivePatternScan, subscribePatternScan, PATTERN_GROUP_LABELS } from '../patterns';
+import type { PatternGroup } from '../patterns';
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
@@ -9,14 +10,15 @@ const DIRECTION_ICON = {
   neutral: Minus,
 };
 
-const DIRECTION_COLOR = {
-  bullish: 'text-green-400',
-  bearish: 'text-red-400',
-  neutral: 'text-yellow-400',
+const GROUP_ORDER: PatternGroup[] = ['continuation', 'reversal', 'bilateral'];
+
+const GROUP_BADGE: Record<PatternGroup, string> = {
+  continuation: 'text-[#FF1493] border-[#FF1493]/40',
+  reversal: 'text-[#BF00FF] border-[#BF00FF]/40',
+  bilateral: 'text-[#9D00FF] border-[#9D00FF]/40',
 };
 
 interface PatternOverlayProps {
-  /** When true, show a standby badge even before patterns are detected (chart tabs). */
   chartActive?: boolean;
 }
 
@@ -25,50 +27,77 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
-  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart').slice(-5) ?? [];
+  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart').slice(-10) ?? [];
   const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick').slice(-5) ?? [];
   const patternCount = scan?.patterns.length ?? 0;
-  const geometryCount = chartPatterns.filter((p) => p.geometry?.lines?.length).length;
 
   if (!chartActive && (!scan || patternCount === 0)) return null;
+
+  const byGroup = GROUP_ORDER.map((group) => ({
+    group,
+    items: chartPatterns.filter((p) => p.patternGroup === group),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="fixed bottom-24 right-4 z-[120] w-72 bg-black/90 border border-white/10 rounded-xl p-4 backdrop-blur-md shadow-2xl font-mono"
+      className="fixed bottom-24 right-4 z-[120] w-80 rounded-xl border border-[#FF1493]/40 bg-black/92 p-4 font-mono shadow-[0_0_32px_rgba(191,0,255,0.3)] backdrop-blur-md"
     >
-      <div className="flex items-center gap-2 mb-3 border-b border-white/10 pb-2">
-        <Scan size={16} className="text-[#00D9FF]" />
+      <div className="mb-3 flex items-center gap-2 border-b border-[#BF00FF]/30 pb-2">
+        <Scan size={16} className="text-[#FF1493]" />
         <span className="text-xs font-black uppercase tracking-wider text-white">Pattern Scanner</span>
-        <span className="text-xs text-white/30 ml-auto">
+        <span className="ml-auto text-xs text-[#BF00FF]">
           {patternCount > 0 ? `${patternCount} found` : 'active'}
         </span>
       </div>
 
       {patternCount === 0 ? (
-        <p className="text-[10px] text-white/50 leading-relaxed">
+        <p className="text-[10px] leading-relaxed text-white/50">
           {scan
-            ? `Scanned ${scan.scannedBars.toLocaleString()} bars · no candlestick or chart patterns on this symbol yet. Trendlines and markers appear automatically when detected.`
-            : 'Loading chart data… native candlestick + wedge/triangle detection runs on every chart.'}
+            ? `Scanned ${scan.scannedBars.toLocaleString()} bars · continuation, reversal & bilateral shapes draw in hot pink / purple neon.`
+            : 'Loading chart… pattern geometry runs on every chart load.'}
         </p>
       ) : (
         <>
-          <p className="text-[10px] text-white/40 mb-3">
-            Trendlines drawn on chart · list shows confidence
+          <p className="mb-3 text-[10px] text-[#FF00CC]/80">
+            Neon geometry: hot pink upper · purple lower · magenta necklines
           </p>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto">
-            {recent.map((p, i) => {
-              const Icon = DIRECTION_ICON[p.direction];
-              return (
-                <div key={`${p.id}-${p.time}-${i}`} className="flex items-center gap-2 text-xs bg-white/5 rounded-lg px-2 py-1.5">
-                  <Icon size={12} className={DIRECTION_COLOR[p.direction]} />
-                  <span className="text-white/80 flex-1 truncate">{p.label}</span>
-                  <span className="text-white/30">{Math.round(p.confidence * 100)}%</span>
-                </div>
-              );
-            })}
-          </div>
+
+          {byGroup.map(({ group, items }) => (
+            <div key={group} className="mb-2">
+              <p className={`mb-1 text-[8px] font-bold uppercase tracking-widest ${GROUP_BADGE[group]}`}>
+                {PATTERN_GROUP_LABELS[group]}
+              </p>
+              <div className="space-y-1">
+                {items.map((p, i) => {
+                  const Icon = DIRECTION_ICON[p.direction];
+                  return (
+                    <div key={`${group}-${p.id}-${i}`} className="flex items-center gap-2 rounded-lg border border-[#FF00CC]/20 bg-[#BF00FF]/10 px-2 py-1.5 text-xs">
+                      <Icon size={12} className="text-[#FF1493]" />
+                      <span className="flex-1 truncate text-white/85">{p.label}</span>
+                      <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {candlePatterns.length > 0 && (
+            <div className="mt-2 max-h-28 space-y-1 overflow-y-auto border-t border-white/10 pt-2">
+              <p className="text-[8px] font-bold uppercase tracking-widest text-white/30">Candlesticks</p>
+              {candlePatterns.map((p, i) => {
+                const Icon = DIRECTION_ICON[p.direction];
+                return (
+                  <div key={`candle-${p.id}-${i}`} className="flex items-center gap-2 rounded bg-white/5 px-2 py-1 text-xs">
+                    <Icon size={12} className="text-white/60" />
+                    <span className="flex-1 truncate text-white/75">{p.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </motion.div>
