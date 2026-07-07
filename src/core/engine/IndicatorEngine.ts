@@ -10,7 +10,7 @@ export class IndicatorEngine {
       throw new Error(`Indicator calculation function not registered in IndicatorBank: ${indicator}`);
     }
 
-    if (sym === "SMA" || sym === "EMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
+    if (sym === "SMA" || sym === "EMA" || sym === "WMA" || sym === "ATR" || sym === "RSI" || sym === "ADX") {
       return fn(candles, settings?.period);
     }
     if (sym === "ICHIMOKU") {
@@ -32,6 +32,21 @@ export class IndicatorEngine {
     }
     if (sym === "BB") {
       return fn(candles, settings?.period || 20, settings?.multiplier || 2);
+    }
+    if (sym === "DC") {
+      return fn(candles, settings?.period || 20);
+    }
+    if (sym === "STOCH") {
+      return fn(candles, settings?.kPeriod || 14, settings?.dPeriod || 3);
+    }
+    if (sym === "CCI" || sym === "WPR" || sym === "ROC" || sym === "MFI" || sym === "CMF") {
+      return fn(candles, settings?.period);
+    }
+    if (sym === "AO") {
+      return fn(candles, settings?.fastPeriod || 5, settings?.slowPeriod || 34);
+    }
+    if (sym === "PSAR") {
+      return fn(candles, settings?.step || 0.02, settings?.maxStep || 0.2);
     }
     if (sym === "VWAP" || sym === "OBV") {
       return fn(candles);

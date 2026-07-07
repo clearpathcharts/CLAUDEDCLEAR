@@ -36,7 +36,10 @@ type Candle = {
  * separate price scale. Price-based overlays (SMA, EMA, BB, VWAP, Ichimoku,
  * River) belong ON the candle scale and are deliberately excluded here.
  */
-const OSCILLATOR_INDICATORS = new Set(["RSI", "MACD", "ATR", "ADX", "OBV", "AO"]);
+const OSCILLATOR_INDICATORS = new Set([
+  "RSI", "MACD", "ATR", "ADX", "OBV", "AO",
+  "STOCH", "CCI", "WPR", "ROC", "MFI", "CMF",
+]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
 export function LightweightCandles({
@@ -461,6 +464,37 @@ export function LightweightCandles({
                 const adxValueData = adxData.map((d: any) => ({ time: d.time as Time, value: d.adx }));
                 const adxLine = addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" });
                 adxLine.setData(adxValueData);
+              }
+              else if (indAbbr === "WMA") {
+                const lineData = IndicatorEngine.calculate("WMA", tierOptimizedData, { period: 20 });
+                const wmaLine = chart.addSeries(LineSeries, { color: "#3E78FF", lineWidth: 2, title: "WMA (20)" });
+                wmaLine.setData(lineData as any[]);
+              }
+              else if (indAbbr === "PSAR") {
+                const lineData = IndicatorEngine.calculate("PSAR", tierOptimizedData);
+                const psarLine = chart.addSeries(LineSeries, {
+                  color: "#FFD166",
+                  lineWidth: 2,
+                  lineStyle: LineStyle.Dotted,
+                  title: "Parabolic SAR",
+                });
+                psarLine.setData(lineData as any[]);
+              }
+              else if (indAbbr === "DC") {
+                const dcData = IndicatorEngine.calculate("DC", tierOptimizedData, { period: 20 });
+                const upperData = dcData.map((d: any) => ({ time: d.time as Time, value: d.upper }));
+                const lowerData = dcData.map((d: any) => ({ time: d.time as Time, value: d.lower }));
+                const basisData = dcData.map((d: any) => ({ time: d.time as Time, value: d.basis }));
+                chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 2, title: "DC upper" }).setData(upperData);
+                chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 2, title: "DC lower" }).setData(lowerData);
+                chart.addSeries(LineSeries, { color: "#F72585", lineWidth: 1, title: "DC mid" }).setData(basisData);
+              }
+              else if (indAbbr === "STOCH") {
+                const stochData = IndicatorEngine.calculate("STOCH", tierOptimizedData, { kPeriod: 14, dPeriod: 3 });
+                const kData = stochData.map((d: any) => ({ time: d.time as Time, value: d.k }));
+                const dData = stochData.map((d: any) => ({ time: d.time as Time, value: d.d }));
+                addOscillatorSeries({ color: "#B5179E", lineWidth: 2, title: "Stoch %K" }).setData(kData);
+                addOscillatorSeries({ color: "#FFAA00", lineWidth: 2, title: "Stoch %D" }).setData(dData);
               }
               else {
                 // Unknown indicator: route via the IndicatorEngine. If it's a known
