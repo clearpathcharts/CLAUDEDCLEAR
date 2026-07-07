@@ -536,6 +536,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');
   const [showTerminalMatrixNoise, setShowTerminalMatrixNoise] = useState(() => localStorage.getItem('cp_terminal_ambient_overlay') === 'true');
   const [showHomepageContacts, setShowHomepageContacts] = useState(() => localStorage.getItem('cp_show_homepage_contacts') === 'true');
+  const [showRightSidebar, setShowRightSidebar] = useState(() => localStorage.getItem('cp_show_right_sidebar') !== 'false');
 
   const handleSetShowTicker = (val: boolean) => {
     setShowTicker(val);
@@ -555,6 +556,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const handleSetShowHomepageContacts = (val: boolean) => {
     setShowHomepageContacts(val);
     localStorage.setItem('cp_show_homepage_contacts', val ? 'true' : 'false');
+  };
+
+  const handleSetShowRightSidebar = (val: boolean) => {
+    setShowRightSidebar(val);
+    localStorage.setItem('cp_show_right_sidebar', val ? 'true' : 'false');
   };
 
   // Removed showFoundersModal Escape hook listener
@@ -1375,9 +1381,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
               </div>
               <div className="flex items-center space-x-4">
                 <button 
-                  onClick={() => setRightSide(!rightSide)}
-                  className="lg:hidden p-3 transition-colors rounded-full shadow-lg z-[60]"
+                  onClick={() => {
+                    if (!showRightSidebar) {
+                      handleSetShowRightSidebar(true);
+                      setRightSide(true);
+                    } else {
+                      setRightSide(!rightSide);
+                    }
+                  }}
+                  className={`${showRightSidebar ? 'lg:hidden' : ''} p-3 transition-colors rounded-full shadow-lg z-[60]`}
                   style={{ background: `${profile.borderA}ee`, color: '#000' }}
+                  aria-label={showRightSidebar ? 'Toggle contacts panel' : 'Open contacts panel'}
+                  title={showRightSidebar ? 'Toggle contacts panel' : 'Open contacts panel'}
                 >
                   <MessageSquare size={24} />
                 </button>
@@ -1458,11 +1473,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       </div>
 
       {/* Right Sidebar */}
-      {activeTab !== 'StrictlyCharts' && (
+      {activeTab !== 'StrictlyCharts' && (showRightSidebar || rightSide) && (
       <div className={`
         fixed inset-y-0 right-0 z-50 w-[280px] border-l flex flex-col transition-all duration-300 glass
-        xl:sticky xl:top-0 xl:h-dvh xl:translate-x-0
-        ${rightSide ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
+        ${showRightSidebar ? 'xl:sticky xl:top-0 xl:h-dvh xl:translate-x-0' : ''}
+        ${rightSide ? 'translate-x-0' : `translate-x-full ${showRightSidebar ? 'xl:translate-x-0' : ''}`}
       `}
       style={{ borderColor: `${profile.borderA}22` }}
       >
@@ -1494,6 +1509,16 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             </div>
             <ChevronDown size={10} style={{ color: profile.borderA }} />
           </div>
+          <button 
+            type="button"
+            aria-label="Close contacts panel"
+            title="Close contacts panel"
+            onClick={() => { setRightSide(false); handleSetShowRightSidebar(false); }}
+            className="p-1.5 rounded-full transition-all hover:bg-white/10 hover:scale-110"
+            style={{ color: `${profile.borderA}88` }}
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
