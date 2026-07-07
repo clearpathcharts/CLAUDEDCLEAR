@@ -35,6 +35,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { resolveTwelveDataInterval } from './src/services/marketData';
 
 const parser = new RSSParser();
 
@@ -996,7 +997,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    const resolvedInterval = typeof interval === 'string' ? interval : '5min';
+    const resolvedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '5min'
+    );
     if (!apiKey) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
@@ -1037,19 +1040,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
 
-    let selectedInterval = '1min';
-    const rawInterval = typeof interval === 'string' ? interval : '1m';
-    if (rawInterval === '1m' || rawInterval === '1min') selectedInterval = '1min';
-    else if (rawInterval === '5m' || rawInterval === '5min') selectedInterval = '5min';
-    else if (rawInterval === '15m' || rawInterval === '15min') selectedInterval = '15min';
-    else if (rawInterval === '30m' || rawInterval === '30min') selectedInterval = '30min';
-    else if (rawInterval === '45m' || rawInterval === '45min') selectedInterval = '45min';
-    else if (rawInterval === '1h') selectedInterval = '1h';
-    else if (rawInterval === '4H' || rawInterval === '4h') selectedInterval = '4h';
-    else if (rawInterval === '1D' || rawInterval === '1d' || rawInterval === 'day' || rawInterval === '1day') selectedInterval = '1day';
-    else if (rawInterval === 'week' || rawInterval === '1week') selectedInterval = '1week';
-    else if (rawInterval === 'month' || rawInterval === '1month') selectedInterval = '1month';
-    else selectedInterval = rawInterval;
+    const selectedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '1h'
+    );
 
     const apiKey = getCleanTwelveDataApiKey();
     if (!apiKey) {
@@ -1057,7 +1050,8 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
 
     try {
-      const outputsize = Math.max(limit ? Number(limit) : 100, 100);
+      const requested = limit ? Number(limit) : 100;
+      const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
       const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey);
       
       if (!data.values || !Array.isArray(data.values)) {

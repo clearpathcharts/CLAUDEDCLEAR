@@ -220,6 +220,9 @@ export function LightweightCandles({
 
     async function load() {
       try {
+        if (!active) return;
+        setError(null);
+
         const allowedLimit = getCandleLimit(userTier);
 
         if (data && data.length > 0) {
@@ -227,19 +230,21 @@ export function LightweightCandles({
           displayData = data;
         } else {
           let fetched: Candle[] | null = null;
+          let lastFetchError: string | null = null;
+
           try {
-            // Fetch real candles via the secure server proxy.
             fetched = await fetchTieredHistoricalData(sym, timeframe, userTier);
-          } catch (err) {
-            // ChartFeedAdapter forwards through MarketEngine -> DataRouter, all of
-            // which return real data or empty arrays (never simulated candles).
-            console.warn("Primary fetch failed, trying adapter for", sym, err);
+          } catch (err: any) {
+            lastFetchError = err?.message || String(err);
+            console.warn("Primary fetch failed for", sym, err);
+          }
+
+          if ((!fetched || fetched.length === 0) && active) {
             try {
-              if (active) {
-                fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
-              }
-            } catch (adapterErr) {
+              fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
+            } catch (adapterErr: any) {
               console.error(adapterErr);
+              lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
             }
           }
 
@@ -248,7 +253,11 @@ export function LightweightCandles({
           if (fetched && fetched.length > 0) {
             displayData = fetched;
           } else {
-            setError("No historical data available for this timeframe.");
+            setError(
+              lastFetchError
+                ? `No historical data available for this timeframe. (${lastFetchError})`
+                : "No historical data available for this timeframe."
+            );
             return;
           }
         }
@@ -535,7 +544,7 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), error]);
+  }, [data, height, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
     <div
