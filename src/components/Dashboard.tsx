@@ -24,7 +24,6 @@ import {
   Brain,
   Activity,
   Compass,
-  BookOpen,
   Building2,
   BarChart3,
   Shield,
@@ -47,7 +46,6 @@ import {
   Calendar,
   Map,
   Landmark,
-  SlidersHorizontal,
   ShieldAlert,
   Crown
 } from 'lucide-react';
@@ -83,7 +81,6 @@ import { ClearNav } from './nav/ClearNav';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 
-import TradingJournal from './TradingJournal';
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 
@@ -105,7 +102,6 @@ const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
 const GeographicMap = lazy(() => import('./GeographicMap'));
-const AdvancedScreener = lazy(() => import('./AdvancedScreener'));
 const CapitalFlowMap = lazy(() => import('./CapitalFlowMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
@@ -137,6 +133,15 @@ import DiscoveryFeed from './DiscoveryFeed';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import FoundersPortal from './FoundersPortal';
 import KillZones from './KillZones';
+
+const RETIRED_TABS: Record<string, string> = {
+  Screener: 'StrictlyCharts',
+  Journal: 'StrictlyCharts',
+};
+
+function normalizeTabId(tabId: string): string {
+  return RETIRED_TABS[tabId] ?? tabId;
+}
 
 const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange }: { chartTheme: any, setChartTheme: (t: any) => void, profile: any, onProfileChange: (p: any) => void }) => {
   const [userTier, setUserTier] = useState<string>(() => {
@@ -353,13 +358,11 @@ const TabContent = ({
         />
       );
       case 'CapitalFlow': return <CapitalFlowMap />;
-      case 'Screener': return <AdvancedScreener />;
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
       case 'StrictlyCharts': return <LightweightMarketUI profile={profile} onBack={onBack} chartTheme={chartTheme} selectedMarketSymbol={selectedLightweightSymbol} onSelectMarketSymbol={setSelectedLightweightSymbol} />;
       case 'ThemeTerminal': return <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />;
       case 'Macro': return <MacroDashboard />;
       case 'Fundamentals': return <FundamentalsPanel />;
-      case 'Journal': return <TradingJournal />;
       case 'News': return <NewsPanel />;
       case 'Founders': return <FoundersPortal />;
       case 'Intelligence': return <MarketScanner />;
@@ -525,7 +528,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     if (typeof localStorage !== 'undefined') {
       try {
         const savedTab = localStorage.getItem('clearpath_active_tab');
-        if (savedTab) return savedTab;
+        if (savedTab) return normalizeTabId(savedTab);
       } catch (e) {
         console.error('Failed to load activeTab from localStorage:', e);
       }
@@ -534,10 +537,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       try {
         const params = new URLSearchParams(window.location.search);
         const urlTab = params.get('tab');
-        if (urlTab) return urlTab;
+        if (urlTab) return normalizeTabId(urlTab);
         
         const hash = window.location.hash.replace('#', '');
-        if (hash) return hash;
+        if (hash) return normalizeTabId(hash);
       } catch (e) {
         console.error('Failed to parse activeTab initial URL:', e);
       }
@@ -682,7 +685,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'markets': 'StrictlyCharts',
           'exchange command center': 'StrictlyCharts',
           'standard': 'Standard',
-          'journal': 'Journal',
           'news': 'News',
           'photos': 'Photos',
           'settings': 'Settings',
@@ -691,7 +693,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'strictlycharts': 'StrictlyCharts',
           'charts': 'StrictlyCharts'
         };
-        const mappedTarget = targetMap[target.toLowerCase()] || target;
+        const mappedTarget = normalizeTabId(targetMap[target.toLowerCase()] || target);
         setActiveTab(mappedTarget);
       }
     };
@@ -890,8 +892,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
-      { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
-      { id: 'Journal', icon: BookOpen, label: 'TRADING JOURNAL', verified: true },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
@@ -939,10 +939,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const seoData = getSeoData();
 
   const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
+    const nextTab = normalizeTabId(tabId);
+    setActiveTab(nextTab);
     if (typeof localStorage !== 'undefined') {
       try {
-        localStorage.setItem('clearpath_active_tab', tabId);
+        localStorage.setItem('clearpath_active_tab', nextTab);
       } catch (e) {
         console.error('Failed to save activeTab to localStorage:', e);
       }
@@ -950,9 +951,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
-        params.set('tab', tabId);
-        const newUrl = `${window.location.pathname}?${params.toString()}#${tabId}`;
-        window.history.pushState({ tabId }, '', newUrl);
+        params.set('tab', nextTab);
+        const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
+        window.history.pushState({ tabId: nextTab }, '', newUrl);
       } catch (e) {
         console.error('Failed to push tab status state:', e);
       }
@@ -992,16 +993,16 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       }
 
       if (event.state && event.state.tabId) {
-        const nextTabId = event.state.tabId;
+        const nextTabId = normalizeTabId(event.state.tabId);
         setActiveTab(nextTabId);
       } else {
         const params = new URLSearchParams(window.location.search);
         const urlTab = params.get('tab');
         if (urlTab) {
-          setActiveTab(urlTab);
+          setActiveTab(normalizeTabId(urlTab));
         } else {
           const hash = window.location.hash.replace('#', '');
-          if (hash) setActiveTab(hash);
+          if (hash) setActiveTab(normalizeTabId(hash));
         }
       }
     };
@@ -1029,7 +1030,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
       if (urlTab) {
-        setActiveTab(urlTab);
+        setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
         const validHash = menuItems.find(m => m.id === hash) || 
@@ -1040,9 +1041,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Market' || 
           hash === 'StrictlyCharts' || 
           hash === 'Fundamentals' || 
-          hash === 'Screener' || 
           hash === 'Portfolio' || 
-          hash === 'Journal' || 
           hash === 'News' || 
           hash === 'Biography' || 
           hash === 'CapitalFlow' || 
@@ -1056,7 +1055,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';
         if (validHash) {
-          setActiveTab(hash);
+          setActiveTab(normalizeTabId(hash));
         }
       }
     }
