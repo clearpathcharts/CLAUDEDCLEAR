@@ -13,12 +13,14 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
+import { scanAllPatterns, scanPatternsForViewport, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
+import { ChartScannerDock } from "./ChartScannerDock";
 import { Crosshair, Scan, Radio } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
+import { MOBILE_PATTERN_LOOKBACK, useIsMobileChart } from "../../hooks/useIsMobileChart";
 
 type Candle = {
   time: number;
@@ -84,24 +86,30 @@ export function LightweightCandles({
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
-  const [showPatternHud, setShowPatternHud] = useState(() => {
-    try {
-      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
-      return stored === null ? true : stored === "1";
-    } catch {
-      return true;
-    }
-  });
-  const [showFormingWatch, setShowFormingWatch] = useState(() => {
-    try {
-      const stored = localStorage.getItem("cp_chart_forming_watch_open");
-      return stored === null ? true : stored === "1";
-    } catch {
-      return true;
-    }
-  });
+  const [showPatternHud, setShowPatternHud] = useState(false);
+  const [showFormingWatch, setShowFormingWatch] = useState(false);
+  const [mobileScannerOpen, setMobileScannerOpen] = useState(false);
+  const isMobileChart = useIsMobileChart();
   const visible = useVisibilityPause();
   const sym = symbol.toUpperCase();
+
+  useEffect(() => {
+    if (isMobileChart) {
+      setShowPatternHud(false);
+      setShowFormingWatch(false);
+      setMobileScannerOpen(false);
+      return;
+    }
+    try {
+      const patternStored = localStorage.getItem("cp_chart_pattern_hud_open");
+      const formingStored = localStorage.getItem("cp_chart_forming_watch_open");
+      setShowPatternHud(patternStored === null ? true : patternStored === "1");
+      setShowFormingWatch(formingStored === null ? true : formingStored === "1");
+    } catch {
+      setShowPatternHud(true);
+      setShowFormingWatch(true);
+    }
+  }, [isMobileChart]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -298,11 +306,16 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        const patternScan = scanAllPatterns(tierOptimizedData);
+        const patternScan = isMobileChart
+          ? scanPatternsForViewport(tierOptimizedData, MOBILE_PATTERN_LOOKBACK)
+          : scanAllPatterns(tierOptimizedData);
         setPatternScan(patternScan);
         setActivePatternScan(patternScan);
 
-        const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
+        const formingCandles = isMobileChart
+          ? tierOptimizedData.slice(-MOBILE_PATTERN_LOOKBACK)
+          : tierOptimizedData;
+        const formingBrief = analyzeFormingStructure(formingCandles, sym, timeframe);
         setFormingBrief(formingBrief);
         setActiveFormingBrief(formingBrief);
 
@@ -317,7 +330,11 @@ export function LightweightCandles({
         series.setData(chartCandles);
 
         // Pattern geometry — bold trendlines on wedges/triangles/triple tops
-        const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns);
+        const overlayLimits = isMobileChart
+          ? { maxChartPatterns: 4, maxLineOverlays: 10, maxCandleMarkers: 6, maxPeakMarkers: 3 }
+          : {};
+
+        const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns, overlayLimits);
         for (const overlay of patternLines) {
           const line = chart.addSeries(LineSeries, {
             color: overlay.color,
@@ -332,14 +349,18 @@ export function LightweightCandles({
         }
 
         const candleMarkers = [
-          ...buildCandlestickMarkers(tierOptimizedData, patternScan.patterns),
-          ...buildPatternPeakMarkers(tierOptimizedData, patternScan.patterns),
+          ...buildCandlestickMarkers(tierOptimizedData, patternScan.patterns, overlayLimits),
+          ...buildPatternPeakMarkers(tierOptimizedData, patternScan.patterns, overlayLimits),
         ];
         if (candleMarkers.length > 0) {
           createSeriesMarkers(series, candleMarkers as any);
         }
 
-        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+        chart.timeScale().applyOptions({
+          barSpacing: isMobileChart
+            ? (tierOptimizedData.length > 120 ? 3 : 5)
+            : (tierOptimizedData.length > 800 ? 4 : 6),
+        });
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -615,11 +636,12 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), isMobileChart]);
 
   return (
     <div
       ref={containerRef}
+      className={isMobileChart ? 'pb-14' : undefined}
       style={{
         width: "100%",
         height: isExpanded ? "100%" : `${height}px`,
@@ -640,76 +662,90 @@ export function LightweightCandles({
           {error}
         </div>
       )}
-      <ChartFormingWatch
-        symbol={sym}
-        brief={showFormingWatch ? formingBrief : null}
-        onClose={() => {
-          setShowFormingWatch(false);
-          try {
-            localStorage.setItem("cp_chart_forming_watch_open", "0");
-          } catch {
-            /* ignore */
-          }
-        }}
-      />
-      {!showFormingWatch && (
-        <button
-          type="button"
-          onClick={() => {
-            setShowFormingWatch(true);
-            try {
-              localStorage.setItem("cp_chart_forming_watch_open", "1");
-            } catch {
-              /* ignore */
-            }
-          }}
-          aria-label="Open forming watch"
-          className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
-        >
-          <Radio size={10} className="animate-pulse" />
-          Forming
-        </button>
-      )}
-      <ChartPatternHud
-        symbol={sym}
-        scan={showPatternHud ? patternScan : null}
-        onClose={() => {
-          setShowPatternHud(false);
-          try {
-            localStorage.setItem("cp_chart_pattern_hud_open", "0");
-          } catch {
-            /* ignore */
-          }
-        }}
-      />
-      {!showPatternHud && (
-        <button
-          type="button"
-          onClick={() => {
-            setShowPatternHud(true);
-            try {
-              localStorage.setItem("cp_chart_pattern_hud_open", "1");
-            } catch {
-              /* ignore */
-            }
-          }}
-          aria-label="Open pattern scanner"
-          className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
-        >
-          <Scan size={10} />
-          Patterns
-        </button>
+      {isMobileChart ? (
+        <ChartScannerDock
+          symbol={sym}
+          scan={patternScan}
+          forming={formingBrief}
+          open={mobileScannerOpen}
+          onOpenChange={setMobileScannerOpen}
+        />
+      ) : (
+        <>
+          <ChartFormingWatch
+            symbol={sym}
+            brief={showFormingWatch ? formingBrief : null}
+            onClose={() => {
+              setShowFormingWatch(false);
+              try {
+                localStorage.setItem("cp_chart_forming_watch_open", "0");
+              } catch {
+                /* ignore */
+              }
+            }}
+          />
+          {!showFormingWatch && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowFormingWatch(true);
+                try {
+                  localStorage.setItem("cp_chart_forming_watch_open", "1");
+                } catch {
+                  /* ignore */
+                }
+              }}
+              aria-label="Open forming watch"
+              className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+            >
+              <Radio size={10} className="animate-pulse" />
+              Forming
+            </button>
+          )}
+          <ChartPatternHud
+            symbol={sym}
+            scan={showPatternHud ? patternScan : null}
+            onClose={() => {
+              setShowPatternHud(false);
+              try {
+                localStorage.setItem("cp_chart_pattern_hud_open", "0");
+              } catch {
+                /* ignore */
+              }
+            }}
+          />
+          {!showPatternHud && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowPatternHud(true);
+                try {
+                  localStorage.setItem("cp_chart_pattern_hud_open", "1");
+                } catch {
+                  /* ignore */
+                }
+              }}
+              aria-label="Open pattern scanner"
+              className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+            >
+              <Scan size={10} />
+              Patterns
+            </button>
+          )}
+        </>
       )}
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-        className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+        className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+          isMobileChart
+            ? `top-3 right-3 rounded-full p-2 ${mobileScannerOpen ? 'opacity-60' : ''}`
+            : `text-[9px] px-2.5 py-1.5 rounded-lg ${showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'}`
         }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}
       >
         <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-        <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
+        {!isMobileChart && <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>}
       </button>
     </div>
   );

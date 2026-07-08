@@ -18,14 +18,25 @@ const CANDLE_MARKER_COLOR = {
   neutral: '#00D9FF',
 };
 
+export interface PatternOverlayLimits {
+  maxChartPatterns?: number;
+  maxLineOverlays?: number;
+  maxCandleMarkers?: number;
+  maxPeakMarkers?: number;
+}
+
 /** Build lightweight-charts line overlays — hot pink / purple neon geometry */
 export function buildPatternLineOverlays(
   candles: Candle[],
   patterns: DetectedPattern[],
+  limits: PatternOverlayLimits = {},
 ): PatternLineOverlay[] {
+  const maxChartPatterns = limits.maxChartPatterns ?? 8;
+  const maxLineOverlays = limits.maxLineOverlays ?? 20;
+
   const chartPatterns = patterns
     .filter((p) => p.category === 'chart' && p.geometry?.lines.length)
-    .slice(-8);
+    .slice(-maxChartPatterns);
 
   const overlays: PatternLineOverlay[] = [];
 
@@ -47,7 +58,7 @@ export function buildPatternLineOverlays(
     }
   }
 
-  return overlays.slice(-20);
+  return overlays.slice(-maxLineOverlays);
 }
 
 export interface PatternCandleMarker {
@@ -63,7 +74,9 @@ export interface PatternCandleMarker {
 export function buildPatternPeakMarkers(
   candles: Candle[],
   patterns: DetectedPattern[],
+  limits: PatternOverlayLimits = {},
 ): PatternCandleMarker[] {
+  const maxPeakMarkers = limits.maxPeakMarkers ?? 6;
   const markers: PatternCandleMarker[] = [];
   const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-3);
 
@@ -83,17 +96,20 @@ export function buildPatternPeakMarkers(
     }
   }
 
-  return markers.slice(-6);
+  return markers.slice(-maxPeakMarkers);
 }
 
-/** Mark recent candlestick pattern hits on the chart (max 12). */
+/** Mark recent candlestick pattern hits on the chart. */
 export function buildCandlestickMarkers(
   candles: Candle[],
   patterns: DetectedPattern[],
+  limits: PatternOverlayLimits = {},
 ): PatternCandleMarker[] {
+  const maxCandleMarkers = limits.maxCandleMarkers ?? 12;
+
   return patterns
     .filter((p) => p.category === 'candlestick')
-    .slice(-12)
+    .slice(-maxCandleMarkers)
     .map((p) => {
       const c = candles[p.endIndex];
       const price = c ? (p.direction === 'bullish' ? c.low : c.high) : undefined;

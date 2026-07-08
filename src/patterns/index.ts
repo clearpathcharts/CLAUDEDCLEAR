@@ -1,4 +1,4 @@
-export { scanAllPatterns } from './scan';
+export { scanAllPatterns, scanPatternsForViewport } from './scan';
 export { scanCandlestickPatterns } from './candlesticks';
 export { scanChartPatterns } from './chartPatterns';
 export { findSwingPoints } from './swings';

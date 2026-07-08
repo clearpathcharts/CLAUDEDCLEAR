@@ -17,3 +17,30 @@ export function scanAllPatterns(candles: Candle[]): PatternScanResult {
     swingLows: swings.filter((s) => s.kind === 'low').length,
   };
 }
+
+/**
+ * Mobile / small screens: scan only the recent window so hits stay relevant
+ * to what's on screen (avoids thousands of ancient doji tags).
+ */
+export function scanPatternsForViewport(
+  candles: Candle[],
+  lookback = 200,
+): PatternScanResult {
+  if (candles.length <= lookback) {
+    return scanAllPatterns(candles);
+  }
+
+  const offset = candles.length - lookback;
+  const slice = candles.slice(-lookback);
+  const partial = scanAllPatterns(slice);
+
+  return {
+    ...partial,
+    scannedBars: lookback,
+    patterns: partial.patterns.map((p) => ({
+      ...p,
+      startIndex: p.startIndex + offset,
+      endIndex: p.endIndex + offset,
+    })),
+  };
+}
