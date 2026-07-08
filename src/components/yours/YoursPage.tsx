@@ -543,62 +543,69 @@ export default function YoursPageHub() {
     : newsFeed.filter(item => item.category === selectedFeedCategory);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-hidden">
+    <div className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-hidden">
       
-      {/* Cyber Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-[#ff0088]/5 to-[#00f0ff]/5 blur-[120px] rounded-full pointer-events-none" />
+      {/* Lava / neon atmosphere */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+      <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#FF0080]/20 blur-[140px] rounded-full pointer-events-none animate-pulse" />
+      <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-[#FF4500]/25 blur-[120px] rounded-full pointer-events-none ywc-lava-drift" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-[#BF00FF]/15 blur-[130px] rounded-full pointer-events-none" />
 
       {/* TOP HEADER MODULE - BRAND PROVENANCE */}
-      <div className="border border-[#fff/5] bg-[#0c0c0e]/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.8)]">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#ff0088]/20 to-transparent blur-2xl rounded-full" />
-        <div className="absolute left-0 bottom-0 w-32 h-32 bg-gradient-to-tr from-[#00f0ff]/15 to-transparent blur-3xl rounded-full pointer-events-none" />
+      <div className="border-2 border-transparent bg-[#0a0008]/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_0_60px_rgba(255,20,147,0.35),0_0_80px_rgba(255,69,0,0.2)] ywc-lava-border">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF0080]/50 via-[#FF4500]/30 to-transparent blur-2xl rounded-full" />
+        <div className="absolute left-0 bottom-0 w-48 h-48 bg-gradient-to-tr from-[#FF4500]/40 via-[#FF1493]/25 to-transparent blur-3xl rounded-full pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FF0080] via-[#FF4500] via-[#FF1493] to-[#BF00FF] opacity-90" />
         
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="text-[9px] font-mono tracking-[0.25em] bg-gradient-to-r from-[#ff0088] to-[#00f0ff] text-black px-2.5 py-0.5 rounded-full font-black uppercase">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[9px] font-mono tracking-[0.3em] bg-gradient-to-r from-[#FF0080] via-[#FF4500] to-[#FF1493] text-black px-3 py-1 rounded-full font-black uppercase shadow-[0_0_20px_rgba(255,0,128,0.6)]">
                 Y.W.C. CORE MODULE
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-[#00FF88] font-bold drop-shadow-[0_0_8px_rgba(0,255,136,0.5)]">
+                <span className="w-2 h-2 bg-[#00FF88] rounded-full animate-pulse shadow-[0_0_10px_#00FF88]" />
                 SYSTEM SECURE Handshake (Port 3000)
               </span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-black font-serif italic tracking-tight text-white flex flex-wrap items-center gap-2">
-              CPMS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff00c8] to-[#01f0ff] flex items-center gap-2">Your World Connected <Flame className="w-10 h-10 text-[#ff00c8] fill-[#ff00c8] animate-pulse drop-shadow-[0_0_15px_rgba(255,0,200,0.6)] shrink-0 inline-block" /></span>
+            <h1 className="text-5xl md:text-7xl font-black font-serif italic tracking-tight flex flex-wrap items-center gap-3 leading-[1.05]">
+              <span className="text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.35)]">CPMS</span>
+              <span className="ywc-title-lava flex items-center gap-3">
+                Your World Connected
+                <Flame className="w-10 h-10 md:w-12 md:h-12 text-[#FF4500] fill-[#FF0080] animate-pulse drop-shadow-[0_0_20px_rgba(255,69,0,0.9)] shrink-0" />
+              </span>
             </h1>
             
-            <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
-              Welcome to the premium interactive terminal wrapper. This workspace fuses elite editorial newspaper columns, sports streams, global indices metrics, AI smart insight systems, real-time audio monitors, and a massive 15-platform OAuth multi-channel social synchronization hub.
+            <p className="text-sm md:text-base text-[#FFD4E8] font-sans max-w-2xl leading-relaxed drop-shadow-[0_0_12px_rgba(255,20,147,0.2)]">
+              Welcome to the <span className="text-[#FF1493] font-bold">premium interactive terminal</span>. This workspace fuses elite editorial columns, sports streams, global indices, AI insight systems, live audio monitors, and a <span className="text-[#FF4500] font-bold">15-platform OAuth</span> social sync hub — built for maximum energy, not faded wallpaper.
             </p>
           </div>
 
           {/* Sync status & manual simulator trigger */}
-          <div className="bg-zinc-950/80 rounded-2xl border border-white/5 p-4 md:min-w-[280px] space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+          <div className="bg-black/70 rounded-2xl border-2 border-[#FF1493]/40 p-4 md:min-w-[280px] space-y-3 shadow-[0_0_24px_rgba(255,20,147,0.2)]">
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#FFB3D9]">
               <span>Automatic Chrono Sync:</span>
-              <span className="text-cyan-400 font-bold">{xmlPollingInterval} hours</span>
+              <span className="text-[#00E5FF] font-bold drop-shadow-[0_0_6px_#00E5FF]">{xmlPollingInterval} hours</span>
             </div>
             
-            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#FFB3D9]">
               <span>Last Handshake (XML/RSS):</span>
-              <span className="text-pink-400 font-bold">{lastSyncTime}</span>
+              <span className="text-[#FF4500] font-bold drop-shadow-[0_0_6px_#FF4500]">{lastSyncTime}</span>
             </div>
 
             {/* Simulated cron rate changer */}
-            <div className="flex items-center gap-2 pt-1 border-t border-white/5">
-              <span className="text-[10px] font-mono text-zinc-500">SET CRON RATE:</span>
+            <div className="flex items-center gap-2 pt-1 border-t border-[#FF1493]/30">
+              <span className="text-[10px] font-mono text-[#FF69B4]">SET CRON RATE:</span>
               <button 
                 onClick={() => setXmlPollingInterval(6)} 
-                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 6 ? 'bg-[#ff0088] text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 6 ? 'bg-gradient-to-r from-[#FF0080] to-[#FF4500] text-white shadow-[0_0_12px_#FF4500]' : 'bg-zinc-900 text-zinc-400 hover:text-[#FF1493]'}`}
               >
                 6 Hours
               </button>
               <button 
                 onClick={() => setXmlPollingInterval(12)} 
-                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 12 ? 'bg-[#ff0088] text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 12 ? 'bg-gradient-to-r from-[#FF0080] to-[#FF4500] text-white shadow-[0_0_12px_#FF4500]' : 'bg-zinc-900 text-zinc-400 hover:text-[#FF1493]'}`}
               >
                 12 Hours
               </button>

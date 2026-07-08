@@ -359,7 +359,16 @@ const TabContent = ({
       );
       case 'CapitalFlow': return <CapitalFlowMap />;
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
-      case 'StrictlyCharts': return <LightweightMarketUI profile={profile} onBack={onBack} chartTheme={chartTheme} selectedMarketSymbol={selectedLightweightSymbol} onSelectMarketSymbol={setSelectedLightweightSymbol} />;
+      case 'StrictlyCharts': return (
+        <LightweightMarketUI
+          profile={profile}
+          onBack={onBack}
+          chartTheme={chartTheme}
+          selectedMarketSymbol={selectedLightweightSymbol}
+          onSelectMarketSymbol={setSelectedLightweightSymbol}
+          onProfileChange={onProfileChange}
+        />
+      );
       case 'ThemeTerminal': return <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />;
       case 'Macro': return <MacroDashboard />;
       case 'Fundamentals': return <FundamentalsPanel />;

@@ -5,6 +5,8 @@ import { LightweightCandles } from '../charts/LightweightCandles';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import TerminalConfigWidget from '../widgets/TerminalConfigWidget';
 import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
+import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
+import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
 
 const ASSETS = [
@@ -61,9 +63,17 @@ interface LightweightMarketUIProps {
   chartTheme?: any;
   selectedMarketSymbol?: string;
   onSelectMarketSymbol?: (symbol: string) => void;
+  onProfileChange?: (profileId: ThemeProfileId) => void;
 }
 
-export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({ onBack, profile, chartTheme, selectedMarketSymbol, onSelectMarketSymbol }) => {
+export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
+  onBack,
+  profile,
+  chartTheme,
+  selectedMarketSymbol,
+  onSelectMarketSymbol,
+  onProfileChange,
+}) => {
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
@@ -260,6 +270,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({ onBack
               </div>
             </div>
           </div>
+
+          {onProfileChange && (
+            <NeuroProfilePicker
+              activeProfileId={profile.id}
+              onProfileChange={onProfileChange}
+            />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Left Column: Interactive Terminal Configuration Dashboard Panel & Live Social Broker Socket */}
