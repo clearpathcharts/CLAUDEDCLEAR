@@ -40,6 +40,7 @@ import GlobalFinance from '../GlobalFinance';
 import MagazineHub from '../MagazineHub';
 import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
+import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -552,12 +553,8 @@ export default function YoursPageHub() {
       <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-[#BF00FF]/15 blur-[130px] rounded-full pointer-events-none" />
 
       {/* TOP HEADER MODULE - BRAND PROVENANCE */}
-      <div className="border-2 border-transparent bg-[#0a0008]/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_0_60px_rgba(255,20,147,0.35),0_0_80px_rgba(255,69,0,0.2)] ywc-lava-border">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-[#FF0080]/50 via-[#FF4500]/30 to-transparent blur-2xl rounded-full" />
-        <div className="absolute left-0 bottom-0 w-48 h-48 bg-gradient-to-tr from-[#FF4500]/40 via-[#FF1493]/25 to-transparent blur-3xl rounded-full pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FF0080] via-[#FF4500] via-[#FF1493] to-[#BF00FF] opacity-90" />
-        
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative z-10">
+      <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8 pt-7">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[9px] font-mono tracking-[0.3em] bg-gradient-to-r from-[#FF0080] via-[#FF4500] to-[#FF1493] text-black px-3 py-1 rounded-full font-black uppercase shadow-[0_0_20px_rgba(255,0,128,0.6)]">
@@ -612,22 +609,22 @@ export default function YoursPageHub() {
             </div>
           </div>
         </div>
-      </div>
+      </YwcLavaPanel>
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Core Live Update & RSS Engine Simulator */}
-        <div className="lg:col-span-8 border border-white/5 bg-[#08080a]/90 backdrop-blur-md rounded-2xl p-5 md:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+        <YwcLavaPanel className="lg:col-span-8 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#00f0ff]/10 text-[#00f0ff]">
+              <div className="p-2 rounded-xl bg-[#FF4500]/15 text-[#FF4500] shadow-[0_0_12px_rgba(255,69,0,0.35)]">
                 <RefreshCw size={19} className={isSimulatingFetch ? 'animate-spin' : ''} />
               </div>
               <div>
-                <h3 className="text-sm font-black tracking-wider uppercase font-sans">
+                <YwcSectionTitle className="text-sm font-sans">
                   RSS Fetch & Node Parser Simulator
-                </h3>
+                </YwcSectionTitle>
                 <p className="text-[11px] text-zinc-500 font-mono">
                   Convert live streams (ESPN, Formula 1, AP, Reuters, CoinDesk) into reactive grid matrices
                 </p>
@@ -640,7 +637,7 @@ export default function YoursPageHub() {
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 cursor-pointer ${
                 isSimulatingFetch 
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-[#ff0088] to-[#00f0ff] text-black hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
+                  : 'bg-gradient-to-r from-[#FF0080] via-[#FF4500] to-[#FF8C00] text-black hover:shadow-[0_0_24px_rgba(255,69,0,0.55)]'
               }`}
             >
               <span>{isSimulatingFetch ? 'PROCESSING FEED...' : 'FORCE RSS XML FETCH'}</span>
@@ -674,16 +671,16 @@ export default function YoursPageHub() {
               </div>
             </div>
           )}
-        </div>
+        </YwcLavaPanel>
 
         {/* Global Indices Quick View (MARKET WATCH PANEL) */}
-        <div className="lg:col-span-4 border border-white/5 bg-[#08080a]/90 backdrop-blur-md rounded-2xl p-5 md:p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <YwcLavaPanel className="lg:col-span-4 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-[#ff0088]" />
-              <h3 className="text-xs font-black tracking-widest uppercase text-zinc-300">
+              <TrendingUp size={16} className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" />
+              <YwcSectionTitle className="text-xs tracking-widest">
                 MARKET WATCH (GLOBAL DESK)
-              </h3>
+              </YwcSectionTitle>
             </div>
             <span className="text-[10px] bg-zinc-900 border border-white/10 text-zinc-400 px-2 py-0.5 rounded font-mono">
               REAL PARITY
@@ -715,7 +712,7 @@ export default function YoursPageHub() {
               </div>
             ))}
           </div>
-        </div>
+        </YwcLavaPanel>
 
       </div>
 
@@ -725,8 +722,9 @@ export default function YoursPageHub() {
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
         <div className="lg:col-span-8 space-y-8">
           
+          <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
-          <div className="flex items-center justify-between pb-4 border-b-2 border-white/10">
+          <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
               <span className="text-sm font-black text-[#39ff14] uppercase tracking-wider shrink-0 pr-2 border-r border-white/10 hidden sm:inline">
                 SECTIONS:
@@ -756,12 +754,13 @@ export default function YoursPageHub() {
               ))}
             </div>
             
-            <div className="h-2 w-2 rounded-full bg-[#39ff14] animate-ping hidden lg:block" />
+            <div className="h-2 w-2 rounded-full bg-[#FF4500] animate-ping hidden lg:block shadow-[0_0_10px_#FF4500]" />
           </div>
+          </YwcLavaPanel>
 
           {selectedFeedCategory === 'all' && (
             /* 1. HERO TOP STORY (Giant Cinematic layout preview) */
-            <section className="relative group overflow-hidden rounded-3xl border border-white/5 bg-zinc-950 min-h-[460px] flex flex-col justify-end p-6 md:p-10 animate-fade-in">
+            <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="min-h-[460px] flex flex-col justify-end animate-fade-in group">
               <img 
                 src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1600"
                 alt="Global news background matrix" 
@@ -810,20 +809,24 @@ export default function YoursPageHub() {
                   </button>
                 </div>
               </div>
-            </section>
+            </YwcLavaPanel>
           )}
 
           {selectedFeedCategory === 'politics' ? (
-            <PoliticalHub />
+            <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
-            <GlobalFinance />
+            <YwcLavaPanel rounded="3xl"><GlobalFinance /></YwcLavaPanel>
           ) : selectedFeedCategory === 'magazine' ? (
-            <MagazineHub />
+            <YwcLavaPanel rounded="3xl"><MagazineHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'news' ? (
-            <WorldHub />
+            <YwcLavaPanel rounded="3xl"><WorldHub /></YwcLavaPanel>
           ) : (
             <>
               {/* DYNAMIC STORIES GRID */}
+              <YwcLavaPanel className="space-y-4">
+                <YwcSectionTitle className="text-xs tracking-[0.2em]">
+                  Online Newspaper — Live Editorial Grid
+                </YwcSectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AnimatePresence mode="popLayout">
                   {filteredFeed.map((article) => (
@@ -891,15 +894,16 @@ export default function YoursPageHub() {
                   ))}
                 </AnimatePresence>
               </div>
+              </YwcLavaPanel>
 
               {/* AI INSIGHTS & ANALYSES SECTION */}
-              <section className="border border-white/5 bg-gradient-to-r from-zinc-950 to-[#0e0717]/90 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <YwcLavaPanel as="section" className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="text-[#00f0ff]" size={18} />
-                    <h3 className="text-sm font-black tracking-wider uppercase font-sans">
+                    <Sparkles className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" size={18} />
+                    <YwcSectionTitle className="text-sm font-sans">
                       CPMS COGNITIVE AI INSIGHTS
-                    </h3>
+                    </YwcSectionTitle>
                   </div>
                   <span className="text-[10px] bg-[#ff0088]/10 text-[#ff0088] border border-[#ff0088]/20 px-2 py-0.5 rounded font-mono font-bold">
                     GENERATIVE SUMMARY STACK
@@ -931,10 +935,10 @@ export default function YoursPageHub() {
                     </p>
                   </div>
                 </div>
-              </section>
+              </YwcLavaPanel>
 
               {/* MAGAZINE EDITORIAL STORY BLOCK */}
-              <section className="bg-zinc-950/40 border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden space-y-6">
+              <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="space-y-6">
                 <div className="absolute right-4 top-4 text-zinc-800 text-7xl font-serif font-black select-none pointer-events-none">
                   M
                 </div>
@@ -959,7 +963,7 @@ export default function YoursPageHub() {
                     Providing spacious margins enhances the organic flow of stories. As users transit through multiple display terminals, responsive CSS snap-points deliver tactile card slides that mimic premium physical pages. The ultimate objective is not merely the presentation of raw feed nodes, but the creation of an immersive storytelling wrapper that heightens consumer interaction and reinforces the gravity of the editorial content.
                   </p>
                 </div>
-              </section>
+              </YwcLavaPanel>
             </>
           )}
 
@@ -969,13 +973,13 @@ export default function YoursPageHub() {
         <div className="lg:col-span-4 space-y-8">
           
           {/* LIIV TELEVISION STREAM MONITOR PANEL */}
-          <div className="bg-[#0c0c0f] border border-white/5 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+          <YwcLavaPanel className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
               <div className="flex items-center gap-2">
-                <Tv size={17} className="text-[#00f0ff]" />
-                <h3 className="text-xs font-black tracking-widest text-zinc-300 uppercase">
+                <Tv size={17} className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" />
+                <YwcSectionTitle className="text-xs tracking-widest">
                   CPMS LIVE TV DECK
-                </h3>
+                </YwcSectionTitle>
               </div>
               <span className="text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-bold font-mono uppercase animate-pulse">
                 • LIVE AT DESK
@@ -1065,17 +1069,17 @@ export default function YoursPageHub() {
                 Sports Deck Live
               </button>
             </div>
-          </div>
+          </YwcLavaPanel>
 
           {/* SOCIAL MEDIA OAUTH HANDSHAKE PORTAL (15 PLATFORMS INTEGRATED) */}
-          <div className="bg-[#0c0c0f] border border-white/5 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col space-y-1.5 pb-3 border-b border-white/5">
+          <YwcLavaPanel className="space-y-4">
+            <div className="flex flex-col space-y-1.5 pb-3 border-b border-[#FF1493]/25">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Share2 size={17} className="text-[#ff0088]" />
-                  <h3 className="text-xs font-black tracking-widest text-zinc-300 uppercase">
+                  <Share2 size={17} className="text-[#FF1493] drop-shadow-[0_0_8px_#FF1493]" />
+                  <YwcSectionTitle className="text-xs tracking-widest">
                     OATH SOCIAL SYNC HUB
-                  </h3>
+                  </YwcSectionTitle>
                 </div>
                 <span className="text-[10px] font-mono bg-cyan-950/50 text-[#00f0ff] border border-[#00f0ff]/25 px-2 py-0.5 rounded font-black">
                   {activeConnectedCount} / 15 SYNCED
@@ -1183,7 +1187,7 @@ export default function YoursPageHub() {
               </div>
             </div>
 
-          </div>
+          </YwcLavaPanel>
 
         </div>
 
@@ -1251,7 +1255,7 @@ export default function YoursPageHub() {
       </AnimatePresence>
 
       {/* PERSISTENT SCROLLING TICKER FOOTER (14. REQUIRED TICKER) */}
-      <footer className="w-full bg-[#070709] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <YwcLavaPanel as="footer" padding="p-4" className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 bg-[#ff0088]/10 text-[#ff0088] border border-[#ff0088]/20 px-3.5 py-1.5 rounded-xl shrink-0">
           <Radio size={14} className="animate-pulse" />
           <span className="text-[10px] font-mono font-black tracking-widest">
@@ -1289,7 +1293,7 @@ export default function YoursPageHub() {
         <div className="text-[9.5px] font-mono text-zinc-500 shrink-0 uppercase">
           © 2026 CPMS Media Group. ALL RIGHTS ANCHORED.
         </div>
-      </footer>
+      </YwcLavaPanel>
 
     </div>
   );
