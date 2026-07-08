@@ -80,7 +80,7 @@ export function CpmsMediaPantry() {
   const [searchResults, setSearchResults] = useState<PodcastSearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchNote, setSearchNote] = useState<string | null>(null);
-  const [podcastIndexReady, setPodcastIndexReady] = useState(false);
+  const [searchSource, setSearchSource] = useState<'itunes' | 'podcastindex'>('itunes');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const bars = useAudioVisualizer(audioRef, isPlaying && drawer === 'radio');
@@ -130,8 +130,8 @@ export function CpmsMediaPantry() {
   useEffect(() => {
     fetch('/api/podcast/status')
       .then((r) => r.json())
-      .then((d) => setPodcastIndexReady(Boolean(d.podcastIndex)))
-      .catch(() => setPodcastIndexReady(false));
+      .then((d) => setSearchSource(d.searchSource === 'podcastindex' ? 'podcastindex' : 'itunes'))
+      .catch(() => setSearchSource('itunes'));
   }, []);
 
   useEffect(() => {
@@ -177,6 +177,9 @@ export function CpmsMediaPantry() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Search failed');
       setSearchResults(data.results ?? []);
+      if (data.source === 'podcastindex' || data.source === 'itunes') {
+        setSearchSource(data.source);
+      }
       if (data.note) setSearchNote(data.note);
     } catch (e: unknown) {
       setSearchResults([]);
@@ -421,7 +424,7 @@ export function CpmsMediaPantry() {
       {drawer === 'pantry' && (
         <>
           <p className="text-[10px] text-zinc-400">
-            Search the open Podcast Index directory (podcastindex.org). Keys stay on the server — never in the browser.
+            Search podcasts by topic — works now via Apple&apos;s open directory (no signup). Optional Podcast Index keys unlock the independent directory too.
           </p>
           <form
             className="flex gap-2"
@@ -448,9 +451,9 @@ export function CpmsMediaPantry() {
               Search
             </button>
           </form>
-          {!podcastIndexReady && (
-            <p className="text-[9px] font-mono text-amber-400/90 border border-amber-500/30 bg-amber-950/20 rounded-lg p-2">
-              Add PODCAST_INDEX_API_KEY and PODCAST_INDEX_API_SECRET to .env (free at podcastindex.org) to unlock search. Channels above still play via RSS without it.
+          {searchSource === 'itunes' && (
+            <p className="text-[9px] font-mono text-zinc-500 border border-white/10 bg-black/30 rounded-lg p-2">
+              Using Apple podcast search (no API key). Podcast Index blocks Gmail signups — use a domain email like you@clearpathtrader.com if you want their open directory later.
             </p>
           )}
           {searchNote && <p className="text-[9px] font-mono text-zinc-500">{searchNote}</p>}

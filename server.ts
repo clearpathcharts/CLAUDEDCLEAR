@@ -1329,7 +1329,12 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 
   // Podcast Index + RSS episode bridge (keys stay server-side)
   app.get('/api/podcast/status', (_req, res) => {
-    res.json({ podcastIndex: podcastIndexConfigured() });
+    const podcastIndex = podcastIndexConfigured();
+    res.json({
+      podcastIndex,
+      searchAvailable: true,
+      searchSource: podcastIndex ? 'podcastindex' : 'itunes',
+    });
   });
 
   app.get('/api/podcast/episodes', async (req, res) => {
@@ -1363,19 +1368,18 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'q required' });
     }
 
-    if (!podcastIndexConfigured()) {
-      return res.json({
-        results: [],
-        note: 'Add PODCAST_INDEX_API_KEY and PODCAST_INDEX_API_SECRET to .env (free at podcastindex.org).',
-      });
-    }
-
     try {
-      const results = await searchPodcastsByTerm(q.trim());
-      res.json({ results });
+      const { results, source } = await searchPodcastsByTerm(q.trim());
+      res.json({
+        results,
+        source,
+        note: source === 'itunes'
+          ? 'Searching Apple podcast directory (no API key). Optional: add Podcast Index keys with a domain email for the open directory.'
+          : undefined,
+      });
     } catch (error: any) {
       console.error('[Podcast Search Error]', error);
-      res.status(502).json({ error: 'Podcast Index search failed' });
+      res.status(502).json({ error: 'Podcast search failed' });
     }
   });
 

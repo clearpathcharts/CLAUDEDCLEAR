@@ -72,7 +72,38 @@ export async function fetchEpisodesFromFeed(feedUrl: string, limit = 12): Promis
     .filter((ep): ep is PodcastEpisode => ep !== null);
 }
 
-export async function searchPodcastsByTerm(term: string, max = 20): Promise<PodcastSearchHit[]> {
+export type PodcastSearchSource = 'podcastindex' | 'itunes';
+
+async function searchPodcastsViaItunes(term: string, max = 20): Promise<PodcastSearchHit[]> {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=podcast&entity=podcast&limit=${max}`;
+  const res = await fetch(url, { headers: { 'User-Agent': 'ClearPathTrader/1.0' } });
+  if (!res.ok) {
+    throw new Error(`Apple podcast search failed (${res.status})`);
+  }
+
+  const data = (await res.json()) as {
+    results?: Array<{
+      collectionId: number;
+      collectionName?: string;
+      artistName?: string;
+      feedUrl?: string;
+      artworkUrl600?: string;
+      artworkUrl100?: string;
+    }>;
+  };
+
+  return (data.results ?? [])
+    .filter((r) => r.feedUrl?.startsWith('http'))
+    .map((r) => ({
+      id: r.collectionId,
+      title: r.collectionName || 'Untitled podcast',
+      author: r.artistName,
+      feedUrl: r.feedUrl!,
+      image: r.artworkUrl600 || r.artworkUrl100,
+    }));
+}
+
+async function searchPodcastsViaIndex(term: string, max = 20): Promise<PodcastSearchHit[]> {
   const headers = podcastIndexHeaders();
   if (!headers) {
     return [];
@@ -103,6 +134,19 @@ export async function searchPodcastsByTerm(term: string, max = 20): Promise<Podc
     feedUrl: f.url,
     image: f.image,
   }));
+}
+
+export async function searchPodcastsByTerm(
+  term: string,
+  max = 20
+): Promise<{ results: PodcastSearchHit[]; source: PodcastSearchSource }> {
+  if (podcastIndexConfigured()) {
+    const results = await searchPodcastsViaIndex(term, max);
+    return { results, source: 'podcastindex' };
+  }
+
+  const results = await searchPodcastsViaItunes(term, max);
+  return { results, source: 'itunes' };
 }
 
 export function podcastIndexConfigured(): boolean {
