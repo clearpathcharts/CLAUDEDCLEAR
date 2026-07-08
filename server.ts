@@ -36,6 +36,11 @@ import {
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import {
+  fetchEpisodesFromFeed,
+  podcastIndexConfigured,
+  searchPodcastsByTerm,
+} from './src/server/podcastService';
 
 const parser = new RSSParser();
 
@@ -1319,6 +1324,62 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       if (timeoutId) clearTimeout(timeoutId);
       console.error('[RSS Proxy Error]', error);
       res.status(502).json({ error: 'Institutional RSS node timed out' });
+    }
+  });
+
+  // Podcast Index + RSS episode bridge (keys stay server-side)
+  app.get('/api/podcast/status', (_req, res) => {
+    const podcastIndex = podcastIndexConfigured();
+    res.json({
+      podcastIndex,
+      searchAvailable: true,
+      searchSource: podcastIndex ? 'podcastindex' : 'itunes',
+    });
+  });
+
+  app.get('/api/podcast/episodes', async (req, res) => {
+    const { feedUrl, limit } = req.query;
+    if (!feedUrl || typeof feedUrl !== 'string') {
+      return res.status(400).json({ error: 'feedUrl required' });
+    }
+
+    try {
+      await assertSafePublicUrl(feedUrl);
+    } catch (guardErr: any) {
+      console.warn('[Podcast Episodes] Rejected unsafe URL:', feedUrl, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+
+    const parsedLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : 12;
+    const safeLimit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 30) : 12;
+
+    try {
+      const episodes = await fetchEpisodesFromFeed(feedUrl, safeLimit);
+      res.json({ episodes });
+    } catch (error: any) {
+      console.error('[Podcast Episodes Error]', error);
+      res.status(502).json({ error: 'Failed to load podcast feed' });
+    }
+  });
+
+  app.get('/api/podcast/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || !q.trim()) {
+      return res.status(400).json({ error: 'q required' });
+    }
+
+    try {
+      const { results, source } = await searchPodcastsByTerm(q.trim());
+      res.json({
+        results,
+        source,
+        note: source === 'itunes'
+          ? 'Searching Apple podcast directory (no API key). Optional: add Podcast Index keys with a domain email for the open directory.'
+          : undefined,
+      });
+    } catch (error: any) {
+      console.error('[Podcast Search Error]', error);
+      res.status(502).json({ error: 'Podcast search failed' });
     }
   });
 

@@ -17,10 +17,6 @@ import {
   MessageSquare,
   Sparkles,
   RefreshCw,
-  Play,
-  Pause,
-  Volume2,
-  Tv,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
@@ -41,6 +37,7 @@ import MagazineHub from '../MagazineHub';
 import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
+import { CpmsMediaPantry } from './CpmsMediaPantry';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -102,12 +99,6 @@ export default function YoursPageHub() {
 
   // Reader modal story
   const [activeStoryDetails, setActiveStoryDetails] = useState<any | null>(null);
-
-  // TV Player states
-  const [tvPlaying, setTvPlaying] = useState(true);
-  const [tvVolume, setTvVolume] = useState(70);
-  const [activeTvStream, setActiveTvStream] = useState({ name: 'CPMS Global Financial Live', loc: 'GENEVA / TOKYO DESK', viewers: '14,840' });
-  const [frequencyBars, setFrequencyBars] = useState<number[]>(new Array(16).fill(20));
 
   // Ticker text
   const tickerItems = [
@@ -451,19 +442,6 @@ export default function YoursPageHub() {
       }, step.t);
     });
   };
-
-  // Simulated live audio visualizer inside TV player
-  useEffect(() => {
-    let interval: any = null;
-    if (tvPlaying) {
-      interval = setInterval(() => {
-        setFrequencyBars(new Array(16).fill(0).map(() => Math.floor(Math.random() * 60) + 15));
-      }, 100);
-    } else {
-      setFrequencyBars(new Array(16).fill(8));
-    }
-    return () => clearInterval(interval);
-  }, [tvPlaying]);
 
   // Social account simulation login triggering handshakes
   const handleTriggerSocialConnect = (id: string, name: string) => {
@@ -972,103 +950,9 @@ export default function YoursPageHub() {
         {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
         <div className="lg:col-span-4 space-y-8">
           
-          {/* LIIV TELEVISION STREAM MONITOR PANEL */}
+          {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
           <YwcLavaPanel className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
-              <div className="flex items-center gap-2">
-                <Tv size={17} className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" />
-                <YwcSectionTitle className="text-xs tracking-widest">
-                  CPMS LIVE TV DECK
-                </YwcSectionTitle>
-              </div>
-              <span className="text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-bold font-mono uppercase animate-pulse">
-                • LIVE AT DESK
-              </span>
-            </div>
-
-            {/* Simulated TV view screen */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 flex flex-col justify-between p-3">
-              {tvPlaying ? (
-                /* Glowing screen simulation */
-                <div className="absolute inset-0 bg-gradient-to-tr from-cyan-950/20 via-black to-pink-950/10 pointer-events-none" />
-              ) : (
-                <div className="absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center pointer-events-none z-10">
-                  <Play size={24} className="text-zinc-500 animate-pulse" />
-                  <span className="text-[10px] font-mono text-zinc-600 mt-2">VIDEO STANDBY</span>
-                </div>
-              )}
-
-              {/* Status bar inside screen */}
-              <div className="relative z-10 flex items-center justify-between text-[9px] font-mono bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded">
-                <span className="text-[#00f0ff] font-bold">{activeTvStream.name}</span>
-                <span className="text-zinc-400">{activeTvStream.loc}</span>
-              </div>
-
-              {/* Graphical equalizer bar mimicking video playback */}
-              <div className="relative z-10 space-y-1">
-                {tvPlaying && (
-                  <div className="flex items-end justify-center gap-[2px] h-10 px-4">
-                    {frequencyBars.map((barHeight, bidx) => (
-                      <div 
-                        key={bidx} 
-                        className="w-1 bg-[#ff0088] rounded-t transition-all duration-100" 
-                        style={{ 
-                          height: `${barHeight}%`,
-                          backgroundColor: bidx % 2 === 0 ? '#ff0088' : '#00f0ff'
-                        }} 
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between text-[8px] font-mono text-zinc-500 bg-black/80 p-1.5 rounded">
-                  <span>AUDIO VERIFIED SOURCE</span>
-                  <span>SYNC BUFFER OK</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Deck Controls */}
-            <div className="flex items-center justify-between gap-3 bg-zinc-950/80 p-3 rounded-xl border border-white/5">
-              <button
-                onClick={() => setTvPlaying(!tvPlaying)}
-                className="p-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-white border border-white/10 active:scale-95 transition-all text-xs flex items-center gap-1 cursor-pointer"
-              >
-                {tvPlaying ? <Pause size={13} /> : <Play size={13} />}
-                <span className="text-[10px] font-mono">{tvPlaying ? 'MUTE' : 'PLAY'}</span>
-              </button>
-
-              <div className="flex-1 flex items-center gap-2">
-                <Volume2 size={13} className="text-zinc-500" />
-                <input 
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={tvVolume}
-                  onChange={(e) => setTvVolume(Number(e.target.value))}
-                  className="w-full accent-[#ff0088] bg-zinc-800 h-1 rounded-lg"
-                  title="Adjust Simulated TV Volume"
-                />
-              </div>
-
-              <span className="text-[9px] font-mono text-zinc-500">{activeTvStream.viewers} Viewers</span>
-            </div>
-
-            {/* Quick switches channels */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-              <button 
-                onClick={() => setActiveTvStream({ name: 'CPMS Global Financial Live', loc: 'GENEVA / TOKYO DESK', viewers: '14,840' })}
-                className={`p-2.5 rounded-lg border text-left transition-all ${activeTvStream.name.includes('Financial') ? 'border-[#00f0ff] bg-cyan-950/10 text-[#00f0ff]' : 'border-white/5 bg-zinc-950 text-zinc-400 hover:text-white'}`}
-              >
-                Financial Desk
-              </button>
-              <button 
-                onClick={() => setActiveTvStream({ name: 'World Sports Broadcast CPMS', loc: 'EMILIA ROMAGNA', viewers: '8,924' })}
-                className={`p-2.5 rounded-lg border text-left transition-all ${activeTvStream.name.includes('Sports') ? 'border-[#ff0088] bg-pink-950/10 text-[#ff0088]' : 'border-white/5 bg-zinc-950 text-zinc-400 hover:text-white'}`}
-              >
-                Sports Deck Live
-              </button>
-            </div>
+            <CpmsMediaPantry />
           </YwcLavaPanel>
 
           {/* SOCIAL MEDIA OAUTH HANDSHAKE PORTAL (15 PLATFORMS INTEGRATED) */}
