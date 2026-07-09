@@ -41,6 +41,13 @@ import {
   podcastIndexConfigured,
   searchPodcastsByTerm,
 } from './src/server/podcastService';
+import {
+  forwardIntelligenceToMake,
+  getIntelligenceBriefing,
+  ingestIntelligenceWebhook,
+  listIntelligenceBriefings,
+  verifyIntelligenceWebhookSecret,
+} from './src/server/intelligenceWebhookService';
 
 const parser = new RSSParser();
 
@@ -1787,6 +1794,62 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
 
   app.get('/api/semantic/faqs', (req, res) => {
     res.json(GENERAL_FAQS);
+  });
+
+  // CrewAI / Make.com intelligence briefing webhook receiver
+  app.post('/api/intelligence/webhook', async (req, res) => {
+    const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
+    if (!verifyIntelligenceWebhookSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid webhook secret.' });
+    }
+
+    try {
+      const record = await ingestIntelligenceWebhook(req.body);
+      const shouldForward =
+        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
+      const forwardResult = shouldForward
+        ? await forwardIntelligenceToMake(record)
+        : { forwarded: false };
+
+      res.status(201).json({
+        success: true,
+        id: record.id,
+        receivedAt: record.receivedAt,
+        publishMode: record.publishMode,
+        hasBriefing: Boolean(record.briefingMarkdown),
+        hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+        makeForward: forwardResult,
+      });
+    } catch (error: any) {
+      console.error('[Intelligence Webhook Error]', error);
+      res.status(500).json({
+        error: 'INTELLIGENCE_WEBHOOK_FAILED',
+        message: error?.message || 'Failed to ingest intelligence briefing.',
+      });
+    }
+  });
+
+  app.get('/api/intelligence/briefings', (req, res) => {
+    const limit = Math.min(parseInt(String(req.query.limit || '20'), 10) || 20, 100);
+    const briefings = listIntelligenceBriefings(limit).map((record) => ({
+      id: record.id,
+      receivedAt: record.receivedAt,
+      source: record.source,
+      runMode: record.runMode,
+      activeNeuroProfile: record.activeNeuroProfile,
+      publishMode: record.publishMode,
+      hasBriefing: Boolean(record.briefingMarkdown),
+      hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+    }));
+    res.json({ count: briefings.length, briefings });
+  });
+
+  app.get('/api/intelligence/briefings/:id', (req, res) => {
+    const record = getIntelligenceBriefing(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Briefing not found' });
+    }
+    res.json(record);
   });
 
   // 1 & 2. DYNAMIC PAGE INTERCEPTOR (SSR METADATA & SCHEMA INJECTION)

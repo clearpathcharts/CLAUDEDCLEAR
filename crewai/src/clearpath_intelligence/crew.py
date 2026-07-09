@@ -24,6 +24,12 @@ from clearpath_intelligence.tools.clearpath_api import (
     ClearPathGroundedNewsTool,
     ClearPathMacroFredTool,
 )
+from clearpath_intelligence.tools.social_research import (
+    ApifyAppStoreReviewsTool,
+    ApifyRedditScraperTool,
+    ClearPathIntelligenceWebhookTool,
+    YouTubeCommentsTool,
+)
 
 # Optional CrewAI tool integrations — install crewai[tools] and set API keys.
 try:
@@ -66,6 +72,15 @@ def _file_tools(read: bool = True, write: bool = False) -> list:
     return tools
 
 
+def _harvest_tools() -> list:
+    """Tools for competitor harvester and social listener (0A / 0B)."""
+    return _research_tools() + [
+        ApifyRedditScraperTool(),
+        ApifyAppStoreReviewsTool(),
+        YouTubeCommentsTool(),
+    ]
+
+
 @CrewBase
 class ClearpathIntelligenceCrew:
     """ClearPath Trader intelligence crew for CrewAI Enterprise / AMP."""
@@ -79,7 +94,7 @@ class ClearpathIntelligenceCrew:
     def competitor_harvester(self) -> Agent:
         return Agent(
             config=self.agents_config["competitor_harvester"],
-            tools=_research_tools(),
+            tools=_harvest_tools(),
             verbose=True,
         )
 
@@ -87,7 +102,7 @@ class ClearpathIntelligenceCrew:
     def social_listener(self) -> Agent:
         return Agent(
             config=self.agents_config["social_listener"],
-            tools=_research_tools(),
+            tools=_harvest_tools(),
             verbose=True,
         )
 
@@ -172,7 +187,7 @@ class ClearpathIntelligenceCrew:
     def crew_manager(self) -> Agent:
         return Agent(
             config=self.agents_config["crew_manager"],
-            tools=_file_tools(read=True, write=True),
+            tools=_file_tools(read=True, write=True) + [ClearPathIntelligenceWebhookTool()],
             verbose=True,
         )
 

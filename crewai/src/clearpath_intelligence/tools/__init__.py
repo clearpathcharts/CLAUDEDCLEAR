@@ -6,10 +6,20 @@ from clearpath_intelligence.tools.clearpath_api import (
     ClearPathGroundedNewsTool,
     ClearPathMacroFredTool,
 )
+from clearpath_intelligence.tools.social_research import (
+    ApifyAppStoreReviewsTool,
+    ApifyRedditScraperTool,
+    ClearPathIntelligenceWebhookTool,
+    YouTubeCommentsTool,
+)
 
 __all__ = [
     "ClearPathGetCandlesTool",
     "ClearPathGetQuoteTool",
     "ClearPathGroundedNewsTool",
     "ClearPathMacroFredTool",
+    "ApifyRedditScraperTool",
+    "ApifyAppStoreReviewsTool",
+    "YouTubeCommentsTool",
+    "ClearPathIntelligenceWebhookTool",
 ]

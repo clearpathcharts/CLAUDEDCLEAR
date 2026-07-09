@@ -92,14 +92,25 @@ Implemented in `src/clearpath_intelligence/crew.py` via task `context` chains.
 
 | Agent | Tools |
 |-------|-------|
-| competitor_harvester, social_listener | Serper, Tavily, ScrapeWebsite, Firecrawl |
+| competitor_harvester, social_listener | Serper, Tavily, ScrapeWebsite, Firecrawl, Apify Reddit, Apify App Reviews, YouTube Comments |
 | macro_intelligence | Serper, Tavily, clearpath_macro_fred |
 | pattern_scanner | clearpath_get_candles, clearpath_get_quote |
 | order_flow_agent | Serper, Tavily, clearpath_get_quote |
 | sentiment_divergence | clearpath_grounded_news, Serper, Tavily, clearpath_get_quote |
 | correlation_agent | clearpath_get_candles, clearpath_get_quote |
 | devils_advocate, risk_guardrail, backtest_validator | FileReadTool |
-| neuro_translator, crew_manager | FileReadTool, FileWriteTool |
+| neuro_translator | FileReadTool, FileWriteTool |
+| crew_manager | FileReadTool, FileWriteTool, clearpath_post_intelligence_webhook |
+
+### ClearPath webhook receiver (Express server)
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/intelligence/webhook` | POST | Receive crew briefing payloads |
+| `/api/intelligence/briefings` | GET | List recent briefings |
+| `/api/intelligence/briefings/:id` | GET | Fetch full briefing record |
+
+Auth: `x-intelligence-webhook-secret` header. Forward to Make.com: `?forward=make` + `MAKE_WEBHOOK_URL` on server.
 
 ---
 
@@ -123,6 +134,15 @@ Copy from `.env.example`. Required minimum:
 | `clearpath_grounded_news` | `GET /api/news/search?q={query}` |
 
 Source: `src/clearpath_intelligence/tools/clearpath_api.py`
+
+Social harvest tools: `src/clearpath_intelligence/tools/social_research.py`
+
+| Tool | Env |
+|------|-----|
+| `apify_reddit_scraper` | `APIFY_API_KEY`, optional `APIFY_REDDIT_ACTOR_ID` |
+| `apify_app_store_reviews` | `APIFY_API_KEY`, optional `APIFY_APP_REVIEWS_ACTOR_ID` |
+| `youtube_comments_harvest` | `YOUTUBE_API_KEY` |
+| `clearpath_post_intelligence_webhook` | `CLEARPATH_API_BASE`, `INTELLIGENCE_WEBHOOK_SECRET` |
 
 ---
 

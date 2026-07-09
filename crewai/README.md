@@ -86,8 +86,38 @@ Custom tools call your deployed ClearPath server:
 | `clearpath_get_quote` | `GET /api/quote?symbol=` |
 | `clearpath_macro_fred` | `GET /api/fred/observations?series_id=` |
 | `clearpath_grounded_news` | `GET /api/news/search?q=` |
+| `clearpath_post_intelligence_webhook` | `POST /api/intelligence/webhook?forward=make` |
+| `apify_reddit_scraper` | Apify Reddit actor (requires `APIFY_API_KEY`) |
+| `apify_app_store_reviews` | Apify app review actor (1-3 star pain harvesting) |
+| `youtube_comments_harvest` | YouTube Data API v3 (requires `YOUTUBE_API_KEY`) |
 
 Set `CLEARPATH_API_BASE=https://clearpathtrader.com` (or your staging URL).
+
+## Webhook receiver (ClearPath server)
+
+Crew results can be POSTed to your deployed ClearPath server:
+
+```bash
+POST /api/intelligence/webhook?forward=make
+Header: x-intelligence-webhook-secret: <INTELLIGENCE_WEBHOOK_SECRET>
+```
+
+```json
+{
+  "source": "clearpath_intelligence_crew",
+  "run_mode": "full_intelligence_cycle",
+  "active_neuro_profile": "calm_focus",
+  "publish_mode": "draft_only",
+  "clearpath_daily_briefing": "# ClearPath Daily Intelligence Briefing\n...",
+  "clearpath_daily_briefing_localized": "..."
+}
+```
+
+- **List briefings:** `GET /api/intelligence/briefings?limit=20`
+- **Get briefing:** `GET /api/intelligence/briefings/:id`
+- **Forward to Make.com:** set `MAKE_WEBHOOK_URL` on the ClearPath server; use `?forward=make`
+
+The `crew_manager` agent includes `clearpath_post_intelligence_webhook` to deliver briefings automatically.
 
 ## Outputs
 
