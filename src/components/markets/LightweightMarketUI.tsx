@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { BackToDashboard } from '../nav/BackToDashboard';
@@ -85,6 +86,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     });
   }, []);
 
+  // Escape always exits blackout, even if the user never finds the button.
+  useEffect(() => {
+    if (!isBlackoutMode) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsBlackoutMode(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isBlackoutMode]);
+
   const [searchSymbol, setSearchSymbol] = useState('');
   const [mainAsset, setMainAsset] = useState({ label: 'XAU/USD', value: 'XAUUSD' });
   const [secondaryAsset, setSecondaryAsset] = useState({ label: 'DXY', value: 'DXY' });
@@ -130,44 +141,78 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   }
 
   if (isBlackoutMode) {
-    return (
-      <div className="fixed inset-0 z-[99999] bg-[#000000] flex flex-col items-center justify-center pt-16 p-4">
-        <button
-          onClick={() => setIsBlackoutMode(false)}
-          className="absolute top-4 right-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-        >
-          <span>Exit Blackout</span>
-        </button>
-        <div className="w-full flex-1 max-w-[1920px] flex flex-col lg:flex-row gap-4 mb-8">
-            <div className="flex-1 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col relative">
-                <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/80 rounded bg-blur border border-zinc-900">
-                    <span className="text-zinc-300 font-mono text-xs font-bold">{mainAsset.label}</span>
+    // Rendered through a portal to <body>: ancestors in the dashboard tree carry
+    // CSS transforms (framer-motion), which would otherwise hijack position:fixed
+    // and push the overlay (and its exit button) off-screen.
+    // z-[150] keeps blackout above the dashboard chrome but BELOW the C.P.T.
+    // Buddy widget (zIndex 200), so the buddy stays reachable in blackout.
+    return createPortal(
+      <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
+        {/* Header bar stays in normal flow so the exit control can never be covered or pushed off-screen */}
+        <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
+            <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Blackout Mode</span>
+            <span className="hidden md:inline text-zinc-600 font-mono text-[10px] uppercase truncate">
+              {mainAsset.label} vs {secondaryAsset.label} · {activeTimeframe}
+            </span>
+          </div>
+          <button
+            onClick={() => setIsBlackoutMode(false)}
+            className="shrink-0 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+          >
+            <span>Exit Blackout</span>
+            <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
+          </button>
+        </div>
+        {/* Charts fill the remaining viewport height instead of a fixed 800px, so nothing overflows off-screen */}
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+            <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
+                <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-900">
+                    <select
+                        value={mainAsset.value}
+                        onChange={(e) => {
+                            const match = ASSETS.find(a => a.value === e.target.value);
+                            if (match) {
+                                setMainAsset(match);
+                                onSelectMarketSymbol?.(match.value);
+                            }
+                        }}
+                        className="bg-transparent text-zinc-200 font-mono text-xs font-bold outline-none cursor-pointer"
+                    >
+                         {ASSETS.map(asset => (
+                             <option key={asset.value} value={asset.value} className="bg-black text-white">{asset.label}</option>
+                         ))}
+                    </select>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Primary · {activeTimeframe}</span>
                 </div>
-                <div className="w-full h-full p-0 m-0">
-                     <LightweightCandles profileId={profile.id} height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={mainAsset.value} theme={chartTheme} blackoutMode={true} />
+                <div className="flex-1 min-h-0 relative">
+                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={mainAsset.value} theme={chartTheme} blackoutMode={true} />
                 </div>
             </div>
-            <div className="flex-1 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col relative">
-                 <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/80 rounded bg-blur border border-zinc-900 flex items-center gap-2">
+            <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
+                <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-900">
                     <select
                         value={secondaryAsset.value}
                         onChange={(e) => {
                             const match = ASSETS.find(a => a.value === e.target.value);
                             if (match) setSecondaryAsset(match);
                         }}
-                        className="bg-transparent text-zinc-300 font-mono text-xs font-bold outline-none cursor-pointer"
+                        className="bg-transparent text-zinc-200 font-mono text-xs font-bold outline-none cursor-pointer"
                     >
                          {ASSETS.map(asset => (
                              <option key={asset.value} value={asset.value} className="bg-black text-white">{asset.label}</option>
                          ))}
                     </select>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Compare · {activeTimeframe}</span>
                 </div>
-                <div className="w-full h-full p-0 m-0">
-                     <LightweightCandles profileId={profile.id} height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={secondaryAsset.value} theme={chartTheme} blackoutMode={true} />
+                <div className="flex-1 min-h-0 relative">
+                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={secondaryAsset.value} theme={chartTheme} blackoutMode={true} />
                 </div>
             </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
