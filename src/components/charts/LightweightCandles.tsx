@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers, type IChartApi } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import {
   themeProfiles,
@@ -15,9 +15,9 @@ import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
 import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
-import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
+import { ChartZoomControls } from "./ChartZoomControls";
 import { Crosshair, Scan, Radio } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
@@ -81,6 +81,7 @@ export function LightweightCandles({
   blackoutMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
@@ -191,8 +192,10 @@ export function LightweightCandles({
         horzTouchDrag: true,
         vertTouchDrag: isExpanded,
       },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
+
+    chartRef.current = chart;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -612,6 +615,7 @@ export function LightweightCandles({
 
     return () => {
       active = false;
+      chartRef.current = null;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
@@ -705,6 +709,7 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
+      <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
