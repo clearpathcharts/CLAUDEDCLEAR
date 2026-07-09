@@ -17,8 +17,10 @@ import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildC
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
-import { Crosshair, Scan, Radio } from "lucide-react";
+import { Crosshair, Scan, Radio, ZoomIn, ZoomOut, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
+import { focusRecentBars, visibleBarTarget, zoomTimeScale } from "../../lib/charts/chartZoom";
+import type { IChartApi } from "lightweight-charts";
 
 type Candle = {
   time: number;
@@ -80,6 +82,8 @@ export function LightweightCandles({
   blackoutMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
@@ -190,8 +194,10 @@ export function LightweightCandles({
         horzTouchDrag: true,
         vertTouchDrag: isExpanded,
       },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
+
+    chartRef.current = chart;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -340,6 +346,15 @@ export function LightweightCandles({
         }
 
         chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+
+        barCountRef.current = tierOptimizedData.length;
+        const isMobileViewport =
+          typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+        focusRecentBars(
+          chart.timeScale(),
+          tierOptimizedData.length,
+          visibleBarTarget(isMobileViewport, isExpanded),
+        );
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -581,8 +596,6 @@ export function LightweightCandles({
           series.update(updateObj);
           lastCandle = { ...updateObj, time: updateTime as number };
         }, tickDelay);
-
-        chart.timeScale().fitContent();
       } catch (err) {
         console.warn("[LightweightCandles load error handler] Recovered from load failure gracefully:", err);
       }
@@ -607,6 +620,8 @@ export function LightweightCandles({
 
     return () => {
       active = false;
+      chartRef.current = null;
+      barCountRef.current = 0;
       clearFormingBrief(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
@@ -616,6 +631,30 @@ export function LightweightCandles({
       chart.remove();
     };
   }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+
+  const handleZoomIn = () => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    zoomTimeScale(chart.timeScale(), 0.72);
+  };
+
+  const handleZoomOut = () => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    zoomTimeScale(chart.timeScale(), 1.38);
+  };
+
+  const handleFocusRecent = () => {
+    const chart = chartRef.current;
+    if (!chart || barCountRef.current <= 0) return;
+    const isMobileViewport =
+      typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    focusRecentBars(
+      chart.timeScale(),
+      barCountRef.current,
+      visibleBarTarget(isMobileViewport, isExpanded),
+    );
+  };
 
   return (
     <div
@@ -700,6 +739,35 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
+      <div className="absolute bottom-3 right-3 z-40 flex gap-1">
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          aria-label="Zoom in"
+          title="Zoom in (or scroll wheel up on chart)"
+          className="rounded-lg border border-white/15 bg-black/75 p-2 text-zinc-300 shadow-lg backdrop-blur-sm transition-all hover:border-[#00D9FF]/40 active:scale-95"
+        >
+          <ZoomIn size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          aria-label="Zoom out"
+          title="Zoom out (or scroll wheel down on chart)"
+          className="rounded-lg border border-white/15 bg-black/75 p-2 text-zinc-300 shadow-lg backdrop-blur-sm transition-all hover:border-[#00D9FF]/40 active:scale-95"
+        >
+          <ZoomOut size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={handleFocusRecent}
+          aria-label="Focus recent bars"
+          title="Snap to recent price action"
+          className="rounded-lg border border-white/15 bg-black/75 p-2 text-zinc-300 shadow-lg backdrop-blur-sm transition-all hover:border-[#00D9FF]/40 active:scale-95"
+        >
+          <Focus size={14} />
+        </button>
+      </div>
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
