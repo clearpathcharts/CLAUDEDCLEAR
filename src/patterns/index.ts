@@ -10,7 +10,22 @@ export {
   getChartPatternGroup,
 } from './patternMeta';
 export type { PatternGroup } from './patternMeta';
-export { setActivePatternScan, getActivePatternScan, getRecentPatterns, subscribePatternScan } from './activeScan';
+export {
+  setActivePatternScan,
+  setChartPatternScan,
+  clearChartPatternScan,
+  getChartPatternScan,
+  getAllChartPatternScans,
+  getActivePatternScan,
+  getRecentPatterns,
+  subscribePatternScan,
+} from './activeScan';
+export type { ChartPatternScanBrief } from './activeScan';
+export {
+  formatPatternScanForChat,
+  formatAllPatternScansForChat,
+  buildMentorChartVision,
+} from './mentorVision';
 export { analyzeFormingStructure, formatFormingBriefForChat, formatAllFormingBriefsForChat, normalizeTimeframe } from './forming';
 export {
   setActiveFormingBrief,

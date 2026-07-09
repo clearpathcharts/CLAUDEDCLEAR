@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
-import { getAllFormingBriefs, subscribeFormingBrief, formatAllFormingBriefsForChat } from "../patterns";
-import type { FormingStructureBrief } from "../patterns";
+import {
+  getAllFormingBriefs,
+  getAllChartPatternScans,
+  subscribeFormingBrief,
+  subscribePatternScan,
+  buildMentorChartVision,
+} from "../patterns";
+import type { FormingStructureBrief, ChartPatternScanBrief } from "../patterns";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc } from "../firebase";
 
@@ -47,9 +53,11 @@ export const CptBuddyWidget: React.FC = () => {
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
   const [formingBriefs, setFormingBriefs] = useState<FormingStructureBrief[]>(getAllFormingBriefs());
+  const [patternScans, setPatternScans] = useState<ChartPatternScanBrief[]>(getAllChartPatternScans());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => subscribeFormingBrief(() => setFormingBriefs(getAllFormingBriefs())), []);
+  useEffect(() => subscribePatternScan(() => setPatternScans(getAllChartPatternScans())), []);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -197,7 +205,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
-          chartContext: formatAllFormingBriefsForChat(formingBriefs),
+          chartContext: buildMentorChartVision(patternScans, formingBriefs),
           conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -354,6 +362,49 @@ export const CptBuddyWidget: React.FC = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {memoryLoaded && setupStep === "done" && patternScans.length > 0 && (
+              <div
+                style={{
+                  marginBottom: 10,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(255,20,147,0.35)",
+                  background: "rgba(255,20,147,0.08)",
+                  fontSize: 10,
+                  lineHeight: 1.45,
+                  color: "#FFD6EC",
+                }}
+              >
+                <div style={{ color: "#FF1493", fontWeight: 800, marginBottom: 4, fontSize: 9, letterSpacing: 1 }}>
+                  PATTERN SCAN · {patternScans.length} CHART{patternScans.length === 1 ? "" : "S"} LIVE
+                </div>
+                {patternScans.slice(0, 4).map((scan) => {
+                  const chartHits = scan.patterns.filter((p) => p.category === "chart").slice(-2);
+                  const candleHits = scan.patterns.filter((p) => p.category === "candlestick").slice(-2);
+                  return (
+                    <div key={`${scan.symbol}-${scan.timeframe}`} style={{ marginBottom: 6 }}>
+                      <div style={{ color: "#FF4500", fontWeight: 700, fontSize: 9, marginBottom: 2 }}>
+                        {scan.symbol} · {scan.timeframe}
+                      </div>
+                      {chartHits.map((p) => (
+                        <div key={`${p.id}-${p.time}`} style={{ color: "#fff" }}>
+                          {p.label} ({p.direction}, {Math.round(p.confidence * 100)}%)
+                        </div>
+                      ))}
+                      {candleHits.length > 0 && (
+                        <div style={{ color: "#86EFAC", fontSize: 9 }}>
+                          Candles: {candleHits.map((p) => p.label).join(", ")}
+                        </div>
+                      )}
+                      {chartHits.length === 0 && candleHits.length === 0 && (
+                        <div style={{ color: "#a1a1aa", fontSize: 9 }}>No hits in recent window</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

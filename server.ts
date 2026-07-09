@@ -761,7 +761,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
       const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
       if (localChart && chartish) {
         return res.json({
-          answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
+          answer: `Here's what I measure on your live chart(s) right now — patterns and structure, not guesses:\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line. Open a chart first if this looks empty.`,
           newFacts: [],
         });
       }
@@ -846,7 +846,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       : '';
 
     const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
-      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART STRUCTURE above. Always say "possible" or "forming" — never claim a pattern is confirmed. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+      ? `\n\n${chartContext.trim()}\nThis LIVE PATTERN SCAN and LIVE CHART STRUCTURE data is measured from real OHLC on the user's open charts — your eyes. When the user asks about the chart, wedges, triangles, candlesticks, or what may be forming, use ONLY what is listed above. Always say "possible," "measured," or "forming" — never claim a pattern is confirmed. Do not invent patterns not in the scan. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
       : '';
 
     const messages = [
