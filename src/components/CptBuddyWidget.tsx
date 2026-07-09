@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Send } from "lucide-react";
 import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
@@ -235,7 +236,11 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
-  return (
+  // Portal to <body>: full-screen overlays elsewhere in the app (e.g. chart
+  // blackout mode) also portal to <body>, and the buddy must stack above them
+  // (zIndex 200 vs the overlays' z-150) instead of being trapped inside the
+  // app root's stacking context.
+  return createPortal(
     <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200 }}>
       {/* Floating avatar button */}
       {!isOpen && (
@@ -458,6 +463,7 @@ export const CptBuddyWidget: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
