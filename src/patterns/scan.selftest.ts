@@ -24,11 +24,18 @@ const engulf = scanCandlestickPatterns(engulfingCandles);
 assert(engulf.some((p) => p.id === 'bullish_engulfing'), 'expected bullish engulfing');
 
 const soldiers = [
-  { time: 1, open: 100, high: 103, low: 99, close: 102 },
-  { time: 2, open: 101, high: 105, low: 100, close: 104 },
-  { time: 3, open: 103, high: 108, low: 102, close: 107 },
+  { time: 1, open: 100, high: 103, low: 99.5, close: 102.8 },
+  { time: 2, open: 102.2, high: 106, low: 102, close: 105.8 },
+  { time: 3, open: 105, high: 109, low: 104.8, close: 108.7 },
 ];
 assert(scanCandlestickPatterns(soldiers).some((p) => p.id === 'three_white_soldiers'), 'expected three white soldiers');
+
+const oldHistory = generateSampleCandles(200);
+const oldScan = scanAllPatterns(oldHistory);
+assert(
+  oldScan.patterns.every((p) => p.endIndex >= oldHistory.length - 12),
+  'live-edge filter should drop historical pattern hits',
+);
 
 import { analyzeFormingStructure } from './forming';
 

@@ -13,7 +13,7 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
+import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief, clearPatternScan } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
@@ -300,7 +300,7 @@ export function LightweightCandles({
 
         const patternScan = scanAllPatterns(tierOptimizedData);
         setPatternScan(patternScan);
-        setActivePatternScan(patternScan);
+        setActivePatternScan(patternScan, sym, timeframe);
 
         const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
         setFormingBrief(formingBrief);
@@ -608,6 +608,7 @@ export function LightweightCandles({
     return () => {
       active = false;
       clearFormingBrief(sym, timeframe);
+      clearPatternScan(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }

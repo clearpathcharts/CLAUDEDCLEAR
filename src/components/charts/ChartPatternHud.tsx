@@ -26,8 +26,8 @@ interface ChartPatternHudProps {
 export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
   if (!scan) return null;
 
-  const chartPatterns = scan.patterns.filter((p) => p.category === 'chart').slice(-12);
-  const candlePatterns = scan.patterns.filter((p) => p.category === 'candlestick').slice(-5);
+  const chartPatterns = scan.patterns.filter((p) => p.category === 'chart');
+  const candlePatterns = scan.patterns.filter((p) => p.category === 'candlestick');
   const total = scan.patterns.length;
 
   const byGroup = GROUP_ORDER.map((group) => ({
@@ -62,8 +62,8 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
         {total > 0
-          ? `${total} hits · neon lines trace outside candles only`
-          : `Scanned ${scan.scannedBars.toLocaleString()} bars · no patterns yet`}
+          ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
+          : `Scanned ${scan.scannedBars.toLocaleString()} bars · nothing forming on the latest candles`}
       </p>
 
       {byGroup.map(({ group, items }) => (
@@ -88,7 +88,7 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
 
       {candlePatterns.length > 0 && (
         <div>
-          <p className="mb-1 text-[8px] font-bold uppercase tracking-widest text-white/30">Candlesticks</p>
+          <p className="mb-1 text-[8px] font-bold uppercase tracking-widest text-white/30">Latest Candlesticks</p>
           <div className="max-h-16 space-y-1 overflow-y-auto">
             {candlePatterns.map((p, i) => {
               const Icon = DIRECTION_ICON[p.direction];

@@ -15,6 +15,10 @@ const MAJOR_PATTERN_IDS = new Set<ChartPatternId>([
   'falling_wedge',
   'ascending_triangle',
   'descending_triangle',
+  'symmetrical_triangle',
+  'broadening_formation',
+  'double_top',
+  'double_bottom',
   'cup_and_handle',
 ]);
 
@@ -138,6 +142,51 @@ function cupAndHandleGeometry(
   return finalizeGeometry(pattern, lines, candles, pattern.endIndex, candles[pattern.endIndex]?.high);
 }
 
+function doubleTopBottomGeometry(
+  pattern: DetectedPattern,
+  swings: SwingPoint[],
+  candles: Candle[],
+  mode: 'top' | 'bottom',
+): DetectedPattern {
+  const start = pattern.startIndex;
+  const end = pattern.endIndex;
+  const lines: PatternLineSegment[] = [];
+
+  if (mode === 'top') {
+    const highs = swingsInRange(swings, start, end, 'high');
+    const lows = swingsInRange(swings, start, end, 'low');
+    if (highs.length < 2) return { ...pattern, geometry: undefined };
+
+    const peak = Math.max(highs[0].price, highs[highs.length - 1].price);
+    const resistance = fitHorizontalResistance(candles, start, end, peak);
+    const upper = horizontalSegment(candles, start, end, resistance, 'upper');
+    if (upper) lines.push(upper);
+
+    if (lows.length > 0) {
+      const neckline = Math.min(...lows.map((s) => s.price));
+      const neck = horizontalSegment(candles, start, end, neckline, 'neckline');
+      if (neck) lines.push(neck);
+    }
+  } else {
+    const lows = swingsInRange(swings, start, end, 'low');
+    const highs = swingsInRange(swings, start, end, 'high');
+    if (lows.length < 2) return { ...pattern, geometry: undefined };
+
+    const trough = Math.min(lows[0].price, lows[lows.length - 1].price);
+    const support = fitHorizontalSupport(candles, start, end, trough);
+    const lower = horizontalSegment(candles, start, end, support, 'lower');
+    if (lower) lines.push(lower);
+
+    if (highs.length > 0) {
+      const neckline = Math.max(...highs.map((s) => s.price));
+      const neck = horizontalSegment(candles, start, end, neckline, 'neckline');
+      if (neck) lines.push(neck);
+    }
+  }
+
+  return finalizeGeometry(pattern, lines, candles, end, lines[0]?.to.price);
+}
+
 export function attachChartGeometry(
   pattern: DetectedPattern,
   swings: SwingPoint[],
@@ -154,7 +203,13 @@ export function attachChartGeometry(
       return wedgeOrTriangleGeometry(pattern, swings, candles, 'descending');
     case 'rising_wedge':
     case 'falling_wedge':
+    case 'symmetrical_triangle':
+    case 'broadening_formation':
       return wedgeOrTriangleGeometry(pattern, swings, candles, 'wedge');
+    case 'double_top':
+      return doubleTopBottomGeometry(pattern, swings, candles, 'top');
+    case 'double_bottom':
+      return doubleTopBottomGeometry(pattern, swings, candles, 'bottom');
     case 'cup_and_handle':
       return cupAndHandleGeometry(pattern, swings, candles);
     default:

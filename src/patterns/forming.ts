@@ -69,6 +69,10 @@ const MAJOR_LABELS: Record<FormingPatternId, string> = {
   falling_wedge: 'Falling Wedge',
   ascending_triangle: 'Ascending Triangle',
   descending_triangle: 'Descending Triangle',
+  symmetrical_triangle: 'Symmetrical Triangle',
+  broadening_formation: 'Broadening Formation',
+  double_top: 'Double Top',
+  double_bottom: 'Double Bottom',
   cup_and_handle: 'Cup and Handle',
 };
 
