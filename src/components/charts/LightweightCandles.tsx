@@ -21,6 +21,7 @@ import { ChartScannerDock } from "./ChartScannerDock";
 import { Crosshair, Scan, Radio } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { MOBILE_PATTERN_LOOKBACK, useIsMobileChart } from "../../hooks/useIsMobileChart";
+import { useAppShell } from "../../contexts/AppShellContext";
 
 type Candle = {
   time: number;
@@ -90,11 +91,13 @@ export function LightweightCandles({
   const [showFormingWatch, setShowFormingWatch] = useState(false);
   const [mobileScannerOpen, setMobileScannerOpen] = useState(false);
   const isMobileChart = useIsMobileChart();
+  const { isAppShell } = useAppShell();
+  const compactScanner = isMobileChart || isAppShell;
   const visible = useVisibilityPause();
   const sym = symbol.toUpperCase();
 
   useEffect(() => {
-    if (isMobileChart) {
+    if (compactScanner) {
       setShowPatternHud(false);
       setShowFormingWatch(false);
       setMobileScannerOpen(false);
@@ -109,7 +112,7 @@ export function LightweightCandles({
       setShowPatternHud(true);
       setShowFormingWatch(true);
     }
-  }, [isMobileChart]);
+  }, [compactScanner]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -306,13 +309,13 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        const patternScan = isMobileChart
+        const patternScan = compactScanner
           ? scanPatternsForViewport(tierOptimizedData, MOBILE_PATTERN_LOOKBACK)
           : scanAllPatterns(tierOptimizedData);
         setPatternScan(patternScan);
         setActivePatternScan(patternScan);
 
-        const formingCandles = isMobileChart
+        const formingCandles = compactScanner
           ? tierOptimizedData.slice(-MOBILE_PATTERN_LOOKBACK)
           : tierOptimizedData;
         const formingBrief = analyzeFormingStructure(formingCandles, sym, timeframe);
@@ -330,7 +333,7 @@ export function LightweightCandles({
         series.setData(chartCandles);
 
         // Pattern geometry — bold trendlines on wedges/triangles/triple tops
-        const overlayLimits = isMobileChart
+        const overlayLimits = compactScanner
           ? { maxChartPatterns: 4, maxLineOverlays: 10, maxCandleMarkers: 6, maxPeakMarkers: 3 }
           : {};
 
@@ -636,12 +639,12 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), isMobileChart]);
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), compactScanner]);
 
   return (
     <div
       ref={containerRef}
-      className={isMobileChart ? 'pb-14' : undefined}
+      className={compactScanner ? 'pb-14' : undefined}
       style={{
         width: "100%",
         height: isExpanded ? "100%" : `${height}px`,
@@ -662,7 +665,7 @@ export function LightweightCandles({
           {error}
         </div>
       )}
-      {isMobileChart ? (
+      {compactScanner ? (
         <ChartScannerDock
           symbol={sym}
           scan={patternScan}
@@ -737,7 +740,7 @@ export function LightweightCandles({
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          isMobileChart
+          compactScanner
             ? `top-3 right-3 rounded-full p-2 ${mobileScannerOpen ? 'opacity-60' : ''}`
             : `text-[9px] px-2.5 py-1.5 rounded-lg ${showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'}`
         }`}
@@ -745,7 +748,7 @@ export function LightweightCandles({
         id={`crosshair_toggle_${symbol}`}
       >
         <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-        {!isMobileChart && <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>}
+        {!compactScanner && <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>}
       </button>
     </div>
   );

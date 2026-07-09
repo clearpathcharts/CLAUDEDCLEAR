@@ -26,6 +26,8 @@ interface MobileCommandCenterProps {
   onNavigate: (tab: string) => void;
   isAdmin: boolean;
   onLogout?: () => void;
+  /** Lean app shell — charts + river + account only */
+  lean?: boolean;
 }
 
 interface NavItem {
@@ -123,6 +125,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
   onNavigate,
   isAdmin,
   onLogout,
+  lean = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -133,11 +136,19 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const toolsItems = isAdmin ? [...TOOLS_ITEMS, DIAGNOSTICS_ITEM] : TOOLS_ITEMS;
 
-  const sections: { title: string; items: NavItem[] }[] = [
-    { title: "WORK", items: WORK_ITEMS },
-    { title: "TOOLS", items: toolsItems },
-    { title: "ACCOUNT", items: ACCOUNT_ITEMS },
-  ];
+  const sections: { title: string; items: NavItem[] }[] = lean
+    ? [
+        { title: 'TRADE', items: toolsItems.filter((i) => i.id === 'TheRiver') },
+        {
+          title: 'ACCOUNT',
+          items: ACCOUNT_ITEMS.filter((i) => ['Biography', 'Membership'].includes(i.id)),
+        },
+      ]
+    : [
+        { title: 'WORK', items: WORK_ITEMS },
+        { title: 'TOOLS', items: toolsItems },
+        { title: 'ACCOUNT', items: ACCOUNT_ITEMS },
+      ];
 
   return (
     <div id="mobile-nav" className="w-full">
@@ -151,24 +162,6 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           px-3 py-3
         "
       >
-        <button
-          type="button"
-          onClick={() => handleItemTap("Discovery")}
-          className={`
-            flex items-center gap-2 rounded-full px-3 py-2
-            text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
-            ${
-              activeTab === "Discovery"
-                ? "bg-[#4D00FF]/25 text-[#4D00FF] border border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]"
-                : "text-[#4D00FF] border border-[#4D00FF]/25 hover:bg-[#4D00FF]/10"
-            }
-          `}
-          style={{ fontFamily: "'Cinzel', serif" }}
-        >
-          <Home className="w-4 h-4" />
-          <span>HOME</span>
-        </button>
-
         <button
           type="button"
           onClick={() => handleItemTap("StrictlyCharts")}
@@ -187,23 +180,83 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           <span>CHARTS</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className={`
-            flex items-center gap-2 rounded-full px-3 py-2
-            text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
-            ${
-              isOpen
-                ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
-                : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
-            }
-          `}
-          style={{ fontFamily: "'Cinzel', serif" }}
-        >
-          <Users className="w-4 h-4" />
-          <span>Y.W.C.</span>
-        </button>
+        {lean ? (
+          <button
+            type="button"
+            onClick={() => handleItemTap("TheRiver")}
+            className={`
+              flex items-center gap-2 rounded-full px-3 py-2
+              text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+              ${
+                activeTab === "TheRiver"
+                  ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
+                  : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
+              }
+            `}
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            <Cpu className="w-4 h-4" />
+            <span>RIVER</span>
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => handleItemTap("Discovery")}
+              className={`
+                flex items-center gap-2 rounded-full px-3 py-2
+                text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+                ${
+                  activeTab === "Discovery"
+                    ? "bg-[#4D00FF]/25 text-[#4D00FF] border border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]"
+                    : "text-[#4D00FF] border border-[#4D00FF]/25 hover:bg-[#4D00FF]/10"
+                }
+              `}
+              style={{ fontFamily: "'Cinzel', serif" }}
+            >
+              <Home className="w-4 h-4" />
+              <span>HOME</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsOpen((prev) => !prev)}
+              className={`
+                flex items-center gap-2 rounded-full px-3 py-2
+                text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+                ${
+                  isOpen
+                    ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
+                    : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
+                }
+              `}
+              style={{ fontFamily: "'Cinzel', serif" }}
+            >
+              <Users className="w-4 h-4" />
+              <span>Y.W.C.</span>
+            </button>
+          </>
+        )}
+
+        {lean && (
+          <button
+            type="button"
+            onClick={() => setIsOpen((prev) => !prev)}
+            className={`
+              flex items-center gap-2 rounded-full px-3 py-2
+              text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+              ${
+                isOpen
+                  ? "bg-[#FF1493]/25 text-[#FF1493] border border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]"
+                  : "text-[#FF1493] border border-[#FF1493]/30 hover:bg-[#FF1493]/10"
+              }
+            `}
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            <Terminal className="w-4 h-4" />
+            <span>MENU</span>
+          </button>
+        )}
       </div>
 
       {/* ================= DRAWER ================= */}

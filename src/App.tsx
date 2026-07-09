@@ -5,6 +5,25 @@ import ExternalAboutPage from './components/ExternalAboutPage';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
+import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+
+function AppContent({
+  profile,
+  onProfileChange,
+}: {
+  profile: (typeof advancedProfiles)[keyof typeof advancedProfiles];
+  onProfileChange: (id: string) => void;
+}) {
+  const { isAppShell } = useAppShell();
+
+  return (
+    <div className="clearpath-glass-root">
+      <Dashboard profile={profile} onProfileChange={onProfileChange} />
+      {!isAppShell && <CptBuddyWidget />}
+    </div>
+  );
+}
+
 export default function App() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(() => {
@@ -92,9 +111,8 @@ export default function App() {
   }
   const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
   return (
-    <div className="clearpath-glass-root">
-      <Dashboard profile={profile} onProfileChange={handleProfileChange} />
-      <CptBuddyWidget />
-    </div>
+    <AppShellProvider>
+      <AppContent profile={profile} onProfileChange={handleProfileChange} />
+    </AppShellProvider>
   );
 }

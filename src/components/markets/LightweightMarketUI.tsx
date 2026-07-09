@@ -8,6 +8,10 @@ import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
+import { useAppShell } from '../../contexts/AppShellContext';
+import { APP_ESSENTIAL_TIMEFRAMES } from '../../lib/appShell';
+
+const ALL_TIMEFRAMES = ['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'];
 
 const ASSETS = [
   { label: 'EUR/USD', value: 'EURUSD' },
@@ -74,6 +78,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   onSelectMarketSymbol,
   onProfileChange,
 }) => {
+  const { isAppShell } = useAppShell();
+  const timeframes = isAppShell ? [...APP_ESSENTIAL_TIMEFRAMES] : ALL_TIMEFRAMES;
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
@@ -227,8 +233,9 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
       {/* Main Content Area */}
       {/* ONE SCROLLBAR RULE: no private scroller here; the page scrolls. */}
-      <div className="flex-1 p-8" style={{ background: '#000000' }}>
+      <div className={`flex-1 ${isAppShell ? 'p-3' : 'p-8'}`} style={{ background: '#000000' }}>
         <div className="max-w-7xl mx-auto w-full space-y-8">
+          {!isAppShell && (
           <div className="flex items-center justify-between border-b border-indigo-500/20 pb-6">
             <h1 className="text-3xl font-black tracking-tighter uppercase italic border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] px-4 py-2 rounded-lg" style={{ color: profile.text }}>
               CLEAR PATH <span style={{ color: profile.borderA }}>COMMAND TERMINAL</span>
@@ -270,16 +277,17 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               </div>
             </div>
           </div>
+          )}
 
-          {onProfileChange && (
+          {onProfileChange && !isAppShell && (
             <NeuroProfilePicker
               activeProfileId={profile.id}
               onProfileChange={onProfileChange}
             />
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Left Column: Interactive Terminal Configuration Dashboard Panel & Live Social Broker Socket */}
+          <div className={`grid grid-cols-1 ${isAppShell ? '' : 'lg:grid-cols-4'} gap-8`}>
+            {!isAppShell && (
             <div className="lg:col-span-1 flex flex-col space-y-6 lg:sticky lg:top-8">
               <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,217,255,0.15)] bg-black/60 backdrop-blur-md">
                 <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
@@ -310,12 +318,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 <CompactSocialTerminal />
               </div>
             </div>
+            )}
 
-            {/* Right Column: Timeframes & Charts */}
-            <div className="lg:col-span-3 space-y-6">
+            {/* Chart column — full width in app shell */}
+            <div className={isAppShell ? 'space-y-4' : 'lg:col-span-3 space-y-6'}>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
-                    {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
+                    {timeframes.map((tf, idx) => (
                       <button 
                         key={`${tf}-${idx}`} 
                         onClick={() => setActiveTimeframe(tf)}
@@ -335,7 +344,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
         </div>
       </div>
 
-      {/* Global Legal Positioning Footer */}
+      {!isAppShell && (
       <div 
         className="px-8 py-4 border-t text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff3333] via-[#ff6633] to-[#ff9933] text-center glass"
         style={{ 
@@ -346,6 +355,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       >
         ⚖ Legal Positioning — “Provides financial data visualization with optional user-controlled presentation adjustments for accessibility and visual clarity. The system does not evaluate, alter, or advise on financial decisions.”
       </div>
+      )}
     </div>
   );
 };
