@@ -1,0 +1,23 @@
+[project]
+name = "clearpath-intelligence"
+version = "0.1.0"
+description = "ClearPath Trader — Market Intelligence & Competitive Intelligence Crew for CrewAI Enterprise / AMP"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "crewai[tools]>=0.108.0,<1.0.0",
+]
+
+[project.scripts]
+clearpath_intelligence = "clearpath_intelligence.main:run"
+kickoff = "clearpath_intelligence.main:run"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.crewai]
+type = "crew"
