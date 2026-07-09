@@ -13,7 +13,8 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
+import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
+import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
@@ -298,14 +299,6 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        const patternScan = scanAllPatterns(tierOptimizedData);
-        setPatternScan(patternScan);
-        setActivePatternScan(patternScan);
-
-        const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
-        setFormingBrief(formingBrief);
-        setActiveFormingBrief(formingBrief);
-
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
           const rirExec = executeActiveRirOnCandles(tierOptimizedData);
@@ -316,28 +309,40 @@ export function LightweightCandles({
 
         series.setData(chartCandles);
 
-        // Pattern geometry — bold trendlines on wedges/triangles/triple tops
-        const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns);
-        for (const overlay of patternLines) {
-          const line = chart.addSeries(LineSeries, {
-            color: overlay.color,
-            lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
-            lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
-            title: '',
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-          });
-          line.setData(overlay.points);
-        }
+        scheduleChartVisionImmediate(
+          { candles: tierOptimizedData, symbol: sym, timeframe },
+          (output) => {
+            if (!active) return;
+            setPatternScan(output.scan);
+            setFormingBrief(output.forming);
 
-        const candleMarkers = [
-          ...buildCandlestickMarkers(tierOptimizedData, patternScan.patterns),
-          ...buildPatternPeakMarkers(tierOptimizedData, patternScan.patterns),
-        ];
-        if (candleMarkers.length > 0) {
-          createSeriesMarkers(series, candleMarkers as any);
-        }
+            try {
+              const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
+              for (const overlay of patternLines) {
+                const line = chart.addSeries(LineSeries, {
+                  color: overlay.color,
+                  lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
+                  lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+                  title: '',
+                  priceLineVisible: false,
+                  lastValueVisible: false,
+                  crosshairMarkerVisible: false,
+                });
+                line.setData(overlay.points);
+              }
+
+              const candleMarkers = [
+                ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
+                ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
+              ];
+              if (candleMarkers.length > 0) {
+                createSeriesMarkers(series, candleMarkers as any);
+              }
+            } catch (overlayErr) {
+              console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
+            }
+          },
+        );
 
         chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
 
@@ -607,7 +612,7 @@ export function LightweightCandles({
 
     return () => {
       active = false;
-      clearFormingBrief(sym, timeframe);
+      cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }

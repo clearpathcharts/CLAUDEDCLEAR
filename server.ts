@@ -846,7 +846,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       : '';
 
     const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
-      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART STRUCTURE above. Always say "possible" or "forming" — never claim a pattern is confirmed. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
       : '';
 
     const messages = [
