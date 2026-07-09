@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { BackToDashboard } from '../nav/BackToDashboard';
@@ -140,9 +141,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   }
 
   if (isBlackoutMode) {
+    // Rendered through a portal to <body>: ancestors in the dashboard tree carry
+    // CSS transforms (framer-motion), which would otherwise hijack position:fixed
+    // and push the overlay (and its exit button) off-screen.
     // z-[150] keeps blackout above the dashboard chrome but BELOW the C.P.T.
     // Buddy widget (zIndex 200), so the buddy stays reachable in blackout.
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
         {/* Header bar stays in normal flow so the exit control can never be covered or pushed off-screen */}
         <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
@@ -207,7 +211,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
             </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
