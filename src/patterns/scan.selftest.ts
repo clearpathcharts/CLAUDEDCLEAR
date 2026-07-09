@@ -51,7 +51,7 @@ for (let i = 0; i < 40; i++) {
     close: floor + 2.5,
   });
 }
-assert(analyzeFormingStructure(wedgeCandles, 'TEST', '1h') !== null, 'expected forming brief');
+assert(analyzeFormingStructure(wedgeCandles, 'TEST', '1h', scanAllPatterns(wedgeCandles).patterns) !== null, 'expected forming brief');
 
 const sample = generateSampleCandles(120);
 const scan = scanAllPatterns(sample);

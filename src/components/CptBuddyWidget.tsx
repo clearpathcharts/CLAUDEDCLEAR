@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
-import { getAllFormingBriefs, getAllPatternScans, subscribeFormingBrief, subscribePatternScan, formatChartVisionForMentor } from "../patterns";
-import type { FormingStructureBrief, ChartPatternScan } from "../patterns";
+import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc } from "../firebase";
 
@@ -46,12 +45,8 @@ export const CptBuddyWidget: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
-  const [formingBriefs, setFormingBriefs] = useState<FormingStructureBrief[]>(getAllFormingBriefs());
-  const [patternScans, setPatternScans] = useState<ChartPatternScan[]>(getAllPatternScans());
+  const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => subscribeFormingBrief(() => setFormingBriefs(getAllFormingBriefs())), []);
-  useEffect(() => subscribePatternScan(() => setPatternScans(getAllPatternScans())), []);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -199,7 +194,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
-          chartContext: formatChartVisionForMentor(formingBriefs, patternScans),
+          chartContext: mentorContext,
           conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
