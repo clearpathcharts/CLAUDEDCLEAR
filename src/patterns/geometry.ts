@@ -15,6 +15,9 @@ const MAJOR_PATTERN_IDS = new Set<ChartPatternId>([
   'falling_wedge',
   'ascending_triangle',
   'descending_triangle',
+  'symmetrical_triangle',
+  'double_top',
+  'double_bottom',
   'cup_and_handle',
 ]);
 
@@ -86,6 +89,49 @@ function wedgeOrTriangleGeometry(
   return finalizeGeometry(pattern, lines, candles, end, lines[0]?.to.price);
 }
 
+function doubleFormationGeometry(
+  pattern: DetectedPattern,
+  swings: SwingPoint[],
+  candles: Candle[],
+  mode: 'top' | 'bottom',
+): DetectedPattern {
+  const start = pattern.startIndex;
+  const end = pattern.endIndex;
+  const peaks = swingsInRange(swings, start, end, mode === 'top' ? 'high' : 'low');
+  const valleys = swingsInRange(swings, start, end, mode === 'top' ? 'low' : 'high');
+
+  if (peaks.length < 2) {
+    return { ...pattern, geometry: undefined };
+  }
+
+  const p1 = peaks[0];
+  const p2 = peaks[peaks.length - 1];
+  const mid = valleys.find((v) => v.index > p1.index && v.index < p2.index) ?? valleys[0];
+  const lines: PatternLineSegment[] = [];
+
+  const formationLevel = mode === 'top'
+    ? fitHorizontalResistance(candles, start, end, Math.max(p1.price, p2.price))
+    : fitHorizontalSupport(candles, start, end, Math.min(p1.price, p2.price));
+  const formationLine = horizontalSegment(
+    candles,
+    p1.index,
+    p2.index,
+    formationLevel,
+    mode === 'top' ? 'upper' : 'lower',
+  );
+  if (formationLine) lines.push(formationLine);
+
+  if (mid) {
+    const necklineLevel = mode === 'top'
+      ? fitHorizontalSupport(candles, p1.index, p2.index, mid.price)
+      : fitHorizontalResistance(candles, p1.index, p2.index, mid.price);
+    const neckline = horizontalSegment(candles, p1.index, p2.index, necklineLevel, 'neckline');
+    if (neckline) lines.push(neckline);
+  }
+
+  return finalizeGeometry(pattern, lines, candles, end, p2.price);
+}
+
 function cupAndHandleGeometry(
   pattern: DetectedPattern,
   swings: SwingPoint[],
@@ -152,9 +198,15 @@ export function attachChartGeometry(
       return wedgeOrTriangleGeometry(pattern, swings, candles, 'ascending');
     case 'descending_triangle':
       return wedgeOrTriangleGeometry(pattern, swings, candles, 'descending');
+    case 'symmetrical_triangle':
+      return wedgeOrTriangleGeometry(pattern, swings, candles, 'wedge');
     case 'rising_wedge':
     case 'falling_wedge':
       return wedgeOrTriangleGeometry(pattern, swings, candles, 'wedge');
+    case 'double_top':
+      return doubleFormationGeometry(pattern, swings, candles, 'top');
+    case 'double_bottom':
+      return doubleFormationGeometry(pattern, swings, candles, 'bottom');
     case 'cup_and_handle':
       return cupAndHandleGeometry(pattern, swings, candles);
     default:

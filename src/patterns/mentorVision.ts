@@ -8,6 +8,9 @@ const CHART_PATTERN_NOTES: Partial<Record<string, string>> = {
   'Falling Wedge': 'Highs and lows slide down while the lines pinch — often ends with a push back up.',
   'Ascending Triangle': 'Flat ceiling with rising lows — buyers pressing upward.',
   'Descending Triangle': 'Flat floor with falling highs — sellers pressing downward.',
+  'Symmetrical Triangle': 'Highs falling and lows rising — coiling before a directional break.',
+  'Double Top': 'Two peaks near the same level — sellers defending a ceiling twice.',
+  'Double Bottom': 'Two troughs near the same level — buyers defending a floor twice.',
   'Cup and Handle': 'Rounded bottom recovered near the old high, then a small pause (handle).',
 };
 

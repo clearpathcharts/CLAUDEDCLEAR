@@ -14,6 +14,9 @@ export const CHART_PATTERN_META: Record<
   cup_and_handle: { group: 'continuation', label: 'Cup and Handle' },
   ascending_triangle: { group: 'continuation', label: 'Ascending Triangle' },
   descending_triangle: { group: 'continuation', label: 'Descending Triangle' },
+  symmetrical_triangle: { group: 'continuation', label: 'Symmetrical Triangle' },
+  double_top: { group: 'reversal', label: 'Double Top' },
+  double_bottom: { group: 'reversal', label: 'Double Bottom' },
   rising_wedge: { group: 'reversal', label: 'Rising Wedge' },
   falling_wedge: { group: 'reversal', label: 'Falling Wedge' },
 };
