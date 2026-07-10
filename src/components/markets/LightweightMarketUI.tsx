@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
@@ -9,20 +9,9 @@ import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
+import { MARKET_ASSETS, resolveMarketAsset, type MarketAsset } from '../../constants/marketAssets';
 
-const ASSETS = [
-  { label: 'EUR/USD', value: 'EURUSD' },
-  { label: 'GBP/USD', value: 'GBPUSD' },
-  { label: 'USD/JPY', value: 'USDJPY' },
-  { label: 'AUD/USD', value: 'AUDUSD' },
-  { label: 'USD/CAD', value: 'USDCAD' },
-  { label: 'NZD/USD', value: 'NZDUSD' },
-  { label: 'XAU/USD', value: 'XAUUSD' },
-  { label: 'XAG/USD', value: 'XAGUSD' },
-  { label: 'SOL/USD', value: 'SOLUSD' },
-  { label: 'SPX', value: 'SPX' },
-  { label: 'DXY', value: 'DXY' },
-];
+const ASSETS = MARKET_ASSETS;
 
 const timeframesMapping: Record<string, string> = {
   '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
@@ -30,26 +19,87 @@ const timeframesMapping: Record<string, string> = {
   '1D': '1d', '1W': '1w', '1M': '1M', '3M': '3M', '6M': '6M', 'YTD': 'ytd'
 };
 
-const ChartWidget = ({ asset, profile, activeTimeframe = '1H', chartTheme }: { asset: typeof ASSETS[0], profile: ThemeProfile, activeTimeframe?: string, chartTheme?: any }) => {
+const CHART_SLOT_COUNT = 3;
+const CHART_SLOTS_STORAGE_KEY = 'cpt-market-terminal-chart-slots';
+
+const DEFAULT_CHART_SLOTS: MarketAsset[] = [
+  { label: 'XAU/USD', value: 'XAUUSD' },
+  { label: 'EUR/USD', value: 'EURUSD' },
+  { label: 'DXY', value: 'DXY' },
+];
+
+function loadChartSlots(): MarketAsset[] {
+  try {
+    const raw = localStorage.getItem(CHART_SLOTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === CHART_SLOT_COUNT) {
+        return parsed.map((entry: MarketAsset) => resolveMarketAsset(entry.value));
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_CHART_SLOTS;
+}
+
+const ChartWidget = ({
+  asset,
+  profile,
+  activeTimeframe = '1H',
+  chartTheme,
+  slotIndex,
+  onAssetChange,
+}: {
+  asset: MarketAsset;
+  profile: ThemeProfile;
+  activeTimeframe?: string;
+  chartTheme?: any;
+  slotIndex: number;
+  onAssetChange?: (asset: MarketAsset) => void;
+}) => {
   return (
-    <div className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass" id={`wrapper_${asset.value.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
-      {/* Chart Label Header */}
+    <div
+      className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass"
+      id={`wrapper_slot_${slotIndex}_${asset.value.replace(/[^a-zA-Z0-9_-]/g, '_')}`}
+    >
       <div className="flex items-center justify-between px-6 py-3 border-b bg-black/40 backdrop-blur-md border-white/5 select-none shrink-0">
-        <div className="flex items-center space-x-3">
-          <span className="text-xs font-black tracking-widest text-[#00FFFF] uppercase font-mono bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20 shadow-[0_0_10px_rgba(0,255,255,0.15)]">
-            {asset.label}
-          </span>
-          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-widest">
+        <div className="flex items-center space-x-3 min-w-0">
+          {onAssetChange ? (
+            <select
+              value={asset.value}
+              onChange={(e) => onAssetChange(resolveMarketAsset(e.target.value))}
+              className="bg-transparent text-xs font-black tracking-widest text-[#00FFFF] uppercase font-mono outline-none cursor-pointer max-w-[140px] truncate"
+            >
+              {ASSETS.map((a) => (
+                <option key={a.value} value={a.value} className="bg-black text-white">
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs font-black tracking-widest text-[#00FFFF] uppercase font-mono bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20 shadow-[0_0_10px_rgba(0,255,255,0.15)]">
+              {asset.label}
+            </span>
+          )}
+          <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-widest truncate">
             {asset.value}
           </span>
         </div>
-        <div className="flex items-center space-x-3 text-[9px] font-black tracking-widest uppercase text-zinc-400">
+        <div className="flex items-center space-x-3 text-[9px] font-black tracking-widest uppercase text-zinc-400 shrink-0">
+          <span className="hidden sm:inline text-zinc-600">CHART {slotIndex + 1}</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#00FFFF] shadow-[0_0_6px_rgba(0,255,255,0.8)] animate-pulse" />
           <span>{activeTimeframe} STREAM</span>
         </div>
       </div>
       <div className="flex-1 w-full min-h-0 relative">
-        <LightweightCandles profileId={profile.id} height={440} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={asset.value} theme={chartTheme} />
+        <LightweightCandles
+          profileId={profile.id}
+          height={440}
+          timeframe={timeframesMapping[activeTimeframe] || '1h'}
+          symbol={asset.value}
+          theme={chartTheme}
+        />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
         <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
@@ -78,6 +128,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
+  const [chartSlots, setChartSlots] = useState<MarketAsset[]>(loadChartSlots);
+
+  const mainAsset = chartSlots[0] ?? DEFAULT_CHART_SLOTS[0];
+  const secondaryAsset = chartSlots[1] ?? DEFAULT_CHART_SLOTS[1];
 
   useEffect(() => {
     return TradingHaltController.subscribe((isHalted, reason) => {
@@ -86,7 +140,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     });
   }, []);
 
-  // Escape always exits blackout, even if the user never finds the button.
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHART_SLOTS_STORAGE_KEY, JSON.stringify(chartSlots));
+    } catch {
+      /* ignore */
+    }
+  }, [chartSlots]);
+
   useEffect(() => {
     if (!isBlackoutMode) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -97,33 +158,30 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   }, [isBlackoutMode]);
 
   const [searchSymbol, setSearchSymbol] = useState('');
-  const [mainAsset, setMainAsset] = useState({ label: 'XAU/USD', value: 'XAUUSD' });
-  const [secondaryAsset, setSecondaryAsset] = useState({ label: 'DXY', value: 'DXY' });
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
+
+  const updateChartSlot = useCallback((index: number, asset: MarketAsset) => {
+    setChartSlots((prev) => {
+      const next = [...prev];
+      next[index] = asset;
+      return next;
+    });
+    if (index === 0) {
+      onSelectMarketSymbol?.(asset.value);
+    }
+  }, [onSelectMarketSymbol]);
 
   useEffect(() => {
     if (selectedMarketSymbol) {
-      const match = ASSETS.find(a => a.value === selectedMarketSymbol);
-      if (match) {
-        setMainAsset(match);
-      } else {
-        setMainAsset({ label: selectedMarketSymbol, value: selectedMarketSymbol });
-      }
+      updateChartSlot(0, resolveMarketAsset(selectedMarketSymbol));
     }
-  }, [selectedMarketSymbol]);
+  }, [selectedMarketSymbol, updateChartSlot]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchSymbol.trim()) {
-      const sym = searchSymbol.toUpperCase().trim();
-      const match = ASSETS.find(a => a.value === sym);
-      if (match) {
-        setMainAsset(match);
-        onSelectMarketSymbol?.(match.value);
-      } else {
-        setMainAsset({ label: sym, value: sym });
-        onSelectMarketSymbol?.(sym);
-      }
+      const asset = resolveMarketAsset(searchSymbol);
+      updateChartSlot(0, asset);
       setSearchSymbol('');
     }
   };
@@ -141,14 +199,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   }
 
   if (isBlackoutMode) {
-    // Rendered through a portal to <body>: ancestors in the dashboard tree carry
-    // CSS transforms (framer-motion), which would otherwise hijack position:fixed
-    // and push the overlay (and its exit button) off-screen.
-    // z-[150] keeps blackout above the dashboard chrome but BELOW the C.P.T.
-    // Buddy widget (zIndex 200), so the buddy stays reachable in blackout.
     return createPortal(
       <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
-        {/* Header bar stays in normal flow so the exit control can never be covered or pushed off-screen */}
         <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
           <div className="flex items-center gap-3 min-w-0">
             <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
@@ -165,19 +217,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
             <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
           </button>
         </div>
-        {/* Charts fill the remaining viewport height instead of a fixed 800px, so nothing overflows off-screen */}
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
             <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
                 <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-900">
                     <select
                         value={mainAsset.value}
-                        onChange={(e) => {
-                            const match = ASSETS.find(a => a.value === e.target.value);
-                            if (match) {
-                                setMainAsset(match);
-                                onSelectMarketSymbol?.(match.value);
-                            }
-                        }}
+                        onChange={(e) => updateChartSlot(0, resolveMarketAsset(e.target.value))}
                         className="bg-transparent text-zinc-200 font-mono text-xs font-bold outline-none cursor-pointer"
                     >
                          {ASSETS.map(asset => (
@@ -194,10 +239,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-900">
                     <select
                         value={secondaryAsset.value}
-                        onChange={(e) => {
-                            const match = ASSETS.find(a => a.value === e.target.value);
-                            if (match) setSecondaryAsset(match);
-                        }}
+                        onChange={(e) => updateChartSlot(1, resolveMarketAsset(e.target.value))}
                         className="bg-transparent text-zinc-200 font-mono text-xs font-bold outline-none cursor-pointer"
                     >
                          {ASSETS.map(asset => (
@@ -221,7 +263,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       className="flex flex-col min-h-full w-full transition-all duration-1000"
       style={{ background: profile.bgTop }}
     >
-      {/* Top Navigation */}
       <div 
         className="flex items-center justify-between px-8 py-4 border-b glass"
         style={{ 
@@ -270,8 +311,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
         </form>
       </div>
 
-      {/* Main Content Area */}
-      {/* ONE SCROLLBAR RULE: no private scroller here; the page scrolls. */}
       <div className="flex-1 p-8" style={{ background: '#000000' }}>
         <div className="max-w-7xl mx-auto w-full space-y-8">
           <div className="flex items-center justify-between border-b border-indigo-500/20 pb-6">
@@ -289,13 +328,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <div className="relative mr-4">
                 <select
                   value={mainAsset.value}
-                  onChange={(e) => {
-                    const match = ASSETS.find(a => a.value === e.target.value);
-                    if (match) {
-                      setMainAsset(match);
-                      onSelectMarketSymbol?.(match.value);
-                    }
-                  }}
+                  onChange={(e) => updateChartSlot(0, resolveMarketAsset(e.target.value))}
                   className="bg-black/80 border-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg focus:outline-none focus:ring-1 cursor-pointer min-w-[160px]"
                   style={{
                     color: profile.text,
@@ -311,7 +344,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </select>
               </div>
               <div className="px-4 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                System Active // Zero Grey Area
+                3 Charts Active
               </div>
             </div>
           </div>
@@ -324,7 +357,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Left Column: Interactive Terminal Configuration Dashboard Panel & Live Social Broker Socket */}
             <div className="lg:col-span-1 flex flex-col space-y-6 lg:sticky lg:top-8">
               <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,217,255,0.15)] bg-black/60 backdrop-blur-md">
                 <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
@@ -356,7 +388,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               </div>
             </div>
 
-            {/* Right Column: Timeframes & Charts */}
             <div className="lg:col-span-3 space-y-6">
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
@@ -373,14 +404,23 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               </div>
               
               <div id="master-chart-stack" className="multi-chart-container space-y-6">
-                <ChartWidget key={`${mainAsset.value}-${activeTimeframe}`} asset={mainAsset} profile={profile} activeTimeframe={activeTimeframe} chartTheme={chartTheme} />
+                {chartSlots.map((asset, idx) => (
+                  <ChartWidget
+                    key={`slot-${idx}-${asset.value}-${activeTimeframe}`}
+                    asset={asset}
+                    profile={profile}
+                    activeTimeframe={activeTimeframe}
+                    chartTheme={chartTheme}
+                    slotIndex={idx}
+                    onAssetChange={(next) => updateChartSlot(idx, next)}
+                  />
+                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Global Legal Positioning Footer */}
       <div 
         className="px-8 py-4 border-t text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff3333] via-[#ff6633] to-[#ff9933] text-center glass"
         style={{ 

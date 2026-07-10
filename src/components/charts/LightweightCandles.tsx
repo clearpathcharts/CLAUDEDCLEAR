@@ -59,6 +59,7 @@ export function LightweightCandles({
     laggingSpan2Periods: 52,
     displacement: 26
   },
+  embedMode = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -79,6 +80,8 @@ export function LightweightCandles({
     displacement: number;
   };
   blackoutMode?: boolean;
+  /** Compact embed: hide HUD chrome for bento mini-charts. */
+  embedMode?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -651,7 +654,7 @@ export function LightweightCandles({
       )}
       <ChartFormingWatch
         symbol={sym}
-        brief={showFormingWatch ? formingBrief : null}
+        brief={!embedMode && showFormingWatch ? formingBrief : null}
         onClose={() => {
           setShowFormingWatch(false);
           try {
@@ -661,7 +664,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showFormingWatch && (
+      {!embedMode && !showFormingWatch && (
         <button
           type="button"
           onClick={() => {
@@ -681,7 +684,7 @@ export function LightweightCandles({
       )}
       <ChartPatternHud
         symbol={sym}
-        scan={showPatternHud ? patternScan : null}
+        scan={!embedMode && showPatternHud ? patternScan : null}
         onClose={() => {
           setShowPatternHud(false);
           try {
@@ -691,7 +694,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showPatternHud && (
+      {!embedMode && !showPatternHud && (
         <button
           type="button"
           onClick={() => {
@@ -709,7 +712,8 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
-      <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />
+      {!embedMode && <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />}
+      {!embedMode && (
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
@@ -721,6 +725,7 @@ export function LightweightCandles({
         <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
         <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
       </button>
+      )}
     </div>
   );
 }
