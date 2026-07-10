@@ -1,15 +1,10 @@
 import { Candle } from '../types/indicators';
-import { ChartPatternId } from './types';
+import { ChartPatternId, DetectedPattern } from './types';
 import {
   consecutiveBearishEndingAt,
   consecutiveBearishFrom,
-  consecutiveBullishEndingAt,
   findImpulseLegs,
-  firstBullishWickLowAfter,
-  isBearishBar,
-  isBullishBar,
 } from './barStructure';
-import { findSwingPoints, pricesNear, slope } from './swings';
 
 export type FormingPatternId = ChartPatternId;
 
@@ -62,18 +57,6 @@ export function normalizeTimeframe(tf: string): string {
   if (lower === '1h' || lower === '2h' || lower === '3h' || lower === '4h') return lower;
   if (lower === '1d' || lower === '1w') return lower;
   return lower;
-}
-
-const MAJOR_LABELS: Record<FormingPatternId, string> = {
-  rising_wedge: 'Rising Wedge',
-  falling_wedge: 'Falling Wedge',
-  ascending_triangle: 'Ascending Triangle',
-  descending_triangle: 'Descending Triangle',
-  cup_and_handle: 'Cup and Handle',
-};
-
-function clamp01(n: number): number {
-  return Math.max(0, Math.min(1, n));
 }
 
 function detectClock(
@@ -132,67 +115,18 @@ function detectClock(
   return { type: 'none', active: false, bar: 0, total: 0, reason: 'No bar clock active' };
 }
 
-function scoreWedgeTriangle(
-  candles: Candle[],
-  swings: ReturnType<typeof findSwingPoints>,
-): Partial<Record<FormingPatternId, { p: number; detail: string }>> {
-  const scores: Partial<Record<FormingPatternId, { p: number; detail: string }>> = {};
-  const highs = swings.filter((s) => s.kind === 'high').slice(-4);
-  const lows = swings.filter((s) => s.kind === 'low').slice(-4);
-  if (highs.length < 2 || lows.length < 2) return scores;
-
-  const h1 = highs[highs.length - 2];
-  const h2 = highs[highs.length - 1];
-  const l1 = lows[lows.length - 2];
-  const l2 = lows[lows.length - 1];
-  const highSlope = slope(h1, h2);
-  const lowSlope = slope(l1, l2);
-
-  if (highSlope > 0 && lowSlope > 0 && highSlope < lowSlope) {
-    const gap = (lowSlope - highSlope) / Math.max(Math.abs(lowSlope), 1e-9);
-    scores.rising_wedge = {
-      p: clamp01(0.45 + gap * 2),
-      detail: 'Converging upward slopes on swing highs/lows',
-    };
-  }
-
-  if (highSlope < 0 && lowSlope < 0 && highSlope > lowSlope) {
-    const gap = (highSlope - lowSlope) / Math.max(Math.abs(highSlope), 1e-9);
-    scores.falling_wedge = {
-      p: clamp01(0.45 + gap * 2),
-      detail: 'Converging downward slopes — classic retrace wedge',
-    };
-  }
-
-  if (Math.abs(highSlope) < Math.abs(lowSlope) * 0.3 && lowSlope > 0 && pricesNear(h1.price, h2.price, 0.025)) {
-    scores.ascending_triangle = {
-      p: clamp01(0.5 + lowSlope * 5),
-      detail: 'Flat resistance + rising lows',
-    };
-  }
-
-  if (Math.abs(lowSlope) < Math.abs(highSlope) * 0.3 && highSlope < 0 && pricesNear(l1.price, l2.price, 0.025)) {
-    scores.descending_triangle = {
-      p: clamp01(0.5 + Math.abs(highSlope) * 5),
-      detail: 'Flat support + falling highs',
-    };
-  }
-
-  return scores;
-}
-
-function scoreCupHandle(candles: Candle[], swings: ReturnType<typeof findSwingPoints>): { p: number; detail: string } | null {
-  const lows = swings.filter((s) => s.kind === 'low');
-  if (lows.length < 3 || candles.length < 40) return null;
-  const recent = lows.slice(-5);
-  const cupLow = recent.reduce((min, s) => (s.price < min.price ? s : min), recent[0]);
-  const left = recent.find((s) => s.index < cupLow.index);
-  const right = recent.find((s) => s.index > cupLow.index);
-  if (!left || !right || right.index - left.index < 12) return null;
-  return {
-    p: 0.42,
-    detail: 'U-shaped low structure with two rim highs forming',
-  };
+function possibilitiesFromMeasured(patterns: DetectedPattern[]): FormingPossibility[] {
+  return patterns
+    .filter((p) => p.category === 'chart')
+    .map((p) => ({
+      id: p.id as FormingPatternId,
+      label: p.label,
+      probability: p.confidence,
+      status: (p.confidence >= 0.62 ? 'forming' : p.confidence >= 0.5 ? 'possible' : 'watch') as FormingPossibility['status'],
+      detail: p.detail || `${p.label} measured on latest candles.`,
+    }))
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, 4);
 }
 
 function buildNarrative(
@@ -219,11 +153,11 @@ function buildNarrative(
   }
 
   if (brief.possibilities.length === 0) {
-    lines.push('No major forming patterns above watch threshold.');
+    lines.push('No measured chart patterns in the latest window.');
   } else {
     for (const p of brief.possibilities) {
       lines.push(
-        `${p.status === 'forming' ? 'Forming' : 'Possible'} ${p.label} (~${Math.round(p.probability * 100)}%) — ${p.detail}`,
+        `Measured ${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`,
       );
     }
   }
@@ -231,15 +165,15 @@ function buildNarrative(
   return lines;
 }
 
-/** Analyze live OHLC for forming pattern probabilities — color-agnostic, no harmonics. */
+/** Analyze live OHLC for methodology context. Pattern labels come from measured scan when provided. */
 export function analyzeFormingStructure(
   candles: Candle[],
   symbol: string,
   timeframe: string,
+  measuredPatterns: DetectedPattern[] = [],
 ): FormingStructureBrief | null {
   if (!candles || candles.length < 12) return null;
 
-  const swings = findSwingPoints(candles, 3, 3);
   const upLegs = findImpulseLegs(candles, 56);
   const upImpulses = upLegs.filter((l) => l.direction === 'up');
   const downImpulses = upLegs.filter((l) => l.direction === 'down');
@@ -268,58 +202,7 @@ export function analyzeFormingStructure(
     retraceEndingWithThreeBearish,
   };
 
-  const rawScores = scoreWedgeTriangle(candles, swings);
-  const cup = scoreCupHandle(candles, swings);
-  if (cup) rawScores.cup_and_handle = cup;
-
-  // Boost falling wedge during active 12-bar retrace clock
-  if (clock.active && clock.type === '12-bar-retrace') {
-    const cur = rawScores.falling_wedge?.p ?? 0.35;
-    rawScores.falling_wedge = {
-      p: clamp01(cur + 0.2 + (clock.bar / clock.total) * 0.15),
-      detail: rawScores.falling_wedge?.detail ?? 'Retrace window active on bar grid',
-    };
-  }
-
-  if (retraceEndingWithThreeBearish) {
-    const cur = rawScores.ascending_triangle?.p ?? 0.3;
-    rawScores.ascending_triangle = {
-      p: clamp01(cur + 0.25),
-      detail: 'Post-retrace breakout leg may build ascending structure',
-    };
-  }
-
-  if (clock.active && legs.lastUpLegIncomplete) {
-    const cur = rawScores.rising_wedge?.p ?? 0.25;
-    rawScores.rising_wedge = {
-      p: clamp01(cur + 0.15),
-      detail: 'Compression after incomplete 4th push',
-    };
-  }
-
-  const anchor = firstBullishWickLowAfter(candles, Math.max(0, candles.length - 30));
-  if (anchor && trendBias === 'up') {
-    const cur = rawScores.rising_wedge?.p ?? 0.3;
-    rawScores.rising_wedge = {
-      p: clamp01(Math.max(cur, 0.4)),
-      detail: `Uptrend anchor wick set at bar ${anchor.index}`,
-    };
-  }
-
-  const possibilities: FormingPossibility[] = (Object.keys(rawScores) as FormingPatternId[])
-    .map((id) => {
-      const s = rawScores[id]!;
-      return {
-        id,
-        label: MAJOR_LABELS[id],
-        probability: s.p,
-        status: s.p >= 0.62 ? 'forming' as const : s.p >= 0.45 ? 'possible' as const : 'watch' as const,
-        detail: s.detail,
-      };
-    })
-    .filter((p) => p.probability >= 0.38)
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, 6);
+  const possibilities = possibilitiesFromMeasured(measuredPatterns);
 
   const normalizedTf = normalizeTimeframe(timeframe);
   const base = {

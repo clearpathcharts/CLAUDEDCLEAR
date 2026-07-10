@@ -22,6 +22,10 @@ export type ChartPatternId =
   | 'falling_wedge'
   | 'ascending_triangle'
   | 'descending_triangle'
+  | 'symmetrical_triangle'
+  | 'broadening_formation'
+  | 'double_top'
+  | 'double_bottom'
   | 'cup_and_handle';
 
 export type PatternId = CandlestickPatternId | ChartPatternId;

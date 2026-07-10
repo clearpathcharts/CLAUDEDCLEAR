@@ -4,6 +4,7 @@
  */
 import { generateSampleCandles } from '../river/runtime/fixtures/sampleCandles';
 import { analyzeFormingStructure } from './forming';
+import { scanAllPatterns } from './scan';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -13,7 +14,8 @@ function assert(condition: boolean, message: string): void {
 }
 
 const sample = generateSampleCandles(120);
-const brief = analyzeFormingStructure(sample, 'EURUSD', '1h');
+const measured = scanAllPatterns(sample).patterns;
+const brief = analyzeFormingStructure(sample, 'EURUSD', '1h', measured);
 assert(brief !== null, 'expected forming brief');
 assert(brief!.scannedBars === 120, 'expected 120 bars');
 assert(Array.isArray(brief!.narrativeLines), 'expected narrative lines');

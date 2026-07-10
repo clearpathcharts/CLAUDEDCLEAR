@@ -25,7 +25,7 @@ export function buildPatternLineOverlays(
 ): PatternLineOverlay[] {
   const chartPatterns = patterns
     .filter((p) => p.category === 'chart' && p.geometry?.lines.length)
-    .slice(-8);
+    .slice(0, 8);
 
   const overlays: PatternLineOverlay[] = [];
 
@@ -65,7 +65,7 @@ export function buildPatternPeakMarkers(
   patterns: DetectedPattern[],
 ): PatternCandleMarker[] {
   const markers: PatternCandleMarker[] = [];
-  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(-3);
+  const chartPatterns = patterns.filter((p) => p.category === 'chart').slice(0, 3);
 
   for (const pattern of chartPatterns) {
     if (pattern.geometry?.markerIndex != null) {
@@ -93,7 +93,7 @@ export function buildCandlestickMarkers(
 ): PatternCandleMarker[] {
   return patterns
     .filter((p) => p.category === 'candlestick')
-    .slice(-12)
+    .slice(0, 6)
     .map((p) => {
       const c = candles[p.endIndex];
       const price = c ? (p.direction === 'bullish' ? c.low : c.high) : undefined;
