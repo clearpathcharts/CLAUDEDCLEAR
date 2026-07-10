@@ -91,6 +91,7 @@ export function LightweightCandles({
   const chartRef = useRef<IChartApi | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
   const [showPatternHud, setShowPatternHud] = useState(() => {
@@ -110,7 +111,7 @@ export function LightweightCandles({
     }
   });
   const visible = useVisibilityPause();
-  const sym = symbol.toUpperCase();
+  const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -265,6 +266,7 @@ export function LightweightCandles({
       try {
         if (!active) return;
         setError(null);
+        setIsLoading(true);
 
         const allowedLimit = getCandleLimit(userTier);
 
@@ -296,11 +298,15 @@ export function LightweightCandles({
           if (fetched && fetched.length > 0) {
             displayData = fetched;
           } else {
+            const hint = lastFetchError?.includes("API Key not configured")
+              ? " Set TWELVEDATA_API_KEY in .env and restart the server."
+              : "";
             setError(
               lastFetchError
-                ? `No historical data available for this timeframe. (${lastFetchError})`
+                ? `No historical data available for this timeframe. (${lastFetchError})${hint}`
                 : "No historical data available for this timeframe."
             );
+            setIsLoading(false);
             return;
           }
         }
@@ -599,13 +605,22 @@ export function LightweightCandles({
         }, tickDelay);
 
         chart.timeScale().fitContent();
+        if (active) setIsLoading(false);
       } catch (err) {
-        console.warn("[LightweightCandles load error handler] Recovered from load failure gracefully:", err);
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("[LightweightCandles load error]", err);
+        setError(msg || "Chart failed to load.");
+        setIsLoading(false);
       }
     }
 
     load().catch(err => {
-      console.warn("[LightweightCandles load promise catch] Suppressed chart loading promise rejection:", err);
+      console.warn("[LightweightCandles load promise catch]", err);
+      if (active) {
+        setError(err instanceof Error ? err.message : String(err));
+        setIsLoading(false);
+      }
     });
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -632,7 +647,7 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
     <div
@@ -652,9 +667,15 @@ export function LightweightCandles({
       }}
     >
       {/* FLOATING COORDINATE TRACKER CONTROL (HUD SWITCH) */}
+      {isLoading && !error && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 text-cyan-400 font-mono text-xs p-4 text-center">
+          <span className="animate-pulse">Loading {sym} chart…</span>
+        </div>
+      )}
       {error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-red-500 font-mono text-sm p-4 text-center">
-          {error}
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-black/85 text-red-400 font-mono text-sm p-6 text-center">
+          <span className="text-red-500 font-bold uppercase tracking-wider text-xs">Chart data unavailable</span>
+          <span>{error}</span>
         </div>
       )}
       <ChartFormingWatch
