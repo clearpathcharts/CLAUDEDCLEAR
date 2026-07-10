@@ -2,18 +2,12 @@ import React from "react";
 import {
   Activity,
   BarChart3,
-  BookOpen,
   Cpu,
   Crown,
-  Folder,
-  GraduationCap,
   Home,
-  Landmark,
   LogOut,
-  Navigation,
   Newspaper,
   Shield,
-  SlidersHorizontal,
   Terminal,
   Users,
 } from "lucide-react";
@@ -58,16 +52,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "StrictlyCharts",
       icon: BarChart3,
       label: "CHARTS",
-    },
-    {
-      id: "Screener",
-      icon: SlidersHorizontal,
-      label: "SCREENER",
-    },
-    {
-      id: "Journal",
-      icon: BookOpen,
-      label: "JOURNAL",
     },
     {
       id: "News",

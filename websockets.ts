@@ -20,6 +20,83 @@ let activeSocialPosts: SocialPost[] = [
   { id: 'p4', platform: 'linkedin', handle: 'Apex Capital Partners', text: 'Announcing our institutional integration with Clear Path Markets Science Reader terminal layer.', timestamp: Date.now() - 450000 }
 ];
 
+export interface ChatRoomMessage {
+  id: string;
+  roomId: string;
+  author: string;
+  avatar?: string;
+  text: string;
+  timestamp: number;
+  isSystem?: boolean;
+}
+
+const CHAT_ROOM_SEEDS: Record<string, ChatRoomMessage[]> = {
+  lobby: [
+    { id: 'lobby-1', roomId: 'lobby', author: 'ClearPath Host', text: 'Welcome to the public trading lobby. Create a free account to unlock private guilds.', timestamp: Date.now() - 7200000, isSystem: true },
+    { id: 'lobby-2', roomId: 'lobby', author: 'MacroMaven', text: 'Anyone watching the 10Y auction today? Curve looks stressed.', timestamp: Date.now() - 3600000 },
+    { id: 'lobby-3', roomId: 'lobby', author: 'FX_Scout', text: 'EURUSD holding the London open range — patience on breakouts.', timestamp: Date.now() - 1800000 },
+  ],
+  'macro-minds': [
+    { id: 'macro-1', roomId: 'macro-minds', author: 'YieldWatcher', text: '2s10s inversion tightening again. Risk-off tone into NY.', timestamp: Date.now() - 5400000 },
+    { id: 'macro-2', roomId: 'macro-minds', author: 'SovereignDesk', text: 'Watching DXY 104.20 as the line in the sand this week.', timestamp: Date.now() - 2400000 },
+  ],
+  'forex-syndicate': [
+    { id: 'fx-1', roomId: 'forex-syndicate', author: 'SessionHunter', text: 'Asia sweep on GBPUSD cleared — watching 1.2680 reaction.', timestamp: Date.now() - 4200000 },
+    { id: 'fx-2', roomId: 'forex-syndicate', author: 'PipArchitect', text: 'NY overlap volatility window opens in 40 minutes.', timestamp: Date.now() - 1200000 },
+  ],
+  'liquidity-alchemists': [
+    { id: 'liq-1', roomId: 'liquidity-alchemists', author: 'RepoRadar', text: 'Overnight RRP usage ticked lower — liquidity pulse improving.', timestamp: Date.now() - 3000000 },
+  ],
+};
+
+const chatRoomMessages: Record<string, ChatRoomMessage[]> = Object.fromEntries(
+  Object.entries(CHAT_ROOM_SEEDS).map(([roomId, messages]) => [roomId, [...messages]])
+);
+
+const chatRoomOnline: Record<string, Set<WebSocket>> = {};
+
+function ensureChatRoom(roomId: string): ChatRoomMessage[] {
+  if (!chatRoomMessages[roomId]) {
+    chatRoomMessages[roomId] = [];
+  }
+  return chatRoomMessages[roomId];
+}
+
+function getChatRoomOnlineCount(roomId: string): number {
+  return chatRoomOnline[roomId]?.size ?? 0;
+}
+
+function joinChatRoom(ws: WebSocket, roomId: string) {
+  if (!chatRoomOnline[roomId]) {
+    chatRoomOnline[roomId] = new Set();
+  }
+  chatRoomOnline[roomId].add(ws);
+  (ws as any).__chatRooms = (ws as any).__chatRooms || new Set<string>();
+  (ws as any).__chatRooms.add(roomId);
+}
+
+function leaveChatRoom(ws: WebSocket, roomId: string) {
+  chatRoomOnline[roomId]?.delete(ws);
+  (ws as any).__chatRooms?.delete(roomId);
+}
+
+function leaveAllChatRooms(ws: WebSocket) {
+  const rooms: Set<string> | undefined = (ws as any).__chatRooms;
+  if (!rooms) return;
+  rooms.forEach((roomId) => leaveChatRoom(ws, roomId));
+}
+
+function broadcastChatRoom(roomId: string, payload: Record<string, unknown>) {
+  const members = chatRoomOnline[roomId];
+  if (!members) return;
+  const message = JSON.stringify(payload);
+  members.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
 /**
  * WebSocket Server for Institutional Data Streams.
  * Handles real-time pushes for prices, news, and system alerts.
@@ -101,6 +178,60 @@ export function setupWebSockets(server: Server) {
             post: newPost,
             timestamp: Date.now()
           });
+        } else if (parsed.type === 'CHAT_ROOM_JOIN') {
+          const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
+          joinChatRoom(ws, roomId);
+          const history = ensureChatRoom(roomId);
+          ws.send(JSON.stringify({
+            type: 'CHAT_ROOM_HISTORY',
+            roomId,
+            messages: history.slice(-80),
+            onlineCount: getChatRoomOnlineCount(roomId),
+            timestamp: Date.now()
+          }));
+          broadcastChatRoom(roomId, {
+            type: 'CHAT_ROOM_PRESENCE',
+            roomId,
+            onlineCount: getChatRoomOnlineCount(roomId),
+            timestamp: Date.now()
+          });
+        } else if (parsed.type === 'CHAT_ROOM_LEAVE') {
+          const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
+          leaveChatRoom(ws, roomId);
+          broadcastChatRoom(roomId, {
+            type: 'CHAT_ROOM_PRESENCE',
+            roomId,
+            onlineCount: getChatRoomOnlineCount(roomId),
+            timestamp: Date.now()
+          });
+        } else if (parsed.type === 'CHAT_ROOM_MESSAGE') {
+          const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
+          const text = String(parsed.text || '').trim().slice(0, 2000);
+          const author = String(parsed.author || 'Guest').trim().slice(0, 64);
+          if (!text) return;
+
+          joinChatRoom(ws, roomId);
+          const newMessage: ChatRoomMessage = {
+            id: 'chat_' + Math.random().toString(36).slice(2, 11),
+            roomId,
+            author,
+            avatar: parsed.avatar ? String(parsed.avatar).slice(0, 8) : undefined,
+            text,
+            timestamp: Date.now()
+          };
+
+          const room = ensureChatRoom(roomId);
+          room.push(newMessage);
+          if (room.length > 120) {
+            room.splice(0, room.length - 120);
+          }
+
+          broadcastChatRoom(roomId, {
+            type: 'CHAT_ROOM_MESSAGE_BROADCAST',
+            message: newMessage,
+            onlineCount: getChatRoomOnlineCount(roomId),
+            timestamp: Date.now()
+          });
         } else {
           // Echo back generic ACK
           ws.send(JSON.stringify({
@@ -117,6 +248,7 @@ export function setupWebSockets(server: Server) {
     ws.on('close', () => {
       clearInterval(newsInterval);
       clearInterval(heartbeatInterval);
+      leaveAllChatRooms(ws);
     });
 
     ws.on('error', (error) => {

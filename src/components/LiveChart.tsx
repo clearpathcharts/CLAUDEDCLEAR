@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries } from 'lightweight-charts';
 import { TradingHaltController } from '../truth/TradingHaltController';
+import { ChartZoomControls } from './charts/ChartZoomControls';
 
 interface LiveChartProps {
   symbol?: string;
@@ -161,6 +162,7 @@ export default function LiveChart({
     <div className="w-full h-full min-h-[400px] relative">
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         <div ref={chartContainerRef} className="w-full h-full" />
+        <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-20" />
       </div>
     </div>
   );

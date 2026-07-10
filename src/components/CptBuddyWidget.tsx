@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Send } from "lucide-react";
-import { getAllFormingBriefs, subscribeFormingBrief, formatAllFormingBriefsForChat } from "../patterns";
-import type { FormingStructureBrief } from "../patterns";
+import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc } from "../firebase";
 
@@ -46,10 +46,8 @@ export const CptBuddyWidget: React.FC = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
-  const [formingBriefs, setFormingBriefs] = useState<FormingStructureBrief[]>(getAllFormingBriefs());
+  const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => subscribeFormingBrief(() => setFormingBriefs(getAllFormingBriefs())), []);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -197,7 +195,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
-          chartContext: formatAllFormingBriefsForChat(formingBriefs),
+          chartContext: mentorContext,
           conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -238,7 +236,11 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
-  return (
+  // Portal to <body>: full-screen overlays elsewhere in the app (e.g. chart
+  // blackout mode) also portal to <body>, and the buddy must stack above them
+  // (zIndex 200 vs the overlays' z-150) instead of being trapped inside the
+  // app root's stacking context.
+  return createPortal(
     <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200 }}>
       {/* Floating avatar button */}
       {!isOpen && (
@@ -357,7 +359,7 @@ export const CptBuddyWidget: React.FC = () => {
               </div>
             )}
 
-            {memoryLoaded && setupStep === "done" && formingBriefs.some((b) => b.possibilities.length > 0) && (
+            {memoryLoaded && setupStep === "done" && patternScans.some((s) => s.scan.patterns.length > 0) && (
               <div
                 style={{
                   marginBottom: 10,
@@ -371,21 +373,16 @@ export const CptBuddyWidget: React.FC = () => {
                 }}
               >
                 <div style={{ color: "#FF1493", fontWeight: 800, marginBottom: 4, fontSize: 9, letterSpacing: 1 }}>
-                  FORMING WATCH · {formingBriefs.length} CHART{formingBriefs.length === 1 ? "" : "S"}
+                  LIVE CHART VISION · {patternScans.filter((s) => s.scan.patterns.length > 0).length} CHART{patternScans.filter((s) => s.scan.patterns.length > 0).length === 1 ? "" : "S"}
                 </div>
-                {formingBriefs.filter((b) => b.possibilities.length > 0).slice(0, 4).map((brief) => (
-                  <div key={`${brief.symbol}-${brief.timeframe}`} style={{ marginBottom: 6 }}>
+                {patternScans.filter((s) => s.scan.patterns.length > 0).slice(0, 4).map((entry) => (
+                  <div key={`${entry.symbol}-${entry.timeframe}`} style={{ marginBottom: 6 }}>
                     <div style={{ color: "#BF00FF", fontWeight: 700, fontSize: 9, marginBottom: 2 }}>
-                      {brief.symbol} · {brief.timeframe}
+                      {entry.symbol} · {entry.timeframe}
                     </div>
-                    {brief.clock.active && (
-                      <div style={{ marginBottom: 2, color: "#FF00CC" }}>
-                        {brief.clock.type === "16-bar-retrace" ? "16" : "12"}-bar clock: {brief.clock.bar}/{brief.clock.total}
-                      </div>
-                    )}
-                    {brief.possibilities.slice(0, 2).map((p) => (
-                      <div key={p.id} style={{ color: "#fff" }}>
-                        {p.status.toUpperCase()} {p.label} (~{Math.round(p.probability * 100)}%)
+                    {entry.scan.patterns.slice(0, 2).map((p) => (
+                      <div key={`${p.id}-${p.endIndex}`} style={{ color: "#fff" }}>
+                        {p.label} ({Math.round(p.confidence * 100)}% measured)
                       </div>
                     ))}
                   </div>
@@ -466,6 +463,7 @@ export const CptBuddyWidget: React.FC = () => {
           )}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

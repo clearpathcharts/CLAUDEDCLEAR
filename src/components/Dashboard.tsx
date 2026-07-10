@@ -24,7 +24,6 @@ import {
   Brain,
   Activity,
   Compass,
-  BookOpen,
   Building2,
   BarChart3,
   Shield,
@@ -47,7 +46,6 @@ import {
   Calendar,
   Map,
   Landmark,
-  SlidersHorizontal,
   ShieldAlert,
   Crown
 } from 'lucide-react';
@@ -75,7 +73,6 @@ import { ProfileHub } from './ProfileHub';
 import AffiliateDashboard from './profile/AffiliateDashboard';
 import YoursPage from './yours/YoursPage';
 import MembershipTab from './MembershipTab';
-import PatternOverlay from './PatternOverlay';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
@@ -84,7 +81,6 @@ import { ClearNav } from './nav/ClearNav';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 
-import TradingJournal from './TradingJournal';
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 
@@ -106,7 +102,6 @@ const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
 const GeographicMap = lazy(() => import('./GeographicMap'));
-const AdvancedScreener = lazy(() => import('./AdvancedScreener'));
 const CapitalFlowMap = lazy(() => import('./CapitalFlowMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
@@ -135,8 +130,18 @@ const CustomNavIcon = ({ size = 16, className = '', style = {} }: { size?: numbe
 
 import NewsPanel from './NewsPanel';
 import DiscoveryFeed from './DiscoveryFeed';
+import ClearPathChatroom from './chat/ClearPathChatroom';
 import FoundersPortal from './FoundersPortal';
 import KillZones from './KillZones';
+
+const RETIRED_TABS: Record<string, string> = {
+  Screener: 'StrictlyCharts',
+  Journal: 'StrictlyCharts',
+};
+
+function normalizeTabId(tabId: string): string {
+  return RETIRED_TABS[tabId] ?? tabId;
+}
 
 const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange }: { chartTheme: any, setChartTheme: (t: any) => void, profile: any, onProfileChange: (p: any) => void }) => {
   const [userTier, setUserTier] = useState<string>(() => {
@@ -353,13 +358,20 @@ const TabContent = ({
         />
       );
       case 'CapitalFlow': return <CapitalFlowMap />;
-      case 'Screener': return <AdvancedScreener />;
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
-      case 'StrictlyCharts': return <LightweightMarketUI profile={profile} onBack={onBack} chartTheme={chartTheme} selectedMarketSymbol={selectedLightweightSymbol} onSelectMarketSymbol={setSelectedLightweightSymbol} />;
+      case 'StrictlyCharts': return (
+        <LightweightMarketUI
+          profile={profile}
+          onBack={onBack}
+          chartTheme={chartTheme}
+          selectedMarketSymbol={selectedLightweightSymbol}
+          onSelectMarketSymbol={setSelectedLightweightSymbol}
+          onProfileChange={onProfileChange}
+        />
+      );
       case 'ThemeTerminal': return <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />;
       case 'Macro': return <MacroDashboard />;
       case 'Fundamentals': return <FundamentalsPanel />;
-      case 'Journal': return <TradingJournal />;
       case 'News': return <NewsPanel />;
       case 'Founders': return <FoundersPortal />;
       case 'Intelligence': return <MarketScanner />;
@@ -525,7 +537,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     if (typeof localStorage !== 'undefined') {
       try {
         const savedTab = localStorage.getItem('clearpath_active_tab');
-        if (savedTab) return savedTab;
+        if (savedTab) return normalizeTabId(savedTab);
       } catch (e) {
         console.error('Failed to load activeTab from localStorage:', e);
       }
@@ -534,10 +546,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       try {
         const params = new URLSearchParams(window.location.search);
         const urlTab = params.get('tab');
-        if (urlTab) return urlTab;
+        if (urlTab) return normalizeTabId(urlTab);
         
         const hash = window.location.hash.replace('#', '');
-        if (hash) return hash;
+        if (hash) return normalizeTabId(hash);
       } catch (e) {
         console.error('Failed to parse activeTab initial URL:', e);
       }
@@ -682,7 +694,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'markets': 'StrictlyCharts',
           'exchange command center': 'StrictlyCharts',
           'standard': 'Standard',
-          'journal': 'Journal',
           'news': 'News',
           'photos': 'Photos',
           'settings': 'Settings',
@@ -691,7 +702,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'strictlycharts': 'StrictlyCharts',
           'charts': 'StrictlyCharts'
         };
-        const mappedTarget = targetMap[target.toLowerCase()] || target;
+        const mappedTarget = normalizeTabId(targetMap[target.toLowerCase()] || target);
         setActiveTab(mappedTarget);
       }
     };
@@ -890,8 +901,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
-      { id: 'Screener', icon: SlidersHorizontal, label: 'SCREENER' },
-      { id: 'Journal', icon: BookOpen, label: 'TRADING JOURNAL', verified: true },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
@@ -939,10 +948,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const seoData = getSeoData();
 
   const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
+    const nextTab = normalizeTabId(tabId);
+    setActiveTab(nextTab);
     if (typeof localStorage !== 'undefined') {
       try {
-        localStorage.setItem('clearpath_active_tab', tabId);
+        localStorage.setItem('clearpath_active_tab', nextTab);
       } catch (e) {
         console.error('Failed to save activeTab to localStorage:', e);
       }
@@ -950,9 +960,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
-        params.set('tab', tabId);
-        const newUrl = `${window.location.pathname}?${params.toString()}#${tabId}`;
-        window.history.pushState({ tabId }, '', newUrl);
+        params.set('tab', nextTab);
+        const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
+        window.history.pushState({ tabId: nextTab }, '', newUrl);
       } catch (e) {
         console.error('Failed to push tab status state:', e);
       }
@@ -992,16 +1002,16 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       }
 
       if (event.state && event.state.tabId) {
-        const nextTabId = event.state.tabId;
+        const nextTabId = normalizeTabId(event.state.tabId);
         setActiveTab(nextTabId);
       } else {
         const params = new URLSearchParams(window.location.search);
         const urlTab = params.get('tab');
         if (urlTab) {
-          setActiveTab(urlTab);
+          setActiveTab(normalizeTabId(urlTab));
         } else {
           const hash = window.location.hash.replace('#', '');
-          if (hash) setActiveTab(hash);
+          if (hash) setActiveTab(normalizeTabId(hash));
         }
       }
     };
@@ -1029,7 +1039,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
       if (urlTab) {
-        setActiveTab(urlTab);
+        setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
         const validHash = menuItems.find(m => m.id === hash) || 
@@ -1040,9 +1050,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Market' || 
           hash === 'StrictlyCharts' || 
           hash === 'Fundamentals' || 
-          hash === 'Screener' || 
           hash === 'Portfolio' || 
-          hash === 'Journal' || 
           hash === 'News' || 
           hash === 'Biography' || 
           hash === 'CapitalFlow' || 
@@ -1056,7 +1064,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';
         if (validHash) {
-          setActiveTab(hash);
+          setActiveTab(normalizeTabId(hash));
         }
       }
     }
@@ -1355,8 +1363,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {/* PERSISTENT Clear NAV */}
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} />
 
-        {/* Pattern scanner floats on any chart tab (StrictlyCharts, ThemeTerminal, etc.) */}
-        <PatternOverlay chartActive={activeTab === 'StrictlyCharts' || activeTab === 'ThemeTerminal'} />
         
         {/* TOP MARKET TICKER */}
         {showTicker && (
@@ -1608,7 +1614,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {isEditingIntro && null}
       </AnimatePresence>
 
-      {/* Slide-out Mock Chat Panel */}
+      {/* Live contact chat panel */}
       <AnimatePresence>
         {activeChat && (
           <motion.div 
@@ -1616,54 +1622,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-[360px] bg-black/95 backdrop-blur-xl border-l z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
-            style={{ borderColor: `${profile.borderA}33` }}
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
           >
-            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: `${profile.borderA}22`, background: `${profile.borderA}11` }}>
-              <div className="flex items-center space-x-3">
-                <div className="surfboard-profile-outline border-2" style={{ width: '30px', height: '50px', borderColor: profile.borderA }}>
-                  {activeChat.img ? <img src={activeChat.img} referrerPolicy="no-referrer" className="surfboard-img" /> : <div className="surfboard-img bg-[#111]" />}
-                </div>
-                <div>
-                  <div className="text-sm font-black uppercase tracking-widest" style={{ color: profile.borderA }}>{activeChat.name}</div>
-                  <div className="text-[10px] uppercase font-mono opacity-50 flex items-center gap-1 text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF1493] to-[#4D00FF]"></div> Encrypted Protocol
-                  </div>
-                </div>
-              </div>
-              <button aria-label="Close chat" onClick={() => setActiveChat(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <X size={20} style={{ color: profile.borderA }} />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-              <div className="text-center text-[10px] font-mono opacity-30 my-4 uppercase tracking-widest">
-                End-to-End Encrypted Session Started
-              </div>
-              <div className="flex flex-col space-y-4">
-                <div className="bg-white/5 p-3 rounded-tr-xl rounded-b-xl max-w-[85%] self-start border border-white/5">
-                  <p className="text-sm">Signal is clear. Awaiting protocol override on the ETH levels.</p>
-                  <span className="text-[10px] opacity-40 mt-1 block font-mono">08:42 AM</span>
-                </div>
-                <div className="p-3 rounded-tl-xl rounded-b-xl max-w-[85%] self-end shadow-[0_0_15px_rgba(99,102,241,0.2)]" style={{ background: `${profile.borderA}22`, border: `1px solid ${profile.borderA}44` }}>
-                  <p className="text-sm text-white">Monitoring the 4H charts. Will send sequence shortly. Stand by.</p>
-                  <span className="text-[10px] opacity-40 mt-1 block font-mono">08:45 AM</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t bg-black/50" style={{ borderColor: `${profile.borderA}22` }}>
-              <div className="relative flex items-center">
-                <input 
-                  type="text" 
-                  placeholder="Transmit securely..." 
-                  className="w-full bg-white/5 border border-white/10 rounded-full pl-4 pr-12 py-2 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-                />
-                <button className="absolute right-2 p-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-full text-white transition-colors shadow-[0_0_10px_#6366f1]">
-                  <MessageSquare size={14} />
-                </button>
-              </div>
-            </div>
+            <ClearPathChatroom
+              variant="panel"
+              initialRoomId="lobby"
+              title={activeChat.name}
+              subtitle="Direct trader channel"
+              showRoomSidebar={false}
+              accentColor={profile.borderA}
+              onClose={() => setActiveChat(null)}
+              className="rounded-none border-l h-full"
+            />
           </motion.div>
         )}
       </AnimatePresence>
