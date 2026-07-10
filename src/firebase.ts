@@ -1,33 +1,40 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, FirebaseApp } from 'firebase/app';
 import * as fbAuth from 'firebase/auth';
 import * as fbFirestore from 'firebase/firestore';
+import * as fbStorage from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
 let _initialized = false;
+let _app: FirebaseApp | null = null;
 let _auth: any = null;
 let _db: any = null;
+let _storage: fbStorage.FirebaseStorage | null = null;
 
 function init() {
-  if (_initialized) return { auth: _auth, db: _db };
+  if (_initialized) return { auth: _auth, db: _db, storage: _storage, app: _app };
   
   try {
     const app = initializeApp(firebaseConfig);
+    _app = app;
     _auth = fbAuth.getAuth(app);
     _db = fbFirestore.getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+    _storage = fbStorage.getStorage(app);
     console.info("Firebase connected.");
   } catch (e) {
     console.error("Firebase init failed, using mocks:", e);
     _auth = { currentUser: null }; // Basic mock
     _db = {}; // Basic mock
+    _storage = null;
   }
   
   _initialized = true;
-  return { auth: _auth, db: _db };
+  return { auth: _auth, db: _db, storage: _storage, app: _app };
 }
 
 // Export functions that delegate to _auth/_db
 export const getAuth = () => init().auth;
 export const getDb = () => init().db;
+export const getFirebaseStorage = () => init().storage;
 
 // Proxy object for 'auth' to maintain compatibility
 export const auth = {

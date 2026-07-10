@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers, type IChartApi } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import {
   themeProfiles,
@@ -12,7 +12,13 @@ import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapte
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
-import { Crosshair } from "lucide-react";
+import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
+import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
+import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
+import { ChartPatternHud } from "./ChartPatternHud";
+import { ChartFormingWatch } from "./ChartFormingWatch";
+import { ChartZoomControls } from "./ChartZoomControls";
+import { Crosshair, Scan, Radio } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 
 type Candle = {
@@ -39,6 +45,7 @@ export function LightweightCandles({
   symbol = "UNKNOWN",
   profileId,
   height = 520,
+  isExpanded = false,
   timeframe = "1h",
   theme: customTheme,
   userTier = "BRONZE",
@@ -52,11 +59,14 @@ export function LightweightCandles({
     laggingSpan2Periods: 52,
     displacement: 26
   },
+  embedMode = false,
+  useDedicatedPatternPanel = false,
 }: {
   data?: Candle[];
   symbol?: string;
   profileId: string;
   height?: number;
+  isExpanded?: boolean;
   timeframe?: string;
   theme?: any;
   userTier?: string;
@@ -71,11 +81,36 @@ export function LightweightCandles({
     displacement: number;
   };
   blackoutMode?: boolean;
+  /** Compact embed: hide HUD chrome for bento mini-charts. */
+  embedMode?: boolean;
+  /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
+  useDedicatedPatternPanel?: boolean;
 }) {
+  const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
+  const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
+  const [showPatternHud, setShowPatternHud] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [showFormingWatch, setShowFormingWatch] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_forming_watch_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
   const visible = useVisibilityPause();
+  const sym = symbol.toUpperCase();
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -156,9 +191,18 @@ export function LightweightCandles({
       // scroll the page. That's what was freezing the page at the first chart on
       // mobile. horzTouchDrag stays on so users can still drag the chart
       // left/right through time; only vertical drag is released back to the page.
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true },
+      // When expanded (fullscreen modal), re-enable vertical drag so the chart
+      // can be panned freely — body scroll is locked while the modal is open.
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: isExpanded,
+      },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
+
+    chartRef.current = chart;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -212,14 +256,13 @@ export function LightweightCandles({
     const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
     const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
 
-    const sym = symbol.toUpperCase();
-
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
     let interval: any;
 
     async function load() {
       try {
+        if (!active) return;
         // Clear any error left over from a previous load (e.g. a transient
         // rate-limit) so a stale overlay never covers freshly loaded candles.
         setError(null);
@@ -231,21 +274,21 @@ export function LightweightCandles({
           displayData = data;
         } else {
           let fetched: Candle[] | null = null;
-          let fetchFailureDetail: string | null = null;
+          let lastFetchError: string | null = null;
+
           try {
-            // Fetch real candles via the secure server proxy.
             fetched = await fetchTieredHistoricalData(sym, timeframe, userTier);
           } catch (err: any) {
-            // ChartFeedAdapter forwards through MarketEngine -> DataRouter, all of
-            // which return real data or empty arrays (never simulated candles).
-            fetchFailureDetail = err?.message || null;
-            console.warn("Primary fetch failed, trying adapter for", sym, err);
+            lastFetchError = err?.message || String(err);
+            console.warn("Primary fetch failed for", sym, err);
+          }
+
+          if ((!fetched || fetched.length === 0) && active) {
             try {
-              if (active) {
-                fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
-              }
-            } catch (adapterErr) {
+              fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
+            } catch (adapterErr: any) {
               console.error(adapterErr);
+              lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
             }
           }
 
@@ -254,12 +297,10 @@ export function LightweightCandles({
           if (fetched && fetched.length > 0) {
             displayData = fetched;
           } else {
-            // Surface the honest upstream failure (rate limit, missing API key,
-            // upstream 4xx/5xx) instead of a generic "no data" message, so the
-            // real cause is visible in the UI and not only in server logs.
             setError(
-              fetchFailureDetail ||
-                "No historical data available for this timeframe."
+              lastFetchError
+                ? `No historical data available for this timeframe. (${lastFetchError})`
+                : "No historical data available for this timeframe."
             );
             return;
           }
@@ -270,7 +311,53 @@ export function LightweightCandles({
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
 
-        series.setData(tierOptimizedData as CandlestickData<Time>[]);
+        let chartCandles = tierOptimizedData as CandlestickData<Time>[];
+        if (getActiveRirProgram()) {
+          const rirExec = executeActiveRirOnCandles(tierOptimizedData);
+          if (rirExec) {
+            chartCandles = applyRirColorsToCandles(tierOptimizedData, rirExec) as CandlestickData<Time>[];
+          }
+        }
+
+        series.setData(chartCandles);
+
+        scheduleChartVisionImmediate(
+          { candles: tierOptimizedData, symbol: sym, timeframe },
+          (output) => {
+            if (!active) return;
+            setPatternScan(output.scan);
+            setFormingBrief(output.forming);
+
+            try {
+              const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
+              for (const overlay of patternLines) {
+                const line = chart.addSeries(LineSeries, {
+                  color: overlay.color,
+                  lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
+                  lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+                  title: '',
+                  priceLineVisible: false,
+                  lastValueVisible: false,
+                  crosshairMarkerVisible: false,
+                });
+                line.setData(overlay.points);
+              }
+
+              const candleMarkers = [
+                ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
+                ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
+              ];
+              if (candleMarkers.length > 0) {
+                createSeriesMarkers(series, candleMarkers as any);
+              }
+            } catch (overlayErr) {
+              console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
+            }
+          },
+        );
+
+        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
         const COLOR_MAP: Record<string, string> = {
@@ -530,9 +617,6 @@ export function LightweightCandles({
           width,
           height: rectHeight > 0 ? rectHeight : initialHeight
         });
-        setTimeout(() => {
-          if (active) chart.timeScale().fitContent();
-        }, 10);
       }
     });
 
@@ -540,6 +624,8 @@ export function LightweightCandles({
 
     return () => {
       active = false;
+      chartRef.current = null;
+      cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }
@@ -549,14 +635,15 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, height, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
     <div
       ref={containerRef}
       style={{
         width: "100%",
-        height: `${height}px`,
+        height: isExpanded ? "100%" : `${height}px`,
+        minHeight: isExpanded ? 320 : undefined,
         borderRadius: 20,
         overflow: "hidden",
         position: "relative",
@@ -573,15 +660,80 @@ export function LightweightCandles({
           {error}
         </div>
       )}
+      <ChartFormingWatch
+        symbol={sym}
+        brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
+        onClose={() => {
+          setShowFormingWatch(false);
+          try {
+            localStorage.setItem("cp_chart_forming_watch_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!hidePatternChrome && !showFormingWatch && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowFormingWatch(true);
+            try {
+              localStorage.setItem("cp_chart_forming_watch_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open forming watch"
+          className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+        >
+          <Radio size={10} className="animate-pulse" />
+          Forming
+        </button>
+      )}
+      <ChartPatternHud
+        symbol={sym}
+        scan={!hidePatternChrome && showPatternHud ? patternScan : null}
+        onClose={() => {
+          setShowPatternHud(false);
+          try {
+            localStorage.setItem("cp_chart_pattern_hud_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!hidePatternChrome && !showPatternHud && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowPatternHud(true);
+            try {
+              localStorage.setItem("cp_chart_pattern_hud_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open pattern scanner"
+          className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+        >
+          <Scan size={10} />
+          Patterns
+        </button>
+      )}
+      {!embedMode && <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />}
+      {!embedMode && (
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-        className="absolute top-3 right-3 z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95"
+        className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+          !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+        }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}
       >
         <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
         <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
       </button>
+      )}
     </div>
   );
 }

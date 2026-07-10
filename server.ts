@@ -35,6 +35,12 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { resolveTwelveDataInterval } from './src/services/marketData';
+import {
+  fetchEpisodesFromFeed,
+  podcastIndexConfigured,
+  searchPodcastsByTerm,
+} from './src/server/podcastService';
 
 const parser = new RSSParser();
 
@@ -744,13 +750,21 @@ Frame your explanation with advanced professional rigor, making it scannable, st
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
   app.post('/api/mentor/chat', async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts } = req.body;
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
+      const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
+      const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
+      if (localChart && chartish) {
+        return res.json({
+          answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
+          newFacts: [],
+        });
+      }
       return res.json({
         answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
       });
@@ -831,8 +845,12 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally in conversation, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
       : '';
 
+    const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
+      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+      : '';
+
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock },
+      { role: 'system', content: systemPrompt + memoryBlock + chartBlock },
       ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
       { role: 'user', content: question }
     ];
@@ -996,7 +1014,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    const resolvedInterval = typeof interval === 'string' ? interval : '5min';
+    const resolvedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '5min'
+    );
     if (!apiKey) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
@@ -1037,19 +1057,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
 
-    let selectedInterval = '1min';
-    const rawInterval = typeof interval === 'string' ? interval : '1m';
-    if (rawInterval === '1m' || rawInterval === '1min') selectedInterval = '1min';
-    else if (rawInterval === '5m' || rawInterval === '5min') selectedInterval = '5min';
-    else if (rawInterval === '15m' || rawInterval === '15min') selectedInterval = '15min';
-    else if (rawInterval === '30m' || rawInterval === '30min') selectedInterval = '30min';
-    else if (rawInterval === '45m' || rawInterval === '45min') selectedInterval = '45min';
-    else if (rawInterval === '1h') selectedInterval = '1h';
-    else if (rawInterval === '4H' || rawInterval === '4h') selectedInterval = '4h';
-    else if (rawInterval === '1D' || rawInterval === '1d' || rawInterval === 'day' || rawInterval === '1day') selectedInterval = '1day';
-    else if (rawInterval === 'week' || rawInterval === '1week') selectedInterval = '1week';
-    else if (rawInterval === 'month' || rawInterval === '1month') selectedInterval = '1month';
-    else selectedInterval = rawInterval;
+    const selectedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '1h'
+    );
 
     const apiKey = getCleanTwelveDataApiKey();
     if (!apiKey) {
@@ -1316,6 +1326,62 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       if (timeoutId) clearTimeout(timeoutId);
       console.error('[RSS Proxy Error]', error);
       res.status(502).json({ error: 'Institutional RSS node timed out' });
+    }
+  });
+
+  // Podcast Index + RSS episode bridge (keys stay server-side)
+  app.get('/api/podcast/status', (_req, res) => {
+    const podcastIndex = podcastIndexConfigured();
+    res.json({
+      podcastIndex,
+      searchAvailable: true,
+      searchSource: podcastIndex ? 'podcastindex' : 'itunes',
+    });
+  });
+
+  app.get('/api/podcast/episodes', async (req, res) => {
+    const { feedUrl, limit } = req.query;
+    if (!feedUrl || typeof feedUrl !== 'string') {
+      return res.status(400).json({ error: 'feedUrl required' });
+    }
+
+    try {
+      await assertSafePublicUrl(feedUrl);
+    } catch (guardErr: any) {
+      console.warn('[Podcast Episodes] Rejected unsafe URL:', feedUrl, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+
+    const parsedLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : 12;
+    const safeLimit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 30) : 12;
+
+    try {
+      const episodes = await fetchEpisodesFromFeed(feedUrl, safeLimit);
+      res.json({ episodes });
+    } catch (error: any) {
+      console.error('[Podcast Episodes Error]', error);
+      res.status(502).json({ error: 'Failed to load podcast feed' });
+    }
+  });
+
+  app.get('/api/podcast/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || !q.trim()) {
+      return res.status(400).json({ error: 'q required' });
+    }
+
+    try {
+      const { results, source } = await searchPodcastsByTerm(q.trim());
+      res.json({
+        results,
+        source,
+        note: source === 'itunes'
+          ? 'Searching Apple podcast directory (no API key). Optional: add Podcast Index keys with a domain email for the open directory.'
+          : undefined,
+      });
+    } catch (error: any) {
+      console.error('[Podcast Search Error]', error);
+      res.status(502).json({ error: 'Podcast search failed' });
     }
   });
 

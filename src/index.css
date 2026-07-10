@@ -1,4 +1,15 @@
 @import "tailwindcss";
+
+:root {
+  --lava-supernova: #ff0000;
+  --lava-magma: #ff4500;
+  --lava-molten: #ff8c00;
+  --lava-track: rgba(0, 0, 0, 0.55);
+  --lava-thumb-gradient: linear-gradient(180deg, var(--lava-supernova) 0%, var(--lava-magma) 52%, var(--lava-molten) 100%);
+  --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
+  --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
+}
+
 @import "./styles/codepen.css";
 
 
@@ -73,21 +84,77 @@ canvas {
   }
 }
 
-/* Custom scrollbar -- visible on desktop, invisible but functional on mobile */
-.custom-scrollbar {
+/* Lava-Hot Industrial scrollbars — global (page + every scroll container) */
+html,
+body,
+.custom-scrollbar,
+.custom-scrollbar-lava,
+.custom-scrollbar-ice,
+*:not(.no-scrollbar):not(.scrollbar-none) {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: var(--lava-magma) var(--lava-track);
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.custom-scrollbar-lava::-webkit-scrollbar,
+.custom-scrollbar-ice::-webkit-scrollbar,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar-lava::-webkit-scrollbar-track,
+.custom-scrollbar-ice::-webkit-scrollbar-track,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track {
+  background: var(--lava-track);
+  border-radius: 4px;
+  box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.12);
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.custom-scrollbar-lava::-webkit-scrollbar-thumb,
+.custom-scrollbar-ice::-webkit-scrollbar-thumb,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb {
+  background: var(--lava-magma);
+  background-image: var(--lava-thumb-gradient);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar-lava::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);
+  box-shadow: inset 0 0 9px rgba(255, 0, 0, 1), inset 0 0 16px rgba(255, 69, 0, 0.65), 0 0 12px rgba(255, 0, 0, 0.75), 0 0 20px rgba(255, 69, 0, 0.5);
+}
+
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+/* Intentionally hidden scrollbars (nav chips, tickers, etc.) */
+.no-scrollbar,
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Mobile nav -- make sure bottom nav doesn't cover content */
@@ -118,4 +185,87 @@ button:active,
 /* Input fields -- readable font size prevents iOS auto-zoom */
 input, textarea, select {
   font-size: 16px !important;
+}
+
+/* Y.W.C. — lava / neon hero title */
+@keyframes ywc-lava-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 18px rgba(255, 0, 128, 0.85)) drop-shadow(0 0 32px rgba(255, 69, 0, 0.55));
+  }
+  33% {
+    background-position: 50% 50%;
+    filter: drop-shadow(0 0 22px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 36px rgba(191, 0, 255, 0.5));
+  }
+  66% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 20px rgba(255, 20, 147, 0.9)) drop-shadow(0 0 40px rgba(255, 140, 0, 0.6));
+  }
+}
+
+.ywc-title-lava {
+  background: linear-gradient(
+    90deg,
+    #ff0080 0%,
+    #ff1493 15%,
+    #ff4500 35%,
+    #ff6a00 50%,
+    #ff0080 65%,
+    #bf00ff 82%,
+    #00e5ff 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ywc-lava-shift 4s ease-in-out infinite;
+}
+
+.ywc-lava-border {
+  background-image: linear-gradient(#0a0008, #0a0008), linear-gradient(135deg, #ff0080, #ff4500, #ff1493, #bf00ff, #00e5ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* Lava panel — hero + every Y.W.C. section module */
+.ywc-lava-panel {
+  border: 2px solid transparent;
+  background-color: rgba(10, 0, 8, 0.92);
+  background-image: linear-gradient(rgba(10, 0, 8, 0.92), rgba(10, 0, 8, 0.92)),
+    linear-gradient(135deg, #ff0080, #ff4500, #ff1493, #bf00ff, #00e5ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 40px rgba(255, 20, 147, 0.32), 0 0 64px rgba(255, 69, 0, 0.18);
+}
+
+.ywc-lava-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff0000, #ff4500, #ff8c00, #ff1493, #bf00ff, #00e5ff);
+  z-index: 5;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.ywc-section-title {
+  background: linear-gradient(90deg, #ff4500 0%, #ff0080 35%, #ff1493 55%, #bf00ff 78%, #00e5ff 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.6)) drop-shadow(0 0 18px rgba(255, 0, 128, 0.45));
+  animation: ywc-lava-shift 4s ease-in-out infinite;
+}
+
+@keyframes ywc-drift {
+  0%, 100% { transform: translateX(0) translateY(0); opacity: 0.25; }
+  50% { transform: translateX(-40px) translateY(20px); opacity: 0.4; }
+}
+
+.ywc-lava-drift {
+  animation: ywc-drift 8s ease-in-out infinite;
 }

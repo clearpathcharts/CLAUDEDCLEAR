@@ -97,7 +97,7 @@ async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Respons
 }
 
 // Global generic tracker for checking status codes, JSON flags, and headers
-async function fetchAndTrack(url: string, type: string, symbol: string): Promise<any> {
+async function fetchAndTrack(url: string, type: string, symbol: string, timeoutMs = 5000): Promise<any> {
   twelvedataHealth.totalRequests++;
   twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
   twelvedataHealth.lastChecked = new Date().toISOString();
@@ -112,7 +112,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string): Promise
 
   const startTime = Date.now();
   try {
-    const response = await fetchWithTimeout(url, 5000);
+    const response = await fetchWithTimeout(url, timeoutMs);
     twelvedataHealth.latencyMs = Date.now() - startTime;
 
     console.log(`\n==================================================`);
@@ -469,7 +469,7 @@ export async function getMarketCandles(symbol: string, interval: string, request
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
       const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}&apikey=${activeKey}`;
-      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol);
+      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000);
 
       if (!batchData || batchData.status === 'error') {
         throw new Error(batchData?.message || 'Twelve Data batch query returned error');
@@ -646,5 +646,6 @@ async function fetchCandlesFromAPI(symbol: string, interval: string, limit: numb
   const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}&apikey=${cleanKey}`
   const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
   console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
-  return fetchAndTrack(url, 'candles', symbol);
+  // Historical pulls can be large (up to 5k candles); allow more time than quote/price calls.
+  return fetchAndTrack(url, 'candles', symbol, 20000);
 }

@@ -1,105 +1,45 @@
 
 import React, { useState, useEffect } from 'react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
+import { LightweightCandles } from '../charts/LightweightCandles';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { TradingHaltController } from '../../truth/TradingHaltController';
 
 import { setClearState, getClearState } from '../../lib/trading/clearState';
 
 const ASSETS = [
-  { label: 'EUR/USD', value: 'OANDA:EURUSD' },
-  { label: 'GBP/USD', value: 'OANDA:GBPUSD' },
-  { label: 'USD/JPY', value: 'OANDA:USDJPY' },
-  { label: 'AUD/USD', value: 'OANDA:AUDUSD' },
-  { label: 'USD/CAD', value: 'OANDA:USDCAD' },
-  { label: 'NZD/USD', value: 'OANDA:NZDUSD' },
+  { label: 'EUR/USD', value: 'EURUSD' },
+  { label: 'GBP/USD', value: 'GBPUSD' },
+  { label: 'USD/JPY', value: 'USDJPY' },
+  { label: 'AUD/USD', value: 'AUDUSD' },
+  { label: 'USD/CAD', value: 'USDCAD' },
+  { label: 'NZD/USD', value: 'NZDUSD' },
 ];
 
 const timeframesMapping: Record<string, string> = {
-  '1m': '1',
-  '2m': '2',
-  '3m': '3',
-  '5m': '5',
-  '10m': '10',
-  '15m': '15',
-  '30m': '30',
-  '1H': '60',
-  '2H': '120',
-  '3H': '180',
-  '4H': '240',
-  '1D': 'D',
-  '1W': 'W',
-  '1M': 'M',
-  '3M': '3M',
-  '6M': '6M',
-  'YTD': '12M'
+  '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
+  '1H': '1h', '2H': '2h', '3H': '3h', '4H': '4h',
+  '1D': '1d', '1W': '1w', '1M': '1M', '3M': '3M', '6M': '6M', 'YTD': 'ytd',
 };
 
-const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof ASSETS[0], profile: any, activeTimeframe?: string }) => {
-  const containerId = `chart_std_${asset.value.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+function toDataSymbol(raw: string): string {
+  const upper = raw.toUpperCase().trim();
+  if (upper.includes(':')) return upper.split(':').pop()!;
+  return upper.replace('/', '');
+}
 
-  useEffect(() => {
-    const scriptId = 'tradingview-widget-script';
-    
-    // Always re-create the container so TV widget can cleanly mount
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = '';
-    }
-
-    const loadWidget = () => {
-      if ((window as any).TradingView) {
-        new (window as any).TradingView.widget({
-          "width": "100%",
-          "height": "100%",
-          "symbol": asset.value,
-          "interval": timeframesMapping[activeTimeframe] || "60",
-          "timezone": "Etc/UTC",
-          "theme": profile.bgTop === "#ffffff" ? "light" : "dark",
-          "style": "1",
-          "locale": "en",
-          "container_id": containerId,
-          "hide_top_toolbar": false,
-          "hide_legend": false,
-          "save_image": false,
-          "backgroundColor": profile.bgTop || "transparent",
-          "gridColor": profile.text === "#000000" ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 255, 255, 0.05)",
-          "overrides": {
-            "mainSeriesProperties.candleStyle.upColor": profile.upColor,
-            "mainSeriesProperties.candleStyle.downColor": profile.downColor,
-            "mainSeriesProperties.candleStyle.borderUpColor": profile.borderUpColor,
-            "mainSeriesProperties.candleStyle.borderDownColor": profile.borderDownColor,
-            "mainSeriesProperties.candleStyle.wickUpColor": profile.wickUpColor,
-            "mainSeriesProperties.candleStyle.wickDownColor": profile.wickDownColor,
-          }
-        });
-      } else {
-        setTimeout(loadWidget, 100);
-      }
-    };
-
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.async = true;
-      script.onload = loadWidget;
-      document.head.appendChild(script);
-    } else {
-      loadWidget();
-    }
-  }, [containerId, asset.value]);
+const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof ASSETS[0], profile: ThemeProfile, activeTimeframe?: string }) => {
+  const dataSymbol = toDataSymbol(asset.value);
 
   return (
-    <div className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6" id={`wrapper_std_${asset.value.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
-      {/* Chart Label Header */}
+    <div className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6" id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
       <div className="flex items-center justify-between px-6 py-3 border-b bg-black/40 backdrop-blur-md border-white/5 select-none shrink-0">
         <div className="flex items-center space-x-3">
           <span className="text-xs font-black tracking-widest text-[#00FFFF] uppercase font-mono bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20 shadow-[0_0_10px_rgba(0,255,255,0.15)]">
             {asset.label}
           </span>
           <span className="text-[10px] font-mono text-zinc-400 font-bold uppercase tracking-widest">
-            {asset.value}
+            {dataSymbol}
           </span>
         </div>
         <div className="flex items-center space-x-3 text-[9px] font-black tracking-widest uppercase text-zinc-400">
@@ -108,7 +48,12 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
         </div>
       </div>
       <div className="flex-1 w-full min-h-0 relative">
-        <div id={containerId} style={{ height: '100%', width: '100%' }}></div>
+        <LightweightCandles
+          profileId={profile.id}
+          height={440}
+          timeframe={timeframesMapping[activeTimeframe] || '1h'}
+          symbol={dataSymbol}
+        />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
         <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
@@ -134,30 +79,10 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
   }, []);
 
   const [searchSymbol, setSearchSymbol] = useState('');
-  const [mainAsset, setMainAsset] = useState({ label: 'EUR/USD', value: 'OANDA:EURUSD' });
+  const [mainAsset, setMainAsset] = useState({ label: 'EUR/USD', value: 'EURUSD' });
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
 
-  const formatSymbol = (raw: string) => {
-    let formattedSymbol = raw;
-    if (!raw.includes(':')) {
-      if (['GOLD', 'SILVER', 'USOIL', 'UKOIL', 'DXY', 'VIX'].includes(raw)) {
-        formattedSymbol = `TVC:${raw}`;
-      } else if (raw.includes('USD') || raw.includes('EUR') || raw.includes('GBP') || raw.includes('JPY') || raw.includes('AUD')) {
-        formattedSymbol = `OANDA:${raw.replace('/', '')}`;
-      } else if (['BTC', 'ETH', 'SOL', 'XRP'].some(crypto => raw.includes(crypto))) {
-        formattedSymbol = `BINANCE:${raw.replace('/', '')}USDT`;
-      } else if (['US10Y', 'US05Y', 'US02Y', 'US30Y'].includes(raw)) {
-        formattedSymbol = `TVC:${raw}`;
-      } else if (['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA', 'AMD', 'MSFT'].includes(raw)) {
-        formattedSymbol = `NASDAQ:${raw}`;
-      } else if (['ES1!', 'NQ1!', 'YM1!'].includes(raw)) {
-        formattedSymbol = `CME_MINI:${raw}`;
-      } else {
-        formattedSymbol = `TVC:${raw}`; 
-      }
-    }
-    return formattedSymbol;
-  };
+  const formatSymbol = (raw: string) => toDataSymbol(raw);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -165,7 +90,8 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
       unsubscribe = subscribeToClearState((state) => {
         if (state.selectedAsset && state.selectedAsset.toUpperCase() !== mainAsset.label.toUpperCase()) {
           const raw = state.selectedAsset.toUpperCase();
-          setMainAsset({ label: raw, value: formatSymbol(raw) });
+          const sym = formatSymbol(raw);
+          setMainAsset({ label: raw, value: sym });
         }
       });
     });
@@ -178,7 +104,8 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
     e.preventDefault();
     if (searchSymbol.trim()) {
       const raw = searchSymbol.toUpperCase().trim();
-      setMainAsset({ label: raw, value: formatSymbol(raw) });
+      const sym = formatSymbol(raw);
+      setMainAsset({ label: raw, value: sym });
       setSearchSymbol('');
       setClearState({ selectedAsset: raw });
     }
@@ -201,7 +128,6 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
       className="flex flex-col min-h-full w-full transition-all duration-1000"
       style={{ background: profile.bgTop }}
     >
-      {/* Top Navigation */}
       <div 
         className="flex items-center justify-between px-8 py-4 border-b glass"
         style={{ 
@@ -250,8 +176,6 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
         </form>
       </div>
 
-      {/* Main Content Area */}
-      {/* ONE SCROLLBAR RULE: no private scroller here; the page scrolls. */}
       <div className="flex-1 p-8" style={{ background: '#000000' }}>
         <div className="max-w-7xl mx-auto w-full space-y-8">
           <div className="flex items-center justify-between border-b border-indigo-500/20 pb-6">
@@ -299,7 +223,6 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
         </div>
       </div>
 
-      {/* Global Legal Positioning Footer */}
       <div 
         className="px-8 py-4 border-t text-sm font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff3333] via-[#ff6633] to-[#ff9933] text-center glass"
         style={{ 
@@ -313,4 +236,3 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
     </div>
   );
 };
-

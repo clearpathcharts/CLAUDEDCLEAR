@@ -25,8 +25,15 @@ export interface NormalizedCandle {
  * being passed through raw (a raw/unknown string is what made non-1H buttons
  * return "no data").
  */
-function resolveInterval(interval: string): string {
-  const v = (interval || "").trim().toLowerCase();
+export function resolveTwelveDataInterval(interval: string): string {
+  const raw = (interval || "").trim();
+
+  // Monthly UI tokens ("1M", "3M", "6M") must be handled before lowercasing,
+  // otherwise "1M" becomes "1m" and is misread as one-minute candles.
+  if (raw === "1M") return "1month";
+  if (raw === "3M" || raw === "6M") return "1month";
+
+  const v = raw.toLowerCase();
 
   switch (v) {
     case "1m":
@@ -98,7 +105,7 @@ export const fetchTieredHistoricalData = async (
   userTier: string
 ): Promise<NormalizedCandle[]> => {
   const limit = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
-  const resolvedInterval = resolveInterval(interval);
+  const resolvedInterval = resolveTwelveDataInterval(interval);
 
   const proxyUrl =
     `/api/market/history` +
