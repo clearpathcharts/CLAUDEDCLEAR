@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
+import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import { TRADING_REIMAGINED_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
@@ -85,6 +87,9 @@ export default function App() {
   // Route: /about should directly load the accessible disclosure page
   if (currentPath === '/about') {
     return <ExternalAboutPage />;
+  }
+  if (currentPath === TRADING_REIMAGINED_PATH) {
+    return <TradingReimaginedLanding />;
   }
   // If there is no authenticated session, render the gorgeous waitlist/external landing page
   if (!user) {
