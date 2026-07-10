@@ -245,6 +245,13 @@ export const GENERAL_FAQS = [
 // ==========================================
 // 1. DYNAMIC JSON-LD SCHEMA INJECTION & SSR METADATA
 // ==========================================
+function stripConflictingHeadTags(html: string): string {
+  return html
+    .replace(/<meta\s+property="og:[^"]+"[^>]*>/gi, '')
+    .replace(/<meta\s+name="twitter:[^"]+"[^>]*>/gi, '')
+    .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
+}
+
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
@@ -253,20 +260,23 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   const baseUrl = "https://clearpathtrader.com";
   const canonicalUrl = `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
 
-  // Organization Schema (Consistently represented)
+  // Organization + WebSite schema (brand trust — no personal founder attribution)
   const orgSchema = {
     "@context": "https://schema.org",
-    "@type": "FinancialProduct",
+    "@type": "Organization",
     "name": "ClearPathTrader",
     "alternateName": "Clear Path Markets Science",
     "url": baseUrl,
     "logo": `${baseUrl}/logo.png`,
-    "description": "Consistent financial intelligence platform and macroeconomics analysis dashboard.",
-    "brand": {
-      "@type": "Brand",
-      "name": "ClearPathTrader",
-      "logo": `${baseUrl}/logo.png`
-    }
+    "description": "Board-governed market intelligence, charting, and financial education platform.",
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ClearPathTrader",
+    "url": baseUrl,
+    "publisher": { "@id": `${baseUrl}/#organization` },
   };
 
   // Breadcrumb Schema
@@ -281,7 +291,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     }))
   });
 
-  const schemas: any[] = [orgSchema];
+  const schemas: any[] = [orgSchema, websiteSchema];
 
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
@@ -300,6 +310,22 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
           "text": faq.answer
         }
       }))
+    });
+  } else if (pathClean === '/about') {
+    title = "About ClearPath Trader | Market Intelligence Platform";
+    description = "Board-governed market intelligence platform: live charts, pattern context, macro education, and clarity-first design. Analytics and education — not brokerage.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "About", url: "/about" }
+    ]));
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "@id": `${canonicalUrl}#webpage`,
+      "url": canonicalUrl,
+      "name": "About ClearPath Trader",
+      "description": description,
+      "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
     });
   } else if (pathClean === '/macro') {
     title = "Macroeconomic Intelligence Desk & Yield Spread Metrics | ClearPathTrader";
@@ -391,8 +417,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         "dateModified": `${record.updatedDate}T15:00:00Z`,
         "author": {
           "@type": "Organization",
-          "name": record.author,
-          "logo": `${baseUrl}/logo.png`,
+          "name": "ClearPathTrader Editorial",
           "url": baseUrl
         },
         "publisher": {
@@ -402,10 +427,6 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
             "@type": "ImageObject",
             "url": `${baseUrl}/logo.png`
           }
-        },
-        "reviewedBy": {
-          "@type": "Person",
-          "name": record.reviewedBy
         }
       });
 
@@ -432,7 +453,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   }).join('\n');
 
   // Perform surgical replacements of metadata placeholders in standard index.html template
-  let html = originalHtml;
+  let html = stripConflictingHeadTags(originalHtml);
 
   // Replace default Title
   const titleRegex = /<title>[^]*?<\/title>/gi;
