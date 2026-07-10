@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
+import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { PatternScannerPanel } from '../charts/PatternScannerPanel';
@@ -83,6 +84,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     loadMarketSlots
   );
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
+  const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
+
+  const toggleIndicator = useCallback((abbr: string) => {
+    setActiveIndicators((prev) =>
+      prev.includes(abbr) ? prev.filter((i) => i !== abbr) : [...prev, abbr]
+    );
+  }, []);
 
   const primarySymbol = chartSlots[0]?.symbol ?? null;
   const compareSymbol = chartSlots[1]?.symbol ?? null;
@@ -184,7 +192,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   {sym ? (
-                    <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={patternTimeframe} symbol={sym} theme={chartTheme} blackoutMode useDedicatedPatternPanel />
+                    <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={patternTimeframe} symbol={sym} theme={chartTheme} blackoutMode useDedicatedPatternPanel activeIndicators={activeIndicators} />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs text-center px-6">
                       Search your chart above — your symbol, your choice
@@ -282,6 +290,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
               </div>
 
+              <ChartIndicatorPicker
+                activeIndicators={activeIndicators}
+                onToggle={toggleIndicator}
+                onClear={() => setActiveIndicators([])}
+              />
+
               <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
                 Three chart slots — all empty until you search. Grab the handle on any chart and drag it anywhere in this workspace.
               </p>
@@ -333,6 +347,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           symbol={slot.symbol}
                           theme={chartTheme}
                           useDedicatedPatternPanel
+                          activeIndicators={activeIndicators}
                         />
                         <div className="brand-mask-forced !bottom-4 !right-6">
                           <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
