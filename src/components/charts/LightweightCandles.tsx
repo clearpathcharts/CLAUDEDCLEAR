@@ -265,6 +265,8 @@ export function LightweightCandles({
     async function load() {
       try {
         if (!active) return;
+        // Clear any error left over from a previous load (e.g. a transient
+        // rate-limit) so a stale overlay never covers freshly loaded candles.
         setError(null);
         setIsLoading(true);
 
@@ -647,6 +649,8 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
+  // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
+  // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
   }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
