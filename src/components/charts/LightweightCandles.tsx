@@ -60,6 +60,7 @@ export function LightweightCandles({
     displacement: 26
   },
   embedMode = false,
+  useDedicatedPatternPanel = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -82,7 +83,10 @@ export function LightweightCandles({
   blackoutMode?: boolean;
   /** Compact embed: hide HUD chrome for bento mini-charts. */
   embedMode?: boolean;
+  /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
+  useDedicatedPatternPanel?: boolean;
 }) {
+  const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
@@ -654,7 +658,7 @@ export function LightweightCandles({
       )}
       <ChartFormingWatch
         symbol={sym}
-        brief={!embedMode && showFormingWatch ? formingBrief : null}
+        brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
         onClose={() => {
           setShowFormingWatch(false);
           try {
@@ -664,7 +668,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!embedMode && !showFormingWatch && (
+      {!hidePatternChrome && !showFormingWatch && (
         <button
           type="button"
           onClick={() => {
@@ -684,7 +688,7 @@ export function LightweightCandles({
       )}
       <ChartPatternHud
         symbol={sym}
-        scan={!embedMode && showPatternHud ? patternScan : null}
+        scan={!hidePatternChrome && showPatternHud ? patternScan : null}
         onClose={() => {
           setShowPatternHud(false);
           try {
@@ -694,7 +698,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!embedMode && !showPatternHud && (
+      {!hidePatternChrome && !showPatternHud && (
         <button
           type="button"
           onClick={() => {
@@ -717,7 +721,7 @@ export function LightweightCandles({
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+          !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
         }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}

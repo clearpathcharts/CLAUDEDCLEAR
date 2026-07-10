@@ -7,8 +7,7 @@ import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
-import TerminalConfigWidget from '../widgets/TerminalConfigWidget';
-import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
+import { PatternScannerPanel } from '../charts/PatternScannerPanel';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
@@ -87,6 +86,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   const primarySymbol = chartSlots[0]?.symbol ?? null;
   const compareSymbol = chartSlots[1]?.symbol ?? null;
+  const patternPanelSymbol = chartSlots.find((s) => s.symbol)?.symbol ?? primarySymbol ?? '';
+  const patternTimeframe = timeframesMapping[activeTimeframe] || '1h';
 
   const canvasMinHeight = useMemo(() => {
     const bottoms = chartSlots.map((s) => s.y + MARKET_CHART_HEIGHT);
@@ -159,6 +160,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           </button>
         </div>
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+          <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0">
+            <PatternScannerPanel
+              symbol={patternPanelSymbol || '—'}
+              timeframe={patternTimeframe}
+              compact
+            />
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2">
           {[0, 1].map((slotIndex) => {
             const sym = chartSlots[slotIndex]?.symbol ?? null;
             const label = slotIndex === 0 ? 'Primary' : 'Compare';
@@ -175,7 +184,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
                 <div className="flex-1 min-h-0 relative">
                   {sym ? (
-                    <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={sym} theme={chartTheme} blackoutMode />
+                    <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={patternTimeframe} symbol={sym} theme={chartTheme} blackoutMode useDedicatedPatternPanel />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs text-center px-6">
                       Search your chart above — your symbol, your choice
@@ -185,6 +194,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               </div>
             );
           })}
+          </div>
         </div>
       </div>,
       document.body
@@ -243,38 +253,21 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-1 flex flex-col space-y-6 lg:sticky lg:top-8">
-              <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,217,255,0.15)] bg-black/60 backdrop-blur-md">
-                <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF00C8] animate-pulse">
-                    Terminal Matrix Control
-                  </span>
-                  <button
-                    onClick={() => {
-                      const event = new CustomEvent('trigger-terminal-telemetry-refresh');
-                      window.dispatchEvent(event);
-                    }}
-                    title="Force refresh of all telemetry data channels"
-                    className="flex items-center gap-1 text-[8px] font-mono text-zinc-400 hover:text-[#00D9FF] bg-black/60 hover:bg-[#00D9FF]/10 active:scale-95 border border-white/10 hover:border-[#00D9FF]/40 px-2 py-1 rounded transition-all duration-300 font-bold uppercase cursor-pointer"
-                  >
-                    <span>Refresh Data</span>
-                  </button>
-                </div>
-                <TerminalConfigWidget />
-              </div>
-
-              <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(255,0,200,0.15)] bg-black/60 backdrop-blur-md">
-                <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#00D9FF] animate-pulse">
-                    WS Ticker Handshakes
-                  </span>
-                  <span className="text-[8px] font-mono text-zinc-500">CPMS-WS-FEED</span>
-                </div>
-                <CompactSocialTerminal />
-              </div>
+            <div className="lg:col-span-1 flex flex-col lg:sticky lg:top-8 min-h-[520px]">
+              <PatternScannerPanel
+                symbol={patternPanelSymbol || '—'}
+                timeframe={patternTimeframe}
+              />
             </div>
 
             <div className="lg:col-span-3 space-y-6">
+              <div className="lg:hidden">
+                <PatternScannerPanel
+                  symbol={patternPanelSymbol || '—'}
+                  timeframe={patternTimeframe}
+                  compact
+                />
+              </div>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
                   {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
@@ -336,9 +329,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                         <LightweightCandles
                           profileId={profile.id}
                           height={440}
-                          timeframe={timeframesMapping[activeTimeframe] || '1h'}
+                          timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}
+                          useDedicatedPatternPanel
                         />
                         <div className="brand-mask-forced !bottom-4 !right-6">
                           <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
