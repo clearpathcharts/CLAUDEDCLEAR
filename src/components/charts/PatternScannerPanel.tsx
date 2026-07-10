@@ -42,6 +42,7 @@ interface PatternScannerPanelProps {
 export function PatternScannerPanel({ symbol, timeframe, compact = false }: PatternScannerPanelProps) {
   const [scan, setScan] = useState(getActivePatternScan());
   const [forming, setForming] = useState(() => getFormingBrief(symbol, timeframe));
+  const hasSymbol = Boolean(symbol && symbol !== '—');
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
@@ -85,7 +86,12 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
-        {byGroup.map(({ group, items }) => (
+        {!hasSymbol && (
+          <p className="text-xs text-center py-8 text-zinc-500 leading-relaxed">
+            Search your chart in any slot — pattern readouts show up here for the symbol you choose.
+          </p>
+        )}
+        {hasSymbol && byGroup.map(({ group, items }) => (
           <div key={group}>
             <p className={`mb-2 inline-block rounded border px-2 py-0.5 text-xs font-bold uppercase tracking-widest ${GROUP_BADGE[group]}`}>
               {PATTERN_GROUP_LABELS[group]}
@@ -108,7 +114,7 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           </div>
         ))}
 
-        {candlePatterns.length > 0 && (
+        {hasSymbol && candlePatterns.length > 0 && (
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/40">Candlesticks</p>
             <div className="space-y-1.5">
@@ -137,14 +143,14 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           </div>
         )}
 
-        {total === 0 && !forming && (
+        {hasSymbol && total === 0 && !forming && (
           <p className="text-xs text-white/40 text-center py-6">
             No patterns detected yet. Lines appear on the chart when structures are found.
           </p>
         )}
       </div>
 
-      {forming && (
+      {hasSymbol && forming && (
         <div className="shrink-0 border-t border-[#FF1493]/20 p-4 bg-[#0a0014]/60">
           <div className="flex items-center gap-2 mb-2">
             <Radio size={14} className="text-[#FF1493] animate-pulse" />
