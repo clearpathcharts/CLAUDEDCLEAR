@@ -59,6 +59,7 @@ export function LightweightCandles({
     laggingSpan2Periods: 52,
     displacement: 26
   },
+  useDedicatedPatternPanel = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -79,6 +80,8 @@ export function LightweightCandles({
     displacement: number;
   };
   blackoutMode?: boolean;
+  /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
+  useDedicatedPatternPanel?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -651,7 +654,7 @@ export function LightweightCandles({
       )}
       <ChartFormingWatch
         symbol={sym}
-        brief={showFormingWatch ? formingBrief : null}
+        brief={!useDedicatedPatternPanel && showFormingWatch ? formingBrief : null}
         onClose={() => {
           setShowFormingWatch(false);
           try {
@@ -661,7 +664,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showFormingWatch && (
+      {!useDedicatedPatternPanel && !showFormingWatch && (
         <button
           type="button"
           onClick={() => {
@@ -681,7 +684,7 @@ export function LightweightCandles({
       )}
       <ChartPatternHud
         symbol={sym}
-        scan={showPatternHud ? patternScan : null}
+        scan={!useDedicatedPatternPanel && showPatternHud ? patternScan : null}
         onClose={() => {
           setShowPatternHud(false);
           try {
@@ -691,7 +694,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showPatternHud && (
+      {!useDedicatedPatternPanel && !showPatternHud && (
         <button
           type="button"
           onClick={() => {
@@ -713,7 +716,7 @@ export function LightweightCandles({
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+          !useDedicatedPatternPanel && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
         }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}

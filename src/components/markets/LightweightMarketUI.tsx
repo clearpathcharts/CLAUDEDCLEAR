@@ -4,8 +4,7 @@ import { createPortal } from 'react-dom';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { BackToDashboard } from '../nav/BackToDashboard';
-import TerminalConfigWidget from '../widgets/TerminalConfigWidget';
-import CompactSocialTerminal from '../widgets/CompactSocialTerminal';
+import { PatternScannerPanel } from '../charts/PatternScannerPanel';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
@@ -49,7 +48,7 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H', chartTheme }: { a
         </div>
       </div>
       <div className="flex-1 w-full min-h-0 relative">
-        <LightweightCandles profileId={profile.id} height={440} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={asset.value} theme={chartTheme} />
+        <LightweightCandles profileId={profile.id} height={440} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={asset.value} theme={chartTheme} useDedicatedPatternPanel />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
         <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
@@ -165,8 +164,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
             <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
           </button>
         </div>
-        {/* Charts fill the remaining viewport height instead of a fixed 800px, so nothing overflows off-screen */}
+        {/* Charts fill the remaining viewport — pattern readout stays in the left column, not on canvas */}
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+            <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0">
+              <PatternScannerPanel
+                symbol={mainAsset.value}
+                timeframe={timeframesMapping[activeTimeframe] || '1h'}
+                compact
+              />
+            </div>
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2">
             <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
                 <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b border-zinc-900">
                     <select
@@ -187,7 +194,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Primary · {activeTimeframe}</span>
                 </div>
                 <div className="flex-1 min-h-0 relative">
-                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={mainAsset.value} theme={chartTheme} blackoutMode={true} />
+                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={mainAsset.value} theme={chartTheme} blackoutMode={true} useDedicatedPatternPanel />
                 </div>
             </div>
             <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
@@ -207,8 +214,9 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">Compare · {activeTimeframe}</span>
                 </div>
                 <div className="flex-1 min-h-0 relative">
-                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={secondaryAsset.value} theme={chartTheme} blackoutMode={true} />
+                     <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={timeframesMapping[activeTimeframe] || '1h'} symbol={secondaryAsset.value} theme={chartTheme} blackoutMode={true} useDedicatedPatternPanel />
                 </div>
+            </div>
             </div>
         </div>
       </div>,
@@ -324,40 +332,23 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Left Column: Interactive Terminal Configuration Dashboard Panel & Live Social Broker Socket */}
-            <div className="lg:col-span-1 flex flex-col space-y-6 lg:sticky lg:top-8">
-              <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(0,217,255,0.15)] bg-black/60 backdrop-blur-md">
-                <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF00C8] animate-pulse">
-                    Terminal Matrix Control
-                  </span>
-                  <button
-                    onClick={() => {
-                      const event = new CustomEvent('trigger-terminal-telemetry-refresh');
-                      window.dispatchEvent(event);
-                    }}
-                    title="Force refresh of all telemetry data channels"
-                    className="flex items-center gap-1 text-[8px] font-mono text-zinc-400 hover:text-[#00D9FF] bg-black/60 hover:bg-[#00D9FF]/10 active:scale-95 border border-white/10 hover:border-[#00D9FF]/40 px-2 py-1 rounded transition-all duration-300 font-bold uppercase cursor-pointer"
-                  >
-                    <span>Refresh Data</span>
-                  </button>
-                </div>
-                <TerminalConfigWidget />
-              </div>
-
-              <div className="border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(255,0,200,0.15)] bg-black/60 backdrop-blur-md">
-                <div className="p-4 border-b border-white/10 bg-[#FF00C8]/5 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#00D9FF] animate-pulse">
-                    WS Ticker Handshakes
-                  </span>
-                  <span className="text-[8px] font-mono text-zinc-500">CPMS-WS-FEED</span>
-                </div>
-                <CompactSocialTerminal />
-              </div>
+            {/* Left Column: dedicated pattern scanner (no floating overlays on chart) */}
+            <div className="lg:col-span-1 flex flex-col lg:sticky lg:top-8 min-h-[520px]">
+              <PatternScannerPanel
+                symbol={mainAsset.value}
+                timeframe={timeframesMapping[activeTimeframe] || '1h'}
+              />
             </div>
 
             {/* Right Column: Timeframes & Charts */}
             <div className="lg:col-span-3 space-y-6">
+              <div className="lg:hidden">
+                <PatternScannerPanel
+                  symbol={mainAsset.value}
+                  timeframe={timeframesMapping[activeTimeframe] || '1h'}
+                  compact
+                />
+              </div>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
                     {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
