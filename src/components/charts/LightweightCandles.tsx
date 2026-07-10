@@ -172,6 +172,7 @@ export function LightweightCandles({
           color: activeCustomTheme ? activeCustomTheme.background : theme.layout.background.bottomColor,
         },
         textColor: activeCustomTheme ? activeCustomTheme.text : theme.layout.textColor,
+        fontSize: 13,
         attributionLogo: false,
       },
       grid: activeCustomTheme ? {
