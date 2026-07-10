@@ -38,6 +38,7 @@ import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
+import { YwcLiveChartBento } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -588,6 +589,9 @@ export default function YoursPageHub() {
           </div>
         </div>
       </YwcLavaPanel>
+
+      {/* Sticky live chart bento — watch trades while scrolling feeds */}
+      <YwcLiveChartBento />
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
