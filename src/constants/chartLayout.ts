@@ -23,6 +23,7 @@ export type YwcChartSlot = {
 
 export const MARKET_CHART_SLOT_COUNT = 3;
 export const YWC_CHART_SLOT_COUNT = 4;
+export const YWC_LAYOUT_STORAGE_VERSION = 3;
 
 export const MARKET_CHART_HEIGHT = 500;
 export const YWC_CHART_WIDTH = 280;
@@ -30,9 +31,6 @@ export const YWC_CHART_HEIGHT = 200;
 
 export const YWC_CHART_ANCHORS: { id: YwcChartAnchor; label: string }[] = [
   { id: "sidebar", label: "Sidebar" },
-  { id: "main-top", label: "Main top" },
-  { id: "main-mid", label: "Main mid" },
-  { id: "float", label: "Free float" },
 ];
 
 export function createEmptyMarketSlots(): ChartLayoutSlot[] {

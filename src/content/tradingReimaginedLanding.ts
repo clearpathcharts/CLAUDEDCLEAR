@@ -2,6 +2,9 @@
 
 export const TRADING_REIMAGINED_PATH = '/if-trading-and-chatgpt-had-a-baby';
 
+/** Easy-to-remember alias — same page */
+export const TRADING_REIMAGINED_SHORT_PATH = '/trading-ai';
+
 export const TRADING_REIMAGINED_SEO = {
   title: 'If Trading and ChatGPT Had a Baby — ClearPath Trader',
   description:

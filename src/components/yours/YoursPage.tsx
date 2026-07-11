@@ -38,7 +38,7 @@ import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
-import { YwcChartDock, YwcChartFloatLayer, YwcChartPlacementHeader, YwcChartWorkspace } from './YwcLiveChartBento';
+import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -591,7 +591,8 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
-      <YwcChartPlacementHeader />
+      {/* Live chart bento — top of YWC, in document flow (never floating overlays) */}
+      <YwcChartSection />
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -698,16 +699,12 @@ export default function YoursPageHub() {
 
       </div>
 
-      <YwcChartDock anchor="main-top" />
-
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
         <div className="lg:col-span-8 space-y-8">
 
-          <YwcChartDock anchor="main-mid" />
-          
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
           <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
@@ -957,8 +954,6 @@ export default function YoursPageHub() {
 
         {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
         <div className="lg:col-span-4 space-y-8">
-
-          <YwcChartDock anchor="sidebar" />
           
           {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
           <YwcLavaPanel className="space-y-4">
@@ -1189,7 +1184,6 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
-      <YwcChartFloatLayer />
     </div>
     </YwcChartWorkspace>
   );
