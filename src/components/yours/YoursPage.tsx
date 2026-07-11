@@ -38,7 +38,7 @@ import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
-import { YwcLiveChartBento } from './YwcLiveChartBento';
+import { YwcChartDock, YwcChartFloatLayer, YwcChartPlacementHeader, YwcChartWorkspace } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -523,7 +523,8 @@ export default function YoursPageHub() {
     : newsFeed.filter(item => item.category === selectedFeedCategory);
 
   return (
-    <div className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-hidden">
+    <YwcChartWorkspace>
+    <div id="ywc-page-canvas" className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden">
       
       {/* Lava / neon atmosphere */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
@@ -590,8 +591,7 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
-      {/* Sticky live chart bento — watch trades while scrolling feeds */}
-      <YwcLiveChartBento />
+      <YwcChartPlacementHeader />
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -698,11 +698,15 @@ export default function YoursPageHub() {
 
       </div>
 
+      <YwcChartDock anchor="main-top" />
+
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
         <div className="lg:col-span-8 space-y-8">
+
+          <YwcChartDock anchor="main-mid" />
           
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
@@ -953,6 +957,8 @@ export default function YoursPageHub() {
 
         {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
         <div className="lg:col-span-4 space-y-8">
+
+          <YwcChartDock anchor="sidebar" />
           
           {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
           <YwcLavaPanel className="space-y-4">
@@ -1183,6 +1189,8 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
+      <YwcChartFloatLayer />
     </div>
+    </YwcChartWorkspace>
   );
 }
