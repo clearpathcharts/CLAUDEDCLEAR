@@ -1712,6 +1712,12 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://clearpathtrader.com/about</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>https://clearpathtrader.com/research</loc>
     <lastmod>2026-06-07</lastmod>
     <changefreq>weekly</changefreq>

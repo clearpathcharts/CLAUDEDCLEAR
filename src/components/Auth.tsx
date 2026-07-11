@@ -1840,7 +1840,7 @@ Not the other way around.`}
               If Trading + ChatGPT Had a Baby
             </a>
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
-              About
+              About ClearPath
             </a>
             <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Platform Scope
