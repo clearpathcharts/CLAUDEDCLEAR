@@ -89,11 +89,13 @@ function YwcChartSlotPanel({
   slot,
   isFirst,
   isLast,
+  chartHeight = 168,
 }: {
   slotIndex: number;
   slot: YwcChartSlot;
   isFirst: boolean;
   isLast: boolean;
+  chartHeight?: number;
 }) {
   const { updateSlot, clearSlot, moveSlot } = useYwcCharts();
 
@@ -139,11 +141,14 @@ function YwcChartSlotPanel({
   );
 
   const body = slot.symbol ? (
-    <div className="h-[168px] relative">
-      <LightweightCandles profileId="calm_focus" symbol={slot.symbol} timeframe="1h" height={168} embedMode />
+    <div className="relative" style={{ height: chartHeight }}>
+      <LightweightCandles profileId="calm_focus" symbol={slot.symbol} timeframe="1h" height={chartHeight} embedMode />
     </div>
   ) : (
-    <div className="h-[168px] flex flex-col items-center justify-center gap-2 px-4 text-center border-t border-dashed border-[#FF1493]/20 bg-zinc-950/80">
+    <div
+      className="flex flex-col items-center justify-center gap-2 px-4 text-center border-t border-dashed border-[#FF1493]/20 bg-zinc-950/80"
+      style={{ height: chartHeight }}
+    >
       <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">
         Empty chart slot {slotIndex + 1}
       </span>
@@ -230,11 +235,13 @@ export function YwcChartWorkspace({ children }: { children: React.ReactNode }) {
 }
 
 /** Sidebar bento only — in document flow, never overlays the page. */
-export function YwcChartDock() {
+export function YwcChartDock({ variant = "wide" }: { variant?: "wide" | "sidebar" }) {
   const { slots } = useYwcCharts();
   const docked = slots
     .map((slot, index) => ({ slot, index }))
     .sort((a, b) => a.slot.dockOrder - b.slot.dockOrder);
+  const isSidebar = variant === "sidebar";
+  const chartHeight = isSidebar ? 192 : 168;
 
   return (
     <YwcLavaPanel className="space-y-3">
@@ -242,7 +249,7 @@ export function YwcChartDock() {
         <Pin size={14} className="text-[#FF1493] shrink-0" />
         <YwcSectionTitle className="text-[10px] tracking-widest">YOUR LIVE CHARTS</YwcSectionTitle>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${isSidebar ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"}`}>
         {docked.map(({ slot, index }, i) => (
           <YwcChartSlotPanel
             key={`ywc-dock-${index}`}
@@ -250,6 +257,7 @@ export function YwcChartDock() {
             slot={slot}
             isFirst={i === 0}
             isLast={i === docked.length - 1}
+            chartHeight={chartHeight}
           />
         ))}
       </div>
@@ -257,7 +265,7 @@ export function YwcChartDock() {
   );
 }
 
-export function YwcChartPlacementHeader() {
+export function YwcChartPlacementHeader({ variant = "wide" }: { variant?: "wide" | "sidebar" }) {
   const { dockAllToSidebar } = useYwcCharts();
 
   return (
@@ -268,7 +276,15 @@ export function YwcChartPlacementHeader() {
           <YwcSectionTitle className="text-xs tracking-widest">ADD YOUR FAVORITE CHARTS TO YWC</YwcSectionTitle>
         </div>
         <p className="text-[10px] font-mono text-zinc-400 max-w-xl leading-relaxed">
-          Four chart slots sit in the <strong className="text-zinc-300">grid below</strong> — they scroll with the page and never cover your content. Use ↑↓ to reorder.
+          {variant === "sidebar" ? (
+            <>
+              Four independent chart slots live in this <strong className="text-zinc-300">right rail</strong> beside your news feed — each with its own symbol. Use ↑↓ to reorder.
+            </>
+          ) : (
+            <>
+              Four chart slots sit in the <strong className="text-zinc-300">grid below</strong> — they scroll with the page and never cover your content. Use ↑↓ to reorder.
+            </>
+          )}
         </p>
       </div>
       <button
@@ -288,11 +304,11 @@ export function YwcChartFloatLayer() {
 }
 
 /** Full chart bento — header + slots together (always visible). */
-export function YwcChartSection() {
+export function YwcChartSection({ variant = "wide" }: { variant?: "wide" | "sidebar" }) {
   return (
     <div className="space-y-3">
-      <YwcChartPlacementHeader />
-      <YwcChartDock />
+      <YwcChartPlacementHeader variant={variant} />
+      <YwcChartDock variant={variant} />
     </div>
   );
 }
