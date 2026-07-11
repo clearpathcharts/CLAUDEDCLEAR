@@ -268,7 +268,7 @@ export function YwcChartPlacementHeader() {
           <YwcSectionTitle className="text-xs tracking-widest">ADD YOUR FAVORITE CHARTS TO YWC</YwcSectionTitle>
         </div>
         <p className="text-[10px] font-mono text-zinc-400 max-w-xl leading-relaxed">
-          Four chart slots live in the <strong className="text-zinc-300">right sidebar</strong> above media — they scroll with the page and never cover your content. Use ↑↓ to reorder.
+          Four chart slots sit in the <strong className="text-zinc-300">grid below</strong> — they scroll with the page and never cover your content. Use ↑↓ to reorder.
         </p>
       </div>
       <button
