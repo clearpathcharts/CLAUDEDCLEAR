@@ -1835,6 +1835,23 @@ Not the other way around.`}
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest">
+            <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              About ClearPath
+            </a>
+            <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Platform Scope
+            </a>
+            <a href="/terms.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Terms
+            </a>
+            <a href="/privacy.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Privacy
+            </a>
+            <a href="/disclaimer.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Disclaimer
+            </a>
+          </nav>
           <p className="text-[11px] text-zinc-500 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
             RISK DISCLOSURE AND EDUCATIONAL DISCLAIMER: ClearPath Trader is strictly an academic learning universe. We do not operate as a financial broker, nor do we manage real client capital, execute trades, or recommend asset purchases. High-performance intermarket analysis carries substantial risk. All calculations and simulations represent general macroeconomic models.
           </p>

@@ -1635,6 +1635,7 @@ Allow: /guides
 Allow: /glossary
 Allow: /faq
 Allow: /research
+Allow: /about
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
@@ -1702,6 +1703,12 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     <lastmod>2026-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://clearpathtrader.com/about</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://clearpathtrader.com/research</loc>
@@ -1828,6 +1835,7 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
   // Intercept primary crawlable SEO routes at server-side
   const SEO_PAGES = [
     '/',
+    '/about',
     '/macro',
     '/learn',
     '/learn/:topic',
