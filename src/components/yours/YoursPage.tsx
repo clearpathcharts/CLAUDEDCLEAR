@@ -916,34 +916,6 @@ export default function YoursPageHub() {
                   </div>
                 </div>
               </YwcLavaPanel>
-
-              {/* MAGAZINE EDITORIAL STORY BLOCK */}
-              <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="space-y-6">
-                <div className="absolute right-4 top-4 text-zinc-800 text-7xl font-serif font-black select-none pointer-events-none">
-                  M
-                </div>
-                
-                <div className="text-center space-y-2 max-w-xl mx-auto pb-4 border-b border-white/5">
-                  <span className="text-[9px] font-mono tracking-[0.25em] text-[#ff0088] font-black uppercase">
-                    MAGAZINE EDITORIAL DIGEST
-                  </span>
-                  <h3 className="text-2xl md:text-3xl font-serif italic text-white font-bold leading-normal">
-                    Modern Layout Parity: Bridging Digital Grids and Premium Print Design
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-zinc-400 font-sans leading-relaxed text-justify">
-                  <p>
-                    <span className="text-4xl text-transparent bg-clip-text bg-gradient-to-r from-[#ff0088] to-[#00f0ff] font-serif font-black float-left mr-3.5 mt-1 line-height-none">
-                      L
-                    </span>
-                    ayout density is under intense reconstruction across leading global publications. The legacy saturation of structured modular grid frames—commonly dubbed "bento" systems—has reached a zenith of aesthetic redundancy. In its wake, elite design desks are pivoting back to asymmetric principles natively perfected by traditional print publications. By employing absolute viewport scaling calculations, beautiful serif displaying and bold negative voids, authors structure a highly tailored visual hierarchy.
-                  </p>
-                  <p>
-                    Providing spacious margins enhances the organic flow of stories. As users transit through multiple display terminals, responsive CSS snap-points deliver tactile card slides that mimic premium physical pages. The ultimate objective is not merely the presentation of raw feed nodes, but the creation of an immersive storytelling wrapper that heightens consumer interaction and reinforces the gravity of the editorial content.
-                  </p>
-                </div>
-              </YwcLavaPanel>
             </>
           )}
 
