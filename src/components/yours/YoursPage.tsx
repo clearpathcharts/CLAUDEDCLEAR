@@ -591,9 +591,6 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
-      {/* Live chart bento — top of YWC, in document flow (never floating overlays) */}
-      <YwcChartSection />
-
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -952,9 +949,12 @@ export default function YoursPageHub() {
 
         </div>
 
-        {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
-        <div className="lg:col-span-4 space-y-8">
+        {/* Sidebar Column (charts, live TV, social OAuth) */}
+        <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-6 lg:self-start">
           
+          {/* Independent live charts — right rail beside editorial grid */}
+          <YwcChartSection variant="sidebar" />
+
           {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
           <YwcLavaPanel className="space-y-4">
             <CpmsMediaPantry />
