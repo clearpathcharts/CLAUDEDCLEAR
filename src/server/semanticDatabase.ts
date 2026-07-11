@@ -3,6 +3,7 @@ import path from 'path';
 import {
   TRADING_REIMAGINED_FAQS,
   TRADING_REIMAGINED_PATH,
+  TRADING_REIMAGINED_SHORT_PATH,
   TRADING_REIMAGINED_SEO,
   SPEED_COPY,
 } from '../content/tradingReimaginedLanding';
@@ -265,7 +266,10 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   let description = "Premium institutional macroeconomic science interface, financial terminal, and educational database. High-fidelity analytics & AI content graph systems.";
   let keywords = "trading platform, market analysis, financial terminal, ClearPath Trader, forex charts, crypto charts";
   const baseUrl = "https://clearpathtrader.com";
-  const canonicalUrl = `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
+  const canonicalUrl =
+    pathClean === TRADING_REIMAGINED_SHORT_PATH
+      ? `${baseUrl}${TRADING_REIMAGINED_PATH}`
+      : `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
 
   // Organization + WebSite schema (brand trust — no personal founder attribution)
   const orgSchema = {
@@ -334,7 +338,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "description": description,
       "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
     });
-  } else if (pathClean === TRADING_REIMAGINED_PATH) {
+  } else if (pathClean === TRADING_REIMAGINED_PATH || pathClean === TRADING_REIMAGINED_SHORT_PATH) {
     title = TRADING_REIMAGINED_SEO.title;
     description = TRADING_REIMAGINED_SEO.description;
     keywords = TRADING_REIMAGINED_SEO.keywords;
