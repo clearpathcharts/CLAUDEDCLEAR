@@ -1835,7 +1835,10 @@ Not the other way around.`}
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
-          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest">
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
+            <a href="/if-trading-and-chatgpt-had-a-baby" className="text-[#FF1493] hover:text-[#00FFFF] transition-colors font-bold">
+              If Trading + ChatGPT Had a Baby
+            </a>
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
             </a>
