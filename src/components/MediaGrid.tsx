@@ -1,11 +1,11 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { MediaTile } from './MediaTile';
 import { InstagramSignals } from './InstagramSignals';
-import { CarAndDriverFeed } from './CarAndDriverFeed';
 import { Globe } from 'lucide-react';
 
 const BloombergLive = lazy(() => import('./BloombergLive'));
 const FacebookIntel = lazy(() => import('./FacebookIntel').then((m) => ({ default: m.FacebookIntel })));
+const CarAndDriverFeed = lazy(() => import('./CarAndDriverFeed').then((m) => ({ default: m.CarAndDriverFeed })));
 
 const BloombergFallback = () => (
   <div className="h-[200px] bg-zinc-950/60 rounded-xl border border-white/5 flex items-center justify-center p-4">
@@ -109,7 +109,9 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
 
         {/* Card 3: Car & Driver Luxury Drivetrains */}
         <MediaTile id="car-driver-tile">
-          <CarAndDriverFeed />
+          <Suspense fallback={<SocialFallback />}>
+            <CarAndDriverFeed />
+          </Suspense>
         </MediaTile>
 
       </div>

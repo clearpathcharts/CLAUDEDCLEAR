@@ -16,6 +16,29 @@ const MediaGrid = lazy(() => import('./MediaGrid').then((m) => ({ default: m.Med
 const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
 const ParticleCanvas = lazy(() => import('./landing/ParticleCanvas'));
 
+function DeferredParticleCanvas() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const enable = () => setReady(true);
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(enable, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(enable, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <Suspense fallback={null}>
+      <ParticleCanvas />
+    </Suspense>
+  );
+}
+
 const SectionFallback = ({ label, minHeight = 'min-h-[200px]' }: { label: string; minHeight?: string }) => (
   <div className={`${minHeight} flex items-center justify-center text-zinc-400 font-mono text-[11px] uppercase tracking-widest`} aria-hidden="true">
     {label}
@@ -428,9 +451,7 @@ export default function Auth() {
       <div className="absolute inset-0 bg-transparent z-0" />
 
       {/* Layer 2: Particle Engine */}
-      <Suspense fallback={null}>
-        <ParticleCanvas />
-      </Suspense>
+      <DeferredParticleCanvas />
 
       {/* Layer 3: Cyber grid overlay */}
       <div 

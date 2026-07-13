@@ -35,20 +35,13 @@ import PoliticalHub from '../PoliticalHub';
 import GlobalFinance from '../GlobalFinance';
 import MagazineHub from '../MagazineHub';
 import WorldHub from '../WorldHub';
-import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
+import OptimisticInjusticeArticle from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
-
-// Static assets/mock data reflecting the RSS feeds requested by the user
-const CORE_COURSES = [
-  { id: 'espn', source: 'ESPN', url: 'https://www.espn.com/espn/rss/news' },
-  { id: 'f1', source: 'Formula 1', url: 'https://www.formula1.com/en/latest/all.xml' },
-  { id: 'nascar', source: 'NASCAR', url: 'https://www.nascar.com/feed/' }
-];
-
-const REUTERS_FEED = 'https://feeds.reuters.com/reuters/topNews';
-const COINDESK_FEED = 'https://www.coindesk.com/arc/outboundfeeds/rss/';
+import { useYwcDigest } from '../../hooks/useYwcDigest';
+import { digestItemToNewsCard } from '../../lib/ywc/feedMappers';
+import { YWC_FALLBACK_NEWS } from '../../data/ywcFeedFallback';
 
 export default function YoursPageHub() {
   // Navigation / Filter control inside the YWC View
@@ -110,338 +103,46 @@ export default function YoursPageHub() {
     "⚖️ POLITICS: Coordinated energy security package enters congressional debate, offering tax deductions for natural gas utility installations..."
   ];
 
-  // Simulated live feed item repository representing the sections
-  const [newsFeed, setNewsFeed] = useState([
-    {
-      id: OPTIMISTIC_INJUSTICE_ARTICLE.id,
-      category: OPTIMISTIC_INJUSTICE_ARTICLE.category,
-      subcategory: OPTIMISTIC_INJUSTICE_ARTICLE.subcategory,
-      title: OPTIMISTIC_INJUSTICE_ARTICLE.title,
-      premium: OPTIMISTIC_INJUSTICE_ARTICLE.premium,
-      source: OPTIMISTIC_INJUSTICE_ARTICLE.source,
-      image: OPTIMISTIC_INJUSTICE_ARTICLE.image,
-      time: OPTIMISTIC_INJUSTICE_ARTICLE.time,
-      desc: OPTIMISTIC_INJUSTICE_ARTICLE.desc,
-      longText: OPTIMISTIC_INJUSTICE_ARTICLE.longText
-    },
-    {
-      id: 'relief-11',
-      category: 'relief',
-      subcategory: 'Healthcare Protection',
-      title: 'World: Still Under Attack: A Decade of Monitoring Attacks on Health Care after Security Council Resolution 2286',
-      premium: false,
-      source: 'Insecurity Insight',
-      image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'A major new report analyses a decade of violence against healthcare, documenting over 17,500 attacks and the loss of 3,860 health workers across global conflict settings.',
-      longText: 'Over 17,500 attacks on healthcare infrastructure were systematically recorded between January 2016 and December 2025. Drawing on ten years of systematically collected data, Insecurity Insight documents the devastating scale, patterns, and consequences of attacks on healthcare in conflict-affected settings worldwide. The report notes that over 3,860 health workers were killed and 2,500 arrested or detained, with local staff bearing 65% of the casualty rate. Rising drone and explosive weapon usage continues to compound surgical and facility degradation.'
-    },
-    {
-      id: 'relief-12',
-      category: 'relief',
-      subcategory: 'Migration Routes',
-      title: 'World: Western Balkans : Migration Routes & Dynamics Report (April 2026)',
-      premium: false,
-      source: 'International Organization for Migration',
-      image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'The latest IOM survey offers structural insights into the pathways, profiles, and protection status of migrants transiting through Balkan routes.',
-      longText: 'Analyzing transit maps across Albania, Bosnia and Herzegovina, Montenegro, North Macedonia, Serbia, and Kosovo, the International Organization for Migration (IOM) surveyed 687 transiting migrants in April 2026. The report details demographic structures, transited geography, and intended final destinations, underscoring the urgent requirement for unified regional protection structures and humane legal corridors.'
-    },
-    {
-      id: 'relief-13',
-      category: 'relief',
-      subcategory: 'Food Insecurity',
-      title: 'Togo: PAM et Gouvernement se mobilisent contre l’insécurité alimentaire au nord',
-      premium: false,
-      source: 'World Food Programme',
-      image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'Le PAM et le Gouvernement togolais déploient une réponse intégrée pour soutenir les populations face aux risques de la période de soudure.',
-      longText: 'Selon les projections du Cadre Harmonisé, environ 332 000 personnes pourraient faire face à une situation de crise alimentaire (Phase 3) entre juin et août 2026 sans intervention. Pour atténuer ces risques, le WFP et le Gouvernement togolais déploient le Programme d’Urgence pour le Renforcement de la Résilience (PURS), associant des stocks céréaliers stratégiques de 40 000 tonnes à des transferts monétaires, des repas scolaires à base de produits locaux, et des interventions de restauration des terres.'
-    },
-    {
-      id: 'relief-14',
-      category: 'relief',
-      subcategory: 'Territorial Action',
-      title: 'Colombia: WFP Country Brief outlines shifts to peacebuilding and community resilience',
-      premium: false,
-      source: 'World Food Programme',
-      image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'WFP transitions towards a comprehensive response combining emergency climate assistance with structural peacebuilding and zero-hunger models.',
-      longText: `WFP's latest assessment indicates that 37% of households in Colombia's 15 most vulnerable departments face moderate or severe food insecurity, driven by internal violence, mixed migration, and extreme weather. Transitioning active projects, WFP has aligned operations with Colombia's long-term peace objectives, executing integrated programs that combine localized emergency logistics with community-led agricultural development and soil restoration.`
-    },
-    {
-      id: 'relief-15',
-      category: 'relief',
-      subcategory: 'Climate Resilience',
-      title: 'Bangladesh: Community-led drainage construction directly mitigates chronic flooding',
-      premium: false,
-      source: 'Concern Worldwide',
-      image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'Under the Zurich Climate Resilience Alliance, community action groups successfully construct physical water drainage projects to secure agricultural yields.',
-      longText: 'By deploying the Climate Resilience Measurement for Communities (CRMC) framework, Concern Worldwide has supported rural villages bordering the Saniajan River. In Nij Goddimari, a community-led resilience group successfully advocated for and engineered a 26-meter U-drain. The physical barrier has mitigated prolonged land waterlogging, secured fragile local crops, and kept access to surrounding schools and hospitals intact.'
-    },
-    {
-      id: 'relief-1',
-      category: 'relief',
-      subcategory: 'Refugee Support',
-      title: 'World: With seven in 10 refugees living in long-term displacement, UNHCR calls for solutions',
-      premium: false,
-      source: 'UN High Commissioner for Refugees',
-      image: 'https://images.unsplash.com/photo-1469571486040-0b3b279a74dd?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 11 Jun 2026',
-      desc: 'The latest Global Trends Report shows that returns are also gathering pace: 14.7 million displaced people returned to their areas or countries of origin in 2025.',
-      longText: 'The latest Global Trends Report shows that returns are also gathering pace: 14.7 million displaced people returned to their areas or countries of origin in 2025. UNHCR urges global collaboration to expand secure pathways of rehabilitation. Under extreme displacement contexts, humanitarian networks calls for comprehensive support programs centered on dignity, legal identification, and physical rehabilitation.'
-    },
-    {
-      id: 'relief-2',
-      category: 'relief',
-      subcategory: 'Epidemic Monitor',
-      title: 'Nigeria: Rapid surge in suspected cholera cases places health facilities under severe strain',
-      premium: false,
-      source: 'Médecins Sans Frontières',
-      image: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600',
-      time: 'Wed, 10 Jun 2026',
-      desc: 'MSF is supporting the Borno State Ministry of Health (MoH) to respond to a rapidly evolving surge in suspected cholera cases across Borno State, where more than seven thousand people have fallen ill since early May 2026.',
-      longText: 'Doctors Without Borders (Médecins Sans Frontières) is supporting the Borno State Ministry of Health (MoH) to respond to a rapidly evolving surge in suspected cholera cases across Borno State, where more than seven thousand people have fallen ill since early May 2026. Treatment structures and rehydration reserves are under heavy pressure, requesting supplementary staff deployment and clean water trucks across non-urban zones.'
-    },
-    {
-      id: 'relief-3',
-      category: 'relief',
-      subcategory: 'Food Security',
-      title: 'South Sudan: Food insecurity worsens in Jonglei amid conflict and aid suspensions',
-      premium: false,
-      source: 'Save the Children',
-      image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=600',
-      time: 'Tue, 09 Jun 2026',
-      desc: 'Save the Children warns that parts of South Sudan are at risk of famine as acute food insecurity and child malnutrition worsen, with conflict, flooding and aid suspensions disrupting essential services in Jonglei state.',
-      longText: 'South Sudan is facing extreme stress vectors in the Jonglei province. Severe flooding combined with localized conflict has disrupted critical agricultural yields and halted standard supply routes. Save the Children warns that parts of South Sudan are at risk of famine as acute food insecurity and child malnutrition worsen, with conflict, flooding and aid suspensions disrupting essential services in Jonglei state.'
-    },
-    {
-      id: 'relief-4',
-      category: 'relief',
-      subcategory: 'Peace Analytics',
-      title: 'World: Global peacefulness deteriorates for twelfth consecutive year',
-      premium: false,
-      source: 'Institute for Economics and Peace',
-      image: 'https://images.unsplash.com/photo-1444653303775-603403e56c5a?auto=format&fit=crop&q=80&w=600',
-      time: 'Tue, 09 Jun 2026',
-      desc: 'The 2026 Global Peace Index reveals a world struggling with the economic consequences of a record-high number of conflicts that are increasingly interconnected and difficult to resolve.',
-      longText: 'The 2026 Global Peace Index reveals a world struggling with the economic consequences of a record-high number of conflicts that are increasingly interconnected and difficult to resolve. Traditional mediation mechanisms are facing structural limitations, demanding alternative analytical models to map and predict tension hot-zones.'
-    },
-    {
-      id: 'relief-5',
-      category: 'relief',
-      subcategory: 'Trauma Relief',
-      title: 'Drone strikes cause mass casualties at Chad-Sudan border',
-      premium: false,
-      source: 'Médecins Sans Frontières',
-      image: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&q=80&w=600',
-      time: 'Thu, 04 Jun 2026',
-      desc: 'Since early May, drone strikes around Tina, Sudan, near the Chadian border, have intensified, leading to repeated influxes of wounded patients at Tiné Hospital, supported by MSF in Chad.',
-      longText: 'Since early May, drone strikes around Tina, Sudan, near the Chadian border, have intensified, leading to repeated influxes of wounded patients at Tiné Hospital, supported by Médecins Sans Frontières (MSF) in Chad. MSF warns of sharp escalations in direct civilian impact, requesting uninhibited safety corridors to restore medical logistics pipelines.'
-    },
-    {
-      id: 'relief-6',
-      category: 'relief',
-      subcategory: 'Protection',
-      title: 'oPt: Dire conditions trap Gaza’s children in an endless cycle of suffering',
-      premium: false,
-      source: "UN Children's Fund (UNICEF)",
-      image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80&w=600',
-      time: 'Fri, 29 May 2026',
-      desc: 'UNICEF is calling for safe unfettered access to deliver aid operations, the lifting of restrictions on items needed to quickly repair and sustain water and sanitation systems.',
-      longText: 'Direr conditions continue to trap children in Gaza in a cyclic pattern of suffering. UNICEF is calling for safe unfettered access to deliver aid operations, the lifting of restrictions on items needed to quickly repair and sustain water and sanitation systems, and for International Humanitarian Law (IHL) to be upheld with absolute transparency code-wide.'
-    },
-    {
-      id: 'relief-7',
-      category: 'relief',
-      subcategory: 'Commodity Risk',
-      title: 'World: Strait of Hormuz conflict threatens global food prices as FAO warns time is running out',
-      premium: false,
-      source: 'Food & Agriculture Organization',
-      image: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=600',
-      time: 'Wed, 20 May 2026',
-      desc: 'The window for preventive action is closing quickly. Decisions taken now on fertilizer use, imports and crop choices will determine whether a severe global food price crisis emerges in 6-12 months.',
-      longText: 'The window for preventive action is closing quickly. Decisions taken now on fertilizer use, imports and crop choices will determine whether a severe global food price crisis emerges in 6-12 months. Disruption vectors across key shipping passes threaten bilateral grain routing schedules.'
-    },
-    {
-      id: 'relief-8',
-      category: 'relief',
-      subcategory: 'Epidemic Control',
-      title: 'DR Congo: Ebola outbreak in eastern DRC spreading faster than response',
-      premium: false,
-      source: 'International Rescue Committee',
-      image: 'https://images.unsplash.com/photo-1581056771107-24ca5f033842?auto=format&fit=crop&q=80&w=600',
-      time: 'Tue, 26 May 2026',
-      desc: 'Aid cuts mean eastern DRC has a weaker health system now than it did before the 2018-20 outbreak that killed more than 2,000 people. IRC calls for urgent funding.',
-      longText: 'Aid cuts mean eastern DRC has a weaker health system now than it did before the 2018-20 outbreak that killed more than 2,000 people. IRC calls for urgent funding and coordination to contain epidemic. Suspected cases are rising exponentially, signaling that response logistics must scale immediately.'
-    },
-    {
-      id: 'relief-9',
-      category: 'relief',
-      subcategory: 'Sahel Alliance',
-      title: 'Mali: More than 24 million people in the Sahel urgently need aid',
-      premium: false,
-      source: 'UN OCHA',
-      image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&q=80&w=600',
-      time: 'Tue, 02 Jun 2026',
-      desc: 'Violence in the Central Sahel is spreading beyond its traditional borders and rapidly spilling over into coastal West Africa, rendering the Sahel one of the main epicentres of violence in Africa.',
-      longText: 'Violence in the Central Sahel is spreading beyond its traditional borders and rapidly spilling over into coastal West Africa, rendering the Sahel one of the main epicentres of violence in Africa. Over 24 million people in this critical pocket require immediate water filtration, medical treatment centers, and stable nutrition supplies.'
-    },
-    {
-      id: 'relief-10',
-      category: 'relief',
-      subcategory: 'Food Nutrition',
-      title: 'Somalia: UN agencies warn of worsening hunger and malnutrition crisis as famine risk emerges',
-      premium: false,
-      source: 'World Food Programme & FAO',
-      image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=600',
-      time: 'Fri, 15 May 2026',
-      desc: 'A rapidly intensifying hunger emergency is pushing six million people – 31 percent of the population – into critical levels of food insecurity.',
-      longText: 'A rapidly intensifying hunger emergency is pushing six million people – 31 percent of the population – into critical levels of food insecurity (IPC Phase 3 or above), affecting 1.9 million children. Drought-stricken locations are calling for immediate distribution hubs to counteract localized famine risk indices.'
-    },
-    {
-      id: 'a1',
-      category: 'sports',
-      subcategory: 'NFL',
-      title: 'Chiefs Win Thriller in Overtime with Impeccable Red Zone Strategy',
-      premium: false,
-      source: 'ESPN Sports Desk',
-      image: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&q=80&w=600',
-      time: '18m ago',
-      desc: 'An intense overtime drive capped with a dramatic passing touchdown secures the victory in a highly physical conference final.',
-      longText: 'The Chiefs secured a historic overtime win on Sunday night, putting on a clinic of tactical resilience. Defensive coordination held their opponents to field goals throughout the fourth quarter, allowing the offense to leverage precise quick-outs in high-pressure down situations. Analysts highlight that the game-winning touchdown relied on a classic West Coast route package, exploiting weak zone coverage directly opposite the linebacker seams.'
-    },
-    {
-      id: 'a2',
-      category: 'sports',
-      subcategory: 'Formula 1',
-      title: 'Verstappen Wins Emilia Romagna GP After Intense Red Bull Setup adjustments',
-      premium: true,
-      source: 'Formula 1 Official',
-      image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&q=80&w=600',
-      time: '22m ago',
-      desc: 'Max Verstappen survives high tire degradation to hold off late-charging rivals on the technical Imola layout.',
-      longText: 'Struggling with balance issues during private sessions, Verstappen’s engineering desk overhauled the rear suspension damper rates just moments before qualifying. The gamble paid off: Max clinched pole and successfully executed an aggressive single-stop hard compound strategy. Despite a blistering late-stage charge by competitors on fresher rubber, Red Bull’s clean telemetry line defenses held clean to secure first-place honors.'
-    },
-    {
-      id: 'a3',
-      category: 'sports',
-      subcategory: 'NASCAR',
-      title: 'Byron Takes Checkered Flag at Darlington as Multi-Car Collision Freezes Field',
-      premium: false,
-      source: 'NASCAR Feed',
-      image: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&q=80&w=600',
-      time: '34m ago',
-      desc: 'William Byron maneuvers past late-stage corner traffic to claim Darlington honors under a tense green-white-checkered final.',
-      longText: 'Darlington proved its notorious "Too Tough to Tame" title on Sunday afternoon. A critical multi-car pileup in Turn 2 sent ripples of mechanical debris across the track surface with only 8 laps remaining. Byron, relying on sharp navigation spots from his crew desk, chose the high line groove and maintained throttle authority to clear the field ahead of emergency caution flags.'
-    },
-    {
-      id: 'a4',
-      category: 'finance',
-      subcategory: 'Macro Market',
-      title: 'Global Markets Rally on Cooling Consumer Inflation and Easing Bond Yield Gauges',
-      premium: false,
-      source: 'Reuters Financial',
-      image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=600',
-      time: '5m of UTC',
-      desc: 'Treasury yields stabilize under 4.3% as retail benchmarks soften, triggering an immediate rotation into high-beta tech blocks.',
-      longText: 'The official print of the Consumer Price Index (CPI) arrived lower than baseline forecasts, injecting sudden relief through global trading chambers. High-yield municipal paper saw sudden spot bids, sending bilateral exchange yields lower. Macro-oriented funds aggressively rotated assets out of defensive safe-haven currencies into corporate growth blocks, anticipating that central banks have officially concluded their tightening cycles.'
-    },
-    {
-      id: 'a5',
-      category: 'crypto',
-      subcategory: 'Asset Flows',
-      title: 'Bitcoin Surges Past $68,400 Resistance Triggering Over $120M in Leveraged Short Squeezes',
-      premium: true,
-      source: 'CoinDesk Desk',
-      image: 'https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&q=80&w=600',
-      time: '12m ago',
-      desc: 'Spot volume spikes across prominent domestic exchanges absorb large market sell walls, pushing prices to local highs.',
-      longText: 'The sudden breakout occurred after a massive block of buy orders cleared the OTC registers, directly triggering cascade liquidations of over-leveraged short options. Analysts track that Bitcoin supply reserves on major public exchange addresses have reached their lowest levels since 2018, heightening spot market sensitivity to sudden investment flows.'
-    },
-    {
-      id: 'a6',
-      category: 'politics',
-      subcategory: 'Legislative',
-      title: 'Senate Approves Major Interstate Defense Infrastructure and Renewable Utility Package',
-      premium: false,
-      source: 'AP Washington',
-      image: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&q=80&w=600',
-      time: '45m ago',
-      desc: 'Bipartisan vote delivers historic framework funding for high-capacity electric grids and naval shipping canals.',
-      longText: 'Following two weeks of intensive committee debate, lawmakers approved the comprehensive infrastructure bill with a 72-26 majority. The legislation distributes billions in direct grants to modernize high-voltage transmission lines, reinforcing electrical supply stability for localized datacenters, while expanding maritime canal locks across corporate shipping channels.'
-    },
-    {
-      id: 'a7',
-      category: 'tech',
-      subcategory: 'Artificial Labor',
-      title: 'Apple Unveils Vision Pro 2 Powered by Massive Coprocessor Fabric for Neural Tracking',
-      premium: true,
-      source: 'Wired News',
-      image: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&q=80&w=600',
-      time: '1h ago',
-      desc: 'Next-generation spatial visor automates professional desk tasks using high-bandwidth local language models.',
-      longText: 'Apple shocked enterprise networks by releasing its premium spatial computer sooner than competitors projected. Utilizing a proprietary dual silicon stack featuring advanced liquid-cooling thermal pipes, the visor enables sub-millisecond eye-tracking fidelity. The real breakthrough lies in its integrated desktop proxy agent, allowing users to automate heavy spreadsheets, slide design, and code compilations with simple spatial gaze commands.'
-    },
-    {
-      id: 'a8',
-      category: 'magazine',
-      subcategory: 'Design Core',
-      title: 'Minimalist Grid Interfaces: The Return of Print-inspired Asymmetric Typography',
-      premium: false,
-      source: 'Wired Media',
-      image: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=600',
-      time: '2h ago',
-      desc: 'Why leading digital terminals are discarding generic bento systems for spacious editorial canvas structures.',
-      longText: 'The excessive saturation of modular cards is driving high-end digital publications back to classic print principles. By employing massive serif displays paired with absolute clamp-based scale ratios, authors structure layouts that feel highly organic, human, and artistic. Asymmetry, dramatic headers, and wide negative margins enhance user retention and establish an elite aesthetic character.'
-    }
-  ]);
+  const [newsFeed, setNewsFeed] = useState(YWC_FALLBACK_NEWS);
+  const { items: digestItems, refresh: refreshDigest, loading: digestLoading, error: digestError } = useYwcDigest(xmlPollingInterval);
 
-  // Handle simulated auto RSS update triggers (every 6 or 12 hours check)
-  const handleSimulateRSSFetch = () => {
+  useEffect(() => {
+    if (!digestItems.length) return;
+    const liveCards = digestItems.map(digestItemToNewsCard);
+    setNewsFeed(liveCards);
+    setLastSyncTime(new Date().toLocaleTimeString());
+  }, [digestItems]);
+
+  const featuredStory = newsFeed[0] ?? YWC_FALLBACK_NEWS[0];
+
+  const handleSimulateRSSFetch = async () => {
     setIsSimulatingFetch(true);
     setFetchProgress(10);
-    setSimulatedLogs([`[0.0s] [CRON] Triggered automatic feed update sequence...`]);
+    setSimulatedLogs([`[0.0s] [CRON] Triggered live RSS digest refresh...`]);
 
-    const steps = [
-      { t: 400, p: 25, log: `[0.4s] Connecting to ESPN RSS feed: https://www.espn.com/espn/rss/news...` },
-      { t: 900, p: 45, log: `[0.9s] Connected. Found 12 XML feed nodes. Translating nodes to generic JSON objects...` },
-      { t: 1400, p: 60, log: `[1.4s] Connecting to Formula 1 XML nodes & NASCAR RSS stream...` },
-      { t: 1900, p: 75, log: `[1.9s] Connecting to Reuters Financial (${REUTERS_FEED}) & CoinDesk (${COINDESK_FEED})...` },
-      { t: 2400, p: 90, log: `[2.4s] Completed OAuth streaming parsing. XML parse validation index: 100% green.` },
-      { t: 2800, p: 100, log: `[2.8s] Database cache updated. React state updated. 8 high-fidelity cards smoothly compiled with glassmorphism glow!` }
-    ];
+    try {
+      setFetchProgress(35);
+      setSimulatedLogs((prev) => [...prev, `[0.3s] Fetching cached YWC digest from /api/ywc/digest...`]);
+      const items = await refreshDigest(true);
+      setFetchProgress(85);
+      setSimulatedLogs((prev) => [
+        ...prev,
+        `[1.2s] Parsed ${items.length} live articles across sports, finance, relief, and world desks.`,
+        `[1.6s] Images and timestamps synced from publisher RSS nodes.`,
+      ]);
 
-    steps.forEach((step, idx) => {
-      setTimeout(() => {
-        setFetchProgress(step.p);
-        setSimulatedLogs(prev => [...prev, step.log]);
-        
-        if (idx === steps.length - 1) {
-          setIsSimulatingFetch(false);
-          setLastSyncTime(new Date().toLocaleTimeString());
-          
-          // Randomize market prices slightly as a visual indicator
-          setMarketIndices(prev => prev.map(item => {
-            const delta = (Math.random() - 0.5) * (item.value * 0.015);
-            const newValue = item.value + delta;
-            const newChange = item.change + (delta * 0.2);
-            return {
-              ...item,
-              value: parseFloat(newValue.toFixed(item.name.includes('EUR') ? 4 : 2)),
-              change: parseFloat(newChange.toFixed(2)),
-              pct: parseFloat(((newChange / (newValue - newChange)) * 100).toFixed(2)),
-              isPositive: newChange >= 0
-            };
-          }));
-        }
-      }, step.t);
-    });
+      if (items.length) {
+        setNewsFeed(items.map(digestItemToNewsCard));
+      }
+      setFetchProgress(100);
+      setLastSyncTime(new Date().toLocaleTimeString());
+      setSimulatedLogs((prev) => [...prev, `[2.0s] React news grid updated with today's headlines.`]);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'RSS refresh failed';
+      setSimulatedLogs((prev) => [...prev, `[ERROR] ${message}`]);
+    } finally {
+      setIsSimulatingFetch(false);
+    }
   };
 
   // Social account simulation login triggering handshakes
@@ -739,11 +440,10 @@ export default function YoursPageHub() {
           </YwcLavaPanel>
 
           {selectedFeedCategory === 'all' && (
-            /* 1. HERO TOP STORY (Giant Cinematic layout preview) */
             <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="min-h-[460px] flex flex-col justify-end animate-fade-in group">
               <img 
-                src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1600"
-                alt="Global news background matrix" 
+                src={featuredStory.image}
+                alt={featuredStory.title}
                 referrerPolicy="no-referrer"
                 className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:scale-102 transition-transform duration-700 pointer-events-none"
               />
@@ -755,17 +455,20 @@ export default function YoursPageHub() {
                     HERO TOP STORY
                   </span>
                   <span className="bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20 text-[9px] font-mono px-2.5 py-1 rounded">
-                    HOT NEWS BENCH
+                    {digestLoading ? 'SYNCING RSS…' : 'LIVE RSS'}
                   </span>
                   <span className="text-zinc-400 text-xs font-mono">{lastSyncTime}</span>
                 </div>
 
-                <h2 className="text-3xl md:text-5xl font-serif italic font-black leading-tight text-white max-w-3xl hover:text-cyan-400 transition-colors pointer-events-auto cursor-pointer" onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}>
-                  Global Markets Rally on Cooling Inflation Signs as Yields Retreat
+                <h2
+                  className="text-3xl md:text-5xl font-serif italic font-black leading-tight text-white max-w-3xl hover:text-cyan-400 transition-colors pointer-events-auto cursor-pointer"
+                  onClick={() => setActiveStoryDetails(featuredStory)}
+                >
+                  {featuredStory.title}
                 </h2>
 
                 <p className="text-zinc-300 font-sans text-xs md:text-sm max-w-2xl leading-relaxed">
-                  Optimism sweeps across global indices after Consumer Price levels print below baseline analyst estimates. Sovereign debt desks release deep bid blocks on longer-duration paper.
+                  {featuredStory.desc}
                 </p>
 
                 <div className="flex items-center justify-between pt-4 border-t border-white/5">
@@ -776,18 +479,21 @@ export default function YoursPageHub() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[11px] font-bold text-zinc-300 block">Reuters Intelligence Node</span>
-                      <span className="text-[9px] font-mono text-zinc-500">Live global transmission</span>
+                      <span className="text-[11px] font-bold text-zinc-300 block">{featuredStory.source}</span>
+                      <span className="text-[9px] font-mono text-zinc-500">{featuredStory.time}</span>
                     </div>
                   </div>
 
                   <button 
-                    onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}
+                    onClick={() => setActiveStoryDetails(featuredStory)}
                     className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ff0088] rounded-xl text-xs font-black tracking-wider transition-all duration-300 cursor-pointer"
                   >
                     READ COVERAGE
                   </button>
                 </div>
+                {digestError && (
+                  <p className="text-[10px] font-mono text-amber-400/90">Feed cache warming — showing fallback until RSS reconnects.</p>
+                )}
               </div>
             </YwcLavaPanel>
           )}

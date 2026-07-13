@@ -1,10 +1,33 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Globe } from 'lucide-react';
+import { useYwcDigest } from '../hooks/useYwcDigest';
+import { digestItemToNewsCard, pickDigestItem } from '../lib/ywc/feedMappers';
 
 export const FacebookIntel: React.FC = React.memo(() => {
   const [likes, setLikes] = useState(18240);
   const [commentsCount, setCommentsCount] = useState(2410);
   const [hasLiked, setHasLiked] = useState(false);
+  const { items } = useYwcDigest();
+
+  const headline = useMemo(() => {
+    const item = pickDigestItem(items, 'finance') || pickDigestItem(items, 'news');
+    if (!item) {
+      return {
+        quote: 'Syncing live market headlines from RSS…',
+        image: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=600',
+        source: 'Markets Desk',
+        time: 'Live',
+      };
+    }
+    const card = digestItemToNewsCard(item);
+    return {
+      quote: card.title,
+      image: card.image,
+      source: card.source,
+      time: card.time,
+      link: card.link,
+    };
+  }, [items]);
 
   const handleLike = () => {
     if (hasLiked) {
@@ -43,7 +66,7 @@ export const FacebookIntel: React.FC = React.memo(() => {
             </h4>
             <div className="flex items-center gap-1.5 text-[9px] text-[#00ffff] font-mono">
               <Globe size={10} className="text-[#00ffff]" />
-              <span>Public Group • 142k Members</span>
+              <span>{headline.source} • {headline.time}</span>
             </div>
           </div>
         </div>
@@ -57,21 +80,18 @@ export const FacebookIntel: React.FC = React.memo(() => {
       {/* 2. Main Visual Storytelling Area */}
       <div className="relative flex-1 my-3 rounded-xl overflow-hidden group/img min-h-[160px] border border-white/5 bg-neutral-950">
         <img 
-          src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80&w=600" 
-          alt="Trading room with gold prices chart" 
+          src={headline.image}
+          alt={headline.quote}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700 pointer-events-none"
         />
-        {/* Dark overlay with linear gradient to read copy */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/5" />
-
-        {/* Text inside the visual */}
         <div className="absolute bottom-4 left-4 right-4 text-left space-y-1">
           <span className="inline-block bg-blue-600 text-white font-mono text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-            MARKET SENTIMENT
+            LIVE RSS
           </span>
-          <p className="text-sm sm:text-base font-bold font-serif text-white tracking-wide leading-snug drop-shadow-md">
-            "Gold traders are preparing for CPI tomorrow. Overnight collateral calls peak as positions lock."
+          <p className="text-sm sm:text-base font-bold font-serif text-white tracking-wide leading-snug drop-shadow-md line-clamp-3">
+            {headline.quote}
           </p>
         </div>
       </div>

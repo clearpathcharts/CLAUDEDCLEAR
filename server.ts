@@ -41,8 +41,18 @@ import {
   podcastIndexConfigured,
   searchPodcastsByTerm,
 } from './src/server/podcastService';
+import { mapRssItem } from './src/server/rssItemMapper';
+import { getYwcDigest } from './src/server/ywcDigestService';
 
-const parser = new RSSParser();
+const parser = new RSSParser({
+  customFields: {
+    item: [
+      ['media:content', 'media:content'],
+      ['media:thumbnail', 'media:thumbnail'],
+      ['content:encoded', 'content:encoded'],
+    ],
+  },
+});
 
 function getCleanTwelveDataApiKey(): string {
   const rawKey = 
@@ -1313,19 +1323,35 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 
       if (timeoutId) clearTimeout(timeoutId);
 
-      const items = feed.items.map((item: any, index: number) => ({
-        id: item.guid || index.toString(),
-        text: item.title,
-        link: item.link,
-        description: item.contentSnippet,
-        timestamp: item.pubDate ? new Date(item.pubDate).getTime() : Date.now(),
-        image: null
-      }));
+      const items = feed.items.map((item: any, index: number) => {
+        const mapped = mapRssItem(item, index);
+        return {
+          id: mapped.id,
+          text: mapped.text,
+          link: mapped.link,
+          description: mapped.description,
+          timestamp: mapped.timestamp,
+          image: mapped.image,
+          author: mapped.author ?? null,
+        };
+      });
       res.json(items);
     } catch (error) {
       if (timeoutId) clearTimeout(timeoutId);
       console.error('[RSS Proxy Error]', error);
       res.status(502).json({ error: 'Institutional RSS node timed out' });
+    }
+  });
+
+  app.get('/api/ywc/digest', async (req, res) => {
+    const force = req.query.refresh === '1' || req.query.refresh === 'true';
+    try {
+      const digest = await getYwcDigest(parser, assertSafePublicUrl, force);
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
+      res.json(digest);
+    } catch (error) {
+      console.error('[YWC Digest Error]', error);
+      res.status(502).json({ error: 'Failed to build YWC digest' });
     }
   });
 

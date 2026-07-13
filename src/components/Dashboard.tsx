@@ -71,7 +71,7 @@ import ThemeSelector from './ThemeSelector';
 import MeetTheBoard from './MeetTheBoard';
 import { ProfileHub } from './ProfileHub';
 import AffiliateDashboard from './profile/AffiliateDashboard';
-import YoursPage from './yours/YoursPage';
+const YoursPage = lazy(() => import('./yours/YoursPage'));
 import MembershipTab from './MembershipTab';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
@@ -377,7 +377,11 @@ const TabContent = ({
       case 'Intelligence': return <MarketScanner />;
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
-      case 'Yours': return <YoursPage />;
+      case 'Yours': return (
+        <Suspense fallback={<TabLoading />}>
+          <YoursPage />
+        </Suspense>
+      );
       case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
       case 'Workspace': return (
         <Suspense fallback={<TabLoading />}>
@@ -391,7 +395,11 @@ const TabContent = ({
       );
       case 'CpmsApk': return <CpmsApk />;
       case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isAdmin ? 'CeoDashboard' : 'StrictlyCharts')} />;
-      case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
+      case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : (
+        <Suspense fallback={<TabLoading />}>
+          <YoursPage />
+        </Suspense>
+      );
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
