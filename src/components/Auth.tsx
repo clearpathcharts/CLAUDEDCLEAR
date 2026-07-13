@@ -11,6 +11,7 @@ import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "../fire
 import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
+import { joinWaitlist } from "../appwrite";
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
@@ -453,7 +454,7 @@ export default function Auth() {
     }
   };
 
-  // Waitlist form register submit via server API (duplicate check + activation key + email)
+  // Waitlist form -> Appwrite TablesDB (site_registrations / waitlist)
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
@@ -470,16 +471,15 @@ export default function Auth() {
     }
 
     try {
-      const { submitWaitlistRegistration } = await import('../api/registrations');
-      const result = await submitWaitlistRegistration({
+      const result = await joinWaitlist({
         firstName: fName,
         emailAddress: lEmail,
         country: lCountry,
         experienceLevel: experience,
       });
 
-      setActivationKey(result.activationKey);
-      setEmailSent(result.emailSent);
+      setActivationKey(result.passcode);
+      setEmailSent(false);
       setIsSubmitted(true);
       setFirstName('');
       setEmail('');
@@ -1764,7 +1764,7 @@ Not the other way around.`}
               {/* Secure Node Info */}
               <div className="text-center pt-2">
                 <p className="text-[10px] text-zinc-500 font-mono flex items-center justify-center gap-1">
-                  🔒 Server-authenticated endpoint secured. Direct pipeline linked to waitlist collection.
+                  🔒 Appwrite waitlist pipeline — reservations stored in ClearPath TablesDB.
                 </p>
               </div>
 
