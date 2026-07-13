@@ -89,6 +89,15 @@ def get_quote(symbol: str) -> dict[str, Any]:
     return _get("/api/quote", params={"symbol": symbol})
 
 
+def get_candles(symbol: str, interval: str = "1h") -> dict[str, Any]:
+    """Fetch recent OHLC candles for a symbol/interval (pattern-of-the-day).
+
+    Requires ``TWELVEDATA_API_KEY`` on the server; otherwise returns the
+    server's 503 error body, which callers should surface (never fabricate).
+    """
+    return _get("/api/candles", params={"symbol": symbol, "interval": interval})
+
+
 def summarize_corpus(records: dict[str, Any]) -> list[dict[str, str]]:
     """Compress the semantic corpus into lightweight {id,title,summary,pages}.
 

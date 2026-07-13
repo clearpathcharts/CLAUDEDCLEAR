@@ -13,6 +13,8 @@ import json
 from crewai.tools import tool
 
 from . import clearpath_client as api
+from .campaign import DEFAULT_COUNTRY_CAP, LAUNCH_COUNTRIES
+from .scarcity import scarcity_snapshot, spots_left
 
 
 @tool("Fetch ClearPath education corpus")
@@ -80,6 +82,35 @@ def fetch_quote(symbol: str) -> str:
         return f"ERROR: {exc}"
 
 
+@tool("Fetch recent candles for pattern-of-the-day")
+def fetch_candles(symbol: str, interval: str = "1h") -> str:
+    """Fetch recent OHLC candles for a symbol (e.g. 'XAU/USD', 'BTC/USD') to
+    ground a 'pattern of the day' post in real price action. Returns JSON. If the
+    server lacks a market-data key it returns an error body — surface that,
+    never invent candles."""
+    try:
+        return json.dumps(api.get_candles(symbol, interval), ensure_ascii=False)
+    except api.ClearPathAPIError as exc:
+        return f"ERROR: {exc}"
+
+
+@tool("Compute compliant scarcity (spots left)")
+def scarcity_spots_left(country: str) -> str:
+    """Return the compliant scarcity line for a country's soft-launch cap
+    (e.g. 'Brazil'). Only emits a number when a REAL registered count is
+    configured; otherwise returns verified=false with no number, so you must
+    NOT publish a spots-left figure for that country. Returns JSON."""
+    result = spots_left(country)
+    return json.dumps(result.to_dict(), ensure_ascii=False)
+
+
+@tool("Scarcity snapshot for launch countries")
+def scarcity_snapshot_tool() -> str:
+    """Return compliant scarcity results for all priority launch countries as
+    JSON. Use verified=true entries only."""
+    return json.dumps(scarcity_snapshot(list(LAUNCH_COUNTRIES)), ensure_ascii=False)
+
+
 # Grouped for convenient import into crews.
 RESEARCH_TOOLS = [
     fetch_education_corpus,
@@ -87,15 +118,29 @@ RESEARCH_TOOLS = [
     search_finance_news,
     fetch_macro_series,
     fetch_quote,
+    fetch_candles,
 ]
 
 CONTENT_TOOLS = [
     fetch_education_corpus,
     fetch_faqs,
     auto_internal_link,
+    scarcity_spots_left,
+]
+
+SEO_TOOLS = [
+    fetch_education_corpus,
+    fetch_faqs,
+    auto_internal_link,
+]
+
+SEEDING_TOOLS = [
+    fetch_education_corpus,
+    fetch_faqs,
 ]
 
 COMPLIANCE_TOOLS = [
     fetch_faqs,
     fetch_education_corpus,
+    scarcity_spots_left,
 ]

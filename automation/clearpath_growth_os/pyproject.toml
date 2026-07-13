@@ -15,6 +15,8 @@ dependencies = [
 # `crewai run` / `crewai flow kickoff` also work; these are convenience entry points.
 growth-os = "clearpath_growth_os.main:kickoff"
 growth-os-plot = "clearpath_growth_os.main:plot"
+plant-the-flag = "clearpath_growth_os.plant_the_flag:kickoff"
+plant-the-flag-plot = "clearpath_growth_os.plant_the_flag:plot"
 
 [build-system]
 requires = ["hatchling"]

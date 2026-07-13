@@ -89,9 +89,61 @@ file (or the `publish_batch` return value) into Zapier MCP to fan out to X,
 LinkedIn, Buffer, email, or your CRM after a human approves. This keeps the
 board-governed brand in control during the initial trust window.
 
+## 30-Day "Plant the Flag" phase
+
+`plant_the_flag.py` is the concrete system for the 30-day launch phase: daily
+omnipresence on 3 channels, a seeded SEO farm, founding distribution, and a
+compliant scarcity loop — all tracked against the phase KPIs.
+
+```
+build_daily_plan   deterministic planner (no LLM) — decides the day's exact output
+      ↓
+gather_intelligence   Macro Intelligence crew  → grounded brief + teachable moments
+      ↓
+produce_omnipresence  Daily Omnipresence crew  → X pack (3-4 posts + thread), LinkedIn post, 1-2 short-form scripts
+      ↓
+produce_seo           SEO Farm crew  → pillar article + 8-10 supporting posts  (Mon/Wed/Fri only)
+      ↓
+produce_seeding       Seeding crew   → value-first Reddit/Quora answers          (Tue/Thu only)
+      ↓
+enforce_compliance    Compliance Guardian crew
+      ↓ (router)
+approved → publish_day  → output/plant_the_flag_<date>.json + output/plant_the_flag_kpi.json
+needs_revision → flag_day → output/plant_the_flag_flags_<date>.json
+```
+
+### Deterministic core (unit-tested, no LLM)
+
+| Module | Responsibility |
+| --- | --- |
+| `campaign.py` | Pillars + clusters, long-tail keywords, per-channel cadence, country caps, KPI targets |
+| `planner.py` | `build_daily_plan(run_date, phase_start)` → exactly what ships today (reproducible) |
+| `scarcity.py` | Compliant "spots left" — emits a number ONLY with a real registered count |
+| `kpi.py` | Rolls up daily batches vs the 90 articles / 300 posts / 2-5k signups / 50k video targets |
+
+### Scarcity loop (compliant)
+
+The "4,218 spots left in Brazil" hook only fires with a real count. Supply
+counts via `GROWTH_OS_WAITLIST_COUNTS` (a JSON file like `{"Brazil": 10782}`)
+or the `counts` argument. Without a verified count the engine returns
+`verified: false` and no number, so agents cannot invent urgency.
+
+### Run
+
+```bash
+# Deterministic tests (fast, no LLM key):
+python -m pytest tests/ -q
+
+# End-to-end flow with stubbed crews (no LLM key):
+python scripts/e2e_flow_test.py
+
+# One real day of the phase (needs an LLM key):
+plant-the-flag           # or: python -m clearpath_growth_os.plant_the_flag
+```
+
 ## Extending
 
-The strategy calls for four more crews — Social Distributor, Funnel Architect,
+The strategy calls for more crews — Social Distributor, Funnel Architect,
 Affiliate Empire, Competitive Warfare. Each is added the same way: a folder
 under `crews/` with `config/agents.yaml` + `config/tasks.yaml` and a `@CrewBase`
-class, then a new `@listen(...)` step in `main.py`.
+class, then a new `@listen(...)` step in a flow.
