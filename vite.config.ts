@@ -38,7 +38,22 @@ export default defineConfig(({mode}) => {
               if (id.includes('framer-motion') || id.includes('motion')) {
                 return 'motion-vendor';
               }
+              if (id.includes('firebase')) {
+                return 'firebase-vendor';
+              }
               return 'common-vendor';
+            }
+            if (id.includes('/components/Auth')) {
+              return 'landing-auth';
+            }
+            if (id.includes('/components/GlobalNetworkGlobe') || id.includes('/components/landing/ParticleCanvas')) {
+              return 'landing-visuals';
+            }
+            if (id.includes('/components/MediaGrid') || id.includes('/components/BloombergLive') || id.includes('/components/FacebookIntel')) {
+              return 'landing-media';
+            }
+            if (id.includes('/components/chat/ClearPathChatroom')) {
+              return 'landing-chat';
             }
           }
         }

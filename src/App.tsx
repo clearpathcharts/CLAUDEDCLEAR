@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Dashboard from './components/Dashboard';
-import Auth from './components/Auth';
+const Auth = lazy(() => import('./components/Auth'));
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
@@ -93,7 +93,18 @@ export default function App() {
   }
   // If there is no authenticated session, render the gorgeous waitlist/external landing page
   if (!user) {
-    return <Auth />;
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
+            <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
+            <p className="text-zinc-400 font-mono text-xs mt-4 uppercase tracking-[0.3em]">Loading ClearPath…</p>
+          </div>
+        }
+      >
+        <Auth />
+      </Suspense>
+    );
   }
   const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
   return (

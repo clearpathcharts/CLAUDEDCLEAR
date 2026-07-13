@@ -312,3 +312,46 @@ input, textarea, select {
 .ywc-lava-drift {
   animation: ywc-drift 8s ease-in-out infinite;
 }
+
+/* Respect OS reduced-motion preference — disables pulse, marquee, glow, and scroll animations */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  .animate-spin-slow,
+  .animate-ping,
+  .animate-bounce,
+  .ywc-title-lava,
+  .ywc-section-title,
+  .ywc-lava-drift,
+  .text-neon-glow {
+    animation: none !important;
+  }
+}
+
+/* Landing Y.W.C. ecosystem — WCAG AA micro-copy on #050505 */
+#ecosystem [class*="text-[8px]"],
+#ecosystem [class*="text-[9px]"] {
+  font-size: 0.6875rem !important; /* 11px minimum */
+}
+
+#ecosystem .text-zinc-500,
+#ecosystem [class*="text-zinc-500"] {
+  color: #a1a1aa !important; /* zinc-400 — 4.5:1+ on near-black */
+}
+
+#waitlist .text-zinc-500,
+#waitlist [class*="text-zinc-500"] {
+  color: #a1a1aa !important;
+}

@@ -1,12 +1,11 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { MediaTile } from './MediaTile';
-import { FacebookIntel } from './FacebookIntel';
 import { InstagramSignals } from './InstagramSignals';
 import { CarAndDriverFeed } from './CarAndDriverFeed';
 import { Globe } from 'lucide-react';
 
-// Lazy load the Bloomberg Live Component for performance optimization
 const BloombergLive = lazy(() => import('./BloombergLive'));
+const FacebookIntel = lazy(() => import('./FacebookIntel').then((m) => ({ default: m.FacebookIntel })));
 
 const BloombergFallback = () => (
   <div className="h-[200px] bg-zinc-950/60 rounded-xl border border-white/5 flex items-center justify-center p-4">
@@ -14,6 +13,12 @@ const BloombergFallback = () => (
       <div className="w-1.5 h-1.5 rounded-full bg-[#ff1493] animate-ping" />
       <span>SYNCING TV DECK FEED...</span>
     </div>
+  </div>
+);
+
+const SocialFallback = () => (
+  <div className="min-h-[160px] bg-zinc-950/60 rounded-xl border border-white/5 flex items-center justify-center p-4">
+    <span className="text-zinc-400 font-mono text-[10px] uppercase">Loading community feed…</span>
   </div>
 );
 
@@ -29,10 +34,10 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
       {/* Title block of the Grid */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-black font-serif italic text-[#ff1493] flex items-center gap-2 uppercase tracking-tight">
+          <h3 className="text-lg md:text-xl font-black font-serif italic text-[#ff1493] flex items-center gap-2 uppercase tracking-tight">
             <Globe size={18} className="text-[#ff1493]" />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
-          </h2>
+          </h3>
           <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1">
             Welcome to your connected realm. A curated consumer media experience syncing community discussions, live-streamed financial television, and luxury automotive reviews.
           </p>
@@ -88,7 +93,9 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
 
             {/* Render the selected community component */}
             <div className="flex-1 flex flex-col justify-start">
-              {activeTab === 'facebook' ? <FacebookIntel /> : <InstagramSignals />}
+              <Suspense fallback={<SocialFallback />}>
+                {activeTab === 'facebook' ? <FacebookIntel /> : <InstagramSignals />}
+              </Suspense>
             </div>
           </div>
         </MediaTile>

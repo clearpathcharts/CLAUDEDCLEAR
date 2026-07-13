@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, Lock, Eye, EyeOff, ArrowRight, UserCheck, 
@@ -9,148 +9,18 @@ import {
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "../firebase";
 import { auth, getDb, loginAnonymously } from "../firebase";
-import GlobalNetworkGlobe from './GlobalNetworkGlobe';
-import { SurfBackground } from './SurfBackground';
-import { MediaGrid } from './MediaGrid';
-import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 
-// ==========================================
-// 1. PARTICLE CANVAS COMPONENT
-// ==========================================
-const ParticleCanvas = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const GlobalNetworkGlobe = lazy(() => import('./GlobalNetworkGlobe'));
+const MediaGrid = lazy(() => import('./MediaGrid').then((m) => ({ default: m.MediaGrid })));
+const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
+const ParticleCanvas = lazy(() => import('./landing/ParticleCanvas'));
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let animationId: number;
-
-    // ClearPath aesthetic color palette
-    const colors = [
-      '#FF1493', // Fluorescent Pink
-      '#00FFFF', // Electric Cyan
-      '#B026FF', // Neon Indigo
-      '#FF7B00'  // Molten Lava Orange
-    ];
-
-    // Helper to convert hex to rgba
-    const convertHexToRGBA = (hex: string, alpha: number) => {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-
-    // Dense Matrix Rain Configuration (Subtle environmental texture)
-    const fontSize = 11;
-    let columns = 0;
-    let drops: number[] = [];
-    let dropColors: string[] = [];
-    const charPool = "01010101ABCDEFGHIJKLMNOPQRSTUVWXYZ$%#@&*()[]{}X+-=".split("");
-
-    const updateHubsAndClusters = () => {
-      const parent = canvas.parentElement;
-      canvas.width = parent ? parent.clientWidth : window.innerWidth;
-      
-      // Calculate full scroll height so animation spreads all the way down behind footer content
-      const targetHeight = parent ? Math.max(parent.scrollHeight, parent.clientHeight) : document.documentElement.scrollHeight;
-      canvas.height = targetHeight;
-
-      // Re-initialize columns and drop points for continuous rain
-      columns = Math.floor(canvas.width / fontSize) + 1;
-      drops = [];
-      dropColors = [];
-      
-      for (let i = 0; i < columns; i++) {
-        // Populate the screen immediately on load to prevent any initial chunks/gaps
-        drops[i] = Math.floor(Math.random() * (canvas.height / fontSize));
-        dropColors[i] = colors[Math.floor(Math.random() * colors.length)];
-      }
-    };
-
-    updateHubsAndClusters();
-
-    // Use ResizeObserver to dynamically expand canvas height as layout/assets settle on screen
-    const resizeObserver = new ResizeObserver(() => {
-      updateHubsAndClusters();
-    });
-    if (canvas.parentElement) {
-      resizeObserver.observe(canvas.parentElement);
-    }
-
-    const trailLength = 8;
-    const animate = () => {
-      // Clear with absolute static transparency - NO RGBA background fills
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.font = `600 ${fontSize}px monospace`;
-      ctx.textAlign = 'center';
-
-      for (let i = 0; i < columns; i++) {
-        const baseColor = dropColors[i];
-        const x = i * fontSize + fontSize / 2;
-        const headY = Math.floor(drops[i]);
-
-        // Draw character trail with precise fading up to max 0.15 opacity
-        for (let j = 0; j < trailLength; j++) {
-          const currentY = headY - j;
-          if (currentY >= 0 && currentY * fontSize < canvas.height) {
-            const factor = (trailLength - j) / trailLength; // 1 to 0
-            const opacity = factor * 0.11; // trail characters strictly under 0.15
-            
-            const char = charPool[(Math.floor(drops[i] * 5) + j) % charPool.length];
-            const y = currentY * fontSize;
-            
-            ctx.fillStyle = convertHexToRGBA(baseColor, opacity);
-            ctx.shadowBlur = 0;
-            ctx.fillText(char, x, y);
-          }
-        }
-
-        // Draw bright head tip character at max 0.15 opacity
-        if (headY * fontSize < canvas.height) {
-          const tipChar = charPool[Math.floor(Math.random() * charPool.length)];
-          ctx.fillStyle = convertHexToRGBA('#FFFFFF', 0.15); // Strict 0.15 maximum char opacity
-          ctx.shadowColor = baseColor;
-          ctx.shadowBlur = 3;
-          ctx.fillText(tipChar, x, headY * fontSize);
-        }
-
-        // Downward drift
-        drops[i] += 0.18;
-
-        // Reset drop index when it drifts past bounds
-        if ((drops[i] - trailLength) * fontSize > canvas.height) {
-          drops[i] = 0;
-          dropColors[i] = colors[Math.floor(Math.random() * colors.length)];
-        }
-      }
-
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      resizeObserver.disconnect();
-    };
-  }, []);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-[0.08]" 
-    />
-  );
-};
-
-// ==========================================
-// 2. MAIN PORTAL & LANDING
-// ==========================================
+const SectionFallback = ({ label, minHeight = 'min-h-[200px]' }: { label: string; minHeight?: string }) => (
+  <div className={`${minHeight} flex items-center justify-center text-zinc-400 font-mono text-[11px] uppercase tracking-widest`} aria-hidden="true">
+    {label}
+  </div>
+);
 export default function Auth() {
   const [boardModalOpen, setBoardModalOpen] = useState(false);
   const [passcode, setPasscode] = useState('');
@@ -558,7 +428,9 @@ export default function Auth() {
       <div className="absolute inset-0 bg-transparent z-0" />
 
       {/* Layer 2: Particle Engine */}
-      <ParticleCanvas />
+      <Suspense fallback={null}>
+        <ParticleCanvas />
+      </Suspense>
 
       {/* Layer 3: Cyber grid overlay */}
       <div 
@@ -870,7 +742,7 @@ Not the other way around.`}
               </span>
             </div>
             
-            <p className="text-zinc-500 text-xs sm:text-xs max-w-lg mx-auto font-mono mt-4 font-black">
+            <p className="text-zinc-400 text-xs sm:text-xs max-w-lg mx-auto font-mono mt-4 font-black">
               ⚡ IMMERSIVE. SOCIAL. VISUAL. AND BUILT FOR HUMANS. ⚡
             </p>
           </div>
@@ -901,7 +773,7 @@ Not the other way around.`}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%)] bg-[size:100%_4px] pointer-events-none" />
 
                 {/* Receiver Info Bar */}
-                <div className="flex items-center justify-between text-[8px] text-zinc-500 border-b border-zinc-900/60 pb-2">
+                <div className="flex items-center justify-between text-[8px] text-zinc-400 border-b border-zinc-900/60 pb-2">
                   <span>HD 1080P STREAM</span>
                   <span className="text-[#FF1493] font-black animate-pulse">● BROADCAST_SECURE</span>
                 </div>
@@ -917,28 +789,28 @@ Not the other way around.`}
                 <div className="py-2 flex-grow flex flex-col justify-end z-10">
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         📡 Fed Repo Facilities Explained
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🌊 Global Sovereign Debt Flows
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
-                      </h4>
+                      </h3>
                     </div>
                   )}
                 </div>
@@ -985,7 +857,7 @@ Not the other way around.`}
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
                 <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
+                  <span className="text-[9px] text-zinc-400 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
                   <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
                 </div>
               </div>
@@ -1009,7 +881,9 @@ Not the other way around.`}
             <div className="flex flex-col h-full rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-[#B026FF]/60 hover:border-[#B026FF] shadow-[0_0_25px_rgba(176,38,255,0.25)] hover:shadow-[0_0_55px_rgba(176,38,255,0.7)] transition-all duration-300 text-left" style={{ backgroundColor: '#050505' }}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#B026FF]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#B026FF]/10 transition-all duration-500" />
               
-              <MediaGrid onConfigureYwc={() => setEcosystemYwcOpen(true)} />
+              <Suspense fallback={<SectionFallback label="Loading media hub…" minHeight="min-h-[320px]" />}>
+                <MediaGrid onConfigureYwc={() => setEcosystemYwcOpen(true)} />
+              </Suspense>
             </div>
 
             {/* -----------------------------------------------------------------
@@ -1058,14 +932,20 @@ Not the other way around.`}
                     className="mt-3 space-y-2 bg-black/40 border border-[#FF7B00]/15 p-2.5 rounded-xl text-left"
                   >
                     <input
+                      id="community-custom-name"
                       type="text"
                       placeholder="Custom community title... (e.g. Forex Rebels)"
                       value={customCommunityName}
                       onChange={(e) => setCustomCommunityName(e.target.value)}
                       disabled={hasBuiltCommunity}
+                      aria-label="Custom community title"
                       className="w-full px-3 py-1.5 border border-zinc-800 bg-neutral-950 font-sans text-[10px] rounded-lg focus:border-[#FF7B00] focus:ring-1 focus:ring-[#FF7B00]/30 outline-none text-white disabled:opacity-50"
                     />
+                    <label htmlFor="community-template" className="sr-only">
+                      Community template
+                    </label>
                     <select
+                      id="community-template"
                       value={communityTemplate}
                       onChange={(e) => setCommunityTemplate(e.target.value)}
                       disabled={hasBuiltCommunity}
@@ -1128,14 +1008,16 @@ Not the other way around.`}
               <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-[0.3em] bg-[#FF7B00]/5 px-4 py-1.5 rounded-full border border-[#FF7B00]/20 inline-block">
                 Live Before Login
               </span>
-              <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white">
+              <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white">
                 ClearPath <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B00] to-[#FF1493]">Trading Lobby</span>
-              </h2>
-              <p className="text-sm text-zinc-500 max-w-2xl mx-auto">
+              </h3>
+              <p className="text-sm text-zinc-400 max-w-2xl mx-auto">
                 Real-time community chat powered by WebSocket. Join macro, forex, or liquidity rooms — create your free account later for private guilds.
               </p>
             </div>
-            <ClearPathChatroom variant="embedded" heightClass="min-h-[580px] md:min-h-[620px]" />
+            <Suspense fallback={<SectionFallback label="Connecting lobby…" minHeight="min-h-[580px]" />}>
+              <ClearPathChatroom variant="embedded" heightClass="min-h-[580px] md:min-h-[620px]" />
+            </Suspense>
           </div>
 
           {/* ==========================================
@@ -1146,12 +1028,12 @@ Not the other way around.`}
               <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.3em] bg-[#B026FF]/5 px-4 py-1.5 rounded-full border border-[#B026FF]/20 inline-block shadow-[0_0_15px_rgba(176,38,255,0.05)]">
                 REAL-TIME ROLLOUT DEPLOYMENT NODES
               </span>
-              <h2 className="text-4xl sm:text-6xl md:text-7xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#36E6FF] to-[#8B3DFF] uppercase mt-2">
+              <h3 className="text-4xl sm:text-6xl md:text-7xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#36E6FF] to-[#8B3DFF] uppercase mt-2">
                 THE CLEARPATH <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00FFFF] via-[#B026FF] to-[#FF1493] drop-shadow-[0_0_35px_rgba(0,255,255,0.45)]">
                   GLOBAL NETWORK
                 </span>
-              </h2>
+              </h3>
               <div className="flex items-center justify-center gap-2 text-[#00FFFF] font-mono text-[10px] uppercase font-black tracking-widest">
                 <Compass size={12} className="animate-spin-slow" />
                 <span>DIFFERENT MINDS. DIFFERENTS COUNTRIES. ONE CONNECTED COMMUNITY.</span>
@@ -1160,7 +1042,9 @@ Not the other way around.`}
 
             {/* Render 3D Globe with Firestore sync */}
             <div className="relative z-10 w-full min-h-[550px] overflow-hidden">
-              <GlobalNetworkGlobe />
+              <Suspense fallback={<SectionFallback label="Loading global network…" minHeight="min-h-[550px]" />}>
+                <GlobalNetworkGlobe />
+              </Suspense>
             </div>
           </div>
 
@@ -1664,12 +1548,13 @@ Not the other way around.`}
                 
                 {/* First Name */}
                 <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
+                  <label htmlFor="waitlist-first-name" className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
                     First Name
                   </label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                     <input
+                      id="waitlist-first-name"
                       type="text"
                       required
                       value={firstName}
@@ -1682,12 +1567,13 @@ Not the other way around.`}
 
                 {/* Email Address */}
                 <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
+                  <label htmlFor="waitlist-email" className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
                     Email Address
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                     <input
+                      id="waitlist-email"
                       type="email"
                       required
                       value={email}
@@ -1700,12 +1586,13 @@ Not the other way around.`}
 
                 {/* Country Selection */}
                 <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
+                  <label htmlFor="waitlist-country" className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
                     Country of Residence
                   </label>
                   <div className="relative">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                     <select
+                      id="waitlist-country"
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
                       required
@@ -1721,12 +1608,13 @@ Not the other way around.`}
 
                 {/* Experience Level Dropdown */}
                 <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
+                  <label htmlFor="waitlist-experience" className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
                     Trading Experience Level
                   </label>
                   <div className="relative">
                     <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                     <select
+                      id="waitlist-experience"
                       value={experience}
                       onChange={(e) => setExperience(e.target.value)}
                       className="w-full bg-black border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono appearance-none"
@@ -2276,14 +2164,14 @@ Not the other way around.`}
                     >
                       <div className="p-4 bg-zinc-900/60 border border-[#B026FF]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#00FFFF] font-extrabold uppercase">FED TREASURY ACTION</span>
-                        <h5 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h5>
+                        <h4 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h4>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           This introduces cash into financial avenues, easing loan constraints and boosting long-term investment queues.
                         </p>
                       </div>
                       <div className="p-4 bg-zinc-900/60 border border-[#FF7B00]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#FF7B00] font-extrabold uppercase">LIQUIDITY ALERT</span>
-                        <h5 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h5>
+                        <h4 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h4>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           Capital cash reserves show a strong tick up, creating a healthy backdrop for stock and coin indicators.
                         </p>
