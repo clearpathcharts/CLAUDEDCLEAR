@@ -13,6 +13,11 @@ import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
+import { YwcPersonalCharts } from './yours/YwcPersonalCharts';
+
+const scrollToSection = (id: string) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 
 // ==========================================
@@ -199,6 +204,7 @@ export default function Auth() {
 
   // Modals for detail immersive popups
   const [ecosystemTvOpen, setEcosystemTvOpen] = useState(false);
+  const [tvDeckView, setTvDeckView] = useState<'live' | 'archive'>('live');
   const [ecosystemYwcOpen, setEcosystemYwcOpen] = useState(false);
   const [ecosystemCommOpen, setEcosystemCommOpen] = useState(false);
 
@@ -845,9 +851,13 @@ Not the other way around.`}
           
           {/* Header Block with Cosmic Glowing Typo */}
           <div className="text-center mb-20 space-y-4">
-            <span className="font-mono text-[10px] text-[#00FFFF] font-black uppercase tracking-[0.3em] bg-[#00FFFF]/10 px-5 py-2 rounded-full border border-[#00FFFF]/40 inline-block shadow-[0_0_20px_rgba(0,255,255,0.3)]">
+            <button
+              type="button"
+              onClick={() => scrollToSection('ecosystem')}
+              className="font-mono text-[10px] text-[#00FFFF] font-black uppercase tracking-[0.3em] bg-[#00FFFF]/10 px-5 py-2 rounded-full border border-[#00FFFF]/40 inline-block shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:bg-[#00FFFF]/20 hover:scale-[1.02] transition-all cursor-pointer"
+            >
               EXPERIENCE THE LIVING NETWORK
-            </span>
+            </button>
             <h2 className="text-4xl sm:text-6xl md:text-7xl font-sans font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FF7A00] to-[#FFB300] uppercase mt-2">
               WELCOME TO YOUR <br className="hidden sm:inline" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] via-[#B026FF] to-[#00FFFF] drop-shadow-[0_0_35px_rgba(255,20,147,0.45)]">
@@ -857,17 +867,29 @@ Not the other way around.`}
             
             {/* Immersive Subheadline Grid */}
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-center mt-6 text-zinc-300 font-sans text-xs sm:text-sm tracking-widest uppercase font-black">
-              <span className="flex items-center gap-1 text-[#FF1493]">
+              <button
+                type="button"
+                onClick={() => scrollToSection('ywc-chamber-tv')}
+                className="flex items-center gap-1 text-[#FF1493] hover:text-white transition-colors cursor-pointer"
+              >
                 <Film size={11} className="text-[#FF1493]" /> Watch Live
-              </span>
+              </button>
               <span className="text-zinc-700">•</span>
-              <span className="flex items-center gap-1 text-[#B026FF]">
+              <button
+                type="button"
+                onClick={() => scrollToSection('ywc-chamber-media')}
+                className="flex items-center gap-1 text-[#B026FF] hover:text-white transition-colors cursor-pointer"
+              >
                 <Newspaper size={11} className="text-[#B026FF]" /> Organize Feeds
-              </span>
+              </button>
               <span className="text-zinc-700">•</span>
-              <span className="flex items-center gap-1 text-[#00FFFF]">
+              <button
+                type="button"
+                onClick={() => scrollToSection('clearpath-live-lobby')}
+                className="flex items-center gap-1 text-[#00FFFF] hover:text-white transition-colors cursor-pointer"
+              >
                 <Users size={11} className="text-[#00FFFF]" /> Find Your People
-              </span>
+              </button>
             </div>
             
             <p className="text-zinc-500 text-xs sm:text-xs max-w-lg mx-auto font-mono mt-4 font-black">
@@ -881,7 +903,7 @@ Not the other way around.`}
             {/* -----------------------------------------------------------------
                 CHAMBER 1: CPMS TV™ (Streaming Platform Deck)
                 ----------------------------------------------------------------- */}
-            <div className="flex flex-col h-full rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-[#FF1493]/60 hover:border-[#FF1493] shadow-[0_0_25px_rgba(255,20,147,0.25)] hover:shadow-[0_0_55px_rgba(255,20,147,0.7)] hover:-translate-y-2.5 transition-all duration-300" style={{ backgroundColor: '#050505' }}>
+            <div id="ywc-chamber-tv" className="flex flex-col h-full rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-[#FF1493]/60 hover:border-[#FF1493] shadow-[0_0_25px_rgba(255,20,147,0.25)] hover:shadow-[0_0_55px_rgba(255,20,147,0.7)] hover:-translate-y-2.5 transition-all duration-300 scroll-mt-24" style={{ backgroundColor: '#050505' }}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF1493]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF1493]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
@@ -894,7 +916,11 @@ Not the other way around.`}
               </div>
 
               {/* Glowing TV Player Frame */}
-              <div className="aspect-[16/9] w-full rounded-2xl bg-black border border-zinc-900 overflow-hidden relative p-4 flex flex-col justify-between font-mono z-10 shadow-inner group-hover:border-[#FF1493]/35 transition-colors duration-500">
+              <button
+                type="button"
+                onClick={() => { setTvDeckView('live'); setEcosystemTvOpen(true); }}
+                className="aspect-[16/9] w-full rounded-2xl bg-black border border-zinc-900 overflow-hidden relative p-4 flex flex-col justify-between font-mono z-10 shadow-inner group-hover:border-[#FF1493]/35 transition-colors duration-500 cursor-pointer text-left"
+              >
                 
                 {/* Scanline overlay for TV stream feel */}
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/20 to-zinc-950/50 pointer-events-none mix-blend-overlay" />
@@ -957,6 +983,23 @@ Not the other way around.`}
                     );
                   })}
                 </div>
+              </button>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => { setTvDeckView('live'); setEcosystemTvOpen(true); }}
+                  className="flex-1 py-2 px-2 rounded-xl border border-[#FF1493]/30 bg-[#FF1493]/10 text-[#FF1493] text-[8px] font-black uppercase tracking-wider hover:bg-[#FF1493] hover:text-white transition-all cursor-pointer"
+                >
+                  Live Stream
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTvDeckView('archive'); setActiveTvChannel('liquidity'); setEcosystemTvOpen(true); }}
+                  className="flex-1 py-2 px-2 rounded-xl border border-zinc-800 text-zinc-400 text-[8px] font-black uppercase tracking-wider hover:border-[#FF1493]/30 hover:text-white transition-all cursor-pointer"
+                >
+                  Broadcast Archive
+                </button>
               </div>
 
               {/* Watch presets selectors resembling digital tuner deck */}
@@ -984,17 +1027,21 @@ Not the other way around.`}
                 <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
-                <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => { setActiveTvChannel('liquidity'); setTvDeckView('live'); setEcosystemTvOpen(true); }}
+                  className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center w-full text-left hover:border-[#FF1493]/35 transition-colors cursor-pointer"
+                >
                   <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
                   <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
-                </div>
+                </button>
               </div>
 
               {/* Action Button */}
               <div className="mt-8">
                 <button
                   type="button"
-                  onClick={() => setEcosystemTvOpen(true)}
+                  onClick={() => { setTvDeckView('live'); setEcosystemTvOpen(true); }}
                   className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Tv size={14} /> TUNE IN NOW
@@ -1006,7 +1053,7 @@ Not the other way around.`}
                 CHAMBER 2: YOUR WORLD CONNECTED™ (Information Universe Deck)
                 - Integrated full 2x2 MediaGrid with custom responsive grid structure
                 ----------------------------------------------------------------- */}
-            <div className="flex flex-col h-full rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-[#B026FF]/60 hover:border-[#B026FF] shadow-[0_0_25px_rgba(176,38,255,0.25)] hover:shadow-[0_0_55px_rgba(176,38,255,0.7)] transition-all duration-300 text-left" style={{ backgroundColor: '#050505' }}>
+            <div id="ywc-chamber-media" className="flex flex-col h-full rounded-[2.5rem] p-6 sm:p-8 relative overflow-hidden group border border-[#B026FF]/60 hover:border-[#B026FF] shadow-[0_0_25px_rgba(176,38,255,0.25)] hover:shadow-[0_0_55px_rgba(176,38,255,0.7)] transition-all duration-300 text-left scroll-mt-24" style={{ backgroundColor: '#050505' }}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#B026FF]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#B026FF]/10 transition-all duration-500" />
               
               <MediaGrid onConfigureYwc={() => setEcosystemYwcOpen(true)} />
@@ -2121,19 +2168,23 @@ Not the other way around.`}
                       {activeTvChannel === 'review' ? 'MACRO DIRECT' : activeTvChannel === 'liquidity' ? 'LIQUIDITY FEED' : 'VISUAL CLASSROOM'}
                     </span>
                     <h3 className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
-                      {activeTvChannel === 'review' 
-                        ? 'Federal Reserve Bond Buyback Rates Adjustments'
-                        : activeTvChannel === 'liquidity'
-                        ? 'Global Liquidity Flows & Central Bank Balances'
-                        : 'Uncluttering Trading Interfaces For Clearer Execution'}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-sans">
-                      {activeTvChannel === 'review'
-                        ? 'A complete visual teardown breaking down treasury buybacks, repo desk limits, and dollar liquidity indices in real time.'
-                        : activeTvChannel === 'liquidity'
-                        ? 'Tracing multi-billion dollar capital corridors between the Eurozone, Wall Street queues, and emerging market debt structures.'
-                        : 'Discover how stripping complex indicators like MACD or Stochastic reduces mental fatigue and builds pristine visual confidence.'}
-                    </p>
+                  {tvDeckView === 'archive' ? 'CPMS Broadcast Archive' : (
+                    activeTvChannel === 'review' 
+                      ? 'Federal Reserve Bond Buyback Rates Adjustments'
+                      : activeTvChannel === 'liquidity'
+                      ? 'Global Liquidity Flows & Central Bank Balances'
+                      : 'Uncluttering Trading Interfaces For Clearer Execution'
+                  )}
+                </h3>
+                <p className="text-xs text-zinc-400 font-sans">
+                  {tvDeckView === 'archive'
+                    ? 'Replay recent macro sessions, collateral flow breakdowns, and visual classroom archives from the CPMS TV network.'
+                    : activeTvChannel === 'review'
+                    ? 'A complete visual teardown breaking down treasury buybacks, repo desk limits, and dollar liquidity indices in real time.'
+                    : activeTvChannel === 'liquidity'
+                    ? 'Tracing multi-billion dollar capital corridors between the Eurozone, Wall Street queues, and emerging market debt structures.'
+                    : 'Discover how stripping complex indicators like MACD or Stochastic reduces mental fatigue and builds pristine visual confidence.'}
+                </p>
                   </div>
 
                   <div className="flex justify-between items-center text-[11px] text-zinc-500 pt-3 border-t border-zinc-900">
@@ -2316,6 +2367,9 @@ Not the other way around.`}
                     </motion.div>
                   )}
                 </div>
+
+                {/* Personal trading charts in YWC terminal */}
+                <YwcPersonalCharts compact />
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-zinc-900">
