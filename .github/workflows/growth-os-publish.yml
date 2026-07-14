@@ -1,0 +1,74 @@
+name: Growth OS — Publish (manual)
+
+# The human "yes". Downloads the latest daily batch, optionally approves it,
+# and publishes through the chosen adapter. Defaults to dry-run so you can
+# rehearse the whole pipeline safely with zero paid accounts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "Posting provider"
+        type: choice
+        default: dryrun
+        options: [dryrun, ayrshare]
+      approve:
+        description: "Approve the batch for posting (required for a real post)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation/clearpath_growth_os
+    env:
+      POSTING_PROVIDER: ${{ inputs.provider }}
+      AYRSHARE_API_KEY: ${{ secrets.AYRSHARE_API_KEY }}
+      GROWTH_OS_OUTPUT_DIR: ${{ github.workspace }}/automation/clearpath_growth_os/output
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Download latest produced batch
+        run: |
+          mkdir -p output
+          RUN_ID=$(gh run list --workflow=growth-os-daily.yml --status=success \
+            --limit 1 --json databaseId --jq '.[0].databaseId' -R "$GITHUB_REPOSITORY")
+          if [ -z "$RUN_ID" ]; then
+            echo "No successful daily run found; nothing to publish." && exit 1
+          fi
+          gh run download "$RUN_ID" -n growth-batch --dir output -R "$GITHUB_REPOSITORY"
+          ls -la output
+
+      - name: Approve batch
+        if: ${{ inputs.approve }}
+        run: growth-os-approve
+
+      - name: Publish
+        run: |
+          if [ "${{ inputs.approve }}" = "true" ]; then
+            growth-os-publish --provider "${{ inputs.provider }}" --approved
+          else
+            growth-os-publish --provider "${{ inputs.provider }}" || true
+          fi
+
+      - name: Upload receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-receipts
+          path: automation/clearpath_growth_os/output/*.published.json
+          if-no-files-found: warn

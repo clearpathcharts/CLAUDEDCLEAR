@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import SEEDING_TOOLS
 
 
@@ -17,7 +18,7 @@ class SeedingCrew:
 
     @agent
     def community_advocate(self) -> Agent:
-        return Agent(config=self.agents_config["community_advocate"], tools=SEEDING_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["community_advocate"], tools=SEEDING_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def seeding_task(self) -> Task:

@@ -9,6 +9,7 @@ dependencies = [
     "requests>=2.31.0",
     "pydantic>=2.6.0",
     "python-dotenv>=1.0.0",
+    "google-genai>=1.0.0",
 ]
 
 [project.scripts]
@@ -17,6 +18,8 @@ growth-os = "clearpath_growth_os.main:kickoff"
 growth-os-plot = "clearpath_growth_os.main:plot"
 plant-the-flag = "clearpath_growth_os.plant_the_flag:kickoff"
 plant-the-flag-plot = "clearpath_growth_os.plant_the_flag:plot"
+growth-os-approve = "clearpath_growth_os.approve:main"
+growth-os-publish = "clearpath_growth_os.publisher:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import CONTENT_TOOLS
 
 
@@ -17,15 +18,15 @@ class ContentFactoryCrew:
 
     @agent
     def hook_engineer(self) -> Agent:
-        return Agent(config=self.agents_config["hook_engineer"], tools=CONTENT_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["hook_engineer"], tools=CONTENT_TOOLS, verbose=True, llm=default_llm())
 
     @agent
     def thread_architect(self) -> Agent:
-        return Agent(config=self.agents_config["thread_architect"], tools=CONTENT_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["thread_architect"], tools=CONTENT_TOOLS, verbose=True, llm=default_llm())
 
     @agent
     def cta_router(self) -> Agent:
-        return Agent(config=self.agents_config["cta_router"], tools=CONTENT_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["cta_router"], tools=CONTENT_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def draft_social_task(self) -> Task:

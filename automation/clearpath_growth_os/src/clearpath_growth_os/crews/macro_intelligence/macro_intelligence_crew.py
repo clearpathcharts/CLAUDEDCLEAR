@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import RESEARCH_TOOLS
 
 
@@ -17,11 +18,11 @@ class MacroIntelligenceCrew:
 
     @agent
     def macro_sentinel(self) -> Agent:
-        return Agent(config=self.agents_config["macro_sentinel"], tools=RESEARCH_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["macro_sentinel"], tools=RESEARCH_TOOLS, verbose=True, llm=default_llm())
 
     @agent
     def education_translator(self) -> Agent:
-        return Agent(config=self.agents_config["education_translator"], tools=RESEARCH_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["education_translator"], tools=RESEARCH_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def scan_markets_task(self) -> Task:

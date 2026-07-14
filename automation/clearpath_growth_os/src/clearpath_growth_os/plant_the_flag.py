@@ -148,7 +148,15 @@ class PlantTheFlagFlow(Flow[PhaseState]):
                 }
             )
         )
-        self.state.omnipresence = _as_text(result)
+        tasks = getattr(result, "tasks_output", []) or []
+        self.state.omnipresence = json.dumps(
+            {
+                "x_pack": _safe_load(_as_text(tasks[0])) if len(tasks) > 0 else None,
+                "linkedin": _safe_load(_as_text(tasks[1])) if len(tasks) > 1 else None,
+                "shortform": _safe_load(_as_text(tasks[2])) if len(tasks) > 2 else None,
+            },
+            ensure_ascii=False,
+        )
 
     @listen(produce_omnipresence)
     def produce_seo(self) -> None:
@@ -171,7 +179,14 @@ class PlantTheFlagFlow(Flow[PhaseState]):
                 }
             )
         )
-        self.state.seo_output = _as_text(result)
+        tasks = getattr(result, "tasks_output", []) or []
+        self.state.seo_output = json.dumps(
+            {
+                "pillar": _safe_load(_as_text(tasks[0])) if len(tasks) > 0 else None,
+                "cluster": _safe_load(_as_text(tasks[1])) if len(tasks) > 1 else None,
+            },
+            ensure_ascii=False,
+        )
 
     @listen(produce_seo)
     def produce_seeding(self) -> None:

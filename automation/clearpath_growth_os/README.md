@@ -141,6 +141,48 @@ python scripts/e2e_flow_test.py
 plant-the-flag           # or: python -m clearpath_growth_os.plant_the_flag
 ```
 
+## Runtime & publishing (run it without SaaS middlemen)
+
+The engine produces content; two more pieces make it *run itself* and *post*,
+all owned by you — no Zapier/Make/Pulse.
+
+### LLM: uses the key you already have
+Agents default to **Gemini** via `GEMINI_API_KEY` (see `AGENTS.md`) — no OpenAI
+key needed. Override with `GROWTH_OS_MODEL` (e.g. `gpt-4o-mini`,
+`groq/llama-3.3-70b-versatile`). Falls back to CrewAI's default if no key is set.
+
+### Posting adapter (the "hands")
+Pluggable, dry-run by default so the whole pipeline runs today with zero paid
+accounts:
+
+| Provider | Behaviour |
+| --- | --- |
+| `dryrun` (default) | Logs exactly what would post; no network. |
+| `ayrshare` | One API key posts to X/LinkedIn. Video scripts → "needs media"; Reddit/Quora/blog → "manual" (posted by human/CMS, never sprayed). |
+
+Set `POSTING_PROVIDER` + (for Ayrshare) `AYRSHARE_API_KEY`. Add a provider by
+implementing `PostingAdapter` in `publishing/` and registering it in `get_adapter`.
+
+### Human-gated publishing
+```bash
+plant-the-flag                     # produce today's batch (status: pending_human_review)
+growth-os-approve                  # the human "yes" -> approved_for_publish
+growth-os-publish --provider dryrun   # map batch -> posts -> adapter (+ writes a receipt)
+```
+`growth-os-publish` refuses any batch still at `pending_human_review` unless you
+`--approved`. `batch_mapper.py` turns a batch into normalized `PlatformPost`s
+(X posts/threads, LinkedIn, short-form scripts, blog articles, Reddit/Quora answers).
+
+### GitHub Actions (the free runtime)
+- `.github/workflows/growth-os-daily.yml` — scheduled (12:00 UTC) produce; uploads
+  the batch as an artifact + previews it in the job summary. **Posts nothing.**
+- `.github/workflows/growth-os-publish.yml` — manual `workflow_dispatch`; downloads
+  the latest batch, optionally approves, and publishes via the chosen provider
+  (defaults to dry-run).
+
+Secrets/vars: `GEMINI_API_KEY` (secret), `AYRSHARE_API_KEY` (secret, optional),
+`CLEARPATH_API_BASE` / `GROWTH_OS_MODEL` (repo vars, optional).
+
 ## Extending
 
 The strategy calls for more crews — Social Distributor, Funnel Architect,

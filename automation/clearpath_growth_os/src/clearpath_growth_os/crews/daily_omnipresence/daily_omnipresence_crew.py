@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import CONTENT_TOOLS, RESEARCH_TOOLS
 
 
@@ -21,15 +22,15 @@ class DailyOmnipresenceCrew:
 
     @agent
     def x_strategist(self) -> Agent:
-        return Agent(config=self.agents_config["x_strategist"], tools=_Tools.channel, verbose=True)
+        return Agent(config=self.agents_config["x_strategist"], tools=_Tools.channel, verbose=True, llm=default_llm())
 
     @agent
     def linkedin_strategist(self) -> Agent:
-        return Agent(config=self.agents_config["linkedin_strategist"], tools=CONTENT_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["linkedin_strategist"], tools=CONTENT_TOOLS, verbose=True, llm=default_llm())
 
     @agent
     def shortform_director(self) -> Agent:
-        return Agent(config=self.agents_config["shortform_director"], tools=CONTENT_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["shortform_director"], tools=CONTENT_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def x_pack_task(self) -> Task:

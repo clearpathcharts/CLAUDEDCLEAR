@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import COMPLIANCE_TOOLS
 
 
@@ -17,7 +18,7 @@ class ComplianceGuardianCrew:
 
     @agent
     def compliance_auditor(self) -> Agent:
-        return Agent(config=self.agents_config["compliance_auditor"], tools=COMPLIANCE_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["compliance_auditor"], tools=COMPLIANCE_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def audit_task(self) -> Task:

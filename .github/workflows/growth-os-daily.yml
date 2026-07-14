@@ -1,0 +1,70 @@
+name: Growth OS — Daily Produce
+
+# Runs the ClearPath Growth OS "Plant the Flag" flow every morning, produces the
+# day's content batch, and uploads it as an artifact for human review.
+# It does NOT post anything (human-in-the-loop). Publishing is a separate,
+# manually-triggered workflow (growth-os-publish.yml).
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 12:00 UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: growth-os-daily
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation/clearpath_growth_os
+    env:
+      # LLM: uses the Gemini key you already have. Override model with GROWTH_OS_MODEL.
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROWTH_OS_MODEL: ${{ vars.GROWTH_OS_MODEL }}
+      # Point at production so tools pull real corpus/news/quotes.
+      CLEARPATH_API_BASE: ${{ vars.CLEARPATH_API_BASE || 'https://clearpathtrader.com' }}
+      # Keep the human-review gate ON: batch is produced, not posted.
+      FORCE_HUMAN_REVIEW: "true"
+      GROWTH_OS_OUTPUT_DIR: ${{ github.workspace }}/automation/clearpath_growth_os/output
+      # Optional: real per-country waitlist counts enable the scarcity line.
+      GROWTH_OS_WAITLIST_COUNTS: ${{ github.workspace }}/automation/clearpath_growth_os/waitlist_counts.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Produce today's batch
+        run: plant-the-flag
+
+      - name: Preview in job summary
+        if: always()
+        run: |
+          echo "## Growth OS — today's batch" >> "$GITHUB_STEP_SUMMARY"
+          for f in output/plant_the_flag_*.json; do
+            [ -e "$f" ] || continue
+            echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            head -c 4000 "$f" >> "$GITHUB_STEP_SUMMARY"
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload batch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: growth-batch
+          path: automation/clearpath_growth_os/output/*.json
+          retention-days: 14
+          if-no-files-found: warn

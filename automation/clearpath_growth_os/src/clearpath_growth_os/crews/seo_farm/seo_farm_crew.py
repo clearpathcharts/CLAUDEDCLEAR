@@ -5,6 +5,7 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ...llm import default_llm
 from ...tools import SEO_TOOLS
 
 
@@ -17,11 +18,11 @@ class SeoFarmCrew:
 
     @agent
     def pillar_writer(self) -> Agent:
-        return Agent(config=self.agents_config["pillar_writer"], tools=SEO_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["pillar_writer"], tools=SEO_TOOLS, verbose=True, llm=default_llm())
 
     @agent
     def cluster_architect(self) -> Agent:
-        return Agent(config=self.agents_config["cluster_architect"], tools=SEO_TOOLS, verbose=True)
+        return Agent(config=self.agents_config["cluster_architect"], tools=SEO_TOOLS, verbose=True, llm=default_llm())
 
     @task
     def pillar_article_task(self) -> Task:
