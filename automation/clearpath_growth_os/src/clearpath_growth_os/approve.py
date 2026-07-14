@@ -14,8 +14,9 @@ from .config import output_dir
 
 
 def _latest_batch() -> Path | None:
-    batches = sorted(output_dir().glob("plant_the_flag_2*.json"))
-    batches = [b for b in batches if "flags" not in b.name and "kpi" not in b.name and "published" not in b.name]
+    out = output_dir()
+    batches = sorted([*out.glob("plant_the_flag_2*.json"), *out.glob("submission_*.json")], key=lambda p: p.stat().st_mtime)
+    batches = [b for b in batches if all(x not in b.name for x in ("flags", "kpi", "published"))]
     return batches[-1] if batches else None
 
 

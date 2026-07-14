@@ -56,7 +56,31 @@ def batch_to_posts(batch: dict) -> list[PlatformPost]:
     if isinstance(seeding, list):
         posts.extend(_map_seeding(seeding))
 
+    images = _coerce(batch.get("images"))
+    if isinstance(images, list) and images:
+        _attach_images(posts, [str(u) for u in images if u])
+
     return posts
+
+
+def _attach_images(posts: list[PlatformPost], images: list[str]) -> None:
+    """Attach submitted images to the posts where media belongs.
+
+    Images accompany: the LinkedIn post, the blog article, the first X item
+    (post or thread), and every short-form script (as visual references).
+    """
+    first = images[0]
+    linked_x = False
+    for p in posts:
+        if p.platform == "linkedin" and not p.media_urls:
+            p.media_urls = [first]
+        elif p.platform == "blog" and p.kind == "article" and not p.media_urls:
+            p.media_urls = list(images)
+        elif p.platform == "tiktok":
+            p.media_urls = list(images)
+        elif p.platform == "x" and not linked_x:
+            p.media_urls = [first]
+            linked_x = True
 
 
 def _map_x(x_pack: Any) -> list[PlatformPost]:

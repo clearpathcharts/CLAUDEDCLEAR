@@ -82,3 +82,19 @@ def test_skipped_seo_and_missing_fields():
     batch = {"omnipresence": {"x_pack": {"x_posts": []}}, "seo": {"skipped": "not a pillar day"}, "seeding": []}
     posts = batch_to_posts(batch)
     assert all(p.platform != "blog" for p in posts)
+
+
+def test_images_attached_to_relevant_posts():
+    batch = _sample_batch()
+    batch["images"] = ["https://clearpathtrader.com/growth-assets/p/hero.png", "https://clearpathtrader.com/growth-assets/p/chart.jpg"]
+    posts = batch_to_posts(batch)
+
+    linkedin = next(p for p in posts if p.platform == "linkedin")
+    tiktok = next(p for p in posts if p.platform == "tiktok")
+    blog = next(p for p in posts if p.platform == "blog")
+    x_with_media = [p for p in posts if p.platform == "x" and p.media_urls]
+
+    assert linkedin.media_urls == [batch["images"][0]]
+    assert tiktok.media_urls == batch["images"]  # scripts reference all images
+    assert blog.media_urls == batch["images"]
+    assert len(x_with_media) == 1  # only the first X item gets the image

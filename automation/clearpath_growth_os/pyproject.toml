@@ -20,6 +20,7 @@ plant-the-flag = "clearpath_growth_os.plant_the_flag:kickoff"
 plant-the-flag-plot = "clearpath_growth_os.plant_the_flag:plot"
 growth-os-approve = "clearpath_growth_os.approve:main"
 growth-os-publish = "clearpath_growth_os.publisher:main"
+growth-os-submit = "clearpath_growth_os.submit:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -141,6 +141,26 @@ python scripts/e2e_flow_test.py
 plant-the-flag           # or: python -m clearpath_growth_os.plant_the_flag
 ```
 
+## Submit your own articles + images
+
+You don't have to let the AI write everything — drop finished content into
+`inbox/` and the system distributes it. See `inbox/_README.md` for the format
+and `OPERATIONS.md` for the full runbook.
+
+```bash
+# 1) drop inbox/my-post/article.md (+ images)   2) turn it into posts:
+growth-os-submit
+# 3) review, then approve + publish:
+growth-os-approve
+growth-os-publish            # dry-run by default
+```
+
+`growth-os-submit` hosts the images (`assets.py`), atomizes the article into an
+X pack + LinkedIn post + short-form script (Content Atomizer crew), runs the
+compliance gate, and writes `output/submission_<name>.json`. Submitted images
+are auto-attached to the LinkedIn post, the blog article, the first X post, and
+the short-form script.
+
 ## Runtime & publishing (run it without SaaS middlemen)
 
 The engine produces content; two more pieces make it *run itself* and *post*,

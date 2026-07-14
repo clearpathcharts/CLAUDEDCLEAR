@@ -1,0 +1,31 @@
+atomize_task:
+  description: >
+    Repackage the submitted article below into an X pack and a LinkedIn post.
+    Stay faithful to the article — do not invent facts, numbers, or claims beyond
+    it. Message pillar: "{pillar}". Link back to: {target_page}.
+
+    ARTICLE TITLE: {title}
+    ARTICLE BODY:
+    {body_markdown}
+
+    Produce 3-4 X posts (each <= 280 chars) and one 5-7 post thread that
+    summarises the article and ends on a soft CTA. One LinkedIn post,
+    institutional tone. No return promises, no brokerage language.
+  expected_output: >
+    JSON: {"x_pack": {"x_posts": [{"copy","pillar","cta","target_page"}...],
+    "x_thread": {"posts": ["..."], "cta", "target_page"}},
+    "linkedin": {"copy","cta","target_page","hashtags":[...]}}.
+  agent: article_atomizer
+
+atomize_shortform_task:
+  description: >
+    Script {shortform_count} short videos from the same article. Reference these
+    images as visuals where useful: {image_urls}. Each script: hook (first 1.5s),
+    3-5 beats, on-screen text, caption, CTA to {target_page}, hashtags. Use only
+    what the article supports.
+  expected_output: >
+    JSON array: [{"concept","hook","beats":[...],"onscreen_text":[...],
+    "caption","cta","hashtags":[...],"image_refs":[...]}...].
+  agent: shortform_director
+  context:
+    - atomize_task
