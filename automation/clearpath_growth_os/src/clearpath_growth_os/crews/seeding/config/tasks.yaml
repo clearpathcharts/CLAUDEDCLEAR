@@ -1,0 +1,14 @@
+seeding_task:
+  description: >
+    Draft {answers_to_produce} value-first community answers for {run_date},
+    one for each of these targets: {targets}. For each, first invent a realistic
+    question a real person in that community would ask, then write a genuinely
+    helpful answer (150-250 words) that stands on its own. Only if it is truly
+    relevant, add ONE soft, honest mention of ClearPath with a real page link
+    (e.g. /trading-ai, /learn, /about) and a short affiliation disclosure.
+    Respect that ADHD/autism communities are not marketing targets — lead with
+    empathy and utility, links optional.
+  expected_output: >
+    JSON array: [{"target","assumed_question","answer","includes_link":true|false,
+    "link","disclosure"}...].
+  agent: community_advocate
