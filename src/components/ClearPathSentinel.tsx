@@ -603,25 +603,29 @@ export default function ClearPathSentinel({ onClose }: { onClose?: () => void })
         </div>
 
         {/* COMPREHENSIVE COMPLIANCE DECKS FOOTER */}
-        <div className="bg-[#0b0b0b]/95 border border-white/5 p-6 rounded-[2rem] select-none text-left space-y-3 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#00D9FF]/5 rounded-full blur-xl pointer-events-none" />
-          <h3 className="text-sm font-cinzel font-black uppercase text-white tracking-widest flex items-center gap-2">
-            🛡️ LAUNCH READINESS DECLARATION
+        <div className="bg-[#0b0b0b]/95 border border-[#FF1493]/35 p-6 rounded-[2rem] select-none text-left space-y-3 shadow-[0_0_32px_rgba(255,20,147,0.25)] relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#FF0000]/20 to-[#FF1493]/25 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#FF2D95]/10 rounded-full blur-xl pointer-events-none" />
+          <h3 className="text-sm md:text-base font-cinzel font-black uppercase tracking-widest flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-[#FF0000] via-[#FF2D55] to-[#FF1493] drop-shadow-[0_0_12px_rgba(255,20,147,0.55)]">
+            <span aria-hidden className="text-[#FF1493] drop-shadow-[0_0_8px_rgba(255,20,147,0.8)]">🛡️</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF0000] via-[#FF2D55] to-[#FF1493]">
+              LAUNCH READINESS DECLARATION
+            </span>
           </h3>
-          <p className="text-xs text-zinc-405 leading-relaxed font-semibold">
+          <p className="text-xs md:text-sm leading-relaxed font-semibold text-transparent bg-clip-text bg-gradient-to-r from-[#FF1A1A] via-[#FF2D75] to-[#FF1493]">
             ClearPath Sentinel continuously sweeps all core packages to guarantee absolute market coverage and search discovery readiness. Under FTC guidelines on commerce transparency, our AI model operates as a visual charting assistant. It is strictly forbidden from offering self-contained portfolio trading decisions or bypassing sovereign transaction restrictions.
           </p>
-          <div className="flex flex-wrap gap-3 font-mono text-[9px] text-[#00FFFF] font-black pt-1">
-            <span className="border border-cyan-500/20 bg-cyan-950/45 px-3 py-1 rounded-full uppercase">
+          <div className="flex flex-wrap gap-3 font-mono text-[9px] text-[#FF1493] font-black pt-1">
+            <span className="border border-[#FF1493]/35 bg-[#FF1493]/10 px-3 py-1 rounded-full uppercase shadow-[0_0_10px_rgba(255,20,147,0.2)]">
               ✓ COVERS FINRA CORE BROKER LAWS
             </span>
-            <span className="border border-cyan-500/20 bg-cyan-950/45 px-3 py-1 rounded-full uppercase">
+            <span className="border border-[#FF1493]/35 bg-[#FF1493]/10 px-3 py-1 rounded-full uppercase shadow-[0_0_10px_rgba(255,20,147,0.2)]">
               ✓ COMPLIANT SEC FULL DISCLOSURE DIRECT
             </span>
-            <span className="border border-cyan-500/20 bg-cyan-950/45 px-3 py-1 rounded-full uppercase">
+            <span className="border border-[#FF1493]/35 bg-[#FF1493]/10 px-3 py-1 rounded-full uppercase shadow-[0_0_10px_rgba(255,20,147,0.2)]">
               ✓ CFTC FRAUD REDUCTION SYSTEM ENGINE
             </span>
-            <span className="border border-cyan-500/20 bg-cyan-950/45 px-3 py-1 rounded-full uppercase">
+            <span className="border border-[#FF1493]/35 bg-[#FF1493]/10 px-3 py-1 rounded-full uppercase shadow-[0_0_10px_rgba(255,20,147,0.2)]">
               ✓ REDUCED NEUROSENSORY ADDICTOR PATTERNS
             </span>
           </div>
