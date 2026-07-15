@@ -58,6 +58,13 @@ const WORK_ITEMS: NavItem[] = [
 
 const LEARN_ITEMS: NavItem[] = [
   {
+    id: "ClearPathEducation",
+    icon: BookOpen,
+    label: "CLEARPATH EDUCATION",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
     id: "Encyclopedia",
     icon: GraduationCap,
     label: "ENCYCLOPEDIA OF FINANCE",
@@ -68,13 +75,6 @@ const LEARN_ITEMS: NavItem[] = [
     id: "EncyclopediaOfIndicators",
     icon: BarChart3,
     label: "ENCYCLOPEDIA OF INDICATORS",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-  {
-    id: "ClearPathEducation",
-    icon: BookOpen,
-    label: "CLEARPATH EDUCATION",
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },

@@ -102,6 +102,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
+      id: "ClearPathEducation",
+      icon: BookOpen,
+      label: "CLEARPATH EDUCATION",
+    },
+
+    {
       id: "Encyclopedia",
       icon: GraduationCap,
       label: "ENCYCLOPEDIA OF FINANCE",
@@ -111,12 +117,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "EncyclopediaOfIndicators",
       icon: BarChart3,
       label: "ENCYCLOPEDIA OF INDICATORS",
-    },
-
-    {
-      id: "ClearPathEducation",
-      icon: BookOpen,
-      label: "CLEARPATH EDUCATION",
     },
   ];
   const renderNavButton = (
