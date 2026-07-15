@@ -113,11 +113,13 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "ENCYCLOPEDIA OF FINANCE",
     },
 
-    {
-      id: "EncyclopediaOfIndicators",
-      icon: BarChart3,
-      label: "ENCYCLOPEDIA OF INDICATORS",
-    },
+    // Encyclopedia of Indicators — hidden from nav while videos are broken.
+    // Component + Dashboard tab id remain; re-add this item when ready.
+    // {
+    //   id: "EncyclopediaOfIndicators",
+    //   icon: BarChart3,
+    //   label: "ENCYCLOPEDIA OF INDICATORS",
+    // },
   ];
   const renderNavButton = (
     item: NavItem,

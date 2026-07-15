@@ -1863,8 +1863,8 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/financial-encyclopedia',
     '/education',
     '/clearpath-education',
-    '/indicators',
-    '/encyclopedia-of-indicators',
+    // '/indicators', // hidden while Encyclopedia of Indicators videos broken
+    // '/encyclopedia-of-indicators',
     '/market-universe'
   ];
 

@@ -9,7 +9,8 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
-const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
+// EncyclopediaOfIndicators kept in codebase but off the public site while videos are broken.
+// const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 
 function isEncyclopediaPath(path: string): boolean {
@@ -31,10 +32,8 @@ function isEncyclopediaPath(path: string): boolean {
   );
 }
 
-function isIndicatorsPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  return p === '/indicators' || p === '/encyclopedia-of-indicators';
-}
+/** Public /indicators route disabled while Encyclopedia of Indicators videos are broken.
+ *  Re-enable by restoring isIndicatorsPath check + EncyclopediaOfIndicators lazy import. */
 
 function isEducationPath(path: string): boolean {
   const p = path.toLowerCase().trim();
@@ -55,7 +54,6 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
           <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
-          <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
         </div>
       </div>
       <Suspense
@@ -164,20 +162,14 @@ export default function App() {
         </PublicLearnShell>
       );
     }
-    if (isIndicatorsPath(currentPath)) {
-      return (
-        <PublicLearnShell>
-          <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    }
+    // Encyclopedia of Indicators public route intentionally disabled (videos broken).
+    // Component + Dashboard tab remain for later re-enable.
     if (isEducationPath(currentPath)) {
       return (
         <PublicLearnShell>
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
             }}
           />
         </PublicLearnShell>

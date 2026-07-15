@@ -5,7 +5,7 @@ import {
   User, Mail, Globe, Sparkles, BookOpen, Newspaper, Users, 
   Bell, Smartphone, ArrowUpRight, HelpCircle, X, CheckSquare,
   Play, Volume2, VolumeX, Tv, Zap, Compass, MessageSquare, 
-  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, BarChart3, GraduationCap
+  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, GraduationCap
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "../firebase";
 import { auth, getDb, loginAnonymously } from "../firebase";
@@ -598,9 +598,6 @@ export default function Auth() {
           <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
             <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
           </a>
-          <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
-            <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
-          </a>
           <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
             <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
           </a>
@@ -733,14 +730,6 @@ CLARITY BEFORE DECISIONS.`}
           >
             <BookOpen size={14} className="text-[#00FFFF]" />
             OPEN ENCYCLOPEDIA OF FINANCE
-          </a>
-          <a
-            href="/indicators"
-            onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }}
-            className="w-full md:w-auto px-6 py-4 bg-neutral-900/60 hover:bg-neutral-900/90 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
-          >
-            <BarChart3 size={14} className="text-zinc-500 fill-[#ffffff]/10" />
-            EXPLORE INDICATOR DIRECTORY
           </a>
           <a
             href="/education"

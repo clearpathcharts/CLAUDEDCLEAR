@@ -60,8 +60,9 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
           <ArrowRight size={18} className="text-[#00E5FF] shrink-0" />
         </button>
 
-        {/* Bento grid: Board, Encyclopedia of Finance, Encyclopedia of Indicators, ClearPath Education */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Bento grid: Board, Encyclopedia of Finance, ClearPath Education
+            (Encyclopedia of Indicators hidden while videos are broken — component kept) */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <button
             onClick={() => onTabChange('MeetTheBoard')}
             className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
@@ -80,16 +81,6 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
               <GraduationCap size={20} className="text-[#00E5FF]" />
             </div>
             <div className="text-sm font-bold text-white leading-tight">Encyclopedia of finance</div>
-          </button>
-
-          <button
-            onClick={() => onTabChange('EncyclopediaOfIndicators')}
-            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center mb-3.5">
-              <BarChart3 size={20} className="text-[#00E5FF]" />
-            </div>
-            <div className="text-sm font-bold text-white leading-tight">Encyclopedia of indicators</div>
           </button>
 
           <button

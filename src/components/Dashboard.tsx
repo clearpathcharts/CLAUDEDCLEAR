@@ -533,9 +533,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
         }
-        if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-          return 'EncyclopediaOfIndicators';
-        }
+        // Encyclopedia of Indicators hidden from site (videos broken) — path routing disabled.
+        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+        //   return 'EncyclopediaOfIndicators';
+        // }
       } catch (e) {
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
@@ -1009,10 +1010,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('ClearPathEducation');
           return;
         }
-        if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-          setActiveTab('EncyclopediaOfIndicators');
-          return;
-        }
+        // Encyclopedia of Indicators hidden — path routing disabled.
+        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+        //   setActiveTab('EncyclopediaOfIndicators');
+        //   return;
+        // }
       }
 
       if (event.state && event.state.tabId) {
@@ -1051,8 +1053,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       setActiveTab('Encyclopedia');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
-    } else if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-      setActiveTab('EncyclopediaOfIndicators');
+    // Encyclopedia of Indicators hidden — path routing disabled.
+    // } else if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+    //   setActiveTab('EncyclopediaOfIndicators');
     } else {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
