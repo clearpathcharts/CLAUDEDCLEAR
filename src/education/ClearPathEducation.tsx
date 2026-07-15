@@ -558,6 +558,12 @@ function LessonReader({
   const lessonIndex = unit?.lessons.findIndex((l) => l.id === lessonId) ?? -1;
   const lesson = lessonIndex >= 0 ? unit!.lessons[lessonIndex] : undefined;
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [lessonId]);
+
   if (!school || !unit || !lesson) {
     return <Empty>That chapter could not be found.</Empty>;
   }
