@@ -1861,6 +1861,8 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
+    '/education',
+    '/clearpath-education',
     '/market-universe'
   ];
 
