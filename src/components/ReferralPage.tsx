@@ -58,7 +58,7 @@ export default function ReferralPage({ onNavigate }: { onNavigate?: (tab: string
           </span>
         </div>
 
-        <p className="text-sm text-zinc-400 leading-relaxed mb-5">{POLSIA_PARTNER.writeup}</p>
+        <p className="text-sm text-zinc-400 leading-relaxed mb-5">{POLSIA_PARTNER.blurb}</p>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
           {POLSIA_PARTNER.bullets.map((item) => (

@@ -13,7 +13,7 @@ export default function PolsiaPaidAdPage() {
     <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-x-hidden relative">
       <SEO
         title="Sponsored: Polsia — AI That Runs Your Company"
-        description="Paid advertisement for Polsia — an autonomous AI teammate for founders that plans, builds, markets, and operates alongside you. Open via ClearPath's referral link."
+        description="Paid advertisement for Polsia, an AI teammate for founders. Open via ClearPath's referral link."
         canonical="https://clearpathtrader.com/ads/polsia"
       />
       <SurfBackground />
@@ -51,7 +51,7 @@ export default function PolsiaPaidAdPage() {
         </h1>
 
         <p className="text-base md:text-lg text-zinc-400 leading-relaxed mb-8 max-w-2xl">
-          {POLSIA_PARTNER.writeup}
+          {POLSIA_PARTNER.blurb}
         </p>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
