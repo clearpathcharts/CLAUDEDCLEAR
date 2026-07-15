@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PolsiaPaidAdPage from './components/PolsiaPaidAdPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
@@ -41,6 +42,11 @@ function isEducationPath(path: string): boolean {
   return p === '/education' || p === '/clearpath-education';
 }
 
+function isPolsiaAdPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/ads/polsia' || p === '/polsia' || p === '/advertise/polsia';
+}
+
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
@@ -56,6 +62,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
           <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
           <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
           <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
+          <a href="/ads/polsia" className="text-[10px] font-black uppercase tracking-wider text-[#FFD700]/80 hover:text-[#FFD700]">Polsia Ad</a>
         </div>
       </div>
       <Suspense
@@ -154,6 +161,10 @@ export default function App() {
   }
   if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     return <TradingReimaginedLanding />;
+  }
+  // Public paid advertisement — no login required
+  if (isPolsiaAdPath(currentPath)) {
+    return <PolsiaPaidAdPage />;
   }
   // Public learning desks when logged out (Auth marketing links + direct URLs)
   if (!user) {

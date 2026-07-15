@@ -9,6 +9,7 @@ import {
   Home,
   LogOut,
   Newspaper,
+  Share2,
   Shield,
   Terminal,
   Users,
@@ -120,6 +121,13 @@ const ACCOUNT_ITEMS: NavItem[] = [
     label: "PROFILE",
     colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
     glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+  },
+  {
+    id: "ReferralDesk",
+    icon: Share2,
+    label: "REFERRALS",
+    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
   },
   {
     id: "Membership",

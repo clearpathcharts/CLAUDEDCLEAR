@@ -1865,6 +1865,9 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/clearpath-education',
     '/indicators',
     '/encyclopedia-of-indicators',
+    '/ads/polsia',
+    '/polsia',
+    '/advertise/polsia',
     '/market-universe'
   ];
 
