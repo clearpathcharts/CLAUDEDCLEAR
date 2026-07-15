@@ -5,7 +5,7 @@ import {
   User, Mail, Globe, Sparkles, BookOpen, Newspaper, Users, 
   Bell, Smartphone, ArrowUpRight, HelpCircle, X, CheckSquare,
   Play, Volume2, VolumeX, Tv, Zap, Compass, MessageSquare, 
-  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, BarChart3
+  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, BarChart3, GraduationCap
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "../firebase";
 import { auth, getDb, loginAnonymously } from "../firebase";
@@ -595,11 +595,14 @@ export default function Auth() {
           <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
           <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
           <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
-          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
+          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
             <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
           </a>
-          <a href="#indicators" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
+          <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
             <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
+          </a>
+          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
           </a>
           <a href="#faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
         </div>
@@ -725,7 +728,7 @@ CLARITY BEFORE DECISIONS.`}
           </a>
           <a
             href="/encyclopedia"
-            onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/encyclopedia'); }}
+            onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
             className="w-full md:w-auto px-6 py-4 bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/40 hover:border-[#00FFFF] text-[#00FFFF] text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_15px_rgba(0,255,255,0.15)] hover:scale-[1.02] transition-colors text-center flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
           >
             <BookOpen size={14} className="text-[#00FFFF]" />
@@ -733,11 +736,19 @@ CLARITY BEFORE DECISIONS.`}
           </a>
           <a
             href="/indicators"
-            onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/indicators'); }}
+            onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }}
             className="w-full md:w-auto px-6 py-4 bg-neutral-900/60 hover:bg-neutral-900/90 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
           >
             <BarChart3 size={14} className="text-zinc-500 fill-[#ffffff]/10" />
             EXPLORE INDICATOR DIRECTORY
+          </a>
+          <a
+            href="/education"
+            onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }}
+            className="w-full md:w-auto px-6 py-4 bg-[#B026FF]/10 hover:bg-[#B026FF]/25 border border-[#B026FF]/40 hover:border-[#B026FF] text-[#B026FF] text-xs font-black uppercase tracking-widest rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+          >
+            <GraduationCap size={14} className="text-[#B026FF]" />
+            OPEN CLEARPATH EDUCATION
           </a>
         </div>
 

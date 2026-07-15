@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   Cpu,
   Crown,
+  GraduationCap,
   Home,
   LogOut,
   Newspaper,
@@ -51,6 +53,30 @@ const WORK_ITEMS: NavItem[] = [
     label: "NEWS",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+];
+
+const LEARN_ITEMS: NavItem[] = [
+  {
+    id: "ClearPathEducation",
+    icon: BookOpen,
+    label: "CLEARPATH EDUCATION",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "Encyclopedia",
+    icon: GraduationCap,
+    label: "ENCYCLOPEDIA OF FINANCE",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "EncyclopediaOfIndicators",
+    icon: BarChart3,
+    label: "ENCYCLOPEDIA OF INDICATORS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
 ];
 
@@ -135,6 +161,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const sections: { title: string; items: NavItem[] }[] = [
     { title: "WORK", items: WORK_ITEMS },
+    { title: "LEARN", items: LEARN_ITEMS },
     { title: "TOOLS", items: toolsItems },
     { title: "ACCOUNT", items: ACCOUNT_ITEMS },
   ];
