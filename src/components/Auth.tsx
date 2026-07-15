@@ -591,6 +591,9 @@ export default function Auth() {
           <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
             About
           </a>
+          <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">
+            Press
+          </a>
           <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
           <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
           <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>

@@ -239,6 +239,8 @@ export default function ExternalAboutPage() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-4 md:gap-8 text-indigo-500/70 font-bold uppercase tracking-widest text-[10px]">
             <a href="/" className="hover:text-indigo-400 transition-colors">Return to Login</a>
             <span className="text-white/10 hidden md:block">•</span>
+            <a href="/press" className="hover:text-indigo-400 transition-colors">Press Kit</a>
+            <span className="text-white/10 hidden md:block">•</span>
             <a href="/platform-scope.html" className="hover:text-indigo-400 transition-colors">Platform Scope</a>
             <span className="text-white/10 hidden md:block">•</span>
             <a href="/terms.html" className="hover:text-indigo-400 transition-colors">Terms</a>

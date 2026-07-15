@@ -1850,6 +1850,8 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
   const SEO_PAGES = [
     '/',
     '/about',
+    '/press',
+    '/press-kit',
     '/if-trading-and-chatgpt-had-a-baby',
     '/trading-ai',
     '/macro',
