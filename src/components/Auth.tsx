@@ -15,6 +15,7 @@ import { joinWaitlist } from "../appwrite";
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
+import PrivateLoginDesk from './PrivateLoginDesk';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -159,6 +160,13 @@ export default function Auth() {
   const [boardError, setBoardError] = useState('');
   const [boardSuccess, setBoardSuccess] = useState(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
+  const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
+  const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
+
+  const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
+    setPrivateLoginMode(mode);
+    setPrivateLoginOpen(true);
+  };
 
   // Demo presentation state
   const [demoOpen, setDemoOpen] = useState(false);
@@ -618,12 +626,14 @@ export default function Auth() {
             <span className="hidden sm:inline">Board Members</span>
             <span className="sm:hidden">Board</span>
           </button>
-          <a
-            href="#waitlist"
-            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1"
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('login')}
+            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1 cursor-pointer"
           >
-            RESERVE ACCOUNT
-          </a>
+            <Lock size={12} />
+            PRIVATE LOGIN
+          </button>
         </div>
       </nav>
 
@@ -671,7 +681,7 @@ export default function Auth() {
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-950/80 border border-zinc-800/80 text-xs font-mono tracking-widest text-[#00FFFF] mb-8"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] animate-pulse" />
-          SOFT LAUNCH WAITLIST DIRECTORY RUNNING
+          PRIVATE MEMBER LOGIN ACTIVE
         </motion.div>
 
         {/* Glitch Headline Title */}
@@ -720,12 +730,13 @@ CLARITY BEFORE DECISIONS.`}
 
         {/* Interactive Buttons Container */}
         <div className="flex flex-col md:flex-row items-center gap-4 mt-10 w-full max-w-3xl mx-auto justify-center z-30">
-          <a
-            href="#waitlist"
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('register')}
             className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
           >
-            🚀 START LEARNING
-          </a>
+            CREATE PRIVATE ACCOUNT
+          </button>
           <a
             href="/encyclopedia"
             onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
@@ -1499,10 +1510,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="fire-pink-text">RESERVE TIER ONE</span>
+                    <span className="fire-pink-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1540,10 +1552,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="neon-cyan-text">ENTER TIER TWO DRAWING</span>
+                    <span className="neon-cyan-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1611,177 +1624,49 @@ Not the other way around.`}
       </section>
 
       {/* ==========================================
-          9. WAITLIST REGISTRATION FORM
+          9. PRIVATE ACCOUNT ENTRY
           ========================================== */}
-      <section id="waitlist" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
+      <section id="private-login" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
         <div className="text-center mb-12 space-y-3">
           <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.25em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15">
-            SECURE ENTRY
+            PRIVATE MEMBER ACCESS
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white uppercase">
-            Join the Waitlist
+            Your Private Login Desk
           </h2>
-          <p className="text-zinc-400 text-xs sm:text-sm max-w-sm mx-auto">
-            Lock in your soft launch clearance passcode now. Registration automatically saves with primary database integration.
+          <p className="text-zinc-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+            Every ClearPath member gets a private login screen. Create your account, then unlock your own terminal with your email and password — no shared reserve waitlist.
           </p>
         </div>
 
-        <div className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden" style={{ backgroundColor: '#050505' }}>
-          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl" />
+        <div
+          className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] transition-all duration-300 relative overflow-hidden text-center space-y-6"
+          style={{ backgroundColor: '#050505' }}
+        >
+          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {isSubmitted ? (
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-center space-y-6 py-6"
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('login')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-[#00E5FF]/40 bg-[#00E5FF]/10 text-[#00E5FF] text-xs font-black uppercase tracking-widest hover:bg-[#00E5FF]/20 transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              <div className="w-16 h-16 bg-[#00FFFF]/10 rounded-full flex items-center justify-center mx-auto border border-[#00FFFF]/35">
-                <UserCheck size={32} className="text-[#00FFFF] animate-bounce" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-[#00FFFF] uppercase tracking-wide">
-                  ✓ ACCOUNT ALLOCATION SECURED
-                </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed max-w-md mx-auto">
-                  {emailSent
-                    ? 'Your allocation credentials have been saved and a confirmation email with your private activation key has been sent.'
-                    : 'Your allocation credentials have been saved. Copy your private activation key below — email delivery is not configured on this server.'}
-                </p>
-              </div>
-              {activationKey && (
-                <div className="bg-black/60 border border-[#00FFFF]/30 rounded-2xl p-5 max-w-sm mx-auto space-y-2">
-                  <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Private Activation Key</div>
-                  <code className="text-xl font-black text-[#FF1493] font-mono tracking-wider block">{activationKey}</code>
-                </div>
-              )}
-              <button 
-                onClick={() => { setIsSubmitted(false); setActivationKey(''); }}
-                className="px-6 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-mono tracking-wider transition-all cursor-pointer uppercase font-bold"
-              >
-                Register another email
-              </button>
-            </motion.div>
-          ) : (
-            <form onSubmit={handleWaitlistSubmit} className="space-y-6">
-              
-              {submitError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-4 rounded-2xl font-mono leading-relaxed text-center uppercase tracking-wide">
-                  ⚠️ Error: {submitError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* First Name */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    First Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Satoshi"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Email Address */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. satoshi@clearpathtrader.com"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#B026FF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#B026FF]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Country Selection */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Country of Residence
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      required
-                      className="w-full bg-black border border-zinc-800 focus:border-[#00FFFF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#00FFFF]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="">Select country...</option>
-                      {countries.map((c) => (
-                        <option key={c} value={c} className="bg-neutral-950 text-white">{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Experience Level Dropdown */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Trading Experience Level
-                  </label>
-                  <div className="relative">
-                    <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      className="w-full bg-black border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="Beginner" className="bg-neutral-950 text-white">Beginner (1-2 years or learning)</option>
-                      <option value="Intermediate" className="bg-neutral-950 text-white">Intermediate (3-5 years active)</option>
-                      <option value="Advanced" className="bg-neutral-950 text-white">Advanced (Institutional trader)</option>
-                    </select>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] hover:brightness-110 text-[#FFFFFF] font-black uppercase tracking-widest text-xs transition-all shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2 font-mono"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
-                      <span>SECURE RESERVATION TRANSMITTING...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>RESERVE MY ACCOUNT</span>
-                      <ArrowRight size={13} />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Secure Node Info */}
-              <div className="text-center pt-2">
-                <p className="text-[10px] text-zinc-500 font-mono flex items-center justify-center gap-1">
-                  🔒 Appwrite waitlist pipeline — reservations stored in ClearPath TablesDB.
-                </p>
-              </div>
-
-            </form>
-          )}
-
+              <Lock size={14} />
+              Private Login
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('register')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              Create Private Account
+              <ArrowRight size={14} />
+            </button>
+          </div>
+          <p className="relative z-10 text-[10px] text-zinc-500 font-mono">
+            Passwords are hashed on the server. Each desk opens only for its owner.
+          </p>
         </div>
       </section>
 
@@ -2074,13 +1959,16 @@ Not the other way around.`}
                 >
                   Close Showcase
                 </button>
-                <a
-                  href="#waitlist"
-                  onClick={() => setDemoOpen(false)}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01]"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDemoOpen(false);
+                    openPrivateLogin('register');
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
                 >
-                  Reserve Soft Launch Account
-                </a>
+                  Create Private Account
+                </button>
               </div>
             </motion.div>
           </div>
@@ -2344,6 +2232,12 @@ Not the other way around.`}
           </div>
         )}
       </AnimatePresence>
+
+      <PrivateLoginDesk
+        open={privateLoginOpen}
+        initialMode={privateLoginMode}
+        onClose={() => setPrivateLoginOpen(false)}
+      />
 
     </div>
   );
