@@ -257,8 +257,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               >
                 YOUR WORLD CONNECTED
               </span>
-              <span className="block text-[#AAAAAA] text-xs mt-1">
-                Everything you need. One place.
+              <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
+                Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
               <button
                 type="button"

@@ -45,6 +45,13 @@ import {
   moderateBodyFields,
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
+import {
+  PrivateAuthError,
+  buildClientSessionUser,
+  lookupPrivateUser,
+  loginPrivateUser,
+  registerPrivateUser,
+} from './src/server/privateAuthService';
 
 const parser = new RSSParser();
 
@@ -302,6 +309,63 @@ async function startServer() {
       uptime: process.uptime(),
       timestamp: Date.now()
     });
+  });
+
+  // Private member accounts (email + password, per-user login desk)
+  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+    try {
+      const result = await lookupPrivateUser(req.body?.email || '');
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+    try {
+      const user = await registerPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+        displayName: req.body?.displayName || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Registration failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+    try {
+      const user = await loginPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/logout', (req, res) => {
+    try {
+      delete (req.session as any).privateUser;
+    } catch {
+      /* ignore */
+    }
+    res.json({ ok: true });
+  });
+
+  app.get('/api/auth/private/me', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user });
   });
 
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
