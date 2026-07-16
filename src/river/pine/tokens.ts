@@ -27,6 +27,7 @@ export enum TokenType {
   FALSE = "FALSE",
   BREAK = "BREAK",
   CONTINUE = "CONTINUE",
+  SWITCH = "SWITCH",
 
   // Operators & punctuation
   PLUS = "PLUS",
@@ -88,6 +89,7 @@ export const KEYWORDS: Record<string, TokenType> = {
   false: TokenType.FALSE,
   break: TokenType.BREAK,
   continue: TokenType.CONTINUE,
+  switch: TokenType.SWITCH,
 };
 
 /** Error type carrying source position, surfaced verbatim in The River UI. */

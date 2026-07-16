@@ -24,9 +24,11 @@ const CONTINUATION_ENDINGS = new Set<TokenType>([
   TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN, TokenType.STAR_ASSIGN, TokenType.SLASH_ASSIGN,
   TokenType.EQ, TokenType.NEQ, TokenType.LT, TokenType.LTE, TokenType.GT, TokenType.GTE,
   TokenType.AND, TokenType.OR, TokenType.NOT,
-  TokenType.COMMA, TokenType.QUESTION, TokenType.COLON, TokenType.ARROW,
+  TokenType.COMMA, TokenType.QUESTION, TokenType.COLON,
   TokenType.LPAREN, TokenType.LBRACKET, TokenType.DOT,
 ]);
+// Note: ARROW (`=>`) is intentionally excluded — a newline after `=>` starts the
+// function body on the next line, it is NOT a line continuation.
 
 export class PineLexer {
   private src: string;

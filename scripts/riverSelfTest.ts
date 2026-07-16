@@ -274,6 +274,73 @@ console.log("\n[5] Engine facade");
   check("input override applied", res.plots[0].points[0].value === 9);
 }
 
+// ------------------------------------------ POPULAR INDICATOR COMPATIBILITY
+
+console.log("\n[6] Popular indicator compatibility");
+{
+  const squeeze = `//@version=4
+study("Squeeze Momentum Indicator [LazyBear]")
+length = input(20, title="BB Length")
+mult = input(2.0, title="BB MultFactor")
+lengthKC = input(20, title="KC Length")
+multKC = input(1.5, title="KC MultFactor")
+basis = sma(close, length)
+dev = multKC * stdev(close, length)
+upperBB = basis + dev
+lowerBB = basis - dev
+ma = sma(close, lengthKC)
+rangema = sma(tr, lengthKC)
+upperKC = ma + rangema * multKC
+lowerKC = ma - rangema * multKC
+val = linreg(close - avg(avg(highest(high, lengthKC), lowest(low, lengthKC)), sma(close, lengthKC)), lengthKC, 0)
+plot(val, color=color.lime, style=plot.style_histogram, linewidth=4)
+`;
+  check("Squeeze Momentum (LazyBear v4) compiles", compilePine(squeeze).status === "ok");
+
+  const hull = `//@version=5
+indicator("Hull Suite", overlay=true)
+src = input.source(close, title="Source")
+modeSwitch = input.string("Hma", title="Hull Variation", options=["Hma", "Ehma", "Thma"])
+length = input.int(55, title="Length")
+HMA(_src, _length) => ta.wma(2 * ta.wma(_src, _length / 2) - ta.wma(_src, _length), math.round(math.sqrt(_length)))
+EHMA(_src, _length) => ta.ema(2 * ta.ema(_src, _length / 2) - ta.ema(_src, _length), math.round(math.sqrt(_length)))
+Mode(modeSwitch, _src, _len) =>
+    switch modeSwitch
+        "Hma" => HMA(_src, _len)
+        "Ehma" => EHMA(_src, _len)
+        => HMA(_src, _len)
+HULL = Mode(modeSwitch, src, length)
+plot(HULL, color=color.green, linewidth=2)
+`;
+  check("Hull Suite (switch + ta.wma) compiles", compilePine(hull).status === "ok");
+
+  const cciMfi = `//@version=5
+indicator("CCI MFI")
+c = ta.cci(hlc3, 20)
+m = ta.mfi(hlc3, 14)
+plot(c, color=color.aqua)
+plot(m, color=color.purple)
+`;
+  check("CCI + MFI combo compiles", compilePine(cciMfi).status === "ok");
+
+  check("bare v4 tr series works", run(`//@version=4
+study("TR test")
+plot(sma(tr, 5))
+`, candles(30)).plots.length === 1);
+
+  check("switch expression selects branch", (() => {
+    const r = run(`//@version=5
+indicator("sw")
+x = switch close > open
+    true => 1
+    => -1
+plot(x)
+`, candles(10));
+    const vals = r.plots[0].points.map(p => p.value);
+    return vals.every((v, i) => v === (candles(10)[i].close > candles(10)[i].open ? 1 : -1));
+  })());
+}
+
 // -------------------------------------------------------------------- DONE
 
 console.log(`\n${passed} passed, ${failed} failed`);

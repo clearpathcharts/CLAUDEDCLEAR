@@ -167,6 +167,8 @@ const V4_ALIASES: Record<string, string> = {
   stoch: "ta.stoch", cum: "ta.cum", sum: "ta.sum", vwap: "ta.vwap",
   barssince: "ta.barssince", valuewhen: "ta.valuewhen",
   pivothigh: "ta.pivothigh", pivotlow: "ta.pivotlow",
+  linreg: "ta.linreg", cci: "ta.cci", mfi: "ta.mfi", dev: "ta.dev",
+  wpr: "ta.wpr", cmo: "ta.cmo", tsi: "ta.tsi", sar: "ta.sar",
   abs: "math.abs", max: "math.max", min: "math.min", round: "math.round",
   floor: "math.floor", ceil: "math.ceil", sqrt: "math.sqrt", pow: "math.pow",
   exp: "math.exp", log: "math.log", log10: "math.log10", sign: "math.sign",
@@ -391,6 +393,22 @@ export class PineInterpreter {
     }
   }
 
+  private evalSwitch(node: import("./ast").SwitchExpr): Value {
+    const scrutinee = node.scrutinee ? this.evalExpr(node.scrutinee) : null;
+    for (const c of node.cases) {
+      if (c.pattern === null) {
+        return norm(this.evalExpr(c.body));
+      }
+      const pat = this.evalExpr(c.pattern);
+      if (scrutinee !== null) {
+        if (this.binaryOp("==", scrutinee, pat)) return norm(this.evalExpr(c.body));
+      } else if (truthy(pat)) {
+        return norm(this.evalExpr(c.body));
+      }
+    }
+    return null;
+  }
+
   private execIf(node: IfExpr): Value {
     if (truthy(this.evalExpr(node.cond))) {
       return this.execBlockScoped(node.thenBranch);
@@ -465,6 +483,8 @@ export class PineInterpreter {
       case "HistoryRef": return this.evalHistory(expr);
 
       case "IfExpr": return this.execIf(expr);
+
+      case "SwitchExpr": return this.evalSwitch(expr);
 
       case "TupleExpr": return expr.elements.map(e => norm(this.evalExpr(e)));
     }
@@ -876,6 +896,25 @@ export class PineInterpreter {
     return sum / len;
   }
 
+  /** Least-squares linear regression value at `offset` bars back from the window end. */
+  private linregAt(buf: (number | null)[], offset: number): number | null {
+    const n = buf.length;
+    if (n < 2 || buf.some(v => v === null)) return null;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += buf[i]!;
+      sumXY += i * buf[i]!;
+      sumX2 += i * i;
+    }
+    const denom = n * sumX2 - sumX * sumX;
+    if (denom === 0) return null;
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+    const x = n - 1 - offset;
+    return intercept + slope * x;
+  }
+
   private builtinTa(name: string, call: Call, key: string): Value {
     const candle = this.candles[this.bar];
 
@@ -997,6 +1036,67 @@ export class PineInterpreter {
         for (const v of st.buf) sq += (v! - mean) * (v! - mean);
         const variance = sq / len;
         return name === "ta.variance" ? variance : Math.sqrt(variance);
+      }
+
+      case "ta.dev": {
+        const src = asNumber(this.argVal(call, 0, "source"));
+        const len = Math.max(1, Math.round(this.argNum(call, 1, "length", 14) ?? 14));
+        const st = this.state(key, () => ({ buf: [] as (number | null)[] }));
+        this.pushWindow(st, src, len);
+        if (st.buf.length < len) return null;
+        let sum = 0;
+        for (const v of st.buf) { if (v === null) return null; sum += v; }
+        const mean = sum / len;
+        let devSum = 0;
+        for (const v of st.buf) devSum += Math.abs(v! - mean);
+        return devSum / len;
+      }
+
+      case "ta.cci": {
+        const src = asNumber(this.argVal(call, 0, "source"));
+        const len = Math.max(1, Math.round(this.argNum(call, 1, "length", 20) ?? 20));
+        const st = this.state(key, () => ({ buf: [] as (number | null)[] }));
+        this.pushWindow(st, src, len);
+        if (st.buf.length < len || src === null) return null;
+        let sum = 0;
+        for (const v of st.buf) { if (v === null) return null; sum += v; }
+        const mean = sum / len;
+        let devSum = 0;
+        for (const v of st.buf) devSum += Math.abs(v! - mean);
+        const meanDev = devSum / len;
+        if (meanDev === 0) return 0;
+        return (src - mean) / (0.015 * meanDev);
+      }
+
+      case "ta.mfi": {
+        const src = asNumber(this.argVal(call, 0, "source"));
+        const len = Math.max(1, Math.round(this.argNum(call, 1, "length", 14) ?? 14));
+        const vol = candle.volume ?? null;
+        const st = this.state(key, () => ({ tp: [] as (number | null)[], prevTp: null as number | null, pos: [] as number[], neg: [] as number[] }));
+        if (src === null || vol === null) return null;
+        const flow = src * vol;
+        if (st.prevTp !== null) {
+          if (src > st.prevTp) { st.pos.push(flow); st.neg.push(0); }
+          else if (src < st.prevTp) { st.pos.push(0); st.neg.push(flow); }
+          else { st.pos.push(0); st.neg.push(0); }
+        }
+        st.prevTp = src;
+        if (st.pos.length > len) { st.pos.shift(); st.neg.shift(); }
+        if (st.pos.length < len) return null;
+        const posSum = st.pos.reduce((a, b) => a + b, 0);
+        const negSum = st.neg.reduce((a, b) => a + b, 0);
+        if (negSum === 0) return posSum === 0 ? 50 : 100;
+        return 100 - 100 / (1 + posSum / negSum);
+      }
+
+      case "ta.linreg": {
+        const src = asNumber(this.argVal(call, 0, "source"));
+        const len = Math.max(2, Math.round(this.argNum(call, 1, "length", 14) ?? 14));
+        const offset = Math.max(0, Math.round(this.argNum(call, 2, "offset", 0) ?? 0));
+        const st = this.state(key, () => ({ buf: [] as (number | null)[] }));
+        this.pushWindow(st, src, len);
+        if (st.buf.length < len) return null;
+        return this.linregAt(st.buf, offset);
       }
 
       case "ta.highest":
@@ -1393,7 +1493,16 @@ export class PineInterpreter {
   // ---------------------------------------------------------- builtin sources
 
   private isBuiltinSourceName(name: string): boolean {
-    return ["open", "high", "low", "close", "volume", "hl2", "hlc3", "ohlc4", "hlcc4", "time", "bar_index"].includes(name);
+    return ["open", "high", "low", "close", "volume", "hl2", "hlc3", "ohlc4", "hlcc4", "time", "bar_index", "tr"].includes(name);
+  }
+
+  /** Pine v4 bare `tr` series — True Range per bar (same as ta.tr()). */
+  private trueRangeAt(barIdx: number): number | null {
+    if (barIdx < 0 || barIdx >= this.candles.length) return null;
+    const c = this.candles[barIdx];
+    const prev = barIdx > 0 ? this.candles[barIdx - 1] : null;
+    if (!prev) return c.high - c.low;
+    return Math.max(c.high - c.low, Math.abs(c.high - prev.close), Math.abs(c.low - prev.close));
   }
 
   private builtinSourceAt(name: string, barIdx: number): Value {
@@ -1411,6 +1520,7 @@ export class PineInterpreter {
       case "hlcc4": return (c.high + c.low + c.close + c.close) / 4;
       case "time": return c.time * 1000;
       case "bar_index": return barIdx;
+      case "tr": return this.trueRangeAt(barIdx);
     }
     return null;
   }

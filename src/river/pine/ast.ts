@@ -22,6 +22,7 @@ export type Expr =
   | Ternary
   | HistoryRef
   | IfExpr
+  | SwitchExpr
   | TupleExpr;
 
 export interface NumberLit { kind: "NumberLit"; value: number; line: number; }
@@ -69,6 +70,21 @@ export interface IfExpr {
   cond: Expr;
   thenBranch: Stmt[];
   elseBranch: Stmt[] | IfExpr | null;
+  line: number;
+}
+
+/** Pine `switch` expression — matches on a scrutinee or bare boolean cases. */
+export interface SwitchCase {
+  /** null = default `=>` branch */
+  pattern: Expr | null;
+  body: Expr;
+}
+
+export interface SwitchExpr {
+  kind: "SwitchExpr";
+  /** Omitted when cases are bare conditions: `switch\n    close > open => 1` */
+  scrutinee: Expr | null;
+  cases: SwitchCase[];
   line: number;
 }
 

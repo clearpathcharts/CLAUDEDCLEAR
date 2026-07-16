@@ -48,6 +48,11 @@ export class PineParser {
     const t = this.peek();
 
     if (t.type === TokenType.IF) return this.ifStatement();
+    if (t.type === TokenType.SWITCH) {
+      const expr = this.switchExpression();
+      this.endStatement();
+      return { kind: "ExprStmt", expr, line: t.line };
+    }
     if (t.type === TokenType.FOR) return this.forStatement();
     if (t.type === TokenType.WHILE) return this.whileStatement();
     if (t.type === TokenType.BREAK) { this.advance(); this.endStatement(); return { kind: "BreakStmt", line: t.line }; }
@@ -141,11 +146,10 @@ export class PineParser {
     return { kind: "Assign", op: opMap[opTok.type], name, value, line: opTok.line };
   }
 
-  /** RHS of a declaration/assignment: either an if-expression block or a normal expression. */
+  /** RHS of a declaration/assignment: if/switch expression block or a normal expression. */
   private declInitializer(): Expr {
-    if (this.peek().type === TokenType.IF) {
-      return this.ifExpression();
-    }
+    if (this.peek().type === TokenType.SWITCH) return this.switchExpression();
+    if (this.peek().type === TokenType.IF) return this.ifExpression();
     const expr = this.expression();
     this.endStatement();
     return expr;
@@ -172,6 +176,48 @@ export class PineParser {
       }
     }
     return { kind: "IfExpr", cond, thenBranch, elseBranch, line };
+  }
+
+  /** `switch [scrutinee]\n    pat => body\n    => default` */
+  private switchExpression(): import("./ast").SwitchExpr {
+    const line = this.expect(TokenType.SWITCH, "'switch'").line;
+    let scrutinee: Expr | null = null;
+    if (this.peek().type !== TokenType.NEWLINE && this.peek().type !== TokenType.INDENT &&
+        this.peek().type !== TokenType.ARROW && this.peek().type !== TokenType.DEDENT) {
+      scrutinee = this.expression();
+    }
+
+    if (this.peek().type === TokenType.NEWLINE) {
+      this.advance();
+      this.skipNewlines();
+    }
+
+    // Cases may add an extra indent level, or share the parent block's indent.
+    let nestedCaseIndent = false;
+    if (this.peek().type === TokenType.INDENT) {
+      nestedCaseIndent = true;
+      this.advance();
+      this.skipNewlines();
+    }
+
+    const cases: import("./ast").SwitchCase[] = [];
+    while (this.peek().type !== TokenType.DEDENT && !this.isAtEnd()) {
+      let pattern: Expr | null = null;
+      if (this.peek().type !== TokenType.ARROW) {
+        pattern = this.expression();
+      }
+      this.expect(TokenType.ARROW, "'=>'");
+      const body = this.expression();
+      cases.push({ pattern, body });
+      if (this.peek().type === TokenType.NEWLINE) this.advance();
+      this.skipNewlines();
+    }
+
+    if (nestedCaseIndent) {
+      this.expect(TokenType.DEDENT, "end of switch cases");
+    }
+
+    return { kind: "SwitchExpr", scrutinee, cases, line };
   }
 
   private forStatement(): Stmt {
@@ -376,6 +422,8 @@ export class PineParser {
     if (t.type === TokenType.COLOR_LITERAL) { this.advance(); return { kind: "ColorLit", value: t.literal as string, line: t.line }; }
     if (t.type === TokenType.TRUE) { this.advance(); return { kind: "BoolLit", value: true, line: t.line }; }
     if (t.type === TokenType.FALSE) { this.advance(); return { kind: "BoolLit", value: false, line: t.line }; }
+    if (t.type === TokenType.IF) return this.ifExpression();
+    if (t.type === TokenType.SWITCH) return this.switchExpression();
 
     if (t.type === TokenType.LPAREN) {
       this.advance();
