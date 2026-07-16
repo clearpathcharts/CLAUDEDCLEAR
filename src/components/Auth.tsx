@@ -2242,8 +2242,8 @@ Not the other way around.`}
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight">
                   Your World Connected™ Terminal
                 </h3>
-                <p className="text-xs text-zinc-400">
-                  Adapt the structural density of financial streams to fit your cognitive pattern preferences.
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
+                  Stop waiting for every app to load on mobile. Bring social media, online video, and magazines (fashion, cars, and more) into one hub — then move a live chart on the same screen so you can see both.
                 </p>
               </div>
 

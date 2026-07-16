@@ -278,11 +278,11 @@ export function YwcChartPlacementHeader({ variant = "wide" }: { variant?: "wide"
         <p className="text-[10px] font-mono text-zinc-400 max-w-xl leading-relaxed">
           {variant === "sidebar" ? (
             <>
-              Four independent chart slots live in this <strong className="text-zinc-300">right rail</strong> beside your news feed — each with its own symbol. Use ↑↓ to reorder.
+              Keep price beside what you&apos;re reading or watching — four chart slots in this <strong className="text-zinc-300">right rail</strong>, each with its own symbol. Move them with ↑↓ so social, video, magazines, and the market stay on one screen.
             </>
           ) : (
             <>
-              Four chart slots sit in the <strong className="text-zinc-300">grid below</strong> — they scroll with the page and never cover your content. Use ↑↓ to reorder.
+              Four chart slots sit in the <strong className="text-zinc-300">grid below</strong> — scroll with your feeds, never cover them. Move a chart next to social, video, or a magazine so you can see both without leaving Y.W.C.
             </>
           )}
         </p>
