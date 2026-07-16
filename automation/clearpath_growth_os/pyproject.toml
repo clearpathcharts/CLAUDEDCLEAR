@@ -1,0 +1,29 @@
+[project]
+name = "clearpath-growth-os"
+version = "0.1.0"
+description = "CrewAI Flow that turns ClearPath Trader's APIs into an autonomous research -> content -> compliance -> distribution growth engine."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]>=0.150.0",
+    "requests>=2.31.0",
+    "pydantic>=2.6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+# `crewai run` / `crewai flow kickoff` also work; these are convenience entry points.
+growth-os = "clearpath_growth_os.main:kickoff"
+growth-os-plot = "clearpath_growth_os.main:plot"
+plant-the-flag = "clearpath_growth_os.plant_the_flag:kickoff"
+plant-the-flag-plot = "clearpath_growth_os.plant_the_flag:plot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/clearpath_growth_os"]
+
+[tool.crewai]
+type = "flow"

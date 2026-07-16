@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Brain, Cpu, ShieldCheck, Zap, Activity, Users, LineChart, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Cpu, ShieldCheck, Zap, Activity, Users, LineChart, Building2 } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
 
@@ -11,8 +11,8 @@ export default function ExternalAboutPage() {
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
       <SEO 
-        title="Accessible Display Technology for Clear Insights | Clear Path Markets Science" 
-        description="Accessible Display Technology for market traders. Adaptive technology with high clarity for real-time insights and decision support." 
+        title="About ClearPath Trader | Market Intelligence Platform" 
+        description="ClearPath Trader is a board-governed market intelligence platform built for clarity, adjustable chart layouts, and real-time analysis. Education and analytics — not brokerage." 
       />
       <SurfBackground />
       
@@ -43,31 +43,46 @@ export default function ExternalAboutPage() {
           
           <header className="text-center space-y-6">
             <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-xs font-mono uppercase tracking-widest mb-4">
-              <Brain size={14} className="mr-2" />
-              high clarity Enabled
+              <Building2 size={14} className="mr-2" />
+              Board-Governed Platform
             </div>
             <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-[1.1]">
-              Accessible Display Technology <br className="hidden md:block" />
-              <span className="lava-hot-text">For Market Analysis</span>
+              About <span className="lava-hot-text">ClearPath Trader</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-400 font-sans max-w-3xl mx-auto leading-relaxed">
-              Clear Path Markets Science is the premier <strong className="text-indigo-400 font-normal">advanced analysis platform</strong> built entirely on accessibility needs. By fusing <strong className="text-white font-normal">adaptive technology with high clarity</strong>, we've developed an environment that actively processes and supports your real-time insights and data organization capabilities.
+              ClearPath Trader is a <strong className="text-indigo-400 font-normal">market intelligence and education platform</strong> — charts, patterns, macro context, and learning tools in one place. The product is built for <strong className="text-white font-normal">clarity and control</strong>: you choose symbols, layouts, and how much data is on screen.
             </p>
           </header>
 
-          {/* Section 1: Definition */}
+          <section className="glass p-8 md:p-10 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-6 flex items-center">
+              <ShieldCheck className="text-indigo-500 mr-4" size={28} />
+              Governance &amp; Mission
+            </h2>
+            <div className="space-y-5 text-gray-400 leading-relaxed text-base md:text-lg">
+              <p>
+                ClearPath is developed under the oversight of a <strong className="text-white">board of directors</strong> with a shared mandate: ship tools that help people read markets without noise, hype, or predatory design. We are an analytics and education company — <strong className="text-white">not a broker</strong> and not a fund manager.
+              </p>
+              <p>
+                Our focus is practical: live charts you can search and arrange, pattern context, macro and news feeds, and structured learning — so operators can study price action on their own terms.
+              </p>
+            </div>
+          </section>
+
+          {/* Section 1: Design philosophy */}
           <section className="glass p-8 md:p-10 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
             <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-6 flex items-center">
               <Cpu className="text-indigo-500 mr-4" size={32} />
-              What is Accessible Display Technology?
+              Built for Clarity
             </h2>
             <div className="space-y-6 text-gray-400 leading-relaxed text-lg">
               <p>
-                Standard interfaces are static; they force the brain to adapt to the screen. <strong>Accessible Display Technology</strong> reverses this dynamic. It dynamically shifts visual hierarchies, data flow logic, and auditory feedback to match the user's specific processing processing style.
+                Most terminals dump maximum density by default. ClearPath starts from the opposite assumption: <strong className="text-white">the screen should adapt to how you work</strong>, not the other way around.
               </p>
               <p>
-                As the leading <strong className="text-white">analysis platform for people with disabilities</strong>, Clear Path Markets Science offers an <strong>interface with adjustable data density</strong>. Whether you require a hyper-focused, <strong className="text-white">minimal and high-stimulation visualization interface</strong> or a low-velocity visual stream to mitigate sensory overload, this system is a <strong>easy-to-read platform</strong> designed to give you absolute control over your mental bandwidth.
+                That means <strong className="text-white">adjustable data density</strong>, readable typography, calm color profiles, and chart slots you control — search any symbol, place panels where you want them, and strip chrome when you only need price. No single layout is forced on you.
               </p>
             </div>
           </section>
@@ -134,7 +149,7 @@ export default function ExternalAboutPage() {
                 <div className="inline-flex px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded text-xs font-bold uppercase tracking-widest">Theme-Adaptive (Clear Path Markets Science)</div>
                 <h3 className="text-xl font-bold text-white">Clear Alignment</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  A true <strong>all-in-one trading dashboard</strong> that shifts structurally. It scales its <strong>centralized trading data platform</strong> up or down based on your psychological saturation limit. It's a <strong>fast trading dashboard</strong> that physically aligns with your nervous system.
+                  A true <strong>all-in-one trading dashboard</strong> that shifts structurally. It scales chart density and visual intensity up or down based on <strong>your</strong> workflow — fewer distractions when you want focus, full depth when you want it.
                 </p>
               </div>
             </div>
@@ -149,8 +164,8 @@ export default function ExternalAboutPage() {
                 <p className="text-sm text-gray-500">Requires <strong>all analysis tools in one place</strong>. They monitor forex pairs and crypto momentum concurrently, utilizing our <strong>customizable visualization charts</strong> to process data with milliseconds of edge, leveraging the <strong>fast analysis dashboard</strong>.</p>
               </div>
               <div className="border border-white/10 rounded-2xl p-6 bg-[#050505]">
-                <h3 className="text-white font-bold mb-2">The Accessible View</h3>
-                <p className="text-sm text-gray-500">Requires a sanctuary. They activate our low-distraction profiles to interact with a <strong>easy-to-read platform</strong>, absorbing deep market truth without the visual anxiety of standard environments.</p>
+                <h3 className="text-white font-bold mb-2">The Focused Layout</h3>
+                <p className="text-sm text-gray-500">Uses calm profiles and lower-density views to read price action without fighting the interface — <strong>searchable charts</strong>, draggable panels, and typography tuned for long sessions.</p>
               </div>
               <div className="border border-white/10 rounded-2xl p-6 bg-[#050505]">
                 <h3 className="text-white font-bold mb-2">The Syndicate & Student</h3>
@@ -159,19 +174,19 @@ export default function ExternalAboutPage() {
             </div>
           </section>
 
-          {/* Section 5: Operator Testimonials */}
+          {/* Section 5: What operators say (anonymous, no labels) */}
           <section className="relative p-10 mt-16 rounded-3xl overflow-hidden border border-indigo-500/20">
             <div className="absolute inset-0 lava-hot-gradient opacity-5" />
             <div className="relative z-10">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-10 text-center">Operator Testimonials</h2>
+              <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-10 text-center">From the Desk</h2>
               <div className="space-y-8">
                 <blockquote className="bg-[#050505]/50 p-6 rounded-xl border border-white/5 backdrop-blur-sm">
-                  <p className="text-gray-300 italic mb-4">"Before Clear Path Markets Science, my memory footprint was tied up in six different browser windows. TradingView, Discord, a crypto exchange, an economic calendar... Now I have an <strong>analysis platform without switching apps</strong>. <strong>All research tools in one place</strong>. My data processing speed tripled."</p>
-                  <footer className="text-indigo-400 font-mono text-xs uppercase tracking-widest">— Senior Crypto Data Analyst</footer>
+                  <p className="text-gray-300 italic mb-4">"Before ClearPath, my workflow was six browser tabs — charts, chat, calendar, news. Now the terminal keeps research in one place. I pick my symbols and layouts; nothing is pre-loaded on me."</p>
+                  <footer className="text-indigo-400 font-mono text-xs uppercase tracking-widest">— Multi-asset analyst</footer>
                 </blockquote>
                 <blockquote className="bg-[#050505]/50 p-6 rounded-xl border border-white/5 backdrop-blur-sm">
-                  <p className="text-gray-300 italic mb-4">"As someone on the spectrum, standard financial hubs cause severe sensory overload. The flashing, the alerts, the density. Finding an <strong>analysis platform for people with disabilities</strong> with a true, pure <strong>dark mode interface</strong> and <strong>adjustable data density</strong> saved my career."</p>
-                  <footer className="text-lava-red font-mono text-xs uppercase tracking-widest">— Private Equities Managing Director</footer>
+                  <p className="text-gray-300 italic mb-4">"Standard hubs are loud — alerts, clutter, tiny type. ClearPath lets me run a <strong>dark, readable layout</strong> with <strong>adjustable density</strong>. I stay on the chart instead of fighting the UI."</p>
+                  <footer className="text-lava-red font-mono text-xs uppercase tracking-widest">— Independent operator</footer>
                 </blockquote>
               </div>
             </div>
@@ -185,10 +200,10 @@ export default function ExternalAboutPage() {
               <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
                 <h3 className="text-white font-bold mb-2 flex items-center">
                   <span className="text-indigo-500 mr-3">Q.</span> 
-                  Is this essentially an analysis dashboard with social integration?
+                  Is ClearPath a brokerage?
                 </h3>
                 <p className="text-gray-400 text-sm ml-7">
-                  Yes, but structurally much deeper. It is a <strong>unified analysis platform with social sentiment</strong>. You don't just "see chat"—you map global emotional bias directly to your <strong>charting hub for analysts</strong> using <strong>live market sentiment tools</strong>.
+                  No. ClearPath Trader provides <strong>market data visualization, education, and research tools</strong>. We do not hold customer funds, execute trades, or provide personalized investment advice.
                 </p>
               </div>
 

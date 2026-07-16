@@ -38,6 +38,7 @@ import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
+import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -522,7 +523,8 @@ export default function YoursPageHub() {
     : newsFeed.filter(item => item.category === selectedFeedCategory);
 
   return (
-    <div className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-hidden">
+    <YwcChartWorkspace>
+    <div id="ywc-page-canvas" className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden">
       
       {/* Lava / neon atmosphere */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
@@ -553,8 +555,22 @@ export default function YoursPageHub() {
             </h1>
             
             <p className="text-sm md:text-base text-[#FFD4E8] font-sans max-w-2xl leading-relaxed drop-shadow-[0_0_12px_rgba(255,20,147,0.2)]">
-              Welcome to the <span className="text-[#FF1493] font-bold">premium interactive terminal</span>. This workspace fuses elite editorial columns, sports streams, global indices, AI insight systems, live audio monitors, and a <span className="text-[#FF4500] font-bold">15-platform OAuth</span> social sync hub — built for maximum energy, not faded wallpaper.
+              As a trader, jumping between apps on mobile burns time — open social, wait, open video, wait, open a magazine, lose the chart. <span className="text-[#FF1493] font-bold">Your World Connected™</span> keeps it on one screen: load social media and online video, read your favorite magazines (fashion, cars, and more), and <span className="text-[#FF4500] font-bold">move a live chart</span> beside it so you never leave price action behind.
             </p>
+            <ul className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-1 text-[10px] md:text-[11px] font-mono uppercase tracking-wider text-[#FFB3D9]/90">
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] shadow-[0_0_8px_#FF1493]" />
+                Social + video in-hub
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] shadow-[0_0_8px_#FF4500]" />
+                Magazines · fashion · cars
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] shadow-[0_0_8px_#00E5FF]" />
+                Chart on the same screen
+              </li>
+            </ul>
           </div>
 
           {/* Sync status & manual simulator trigger */}
@@ -699,7 +715,7 @@ export default function YoursPageHub() {
         
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
         <div className="lg:col-span-8 space-y-8">
-          
+
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
           <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
@@ -914,42 +930,17 @@ export default function YoursPageHub() {
                   </div>
                 </div>
               </YwcLavaPanel>
-
-              {/* MAGAZINE EDITORIAL STORY BLOCK */}
-              <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="space-y-6">
-                <div className="absolute right-4 top-4 text-zinc-800 text-7xl font-serif font-black select-none pointer-events-none">
-                  M
-                </div>
-                
-                <div className="text-center space-y-2 max-w-xl mx-auto pb-4 border-b border-white/5">
-                  <span className="text-[9px] font-mono tracking-[0.25em] text-[#ff0088] font-black uppercase">
-                    MAGAZINE EDITORIAL DIGEST
-                  </span>
-                  <h3 className="text-2xl md:text-3xl font-serif italic text-white font-bold leading-normal">
-                    Modern Layout Parity: Bridging Digital Grids and Premium Print Design
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-zinc-400 font-sans leading-relaxed text-justify">
-                  <p>
-                    <span className="text-4xl text-transparent bg-clip-text bg-gradient-to-r from-[#ff0088] to-[#00f0ff] font-serif font-black float-left mr-3.5 mt-1 line-height-none">
-                      L
-                    </span>
-                    ayout density is under intense reconstruction across leading global publications. The legacy saturation of structured modular grid frames—commonly dubbed "bento" systems—has reached a zenith of aesthetic redundancy. In its wake, elite design desks are pivoting back to asymmetric principles natively perfected by traditional print publications. By employing absolute viewport scaling calculations, beautiful serif displaying and bold negative voids, authors structure a highly tailored visual hierarchy.
-                  </p>
-                  <p>
-                    Providing spacious margins enhances the organic flow of stories. As users transit through multiple display terminals, responsive CSS snap-points deliver tactile card slides that mimic premium physical pages. The ultimate objective is not merely the presentation of raw feed nodes, but the creation of an immersive storytelling wrapper that heightens consumer interaction and reinforces the gravity of the editorial content.
-                  </p>
-                </div>
-              </YwcLavaPanel>
             </>
           )}
 
         </div>
 
-        {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
-        <div className="lg:col-span-4 space-y-8">
+        {/* Sidebar Column (charts, live TV, social OAuth) */}
+        <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-6 lg:self-start">
           
+          {/* Independent live charts — right rail beside editorial grid */}
+          <YwcChartSection variant="sidebar" />
+
           {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
           <YwcLavaPanel className="space-y-4">
             <CpmsMediaPantry />
@@ -1180,5 +1171,6 @@ export default function YoursPageHub() {
       </YwcLavaPanel>
 
     </div>
+    </YwcChartWorkspace>
   );
 }

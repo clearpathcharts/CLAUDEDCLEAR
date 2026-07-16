@@ -48,6 +48,17 @@ import {
   listIntelligenceBriefings,
   verifyIntelligenceWebhookSecret,
 } from './src/server/intelligenceWebhookService';
+import {
+  moderateBodyFields,
+  runContentModerationSelfTest,
+} from './src/server/contentModeration';
+import {
+  PrivateAuthError,
+  buildClientSessionUser,
+  lookupPrivateUser,
+  loginPrivateUser,
+  registerPrivateUser,
+} from './src/server/privateAuthService';
 
 const parser = new RSSParser();
 
@@ -307,6 +318,63 @@ async function startServer() {
     });
   });
 
+  // Private member accounts (email + password, per-user login desk)
+  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+    try {
+      const result = await lookupPrivateUser(req.body?.email || '');
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+    try {
+      const user = await registerPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+        displayName: req.body?.displayName || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Registration failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+    try {
+      const user = await loginPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/logout', (req, res) => {
+    try {
+      delete (req.session as any).privateUser;
+    } catch {
+      /* ignore */
+    }
+    res.json({ ok: true });
+  });
+
+  app.get('/api/auth/private/me', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user });
+  });
+
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
@@ -419,7 +487,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/workspace/notes', async (req, res) => {
+  app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
     const { uid, associatedId, content } = req.body;
     if (!uid || !associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -707,7 +775,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', async (req, res) => {
+  app.post('/api/encyclopedia/chat', moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -756,7 +824,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', async (req, res) => {
+  app.post('/api/mentor/chat', moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -1074,6 +1142,8 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
 
     try {
+      // Twelve Data rejects outputsize outside [1, 5000] with HTTP 400, which
+      // used to blank every chart for tiers whose candle limit exceeds 5000.
       const requested = limit ? Number(limit) : 100;
       const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
       const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey);
@@ -1640,6 +1710,9 @@ Allow: /guides
 Allow: /glossary
 Allow: /faq
 Allow: /research
+Allow: /about
+Allow: /if-trading-and-chatgpt-had-a-baby
+Allow: /trading-ai
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
@@ -1672,6 +1745,18 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://clearpathtrader.com/trading-ai</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://clearpathtrader.com/if-trading-and-chatgpt-had-a-baby</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
   <url>
     <loc>https://clearpathtrader.com/</loc>
     <lastmod>2026-06-07</lastmod>
@@ -1707,6 +1792,12 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     <lastmod>2026-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://clearpathtrader.com/about</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://clearpathtrader.com/research</loc>
@@ -1889,6 +1980,9 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
   // Intercept primary crawlable SEO routes at server-side
   const SEO_PAGES = [
     '/',
+    '/about',
+    '/if-trading-and-chatgpt-had-a-baby',
+    '/trading-ai',
     '/macro',
     '/learn',
     '/learn/:topic',
@@ -1898,6 +1992,10 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
+    '/education',
+    '/clearpath-education',
+    '/indicators',
+    '/encyclopedia-of-indicators',
     '/market-universe'
   ];
 
@@ -1983,6 +2081,23 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         console.log(`[STARTUP] TruthEnforcementEngine initialized. Compliance score: ${startupTruth.score}%`);
       } catch (e: any) {
         console.error("[CRITICAL] TruthEnforcementEngine postponed startup failure:", e);
+      }
+
+      // 3. Content moderation blocklist smoke test
+      try {
+        const modTest = runContentModerationSelfTest();
+        if (modTest.failed.length) {
+          console.error(
+            `[STARTUP] Content moderation self-test FAILED (${modTest.failed.length}):`,
+            modTest.failed
+          );
+        } else {
+          console.log(
+            `[STARTUP] Content moderation self-test passed (${modTest.passed} checks).`
+          );
+        }
+      } catch (e: any) {
+        console.error("[CRITICAL] Content moderation self-test failure:", e);
       }
     }, 10000); // 10-second delay to guarantee instant, responsive container cold starts
   });

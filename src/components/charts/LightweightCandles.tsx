@@ -59,6 +59,8 @@ export function LightweightCandles({
     laggingSpan2Periods: 52,
     displacement: 26
   },
+  embedMode = false,
+  useDedicatedPatternPanel = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -79,11 +81,17 @@ export function LightweightCandles({
     displacement: number;
   };
   blackoutMode?: boolean;
+  /** Compact embed: hide HUD chrome for bento mini-charts. */
+  embedMode?: boolean;
+  /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
+  useDedicatedPatternPanel?: boolean;
 }) {
+  const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
   const [showPatternHud, setShowPatternHud] = useState(() => {
@@ -103,7 +111,7 @@ export function LightweightCandles({
     }
   });
   const visible = useVisibilityPause();
-  const sym = symbol.toUpperCase();
+  const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -165,6 +173,7 @@ export function LightweightCandles({
           color: activeCustomTheme ? activeCustomTheme.background : theme.layout.background.bottomColor,
         },
         textColor: activeCustomTheme ? activeCustomTheme.text : theme.layout.textColor,
+        fontSize: 13,
         attributionLogo: false,
       },
       grid: activeCustomTheme ? {
@@ -256,7 +265,10 @@ export function LightweightCandles({
     async function load() {
       try {
         if (!active) return;
+        // Clear any error left over from a previous load (e.g. a transient
+        // rate-limit) so a stale overlay never covers freshly loaded candles.
         setError(null);
+        setIsLoading(true);
 
         const allowedLimit = getCandleLimit(userTier);
 
@@ -288,11 +300,15 @@ export function LightweightCandles({
           if (fetched && fetched.length > 0) {
             displayData = fetched;
           } else {
+            const hint = lastFetchError?.includes("API Key not configured")
+              ? " Set TWELVEDATA_API_KEY in .env and restart the server."
+              : "";
             setError(
               lastFetchError
-                ? `No historical data available for this timeframe. (${lastFetchError})`
+                ? `No historical data available for this timeframe. (${lastFetchError})${hint}`
                 : "No historical data available for this timeframe."
             );
+            setIsLoading(false);
             return;
           }
         }
@@ -591,13 +607,22 @@ export function LightweightCandles({
         }, tickDelay);
 
         chart.timeScale().fitContent();
+        if (active) setIsLoading(false);
       } catch (err) {
-        console.warn("[LightweightCandles load error handler] Recovered from load failure gracefully:", err);
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("[LightweightCandles load error]", err);
+        setError(msg || "Chart failed to load.");
+        setIsLoading(false);
       }
     }
 
     load().catch(err => {
-      console.warn("[LightweightCandles load promise catch] Suppressed chart loading promise rejection:", err);
+      console.warn("[LightweightCandles load promise catch]", err);
+      if (active) {
+        setError(err instanceof Error ? err.message : String(err));
+        setIsLoading(false);
+      }
     });
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -624,7 +649,9 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
+  // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   return (
     <div
@@ -644,14 +671,20 @@ export function LightweightCandles({
       }}
     >
       {/* FLOATING COORDINATE TRACKER CONTROL (HUD SWITCH) */}
+      {isLoading && !error && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 text-cyan-400 font-mono text-xs p-4 text-center">
+          <span className="animate-pulse">Loading {sym} chart…</span>
+        </div>
+      )}
       {error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-red-500 font-mono text-sm p-4 text-center">
-          {error}
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-black/85 text-red-400 font-mono text-sm p-6 text-center">
+          <span className="text-red-500 font-bold uppercase tracking-wider text-xs">Chart data unavailable</span>
+          <span>{error}</span>
         </div>
       )}
       <ChartFormingWatch
         symbol={sym}
-        brief={showFormingWatch ? formingBrief : null}
+        brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
         onClose={() => {
           setShowFormingWatch(false);
           try {
@@ -661,7 +694,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showFormingWatch && (
+      {!hidePatternChrome && !showFormingWatch && (
         <button
           type="button"
           onClick={() => {
@@ -681,7 +714,7 @@ export function LightweightCandles({
       )}
       <ChartPatternHud
         symbol={sym}
-        scan={showPatternHud ? patternScan : null}
+        scan={!hidePatternChrome && showPatternHud ? patternScan : null}
         onClose={() => {
           setShowPatternHud(false);
           try {
@@ -691,7 +724,7 @@ export function LightweightCandles({
           }
         }}
       />
-      {!showPatternHud && (
+      {!hidePatternChrome && !showPatternHud && (
         <button
           type="button"
           onClick={() => {
@@ -709,11 +742,12 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
-      <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />
+      {!embedMode && <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />}
+      {!embedMode && (
       <button
         onClick={() => setCrosshairEnabled(!crosshairEnabled)}
         className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+          !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
         }`}
         title="Toggle Crosshair Coordinates tracking"
         id={`crosshair_toggle_${symbol}`}
@@ -721,6 +755,7 @@ export function LightweightCandles({
         <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
         <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
       </button>
+      )}
     </div>
   );
 }
