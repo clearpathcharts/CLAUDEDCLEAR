@@ -42,6 +42,10 @@ import {
   searchPodcastsByTerm,
 } from './src/server/podcastService';
 import {
+  moderateBodyFields,
+  runContentModerationSelfTest,
+} from './src/server/contentModeration';
+import {
   PrivateAuthError,
   buildClientSessionUser,
   lookupPrivateUser,
@@ -476,7 +480,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/workspace/notes', async (req, res) => {
+  app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
     const { uid, associatedId, content } = req.body;
     if (!uid || !associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -764,7 +768,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', async (req, res) => {
+  app.post('/api/encyclopedia/chat', moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -813,7 +817,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', async (req, res) => {
+  app.post('/api/mentor/chat', moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2014,6 +2018,23 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         console.log(`[STARTUP] TruthEnforcementEngine initialized. Compliance score: ${startupTruth.score}%`);
       } catch (e: any) {
         console.error("[CRITICAL] TruthEnforcementEngine postponed startup failure:", e);
+      }
+
+      // 3. Content moderation blocklist smoke test
+      try {
+        const modTest = runContentModerationSelfTest();
+        if (modTest.failed.length) {
+          console.error(
+            `[STARTUP] Content moderation self-test FAILED (${modTest.failed.length}):`,
+            modTest.failed
+          );
+        } else {
+          console.log(
+            `[STARTUP] Content moderation self-test passed (${modTest.passed} checks).`
+          );
+        }
+      } catch (e: any) {
+        console.error("[CRITICAL] Content moderation self-test failure:", e);
       }
     }, 10000); // 10-second delay to guarantee instant, responsive container cold starts
   });
