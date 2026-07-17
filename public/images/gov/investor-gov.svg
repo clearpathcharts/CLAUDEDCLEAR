@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 48" role="img" aria-label="Investor.gov">
+  <rect width="140" height="48" rx="4" fill="#0B3D5C"/>
+  <rect x="1" y="1" width="138" height="46" rx="3" fill="none" stroke="#5BA3D9" stroke-width="1.5"/>
+  <text x="70" y="22" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="12" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">Investor.gov</text>
+  <text x="70" y="36" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="6" fill="#5BA3D9" letter-spacing="1">SEC INVESTOR EDUCATION</text>
+</svg>

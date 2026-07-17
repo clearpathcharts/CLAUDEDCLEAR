@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Cpu, ShieldCheck, Zap, Activity, Users, LineChart, Building2 } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
+import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 
 export default function ExternalAboutPage() {
   const handleBack = () => {
@@ -248,6 +249,7 @@ export default function ExternalAboutPage() {
             <a href="/disclaimer.html" className="hover:text-indigo-400 transition-colors">Disclaimer</a>
           </div>
           <p className="mt-6 text-indigo-900">&copy; {new Date().getFullYear()} Clear Path Markets Science Grid</p>
+          <GovernmentFinanceLinks compact />
         </div>
       </footer>
     </div>
