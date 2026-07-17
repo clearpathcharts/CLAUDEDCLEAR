@@ -92,7 +92,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "CpmsApk",
       icon: Cpu,
-      label: "CPMS APK",
+      label: "CLEARPATH CINEMA",
     },
 
     {
