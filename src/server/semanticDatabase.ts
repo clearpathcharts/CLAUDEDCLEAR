@@ -1,5 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import {
+  TRADING_REIMAGINED_FAQS,
+  TRADING_REIMAGINED_PATH,
+  TRADING_REIMAGINED_SHORT_PATH,
+  TRADING_REIMAGINED_SEO,
+  SPEED_COPY,
+} from '../content/tradingReimaginedLanding';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -245,28 +252,42 @@ export const GENERAL_FAQS = [
 // ==========================================
 // 1. DYNAMIC JSON-LD SCHEMA INJECTION & SSR METADATA
 // ==========================================
+function stripConflictingHeadTags(html: string): string {
+  return html
+    .replace(/<meta\s+property="og:[^"]+"[^>]*>/gi, '')
+    .replace(/<meta\s+name="twitter:[^"]+"[^>]*>/gi, '')
+    .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
+}
+
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
   let title = "CLEAR PATH MARKETS SCIENCE | Financial Intelligence Platform";
   let description = "Premium institutional macroeconomic science interface, financial terminal, and educational database. High-fidelity analytics & AI content graph systems.";
+  let keywords = "trading platform, market analysis, financial terminal, ClearPath Trader, forex charts, crypto charts";
   const baseUrl = "https://clearpathtrader.com";
-  const canonicalUrl = `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
+  const canonicalUrl =
+    pathClean === TRADING_REIMAGINED_SHORT_PATH
+      ? `${baseUrl}${TRADING_REIMAGINED_PATH}`
+      : `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
 
-  // Organization Schema (Consistently represented)
+  // Organization + WebSite schema (brand trust — no personal founder attribution)
   const orgSchema = {
     "@context": "https://schema.org",
-    "@type": "FinancialProduct",
+    "@type": "Organization",
     "name": "ClearPathTrader",
     "alternateName": "Clear Path Markets Science",
     "url": baseUrl,
     "logo": `${baseUrl}/logo.png`,
-    "description": "Consistent financial intelligence platform and macroeconomics analysis dashboard.",
-    "brand": {
-      "@type": "Brand",
-      "name": "ClearPathTrader",
-      "logo": `${baseUrl}/logo.png`
-    }
+    "description": "Board-governed market intelligence, charting, and financial education platform.",
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ClearPathTrader",
+    "url": baseUrl,
+    "publisher": { "@id": `${baseUrl}/#organization` },
   };
 
   // Breadcrumb Schema
@@ -281,7 +302,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     }))
   });
 
-  const schemas: any[] = [orgSchema];
+  const schemas: any[] = [orgSchema, websiteSchema];
 
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
@@ -299,6 +320,71 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
           "@type": "Answer",
           "text": faq.answer
         }
+      }))
+    });
+  } else if (pathClean === '/about') {
+    title = "About ClearPath Trader | Market Intelligence Platform";
+    description = "Board-governed market intelligence platform: live charts, pattern context, macro education, and clarity-first design. Analytics and education — not brokerage.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "About", url: "/about" }
+    ]));
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "@id": `${canonicalUrl}#webpage`,
+      "url": canonicalUrl,
+      "name": "About ClearPath Trader",
+      "description": description,
+      "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
+    });
+  } else if (pathClean === TRADING_REIMAGINED_PATH || pathClean === TRADING_REIMAGINED_SHORT_PATH) {
+    title = TRADING_REIMAGINED_SEO.title;
+    description = TRADING_REIMAGINED_SEO.description;
+    keywords = TRADING_REIMAGINED_SEO.keywords;
+
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "If Trading and ChatGPT Had a Baby", url: TRADING_REIMAGINED_PATH }
+    ]));
+
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": `${canonicalUrl}#webpage`,
+      "url": canonicalUrl,
+      "name": title,
+      "description": description,
+      "inLanguage": "en-US",
+      "isPartOf": { "@type": "WebSite", "name": "ClearPathTrader", "url": baseUrl }
+    });
+
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ClearPath Trader",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web",
+      "url": baseUrl,
+      "description": description,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "featureList": [
+        "Unlimited trading indicators",
+        "Automatic chart pattern detection",
+        "Customizable layouts and color profiles",
+        "Indicator encyclopedia",
+        "Beginner to advanced education path",
+        "Integrated news and social feeds"
+      ]
+    });
+
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": TRADING_REIMAGINED_FAQS.map((faq) => ({
+        "@type": "Question",
+        "name": faq.question,
+        "acceptedAnswer": { "@type": "Answer", "text": faq.answer }
       }))
     });
   } else if (pathClean === '/macro') {
@@ -391,8 +477,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         "dateModified": `${record.updatedDate}T15:00:00Z`,
         "author": {
           "@type": "Organization",
-          "name": record.author,
-          "logo": `${baseUrl}/logo.png`,
+          "name": "ClearPathTrader Editorial",
           "url": baseUrl
         },
         "publisher": {
@@ -402,10 +487,6 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
             "@type": "ImageObject",
             "url": `${baseUrl}/logo.png`
           }
-        },
-        "reviewedBy": {
-          "@type": "Person",
-          "name": record.reviewedBy
         }
       });
 
@@ -432,7 +513,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   }).join('\n');
 
   // Perform surgical replacements of metadata placeholders in standard index.html template
-  let html = originalHtml;
+  let html = stripConflictingHeadTags(originalHtml);
 
   // Replace default Title
   const titleRegex = /<title>[^]*?<\/title>/gi;
@@ -445,9 +526,16 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   // Inject or Replace Meta Description
   const descRegex = /<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi;
   if (descRegex.test(html)) {
-    html = html.replace(descRegex, `<meta name="description" content="${description}" />`);
+    html = html.replace(descRegex, `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />`);
   } else {
-    html = html.replace('</head>', `<meta name="description" content="${description}" />\n</head>`);
+    html = html.replace('</head>', `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />\n</head>`);
+  }
+
+  const keywordsRegex = /<meta\s+name="keywords"\s+content="[^]*?"\s*\/?>/gi;
+  if (keywordsRegex.test(html)) {
+    html = html.replace(keywordsRegex, `<meta name="keywords" content="${keywords.replace(/"/g, '&quot;')}" />`);
+  } else {
+    html = html.replace('</head>', `<meta name="keywords" content="${keywords.replace(/"/g, '&quot;')}" />\n</head>`);
   }
 
   // OpenGraph SEO Meta Tags (100% compliant)
@@ -470,6 +558,27 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 
   // Inject OG Tags & Schema Script blocks right before closing head
   html = html.replace('</head>', `${ogTags}\n${schemaScripts}\n</head>`);
+
+  if (pathClean === TRADING_REIMAGINED_PATH) {
+    const noscriptArticle = `
+    <noscript>
+      <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
+        <h1>If Trading and ChatGPT Had a Baby — ClearPath Trader</h1>
+        <p>${description}</p>
+        <h2>${SPEED_COPY.headline}</h2>
+        <p>${SPEED_COPY.body}</p>
+        <h2>Neurodivergence</h2>
+        <p>Custom colors and layouts from traditional trading desks to autism-friendly designs — you choose what works for you.</p>
+        <h2>Customization</h2>
+        <p>Your platform: colors, layouts, windows, social links, and news without leaving your charts.</p>
+        <h2>Indicators</h2>
+        <p>Unlimited indicators, automatic chart pattern marking, and an indicator encyclopedia.</p>
+        <h2>Education</h2>
+        <p>Beginner to advanced path in plain language.</p>
+      </article>
+    </noscript>`;
+    html = html.replace('<div id="root">', `${noscriptArticle}\n    <div id="root">`);
+  }
 
   return html;
 }

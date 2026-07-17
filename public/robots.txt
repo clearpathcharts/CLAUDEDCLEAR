@@ -1,4 +1,5 @@
+# Served dynamically by server.ts in production — this file is a dev/static fallback only.
 User-agent: *
 Allow: /
 
-Sitemap: https://clearpathmarkets.com/sitemap.xml
+Sitemap: https://clearpathtrader.com/sitemap.xml

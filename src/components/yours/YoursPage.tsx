@@ -17,10 +17,6 @@ import {
   MessageSquare,
   Sparkles,
   RefreshCw,
-  Play,
-  Pause,
-  Volume2,
-  Tv,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
@@ -40,6 +36,9 @@ import GlobalFinance from '../GlobalFinance';
 import MagazineHub from '../MagazineHub';
 import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
+import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
+import { CpmsMediaPantry } from './CpmsMediaPantry';
+import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -101,12 +100,6 @@ export default function YoursPageHub() {
 
   // Reader modal story
   const [activeStoryDetails, setActiveStoryDetails] = useState<any | null>(null);
-
-  // TV Player states
-  const [tvPlaying, setTvPlaying] = useState(true);
-  const [tvVolume, setTvVolume] = useState(70);
-  const [activeTvStream, setActiveTvStream] = useState({ name: 'CPMS Global Financial Live', loc: 'GENEVA / TOKYO DESK', viewers: '14,840' });
-  const [frequencyBars, setFrequencyBars] = useState<number[]>(new Array(16).fill(20));
 
   // Ticker text
   const tickerItems = [
@@ -451,19 +444,6 @@ export default function YoursPageHub() {
     });
   };
 
-  // Simulated live audio visualizer inside TV player
-  useEffect(() => {
-    let interval: any = null;
-    if (tvPlaying) {
-      interval = setInterval(() => {
-        setFrequencyBars(new Array(16).fill(0).map(() => Math.floor(Math.random() * 60) + 15));
-      }, 100);
-    } else {
-      setFrequencyBars(new Array(16).fill(8));
-    }
-    return () => clearInterval(interval);
-  }, [tvPlaying]);
-
   // Social account simulation login triggering handshakes
   const handleTriggerSocialConnect = (id: string, name: string) => {
     setSocialPlatforms(prev => prev.map(p => {
@@ -543,84 +523,102 @@ export default function YoursPageHub() {
     : newsFeed.filter(item => item.category === selectedFeedCategory);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-hidden">
+    <YwcChartWorkspace>
+    <div id="ywc-page-canvas" className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden">
       
-      {/* Cyber Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-[#ff0088]/5 to-[#00f0ff]/5 blur-[120px] rounded-full pointer-events-none" />
+      {/* Lava / neon atmosphere */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+      <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#FF0080]/20 blur-[140px] rounded-full pointer-events-none animate-pulse" />
+      <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-[#FF4500]/25 blur-[120px] rounded-full pointer-events-none ywc-lava-drift" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-[#BF00FF]/15 blur-[130px] rounded-full pointer-events-none" />
 
       {/* TOP HEADER MODULE - BRAND PROVENANCE */}
-      <div className="border border-[#fff/5] bg-[#0c0c0e]/95 backdrop-blur-xl rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.8)]">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#ff0088]/20 to-transparent blur-2xl rounded-full" />
-        <div className="absolute left-0 bottom-0 w-32 h-32 bg-gradient-to-tr from-[#00f0ff]/15 to-transparent blur-3xl rounded-full pointer-events-none" />
-        
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="text-[9px] font-mono tracking-[0.25em] bg-gradient-to-r from-[#ff0088] to-[#00f0ff] text-black px-2.5 py-0.5 rounded-full font-black uppercase">
+      <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8 pt-7">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[9px] font-mono tracking-[0.3em] bg-gradient-to-r from-[#FF0080] via-[#FF4500] to-[#FF1493] text-black px-3 py-1 rounded-full font-black uppercase shadow-[0_0_20px_rgba(255,0,128,0.6)]">
                 Y.W.C. CORE MODULE
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="flex items-center gap-1.5 text-[10px] font-mono text-[#00FF88] font-bold drop-shadow-[0_0_8px_rgba(0,255,136,0.5)]">
+                <span className="w-2 h-2 bg-[#00FF88] rounded-full animate-pulse shadow-[0_0_10px_#00FF88]" />
                 SYSTEM SECURE Handshake (Port 3000)
               </span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl font-black font-serif italic tracking-tight text-white flex flex-wrap items-center gap-2">
-              CPMS <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff00c8] to-[#01f0ff] flex items-center gap-2">Your World Connected <Flame className="w-10 h-10 text-[#ff00c8] fill-[#ff00c8] animate-pulse drop-shadow-[0_0_15px_rgba(255,0,200,0.6)] shrink-0 inline-block" /></span>
+            <h1 className="text-5xl md:text-7xl font-black font-serif italic tracking-tight flex flex-wrap items-center gap-3 leading-[1.05]">
+              <span className="text-white drop-shadow-[0_0_24px_rgba(255,255,255,0.35)]">CPMS</span>
+              <span className="ywc-title-lava flex items-center gap-3">
+                Your World Connected
+                <Flame className="w-10 h-10 md:w-12 md:h-12 text-[#FF4500] fill-[#FF0080] animate-pulse drop-shadow-[0_0_20px_rgba(255,69,0,0.9)] shrink-0" />
+              </span>
             </h1>
             
-            <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
-              Welcome to the premium interactive terminal wrapper. This workspace fuses elite editorial newspaper columns, sports streams, global indices metrics, AI smart insight systems, real-time audio monitors, and a massive 15-platform OAuth multi-channel social synchronization hub.
+            <p className="text-sm md:text-base text-[#FFD4E8] font-sans max-w-2xl leading-relaxed drop-shadow-[0_0_12px_rgba(255,20,147,0.2)]">
+              As a trader, jumping between apps on mobile burns time — open social, wait, open video, wait, open a magazine, lose the chart. <span className="text-[#FF1493] font-bold">Your World Connected™</span> keeps it on one screen: load social media and online video, read your favorite magazines (fashion, cars, and more), and <span className="text-[#FF4500] font-bold">move a live chart</span> beside it so you never leave price action behind.
             </p>
+            <ul className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-1 text-[10px] md:text-[11px] font-mono uppercase tracking-wider text-[#FFB3D9]/90">
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] shadow-[0_0_8px_#FF1493]" />
+                Social + video in-hub
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] shadow-[0_0_8px_#FF4500]" />
+                Magazines · fashion · cars
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] shadow-[0_0_8px_#00E5FF]" />
+                Chart on the same screen
+              </li>
+            </ul>
           </div>
 
           {/* Sync status & manual simulator trigger */}
-          <div className="bg-zinc-950/80 rounded-2xl border border-white/5 p-4 md:min-w-[280px] space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+          <div className="bg-black/70 rounded-2xl border-2 border-[#FF1493]/40 p-4 md:min-w-[280px] space-y-3 shadow-[0_0_24px_rgba(255,20,147,0.2)]">
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#FFB3D9]">
               <span>Automatic Chrono Sync:</span>
-              <span className="text-cyan-400 font-bold">{xmlPollingInterval} hours</span>
+              <span className="text-[#00E5FF] font-bold drop-shadow-[0_0_6px_#00E5FF]">{xmlPollingInterval} hours</span>
             </div>
             
-            <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+            <div className="flex items-center justify-between text-[11px] font-mono text-[#FFB3D9]">
               <span>Last Handshake (XML/RSS):</span>
-              <span className="text-pink-400 font-bold">{lastSyncTime}</span>
+              <span className="text-[#FF4500] font-bold drop-shadow-[0_0_6px_#FF4500]">{lastSyncTime}</span>
             </div>
 
             {/* Simulated cron rate changer */}
-            <div className="flex items-center gap-2 pt-1 border-t border-white/5">
-              <span className="text-[10px] font-mono text-zinc-500">SET CRON RATE:</span>
+            <div className="flex items-center gap-2 pt-1 border-t border-[#FF1493]/30">
+              <span className="text-[10px] font-mono text-[#FF69B4]">SET CRON RATE:</span>
               <button 
                 onClick={() => setXmlPollingInterval(6)} 
-                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 6 ? 'bg-[#ff0088] text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 6 ? 'bg-gradient-to-r from-[#FF0080] to-[#FF4500] text-white shadow-[0_0_12px_#FF4500]' : 'bg-zinc-900 text-zinc-400 hover:text-[#FF1493]'}`}
               >
                 6 Hours
               </button>
               <button 
                 onClick={() => setXmlPollingInterval(12)} 
-                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 12 ? 'bg-[#ff0088] text-white' : 'bg-zinc-900 text-zinc-400 hover:text-white'}`}
+                className={`px-2 py-0.5 rounded text-[9px] font-mono transition-all font-bold ${xmlPollingInterval === 12 ? 'bg-gradient-to-r from-[#FF0080] to-[#FF4500] text-white shadow-[0_0_12px_#FF4500]' : 'bg-zinc-900 text-zinc-400 hover:text-[#FF1493]'}`}
               >
                 12 Hours
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </YwcLavaPanel>
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Core Live Update & RSS Engine Simulator */}
-        <div className="lg:col-span-8 border border-white/5 bg-[#08080a]/90 backdrop-blur-md rounded-2xl p-5 md:p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+        <YwcLavaPanel className="lg:col-span-8 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#00f0ff]/10 text-[#00f0ff]">
+              <div className="p-2 rounded-xl bg-[#FF4500]/15 text-[#FF4500] shadow-[0_0_12px_rgba(255,69,0,0.35)]">
                 <RefreshCw size={19} className={isSimulatingFetch ? 'animate-spin' : ''} />
               </div>
               <div>
-                <h3 className="text-sm font-black tracking-wider uppercase font-sans">
+                <YwcSectionTitle className="text-sm font-sans">
                   RSS Fetch & Node Parser Simulator
-                </h3>
+                </YwcSectionTitle>
                 <p className="text-[11px] text-zinc-500 font-mono">
                   Convert live streams (ESPN, Formula 1, AP, Reuters, CoinDesk) into reactive grid matrices
                 </p>
@@ -633,7 +631,7 @@ export default function YoursPageHub() {
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 cursor-pointer ${
                 isSimulatingFetch 
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-[#ff0088] to-[#00f0ff] text-black hover:shadow-[0_0_20px_rgba(0,240,255,0.4)]'
+                  : 'bg-gradient-to-r from-[#FF0080] via-[#FF4500] to-[#FF8C00] text-black hover:shadow-[0_0_24px_rgba(255,69,0,0.55)]'
               }`}
             >
               <span>{isSimulatingFetch ? 'PROCESSING FEED...' : 'FORCE RSS XML FETCH'}</span>
@@ -667,16 +665,16 @@ export default function YoursPageHub() {
               </div>
             </div>
           )}
-        </div>
+        </YwcLavaPanel>
 
         {/* Global Indices Quick View (MARKET WATCH PANEL) */}
-        <div className="lg:col-span-4 border border-white/5 bg-[#08080a]/90 backdrop-blur-md rounded-2xl p-5 md:p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+        <YwcLavaPanel className="lg:col-span-4 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-[#ff0088]" />
-              <h3 className="text-xs font-black tracking-widest uppercase text-zinc-300">
+              <TrendingUp size={16} className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" />
+              <YwcSectionTitle className="text-xs tracking-widest">
                 MARKET WATCH (GLOBAL DESK)
-              </h3>
+              </YwcSectionTitle>
             </div>
             <span className="text-[10px] bg-zinc-900 border border-white/10 text-zinc-400 px-2 py-0.5 rounded font-mono">
               REAL PARITY
@@ -708,7 +706,7 @@ export default function YoursPageHub() {
               </div>
             ))}
           </div>
-        </div>
+        </YwcLavaPanel>
 
       </div>
 
@@ -717,9 +715,10 @@ export default function YoursPageHub() {
         
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
         <div className="lg:col-span-8 space-y-8">
-          
+
+          <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
-          <div className="flex items-center justify-between pb-4 border-b-2 border-white/10">
+          <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
               <span className="text-sm font-black text-[#39ff14] uppercase tracking-wider shrink-0 pr-2 border-r border-white/10 hidden sm:inline">
                 SECTIONS:
@@ -749,12 +748,13 @@ export default function YoursPageHub() {
               ))}
             </div>
             
-            <div className="h-2 w-2 rounded-full bg-[#39ff14] animate-ping hidden lg:block" />
+            <div className="h-2 w-2 rounded-full bg-[#FF4500] animate-ping hidden lg:block shadow-[0_0_10px_#FF4500]" />
           </div>
+          </YwcLavaPanel>
 
           {selectedFeedCategory === 'all' && (
             /* 1. HERO TOP STORY (Giant Cinematic layout preview) */
-            <section className="relative group overflow-hidden rounded-3xl border border-white/5 bg-zinc-950 min-h-[460px] flex flex-col justify-end p-6 md:p-10 animate-fade-in">
+            <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="min-h-[460px] flex flex-col justify-end animate-fade-in group">
               <img 
                 src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1600"
                 alt="Global news background matrix" 
@@ -803,20 +803,24 @@ export default function YoursPageHub() {
                   </button>
                 </div>
               </div>
-            </section>
+            </YwcLavaPanel>
           )}
 
           {selectedFeedCategory === 'politics' ? (
-            <PoliticalHub />
+            <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
-            <GlobalFinance />
+            <YwcLavaPanel rounded="3xl"><GlobalFinance /></YwcLavaPanel>
           ) : selectedFeedCategory === 'magazine' ? (
-            <MagazineHub />
+            <YwcLavaPanel rounded="3xl"><MagazineHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'news' ? (
-            <WorldHub />
+            <YwcLavaPanel rounded="3xl"><WorldHub /></YwcLavaPanel>
           ) : (
             <>
               {/* DYNAMIC STORIES GRID */}
+              <YwcLavaPanel className="space-y-4">
+                <YwcSectionTitle className="text-xs tracking-[0.2em]">
+                  Online Newspaper — Live Editorial Grid
+                </YwcSectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AnimatePresence mode="popLayout">
                   {filteredFeed.map((article) => (
@@ -884,15 +888,16 @@ export default function YoursPageHub() {
                   ))}
                 </AnimatePresence>
               </div>
+              </YwcLavaPanel>
 
               {/* AI INSIGHTS & ANALYSES SECTION */}
-              <section className="border border-white/5 bg-gradient-to-r from-zinc-950 to-[#0e0717]/90 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <YwcLavaPanel as="section" className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="text-[#00f0ff]" size={18} />
-                    <h3 className="text-sm font-black tracking-wider uppercase font-sans">
+                    <Sparkles className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" size={18} />
+                    <YwcSectionTitle className="text-sm font-sans">
                       CPMS COGNITIVE AI INSIGHTS
-                    </h3>
+                    </YwcSectionTitle>
                   </div>
                   <span className="text-[10px] bg-[#ff0088]/10 text-[#ff0088] border border-[#ff0088]/20 px-2 py-0.5 rounded font-mono font-bold">
                     GENERATIVE SUMMARY STACK
@@ -924,151 +929,32 @@ export default function YoursPageHub() {
                     </p>
                   </div>
                 </div>
-              </section>
-
-              {/* MAGAZINE EDITORIAL STORY BLOCK */}
-              <section className="bg-zinc-950/40 border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden space-y-6">
-                <div className="absolute right-4 top-4 text-zinc-800 text-7xl font-serif font-black select-none pointer-events-none">
-                  M
-                </div>
-                
-                <div className="text-center space-y-2 max-w-xl mx-auto pb-4 border-b border-white/5">
-                  <span className="text-[9px] font-mono tracking-[0.25em] text-[#ff0088] font-black uppercase">
-                    MAGAZINE EDITORIAL DIGEST
-                  </span>
-                  <h3 className="text-2xl md:text-3xl font-serif italic text-white font-bold leading-normal">
-                    Modern Layout Parity: Bridging Digital Grids and Premium Print Design
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-zinc-400 font-sans leading-relaxed text-justify">
-                  <p>
-                    <span className="text-4xl text-transparent bg-clip-text bg-gradient-to-r from-[#ff0088] to-[#00f0ff] font-serif font-black float-left mr-3.5 mt-1 line-height-none">
-                      L
-                    </span>
-                    ayout density is under intense reconstruction across leading global publications. The legacy saturation of structured modular grid frames—commonly dubbed "bento" systems—has reached a zenith of aesthetic redundancy. In its wake, elite design desks are pivoting back to asymmetric principles natively perfected by traditional print publications. By employing absolute viewport scaling calculations, beautiful serif displaying and bold negative voids, authors structure a highly tailored visual hierarchy.
-                  </p>
-                  <p>
-                    Providing spacious margins enhances the organic flow of stories. As users transit through multiple display terminals, responsive CSS snap-points deliver tactile card slides that mimic premium physical pages. The ultimate objective is not merely the presentation of raw feed nodes, but the creation of an immersive storytelling wrapper that heightens consumer interaction and reinforces the gravity of the editorial content.
-                  </p>
-                </div>
-              </section>
+              </YwcLavaPanel>
             </>
           )}
 
         </div>
 
-        {/* Sidebar Column (Live TV, Social OAuth Login Sync, Live Feeds aggregate) */}
-        <div className="lg:col-span-4 space-y-8">
+        {/* Sidebar Column (charts, live TV, social OAuth) */}
+        <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-6 lg:self-start">
           
-          {/* LIIV TELEVISION STREAM MONITOR PANEL */}
-          <div className="bg-[#0c0c0f] border border-white/5 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <Tv size={17} className="text-[#00f0ff]" />
-                <h3 className="text-xs font-black tracking-widest text-zinc-300 uppercase">
-                  CPMS LIVE TV DECK
-                </h3>
-              </div>
-              <span className="text-[9px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-bold font-mono uppercase animate-pulse">
-                • LIVE AT DESK
-              </span>
-            </div>
+          {/* Independent live charts — right rail beside editorial grid */}
+          <YwcChartSection variant="sidebar" />
 
-            {/* Simulated TV view screen */}
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-white/5 flex flex-col justify-between p-3">
-              {tvPlaying ? (
-                /* Glowing screen simulation */
-                <div className="absolute inset-0 bg-gradient-to-tr from-cyan-950/20 via-black to-pink-950/10 pointer-events-none" />
-              ) : (
-                <div className="absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center pointer-events-none z-10">
-                  <Play size={24} className="text-zinc-500 animate-pulse" />
-                  <span className="text-[10px] font-mono text-zinc-600 mt-2">VIDEO STANDBY</span>
-                </div>
-              )}
-
-              {/* Status bar inside screen */}
-              <div className="relative z-10 flex items-center justify-between text-[9px] font-mono bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded">
-                <span className="text-[#00f0ff] font-bold">{activeTvStream.name}</span>
-                <span className="text-zinc-400">{activeTvStream.loc}</span>
-              </div>
-
-              {/* Graphical equalizer bar mimicking video playback */}
-              <div className="relative z-10 space-y-1">
-                {tvPlaying && (
-                  <div className="flex items-end justify-center gap-[2px] h-10 px-4">
-                    {frequencyBars.map((barHeight, bidx) => (
-                      <div 
-                        key={bidx} 
-                        className="w-1 bg-[#ff0088] rounded-t transition-all duration-100" 
-                        style={{ 
-                          height: `${barHeight}%`,
-                          backgroundColor: bidx % 2 === 0 ? '#ff0088' : '#00f0ff'
-                        }} 
-                      />
-                    ))}
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between text-[8px] font-mono text-zinc-500 bg-black/80 p-1.5 rounded">
-                  <span>AUDIO VERIFIED SOURCE</span>
-                  <span>SYNC BUFFER OK</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Deck Controls */}
-            <div className="flex items-center justify-between gap-3 bg-zinc-950/80 p-3 rounded-xl border border-white/5">
-              <button
-                onClick={() => setTvPlaying(!tvPlaying)}
-                className="p-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-white border border-white/10 active:scale-95 transition-all text-xs flex items-center gap-1 cursor-pointer"
-              >
-                {tvPlaying ? <Pause size={13} /> : <Play size={13} />}
-                <span className="text-[10px] font-mono">{tvPlaying ? 'MUTE' : 'PLAY'}</span>
-              </button>
-
-              <div className="flex-1 flex items-center gap-2">
-                <Volume2 size={13} className="text-zinc-500" />
-                <input 
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={tvVolume}
-                  onChange={(e) => setTvVolume(Number(e.target.value))}
-                  className="w-full accent-[#ff0088] bg-zinc-800 h-1 rounded-lg"
-                  title="Adjust Simulated TV Volume"
-                />
-              </div>
-
-              <span className="text-[9px] font-mono text-zinc-500">{activeTvStream.viewers} Viewers</span>
-            </div>
-
-            {/* Quick switches channels */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-              <button 
-                onClick={() => setActiveTvStream({ name: 'CPMS Global Financial Live', loc: 'GENEVA / TOKYO DESK', viewers: '14,840' })}
-                className={`p-2.5 rounded-lg border text-left transition-all ${activeTvStream.name.includes('Financial') ? 'border-[#00f0ff] bg-cyan-950/10 text-[#00f0ff]' : 'border-white/5 bg-zinc-950 text-zinc-400 hover:text-white'}`}
-              >
-                Financial Desk
-              </button>
-              <button 
-                onClick={() => setActiveTvStream({ name: 'World Sports Broadcast CPMS', loc: 'EMILIA ROMAGNA', viewers: '8,924' })}
-                className={`p-2.5 rounded-lg border text-left transition-all ${activeTvStream.name.includes('Sports') ? 'border-[#ff0088] bg-pink-950/10 text-[#ff0088]' : 'border-white/5 bg-zinc-950 text-zinc-400 hover:text-white'}`}
-              >
-                Sports Deck Live
-              </button>
-            </div>
-          </div>
+          {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
+          <YwcLavaPanel className="space-y-4">
+            <CpmsMediaPantry />
+          </YwcLavaPanel>
 
           {/* SOCIAL MEDIA OAUTH HANDSHAKE PORTAL (15 PLATFORMS INTEGRATED) */}
-          <div className="bg-[#0c0c0f] border border-white/5 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col space-y-1.5 pb-3 border-b border-white/5">
+          <YwcLavaPanel className="space-y-4">
+            <div className="flex flex-col space-y-1.5 pb-3 border-b border-[#FF1493]/25">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Share2 size={17} className="text-[#ff0088]" />
-                  <h3 className="text-xs font-black tracking-widest text-zinc-300 uppercase">
+                  <Share2 size={17} className="text-[#FF1493] drop-shadow-[0_0_8px_#FF1493]" />
+                  <YwcSectionTitle className="text-xs tracking-widest">
                     OATH SOCIAL SYNC HUB
-                  </h3>
+                  </YwcSectionTitle>
                 </div>
                 <span className="text-[10px] font-mono bg-cyan-950/50 text-[#00f0ff] border border-[#00f0ff]/25 px-2 py-0.5 rounded font-black">
                   {activeConnectedCount} / 15 SYNCED
@@ -1176,7 +1062,7 @@ export default function YoursPageHub() {
               </div>
             </div>
 
-          </div>
+          </YwcLavaPanel>
 
         </div>
 
@@ -1244,7 +1130,7 @@ export default function YoursPageHub() {
       </AnimatePresence>
 
       {/* PERSISTENT SCROLLING TICKER FOOTER (14. REQUIRED TICKER) */}
-      <footer className="w-full bg-[#070709] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <YwcLavaPanel as="footer" padding="p-4" className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2 bg-[#ff0088]/10 text-[#ff0088] border border-[#ff0088]/20 px-3.5 py-1.5 rounded-xl shrink-0">
           <Radio size={14} className="animate-pulse" />
           <span className="text-[10px] font-mono font-black tracking-widest">
@@ -1282,8 +1168,9 @@ export default function YoursPageHub() {
         <div className="text-[9.5px] font-mono text-zinc-500 shrink-0 uppercase">
           © 2026 CPMS Media Group. ALL RIGHTS ANCHORED.
         </div>
-      </footer>
+      </YwcLavaPanel>
 
     </div>
+    </YwcChartWorkspace>
   );
 }

@@ -1,5 +1,4 @@
 import React from 'react';
-import ClearPathLiveTicker from './ClearPathLiveTicker';
 import {
   BarChart3,
   Shield,
@@ -113,16 +112,6 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
           </div>
           <div className="text-sm font-bold text-white">Ask C.P.T., your personal trading buddy</div>
         </button>
-
-        {/* Live markets */}
-        <div>
-          <p className="text-[#888] text-xs tracking-[0.2em] font-mono mb-3">LIVE MARKETS</p>
-          <div className="bg-black/70 backdrop-blur-md border border-white/10 rounded-[20px] p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-            <ClearPathLiveTicker symbol="AAPL" />
-            <ClearPathLiveTicker symbol="BTCUSD" />
-            <ClearPathLiveTicker symbol="MSFT" />
-          </div>
-        </div>
 
       </div>
     </div>

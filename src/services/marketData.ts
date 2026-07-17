@@ -25,8 +25,15 @@ export interface NormalizedCandle {
  * being passed through raw (a raw/unknown string is what made non-1H buttons
  * return "no data").
  */
-function resolveInterval(interval: string): string {
-  const v = (interval || "").trim().toLowerCase();
+export function resolveTwelveDataInterval(interval: string): string {
+  const raw = (interval || "").trim();
+
+  // Monthly UI tokens ("1M", "3M", "6M") must be handled before lowercasing,
+  // otherwise "1M" becomes "1m" and is misread as one-minute candles.
+  if (raw === "1M") return "1month";
+  if (raw === "3M" || raw === "6M") return "1month";
+
+  const v = raw.toLowerCase();
 
   switch (v) {
     case "1m":
@@ -84,13 +91,21 @@ function resolveInterval(interval: string): string {
  * Returns candles sorted oldest -> newest (required by lightweight-charts).
  * Throws on failure. Never returns mock/simulated data.
  */
+/**
+ * Twelve Data's time_series endpoint accepts outputsize in [1, 5000] and
+ * returns HTTP 400 for anything larger. Tier limits above 5000 (GOLD/VIP)
+ * must therefore be clamped before hitting the API, otherwise EVERY request
+ * for those tiers fails and every chart shows "no data".
+ */
+const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
+
 export const fetchTieredHistoricalData = async (
   symbol: string,
   interval: string,
   userTier: string
 ): Promise<NormalizedCandle[]> => {
-  const limit = getCandleLimit(userTier);
-  const resolvedInterval = resolveInterval(interval);
+  const limit = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
+  const resolvedInterval = resolveTwelveDataInterval(interval);
 
   const proxyUrl =
     `/api/market/history` +

@@ -35,6 +35,30 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { resolveTwelveDataInterval } from './src/services/marketData';
+import {
+  fetchEpisodesFromFeed,
+  podcastIndexConfigured,
+  searchPodcastsByTerm,
+} from './src/server/podcastService';
+import {
+  forwardIntelligenceToMake,
+  getIntelligenceBriefing,
+  ingestIntelligenceWebhook,
+  listIntelligenceBriefings,
+  verifyIntelligenceWebhookSecret,
+} from './src/server/intelligenceWebhookService';
+import {
+  moderateBodyFields,
+  runContentModerationSelfTest,
+} from './src/server/contentModeration';
+import {
+  PrivateAuthError,
+  buildClientSessionUser,
+  lookupPrivateUser,
+  loginPrivateUser,
+  registerPrivateUser,
+} from './src/server/privateAuthService';
 
 const parser = new RSSParser();
 
@@ -294,6 +318,63 @@ async function startServer() {
     });
   });
 
+  // Private member accounts (email + password, per-user login desk)
+  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+    try {
+      const result = await lookupPrivateUser(req.body?.email || '');
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+    try {
+      const user = await registerPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+        displayName: req.body?.displayName || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Registration failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+    try {
+      const user = await loginPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/logout', (req, res) => {
+    try {
+      delete (req.session as any).privateUser;
+    } catch {
+      /* ignore */
+    }
+    res.json({ ok: true });
+  });
+
+  app.get('/api/auth/private/me', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user });
+  });
+
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
@@ -406,7 +487,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/workspace/notes', async (req, res) => {
+  app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
     const { uid, associatedId, content } = req.body;
     if (!uid || !associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -694,7 +775,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', async (req, res) => {
+  app.post('/api/encyclopedia/chat', moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -743,14 +824,22 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts } = req.body;
+  app.post('/api/mentor/chat', moderateBodyFields('question'), async (req, res) => {
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
+      const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
+      const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
+      if (localChart && chartish) {
+        return res.json({
+          answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
+          newFacts: [],
+        });
+      }
       return res.json({
         answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
       });
@@ -831,8 +920,12 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally in conversation, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
       : '';
 
+    const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
+      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+      : '';
+
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock },
+      { role: 'system', content: systemPrompt + memoryBlock + chartBlock },
       ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
       { role: 'user', content: question }
     ];
@@ -996,7 +1089,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    const resolvedInterval = typeof interval === 'string' ? interval : '5min';
+    const resolvedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '5min'
+    );
     if (!apiKey) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
@@ -1037,19 +1132,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       return res.status(400).json({ error: 'symbol required' });
     }
 
-    let selectedInterval = '1min';
-    const rawInterval = typeof interval === 'string' ? interval : '1m';
-    if (rawInterval === '1m' || rawInterval === '1min') selectedInterval = '1min';
-    else if (rawInterval === '5m' || rawInterval === '5min') selectedInterval = '5min';
-    else if (rawInterval === '15m' || rawInterval === '15min') selectedInterval = '15min';
-    else if (rawInterval === '30m' || rawInterval === '30min') selectedInterval = '30min';
-    else if (rawInterval === '45m' || rawInterval === '45min') selectedInterval = '45min';
-    else if (rawInterval === '1h') selectedInterval = '1h';
-    else if (rawInterval === '4H' || rawInterval === '4h') selectedInterval = '4h';
-    else if (rawInterval === '1D' || rawInterval === '1d' || rawInterval === 'day' || rawInterval === '1day') selectedInterval = '1day';
-    else if (rawInterval === 'week' || rawInterval === '1week') selectedInterval = '1week';
-    else if (rawInterval === 'month' || rawInterval === '1month') selectedInterval = '1month';
-    else selectedInterval = rawInterval;
+    const selectedInterval = resolveTwelveDataInterval(
+      typeof interval === 'string' ? interval : '1h'
+    );
 
     const apiKey = getCleanTwelveDataApiKey();
     if (!apiKey) {
@@ -1057,7 +1142,10 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
 
     try {
-      const outputsize = Math.max(limit ? Number(limit) : 100, 100);
+      // Twelve Data rejects outputsize outside [1, 5000] with HTTP 400, which
+      // used to blank every chart for tiers whose candle limit exceeds 5000.
+      const requested = limit ? Number(limit) : 100;
+      const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
       const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey);
       
       if (!data.values || !Array.isArray(data.values)) {
@@ -1316,6 +1404,62 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
   });
 
+  // Podcast Index + RSS episode bridge (keys stay server-side)
+  app.get('/api/podcast/status', (_req, res) => {
+    const podcastIndex = podcastIndexConfigured();
+    res.json({
+      podcastIndex,
+      searchAvailable: true,
+      searchSource: podcastIndex ? 'podcastindex' : 'itunes',
+    });
+  });
+
+  app.get('/api/podcast/episodes', async (req, res) => {
+    const { feedUrl, limit } = req.query;
+    if (!feedUrl || typeof feedUrl !== 'string') {
+      return res.status(400).json({ error: 'feedUrl required' });
+    }
+
+    try {
+      await assertSafePublicUrl(feedUrl);
+    } catch (guardErr: any) {
+      console.warn('[Podcast Episodes] Rejected unsafe URL:', feedUrl, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+
+    const parsedLimit = typeof limit === 'string' ? Number.parseInt(limit, 10) : 12;
+    const safeLimit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 30) : 12;
+
+    try {
+      const episodes = await fetchEpisodesFromFeed(feedUrl, safeLimit);
+      res.json({ episodes });
+    } catch (error: any) {
+      console.error('[Podcast Episodes Error]', error);
+      res.status(502).json({ error: 'Failed to load podcast feed' });
+    }
+  });
+
+  app.get('/api/podcast/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || !q.trim()) {
+      return res.status(400).json({ error: 'q required' });
+    }
+
+    try {
+      const { results, source } = await searchPodcastsByTerm(q.trim());
+      res.json({
+        results,
+        source,
+        note: source === 'itunes'
+          ? 'Searching Apple podcast directory (no API key). Optional: add Podcast Index keys with a domain email for the open directory.'
+          : undefined,
+      });
+    } catch (error: any) {
+      console.error('[Podcast Search Error]', error);
+      res.status(502).json({ error: 'Podcast search failed' });
+    }
+  });
+
   // FRED API Proxy Bridge
   app.get('/api/fred/observations', async (req, res) => {
     const { series_id, limit, api_key } = req.query;
@@ -1566,6 +1710,9 @@ Allow: /guides
 Allow: /glossary
 Allow: /faq
 Allow: /research
+Allow: /about
+Allow: /if-trading-and-chatgpt-had-a-baby
+Allow: /trading-ai
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
@@ -1598,6 +1745,18 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://clearpathtrader.com/trading-ai</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://clearpathtrader.com/if-trading-and-chatgpt-had-a-baby</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
   <url>
     <loc>https://clearpathtrader.com/</loc>
     <lastmod>2026-06-07</lastmod>
@@ -1633,6 +1792,12 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     <lastmod>2026-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://clearpathtrader.com/about</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://clearpathtrader.com/research</loc>
@@ -1722,6 +1887,62 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     res.json(GENERAL_FAQS);
   });
 
+  // CrewAI / Make.com intelligence briefing webhook receiver
+  app.post('/api/intelligence/webhook', async (req, res) => {
+    const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
+    if (!verifyIntelligenceWebhookSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid webhook secret.' });
+    }
+
+    try {
+      const record = await ingestIntelligenceWebhook(req.body);
+      const shouldForward =
+        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
+      const forwardResult = shouldForward
+        ? await forwardIntelligenceToMake(record)
+        : { forwarded: false };
+
+      res.status(201).json({
+        success: true,
+        id: record.id,
+        receivedAt: record.receivedAt,
+        publishMode: record.publishMode,
+        hasBriefing: Boolean(record.briefingMarkdown),
+        hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+        makeForward: forwardResult,
+      });
+    } catch (error: any) {
+      console.error('[Intelligence Webhook Error]', error);
+      res.status(500).json({
+        error: 'INTELLIGENCE_WEBHOOK_FAILED',
+        message: error?.message || 'Failed to ingest intelligence briefing.',
+      });
+    }
+  });
+
+  app.get('/api/intelligence/briefings', (req, res) => {
+    const limit = Math.min(parseInt(String(req.query.limit || '20'), 10) || 20, 100);
+    const briefings = listIntelligenceBriefings(limit).map((record) => ({
+      id: record.id,
+      receivedAt: record.receivedAt,
+      source: record.source,
+      runMode: record.runMode,
+      activeNeuroProfile: record.activeNeuroProfile,
+      publishMode: record.publishMode,
+      hasBriefing: Boolean(record.briefingMarkdown),
+      hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+    }));
+    res.json({ count: briefings.length, briefings });
+  });
+
+  app.get('/api/intelligence/briefings/:id', (req, res) => {
+    const record = getIntelligenceBriefing(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Briefing not found' });
+    }
+    res.json(record);
+  });
+
   // 1 & 2. DYNAMIC PAGE INTERCEPTOR (SSR METADATA & SCHEMA INJECTION)
   let vite: any = null;
   const isDev = process.env.NODE_ENV !== 'production' || process.argv.some(arg => arg.includes('server.ts'));
@@ -1759,6 +1980,9 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
   // Intercept primary crawlable SEO routes at server-side
   const SEO_PAGES = [
     '/',
+    '/about',
+    '/if-trading-and-chatgpt-had-a-baby',
+    '/trading-ai',
     '/macro',
     '/learn',
     '/learn/:topic',
@@ -1768,6 +1992,10 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
+    '/education',
+    '/clearpath-education',
+    '/indicators',
+    '/encyclopedia-of-indicators',
     '/market-universe'
   ];
 
@@ -1853,6 +2081,23 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         console.log(`[STARTUP] TruthEnforcementEngine initialized. Compliance score: ${startupTruth.score}%`);
       } catch (e: any) {
         console.error("[CRITICAL] TruthEnforcementEngine postponed startup failure:", e);
+      }
+
+      // 3. Content moderation blocklist smoke test
+      try {
+        const modTest = runContentModerationSelfTest();
+        if (modTest.failed.length) {
+          console.error(
+            `[STARTUP] Content moderation self-test FAILED (${modTest.failed.length}):`,
+            modTest.failed
+          );
+        } else {
+          console.log(
+            `[STARTUP] Content moderation self-test passed (${modTest.passed} checks).`
+          );
+        }
+      } catch (e: any) {
+        console.error("[CRITICAL] Content moderation self-test failure:", e);
       }
     }, 10000); // 10-second delay to guarantee instant, responsive container cold starts
   });

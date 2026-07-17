@@ -5,15 +5,11 @@ import {
   BookOpen,
   Cpu,
   Crown,
-  Folder,
   GraduationCap,
   Home,
-  Landmark,
   LogOut,
-  Navigation,
   Newspaper,
   Shield,
-  SlidersHorizontal,
   Terminal,
   Users,
 } from "lucide-react";
@@ -55,19 +51,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "THE RIVER",
     },
     {
-      id: "ThemeTerminal",
+      id: "StrictlyCharts",
       icon: BarChart3,
       label: "CHARTS",
-    },
-    {
-      id: "Screener",
-      icon: SlidersHorizontal,
-      label: "SCREENER",
-    },
-    {
-      id: "Journal",
-      icon: BookOpen,
-      label: "JOURNAL",
     },
     {
       id: "News",
@@ -114,6 +100,24 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Shield,
       label: "SENTINEL",
     },
+
+    {
+      id: "ClearPathEducation",
+      icon: BookOpen,
+      label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "Encyclopedia",
+      icon: GraduationCap,
+      label: "ENCYCLOPEDIA OF FINANCE",
+    },
+
+    {
+      id: "EncyclopediaOfIndicators",
+      icon: BarChart3,
+      label: "ENCYCLOPEDIA OF INDICATORS",
+    },
   ];
   const renderNavButton = (
     item: NavItem,
@@ -136,7 +140,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "CpmsApk" ||
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
-      item.id === "EncyclopediaOfIndicators";
+      item.id === "EncyclopediaOfIndicators" ||
+      item.id === "ClearPathEducation";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

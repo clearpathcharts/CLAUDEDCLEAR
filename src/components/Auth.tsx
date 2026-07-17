@@ -5,13 +5,17 @@ import {
   User, Mail, Globe, Sparkles, BookOpen, Newspaper, Users, 
   Bell, Smartphone, ArrowUpRight, HelpCircle, X, CheckSquare,
   Play, Volume2, VolumeX, Tv, Zap, Compass, MessageSquare, 
-  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, BarChart3
+  RefreshCw, Layers, Cpu, Heart, Target, Activity, Film, MessageCircle, Filter, LogOut, BarChart3, GraduationCap
 } from 'lucide-react';
 import { collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "../firebase";
 import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
+import { joinWaitlist } from "../appwrite";
 import { MediaGrid } from './MediaGrid';
+import ClearPathChatroom from './chat/ClearPathChatroom';
+import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
+import PrivateLoginDesk from './PrivateLoginDesk';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -156,6 +160,13 @@ export default function Auth() {
   const [boardError, setBoardError] = useState('');
   const [boardSuccess, setBoardSuccess] = useState(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
+  const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
+  const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
+
+  const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
+    setPrivateLoginMode(mode);
+    setPrivateLoginOpen(true);
+  };
 
   // Demo presentation state
   const [demoOpen, setDemoOpen] = useState(false);
@@ -202,7 +213,6 @@ export default function Auth() {
 
   // Immersive consumer redesign states
   const [isCEO, setIsCEO] = useState(false);
-  const [joinedGroups, setJoinedGroups] = useState<string[]>([]);
   const [ywcFilter, setYwcFilter] = useState<'all' | 'news' | 'social' | 'research'>('all');
   const [dbCountries, setDbCountries] = useState<any[]>([]);
 
@@ -452,7 +462,7 @@ export default function Auth() {
     }
   };
 
-  // Waitlist form register submit via server API (duplicate check + activation key + email)
+  // Waitlist form -> Appwrite TablesDB (site_registrations / waitlist)
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
@@ -469,16 +479,15 @@ export default function Auth() {
     }
 
     try {
-      const { submitWaitlistRegistration } = await import('../api/registrations');
-      const result = await submitWaitlistRegistration({
+      const result = await joinWaitlist({
         firstName: fName,
         emailAddress: lEmail,
         country: lCountry,
         experienceLevel: experience,
       });
 
-      setActivationKey(result.activationKey);
-      setEmailSent(result.emailSent);
+      setActivationKey(result.passcode);
+      setEmailSent(false);
       setIsSubmitted(true);
       setFirstName('');
       setEmail('');
@@ -583,16 +592,25 @@ export default function Auth() {
         </div>
 
         {/* Dynamic Desktop Links */}
-        <div className="hidden lg:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-6">
+          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
+            Trading × AI
+          </a>
+          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
+            About
+          </a>
           <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
           <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
           <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
           <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
-          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
+          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
             <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
           </a>
-          <a href="#indicators" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
+          <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
             <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
+          </a>
+          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
           </a>
           <a href="#faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
         </div>
@@ -608,12 +626,14 @@ export default function Auth() {
             <span className="hidden sm:inline">Board Members</span>
             <span className="sm:hidden">Board</span>
           </button>
-          <a
-            href="#waitlist"
-            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1"
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('login')}
+            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1 cursor-pointer"
           >
-            RESERVE ACCOUNT
-          </a>
+            <Lock size={12} />
+            PRIVATE LOGIN
+          </button>
         </div>
       </nav>
 
@@ -661,7 +681,7 @@ export default function Auth() {
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-950/80 border border-zinc-800/80 text-xs font-mono tracking-widest text-[#00FFFF] mb-8"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] animate-pulse" />
-          SOFT LAUNCH WAITLIST DIRECTORY RUNNING
+          PRIVATE MEMBER LOGIN ACTIVE
         </motion.div>
 
         {/* Glitch Headline Title */}
@@ -710,15 +730,16 @@ CLARITY BEFORE DECISIONS.`}
 
         {/* Interactive Buttons Container */}
         <div className="flex flex-col md:flex-row items-center gap-4 mt-10 w-full max-w-3xl mx-auto justify-center z-30">
-          <a
-            href="#waitlist"
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('register')}
             className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
           >
-            🚀 START LEARNING
-          </a>
+            CREATE PRIVATE ACCOUNT
+          </button>
           <a
             href="/encyclopedia"
-            onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/encyclopedia'); }}
+            onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
             className="w-full md:w-auto px-6 py-4 bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/40 hover:border-[#00FFFF] text-[#00FFFF] text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_15px_rgba(0,255,255,0.15)] hover:scale-[1.02] transition-colors text-center flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
           >
             <BookOpen size={14} className="text-[#00FFFF]" />
@@ -726,11 +747,19 @@ CLARITY BEFORE DECISIONS.`}
           </a>
           <a
             href="/indicators"
-            onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/indicators'); }}
+            onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }}
             className="w-full md:w-auto px-6 py-4 bg-neutral-900/60 hover:bg-neutral-900/90 border border-zinc-800 hover:border-zinc-700 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
           >
             <BarChart3 size={14} className="text-zinc-500 fill-[#ffffff]/10" />
             EXPLORE INDICATOR DIRECTORY
+          </a>
+          <a
+            href="/education"
+            onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }}
+            className="w-full md:w-auto px-6 py-4 bg-[#B026FF]/10 hover:bg-[#B026FF]/25 border border-[#B026FF]/40 hover:border-[#B026FF] text-[#B026FF] text-xs font-black uppercase tracking-widest rounded-2xl transition-colors flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+          >
+            <GraduationCap size={14} className="text-[#B026FF]" />
+            OPEN CLEARPATH EDUCATION
           </a>
         </div>
 
@@ -1020,48 +1049,18 @@ Not the other way around.`}
                 </span>
               </div>
 
-              {/* List of active real-time groups to explore (Discord vibe) */}
-              <div className="flex-grow space-y-3 max-h-[220px] overflow-y-auto no-scrollbar py-1">
-                {[
-                  { id: 'swarm-1', name: 'SOVEREIGN MACRO MINDS', members: '14.8k members', active: '3.2k active', topic: 'Yield curves looking completely off today...', avatar: '🧬' },
-                  { id: 'swarm-2', name: 'FOREX SWARM SYNDICATE', members: '12.4k members', active: '1.9k active', topic: 'Overnight EURUSD structural liquidity sweep is peaking...', avatar: '🦂' },
-                  { id: 'swarm-3', name: 'LIQUIDITY ALCHEMISTS', members: '8.2k members', active: '940 online', topic: 'Reverse repos down another $12B.', avatar: '🧪' },
-                ].map(group => {
-                  const hasJoined = joinedGroups.includes(group.id);
-                  return (
-                    <div 
-                      key={group.id} 
-                      className="p-3 bg-zinc-950/60 border border-zinc-900 rounded-xl hover:border-[#FF7B00]/40 transition-all duration-300 flex items-center justify-between gap-3 text-left group/item"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-xl shrink-0">{group.avatar}</span>
-                        <div className="space-y-0.5 min-w-0">
-                          <h5 className="text-[10px] sm:text-xs font-black text-white uppercase tracking-wide truncate group-hover/item:text-[#FF7B00] transition-colors">{group.name}</h5>
-                          <div className="flex gap-2 text-[8px] font-mono text-zinc-500 font-bold leading-none">
-                            <span>{group.members}</span>
-                            <span>•</span>
-                            <span className="text-emerald-500">{group.active}</span>
-                          </div>
-                          <p className="text-[8px] text-zinc-600 font-sans italic truncate">"{group.topic}"</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (hasJoined) return;
-                          setJoinedGroups([...joinedGroups, group.id]);
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-wider transition-all shrink-0 cursor-pointer ${
-                          hasJoined 
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
-                            : 'bg-[#FF7B00]/10 text-[#FF7B00] border border-[#FF7B00]/20 hover:bg-[#FF7B00] hover:text-white'
-                        }`}
-                      >
-                        {hasJoined ? 'JOINED!' : 'JOIN'}
-                      </button>
-                    </div>
-                  );
-                })}
+              {/* Live lobby preview — full chatroom below the ecosystem grid */}
+              <div className="rounded-2xl border border-[#FF7B00]/25 bg-black/50 p-4 text-left">
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Jump into the <strong className="text-[#FF7B00]">live public lobby</strong> below — no account required. Pick a room, set your trader handle, and chat in real time.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                >
+                  Open Live Chat Lobby ↓
+                </button>
               </div>
 
               {/* Collapsed Seed Engine Form Trigger for CEO Sync (Fulfills the original registration capability) */}
@@ -1143,6 +1142,22 @@ Not the other way around.`}
               </div>
             </div>
 
+          </div>
+
+          {/* LIVE PUBLIC CHATROOM — glass UI inspired by CodePen dark chat patterns */}
+          <div id="clearpath-live-lobby" className="mt-12 scroll-mt-24">
+            <div className="text-center mb-8 space-y-3">
+              <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-[0.3em] bg-[#FF7B00]/5 px-4 py-1.5 rounded-full border border-[#FF7B00]/20 inline-block">
+                Live Before Login
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white">
+                ClearPath <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF7B00] to-[#FF1493]">Trading Lobby</span>
+              </h2>
+              <p className="text-sm text-zinc-500 max-w-2xl mx-auto">
+                Real-time community chat powered by WebSocket. Join macro, forex, or liquidity rooms — create your free account later for private guilds.
+              </p>
+            </div>
+            <ClearPathChatroom variant="embedded" heightClass="min-h-[580px] md:min-h-[620px]" />
           </div>
 
           {/* ==========================================
@@ -1495,10 +1510,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="fire-pink-text">RESERVE TIER ONE</span>
+                    <span className="fire-pink-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1536,10 +1552,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="neon-cyan-text">ENTER TIER TWO DRAWING</span>
+                    <span className="neon-cyan-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1607,177 +1624,49 @@ Not the other way around.`}
       </section>
 
       {/* ==========================================
-          9. WAITLIST REGISTRATION FORM
+          9. PRIVATE ACCOUNT ENTRY
           ========================================== */}
-      <section id="waitlist" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
+      <section id="private-login" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
         <div className="text-center mb-12 space-y-3">
           <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.25em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15">
-            SECURE ENTRY
+            PRIVATE MEMBER ACCESS
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white uppercase">
-            Join the Waitlist
+            Your Private Login Desk
           </h2>
-          <p className="text-zinc-400 text-xs sm:text-sm max-w-sm mx-auto">
-            Lock in your soft launch clearance passcode now. Registration automatically saves with primary database integration.
+          <p className="text-zinc-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+            Every ClearPath member gets a private login screen. Create your account, then unlock your own terminal with your email and password — no shared reserve waitlist.
           </p>
         </div>
 
-        <div className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden" style={{ backgroundColor: '#050505' }}>
-          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl" />
+        <div
+          className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] transition-all duration-300 relative overflow-hidden text-center space-y-6"
+          style={{ backgroundColor: '#050505' }}
+        >
+          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {isSubmitted ? (
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-center space-y-6 py-6"
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('login')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-[#00E5FF]/40 bg-[#00E5FF]/10 text-[#00E5FF] text-xs font-black uppercase tracking-widest hover:bg-[#00E5FF]/20 transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              <div className="w-16 h-16 bg-[#00FFFF]/10 rounded-full flex items-center justify-center mx-auto border border-[#00FFFF]/35">
-                <UserCheck size={32} className="text-[#00FFFF] animate-bounce" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-[#00FFFF] uppercase tracking-wide">
-                  ✓ ACCOUNT ALLOCATION SECURED
-                </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed max-w-md mx-auto">
-                  {emailSent
-                    ? 'Your allocation credentials have been saved and a confirmation email with your private activation key has been sent.'
-                    : 'Your allocation credentials have been saved. Copy your private activation key below — email delivery is not configured on this server.'}
-                </p>
-              </div>
-              {activationKey && (
-                <div className="bg-black/60 border border-[#00FFFF]/30 rounded-2xl p-5 max-w-sm mx-auto space-y-2">
-                  <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Private Activation Key</div>
-                  <code className="text-xl font-black text-[#FF1493] font-mono tracking-wider block">{activationKey}</code>
-                </div>
-              )}
-              <button 
-                onClick={() => { setIsSubmitted(false); setActivationKey(''); }}
-                className="px-6 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-mono tracking-wider transition-all cursor-pointer uppercase font-bold"
-              >
-                Register another email
-              </button>
-            </motion.div>
-          ) : (
-            <form onSubmit={handleWaitlistSubmit} className="space-y-6">
-              
-              {submitError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-4 rounded-2xl font-mono leading-relaxed text-center uppercase tracking-wide">
-                  ⚠️ Error: {submitError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* First Name */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    First Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Satoshi"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Email Address */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. satoshi@clearpathtrader.com"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#B026FF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#B026FF]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Country Selection */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Country of Residence
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      required
-                      className="w-full bg-black border border-zinc-800 focus:border-[#00FFFF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#00FFFF]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="">Select country...</option>
-                      {countries.map((c) => (
-                        <option key={c} value={c} className="bg-neutral-950 text-white">{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Experience Level Dropdown */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Trading Experience Level
-                  </label>
-                  <div className="relative">
-                    <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      className="w-full bg-black border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="Beginner" className="bg-neutral-950 text-white">Beginner (1-2 years or learning)</option>
-                      <option value="Intermediate" className="bg-neutral-950 text-white">Intermediate (3-5 years active)</option>
-                      <option value="Advanced" className="bg-neutral-950 text-white">Advanced (Institutional trader)</option>
-                    </select>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] hover:brightness-110 text-[#FFFFFF] font-black uppercase tracking-widest text-xs transition-all shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2 font-mono"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
-                      <span>SECURE RESERVATION TRANSMITTING...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>RESERVE MY ACCOUNT</span>
-                      <ArrowRight size={13} />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Secure Node Info */}
-              <div className="text-center pt-2">
-                <p className="text-[10px] text-zinc-500 font-mono flex items-center justify-center gap-1">
-                  🔒 Server-authenticated endpoint secured. Direct pipeline linked to waitlist collection.
-                </p>
-              </div>
-
-            </form>
-          )}
-
+              <Lock size={14} />
+              Private Login
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('register')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              Create Private Account
+              <ArrowRight size={14} />
+            </button>
+          </div>
+          <p className="relative z-10 text-[10px] text-zinc-500 font-mono">
+            Passwords are hashed on the server. Each desk opens only for its owner.
+          </p>
         </div>
       </section>
 
@@ -1849,6 +1738,26 @@ Not the other way around.`}
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
+            <a href="/if-trading-and-chatgpt-had-a-baby" className="text-[#FF1493] hover:text-[#00FFFF] transition-colors font-bold">
+              Trading × AI
+            </a>
+            <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              About ClearPath
+            </a>
+            <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Platform Scope
+            </a>
+            <a href="/terms.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Terms
+            </a>
+            <a href="/privacy.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Privacy
+            </a>
+            <a href="/disclaimer.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+              Disclaimer
+            </a>
+          </nav>
           <p className="text-[11px] text-zinc-500 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
             RISK DISCLOSURE AND EDUCATIONAL DISCLAIMER: ClearPath Trader is strictly an academic learning universe. We do not operate as a financial broker, nor do we manage real client capital, execute trades, or recommend asset purchases. High-performance intermarket analysis carries substantial risk. All calculations and simulations represent general macroeconomic models.
           </p>
@@ -2050,13 +1959,16 @@ Not the other way around.`}
                 >
                   Close Showcase
                 </button>
-                <a
-                  href="#waitlist"
-                  onClick={() => setDemoOpen(false)}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01]"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDemoOpen(false);
+                    openPrivateLogin('register');
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
                 >
-                  Reserve Soft Launch Account
-                </a>
+                  Create Private Account
+                </button>
               </div>
             </motion.div>
           </div>
@@ -2218,8 +2130,8 @@ Not the other way around.`}
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight">
                   Your World Connected™ Terminal
                 </h3>
-                <p className="text-xs text-zinc-400">
-                  Adapt the structural density of financial streams to fit your cognitive pattern preferences.
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
+                  Stop waiting for every app to load on mobile. Bring social media, online video, and magazines (fashion, cars, and more) into one hub — then move a live chart on the same screen so you can see both.
                 </p>
               </div>
 
@@ -2320,6 +2232,12 @@ Not the other way around.`}
           </div>
         )}
       </AnimatePresence>
+
+      <PrivateLoginDesk
+        open={privateLoginOpen}
+        initialMode={privateLoginMode}
+        onClose={() => setPrivateLoginOpen(false)}
+      />
 
     </div>
   );

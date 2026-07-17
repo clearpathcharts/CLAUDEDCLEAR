@@ -9,6 +9,7 @@ import {
   clearActiveRiverIndicator,
 } from '../river/riverEngine';
 import type { Value } from '../river/pine/interpreter';
+import RiverCatalogPanel from './RiverCatalogPanel';
 
 type WorkflowStep = 'upload' | 'compiling' | 'compiled' | 'failed' | 'applied';
 
@@ -264,6 +265,8 @@ export default function RiverWorkstation() {
                 Upload Different File
               </button>
             </div>
+
+            <RiverCatalogPanel />
           </motion.div>
         )}
 
