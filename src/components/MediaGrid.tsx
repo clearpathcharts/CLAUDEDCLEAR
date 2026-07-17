@@ -38,8 +38,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
             <Globe size={18} className="text-[#ff1493]" />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
           </h3>
-          <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1">
-            Welcome to your connected realm. A curated consumer media experience syncing community discussions, live-streamed financial television, and luxury automotive reviews.
+          <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1 max-w-2xl">
+            Trading on a phone means waiting for every site to load — social, video, magazines, then hunting for your chart again. Your World Connected™ puts social media, online video, and your favorite reads (fashion, cars, and more) next to a movable live chart on the same screen so you can watch both without tab-hopping.
           </p>
         </div>
         

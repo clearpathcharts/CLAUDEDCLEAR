@@ -43,6 +43,24 @@ import {
 } from './src/server/podcastService';
 import { mapRssItem } from './src/server/rssItemMapper';
 import { getYwcDigest } from './src/server/ywcDigestService';
+import {
+  forwardIntelligenceToMake,
+  getIntelligenceBriefing,
+  ingestIntelligenceWebhook,
+  listIntelligenceBriefings,
+  verifyIntelligenceWebhookSecret,
+} from './src/server/intelligenceWebhookService';
+import {
+  moderateBodyFields,
+  runContentModerationSelfTest,
+} from './src/server/contentModeration';
+import {
+  PrivateAuthError,
+  buildClientSessionUser,
+  lookupPrivateUser,
+  loginPrivateUser,
+  registerPrivateUser,
+} from './src/server/privateAuthService';
 
 const parser = new RSSParser({
   customFields: {
@@ -310,6 +328,63 @@ async function startServer() {
     });
   });
 
+  // Private member accounts (email + password, per-user login desk)
+  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+    try {
+      const result = await lookupPrivateUser(req.body?.email || '');
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+    try {
+      const user = await registerPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+        displayName: req.body?.displayName || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Registration failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+    try {
+      const user = await loginPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/logout', (req, res) => {
+    try {
+      delete (req.session as any).privateUser;
+    } catch {
+      /* ignore */
+    }
+    res.json({ ok: true });
+  });
+
+  app.get('/api/auth/private/me', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user });
+  });
+
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
@@ -422,7 +497,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/workspace/notes', async (req, res) => {
+  app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
     const { uid, associatedId, content } = req.body;
     if (!uid || !associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -710,7 +785,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', async (req, res) => {
+  app.post('/api/encyclopedia/chat', moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -759,7 +834,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', async (req, res) => {
+  app.post('/api/mentor/chat', moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -1838,6 +1913,62 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     res.json(GENERAL_FAQS);
   });
 
+  // CrewAI / Make.com intelligence briefing webhook receiver
+  app.post('/api/intelligence/webhook', async (req, res) => {
+    const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
+    if (!verifyIntelligenceWebhookSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid webhook secret.' });
+    }
+
+    try {
+      const record = await ingestIntelligenceWebhook(req.body);
+      const shouldForward =
+        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
+      const forwardResult = shouldForward
+        ? await forwardIntelligenceToMake(record)
+        : { forwarded: false };
+
+      res.status(201).json({
+        success: true,
+        id: record.id,
+        receivedAt: record.receivedAt,
+        publishMode: record.publishMode,
+        hasBriefing: Boolean(record.briefingMarkdown),
+        hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+        makeForward: forwardResult,
+      });
+    } catch (error: any) {
+      console.error('[Intelligence Webhook Error]', error);
+      res.status(500).json({
+        error: 'INTELLIGENCE_WEBHOOK_FAILED',
+        message: error?.message || 'Failed to ingest intelligence briefing.',
+      });
+    }
+  });
+
+  app.get('/api/intelligence/briefings', (req, res) => {
+    const limit = Math.min(parseInt(String(req.query.limit || '20'), 10) || 20, 100);
+    const briefings = listIntelligenceBriefings(limit).map((record) => ({
+      id: record.id,
+      receivedAt: record.receivedAt,
+      source: record.source,
+      runMode: record.runMode,
+      activeNeuroProfile: record.activeNeuroProfile,
+      publishMode: record.publishMode,
+      hasBriefing: Boolean(record.briefingMarkdown),
+      hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+    }));
+    res.json({ count: briefings.length, briefings });
+  });
+
+  app.get('/api/intelligence/briefings/:id', (req, res) => {
+    const record = getIntelligenceBriefing(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Briefing not found' });
+    }
+    res.json(record);
+  });
+
   // 1 & 2. DYNAMIC PAGE INTERCEPTOR (SSR METADATA & SCHEMA INJECTION)
   let vite: any = null;
   const isDev = process.env.NODE_ENV !== 'production' || process.argv.some(arg => arg.includes('server.ts'));
@@ -1887,6 +2018,10 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
+    '/education',
+    '/clearpath-education',
+    '/indicators',
+    '/encyclopedia-of-indicators',
     '/market-universe'
   ];
 
@@ -1972,6 +2107,23 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         console.log(`[STARTUP] TruthEnforcementEngine initialized. Compliance score: ${startupTruth.score}%`);
       } catch (e: any) {
         console.error("[CRITICAL] TruthEnforcementEngine postponed startup failure:", e);
+      }
+
+      // 3. Content moderation blocklist smoke test
+      try {
+        const modTest = runContentModerationSelfTest();
+        if (modTest.failed.length) {
+          console.error(
+            `[STARTUP] Content moderation self-test FAILED (${modTest.failed.length}):`,
+            modTest.failed
+          );
+        } else {
+          console.log(
+            `[STARTUP] Content moderation self-test passed (${modTest.passed} checks).`
+          );
+        }
+      } catch (e: any) {
+        console.error("[CRITICAL] Content moderation self-test failure:", e);
       }
     }, 10000); // 10-second delay to guarantee instant, responsive container cold starts
   });

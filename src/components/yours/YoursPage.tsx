@@ -256,8 +256,22 @@ export default function YoursPageHub() {
             </h1>
             
             <p className="text-sm md:text-base text-[#FFD4E8] font-sans max-w-2xl leading-relaxed drop-shadow-[0_0_12px_rgba(255,20,147,0.2)]">
-              Welcome to the <span className="text-[#FF1493] font-bold">premium interactive terminal</span>. This workspace fuses elite editorial columns, sports streams, global indices, AI insight systems, live audio monitors, and a <span className="text-[#FF4500] font-bold">15-platform OAuth</span> social sync hub — built for maximum energy, not faded wallpaper.
+              As a trader, jumping between apps on mobile burns time — open social, wait, open video, wait, open a magazine, lose the chart. <span className="text-[#FF1493] font-bold">Your World Connected™</span> keeps it on one screen: load social media and online video, read your favorite magazines (fashion, cars, and more), and <span className="text-[#FF4500] font-bold">move a live chart</span> beside it so you never leave price action behind.
             </p>
+            <ul className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-1 text-[10px] md:text-[11px] font-mono uppercase tracking-wider text-[#FFB3D9]/90">
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] shadow-[0_0_8px_#FF1493]" />
+                Social + video in-hub
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] shadow-[0_0_8px_#FF4500]" />
+                Magazines · fashion · cars
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] shadow-[0_0_8px_#00E5FF]" />
+                Chart on the same screen
+              </li>
+            </ul>
           </div>
 
           {/* Sync status & manual simulator trigger */}

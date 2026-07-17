@@ -538,6 +538,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         ) {
           return 'Encyclopedia';
         }
+        if (path === '/education' || path === '/clearpath-education') {
+          return 'ClearPathEducation';
+        }
+        if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+          return 'EncyclopediaOfIndicators';
+        }
       } catch (e) {
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
@@ -1007,6 +1013,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('Encyclopedia');
           return;
         }
+        if (path === '/education' || path === '/clearpath-education') {
+          setActiveTab('ClearPathEducation');
+          return;
+        }
+        if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+          setActiveTab('EncyclopediaOfIndicators');
+          return;
+        }
       }
 
       if (event.state && event.state.tabId) {
@@ -1043,6 +1057,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       path === '/encyclopedia'
     ) {
       setActiveTab('Encyclopedia');
+    } else if (path === '/education' || path === '/clearpath-education') {
+      setActiveTab('ClearPathEducation');
+    } else if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
+      setActiveTab('EncyclopediaOfIndicators');
     } else {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
@@ -1068,6 +1086,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'AffiliateNetwork' || 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
+          hash === 'ClearPathEducation' ||
           hash === 'ApiMonitor' || 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 const Auth = lazy(() => import('./components/Auth'));
 import ExternalAboutPage from './components/ExternalAboutPage';
@@ -7,6 +7,70 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
+
+const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
+const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
+const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
+
+function isEncyclopediaPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return (
+    p === '/encyclopedia' ||
+    p === '/financial-encyclopedia' ||
+    p.startsWith('/stocks/') ||
+    p.startsWith('/companies/') ||
+    p.startsWith('/crypto/') ||
+    p.startsWith('/forex/') ||
+    p.startsWith('/commodities/') ||
+    p.startsWith('/economy/') ||
+    p === '/crypto' ||
+    p === '/companies' ||
+    p === '/companies/' ||
+    p === '/forex' ||
+    p === '/commodities'
+  );
+}
+
+function isIndicatorsPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/indicators' || p === '/encyclopedia-of-indicators';
+}
+
+function isEducationPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/education' || p === '/clearpath-education';
+}
+
+function PublicLearnShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen w-full bg-[#050505] text-white">
+      <div className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
+        <a
+          href="/"
+          className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
+          style={{ fontFamily: "'Cinzel', serif" }}
+        >
+          ← ClearPath Home
+        </a>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+          <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
+          <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
+        </div>
+      </div>
+      <Suspense
+        fallback={
+          <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+            Loading learning desk...
+          </div>
+        }
+      >
+        {children}
+      </Suspense>
+    </div>
+  );
+}
+
 export default function App() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(() => {
@@ -91,8 +155,34 @@ export default function App() {
   if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     return <TradingReimaginedLanding />;
   }
-  // If there is no authenticated session, render the gorgeous waitlist/external landing page
+  // Public learning desks when logged out (Auth marketing links + direct URLs)
   if (!user) {
+    if (isEncyclopediaPath(currentPath)) {
+      return (
+        <PublicLearnShell>
+          <EncyclopediaLayout />
+        </PublicLearnShell>
+      );
+    }
+    if (isIndicatorsPath(currentPath)) {
+      return (
+        <PublicLearnShell>
+          <EncyclopediaOfIndicators />
+        </PublicLearnShell>
+      );
+    }
+    if (isEducationPath(currentPath)) {
+      return (
+        <PublicLearnShell>
+          <ClearPathEducation
+            onNavigate={(tabId) => {
+              if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+            }}
+          />
+        </PublicLearnShell>
+      );
+    }
     return (
       <Suspense
         fallback={

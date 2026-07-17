@@ -25,6 +25,45 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+/** Reject empty / mock placeholder Stripe Payment Links — never expose buy.stripe.com/mock_* */
+function sanitizeStripePaymentLink(url: string | undefined | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/buy\.stripe\.com\/mock_/i.test(trimmed)) return '';
+  if (!/^https:\/\/buy\.stripe\.com\//i.test(trimmed)) return '';
+  return trimmed;
+}
+
+function CheckoutCta({
+  href,
+  label,
+  className,
+}: {
+  href: string;
+  label: string;
+  className: string;
+}) {
+  const live = sanitizeStripePaymentLink(href);
+  if (!live) {
+    return (
+      <button
+        type="button"
+        disabled
+        className={`${className} opacity-50 cursor-not-allowed`}
+        title="Stripe checkout is not configured yet"
+      >
+        Coming soon
+      </button>
+    );
+  }
+  return (
+    <a href={live} target="_blank" rel="noopener noreferrer" className={className}>
+      {label}
+    </a>
+  );
+}
+
 export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { user, userProfile, updateProfile } = useAuth();
   
@@ -32,18 +71,18 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
   const [activeSubTab, setActiveSubTab] = useState<'catalog' | 'merchant'>('catalog');
   const [isEditLinksOpen, setIsEditLinksOpen] = useState(false);
 
-  // States for Stripe Payment Links
-  const [essentialLink, setEssentialLink] = useState(() => 
-    userProfile?.essentialLink || 'https://buy.stripe.com/mock_essential_free'
+  // States for Stripe Payment Links (no mock defaults)
+  const [essentialLink, setEssentialLink] = useState(() =>
+    sanitizeStripePaymentLink(userProfile?.essentialLink)
   );
-  const [plusLink, setPlusLink] = useState(() => 
-    userProfile?.plusLink || 'https://buy.stripe.com/mock_plus_9fb6839aa'
+  const [plusLink, setPlusLink] = useState(() =>
+    sanitizeStripePaymentLink(userProfile?.plusLink)
   );
-  const [premiumLink, setPremiumLink] = useState(() => 
-    userProfile?.premiumLink || 'https://buy.stripe.com/mock_premium_25bc012bb'
+  const [premiumLink, setPremiumLink] = useState(() =>
+    sanitizeStripePaymentLink(userProfile?.premiumLink)
   );
-  const [ultimateLink, setUltimateLink] = useState(() => 
-    userProfile?.ultimateLink || 'https://buy.stripe.com/mock_ultimate_100ff66cc'
+  const [ultimateLink, setUltimateLink] = useState(() =>
+    sanitizeStripePaymentLink(userProfile?.ultimateLink)
   );
 
   // States for Stripe + Novo bank configuration
@@ -125,10 +164,10 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
       if (userProfile.stripePublishable) setStripePublishable(userProfile.stripePublishable);
       if (userProfile.stripeSecret) setStripeSecret(userProfile.stripeSecret);
       if (userProfile.novoAccount) setNovoAccount(userProfile.novoAccount);
-      if (userProfile.essentialLink) setEssentialLink(userProfile.essentialLink);
-      if (userProfile.plusLink) setPlusLink(userProfile.plusLink);
-      if (userProfile.premiumLink) setPremiumLink(userProfile.premiumLink);
-      if (userProfile.ultimateLink) setUltimateLink(userProfile.ultimateLink);
+      setEssentialLink(sanitizeStripePaymentLink(userProfile.essentialLink));
+      setPlusLink(sanitizeStripePaymentLink(userProfile.plusLink));
+      setPremiumLink(sanitizeStripePaymentLink(userProfile.premiumLink));
+      setUltimateLink(sanitizeStripePaymentLink(userProfile.ultimateLink));
     }
   }, [userProfile]);
 
@@ -178,11 +217,21 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     ]);
 
     try {
+      const nextEssential = sanitizeStripePaymentLink(essentialLink);
+      const nextPlus = sanitizeStripePaymentLink(plusLink);
+      const nextPremium = sanitizeStripePaymentLink(premiumLink);
+      const nextUltimate = sanitizeStripePaymentLink(ultimateLink);
+
+      setEssentialLink(nextEssential);
+      setPlusLink(nextPlus);
+      setPremiumLink(nextPremium);
+      setUltimateLink(nextUltimate);
+
       await updateProfile({
-        essentialLink,
-        plusLink,
-        premiumLink,
-        ultimateLink
+        essentialLink: nextEssential,
+        plusLink: nextPlus,
+        premiumLink: nextPremium,
+        ultimateLink: nextUltimate,
       } as any);
 
       setLinksSaveStatus('success');
@@ -601,35 +650,11 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
                 </div>
 
                 <div className="space-y-3">
-                  <a 
-                    href={essentialLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <CheckoutCta
+                    href={essentialLink}
+                    label="Get Started"
                     className="w-full text-center transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:scale-[1.03]"
-                  >
-                    Get Started
-                  </a>
-
-                  {/* Secure original checkout routing trace */}
-                  <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-1.5 text-left">
-                    <div className="flex items-center justify-between text-[9px] font-mono font-black uppercase tracking-widest text-zinc-400">
-                      <span>💳 Stripe Checkout</span>
-                      <span className="text-emerald-400 font-bold">Secure Gateway</span>
-                    </div>
-                    <div className="text-[9px] font-mono text-zinc-500 flex items-center gap-1 overflow-hidden">
-                      <span className="shrink-0 text-[8px] uppercase tracking-wider text-zinc-550">Origin:</span>
-                      <a 
-                        href={essentialLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 truncate"
-                        title={essentialLink}
-                      >
-                        <span className="truncate">{essentialLink}</span>
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 text-cyan-400/75" />
-                      </a>
-                    </div>
-                  </div>
+                  />
                 </div>
               </div>
 
@@ -675,35 +700,11 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
                 </div>
 
                 <div className="space-y-3">
-                  <a 
-                    href={plusLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <CheckoutCta
+                    href={plusLink}
+                    label="Subscribe"
                     className="w-full text-center transition-all duration-300 shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:scale-[1.03]"
-                  >
-                    Subscribe
-                  </a>
-
-                  {/* Secure original checkout routing trace */}
-                  <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-1.5 text-left">
-                    <div className="flex items-center justify-between text-[9px] font-mono font-black uppercase tracking-widest text-zinc-400">
-                      <span>💳 Stripe Checkout</span>
-                      <span className="text-emerald-400 font-bold">Secure Gateway</span>
-                    </div>
-                    <div className="text-[9px] font-mono text-zinc-500 flex items-center gap-1 overflow-hidden">
-                      <span className="shrink-0 text-[8px] uppercase tracking-wider text-zinc-550">Origin:</span>
-                      <a 
-                        href={plusLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 truncate"
-                        title={plusLink}
-                      >
-                        <span className="truncate">{plusLink}</span>
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 text-cyan-400/75" />
-                      </a>
-                    </div>
-                  </div>
+                  />
                 </div>
               </div>
 
@@ -748,35 +749,11 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
                 </div>
 
                 <div className="space-y-3">
-                  <a 
-                    href={premiumLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <CheckoutCta
+                    href={premiumLink}
+                    label="Subscribe"
                     className="w-full text-center transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:scale-[1.03]"
-                  >
-                    Subscribe
-                  </a>
-
-                  {/* Secure original checkout routing trace */}
-                  <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-1.5 text-left">
-                    <div className="flex items-center justify-between text-[9px] font-mono font-black uppercase tracking-widest text-zinc-400">
-                      <span>💳 Stripe Checkout</span>
-                      <span className="text-emerald-400 font-bold">Secure Gateway</span>
-                    </div>
-                    <div className="text-[9px] font-mono text-zinc-500 flex items-center gap-1 overflow-hidden">
-                      <span className="shrink-0 text-[8px] uppercase tracking-wider text-zinc-550">Origin:</span>
-                      <a 
-                        href={premiumLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 truncate"
-                        title={premiumLink}
-                      >
-                        <span className="truncate">{premiumLink}</span>
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 text-cyan-400/75" />
-                      </a>
-                    </div>
-                  </div>
+                  />
                 </div>
               </div>
 
@@ -822,35 +799,11 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
                 </div>
 
                 <div className="space-y-3">
-                  <a 
-                    href={ultimateLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <CheckoutCta
+                    href={ultimateLink}
+                    label="Subscribe"
                     className="w-full text-center transition-all duration-300 shadow-[0_0_30px_rgba(236,72,153,0.5)] hover:scale-[1.03]"
-                  >
-                    Subscribe
-                  </a>
-
-                  {/* Secure original checkout routing trace */}
-                  <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-1.5 text-left">
-                    <div className="flex items-center justify-between text-[9px] font-mono font-black uppercase tracking-widest text-zinc-400">
-                      <span>💳 Stripe Checkout</span>
-                      <span className="text-emerald-400 font-bold">Secure Gateway</span>
-                    </div>
-                    <div className="text-[9px] font-mono text-zinc-500 flex items-center gap-1 overflow-hidden">
-                      <span className="shrink-0 text-[8px] uppercase tracking-wider text-zinc-550">Origin:</span>
-                      <a 
-                        href={ultimateLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#ec4899] hover:text-pink-400 hover:underline flex items-center gap-1 truncate"
-                        title={ultimateLink}
-                      >
-                        <span className="truncate">{ultimateLink}</span>
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 text-pink-400/75" />
-                      </a>
-                    </div>
-                  </div>
+                  />
                 </div>
               </div>
 

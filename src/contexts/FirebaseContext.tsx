@@ -3,6 +3,7 @@ import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, query, collection, orderBy, limit, updateDoc, deleteDoc, addDoc } from '../firebase';
 import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase';
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
+import { clearPrivateSession, getStoredPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
 
 interface FirebaseContextType {
   user: User | null;
@@ -65,6 +66,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof localStorage !== 'undefined') {
       try {
+        const privateSession = getStoredPrivateSession();
+        if (privateSession) return privateSession as unknown as User;
         const localUser = localStorage.getItem('cp_local_bypass_user');
         if (localUser) {
           return JSON.parse(localUser);
@@ -73,7 +76,18 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(defaultUserProfile);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const privateSession = getStoredPrivateSession();
+    if (privateSession) {
+      return {
+        ...defaultUserProfile,
+        uid: privateSession.uid,
+        email: privateSession.email,
+        displayName: privateSession.displayName,
+      };
+    }
+    return defaultUserProfile;
+  });
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [analysisEntries, setAnalysisEntries] = useState<AnalysisEntry[]>(() => {
@@ -116,6 +130,12 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       } else {
         if (typeof localStorage !== 'undefined') {
           try {
+            const privateSession = getStoredPrivateSession();
+            if (privateSession) {
+              setUser(privateSession as unknown as User);
+              setLoading(false);
+              return;
+            }
             const localUser = localStorage.getItem('cp_local_bypass_user');
             if (localUser) {
               setUser(JSON.parse(localUser));
@@ -204,6 +224,11 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       sendMessage: async () => {},
       requireVerified: () => true,
       logout: async () => {
+        try {
+          await logoutPrivateAccount();
+        } catch {
+          clearPrivateSession();
+        }
         if (typeof localStorage !== 'undefined') {
           try {
             localStorage.removeItem('cp_local_bypass_user');
@@ -214,17 +239,14 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         }
         if (typeof window !== 'undefined') {
           try {
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', 'Discovery');
-            url.hash = 'Discovery';
-            window.history.pushState(null, '', url.toString());
-            window.location.href = url.origin + url.pathname + '?tab=Discovery#Discovery';
+            window.location.href = '/';
           } catch (e) {
             window.location.reload();
           }
         }
       },
       purgeAuthCache: () => {
+        clearPrivateSession();
         if (typeof localStorage !== 'undefined') {
           try {
             localStorage.clear();
