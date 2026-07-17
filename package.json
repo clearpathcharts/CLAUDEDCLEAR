@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "generate:indicator-svgs": "node scripts/generate-indicator-svgs.mjs",
     "test:river": "tsx scripts/riverSelfTest.ts",
     "river:lex-test": "tsx src/river/pine-legacy/lexer.selftest.ts",
     "river:parse-test": "tsx src/river/pine-legacy/parser.selftest.ts",

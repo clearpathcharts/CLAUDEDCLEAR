@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">INTEREST RATE DIFFERENTIAL</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">FUNDAMENTAL / MACRO</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <rect x="39.704166666666666" y="338.83964756705177" width="16.59166666666667" height="201.16035243294823" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="71.18242753623188" y="277.891279190261" width="16.59166666666667" height="262.108720809739" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="102.6606884057971" y="271.5934175177284" width="16.59166666666667" height="268.4065824822716" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="134.13894927536234" y="223.91843779819988" width="16.59166666666667" height="316.0815622018001" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="165.61721014492753" y="183.301637850896" width="16.59166666666667" height="356.698362149104" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="197.09547101449277" y="176.6222735460786" width="16.59166666666667" height="363.3777264539214" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="228.57373188405796" y="206.01631361567075" width="16.59166666666667" height="333.98368638432925" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="260.05199275362315" y="240.71881259083193" width="16.59166666666667" height="299.28118740916807" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="291.5302536231884" y="215.45635910564914" width="16.59166666666667" height="324.54364089435086" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="323.00851449275365" y="187.0160697903463" width="16.59166666666667" height="352.9839302096537" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="354.48677536231884" y="215.27734521886003" width="16.59166666666667" height="324.72265478113997" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="385.965036231884" y="272.71735764352184" width="16.59166666666667" height="267.28264235647816" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="417.4432971014493" y="278.75077444672195" width="16.59166666666667" height="261.24922555327805" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="448.92155797101447" y="301.6079389263666" width="16.59166666666667" height="238.39206107363339" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="480.3998188405797" y="319.4040260445383" width="16.59166666666667" height="220.59597395546172" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="511.8780797101449" y="309.5509064959965" width="16.59166666666667" height="230.44909350400349" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="543.3563405797101" y="293.41807171794346" width="16.59166666666667" height="246.58192828205654" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="574.8346014492753" y="341.9867327979872" width="16.59166666666667" height="198.0132672020128" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="606.3128623188406" y="286.1015742909764" width="16.59166666666667" height="253.89842570902363" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="637.7911231884058" y="311.9734870863817" width="16.59166666666667" height="228.02651291361832" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="669.269384057971" y="345.8107355810799" width="16.59166666666667" height="194.18926441892012" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="700.7476449275362" y="373.7722091084609" width="16.59166666666667" height="166.2277908915391" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="732.2259057971014" y="412.26332870407725" width="16.59166666666667" height="127.73667129592275" fill="#00B6FF" opacity="0.75" rx="2"/>
+<rect x="763.7041666666667" y="439.3777264539214" width="16.59166666666667" height="100.62227354607859" fill="#00B6FF" opacity="0.75" rx="2"/>
+    <path d="M48.0,338.8 L79.5,277.9 L111.0,271.6 L142.4,223.9 L173.9,183.3 L205.4,176.6 L236.9,206.0 L268.3,240.7 L299.8,215.5 L331.3,187.0 L362.8,215.3 L394.3,272.7 L425.7,278.8 L457.2,301.6 L488.7,319.4 L520.2,309.6 L551.7,293.4 L583.1,342.0 L614.6,286.1 L646.1,312.0 L677.6,345.8 L709.0,373.8 L740.5,412.3 L772.0,439.4" fill="none" stroke="#00FFD1" stroke-width="2"/>
+  
+</svg>
