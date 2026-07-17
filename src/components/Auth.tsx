@@ -177,13 +177,12 @@ export default function Auth() {
   const [activationKey, setActivationKey] = useState('');
   const [emailSent, setEmailSent] = useState(false);
 
-  // Floating live alerts for cinematic immersive feel
-  const [announcements, setAnnouncements] = useState<string[]>([
-    "Waitlist active: 11,842 / 15,000 slots per country locked. Registration ending safely.",
+  // Floating live alerts for cinematic immersive feel (no fabricated waitlist counts)
+  const announcements = [
+    "Soft launch waitlist is open — register for early access.",
     "Quantitative nodes linked for real-time market data ingestion.",
-    "System countdown running: Stage-1 opens June 25.",
-    "Macroeconomic intelligence data clusters verified."
-  ]);
+    "Macroeconomic intelligence data clusters verified.",
+  ];
   const [curAnnIdx, setCurAnnIdx] = useState(0);
 
   // ==========================================
@@ -505,7 +504,7 @@ export default function Auth() {
     },
     {
       q: "How does the Soft Launch Waitlist work?",
-      a: "We are releasing exactly 15,000 public accounts PER COUNTRY for $0 during our soft launch phase. Sign-ups are filling fast and closing automatically. Once you register on this waitlist, you lock in permanent priority rights. You will receive an exclusive private key via email to access your trading education desk when the portal opens in 14 days."
+      a: "Join the soft launch waitlist at no cost. Once you register, you receive a confirmation email with an access key for early entry to the ClearPath education desk when soft launch opens."
     },
     {
       q: "What systems are integrated with the platform?",
@@ -787,10 +786,10 @@ CLARITY BEFORE DECISIONS.`}
           </div>
           <div className="text-left">
             <div className="text-[17px] sm:text-lg font-black tracking-tight text-[#00FFFF] text-transparent bg-clip-text bg-gradient-to-r from-[#00FFFF] to-[#B026FF] drop-shadow-[0_0_15px_rgba(0,255,255,0.8)] uppercase">
-              15,000 FREE ACCOUNTS PER COUNTRY
+              Soft Launch Waitlist — Free Early Access
             </div>
-            <p className="text-[10px] text-[#FF1493] font-bold uppercase tracking-wider animate-pulse mt-1">
-              Hurry — Registrations Ending Quickly
+            <p className="text-[10px] text-[#FF1493] font-bold uppercase tracking-wider mt-1">
+              Register below for your access key
             </p>
           </div>
         </motion.div>
