@@ -30,6 +30,16 @@ service cloud.firestore {
       }
     }
 
+    // Biography / ProfileHub documents (avatar, cover, bio, socials)
+    match /profiles/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      match /socials/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
     match /posts/{postId} {
       // Any authenticated user can view public posts
       allow read: if request.auth != null;

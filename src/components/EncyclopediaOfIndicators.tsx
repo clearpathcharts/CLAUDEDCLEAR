@@ -349,10 +349,55 @@ export default function EncyclopediaOfIndicators() {
                   </div>
                   
                   <div className="mt-auto shrink-0 pt-4">
-                    <button className="w-full bg-[#00B6FF] hover:bg-[#00FFD1] hover:text-[#071226] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px] uppercase font-mono tracking-widest shadow-[0_0_20px_rgba(0,182,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,209,0.6)]">
-                      Apply to Active Terminal <ArrowRight size={16} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const abbr = selectedIndicator.chartAbbr;
+                        const payload = {
+                          id: selectedIndicator.id,
+                          name: selectedIndicator.name,
+                          abbr: abbr || selectedIndicator.name,
+                          addedAt: Date.now(),
+                        };
+                        try {
+                          const raw = localStorage.getItem("clearpath_pending_indicators");
+                          const list = raw ? JSON.parse(raw) : [];
+                          const next = Array.isArray(list) ? list.filter((x: any) => x?.name !== payload.name) : [];
+                          next.push(payload);
+                          localStorage.setItem("clearpath_pending_indicators", JSON.stringify(next.slice(-40)));
+                          if (abbr) {
+                            const activeRaw = localStorage.getItem("clearpath_active_chart_indicators");
+                            const active = activeRaw ? JSON.parse(activeRaw) : ["SMA", "RSI"];
+                            const merged = Array.isArray(active) ? [...active] : ["SMA", "RSI"];
+                            if (!merged.includes(abbr)) merged.push(abbr);
+                            localStorage.setItem("clearpath_active_chart_indicators", JSON.stringify(merged));
+                          }
+                        } catch {}
+                        window.dispatchEvent(new CustomEvent("clearpath-add-indicator", { detail: payload }));
+                        window.history.pushState({}, "", "/");
+                        window.dispatchEvent(new Event("popstate"));
+                        try {
+                          localStorage.setItem("clearpath_active_tab", "StrictlyCharts");
+                        } catch {}
+                        window.dispatchEvent(new CustomEvent("clearpath-set-tab", { detail: "StrictlyCharts" }));
+                      }}
+                      className="w-full bg-[#00B6FF] hover:bg-[#00FFD1] hover:text-[#071226] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px] uppercase font-mono tracking-widest shadow-[0_0_20px_rgba(0,182,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,209,0.6)]"
+                    >
+                      Add This Indicator <ArrowRight size={16} />
                     </button>
-                    <button className="w-full bg-transparent border border-[#00B6FF]/40 hover:border-[#00B6FF] text-[#00B6FF] font-mono tracking-widest py-3.5 rounded-xl transition-colors mt-3 text-[11px] uppercase hover:bg-[#00B6FF]/10">
+                    <p className="text-[10px] text-[#00B6FF]/60 font-mono text-center mt-2 tracking-wide">
+                      {selectedIndicator.chartAbbr
+                        ? `Adds ${selectedIndicator.chartAbbr} to Charts when a live overlay exists.`
+                        : "Saved to your indicator list — open Charts to apply related tools."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const q = encodeURIComponent(selectedIndicator.name);
+                        window.open(`https://www.tradingview.com/scripts/search/${q}/`, "_blank", "noopener,noreferrer");
+                      }}
+                      className="w-full bg-transparent border border-[#00B6FF]/40 hover:border-[#00B6FF] text-[#00B6FF] font-mono tracking-widest py-3.5 rounded-xl transition-colors mt-3 text-[11px] uppercase hover:bg-[#00B6FF]/10"
+                    >
                       Read Documentation
                     </button>
                   </div>

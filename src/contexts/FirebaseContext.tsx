@@ -78,15 +78,25 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   });
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     const privateSession = getStoredPrivateSession();
+    let savedImages: { photoURL?: string; coverURL?: string } = {};
+    try {
+      savedImages = JSON.parse(localStorage.getItem('clearpath_user_images') || '{}');
+    } catch {}
     if (privateSession) {
       return {
         ...defaultUserProfile,
         uid: privateSession.uid,
         email: privateSession.email,
         displayName: privateSession.displayName,
+        photoURL: savedImages.photoURL || '',
+        coverURL: savedImages.coverURL || '',
       };
     }
-    return defaultUserProfile;
+    return {
+      ...defaultUserProfile,
+      photoURL: savedImages.photoURL || '',
+      coverURL: savedImages.coverURL || '',
+    };
   });
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [posts, setPosts] = useState<TimelinePost[]>([]);
@@ -179,9 +189,65 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       aboutContent,
       quotaExceeded,
       retryConnection: async () => {},
-      updateProfile: async () => {},
-      updateUserImages: async () => {},
-      updateIntro: async () => {},
+      updateProfile: async (updates: Partial<UserProfile>) => {
+        setUserProfile((prev) => {
+          const next = { ...(prev || defaultUserProfile), ...updates };
+          try {
+            localStorage.setItem(
+              'clearpath_user_images',
+              JSON.stringify({ photoURL: next.photoURL || '', coverURL: next.coverURL || '' })
+            );
+          } catch {}
+          return next;
+        });
+        const uid = user?.uid;
+        if (!uid) return;
+        try {
+          const { updateBasicProfile } = await import('../services/profileService');
+          await updateBasicProfile(uid, {
+            displayName: updates.displayName,
+            bio: updates.intro?.bio,
+            avatarUrl: updates.photoURL,
+            coverUrl: updates.coverURL,
+          });
+        } catch (err) {
+          console.warn('[FirebaseContext] Cloud profile sync skipped:', err);
+        }
+      },
+      updateUserImages: async (updates: { avatar?: string; cover?: string }) => {
+        const photoURL = updates.avatar;
+        const coverURL = updates.cover;
+        setUserProfile((prev) => {
+          const base = prev || defaultUserProfile;
+          const next = {
+            ...base,
+            photoURL: photoURL !== undefined ? photoURL : base.photoURL,
+            coverURL: coverURL !== undefined ? coverURL : base.coverURL,
+          };
+          try {
+            localStorage.setItem(
+              'clearpath_user_images',
+              JSON.stringify({ photoURL: next.photoURL || '', coverURL: next.coverURL || '' })
+            );
+          } catch {}
+          return next;
+        });
+        const uid = user?.uid;
+        if (!uid) return;
+        try {
+          const { updateBasicProfile } = await import('../services/profileService');
+          const payload: Record<string, string> = {};
+          if (photoURL !== undefined) payload.avatarUrl = photoURL;
+          if (coverURL !== undefined) payload.coverUrl = coverURL;
+          await updateBasicProfile(uid, payload);
+        } catch (err) {
+          // Local save already succeeded — cloud may be blocked without Firebase Auth.
+          console.warn('[FirebaseContext] Cloud image sync skipped (local save kept):', err);
+        }
+      },
+      updateIntro: async (intro: { bio: string; location: string; company: string }) => {
+        setUserProfile((prev) => ({ ...(prev || defaultUserProfile), intro }));
+      },
       updateStatuses: async () => {},
       createPost: async () => {},
       toggleLike: async () => {},

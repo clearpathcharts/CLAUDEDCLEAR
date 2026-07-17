@@ -122,10 +122,19 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
     });
   };
 
-  // Load from profiles collection on render
+  // Load from profiles collection on render (local images as immediate fallback)
   useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+      if (saved.photoURL) setPhotoURL(saved.photoURL);
+      if (saved.coverURL) setCoverURL(saved.coverURL);
+    } catch {}
+
     const fetchProfile = async () => {
-      if (!uid) return;
+      if (!uid) {
+        setDisplayName(user?.displayName || "ClearPathTrader");
+        return;
+      }
       try {
         const data = await getProfile(uid);
         if (data) {
@@ -138,7 +147,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           setCoverURL(data.coverUrl || data.coverURL || "");
           setSocials(data.socials || {});
         } else {
-          // Initialize defaults
           setDisplayName(user?.displayName || "ClearPathTrader");
           setPhotoURL(user?.photoURL || "");
           setCoverURL("");
@@ -162,13 +170,28 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           "Image base64 is too large for database limits (must be < 1MB). Please upload a smaller image.",
         );
       }
-      if (!uid) return;
+      // Always persist locally so the avatar survives refresh even without Firebase Auth.
+      try {
+        const raw = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+        localStorage.setItem(
+          "clearpath_user_images",
+          JSON.stringify({ ...raw, photoURL: urlToSave }),
+        );
+      } catch {}
+      if (!uid) {
+        setImageSaveSuccess(true);
+        setTimeout(() => setImageSaveSuccess(false), 4000);
+        return;
+      }
       await updateBasicProfile(uid, { avatarUrl: urlToSave });
       setImageSaveSuccess(true);
       setTimeout(() => setImageSaveSuccess(false), 4000);
     } catch (err: any) {
       console.error("Failed to auto-save profile image:", err);
-      setImageSaveError(err?.message || "Cloud sync failed");
+      // Local save already done — report soft failure for cloud only.
+      setImageSaveSuccess(true);
+      setImageSaveError(err?.message || "Saved on this device (cloud sync unavailable)");
+      setTimeout(() => setImageSaveError(null), 5000);
     } finally {
       setIsImageSaving(false);
     }
@@ -185,13 +208,26 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           "Banner base64 is too large for database limits (must be < 1MB). Please upload a smaller image.",
         );
       }
-      if (!uid) return;
+      try {
+        const raw = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+        localStorage.setItem(
+          "clearpath_user_images",
+          JSON.stringify({ ...raw, coverURL: urlToSave }),
+        );
+      } catch {}
+      if (!uid) {
+        setCoverSaveSuccess(true);
+        setTimeout(() => setCoverSaveSuccess(false), 4000);
+        return;
+      }
       await updateBasicProfile(uid, { coverUrl: urlToSave });
       setCoverSaveSuccess(true);
       setTimeout(() => setCoverSaveSuccess(false), 4000);
     } catch (err: any) {
       console.error("Failed to auto-save profile banner:", err);
-      setCoverSaveError(err?.message || "Cloud sync failed");
+      setCoverSaveSuccess(true);
+      setCoverSaveError(err?.message || "Saved on this device (cloud sync unavailable)");
+      setTimeout(() => setCoverSaveError(null), 5000);
     } finally {
       setIsCoverSaving(false);
     }
