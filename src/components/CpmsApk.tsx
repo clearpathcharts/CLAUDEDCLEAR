@@ -1185,6 +1185,16 @@ export default function CpmsApk() {
               {/* CINEMATIC PLAYER — HLS/MP4 or official YouTube live embed */}
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden border-b border-white/5 group">
 
+                {isMuted && selectedVideo.isLive && (
+                  <button
+                    type="button"
+                    onClick={() => setIsMuted(false)}
+                    className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-amber-400 text-black px-4 py-2 rounded-full text-[10px] font-mono font-black uppercase tracking-widest shadow-lg hover:bg-amber-300 transition-colors"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Tap to unmute live markets
+                  </button>
+                )}
+
                 {streamError && (
                   <div className="absolute top-3 left-3 right-3 z-30 bg-red-950/80 border border-red-500/30 text-red-200 text-[10px] font-mono px-3 py-2 rounded-lg">
                     {streamError}
