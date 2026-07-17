@@ -36,6 +36,7 @@ import {
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import { readProfile, writeProfile } from './src/server/profileStore';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -162,7 +163,7 @@ async function startServer() {
   }));
   app.use(cors());
   app.use(compression());
-  app.use(express.json());
+  app.use(express.json({ limit: '2mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -379,6 +380,48 @@ async function startServer() {
       /* ignore */
     }
     res.json({ ok: true });
+  });
+
+  // Profile save/load for private sessions (bypasses Firebase client permission errors)
+  app.get('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const uid = sessionUser?.uid || (typeof req.query.uid === 'string' ? req.query.uid : '');
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to load your profile.' });
+    }
+    try {
+      const profile = readProfile(uid) || { uid, displayName: sessionUser?.displayName || '' };
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Failed to load profile' });
+    }
+  });
+
+  app.post('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const bodyUid = typeof req.body?.uid === 'string' ? req.body.uid : '';
+    const uid = sessionUser?.uid || bodyUid;
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to save your profile.' });
+    }
+    // If session exists, only allow writing own profile
+    if (sessionUser?.uid && sessionUser.uid !== uid) {
+      return res.status(403).json({ error: 'Cannot save another member profile.' });
+    }
+    try {
+      const allowed = [
+        'displayName', 'username', 'bio', 'avatarUrl', 'coverUrl',
+        'photoURL', 'coverURL', 'instagramType', 'publishStatus',
+      ];
+      const patch: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (req.body?.[key] !== undefined) patch[key] = req.body[key];
+      }
+      const profile = writeProfile(uid, patch);
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
   });
 
   app.get('/api/auth/private/me', (req, res) => {

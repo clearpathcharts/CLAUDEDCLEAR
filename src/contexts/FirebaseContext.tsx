@@ -233,15 +233,25 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
           return next;
         });
         const uid = user?.uid;
+        const payload: Record<string, string> = {};
+        if (uid) payload.uid = uid;
+        if (photoURL !== undefined) payload.avatarUrl = photoURL;
+        if (coverURL !== undefined) payload.coverUrl = coverURL;
+        try {
+          const { saveProfileToServer } = await import('../api/profileApi');
+          const result = await saveProfileToServer(payload);
+          if (result.ok) return;
+        } catch (err) {
+          console.warn('[FirebaseContext] Server image sync skipped:', err);
+        }
         if (!uid) return;
         try {
           const { updateBasicProfile } = await import('../services/profileService');
-          const payload: Record<string, string> = {};
-          if (photoURL !== undefined) payload.avatarUrl = photoURL;
-          if (coverURL !== undefined) payload.coverUrl = coverURL;
-          await updateBasicProfile(uid, payload);
+          const fsPayload: Record<string, string> = {};
+          if (photoURL !== undefined) fsPayload.avatarUrl = photoURL;
+          if (coverURL !== undefined) fsPayload.coverUrl = coverURL;
+          await updateBasicProfile(uid, fsPayload);
         } catch (err) {
-          // Local save already succeeded — cloud may be blocked without Firebase Auth.
           console.warn('[FirebaseContext] Cloud image sync skipped (local save kept):', err);
         }
       },
