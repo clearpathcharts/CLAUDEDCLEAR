@@ -62,6 +62,19 @@ const FUNDAMENTAL = new Set([
   "Sortino Ratio",
 ]);
 
+/** Matches scripts/generate-indicator-svgs.mjs slugify output. */
+export function indicatorImageSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[()%/]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function indicatorImagePath(name: string): string {
+  return `/encyclopedia-indicators/${indicatorImageSlug(name)}.svg`;
+}
+
 export function buildIndicators() {
   const tagPool = ["volatility", "volume", "institutional", "retail", "high-frequency", "oscillator", "overlay", "momentum"];
 
@@ -72,7 +85,7 @@ export function buildIndicators() {
     const category = isFundamental ? "Fundamental" : "Technical";
     
     const hasVideo = i % 5 === 0;
-    const img = `https://picsum.photos/800/600?random=${i + 50}`;
+    const img = indicatorImagePath(name);
     const videoUrl = hasVideo ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : null;
     
     let complexity = Math.round(2 + ((i * 13) % 18) / 10);

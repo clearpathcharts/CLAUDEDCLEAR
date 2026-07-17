@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">VIX</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">VOLATILITY MEASURE</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="354.4" x2="772" y2="354.4" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="350.4" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">AVG</text>
+    <path d="M48.0,373.0 L61.4,385.3 L74.8,389.6 L88.2,421.6 L101.6,415.2 L115.0,386.9 L128.4,374.0 L141.9,345.2 L155.3,352.5 L168.7,327.4 L182.1,301.7 L195.5,335.6 L208.9,309.0 L222.3,321.0 L235.7,348.0 L249.1,378.4 L262.5,348.0 L275.9,326.5 L289.3,334.5 L302.7,359.9 L316.1,393.8 L329.6,359.4 L343.0,347.3 L356.4,355.7 L369.8,391.8 L383.2,387.6 L396.6,399.8 L410.0,415.9 L423.4,419.6 L436.8,416.1 L450.2,443.6 L463.6,445.7 L477.0,402.8 L490.4,420.6 L503.9,387.9 L517.3,363.6 L530.7,373.7 L544.1,372.6 L557.5,370.9 L570.9,357.1 L584.3,347.0 L597.7,334.7 L611.1,300.3 L624.5,321.5 L637.9,301.3 L651.3,292.5 L664.7,319.5 L678.1,302.8 L691.6,291.6 L705.0,283.6 L718.4,252.8 L731.8,253.7 L745.2,262.7 L758.6,238.7 L772.0,253.4 L772.0,540.0 L758.6,540.0 L745.2,540.0 L731.8,540.0 L718.4,540.0 L705.0,540.0 L691.6,540.0 L678.1,540.0 L664.7,540.0 L651.3,540.0 L637.9,540.0 L624.5,540.0 L611.1,540.0 L597.7,540.0 L584.3,540.0 L570.9,540.0 L557.5,540.0 L544.1,540.0 L530.7,540.0 L517.3,540.0 L503.9,540.0 L490.4,540.0 L477.0,540.0 L463.6,540.0 L450.2,540.0 L436.8,540.0 L423.4,540.0 L410.0,540.0 L396.6,540.0 L383.2,540.0 L369.8,540.0 L356.4,540.0 L343.0,540.0 L329.6,540.0 L316.1,540.0 L302.7,540.0 L289.3,540.0 L275.9,540.0 L262.5,540.0 L249.1,540.0 L235.7,540.0 L222.3,540.0 L208.9,540.0 L195.5,540.0 L182.1,540.0 L168.7,540.0 L155.3,540.0 L141.9,540.0 L128.4,540.0 L115.0,540.0 L101.6,540.0 L88.2,540.0 L74.8,540.0 L61.4,540.0 L48.0,540.0 Z" fill="url(#tealFill)"/>
+    <path d="M48.0,373.0 L61.4,385.3 L74.8,389.6 L88.2,421.6 L101.6,415.2 L115.0,386.9 L128.4,374.0 L141.9,345.2 L155.3,352.5 L168.7,327.4 L182.1,301.7 L195.5,335.6 L208.9,309.0 L222.3,321.0 L235.7,348.0 L249.1,378.4 L262.5,348.0 L275.9,326.5 L289.3,334.5 L302.7,359.9 L316.1,393.8 L329.6,359.4 L343.0,347.3 L356.4,355.7 L369.8,391.8 L383.2,387.6 L396.6,399.8 L410.0,415.9 L423.4,419.6 L436.8,416.1 L450.2,443.6 L463.6,445.7 L477.0,402.8 L490.4,420.6 L503.9,387.9 L517.3,363.6 L530.7,373.7 L544.1,372.6 L557.5,370.9 L570.9,357.1 L584.3,347.0 L597.7,334.7 L611.1,300.3 L624.5,321.5 L637.9,301.3 L651.3,292.5 L664.7,319.5 L678.1,302.8 L691.6,291.6 L705.0,283.6 L718.4,252.8 L731.8,253.7 L745.2,262.7 L758.6,238.7 L772.0,253.4" fill="none" stroke="#00FFD1" stroke-width="2.5"/>
+  
+</svg>
