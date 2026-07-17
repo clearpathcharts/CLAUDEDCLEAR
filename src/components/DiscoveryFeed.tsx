@@ -110,7 +110,10 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
           <div className="w-10 h-10 rounded-xl bg-[#FF1493]/10 flex items-center justify-center shrink-0">
             <MessageSquare size={20} className="text-[#FF1493]" />
           </div>
-          <div className="text-sm font-bold text-white">Ask C.P.T., your personal trading buddy</div>
+          <div>
+            <div className="text-sm font-bold text-white">Ask C.P.T., your personal trading buddy</div>
+            <div className="text-[11px] text-white/50 mt-0.5">Site help · neuro charts · The River · trading</div>
+          </div>
         </button>
 
       </div>

@@ -36,6 +36,7 @@ import {
 } from './src/server/semanticDatabase';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -840,8 +841,12 @@ Frame your explanation with advanced professional rigor, making it scannable, st
           newFacts: [],
         });
       }
+      const siteHelp = offlineSiteGuideAnswer(question);
+      if (siteHelp) {
+        return res.json({ answer: siteHelp, newFacts: [] });
+      }
       return res.json({
-        answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
+        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, The River, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
       });
     }
 
@@ -909,7 +914,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 - Never use pressure, urgency, or hype. Never push anyone to trade.
 - Never promise profits or guaranteed outcomes. Trading involves risk and you say so calmly when relevant.
 - You are a supportive companion and educator, not a therapist or doctor. If someone seems to be in serious emotional distress, or mentions wanting to hurt themselves, respond with genuine care and gently encourage them to reach out to someone they trust or a professional - in the US they can call or text 988 any time. Stay kind. Never lecture, never dismiss.
-=== END EMOTIONAL CARE ===`;
+=== END EMOTIONAL CARE ===
+
+${CPT_SITE_GUIDE}`;
 
     // Inject everything we remember about this specific user, so they NEVER
     // have to re-introduce themselves.
@@ -941,7 +948,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
           model: 'llama-3.3-70b-versatile',
           messages,
           temperature: 0.4,
-          max_tokens: 800,
+          max_tokens: 1200,
         }),
       });
 

@@ -144,8 +144,8 @@ export const CptBuddyWidget: React.FC = () => {
         role: "assistant",
         content:
           facts.length > 0
-            ? `Welcome back, ${userName}! Good to see you again. Ask me anything - about Four Up Three Down, an indicator, or whatever's on your mind. I remember our past conversations.`
-            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. Ask me anything about Four Up Three Down, an indicator, or anything else on ClearPath. I'm always here.`,
+            ? `Welcome back, ${userName}! Good to see you again. Ask me about Four Up Three Down, navigating the site, neuro chart profiles, The River, Education, or the Encyclopedias — I remember our past conversations.`
+            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. I can teach Four Up Three Down, help you navigate ClearPath (Charts, The River, Education, Encyclopedias), and explain the neurodivergent chart profiles. Ask me anything.`,
       };
       setMessages([greeting]);
     }
@@ -171,14 +171,14 @@ export const CptBuddyWidget: React.FC = () => {
     setSetupStep("done");
     const intro: ChatMessage = {
       role: "assistant",
-      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me anything, any time - I'm always here, and I'll remember you from now on.`,
+      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me about trading, how to get around the site, neuro chart profiles, The River, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
     };
     setMessages([intro]);
     saveMemory({ userName, skillLevel: level, facts, messages: [intro] });
   };
 
-  const handleSend = async () => {
-    const question = input.trim();
+  const handleSend = async (presetQuestion?: string) => {
+    const question = (presetQuestion ?? input).trim();
     if (!question || isLoading) return;
 
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: question }];
@@ -418,6 +418,35 @@ export const CptBuddyWidget: React.FC = () => {
                 </div>
               ))}
 
+            {memoryLoaded && setupStep === "done" && messages.length === 1 && !isLoading && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                {[
+                  "How do I get around the site?",
+                  "Explain neuro chart profiles",
+                  "How do I use The River?",
+                  "Where is ClearPath Education?",
+                ].map((prompt) => (
+                  <button
+                    key={`after-${prompt}`}
+                    type="button"
+                    onClick={() => { void handleSend(prompt); }}
+                    style={{
+                      fontSize: 10,
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      border: "1px solid rgba(0,229,255,0.35)",
+                      background: "rgba(0,229,255,0.08)",
+                      color: "#00E5FF",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {isLoading && (
               <div style={{ color: "#AAAAAA", fontSize: 12, fontStyle: "italic" }}>C.P.T. is thinking...</div>
             )}
@@ -431,7 +460,8 @@ export const CptBuddyWidget: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={setupStep === "name" ? "Type your name..." : "Ask C.P.T. anything..."}
+                placeholder={setupStep === "name" ? "Type your name..." : "Ask about charts, The River, neuro profiles..."}
+                aria-label={setupStep === "name" ? "Your name" : "Message C.P.T. about trading or site help"}
                 style={{
                   flex: 1,
                   background: "rgba(255,255,255,0.05)",
