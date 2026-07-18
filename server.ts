@@ -60,6 +60,17 @@ import {
   loginPrivateUser,
   registerPrivateUser,
 } from './src/server/privateAuthService';
+import {
+  bumpPrivateApply,
+  bumpPublicApply,
+  getPublicEntry,
+  listPrivateCatalog,
+  listPublicCatalog,
+  removePrivateEntry,
+  removePublicEntry,
+  savePrivateEntry,
+  savePublicEntry,
+} from './src/server/riverCatalogService';
 
 const parser = new RSSParser();
 
@@ -374,6 +385,109 @@ async function startServer() {
     const user = (req.session as any)?.privateUser;
     if (!user) return res.status(401).json({ error: 'Not signed in.' });
     res.json({ user });
+  });
+
+  // The River — compiler manifest (controlled self-update channel)
+  app.get('/api/river/compiler/manifest', (_req, res) => {
+    try {
+      const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
+      const raw = fs.readFileSync(manifestPath, 'utf8');
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.json(JSON.parse(raw));
+    } catch (error: any) {
+      res.status(500).json({ error: 'Compiler manifest unavailable.', message: error.message });
+    }
+  });
+
+  // The River — public community catalog (raw Pine, interpreter path)
+  app.get('/api/river/catalog/public', (_req, res) => {
+    res.json({ entries: listPublicCatalog() });
+  });
+
+  app.get('/api/river/catalog/public/:id', (req, res) => {
+    const entry = getPublicEntry(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    res.json({ entry });
+  });
+
+  app.post('/api/river/catalog/public', moderateBodyFields('pineSource', 'description'), (req, res) => {
+    const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
+    if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
+      return res.status(400).json({ error: 'pineSource is required.' });
+    }
+    try {
+      const entry = savePublicEntry({
+        name: name || 'Untitled Indicator',
+        author: author || 'Community',
+        description: description || '',
+        pineSource,
+        pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
+        tags: Array.isArray(tags) ? tags : [],
+      });
+      res.json({ ok: true, entry });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to save public catalog entry.', message: error.message });
+    }
+  });
+
+  app.post('/api/river/catalog/public/:id/apply', (req, res) => {
+    const entry = getPublicEntry(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    bumpPublicApply(entry.id);
+    res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
+  });
+
+  app.delete('/api/river/catalog/public/:id', (req, res) => {
+    const ok = removePublicEntry(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Not found.' });
+    res.json({ ok: true });
+  });
+
+  // The River — private per-user vault (session auth)
+  app.get('/api/river/catalog/mine', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in to access your private vault.' });
+    res.json({ entries: listPrivateCatalog(user.uid) });
+  });
+
+  app.post('/api/river/catalog/mine', moderateBodyFields('pineSource', 'description'), (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in to save to your private vault.' });
+    const { name, description, pineSource, pineVersion, tags } = req.body || {};
+    if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
+      return res.status(400).json({ error: 'pineSource is required.' });
+    }
+    try {
+      const entry = savePrivateEntry(user.uid, {
+        name: name || 'My Indicator',
+        author: user.displayName || user.email || 'You',
+        description: description || '',
+        pineSource,
+        pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
+        tags: Array.isArray(tags) ? tags : [],
+      });
+      res.json({ ok: true, entry });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to save private vault entry.', message: error.message });
+    }
+  });
+
+  app.post('/api/river/catalog/mine/:id/apply', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
+    const entries = listPrivateCatalog(user.uid);
+    const entry = entries.find((e) => e.id === req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    bumpPrivateApply(user.uid, entry.id);
+    res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
+  });
+
+  app.delete('/api/river/catalog/mine/:id', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
+    const ok = removePrivateEntry(user.uid, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Not found.' });
+    res.json({ ok: true });
   });
 
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {

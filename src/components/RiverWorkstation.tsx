@@ -8,6 +8,12 @@ import {
   getActiveRiverIndicator,
   clearActiveRiverIndicator,
 } from '../river/riverEngine';
+import { buildCompatibilityReport, formatCompatSummary, type CompatibilityReport } from '../river/compat/report';
+import { getLocalHints } from '../river/assist/localHints';
+import { suggestPineMigration } from '../river/assist/pineMigrator';
+import { checkCompilerUpdate } from '../river/compiler/updateChecker';
+import { saveToCatalog, entryFromActive, publishToPublicCatalog } from '../river/catalog';
+import { saveToPrivateVault } from '../river/storage/privateCatalog';
 import type { Value } from '../river/pine/interpreter';
 import RiverCatalogPanel from './RiverCatalogPanel';
 
@@ -21,6 +27,8 @@ interface RiverState {
   errorMessage: string;
   errorLine: number | null;
   inputValues: Record<string, Value>;
+  compat: CompatibilityReport | null;
+  hints: string[];
 }
 
 const INITIAL_STATE: RiverState = {
@@ -31,6 +39,8 @@ const INITIAL_STATE: RiverState = {
   errorMessage: '',
   errorLine: null,
   inputValues: {},
+  compat: null,
+  hints: [],
 };
 
 // A real UT Bot-style ATR trailing stop indicator — the classic "Gold Bar"
@@ -65,6 +75,9 @@ export default function RiverWorkstation() {
   const [state, setState] = useState<RiverState>(INITIAL_STATE);
   const [isDragOver, setIsDragOver] = useState(false);
   const [activeName, setActiveName] = useState<string | null>(() => getActiveRiverIndicator()?.name ?? null);
+  const [catalogRefresh, setCatalogRefresh] = useState(0);
+  const [compilerNote, setCompilerNote] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
 
   useEffect(() => {
     const onUpdate = (e: any) => setActiveName(e?.detail?.name ?? null);
@@ -72,15 +85,32 @@ export default function RiverWorkstation() {
     return () => window.removeEventListener('river-indicator-updated', onUpdate);
   }, []);
 
+  useEffect(() => {
+    checkCompilerUpdate().then(({ updateAvailable, remote }) => {
+      if (updateAvailable && remote) {
+        setCompilerNote(`River compiler ${remote.version} available (you have ${remote.channel}).`);
+      }
+    }).catch(() => { /* offline */ });
+  }, []);
+
   const processSource = useCallback((source: string, fileName: string) => {
     setState(s => ({ ...s, step: 'compiling', rawSource: source, fileName }));
-    // Yield a frame so the "Compiling..." state paints before the (fast) compile.
     setTimeout(() => {
+      const compat = buildCompatibilityReport(source);
       const result = compilePine(source);
       if (result.status === "ok") {
         const inputValues: Record<string, Value> = {};
         result.inputs.forEach(inp => { inputValues[inp.id] = inp.value; });
-        setState(s => ({ ...s, step: 'compiled', compiled: result, inputValues, errorMessage: '', errorLine: null }));
+        setState(s => ({
+          ...s,
+          step: 'compiled',
+          compiled: result,
+          inputValues,
+          errorMessage: '',
+          errorLine: null,
+          compat,
+          hints: getLocalHints(source, '', compat.issues),
+        }));
       } else {
         const { error, line } = result;
         setState(s => ({
@@ -89,6 +119,8 @@ export default function RiverWorkstation() {
           compiled: null,
           errorMessage: error,
           errorLine: line,
+          compat,
+          hints: getLocalHints(source, error, compat.issues),
         }));
       }
     }, 30);
@@ -136,7 +168,63 @@ export default function RiverWorkstation() {
     setActiveName(null);
   }, []);
 
-  const reset = useCallback(() => setState(INITIAL_STATE), []);
+  const reset = useCallback(() => {
+    setSaveStatus('');
+    setState(INITIAL_STATE);
+  }, []);
+
+  const runMigration = useCallback(() => {
+    const { migrated, changes } = suggestPineMigration(state.rawSource);
+    if (changes.length === 0) return;
+    processSource(migrated, state.fileName.replace(/\.pine$/i, '') + '-migrated.pine');
+  }, [state.rawSource, state.fileName, processSource]);
+
+  const saveLocal = useCallback(() => {
+    if (!state.compiled) return;
+    saveToCatalog(entryFromActive(
+      { name: state.fileName || `${state.compiled.title}.pine`, source: state.rawSource, inputs: state.inputValues },
+      { author: 'You', source: 'local', version: state.compiled.version, tags: ['local'] },
+    ));
+    setCatalogRefresh(n => n + 1);
+    setSaveStatus('Saved to local catalog.');
+  }, [state]);
+
+  const savePublic = useCallback(async () => {
+    if (!state.compiled) return;
+    setSaveStatus('');
+    try {
+      await publishToPublicCatalog({
+        name: state.compiled.title,
+        author: 'Community',
+        description: `Imported via The River — Pine v${state.compiled.version}`,
+        pineSource: state.rawSource,
+        pineVersion: state.compiled.version,
+        tags: ['community'],
+      });
+      setCatalogRefresh(n => n + 1);
+      setSaveStatus('Published to public catalog.');
+    } catch (e: any) {
+      setSaveStatus(e?.message || 'Publish failed.');
+    }
+  }, [state]);
+
+  const savePrivate = useCallback(async () => {
+    if (!state.compiled) return;
+    setSaveStatus('');
+    try {
+      await saveToPrivateVault({
+        name: state.compiled.title,
+        description: `Private vault — Pine v${state.compiled.version}`,
+        pineSource: state.rawSource,
+        pineVersion: state.compiled.version,
+        tags: ['private'],
+      });
+      setCatalogRefresh(n => n + 1);
+      setSaveStatus('Saved to your private vault.');
+    } catch (e: any) {
+      setSaveStatus(e?.message || 'Private save failed.');
+    }
+  }, [state]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-mono p-4 md:p-8" id="river-terminal-workstation">
@@ -159,6 +247,9 @@ export default function RiverWorkstation() {
               <Trash2 size={12} /> Remove
             </button>
           </div>
+        )}
+        {compilerNote && (
+          <p className="mt-3 text-xs text-[#00D9FF]/70 max-w-xl">{compilerNote}</p>
         )}
       </div>
 
@@ -257,6 +348,21 @@ export default function RiverWorkstation() {
               </div>
             )}
 
+            {state.compat && <CompatReportPanel report={state.compat} />}
+
+            <div className="flex flex-wrap gap-2">
+              <button onClick={saveLocal} className="px-4 py-2 bg-white/5 border border-white/10 text-white/70 rounded-lg text-xs hover:bg-white/10">
+                Save Local
+              </button>
+              <button onClick={savePublic} className="px-4 py-2 bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] rounded-lg text-xs hover:bg-[#00D9FF]/20">
+                Publish Public
+              </button>
+              <button onClick={savePrivate} className="px-4 py-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 rounded-lg text-xs hover:bg-purple-500/20">
+                Save to Vault
+              </button>
+            </div>
+            {saveStatus && <p className="text-xs text-white/50">{saveStatus}</p>}
+
             <div className="flex gap-3">
               <button onClick={applyToCharts} className="flex-1 py-3 bg-[#FFD700] text-black font-black uppercase tracking-widest rounded-xl hover:bg-[#FFE44D] transition-all active:scale-95">
                 Apply to All Charts
@@ -266,7 +372,7 @@ export default function RiverWorkstation() {
               </button>
             </div>
 
-            <RiverCatalogPanel />
+            <RiverCatalogPanel refreshToken={catalogRefresh} onApplied={(name) => setActiveName(name)} />
           </motion.div>
         )}
 
@@ -289,7 +395,7 @@ export default function RiverWorkstation() {
           <motion.div key="failed" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
             <div className="flex items-start gap-3 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
               {state.errorLine !== null ? <AlertTriangle size={20} className="text-yellow-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
-              <div>
+              <div className="flex-1">
                 <p className={`font-bold text-sm uppercase tracking-wider mb-2 ${state.errorLine !== null ? 'text-yellow-400' : 'text-red-400'}`}>
                   {state.errorLine !== null ? `Problem on line ${state.errorLine}` : 'Could Not Compile'}
                 </p>
@@ -299,6 +405,23 @@ export default function RiverWorkstation() {
                 )}
               </div>
             </div>
+
+            {state.compat && <CompatReportPanel report={state.compat} />}
+
+            {state.hints.length > 0 && (
+              <div className="bg-[#00D9FF]/5 border border-[#00D9FF]/20 rounded-xl p-5">
+                <p className="text-[#00D9FF] text-xs uppercase tracking-wider mb-2">Local assist — try these fixes</p>
+                <ul className="space-y-1">
+                  {state.hints.map((h, i) => (
+                    <li key={i} className="text-white/50 text-xs">{h}</li>
+                  ))}
+                </ul>
+                <button onClick={runMigration} className="mt-3 px-4 py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] rounded-lg text-xs hover:bg-[#FFD700]/20">
+                  Auto-migrate v4 patterns
+                </button>
+              </div>
+            )}
+
             <button onClick={reset} className="w-full py-3 bg-white/5 border border-white/10 text-white/50 rounded-xl hover:bg-white/10 transition-all">
               Try a Different File
             </button>
@@ -326,6 +449,34 @@ function SourceContext({ source, line }: { source: string; line: number }) {
           </p>
         );
       })}
+    </div>
+  );
+}
+
+/** Full compatibility report — all issues, not just the first error. */
+function CompatReportPanel({ report }: { report: CompatibilityReport }) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+      <p className="text-xs text-white/40 uppercase tracking-wider mb-2">
+        Compatibility report · {formatCompatSummary(report)}
+      </p>
+      <div className="space-y-1 max-h-48 overflow-y-auto">
+        {report.issues.map((issue, i) => (
+          <div
+            key={`${issue.code}-${issue.line}-${i}`}
+            className={`text-xs font-mono px-2 py-1 rounded border ${
+              issue.severity === 'error'
+                ? 'bg-red-500/10 border-red-500/20 text-red-300'
+                : issue.severity === 'warning'
+                  ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300/80'
+                  : 'bg-white/5 border-white/5 text-white/40'
+            }`}
+          >
+            {issue.line ? `L${issue.line}: ` : ''}{issue.message}
+            {issue.hint && <span className="block text-white/30 mt-0.5">{issue.hint}</span>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
