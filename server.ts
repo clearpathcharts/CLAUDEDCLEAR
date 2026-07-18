@@ -2013,16 +2013,24 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.send(enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = fs.readFileSync(destIndexPath, 'utf-8');
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           return res.send(enriched);
         } else {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -2074,11 +2082,18 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js')) {
+        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-          res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          if (filePath.endsWith('sw.js')) {
+            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          }
+          return;
+        }
+        // Vite emits content-hashed bundles under assets/ — safe to cache hard.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       }
     }));
