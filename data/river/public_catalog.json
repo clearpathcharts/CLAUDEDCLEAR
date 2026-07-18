@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Trading Anarchy Alpha (compat sample)",
+    "author": "Community",
+    "description": "Popular UT variant — request.security stripped for River compatibility.",
+    "pineSource": "// © forexanarchy\n\n//@version=5\nindicator(\"Trading Anarchy Alpha\", overlay=true)\n\n// Inputs\na = 1\nc = 10\nh = false\n\n\nxATR  = ta.atr(c)\nnLoss = a * xATR\n\nsrc = h ? close, timeframe.period, close, lookahead = barmerge.lookahead_off) : close\n\nxATRTrailingStop = 0.0\nxATRTrailingStop := (src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0) ? math.max(nz(xATRTrailingStop[1]), src - nLoss) :\n   (src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0) ? math.min(nz(xATRTrailingStop[1]), src + nLoss) :\n   (src > nz(xATRTrailingStop[1], 0) ? src - nLoss : src + nLoss)))\n \npos = 0   \npos :=  (src[1] < nz(xATRTrailingStop[1], 0) and src > nz(xATRTrailingStop[1], 0) ? 1 :\n   (src[1] > nz(xATRTrailingStop[1], 0) and src < nz(xATRTrailingStop[1], 0) ? -1 : nz(pos[1], 0))) \n   \nema   = ta.ema(src,1)\nabove = ta.crossover(ema, xATRTrailingStop)\nbelow = ta.crossover(xATRTrailingStop, ema)\n\nbuy  = src > xATRTrailingStop and above \nsell = src < xATRTrailingStop and below\n\nbarbuy  = src > xATRTrailingStop \nbarsell = src < xATRTrailingStop \n\nplotshape(buy,  title = \"Buy\",  text = 'Buy',  style = shape.labelup,   location = location.belowbar, color= color.rgb(2, 236, 253), textcolor = color.white, transp = 0, size = size.tiny)\nplotshape(sell, title = \"Sell\", text = 'Sell', style = shape.labeldown, location = location.abovebar, color= color.rgb(255, 1, 234),   textcolor = color.white, transp = 0, size = size.tiny)\n\nbarcolor(buy  ? color.rgb(255, 215, 0) : na)\nbarcolor(sell ? color.rgb(255, 215, 0)   : na)\n\nalertcondition(buy,  \"UT Long\",  \"UT Long\")\nalertcondition(sell, \"UT Short\", \"UT Short\")\n",
+    "pineVersion": 5,
+    "tags": [
+      "community",
+      "atr",
+      "signals"
+    ],
+    "id": "pub-9283055a97703afb-mrr05ckj",
+    "fingerprint": "9283055a97703afb",
+    "addedAt": 1784417569507,
+    "applyCount": 0
+  },
+  {
+    "name": "EMA Cross Overlay",
+    "author": "ClearPath",
+    "description": "Dual EMA crossover with triangle markers on price.",
+    "pineSource": "//@version=5\nindicator(\"EMA Cross Overlay\", overlay=true)\nfastLen = input.int(9, title=\"Fast EMA\")\nslowLen = input.int(21, title=\"Slow EMA\")\nfast = ta.ema(close, fastLen)\nslow = ta.ema(close, slowLen)\nplot(fast, title=\"Fast\", color=color.teal)\nplot(slow, title=\"Slow\", color=color.orange)\nplotshape(ta.crossover(fast, slow), title=\"Golden Cross\", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.tiny)\nplotshape(ta.crossunder(fast, slow), title=\"Death Cross\", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.tiny)\n",
+    "pineVersion": 5,
+    "tags": [
+      "ema",
+      "crossover",
+      "overlay"
+    ],
+    "id": "pub-b08b0b435853cd11-mrr05cki",
+    "fingerprint": "b08b0b435853cd11",
+    "addedAt": 1784417569506,
+    "applyCount": 0
+  },
+  {
+    "name": "River RSI Panel",
+    "author": "ClearPath",
+    "description": "Simple RSI oscillator pane with 30/70 guides.",
+    "pineSource": "//@version=5\nindicator(\"River RSI Panel\", overlay=false)\nlen = input.int(14, title=\"Length\")\nsrc = close\nrsi = ta.rsi(src, len)\nplot(rsi, title=\"RSI\", color=color.purple)\nhline(70, title=\"Overbought\", color=color.red)\nhline(30, title=\"Oversold\", color=color.green)\n",
+    "pineVersion": 5,
+    "tags": [
+      "momentum",
+      "rsi",
+      "oscillator"
+    ],
+    "id": "pub-f6b3abf13e77b35c-mrr05cki",
+    "fingerprint": "f6b3abf13e77b35c",
+    "addedAt": 1784417569506,
+    "applyCount": 0
+  },
+  {
+    "name": "Gold Bar — ATR Trailing Stop",
+    "author": "ClearPath",
+    "description": "Classic UT-style ATR trailing stop with buy/sell shapes and gold signal bars.",
+    "pineSource": "//@version=5\nindicator(\"Gold Bar — ATR Trailing Stop\", overlay=true)\na = input.float(1.0, title=\"Sensitivity\")\nc = input.int(10, title=\"ATR Period\")\nxATR = ta.atr(c)\nnLoss = a * xATR\nsrc = close\nvar float xATRTrailingStop = na\nxATRTrailingStop := if src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0)\n    math.max(nz(xATRTrailingStop[1]), src - nLoss)\nelse if src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0)\n    math.min(nz(xATRTrailingStop[1]), src + nLoss)\nelse if src > nz(xATRTrailingStop[1], 0)\n    src - nLoss\nelse\n    src + nLoss\nbuy = src > xATRTrailingStop and src[1] <= nz(xATRTrailingStop[1], 0)\nsell = src < xATRTrailingStop and src[1] >= nz(xATRTrailingStop[1], 0)\nplot(xATRTrailingStop, title=\"Trailing Stop\", color=color.orange, linewidth=2)\nplotshape(buy, title=\"Buy\", style=shape.labelup, location=location.belowbar, color=color.green, text=\"Buy\")\nplotshape(sell, title=\"Sell\", style=shape.labeldown, location=location.abovebar, color=color.red, text=\"Sell\")\nbarcolor(buy or sell ? #FFD700 : na)\n",
+    "pineVersion": 5,
+    "tags": [
+      "trend",
+      "atr",
+      "signals",
+      "overlay"
+    ],
+    "id": "pub-9488c56c99b29d41-mrr05cki",
+    "fingerprint": "9488c56c99b29d41",
+    "addedAt": 1784417569506,
+    "applyCount": 0
+  }
+]

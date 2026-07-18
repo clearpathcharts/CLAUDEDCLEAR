@@ -78,6 +78,7 @@ import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
 
 import { ClearNav } from './nav/ClearNav';
+import { getDefaultDashboardTab } from '../lib/platform/defaultTab';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 
@@ -560,7 +561,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         console.error('Failed to parse activeTab initial URL:', e);
       }
     }
-    return 'TheRiver';
+    return getDefaultDashboardTab();
   });
   const [showTicker, setShowTicker] = useState(() => localStorage.getItem('cp_show_ticker') !== 'false');
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');

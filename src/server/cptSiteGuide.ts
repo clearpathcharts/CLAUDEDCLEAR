@@ -81,6 +81,7 @@ What it does:
 - Lets them tune inputs, then apply the indicator so charts on the site can use it.
 - Has a catalog of community / saved indicators.
 - Includes a starter example (Gold Bar — ATR Trailing Stop) so they can try the flow before pasting their own code.
+- **River Genie** (AI co-pilot panel on the right): ask it to build a custom indicator, fix compile errors, or recommend scripts. It writes Pine in \`\`\`pine blocks; user clicks "Use in Workstation" or "Compile & Apply" to load it on charts.
 
 Typical steps to teach:
 1. Open THE RIVER from the top nav.

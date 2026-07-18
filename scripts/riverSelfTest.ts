@@ -341,6 +341,35 @@ plot(x)
   })());
 }
 
+// ---------------------------------------------------------------- PLATFORM LAYERS
+
+console.log("\n[7] Platform layers (compat, assist, catalog types)");
+{
+  const { buildCompatibilityReport, formatCompatSummary } = await import("../src/river/compat/report");
+  const { getLocalHints } = await import("../src/river/assist/localHints");
+  const { suggestPineMigration } = await import("../src/river/assist/pineMigrator");
+  const { getBundledCompilerManifest } = await import("../src/river/compiler/updateChecker");
+
+  const bad = buildCompatibilityReport(`//@version=5\nindicator("x")\nx = request.security("SPY", "D", close)\nplot(x)\n`);
+  check("compat report lists request.security", bad.issues.some(i => i.code === "request.security"));
+  check("compat summary formats", formatCompatSummary(bad).includes("% compatible"));
+
+  const hints = getLocalHints("study(\"T\")\nsecurity(sym, tf, close)", "unsupported");
+  check("local hints returned", hints.length > 0);
+
+  const mig = suggestPineMigration("//@version=4\nstudy(\"T\")\n");
+  check("migrator bumps version", mig.migrated.includes("//@version=5") && mig.changes.length > 0);
+
+  const manifest = getBundledCompilerManifest();
+  check("compiler manifest loaded", manifest.engine === "river-pine-interpreter" && manifest.version.length > 0);
+
+  const { extractPineCode, suggestIndicatorFileName } = await import("../src/river/assist/extractPineCode");
+  const sample = 'Here you go:\n```pine\n//@version=5\nindicator("Test")\nplot(close)\n```';
+  const extracted = extractPineCode(sample);
+  check("extract pine from fence", !!extracted && extracted.includes("indicator"));
+  check("suggest file name", suggestIndicatorFileName(extracted || "").endsWith(".pine"));
+}
+
 // -------------------------------------------------------------------- DONE
 
 console.log(`\n${passed} passed, ${failed} failed`);

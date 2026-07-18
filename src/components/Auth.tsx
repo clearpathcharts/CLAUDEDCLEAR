@@ -1016,10 +1016,16 @@ Not the other way around.`}
               <div className="mt-8">
                 <button
                   type="button"
-                  onClick={() => setEcosystemTvOpen(true)}
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('clearpath_active_tab', 'CpmsApk');
+                      window.location.hash = 'CpmsApk';
+                    } catch { /* ignore */ }
+                    setEcosystemTvOpen(true);
+                  }}
                   className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Tv size={14} /> TUNE IN NOW
+                  <Tv size={14} /> TUNE IN NOW — LIVE MARKETS
                 </button>
               </div>
             </div>
