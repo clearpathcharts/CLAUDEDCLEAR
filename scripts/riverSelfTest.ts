@@ -362,6 +362,12 @@ console.log("\n[7] Platform layers (compat, assist, catalog types)");
 
   const manifest = getBundledCompilerManifest();
   check("compiler manifest loaded", manifest.engine === "river-pine-interpreter" && manifest.version.length > 0);
+
+  const { extractPineCode, suggestIndicatorFileName } = await import("../src/river/assist/extractPineCode");
+  const sample = 'Here you go:\n```pine\n//@version=5\nindicator("Test")\nplot(close)\n```';
+  const extracted = extractPineCode(sample);
+  check("extract pine from fence", !!extracted && extracted.includes("indicator"));
+  check("suggest file name", suggestIndicatorFileName(extracted || "").endsWith(".pine"));
 }
 
 // -------------------------------------------------------------------- DONE

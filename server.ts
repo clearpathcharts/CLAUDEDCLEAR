@@ -71,6 +71,7 @@ import {
   savePrivateEntry,
   savePublicEntry,
 } from './src/server/riverCatalogService';
+import { chatRiverGenie } from './src/server/riverGenieService';
 
 const parser = new RSSParser();
 
@@ -488,6 +489,37 @@ async function startServer() {
     const ok = removePrivateEntry(user.uid, req.params.id);
     if (!ok) return res.status(404).json({ error: 'Not found.' });
     res.json({ ok: true });
+  });
+
+  // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
+  app.post('/api/river/genie/chat', moderateBodyFields('question', 'pineSource'), async (req, res) => {
+    const { question } = req.body || {};
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({ error: 'question required' });
+    }
+    try {
+      const result = await chatRiverGenie({
+        question,
+        userName: req.body?.userName,
+        conversationHistory: req.body?.conversationHistory,
+        pineSource: req.body?.pineSource,
+        compileError: req.body?.compileError,
+        errorLine: req.body?.errorLine,
+        activeIndicatorName: req.body?.activeIndicatorName,
+        compatSummary: req.body?.compatSummary,
+        compatIssues: req.body?.compatIssues,
+        localHints: req.body?.localHints,
+        chartContext: req.body?.chartContext,
+        catalogSnippet: req.body?.catalogSnippet,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[River Genie Error]', error);
+      res.status(500).json({
+        error: 'River Genie failed',
+        message: error.message || 'AI connection failure.',
+      });
+    }
   });
 
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {

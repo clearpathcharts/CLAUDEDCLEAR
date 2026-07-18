@@ -16,6 +16,7 @@ import { saveToCatalog, entryFromActive, publishToPublicCatalog } from '../river
 import { saveToPrivateVault } from '../river/storage/privateCatalog';
 import type { Value } from '../river/pine/interpreter';
 import RiverCatalogPanel from './RiverCatalogPanel';
+import RiverGeniePanel from './RiverGeniePanel';
 
 type WorkflowStep = 'upload' | 'compiling' | 'compiled' | 'failed' | 'applied';
 
@@ -93,7 +94,7 @@ export default function RiverWorkstation() {
     }).catch(() => { /* offline */ });
   }, []);
 
-  const processSource = useCallback((source: string, fileName: string) => {
+  const processSource = useCallback((source: string, fileName: string, autoApply = false) => {
     setState(s => ({ ...s, step: 'compiling', rawSource: source, fileName }));
     setTimeout(() => {
       const compat = buildCompatibilityReport(source);
@@ -101,9 +102,16 @@ export default function RiverWorkstation() {
       if (result.status === "ok") {
         const inputValues: Record<string, Value> = {};
         result.inputs.forEach(inp => { inputValues[inp.id] = inp.value; });
+        if (autoApply) {
+          setActiveRiverIndicator({
+            name: fileName || `${result.title}.pine`,
+            source,
+            inputs: inputValues,
+          });
+        }
         setState(s => ({
           ...s,
-          step: 'compiled',
+          step: autoApply ? 'applied' : 'compiled',
           compiled: result,
           inputValues,
           errorMessage: '',
@@ -226,8 +234,22 @@ export default function RiverWorkstation() {
     }
   }, [state]);
 
+  const genieContext = {
+    rawSource: state.rawSource,
+    fileName: state.fileName,
+    step: state.step,
+    compileError: state.errorMessage,
+    errorLine: state.errorLine,
+    compat: state.compat,
+    hints: state.hints,
+    activeIndicatorName: activeName,
+    compiledTitle: state.compiled?.title ?? null,
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-mono p-4 md:p-8" id="river-terminal-workstation">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
+        <div>
       <div className="mb-8 border-b border-white/10 pb-6">
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
@@ -429,6 +451,16 @@ export default function RiverWorkstation() {
         )}
 
       </AnimatePresence>
+        </div>
+
+        <div className="xl:sticky xl:top-4">
+          <RiverGeniePanel
+            context={genieContext}
+            onUseCode={(source, fileName) => processSource(source, fileName || 'river-genie.pine')}
+            onCompileAndApply={(source, fileName) => processSource(source, fileName || 'river-genie.pine', true)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
