@@ -11,6 +11,7 @@ import { CptBuddyWidget } from './components/CptBuddyWidget';
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
+const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 
 function isEncyclopediaPath(path: string): boolean {
   const p = path.toLowerCase().trim();
@@ -41,6 +42,11 @@ function isEducationPath(path: string): boolean {
   return p === '/education' || p === '/clearpath-education';
 }
 
+function isLiteracyPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/literacy' || p === '/literacy-os';
+}
+
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
@@ -54,6 +60,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
         </a>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+          <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
           <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
           <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
         </div>
@@ -178,6 +185,21 @@ export default function App() {
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
               else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
+            }}
+          />
+        </PublicLearnShell>
+      );
+    }
+    if (isLiteracyPath(currentPath)) {
+      return (
+        <PublicLearnShell>
+          <LiteracyOSPage
+            onNavigate={(tabId) => {
+              if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'ClearPathEducation') window.location.assign('/education');
+              else if (tabId === 'Yours') window.location.assign('/');
             }}
           />
         </PublicLearnShell>

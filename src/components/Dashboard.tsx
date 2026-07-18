@@ -114,6 +114,7 @@ import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
 import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
 const ClearPathEducationPage = lazy(() => import('../education/ClearPathEducation'));
+const LiteracyOSPage = lazy(() => import('../literacy/LiteracyOSPage'));
 
 function TabLoading() {
   return (
@@ -428,6 +429,11 @@ const TabContent = ({
           <ClearPathEducationPage onNavigate={setActiveTab} />
         </Suspense>
       );
+      case 'LiteracyOS': return (
+        <Suspense fallback={<TabLoading />}>
+          <LiteracyOSPage onNavigate={setActiveTab} onProfileChange={onProfileChange} />
+        </Suspense>
+      );
       case 'TrainingBoard': return (
         <div className="min-h-screen bg-[#0a0a1a] flex flex-col items-center justify-center p-4 rounded-3xl border border-[#00FFFF]/10" id="view_training_board">
           <div className="w-full max-w-5xl">
@@ -532,6 +538,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         }
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
+        }
+        if (path === '/literacy' || path === '/literacy-os') {
+          return 'LiteracyOS';
         }
         if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
           return 'EncyclopediaOfIndicators';
@@ -1079,6 +1088,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
+          hash === 'LiteracyOS' ||
           hash === 'ApiMonitor' || 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';

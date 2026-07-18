@@ -108,6 +108,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
+    },
+
+    {
       id: "Encyclopedia",
       icon: GraduationCap,
       label: "ENCYCLOPEDIA OF FINANCE",
@@ -141,7 +147,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
-      item.id === "ClearPathEducation";
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

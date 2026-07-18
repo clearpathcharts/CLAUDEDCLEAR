@@ -54,6 +54,11 @@ import {
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
 import {
+  fetchPageFingerprint,
+  runTruthSearch,
+  scoreMentorAnswer,
+} from './src/server/literacyService';
+import {
   PrivateAuthError,
   buildClientSessionUser,
   lookupPrivateUser,
@@ -1368,6 +1373,84 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // RSS Proxy API with timeout handling
+  // Literacy OS — page watch / truth search / mentor trust (education only)
+  app.post('/api/literacy/watch-check', moderateBodyFields('url'), async (req, res) => {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+    if (!url) {
+      return res.status(400).json({ error: 'url required' });
+    }
+    try {
+      await assertSafePublicUrl(url);
+    } catch (guardErr: any) {
+      console.warn('[Literacy Watch] Rejected unsafe URL:', url, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+    try {
+      const fingerprint = await fetchPageFingerprint(url);
+      res.json(fingerprint);
+    } catch (error: any) {
+      console.error('[Literacy Watch Error]', error);
+      res.status(502).json({ error: error?.message || 'Failed to fetch page' });
+    }
+  });
+
+  app.post('/api/literacy/truth-search', moderateBodyFields('query'), async (req, res) => {
+    const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
+    if (!query) {
+      return res.status(400).json({ error: 'query required' });
+    }
+    const vault = Array.isArray(req.body?.vault) ? req.body.vault : [];
+    const wiki = Array.isArray(req.body?.wiki) ? req.body.wiki : [];
+    const symbol = typeof req.body?.symbol === 'string' ? req.body.symbol.trim().toUpperCase() : '';
+
+    let marketNote: string | undefined;
+    if (symbol) {
+      const apiKey = getCleanTwelveDataApiKey();
+      if (apiKey) {
+        try {
+          const data = await getMarketQuote(symbol, apiKey);
+          const price = data?.price || data?.close;
+          if (price) {
+            marketNote = `Live verified quote for ${symbol}: ${price}` +
+              (data?.percent_change != null ? ` (${data.percent_change}%)` : '') +
+              '. Context for study only — not advice.';
+          }
+        } catch (e: any) {
+          marketNote = `Live quote for ${symbol} unavailable (${e?.message || 'upstream error'}). Searching vault/wiki only.`;
+        }
+      } else {
+        marketNote = `Live market data key not configured; searching vault/wiki only for ${symbol}.`;
+      }
+    }
+
+    try {
+      const result = runTruthSearch({ query, vault, wiki, marketNote });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[Literacy Truth Search Error]', error);
+      res.status(500).json({ error: error?.message || 'Truth search failed' });
+    }
+  });
+
+  app.post('/api/literacy/mentor-trust', moderateBodyFields('question', 'answer'), async (req, res) => {
+    const question = typeof req.body?.question === 'string' ? req.body.question : '';
+    const answer = typeof req.body?.answer === 'string' ? req.body.answer : '';
+    if (!question.trim() || !answer.trim()) {
+      return res.status(400).json({ error: 'question and answer required' });
+    }
+    const vaultNotes = Array.isArray(req.body?.vaultNotes)
+      ? req.body.vaultNotes.filter((n: unknown) => typeof n === 'string')
+      : [];
+    const marketContext = typeof req.body?.marketContext === 'string' ? req.body.marketContext : undefined;
+    try {
+      const result = scoreMentorAnswer({ question, answer, vaultNotes, marketContext });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[Literacy Mentor Trust Error]', error);
+      res.status(500).json({ error: error?.message || 'Trust scoring failed' });
+    }
+  });
+
   app.get('/api/rss', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {

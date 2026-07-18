@@ -59,8 +59,8 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
           <ArrowRight size={18} className="text-[#00E5FF] shrink-0" />
         </button>
 
-        {/* Bento grid: Board, Encyclopedia of Finance, Encyclopedia of Indicators, ClearPath Education */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Bento grid: Board, encyclopedias, Education, Literacy OS */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <button
             onClick={() => onTabChange('MeetTheBoard')}
             className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer"
@@ -99,6 +99,16 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
               <Book size={20} className="text-[#B026FF]" />
             </div>
             <div className="text-sm font-bold text-white">ClearPath education</div>
+          </button>
+
+          <button
+            onClick={() => onTabChange('LiteracyOS')}
+            className="bg-black/70 hover:bg-black/85 backdrop-blur-md border border-white/10 rounded-[20px] p-5 text-left transition-all cursor-pointer col-span-2 md:col-span-1"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[#FFD700]/10 flex items-center justify-center mb-3.5">
+              <Book size={20} className="text-[#FFD700]" />
+            </div>
+            <div className="text-sm font-bold text-white leading-tight">Literacy OS</div>
           </button>
         </div>
 
