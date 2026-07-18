@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">SPREAD INDICATOR</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">STATISTICAL SIGNAL</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="175.42857142857144" x2="772" y2="175.42857142857144" stroke="#FF2D95" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="171.42857142857144" fill="#FF2D95" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">+2σ</text>
+    <line x1="48" y1="440.57142857142856" x2="772" y2="440.57142857142856" stroke="#00FFD1" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="436.57142857142856" fill="#00FFD1" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">-2σ</text>
+    <line x1="48" y1="308" x2="772" y2="308" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">0</text>
+    <path d="M48.0,308.0 L62.8,253.8 L77.6,293.7 L92.3,341.4 L107.1,343.9 L121.9,332.7 L136.7,318.0 L151.4,328.3 L166.2,342.1 L181.0,301.2 L195.8,350.6 L210.5,356.8 L225.3,360.8 L240.1,299.4 L254.9,267.5 L269.6,225.6 L284.4,287.4 L299.2,264.3 L314.0,239.4 L328.7,236.9 L343.5,233.4 L358.3,215.1 L373.1,245.6 L387.8,249.1 L402.6,240.0 L417.4,288.5 L432.2,246.1 L446.9,231.9 L461.7,213.9 L476.5,201.7 L491.3,184.3 L506.0,184.2 L520.8,198.2 L535.6,196.9 L550.4,169.3 L565.1,174.6 L579.9,148.5 L594.7,194.7 L609.5,257.3 L624.2,278.2 L639.0,323.7 L653.8,315.5 L668.6,274.5 L683.3,249.8 L698.1,248.6 L712.9,277.1 L727.7,251.9 L742.4,244.7 L757.2,272.4 L772.0,236.7" fill="none" stroke="#FFF000" stroke-width="2.5"/>
+  
+</svg>

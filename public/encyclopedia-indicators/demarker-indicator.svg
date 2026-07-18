@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">DEMARKER INDICATOR</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">OSCILLATOR PANEL</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="215.20000000000005" x2="772" y2="215.20000000000005" stroke="#FF2D95" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="211.20000000000005" fill="#FF2D95" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">70</text>
+    <line x1="48" y1="400.8" x2="772" y2="400.8" stroke="#00FFD1" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="396.8" fill="#00FFD1" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">30</text>
+    <line x1="48" y1="308" x2="772" y2="308" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">50</text>
+    <path d="M48.0,308.0 L60.3,285.2 L72.5,268.8 L84.8,283.9 L97.1,285.5 L109.4,264.4 L121.6,309.1 L133.9,344.7 L146.2,323.5 L158.4,284.6 L170.7,247.1 L183.0,244.6 L195.3,236.3 L207.5,268.2 L219.8,254.9 L232.1,266.9 L244.3,286.1 L256.6,318.0 L268.9,332.4 L281.2,317.2 L293.4,352.7 L305.7,353.8 L318.0,306.3 L330.2,281.8 L342.5,308.2 L354.8,312.3 L367.1,295.4 L379.3,302.8 L391.6,326.5 L403.9,278.8 L416.1,247.6 L428.4,288.9 L440.7,271.7 L452.9,301.2 L465.2,318.9 L477.5,312.3 L489.8,284.5 L502.0,305.1 L514.3,327.0 L526.6,339.3 L538.8,375.2 L551.1,371.0 L563.4,397.7 L575.7,422.9 L587.9,368.6 L600.2,325.6 L612.5,361.9 L624.7,376.5 L637.0,363.5 L649.3,383.6 L661.6,345.1 L673.8,353.5 L686.1,350.0 L698.4,324.5 L710.6,357.6 L722.9,335.5 L735.2,291.2 L747.5,278.3 L759.7,318.4 L772.0,326.0 L772.0,308.0 L759.7,308.0 L747.5,308.0 L735.2,308.0 L722.9,308.0 L710.6,308.0 L698.4,308.0 L686.1,308.0 L673.8,308.0 L661.6,308.0 L649.3,308.0 L637.0,308.0 L624.7,308.0 L612.5,308.0 L600.2,308.0 L587.9,308.0 L575.7,308.0 L563.4,308.0 L551.1,308.0 L538.8,308.0 L526.6,308.0 L514.3,308.0 L502.0,308.0 L489.8,308.0 L477.5,308.0 L465.2,308.0 L452.9,308.0 L440.7,308.0 L428.4,308.0 L416.1,308.0 L403.9,308.0 L391.6,308.0 L379.3,308.0 L367.1,308.0 L354.8,308.0 L342.5,308.0 L330.2,308.0 L318.0,308.0 L305.7,308.0 L293.4,308.0 L281.2,308.0 L268.9,308.0 L256.6,308.0 L244.3,308.0 L232.1,308.0 L219.8,308.0 L207.5,308.0 L195.3,308.0 L183.0,308.0 L170.7,308.0 L158.4,308.0 L146.2,308.0 L133.9,308.0 L121.6,308.0 L109.4,308.0 L97.1,308.0 L84.8,308.0 L72.5,308.0 L60.3,308.0 L48.0,308.0 Z" fill="url(#magentaFill)" opacity="0.5"/>
+    <path d="M48.0,308.0 L60.3,285.2 L72.5,268.8 L84.8,283.9 L97.1,285.5 L109.4,264.4 L121.6,309.1 L133.9,344.7 L146.2,323.5 L158.4,284.6 L170.7,247.1 L183.0,244.6 L195.3,236.3 L207.5,268.2 L219.8,254.9 L232.1,266.9 L244.3,286.1 L256.6,318.0 L268.9,332.4 L281.2,317.2 L293.4,352.7 L305.7,353.8 L318.0,306.3 L330.2,281.8 L342.5,308.2 L354.8,312.3 L367.1,295.4 L379.3,302.8 L391.6,326.5 L403.9,278.8 L416.1,247.6 L428.4,288.9 L440.7,271.7 L452.9,301.2 L465.2,318.9 L477.5,312.3 L489.8,284.5 L502.0,305.1 L514.3,327.0 L526.6,339.3 L538.8,375.2 L551.1,371.0 L563.4,397.7 L575.7,422.9 L587.9,368.6 L600.2,325.6 L612.5,361.9 L624.7,376.5 L637.0,363.5 L649.3,383.6 L661.6,345.1 L673.8,353.5 L686.1,350.0 L698.4,324.5 L710.6,357.6 L722.9,335.5 L735.2,291.2 L747.5,278.3 L759.7,318.4 L772.0,326.0" fill="none" stroke="#D946EF" stroke-width="2.5"/>
+    
+  
+</svg>
