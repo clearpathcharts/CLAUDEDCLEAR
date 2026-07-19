@@ -77,10 +77,9 @@ function toPublic(user: PrivateUserRecord): PublicPrivateUser {
   };
 }
 
+/** Existence check only — never leak displayName (email enumeration hardening). */
 export async function lookupPrivateUser(email: string): Promise<{
   exists: boolean;
-  displayName?: string;
-  email?: string;
 }> {
   const normalized = normalizeEmail(email);
   if (!normalized || !normalized.includes('@')) {
@@ -88,8 +87,7 @@ export async function lookupPrivateUser(email: string): Promise<{
   }
   const users = readUsers();
   const found = users.find((u) => u.email === normalized);
-  if (!found) return { exists: false, email: normalized };
-  return { exists: true, displayName: found.displayName, email: found.email };
+  return { exists: Boolean(found) };
 }
 
 export async function registerPrivateUser(input: {

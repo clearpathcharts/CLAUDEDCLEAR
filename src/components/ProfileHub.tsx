@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { useAuth } from "../contexts/FirebaseContext";
 import TermsAndConditions from "./TermsAndConditions";
 import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
-import MarketDiagnostics from "./MarketDiagnostics";
+
+const MarketDiagnostics = lazy(() => import("./MarketDiagnostics"));
 
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
@@ -667,7 +668,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
               Active zero-trust diagnostic audit stream and live server state metrics. Intended exclusively for executive viewing.
             </p>
             <div className="border border-white/5 bg-black/60 rounded-2xl p-4 md:p-6 mb-4">
-              <MarketDiagnostics />
+              <Suspense fallback={<div className="text-xs text-zinc-500 font-mono p-4">Loading diagnostics...</div>}>
+                <MarketDiagnostics />
+              </Suspense>
             </div>
           </div>
         )}

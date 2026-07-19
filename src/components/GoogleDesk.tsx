@@ -10,6 +10,9 @@ import { getAuth, db, doc, setDoc, collection, getDocs } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function GoogleDesk() {
+  const [idToken, setIdToken] = useState<string | null>(() => {
+    return localStorage.getItem('google_workspace_id_token');
+  });
   const [accessToken, setAccessToken] = useState<string | null>(() => {
     return localStorage.getItem('google_workspace_access_token');
   });
@@ -17,6 +20,24 @@ export default function GoogleDesk() {
     const saved = localStorage.getItem('google_workspace_user');
     return saved ? JSON.parse(saved) : null;
   });
+
+  const workspaceAuthHeaders = async (): Promise<Record<string, string>> => {
+    let token = idToken;
+    try {
+      const authInstance = getAuth();
+      const current = authInstance?.currentUser;
+      if (current) {
+        token = await current.getIdToken(/* forceRefresh */ false);
+        setIdToken(token);
+        localStorage.setItem('google_workspace_id_token', token);
+      }
+    } catch {
+      /* keep cached token */
+    }
+    return token
+      ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      : { 'Content-Type': 'application/json' };
+  };
 
   // Global loading states
   const [loading, setLoading] = useState(false);
@@ -86,10 +107,18 @@ export default function GoogleDesk() {
       const credential = GoogleAuthProvider.credentialFromResult(result);
       if (credential && credential.accessToken) {
         const token = credential.accessToken;
+        const firebaseIdToken = await result.user.getIdToken();
         setAccessToken(token);
+        setIdToken(firebaseIdToken);
         setGoogleUser(result.user);
         localStorage.setItem('google_workspace_access_token', token);
-        localStorage.setItem('google_workspace_user', JSON.stringify(result.user));
+        localStorage.setItem('google_workspace_id_token', firebaseIdToken);
+        localStorage.setItem('google_workspace_user', JSON.stringify({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+        }));
       } else {
         throw new Error('No OAuth access token was returned by the Google login popup.');
       }
@@ -103,8 +132,10 @@ export default function GoogleDesk() {
 
   const handleDisconnect = () => {
     setAccessToken(null);
+    setIdToken(null);
     setGoogleUser(null);
     localStorage.removeItem('google_workspace_access_token');
+    localStorage.removeItem('google_workspace_id_token');
     localStorage.removeItem('google_workspace_user');
   };
 
@@ -249,13 +280,20 @@ export default function GoogleDesk() {
     if (!googleUser || !googleUser.uid) return;
     setCloudSqlLoading(true);
     try {
-      const res = await fetch(`/api/workspace/assets?uid=${googleUser.uid}`);
+      const headers = await workspaceAuthHeaders();
+      const res = await fetch(`/api/workspace/assets`, {
+        credentials: 'include',
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
         setCloudSqlAssets(data.assets || []);
 
         // Also fetch notes for saved assets
-        const notesRes = await fetch(`/api/workspace/notes?uid=${googleUser.uid}`);
+        const notesRes = await fetch(`/api/workspace/notes`, {
+          credentials: 'include',
+          headers,
+        });
         if (notesRes.ok) {
           const notesData = await notesRes.json();
           const notesMap: { [key: string]: string } = {};
@@ -264,6 +302,8 @@ export default function GoogleDesk() {
           });
           setCloudSqlNotes(notesMap);
         }
+      } else if (res.status === 401) {
+        setErrorMsg('Workspace SQL requires a verified Google sign-in (Firebase ID token). Reconnect Google Desk.');
       }
     } catch (err) {
       console.error('Failed to load SQL assets:', err);
@@ -276,11 +316,12 @@ export default function GoogleDesk() {
     if (!googleUser) return;
     setCloudSqlLoading(true);
     try {
+      const headers = await workspaceAuthHeaders();
       const res = await fetch('/api/workspace/assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
-          uid: googleUser.uid,
           email: googleUser.email,
           assetId,
           title,
@@ -303,11 +344,12 @@ export default function GoogleDesk() {
   const handleSaveNote = async (associatedId: string, content: string) => {
     if (!googleUser) return;
     try {
+      const headers = await workspaceAuthHeaders();
       const res = await fetch('/api/workspace/notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
-          uid: googleUser.uid,
           associatedId,
           content
         })
@@ -322,8 +364,11 @@ export default function GoogleDesk() {
 
   const handleDeleteCloudSqlAsset = async (sqlAssetId: number) => {
     try {
+      const headers = await workspaceAuthHeaders();
       const res = await fetch(`/api/workspace/assets/${sqlAssetId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
+        headers,
       });
       if (res.ok) {
         await fetchCloudSqlAssets();

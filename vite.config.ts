@@ -38,7 +38,27 @@ export default defineConfig(({mode}) => {
               if (id.includes('framer-motion') || id.includes('motion')) {
                 return 'motion-vendor';
               }
+              if (id.includes('firebase')) {
+                return 'firebase-vendor';
+              }
+              if (
+                id.includes('lightweight-charts') ||
+                id.includes('chart.js') ||
+                id.includes('react-chartjs-2') ||
+                id.includes('recharts')
+              ) {
+                return 'charts-vendor';
+              }
               return 'common-vendor';
+            }
+            if (id.includes('/src/components/encyclopedia/') || id.includes('/src/components/EncyclopediaOfIndicators')) {
+              return 'encyclopedia-vendor';
+            }
+            if (id.includes('/src/literacy/')) {
+              return 'literacy-vendor';
+            }
+            if (id.includes('/src/education/')) {
+              return 'education-vendor';
             }
           }
         }
