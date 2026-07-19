@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+/* Keyboard focus — visible without relying on mouse hover */
+:focus-visible {
+  outline: 2px solid var(--cpt-cyan, #00ffff);
+  outline-offset: 2px;
+}
+
+/* Skip link — first focusable control on Auth / public shells */
+.cp-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  background: #00ffff;
+  color: #050505;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.15s ease;
+}
+.cp-skip-link:focus,
+.cp-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 :root {
   --lava-supernova: #ff0000;
   --lava-magma: #ff4500;

@@ -54,31 +54,38 @@ function isLiteracyPath(path: string): boolean {
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
-      <div className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
-        <a
-          href="/"
-          className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
-          style={{ fontFamily: "'Cinzel', serif" }}
-        >
-          ← ClearPath Home
-        </a>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
-          <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
-          <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
-          <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
-          <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
-        </div>
-      </div>
-      <Suspense
-        fallback={
-          <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
-            Loading learning desk...
+      <a href="#learn-main" className="cp-skip-link">
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3">
+        <nav aria-label="Learning desks" className="flex items-center justify-between gap-3">
+          <a
+            href="/"
+            className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            ← ClearPath Home
+          </a>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+            <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
+            <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
+            <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
+            <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
           </div>
-        }
-      >
-        {children}
-      </Suspense>
+        </nav>
+      </header>
+      <main id="learn-main" tabIndex={-1} className="outline-none">
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+              Loading learning desk...
+            </div>
+          }
+        >
+          {children}
+        </Suspense>
+      </main>
     </div>
   );
 }

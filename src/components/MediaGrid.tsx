@@ -62,9 +62,18 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
         <MediaTile id="communities-tile">
           <div className="flex flex-col h-auto justify-start gap-4">
             {/* Elegant, high-end Segmented Segment Swapper for Social Channels */}
-            <div className="flex items-center justify-between p-1 bg-black/60 rounded-xl border border-white/5 shadow-inner">
+            <div
+              role="tablist"
+              aria-label="Social channel"
+              className="flex items-center justify-between p-1 bg-black/60 rounded-xl border border-white/5 shadow-inner"
+            >
               <button
                 type="button"
+                role="tab"
+                id="media-tab-facebook"
+                aria-selected={activeTab === 'facebook'}
+                aria-controls="media-panel-social"
+                tabIndex={activeTab === 'facebook' ? 0 : -1}
                 onClick={() => setActiveTab('facebook')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'facebook'
@@ -76,6 +85,11 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
               </button>
               <button
                 type="button"
+                role="tab"
+                id="media-tab-instagram"
+                aria-selected={activeTab === 'instagram'}
+                aria-controls="media-panel-social"
+                tabIndex={activeTab === 'instagram' ? 0 : -1}
                 onClick={() => setActiveTab('instagram')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'instagram'
@@ -88,7 +102,12 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
             </div>
 
             {/* Render the selected community component */}
-            <div className="flex-1 flex flex-col justify-start">
+            <div
+              id="media-panel-social"
+              role="tabpanel"
+              aria-labelledby={activeTab === 'facebook' ? 'media-tab-facebook' : 'media-tab-instagram'}
+              className="flex-1 flex flex-col justify-start"
+            >
               {activeTab === 'facebook' ? <FacebookIntel /> : <InstagramSignals />}
             </div>
           </div>

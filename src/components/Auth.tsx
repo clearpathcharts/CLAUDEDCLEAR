@@ -16,6 +16,7 @@ import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
+import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -405,12 +406,30 @@ export default function Auth() {
     return () => clearInterval(cycle);
   }, [announcements.length]);
 
-  // Focus input automatically when Board Modal opens
-  useEffect(() => {
-    if (boardModalOpen && passcodeRef.current) {
-      setTimeout(() => passcodeRef.current?.focus(), 150);
-    }
-  }, [boardModalOpen]);
+  const boardDialogRef = useRef<HTMLDivElement>(null);
+  const demoDialogRef = useRef<HTMLDivElement>(null);
+  const tvDialogRef = useRef<HTMLDivElement>(null);
+  const ywcDialogRef = useRef<HTMLDivElement>(null);
+  const anyModalOpen =
+    boardModalOpen || demoOpen || ecosystemTvOpen || ecosystemYwcOpen || privateLoginOpen;
+
+  useAccessibleDialog(boardDialogRef, {
+    open: boardModalOpen,
+    onClose: () => setBoardModalOpen(false),
+    initialFocusRef: passcodeRef,
+  });
+  useAccessibleDialog(demoDialogRef, {
+    open: demoOpen,
+    onClose: () => setDemoOpen(false),
+  });
+  useAccessibleDialog(tvDialogRef, {
+    open: ecosystemTvOpen,
+    onClose: () => setEcosystemTvOpen(false),
+  });
+  useAccessibleDialog(ywcDialogRef, {
+    open: ecosystemYwcOpen,
+    onClose: () => setEcosystemYwcOpen(false),
+  });
 
   // Cryptographic passcode quick checks
   useEffect(() => {
@@ -531,7 +550,10 @@ export default function Auth() {
 
   return (
     <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block select-none">
-      
+      <a href="#main-content" className="cp-skip-link">
+        Skip to main content
+      </a>
+
       {/* GLOBAL HELPER COLOR STYLE INJECTIONS */}
       <style>{`
         :root {
@@ -580,10 +602,11 @@ export default function Auth() {
       {/* ==========================================
           3. NAVIGATION HEADER
           ========================================== */}
-      <nav className="sticky top-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
+      <nav aria-label="Primary" className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* Logo element matches specified clearpath branding icon */}
-          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]">
+          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]" aria-hidden="true">
             <ShieldCheck className="text-white w-5 h-5" />
           </div>
           <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-lg uppercase">
@@ -636,6 +659,14 @@ export default function Auth() {
           </button>
         </div>
       </nav>
+      </header>
+
+      <main
+        id="main-content"
+        tabIndex={-1}
+        aria-hidden={anyModalOpen || undefined}
+        className="relative outline-none"
+      >
 
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
@@ -991,6 +1022,7 @@ Not the other way around.`}
                   <button
                     key={b.id}
                     type="button"
+                    aria-pressed={activeTvChannel === b.id}
                     onClick={() => setActiveTvChannel(b.id as any)}
                     className={`px-1 py-2 sm:py-2.5 border border-zinc-800 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                       activeTvChannel === b.id ? b.activeBg : `text-zinc-400 ${b.bg}`
@@ -1078,6 +1110,8 @@ Not the other way around.`}
               <div className="mt-4 border-t border-zinc-900/60 pt-3 text-left">
                 <button
                   type="button"
+                  aria-expanded={ecosystemCommOpen}
+                  aria-controls="custom-swarm-seed-panel"
                   onClick={() => setEcosystemCommOpen(!ecosystemCommOpen)}
                   className="text-[9px] font-mono font-bold text-zinc-500 hover:text-[#FF7B00] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
@@ -1086,6 +1120,7 @@ Not the other way around.`}
                 
                 {ecosystemCommOpen && (
                   <motion.div 
+                    id="custom-swarm-seed-panel"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     className="mt-3 space-y-2 bg-black/40 border border-[#FF7B00]/15 p-2.5 rounded-xl text-left"
@@ -1713,19 +1748,25 @@ Not the other way around.`}
               >
                 <button
                   type="button"
+                  id={`faq-trigger-${i}`}
+                  aria-expanded={openFaq === i}
+                  aria-controls={`faq-panel-${i}`}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full py-5 px-6 flex items-center justify-between text-left focus:outline-none hover:bg-neutral-900/20 cursor-pointer"
+                  className="w-full py-5 px-6 flex items-center justify-between text-left hover:bg-neutral-900/20 cursor-pointer focus-visible:bg-neutral-900/30"
                 >
                   <span className="text-sm font-bold text-[#FF4500] uppercase tracking-wide text-shadow-[0_0_8px_rgba(255,69,0,0.5)]">
                     {f.q}
                   </span>
-                  <span className="text-[#FF4500] text-lg font-bold">
+                  <span className="text-[#FF4500] text-lg font-bold" aria-hidden="true">
                     {openFaq === i ? '−' : '+'}
                   </span>
                 </button>
                 <AnimatePresence>
                   {openFaq === i && (
                     <motion.div
+                      id={`faq-panel-${i}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${i}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -1744,10 +1785,15 @@ Not the other way around.`}
         </div>
       </section>
 
+      </main>
+
       {/* ==========================================
           11. LEGAL DISCLAIMER FOOTER
           ========================================== */}
-      <footer className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center">
+      <footer
+        className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center"
+        aria-hidden={anyModalOpen || undefined}
+      >
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-2">
             <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-sm uppercase">
@@ -1796,28 +1842,35 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setBoardModalOpen(false)}
               className="absolute inset-0 bg-[#050505]/90 backdrop-blur-lg cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={boardDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="board-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6 outline-none"
             >
               {/* Close Button Trigger */}
               <button
                 type="button"
                 onClick={() => setBoardModalOpen(false)}
+                aria-label="Close board verification"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="text-center space-y-2">
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   BOARD CREDENTIAL AUDIT
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                <h3 id="board-dialog-title" className="text-xl font-black text-white uppercase tracking-wide">
                   Board Verification
                 </h3>
                 <p className="text-[11px] text-zinc-400 max-w-xs mx-auto leading-normal">
@@ -1858,9 +1911,11 @@ Not the other way around.`}
                     <button
                       type="button"
                       onClick={() => setShowPasscode(!showPasscode)}
+                      aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                      aria-pressed={showPasscode}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
                     >
-                      {showPasscode ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPasscode ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1902,27 +1957,34 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setDemoOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={demoDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="demo-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setDemoOpen(false)}
+                aria-label="Close showcase"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-1">
                 <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.2em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15 inline-block">
                   ACADEMIC PREVIEW DECK
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">
+                <h3 id="demo-dialog-title" className="text-xl font-black text-white uppercase tracking-wider">
                   ClearPath Trader Showcase
                 </h3>
                 <p className="text-xs text-zinc-400">
@@ -2003,20 +2065,27 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemTvOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={tvDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="tv-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemTvOpen(false)}
+                aria-label="Close TV broadcast deck"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="flex flex-col md:flex-row gap-6">
@@ -2035,7 +2104,7 @@ Not the other way around.`}
                     <span className="text-[10px] font-mono text-[#FF1493] uppercase tracking-widest font-black bg-[#FF1493]/5 border border-[#FF1493]/20 px-2 py-0.5 rounded-full inline-block">
                       {activeTvChannel === 'review' ? 'MACRO DIRECT' : activeTvChannel === 'liquidity' ? 'LIQUIDITY FEED' : 'VISUAL CLASSROOM'}
                     </span>
-                    <h3 className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
+                    <h3 id="tv-dialog-title" className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
                       {activeTvChannel === 'review' 
                         ? 'Federal Reserve Bond Buyback Rates Adjustments'
                         : activeTvChannel === 'liquidity'
@@ -2072,6 +2141,7 @@ Not the other way around.`}
                         <button
                           key={ch.id}
                           type="button"
+                          aria-pressed={activeTvChannel === ch.id}
                           onClick={() => setActiveTvChannel(ch.id as any)}
                           className={`w-full p-3 text-left border rounded-2xl transition-all cursor-pointer ${
                             activeTvChannel === ch.id 
@@ -2123,27 +2193,34 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemYwcOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={ywcDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ywc-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemYwcOpen(false)}
+                aria-label="Close Your World Connected terminal"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-2">
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   INFORMATION COSMIC ENGINE
                 </span>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                <h3 id="ywc-dialog-title" className="text-2xl font-black text-white uppercase tracking-tight">
                   Your World Connected™ Terminal
                 </h3>
                 <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
@@ -2166,6 +2243,7 @@ Not the other way around.`}
                       <button
                         key={st.id}
                         type="button"
+                        aria-pressed={adaptationMode === st.id}
                         onClick={() => setAdaptationMode(st.id as any)}
                         className={`px-4 py-2 sm:py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                           adaptationMode === st.id 
