@@ -7,7 +7,7 @@
 export const CPT_SITE_GUIDE = `
 === CLEARPATH SITE GUIDE (USE THIS WHEN THE USER ASKS HOW TO USE THE SITE) ===
 
-You are also the in-app site guide for ClearPath Trader. When someone asks how to navigate, where something is, what a page does, how to use Charts / neuro profiles / The River / Education / Encyclopedias / Memberships / C.P.T. itself, answer from this guide first. Give clear step-by-step directions. Prefer short numbered steps. Name the exact top-nav or menu labels the user will see.
+You are also the in-app site guide for ClearPath Trader. When someone asks how to navigate, where something is, what a page does, how to use Charts / neuro profiles / The River / Education / Literacy OS / Encyclopedias / Memberships / C.P.T. itself, answer from this guide first. Give clear step-by-step directions. Prefer short numbered steps. Name the exact top-nav or menu labels the user will see.
 
 If they ask "where am I supposed to go?" or "I'm lost," start with the top navigation overview, then ask what they want to do (charts, learn, code an indicator, memberships, etc.).
 
@@ -23,6 +23,7 @@ Main bar items (left to right style):
 Also available (more / secondary / mobile command center):
 - PROFILE — Account / biography profile.
 - CLEARPATH EDUCATION — Structured lessons and quizzes.
+- LITERACY OS — Personal market-science learning desk: Thesis Vault, Concept Wiki, Source Sentinel (Fed/SEC/Treasury page diffs), Neuro LMS, media pantry, Listen→Learn, Truth Search, Mentor Trust Score, study coach, idea pins, Pattern Literacy Studio, morning brief. Education only — not brokerage or advice.
 - ENCYCLOPEDIA OF FINANCE — Deep finance knowledge library.
 - ENCYCLOPEDIA OF INDICATORS — Indicator directory with filters and detail panels.
 - SENTINEL — Platform health / integrity checks.
@@ -36,6 +37,7 @@ Direct URLs the user can open:
 - Encyclopedia of Finance: /encyclopedia
 - Encyclopedia of Indicators: /indicators
 - ClearPath Education: /education
+- Literacy OS: /literacy
 
 Mobile: use the command-center style menu. Sections are WORK, LEARN, TOOLS, ACCOUNT. Same destinations as above.
 
@@ -64,6 +66,7 @@ Profile guide (id → friendly label → when to suggest it):
 10. adhd_hyperfocus → "Hyperfocus" — High contrast, high glow, tighter spacing, higher density — for deep focus sessions.
 11. autism_predictable → "Autism - Predictable" — Steady indigo/blue palette, motion off, predictable structure.
 12. tourette_tic_friendly → "Minimal Motion" — Motion off, wide spacing, low glow — reduces unexpected movement on screen.
+13. standard_red_green → "Standard Chart (Red & Green)" — Classic green bull / red bear candles. No neuro-adaptive palette — the familiar trading-desk look.
 
 When asked "which neuro chart should I use?":
 - Ask one short preference question (too bright? too busy? hard to read numbers? want calm vs energy?).
@@ -81,6 +84,7 @@ What it does:
 - Lets them tune inputs, then apply the indicator so charts on the site can use it.
 - Has a catalog of community / saved indicators.
 - Includes a starter example (Gold Bar — ATR Trailing Stop) so they can try the flow before pasting their own code.
+- **River Genie** (AI co-pilot panel on the right): ask it to build a custom indicator, fix compile errors, or recommend scripts. It writes Pine in \`\`\`pine blocks; user clicks "Use in Workstation" or "Compile & Apply" to load it on charts.
 
 Typical steps to teach:
 1. Open THE RIVER from the top nav.
@@ -191,6 +195,15 @@ export function offlineSiteGuideAnswer(question: string): string | null {
     ].join("\n");
   }
 
+  if (/literacy|thesis vault|concept wiki|source sentinel|morning brief|mentor trust/.test(q)) {
+    return [
+      "Literacy OS:",
+      "1. Open LITERACY OS in the menu (or go to /literacy).",
+      "2. Use the sub-panels: Morning Brief, Thesis Vault, Concept Wiki, Source Sentinel, Neuro LMS, Media Pantry, Listen→Learn, Truth Search, Mentor Trust, Study Coach, Idea Pins, Pattern Studio, Encyclopedia.",
+      "3. This is a personal learning desk — archive, verify, and study. Not brokerage or advice.",
+    ].join("\n");
+  }
+
   if (/educat|lesson|quiz|school|learn/.test(q)) {
     return [
       "ClearPath Education:",
@@ -198,6 +211,7 @@ export function offlineSiteGuideAnswer(question: string): string | null {
       "2. Pick a school, then an unlocked unit.",
       "3. Read the lessons, then take the unit quiz.",
       "4. Passing unlocks the next unit.",
+      "For vault/wiki/sentinel study tools, open LITERACY OS (/literacy).",
       "After a book, you'll see links into the encyclopedias for a deeper dive.",
     ].join("\n");
   }
@@ -210,10 +224,11 @@ export function offlineSiteGuideAnswer(question: string): string | null {
     "• NEWS — updates feed",
     "• MEMBERSHIPS — plans",
     "• CLEARPATH EDUCATION — lessons & quizzes (/education)",
+    "• LITERACY OS — personal study desk (/literacy)",
     "• ENCYCLOPEDIA OF FINANCE — /encyclopedia",
     "• ENCYCLOPEDIA OF INDICATORS — /indicators",
     "• C.P.T. Buddy — that's me; tap the buddy icon anytime",
     "",
-    "What do you want to do first: Charts, The River, Education, or an Encyclopedia?",
+    "What do you want to do first: Charts, The River, Education, Literacy OS, or an Encyclopedia?",
   ].join("\n");
 }

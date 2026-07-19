@@ -3,7 +3,7 @@ import {
   Sliders, Search, RotateCcw, Frown, Info, Calculator, Tag, ArrowDown, 
   TriangleAlert, X, Check, Star, StarHalf, ChevronLeft, Layers, PlayCircle, BookOpen, Activity, ArrowRight
 } from 'lucide-react';
-import { buildIndicators } from './indicatorsData';
+import { buildIndicators, indicatorImageSlug } from './indicatorsData';
 
 const LS_KEY = "indicator_directory_v1";
 
@@ -259,12 +259,13 @@ export default function EncyclopediaOfIndicators() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-5 gap-4">
                 {filteredIndicators.map(p => {
                   const isActive = p.id === state.selectedIndicatorId;
+                  const permalink = `/indicators/${indicatorImageSlug(p.name)}`;
                   return (
-                    <article 
+                    <a
                       key={p.id}
-                      onClick={() => updateState({ selectedIndicatorId: isActive ? "" : p.id })}
+                      href={permalink}
                       className={`
-                        relative flex flex-col border rounded-2xl overflow-hidden cursor-pointer shadow-[0_12px_26px_rgba(0,0,0,0.5)] transition-all bg-[linear-gradient(135deg,#071226_0%,#0A1C3A_35%,rgba(0,182,255,0.15)_65%,rgba(0,255,209,0.1)_100%)]
+                        relative flex flex-col border rounded-2xl overflow-hidden cursor-pointer shadow-[0_12px_26px_rgba(0,0,0,0.5)] transition-all no-underline bg-[linear-gradient(135deg,#071226_0%,#0A1C3A_35%,rgba(0,182,255,0.15)_65%,rgba(0,255,209,0.1)_100%)]
                         ${isActive ? "border-[#00FFD1] shadow-[0_0_20px_rgba(0,255,209,0.3)] bg-gradient-to-r from-[#071226] to-[#0A1C3A]" : "border-[#00B6FF]/30 hover:-translate-y-0.5 hover:border-[#00B6FF]/70 hover:shadow-[0_0_15px_rgba(0,182,255,0.3)]"}
                       `}
                     >
@@ -295,7 +296,7 @@ export default function EncyclopediaOfIndicators() {
                             </div>
                          </div>
                       </div>
-                    </article>
+                    </a>
                   )
                 })}
               </div>

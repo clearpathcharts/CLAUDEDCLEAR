@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Mail, User, Eye, EyeOff, X, Shield, ArrowRight, KeyRound } from 'lucide-react';
 import {
@@ -6,6 +6,7 @@ import {
   loginPrivateAccount,
   registerPrivateAccount,
 } from '../api/privateAuth';
+import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 type Step = 'identify' | 'login' | 'register';
 
@@ -33,6 +34,7 @@ export default function PrivateLoginDesk({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [knownName, setKnownName] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const reset = () => {
     setStep('identify');
@@ -51,18 +53,24 @@ export default function PrivateLoginDesk({
     onClose();
   };
 
+  useAccessibleDialog(dialogRef, {
+    open,
+    onClose: handleClose,
+  });
+
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
       const result = await lookupPrivateAccount(email);
+      const normalized = email.trim().toLowerCase();
       if (result.exists) {
-        setKnownName(result.displayName || 'Member');
-        setEmail(result.email || email.trim().toLowerCase());
+        setKnownName('Member');
+        setEmail(normalized);
         setStep('login');
       } else {
-        setEmail(result.email || email.trim().toLowerCase());
+        setEmail(normalized);
         setStep('register');
       }
     } catch (err: any) {
@@ -113,17 +121,23 @@ export default function PrivateLoginDesk({
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-black/85 backdrop-blur-xl"
           onClick={handleClose}
+          aria-hidden="true"
         />
 
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="private-login-title"
+          tabIndex={-1}
           initial={{ opacity: 0, y: 24, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.96 }}
-          className="relative z-10 w-full max-w-md rounded-3xl border border-[#00E5FF]/25 bg-[#050508] shadow-[0_0_60px_rgba(0,229,255,0.12)] overflow-hidden"
+          className="relative z-10 w-full max-w-md rounded-3xl border border-[#00E5FF]/25 bg-[#050508] shadow-[0_0_60px_rgba(0,229,255,0.12)] overflow-hidden outline-none"
         >
           <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-[#00E5FF]/10 via-transparent to-[#FF1493]/10 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-[#00E5FF]/15 border border-[#00E5FF]/30">
+              <div className="p-2.5 rounded-xl bg-[#00E5FF]/15 border border-[#00E5FF]/30" aria-hidden="true">
                 <Shield size={18} className="text-[#00E5FF]" />
               </div>
               <div>
@@ -131,6 +145,7 @@ export default function PrivateLoginDesk({
                   Private Member Desk
                 </p>
                 <h2
+                  id="private-login-title"
                   className="text-lg font-black text-white tracking-tight mt-1"
                   style={{ fontFamily: "'Cinzel', serif" }}
                 >
@@ -216,9 +231,11 @@ export default function PrivateLoginDesk({
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                     </button>
                   </div>
                 </label>
@@ -290,9 +307,11 @@ export default function PrivateLoginDesk({
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
                     >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                     </button>
                   </div>
                 </label>

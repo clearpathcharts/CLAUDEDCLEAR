@@ -88,7 +88,8 @@ export default function ClearPathChatroom({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeRoom = rooms.find((r) => r.id === activeRoomId) ?? rooms[0];
-  const roomAccent = activeRoom?.accent || accentColor;
+  const isLava = className.includes('cp-chatroom-lava') || accentColor.toUpperCase() === '#FF4500';
+  const roomAccent = isLava ? '#FF4500' : (activeRoom?.accent || accentColor);
 
   const { messages, status, onlineCount, handle, sendMessage, updateHandle, isOwnMessage } =
     useChatRoom(activeRoomId);
@@ -123,8 +124,15 @@ export default function ClearPathChatroom({
       className={`cp-chatroom relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#06060f]/95 backdrop-blur-2xl shadow-[0_0_60px_rgba(77,0,255,0.12)] ${shellHeight} flex flex-col ${className}`}
       style={{ ['--cp-chat-accent' as string]: roomAccent }}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,20,147,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(0,229,255,0.08),transparent_40%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] bg-[size:24px_24px]" />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: isLava
+            ? 'radial-gradient(circle at top right, rgba(255,69,0,0.28), transparent 48%), radial-gradient(circle at bottom left, rgba(255,140,0,0.16), transparent 42%), linear-gradient(180deg, #1a0800 0%, #0a0400 55%, #050505 100%)'
+            : 'radial-gradient(circle at top right, rgba(255,20,147,0.12), transparent 45%), radial-gradient(circle at bottom left, rgba(0,229,255,0.08), transparent 40%)',
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04] bg-[linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] bg-[size:24px_24px]" />
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3 md:px-5">
@@ -278,11 +286,11 @@ export default function ClearPathChatroom({
             className="flex-1 space-y-3 overflow-y-auto px-4 py-4 custom-scrollbar md:px-5"
           >
             {messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-center text-zinc-500">
-                <MessageCircle size={28} className="mb-3 opacity-40" />
-                <p className="text-xs font-black uppercase tracking-[0.2em]">Room is quiet</p>
-                <p className="mt-1 max-w-xs text-[11px] text-zinc-600">
-                  Be the first to drop a market read in {activeRoom?.label}.
+              <div className="flex h-full flex-col items-center justify-center text-center text-zinc-400">
+                <MessageCircle size={28} className="mb-3 opacity-50" style={{ color: roomAccent }} />
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-300">Room is quiet</p>
+                <p className="mt-1 max-w-xs text-[11px] text-zinc-400">
+                  No fake chatter here — be the first real voice in {activeRoom?.label}.
                 </p>
               </div>
             ) : (
@@ -333,7 +341,10 @@ export default function ClearPathChatroom({
                               style={
                                 own
                                   ? {
-                                      background: `linear-gradient(135deg, ${roomAccent}cc 0%, #4f46e5 100%)`,
+                                      background: isLava
+                                        ? 'linear-gradient(135deg, #ff0000 0%, #ff4500 55%, #ff8c00 100%)'
+                                        : `linear-gradient(135deg, ${roomAccent}cc 0%, #4f46e5 100%)`,
+                                      color: isLava ? '#000' : undefined,
                                       boxShadow: `0 0 24px ${roomAccent}33`,
                                     }
                                   : undefined
@@ -377,9 +388,11 @@ export default function ClearPathChatroom({
               <button
                 type="submit"
                 disabled={!draft.trim() || status !== 'ONLINE'}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-black transition-all disabled:opacity-40"
+                className="cp-chat-send flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-black transition-all disabled:opacity-40"
                 style={{
-                  background: `linear-gradient(135deg, ${roomAccent}, #7c3aed)`,
+                  background: isLava
+                    ? 'linear-gradient(135deg, #ff0000 0%, #ff4500 52%, #ff8c00 100%)'
+                    : `linear-gradient(135deg, ${roomAccent}, #7c3aed)`,
                   boxShadow: draft.trim() ? `0 0 20px ${roomAccent}55` : undefined,
                 }}
                 aria-label="Send message"
@@ -387,8 +400,8 @@ export default function ClearPathChatroom({
                 <Send size={16} />
               </button>
             </div>
-            <p className="mt-2 text-center text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-600">
-              Live WebSocket room • Create an account for private guilds
+            <p className="mt-2 text-center text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+              Live WebSocket room • Empty until real traders speak
             </p>
           </form>
         </div>
