@@ -14,11 +14,17 @@ import {
   FlaskConical,
   Award,
   ExternalLink,
+  Server,
 } from 'lucide-react';
 import {
   APPEALING_CERTIFICATES,
   AWESOME_CERTIFICATES_REPO,
 } from '../content/appealingCertificates';
+import {
+  APPEALING_SELFHOSTED,
+  AWESOME_SELFHOSTED_MONEY_SECTION,
+  AWESOME_SELFHOSTED_REPO,
+} from '../content/appealingSelfhosted';
 
 interface DiscoveryFeedProps {
   onTabChange: (tabId: string) => void;
@@ -233,6 +239,13 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
                 color: '#FFD700',
                 href: '#certificate-desk',
               },
+              {
+                title: 'Self-hosted toolkit',
+                blurb: 'Privacy-first tools from Awesome Selfhosted — budgets, feeds, and read-later you run yourself.',
+                icon: Server,
+                color: '#00E5FF',
+                href: '#selfhosted-toolkit',
+              },
             ].map((item) => {
               const Icon = item.icon;
               const sharedClass = `${bentoClass} p-5 text-left cursor-pointer hover:brightness-110`;
@@ -341,6 +354,104 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
                   PanXProject/awesome-certificates
                 </a>
                 . Course availability and rewards are controlled by each issuer.
+              </p>
+            </div>
+          </div>
+
+          {/* Self-hosted toolkit — curated from Awesome Selfhosted */}
+          <div id="selfhosted-toolkit" className={`${bentoClass} p-5 md:p-6 scroll-mt-24`}>
+            <div className="relative z-10 space-y-5">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#00E5FF] font-black mb-2 flex items-center gap-1.5">
+                    <Server size={12} aria-hidden="true" /> Self-hosted toolkit
+                  </p>
+                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
+                    Run-your-own literacy stack
+                  </h3>
+                  <p className="mt-2 text-[12px] text-zinc-300 max-w-2xl leading-relaxed">
+                    Open-source apps you can host yourself for budgeting journals, RSS study feeds, and research archives.
+                    ClearPath does not operate these services. Tracking tools are not investment advice.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <a
+                    href={AWESOME_SELFHOSTED_MONEY_SECTION}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-widest text-[#FF7B00] hover:text-white border border-[#FF7B00]/35 hover:border-[#FF7B00] bg-[#FF7B00]/10 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    Money section
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                  <a
+                    href={AWESOME_SELFHOSTED_REPO}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-widest text-[#00E5FF] hover:text-white border border-[#00E5FF]/35 hover:border-[#00E5FF] bg-[#00E5FF]/10 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    Full Awesome Selfhosted
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
+
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 m-0">
+                {APPEALING_SELFHOSTED.map((tool) => (
+                  <li key={tool.title}>
+                    <a
+                      href={tool.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-full rounded-2xl border border-white/10 bg-black/40 hover:border-[#00E5FF]/45 hover:bg-black/55 p-4 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[9px] font-mono uppercase tracking-widest text-[#00E5FF]/90">
+                            {tool.category}
+                          </span>
+                          <div className="text-sm font-bold text-white mt-1 leading-snug">{tool.title}</div>
+                          <div className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed">{tool.blurb}</div>
+                        </div>
+                        <ExternalLink size={14} className="text-zinc-500 shrink-0 mt-1" aria-hidden="true" />
+                      </div>
+                      <div className="mt-3">
+                        <span
+                          className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 hover:text-[#00E5FF]"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(tool.sourceHref, '_blank', 'noopener,noreferrer');
+                          }}
+                          role="link"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(tool.sourceHref, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                        >
+                          Source →
+                        </span>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-[10px] text-zinc-500 font-mono leading-relaxed">
+                Catalog curated from{' '}
+                <a
+                  href={AWESOME_SELFHOSTED_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00E5FF] hover:underline"
+                >
+                  awesome-selfhosted/awesome-selfhosted
+                </a>
+                . Skipped trading bots and payment processors — literacy &amp; personal tracking only.
               </p>
             </div>
           </div>
