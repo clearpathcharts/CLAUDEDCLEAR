@@ -134,13 +134,14 @@ export async function loginPrivateUser(input: {
 
   const users = readUsers();
   const found = users.find((u) => u.email === email);
-  if (!found) throw new PrivateAuthError('No private account found for that email.', 404);
+  // Generic messages — avoid confirming whether the email is registered.
+  if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
 
   const { hash } = await hashPassword(password, found.passwordSalt);
   const a = Buffer.from(hash, 'hex');
   const b = Buffer.from(found.passwordHash, 'hex');
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    throw new PrivateAuthError('Incorrect password for this private account.', 401);
+    throw new PrivateAuthError('Invalid email or password.', 401);
   }
 
   found.lastLoginAt = new Date().toISOString();

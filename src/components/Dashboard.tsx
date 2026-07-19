@@ -64,15 +64,7 @@ import { useAuth } from '../contexts/FirebaseContext';
 import { setClearState } from '../lib/trading/clearState';
 
 import SEO from './SEO';
-import { ChartFrame } from './charts/ChartFrame';
-import { InteractiveChart } from './charts/InteractiveChart';
-import { LightweightCandles } from './charts/LightweightCandles';
 import ThemeSelector from './ThemeSelector';
-import MeetTheBoard from './MeetTheBoard';
-import { ProfileHub } from './ProfileHub';
-import AffiliateDashboard from './profile/AffiliateDashboard';
-import YoursPage from './yours/YoursPage';
-import MembershipTab from './MembershipTab';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
@@ -86,11 +78,25 @@ import { isFounderEmail } from '../lib/founder';
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 
-// Lazy load sub-components
+// Lazy load heavy tabs / panels to keep the main Dashboard chunk smaller
+const InteractiveChart = lazy(() =>
+  import('./charts/InteractiveChart').then((m) => ({ default: m.InteractiveChart }))
+);
+const MeetTheBoard = lazy(() => import('./MeetTheBoard'));
+const ProfileHub = lazy(() =>
+  import('./ProfileHub').then((m) => ({ default: m.ProfileHub }))
+);
+const AffiliateDashboard = lazy(() => import('./profile/AffiliateDashboard'));
+const YoursPage = lazy(() => import('./yours/YoursPage'));
+const MembershipTab = lazy(() => import('./MembershipTab'));
+const NewsPanel = lazy(() => import('./NewsPanel'));
+const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
+const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
+const FoundersPortal = lazy(() => import('./FoundersPortal'));
+const KillZones = lazy(() => import('./KillZones'));
 const GoogleDesk = lazy(() => import('./GoogleDesk'));
 const LegalFooter = lazy(() => import('./LegalFooter'));
 const AdditionalTermsOfService = lazy(() => import('./AdditionalTermsOfService'));
-const LiveChart = lazy(() => import('./LiveChart'));
 const CeoDashboard = lazy(() => import('./CeoDashboard'));
 const TodoList = lazy(() => import('./TodoList'));
 const MarketTicker = lazy(() => import('./MarketTicker'));
@@ -128,13 +134,6 @@ function TabLoading() {
 const CustomNavIcon = ({ size = 16, className = '', style = {} }: { size?: number, className?: string, style?: any }) => (
   <Activity size={size} className={className} style={{ ...style, filter: style.color ? `drop-shadow(0 0 5px ${style.color})` : 'none' }} />
 );
-
-
-import NewsPanel from './NewsPanel';
-import DiscoveryFeed from './DiscoveryFeed';
-import ClearPathChatroom from './chat/ClearPathChatroom';
-import FoundersPortal from './FoundersPortal';
-import KillZones from './KillZones';
 
 const RETIRED_TABS: Record<string, string> = {
   Screener: 'StrictlyCharts',
@@ -272,10 +271,12 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-[800px] mt-4">
-        <InteractiveChart title="BTCUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="ETHUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="AAPL" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="SPY" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+        <Suspense fallback={<TabLoading />}>
+          <InteractiveChart title="BTCUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="ETHUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="AAPL" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="SPY" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+        </Suspense>
       </div>
     </div>
   );
@@ -1682,17 +1683,19 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             transition={{ type: 'spring', damping: 22, stiffness: 220 }}
             className="fixed bottom-4 right-4 z-[90] w-[min(100vw-1.5rem,360px)] h-[min(70vh,480px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
           >
-            <ClearPathChatroom
-              variant="panel"
-              initialRoomId="lobby"
-              title="ClearPath Chat"
-              subtitle="Live lobby"
-              showRoomSidebar={false}
-              accentColor="#FF4500"
-              onClose={() => setChatDockOpen(false)}
-              className="rounded-none h-full border-0 cp-chatroom-lava"
-              heightClass="h-full"
-            />
+            <Suspense fallback={<TabLoading />}>
+              <ClearPathChatroom
+                variant="panel"
+                initialRoomId="lobby"
+                title="ClearPath Chat"
+                subtitle="Live lobby"
+                showRoomSidebar={false}
+                accentColor="#FF4500"
+                onClose={() => setChatDockOpen(false)}
+                className="rounded-none h-full border-0 cp-chatroom-lava"
+                heightClass="h-full"
+              />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1707,16 +1710,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
           >
-            <ClearPathChatroom
-              variant="panel"
-              initialRoomId="lobby"
-              title={activeChat.name}
-              subtitle="Direct trader channel"
-              showRoomSidebar={false}
-              accentColor="#FF4500"
-              onClose={() => setActiveChat(null)}
-              className="rounded-none border-l h-full cp-chatroom-lava"
-            />
+            <Suspense fallback={<TabLoading />}>
+              <ClearPathChatroom
+                variant="panel"
+                initialRoomId="lobby"
+                title={activeChat.name}
+                subtitle="Direct trader channel"
+                showRoomSidebar={false}
+                accentColor="#FF4500"
+                onClose={() => setActiveChat(null)}
+                className="rounded-none border-l h-full cp-chatroom-lava"
+              />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>

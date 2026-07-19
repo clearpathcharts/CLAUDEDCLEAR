@@ -204,9 +204,24 @@ async function startServer() {
     referrerPolicy: { policy: 'no-referrer' },
     hidePoweredBy: true,
   }));
-  app.use(cors());
+  // Same-origin by default in production. Set CORS_ALLOWED_ORIGINS=https://a.com,https://b.com for multi-origin.
+  const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.use(cors({
+    origin: isProd
+      ? (corsAllowedOrigins.length
+          ? (origin, callback) => {
+              if (!origin || corsAllowedOrigins.includes(origin)) callback(null, true);
+              else callback(new Error('Not allowed by CORS'));
+            }
+          : false)
+      : true,
+    credentials: true,
+  }));
   app.use(compression());
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -343,21 +358,20 @@ async function startServer() {
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
-  // Custom OAuth Routes for non-Firebase Native Providers
-  const customProviders = ['discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube'];
-  
-  customProviders.forEach(provider => {
-    app.get(`/auth/${provider}`, (req, res, next) => {
-      // In production, this would call passport.authenticate(provider)(req, res, next)
-      // For preview environment, we simulate the OAuth handshake redirect
-      res.send(`
+  // Custom OAuth stubs — disabled in production (use Firebase / private auth instead)
+  if (!isProd) {
+    const customProviders = ['discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube'];
+
+    customProviders.forEach(provider => {
+      app.get(`/auth/${provider}`, (req, res) => {
+        res.send(`
         <html>
           <body style="background: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; font-size: 14px;">
             <div style="text-align: center;">
               <h2 style="color: #00ff99;">OAUTH HANDSHAKE INITIATED</h2>
               <p>Simulating Custom Passport OAuth Flow for: <b>${provider.toUpperCase()}</b></p>
               <br/>
-              <p style="color: #ff2ea6;">Note: In production with real keys, you would be redirected to ${provider.toUpperCase()} to authorize.</p>
+              <p style="color: #ff2ea6;">Dev-only stub. Configure Firebase / private auth for production.</p>
               <p>Redirecting back to profile in 3 seconds...</p>
             </div>
             <script>
@@ -368,13 +382,13 @@ async function startServer() {
           </body>
         </html>
       `);
+      });
+
+      app.get(`/auth/${provider}/callback`, (_req, res) => {
+        res.redirect('/#Biography');
+      });
     });
-    
-    app.get(`/auth/${provider}/callback`, (req, res) => {
-      // Handle the provider callback here
-      res.redirect('/#Biography');
-    });
-  });
+  }
 
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
@@ -1554,7 +1568,7 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  // RSS Proxy API with timeout handling
+  // Stream proxy — SSRF-guarded, timed, size-capped
   app.get('/api/stream-proxy', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
@@ -1566,10 +1580,19 @@ ${CPT_SITE_GUIDE}`;
       console.warn('[Stream Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
+    const STREAM_PROXY_TIMEOUT_MS = 15_000;
+    const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { redirect: 'error' });
+      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
+      }
+
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      if (contentLength > STREAM_PROXY_MAX_BYTES) {
+        return res.status(413).json({ error: 'Upstream payload too large' });
       }
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1580,6 +1603,9 @@ ${CPT_SITE_GUIDE}`;
 
       if (isM3u8) {
         const text = await response.text();
+        if (text.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream playlist too large' });
+        }
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -1616,12 +1642,18 @@ ${CPT_SITE_GUIDE}`;
       } else {
         // Transparent binary segment forwarding for TS chunks loaded through the proxy
         res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = await response.arrayBuffer();
-        return res.send(Buffer.from(buffer));
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream segment too large' });
+        }
+        return res.send(buffer);
       }
     } catch (error: any) {
       console.error('[Stream Proxy Error]', error);
-      res.status(502).json({ error: 'Failed to proxy stream details', message: error.message });
+      const status = error?.name === 'AbortError' ? 504 : 502;
+      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
+    } finally {
+      clearTimeout(timeout);
     }
   });
 

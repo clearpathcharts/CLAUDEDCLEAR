@@ -30,13 +30,7 @@ function first(...candidates: Array<string | undefined>): string {
 }
 
 export function getTwelveDataApiKey(): string {
-  return first(
-    process.env.TWELVEDATA_API_KEY,
-    process.env.TWELVE_DATA_API_KEY,
-    // Legacy fallbacks — do not introduce new VITE_ secrets for server use
-    process.env.VITE_TWELVEDATA_API_KEY,
-    process.env.VITE_TWELVE_DATA_API_KEY
-  );
+  return first(process.env.TWELVEDATA_API_KEY, process.env.TWELVE_DATA_API_KEY);
 }
 
 export function getGeminiApiKey(): string {
@@ -48,7 +42,7 @@ export function getGroqApiKey(): string {
 }
 
 export function getFredApiKey(): string {
-  return first(process.env.FRED_API_KEY, process.env.VITE_FRED_API_KEY);
+  return first(process.env.FRED_API_KEY);
 }
 
 export function getFmpApiKey(): string {
