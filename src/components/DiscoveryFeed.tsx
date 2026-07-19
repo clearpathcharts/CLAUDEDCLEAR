@@ -456,6 +456,81 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
               </p>
             </div>
           </div>
+
+          {/* Academic research desk — free EBSCO / open-access discovery */}
+          <div id="academic-research-desk" className={`${bentoClass} p-5 md:p-6 scroll-mt-24`}>
+            <div className="relative z-10 space-y-5">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#B9A6FF] font-black mb-2 flex items-center gap-1.5">
+                    <Library size={12} aria-hidden="true" /> Academic research desk
+                  </p>
+                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
+                    Free scholarly &amp; open access
+                  </h3>
+                  <p className="mt-2 text-[12px] text-zinc-300 max-w-2xl leading-relaxed">
+                    From EBSCO’s academic library world: complimentary research databases and open-access paths.
+                    ClearPath does not provide paid EBSCOhost subscriptions (e.g. Business Source). Educational research only — not financial advice.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <a
+                    href={EBSCO_FREE_DATABASES}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-widest text-[#B9A6FF] hover:text-white border border-[#B9A6FF]/40 hover:border-[#B9A6FF] bg-[#B9A6FF]/10 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    Free databases
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                  <a
+                    href={EBSCO_ACADEMIC_LIBRARIES}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-widest text-[#00E5FF] hover:text-white border border-[#00E5FF]/35 hover:border-[#00E5FF] bg-[#00E5FF]/10 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    Academic libraries
+                    <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
+
+              <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 m-0">
+                {APPEALING_ACADEMIC_RESEARCH.map((item) => (
+                  <li key={item.title}>
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-full rounded-2xl border border-white/10 bg-black/40 hover:border-[#B9A6FF]/50 hover:bg-black/55 p-4 transition-colors"
+                    >
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#B9A6FF]">
+                        {item.category}
+                      </span>
+                      <div className="text-sm font-bold text-white mt-1 leading-snug flex items-center gap-1.5">
+                        {item.title}
+                        <ExternalLink size={12} className="text-zinc-500 shrink-0" aria-hidden="true" />
+                      </div>
+                      <div className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed">{item.blurb}</div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-[10px] text-zinc-500 font-mono leading-relaxed">
+                Inspired by{' '}
+                <a
+                  href={EBSCO_ACADEMIC_LIBRARIES}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#B9A6FF] hover:underline"
+                >
+                  about.ebsco.com/academic-libraries
+                </a>
+                . Paid discovery / journal packages require a library or campus login — we only list free entry points.
+              </p>
+            </div>
+          </div>
         </section>
 
       </div>
