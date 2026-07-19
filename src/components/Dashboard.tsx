@@ -81,6 +81,7 @@ import { ClearNav } from './nav/ClearNav';
 import { getDefaultDashboardTab } from '../lib/platform/defaultTab';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
+import { isFounderEmail } from '../lib/founder';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
@@ -98,7 +99,6 @@ const ShareQRCode = lazy(() => import('./ShareQRCode'));
 const LightweightMarketUI = lazy(() => import('./markets/LightweightMarketUI').then(m => ({ default: m.LightweightMarketUI })));
 const StandardMarketUI = lazy(() => import('./markets/StandardMarketUI').then(m => ({ default: m.StandardMarketUI })));
 const MarketScanner = lazy(() => import('./MarketScanner'));
-const MarketHeatmap = lazy(() => import('./MarketHeatmap'));
 const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
@@ -138,6 +138,7 @@ import KillZones from './KillZones';
 
 const RETIRED_TABS: Record<string, string> = {
   Screener: 'StrictlyCharts',
+  Heatmap: 'StrictlyCharts',
   Journal: 'StrictlyCharts',
 };
 
@@ -305,6 +306,7 @@ const TabContent = ({
   onBack, 
   onProfileChange, 
   isAdmin,
+  isFounder,
   selectedLightweightSymbol,
   setSelectedLightweightSymbol,
   leftSide,
@@ -330,6 +332,7 @@ const TabContent = ({
   onBack: () => void, 
   onProfileChange: (p: any) => void, 
   isAdmin: boolean,
+  isFounder: boolean,
   selectedLightweightSymbol: string,
   setSelectedLightweightSymbol: (s: string) => void,
   leftSide: boolean,
@@ -394,7 +397,7 @@ const TabContent = ({
         </Suspense>
       );
       case 'CpmsApk': return <CpmsApk />;
-      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isAdmin ? 'CeoDashboard' : 'StrictlyCharts')} />;
+      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isFounder ? 'CeoDashboard' : 'StrictlyCharts')} />;
       case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
@@ -408,7 +411,6 @@ const TabContent = ({
       );
       case 'Portfolio': return <PortfolioTracker />;
       case 'Scanner': return <MarketScanner />;
-      case 'Heatmap': return <MarketHeatmap />;
       case 'Calendar': return <EconomicCalendar />;
       case 'Geomap': return <GeographicMap />;
       case 'Leaderboard': return <Leaderboard />;
@@ -417,7 +419,7 @@ const TabContent = ({
       case 'Tasks': return <TodoList profile={profile} />;
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
-      case 'CeoDashboard': return <CeoDashboard />;
+      case 'CeoDashboard': return isFounder ? <CeoDashboard /> : <YoursPage />;
       case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return (
         <div className="max-w-4xl mx-auto" id="view_global_trading_sessions">
@@ -459,7 +461,8 @@ const TabContent = ({
     setChartTheme, 
     onBack, 
     onProfileChange, 
-    isAdmin, 
+    isAdmin,
+    isFounder,
     leftSide, 
     setLeftSide, 
     rightSide, 
@@ -910,7 +913,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = () => userRole?.role === 'admin' || authUser?.email === 'forexanarchy@gmail.com' || authUser?.email === 'creator@clearpatcharge.com';
+  const isAdmin = () => userRole?.role === 'admin' || isFounderEmail(authUser?.email) || authUser?.email === 'creator@clearpatcharge.com';
+  /** CEO Dashboard — Rick Floyd founder only */
+  const isFounder = () => isFounderEmail(authUser?.email);
   const isVerified = () => requireVerified();
 
   const menuItems = useMemo(() => {
@@ -923,12 +928,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
       { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },
-      { id: 'CeoDashboard', icon: Shield, label: 'ADMIN SETTINGS' }, 
+      { id: 'CeoDashboard', icon: Shield, label: 'CEO DASHBOARD' }, 
       { id: 'Logout', icon: LogOut, label: 'LOGOUT' },
     ];
 
     return allMenuItems.filter((item: any) => {
-      if (item.id === 'CeoDashboard') return isAdmin();
+      if (item.id === 'CeoDashboard') return isFounder();
       if (item.verified) return isVerified() || isAdmin();
       return true;
     });
@@ -1096,7 +1101,13 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';
         if (validHash) {
-          setActiveTab(normalizeTabId(hash));
+          const next = normalizeTabId(hash);
+          // CEO Dashboard hash is founder-only
+          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
+            setActiveTab('StrictlyCharts');
+          } else {
+            setActiveTab(next);
+          }
         }
       }
     }
@@ -1470,7 +1481,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   <div className="px-6 lg:px-12 pb-16 pt-8 flex-1 flex flex-col min-h-[50vh]">
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
-                        <BackToDashboard onBack={() => handleTabChange(isAdmin() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
+                        <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>
                     )}
                     <Suspense fallback={<TabLoading />}>
@@ -1480,9 +1491,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         profile={profile} 
                         chartTheme={chartTheme} 
                         setChartTheme={handleSetChartTheme}
-                        onBack={() => handleTabChange(isAdmin() ? 'CeoDashboard' : 'StrictlyCharts')} 
+                        onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} 
                         onProfileChange={onProfileChange}
                         isAdmin={isAdmin()}
+                        isFounder={isFounder()}
                         selectedLightweightSymbol={selectedLightweightSymbol}
                         setSelectedLightweightSymbol={setSelectedLightweightSymbol}
                         leftSide={leftSide}

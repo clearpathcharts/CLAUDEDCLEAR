@@ -2034,6 +2034,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
       { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
       { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
+      { path: '/tools', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.8' },
+      { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
     ]));
@@ -2175,10 +2177,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   const handlePageServing = async (req: express.Request, res: express.Response) => {
     try {
-      // Public content routes (learn/guides/glossary/faq) are served as fully
-      // crawlable static HTML documents — the SPA has no logged-out UI for
-      // them, so this is what both visitors and search engines should see.
-      const staticContentHtml = renderStaticContentPage(req.path);
+      // Public content routes are served as crawlable static HTML by default.
+      // Pass ?live=1 to load the interactive SPA shell instead (used by hub CTAs
+      // for encyclopedia / indicators / education live desks).
+      const wantLiveSpa = String(req.query.live || '') === '1';
+      const staticContentHtml = wantLiveSpa ? null : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
         res.setHeader('Content-Type', 'text/html');
@@ -2254,6 +2257,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
+    '/tools',
+    '/tools/position-size',
   ];
 
   SEO_PAGES.forEach(pagePath => {

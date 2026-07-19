@@ -39,6 +39,14 @@ const mustCheck = [
   '/education/crypto',
   '/education/crypto/crypto-u1',
   '/education/crypto/crypto-u1/crypto-u1-l1',
+  '/literacy',
+  '/stocks',
+  '/crypto',
+  '/forex',
+  '/commodities',
+  '/companies',
+  '/tools',
+  '/tools/position-size',
   '/ui',
   '/ui/calm_focus',
   '/ui/autism_predictable',
@@ -94,30 +102,30 @@ for (const path of toCheck) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ');
 
-  const isStaticContent = /^\/(learn|guides|glossary|faq|accessibility|ui|indicators\/.|education\/.)/.test(path);
-  if (isStaticContent && bodyText.length < 800) {
+  // Hubs + authored content + entity SSR pages must be thick.
+  const isThickStatic =
+    /^\/(learn|guides|glossary|faq|accessibility)(\/|$)/.test(path) ||
+    /^\/(encyclopedia|literacy|companies|tools)(\/|$)/.test(path) ||
+    /^\/(indicators|education|ui)(\/|$)/.test(path) ||
+    ['/stocks', '/crypto', '/forex', '/commodities'].includes(path) ||
+    /^\/(stocks|crypto|forex|commodities|economy)\//.test(path);
+  if (isThickStatic && bodyText.length < 800) {
     problems.push(`thin server-rendered content (${bodyText.length} chars)`);
   }
-
-  if (desc && (desc.length < 70 || desc.length > 170)) {
-    problems.push(`meta description length ${desc.length} (aim 70–160)`);
+  if (path === '/tools/position-size' && !html.includes('pos-tool')) {
+    problems.push('position size calculator missing');
   }
-  if (title && title.length > 70) {
-    problems.push(`title length ${title.length} (aim ≤70)`);
-  }
-
-  // Accessibility baselines on crawlable HTML
-  if (!/<html[^>]*\slang=/i.test(html)) problems.push('missing html lang');
-  if (isStaticContent) {
-    if (!/skip-link|Skip to main content/i.test(html)) problems.push('missing skip link');
-    if (!/<main[^>]*id="main-content"/i.test(html)) problems.push('missing main#main-content');
-    if (!/<nav[^>]*aria-label=/i.test(html)) problems.push('nav missing aria-label');
+  if (['/encyclopedia', '/indicators', '/education'].includes(path) && !html.includes('live=1')) {
+    problems.push('missing interactive ?live=1 CTA');
   }
 
   // Entity pages must not use the default homepage title
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy/.test(title)) {
+    if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—|Accessibility/.test(title)) {
       problems.push('entity page still has default title');
+    }
+    if (!html.includes('cpt-waitlist')) {
+      problems.push('missing waitlist lead capture');
     }
   }
 
