@@ -398,44 +398,32 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
 
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 m-0">
                 {APPEALING_SELFHOSTED.map((tool) => (
-                  <li key={tool.title}>
+                  <li
+                    key={tool.title}
+                    className="h-full rounded-2xl border border-white/10 bg-black/40 hover:border-[#00E5FF]/45 p-4 flex flex-col"
+                  >
                     <a
                       href={tool.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block h-full rounded-2xl border border-white/10 bg-black/40 hover:border-[#00E5FF]/45 hover:bg-black/55 p-4 transition-colors"
+                      className="flex-1 min-w-0 group"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="text-[9px] font-mono uppercase tracking-widest text-[#00E5FF]/90">
-                            {tool.category}
-                          </span>
-                          <div className="text-sm font-bold text-white mt-1 leading-snug">{tool.title}</div>
-                          <div className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed">{tool.blurb}</div>
-                        </div>
-                        <ExternalLink size={14} className="text-zinc-500 shrink-0 mt-1" aria-hidden="true" />
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#00E5FF]/90">
+                        {tool.category}
+                      </span>
+                      <div className="text-sm font-bold text-white mt-1 leading-snug group-hover:text-[#00E5FF] transition-colors flex items-center gap-1.5">
+                        {tool.title}
+                        <ExternalLink size={12} className="text-zinc-500 shrink-0" aria-hidden="true" />
                       </div>
-                      <div className="mt-3">
-                        <span
-                          className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 hover:text-[#00E5FF]"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.open(tool.sourceHref, '_blank', 'noopener,noreferrer');
-                          }}
-                          role="link"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.open(tool.sourceHref, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
-                        >
-                          Source →
-                        </span>
-                      </div>
+                      <div className="text-[11px] text-zinc-300 mt-1.5 leading-relaxed">{tool.blurb}</div>
+                    </a>
+                    <a
+                      href={tool.sourceHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 text-[9px] font-mono uppercase tracking-wider text-zinc-500 hover:text-[#00E5FF] w-fit"
+                    >
+                      Source repo →
                     </a>
                   </li>
                 ))}
