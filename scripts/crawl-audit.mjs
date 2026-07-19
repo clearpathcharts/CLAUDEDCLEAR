@@ -51,6 +51,7 @@ const mustCheck = [
   '/guides/macro-spreads',
   '/glossary',
   '/faq',
+  '/accessibility',
 ];
 
 const toCheck = [...new Set([...mustCheck, ...samples])];
@@ -93,14 +94,29 @@ for (const path of toCheck) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ');
 
-  const isStaticContent = /^\/(learn|guides|glossary|faq|ui|indicators\/.|education\/.)/.test(path);
+  const isStaticContent = /^\/(learn|guides|glossary|faq|accessibility|ui|indicators\/.|education\/.)/.test(path);
   if (isStaticContent && bodyText.length < 800) {
     problems.push(`thin server-rendered content (${bodyText.length} chars)`);
   }
 
+  if (desc && (desc.length < 70 || desc.length > 170)) {
+    problems.push(`meta description length ${desc.length} (aim 70–160)`);
+  }
+  if (title && title.length > 70) {
+    problems.push(`title length ${title.length} (aim ≤70)`);
+  }
+
+  // Accessibility baselines on crawlable HTML
+  if (!/<html[^>]*\slang=/i.test(html)) problems.push('missing html lang');
+  if (isStaticContent) {
+    if (!/skip-link|Skip to main content/i.test(html)) problems.push('missing skip link');
+    if (!/<main[^>]*id="main-content"/i.test(html)) problems.push('missing main#main-content');
+    if (!/<nav[^>]*aria-label=/i.test(html)) problems.push('nav missing aria-label');
+  }
+
   // Entity pages must not use the default homepage title
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy/.test(title)) {
+    if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy/.test(title)) {
       problems.push('entity page still has default title');
     }
   }

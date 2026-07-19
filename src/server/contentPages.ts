@@ -114,49 +114,62 @@ const NAV_LINKS = [
   { href: '/encyclopedia', label: 'Encyclopedia' },
   { href: '/indicators', label: 'Indicators' },
   { href: '/ui', label: 'UI Modes' },
+  { href: '/accessibility', label: 'Accessibility' },
 ];
 
 const PAGE_CSS = `
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #050505; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; }
-  header.site { position: sticky; top: 0; z-index: 50; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+  body { margin: 0; background: #050505; color: #e8e8e8; font-family: ui-sans-serif, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; }
+  .skip-link { position: absolute; left: -9999px; top: 0; z-index: 1000; background: #00E5FF; color: #000; font-weight: 800; padding: 0.75rem 1.25rem; text-decoration: none; border-radius: 0 0 8px 0; }
+  .skip-link:focus { left: 0; outline: 3px solid #fff; outline-offset: 2px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 3px solid #00E5FF; outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+  header.site { position: sticky; top: 0; z-index: 50; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.12); }
   header.site .inner { max-width: 60rem; margin: 0 auto; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
-  header.site .brand { color: #00E5FF; font-weight: 900; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; }
+  header.site .brand { color: #00E5FF; font-weight: 900; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
   header.site nav { display: flex; gap: 0.85rem; flex-wrap: wrap; }
-  header.site nav a { color: rgba(255,255,255,0.65); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; }
+  header.site nav a { color: #c4c4c4; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
   header.site nav a:hover, header.site nav a[aria-current="page"] { color: #00E5FF; }
   main { max-width: 48rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
-  nav.breadcrumb { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-bottom: 1.5rem; }
-  nav.breadcrumb a { color: rgba(0,229,255,0.8); text-decoration: none; }
+  nav.breadcrumb { font-size: 0.8rem; color: #b0b0b0; margin-bottom: 1.5rem; }
+  nav.breadcrumb ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+  nav.breadcrumb li { display: inline-flex; align-items: center; gap: 0.35rem; }
+  nav.breadcrumb li:not(:last-child)::after { content: '›'; color: #8a8a8a; }
+  nav.breadcrumb a { color: #5EEBFF; text-decoration: underline; text-underline-offset: 2px; }
   h1 { font-size: 1.9rem; line-height: 1.25; color: #fff; margin: 0 0 0.75rem; }
-  p.lead { color: rgba(255,255,255,0.7); font-size: 1.05rem; margin: 0 0 2rem; }
+  p.lead { color: #d0d0d0; font-size: 1.05rem; margin: 0 0 2rem; }
   article h2 { font-size: 1.35rem; color: #00E5FF; margin: 2.25rem 0 0.75rem; }
   article h3 { font-size: 1.1rem; color: #fff; margin: 1.75rem 0 0.5rem; }
-  article p { margin: 0 0 1rem; color: rgba(255,255,255,0.82); }
-  article ul, article ol { margin: 0 0 1.25rem; padding-left: 1.4rem; color: rgba(255,255,255,0.82); }
+  article p { margin: 0 0 1rem; color: #d6d6d6; }
+  article ul, article ol { margin: 0 0 1.25rem; padding-left: 1.4rem; color: #d6d6d6; }
   article li { margin-bottom: 0.4rem; }
-  article a { color: #00D9FF; text-decoration: none; font-weight: 600; }
-  article a:hover { text-decoration: underline; }
+  article a { color: #5EEBFF; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+  article a:hover { color: #9FF5FF; }
   pre.math { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.85rem; color: #9fe8ff; }
   .card-list { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
-  .card-list a.card { display: block; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 1.1rem 1.25rem; text-decoration: none; background: rgba(255,255,255,0.03); transition: border-color 0.15s; }
+  .card-list a.card { display: block; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 1.1rem 1.25rem; text-decoration: none; background: rgba(255,255,255,0.03); transition: border-color 0.15s; }
   .card-list a.card:hover { border-color: rgba(0,229,255,0.5); }
   .card-list .card h2 { margin: 0 0 0.35rem; font-size: 1.05rem; color: #00E5FF; }
-  .card-list .card p { margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.65); }
+  .card-list .card p { margin: 0; font-size: 0.85rem; color: #c8c8c8; }
   dl.glossary dt { color: #00E5FF; font-weight: 800; font-size: 1rem; margin-top: 1.4rem; }
-  dl.glossary dd { margin: 0.25rem 0 0; color: rgba(255,255,255,0.78); }
+  dl.glossary dd { margin: 0.25rem 0 0; color: #d0d0d0; }
   section.faqs { margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 1.5rem; }
   section.faqs h2 { font-size: 1.3rem; color: #fff; }
-  section.faqs h3 { color: #00E5FF; font-size: 1rem; margin: 1.4rem 0 0.35rem; }
-  section.faqs p { color: rgba(255,255,255,0.78); margin: 0 0 0.75rem; }
+  section.faqs details { border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.85rem 1rem; margin: 0.75rem 0; background: rgba(255,255,255,0.02); }
+  section.faqs summary { color: #00E5FF; font-size: 1rem; font-weight: 700; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+  section.faqs details p { color: #d0d0d0; margin: 0.75rem 0 0; }
   aside.cta { margin-top: 3rem; border: 1px solid rgba(0,229,255,0.35); background: rgba(0,229,255,0.06); border-radius: 14px; padding: 1.4rem 1.5rem; }
   aside.cta h2 { margin: 0 0 0.4rem; font-size: 1.1rem; color: #fff; }
-  aside.cta p { margin: 0 0 0.9rem; font-size: 0.9rem; color: rgba(255,255,255,0.7); }
-  aside.cta a { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
+  aside.cta p { margin: 0 0 0.9rem; font-size: 0.9rem; color: #d0d0d0; }
+  aside.cta a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
   footer.site { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 2rem; }
-  footer.site .inner { max-width: 60rem; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.72rem; color: rgba(255,255,255,0.45); }
-  footer.site a { color: rgba(255,255,255,0.55); text-decoration: none; }
+  footer.site .inner { max-width: 60rem; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem; color: #b0b0b0; }
+  footer.site a { color: #c8c8c8; text-decoration: underline; text-underline-offset: 2px; min-height: 44px; display: inline-flex; align-items: center; }
   footer.site a:hover { color: #00E5FF; }
 `;
 
@@ -172,21 +185,23 @@ function renderShell(currentPath: string, bodyHtml: string): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ClearPathTrader</title>
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="theme-color" content="#0b0e11" />
     <style>${PAGE_CSS}</style>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <header class="site">
       <div class="inner">
         <a class="brand" href="/">ClearPath Trader</a>
-        <nav>
+        <nav aria-label="Primary">
         ${nav}
         </nav>
       </div>
     </header>
-    <main>
+    <main id="main-content" tabindex="-1">
 ${bodyHtml}
-      <aside class="cta">
+      <aside class="cta" aria-label="Open the trading terminal">
         <h2>Put this knowledge on a live chart</h2>
         <p>ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.</p>
         <a href="/">Launch the terminal</a>
@@ -196,6 +211,7 @@ ${bodyHtml}
       <div class="inner">
         <span>&copy; ClearPathTrader — analytics &amp; education, not a brokerage.</span>
         <a href="/about">About</a>
+        <a href="/accessibility">Accessibility</a>
         <a href="/terms.html">Terms</a>
         <a href="/privacy.html">Privacy</a>
         <a href="/disclaimer.html">Disclaimer</a>
@@ -206,18 +222,25 @@ ${bodyHtml}
 }
 
 function breadcrumbHtml(items: { name: string; url?: string }[]): string {
-  const parts = items.map((item) =>
-    item.url ? `<a href="${item.url}">${escapeHtml(item.name)}</a>` : escapeHtml(item.name)
-  );
-  return `<nav class="breadcrumb" aria-label="Breadcrumb">${parts.join(' › ')}</nav>`;
+  const parts = items.map((item, idx) => {
+    const isLast = idx === items.length - 1;
+    const inner = item.url && !isLast
+      ? `<a href="${item.url}">${escapeHtml(item.name)}</a>`
+      : `<span aria-current="page">${escapeHtml(item.name)}</span>`;
+    return `<li>${inner}</li>`;
+  });
+  return `<nav class="breadcrumb" aria-label="Breadcrumb"><ol>${parts.join('')}</ol></nav>`;
 }
 
 function faqSectionHtml(faqs: { question: string; answer: string }[]): string {
   if (!faqs.length) return '';
   const items = faqs
-    .map((f) => `<h3>${escapeHtml(f.question)}</h3>\n<p>${escapeHtml(f.answer)}</p>`)
+    .map(
+      (f) =>
+        `<details>\n<summary>${escapeHtml(f.question)}</summary>\n<p>${escapeHtml(f.answer)}</p>\n</details>`
+    )
     .join('\n');
-  return `<section class="faqs">\n<h2>Frequently asked questions</h2>\n${items}\n</section>`;
+  return `<section class="faqs" aria-labelledby="faq-heading">\n<h2 id="faq-heading">Frequently asked questions</h2>\n${items}\n</section>`;
 }
 
 function renderLearnIndex(): string {
@@ -285,6 +308,33 @@ function renderFaqPage(): string {
 <h1>Frequently Asked Questions</h1>
 <p class="lead">What ClearPathTrader is, what it is not, and how the platform's analytics and education systems work.</p>
 ${faqSectionHtml(GENERAL_FAQS)}`;
+}
+
+function renderAccessibilityPage(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Accessibility' }])}
+<h1>Accessibility Statement</h1>
+<p class="lead">ClearPath Trader aims to make market education and charting usable for people with disabilities, including keyboard-only users, screen-reader users, and neurodivergent traders.</p>
+<article>
+<h2>Our commitment</h2>
+<p>We design public pages and terminal UI modes to align with the spirit of <strong>WCAG 2.2 Level AA</strong>: perceivable content, operable controls, understandable language, and robust markup. Accessibility is an ongoing program, not a one-time badge.</p>
+<h2>What we support today</h2>
+<ul>
+<li><strong>Skip links</strong> to jump past navigation into main content</li>
+<li><strong>Landmarks</strong> — header, primary navigation, main, and footer</li>
+<li><strong>Keyboard focus</strong> with visible focus rings on interactive controls</li>
+<li><strong>Semantic structure</strong> — headings, lists, labeled form fields, and breadcrumb navigation</li>
+<li><strong>Reduced motion</strong> — decorative animation respects <code>prefers-reduced-motion</code></li>
+<li><strong>Neurodivergent UI modes</strong> — calm focus, reading support, ADHD, autism-predictable layouts, minimal motion, and more at <a href="/ui">/ui</a></li>
+<li><strong>Contrast-aware content pages</strong> — body text and links tuned for readable contrast on dark backgrounds</li>
+</ul>
+<h2>Known limitations</h2>
+<p>Live chart canvases and dense terminal workspaces are inherently visual. We provide alternate text for indicator illustrations, plain-language education pages, and UI modes that reduce motion and visual noise. Some third-party embeds may not meet the same standard as first-party pages.</p>
+<h2>How to get help or report a barrier</h2>
+<p>If you encounter an accessibility barrier on clearpathtrader.com, email <a href="mailto:accessibility@clearpathtrader.com">accessibility@clearpathtrader.com</a> with the page URL, what you were trying to do, and the assistive technology you use (if any). We prioritize fixes that block core tasks: reading education, browsing the encyclopedia, and signing in.</p>
+<h2>Standards &amp; scope</h2>
+<p>This statement covers the public marketing site, education content, encyclopedia pages, and the authenticated ClearPath terminal. Last reviewed: July 2026.</p>
+<p><a href="/ui">Explore accessible UI modes →</a> · <a href="/faq">FAQ</a> · <a href="/">Launch terminal</a></p>
+</article>`;
 }
 
 function renderIndicatorDetail(slug: string): string | null {
@@ -425,6 +475,7 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean.startsWith('/guides/')) body = renderGuide(pathClean.slice('/guides/'.length));
   else if (pathClean === '/glossary') body = renderGlossary();
   else if (pathClean === '/faq') body = renderFaqPage();
+  else if (pathClean === '/accessibility') body = renderAccessibilityPage();
   else if (parts[0] === 'indicators' && parts.length === 2) body = renderIndicatorDetail(parts[1]);
   else if (parts[0] === 'education' && parts.length === 2) body = renderEducationSchool(parts[1]);
   else if (parts[0] === 'education' && parts.length === 3) body = renderEducationUnit(parts[1], parts[2]);

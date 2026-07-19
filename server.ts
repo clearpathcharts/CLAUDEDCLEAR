@@ -2034,6 +2034,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
       { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
       { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
+      { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
     ]));
   });
@@ -2225,6 +2226,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/guides/:slug',
     '/glossary',
     '/faq',
+    '/accessibility',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',

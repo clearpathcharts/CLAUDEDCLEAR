@@ -30,6 +30,11 @@ const ParticleCanvas = () => {
     if (!ctx) return;
     let animationId: number;
 
+    // Respect OS/browser reduced-motion preference (WCAG 2.3.3)
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
     // ClearPath aesthetic color palette
     const colors = [
       '#FF1493', // Fluorescent Pink
@@ -144,7 +149,8 @@ const ParticleCanvas = () => {
 
   return (
     <canvas 
-      ref={canvasRef} 
+      ref={canvasRef}
+      aria-hidden="true"
       className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-[0.08]" 
     />
   );
@@ -530,7 +536,7 @@ export default function Auth() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block select-none">
+    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
       
       {/* GLOBAL HELPER COLOR STYLE INJECTIONS */}
       <style>{`
@@ -548,6 +554,9 @@ export default function Auth() {
             0 0 40px #B026FF,
             0 0 70px #00FFFF;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .text-neon-glow { text-shadow: none; }
+        }
         .border-neon {
           border-color: rgba(255, 20, 147, 0.3);
           box-shadow: 0 0 15px rgba(255, 20, 147, 0.1);
@@ -563,13 +572,14 @@ export default function Auth() {
 
       {/* BACKGROUND LAYERS */}
       {/* Living Atmospheric Deep Jet-black Luxury canvas backdrop */}
-      <div className="absolute inset-0 bg-transparent z-0" />
+      <div className="absolute inset-0 bg-transparent z-0" aria-hidden="true" />
 
       {/* Layer 2: Particle Engine */}
       <ParticleCanvas />
 
       {/* Layer 3: Cyber grid overlay */}
       <div 
+        aria-hidden="true"
         className="absolute inset-0 pointer-events-none opacity-5 z-0" 
         style={{
           backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)`,
@@ -580,39 +590,40 @@ export default function Auth() {
       {/* ==========================================
           3. NAVIGATION HEADER
           ========================================== */}
-      <nav className="sticky top-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80">
+      <nav aria-label="Primary" className="px-4 sm:px-8 py-4 flex items-center justify-between">
+        <a href="#main-content" className="flex items-center gap-2 min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00FFFF]">
           {/* Logo element matches specified clearpath branding icon */}
-          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]">
+          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]" aria-hidden="true">
             <ShieldCheck className="text-white w-5 h-5" />
           </div>
           <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-lg uppercase">
             CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
           </span>
-        </div>
+        </a>
 
         {/* Dynamic Desktop Links */}
         <div className="hidden lg:flex items-center gap-6">
           <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
             Trading × AI
           </a>
-          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
+          <a href="/about" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
             About
           </a>
-          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
-          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
-          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
-          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
+          <a href="#home" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
+          <a href="#why-clearpath" className="text-zinc-300 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
+          <a href="#ecosystem" className="text-zinc-300 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
+          <a href="#soft-launch" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
           <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
-            <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
+            <BookOpen size={11} className="text-[#00FFFF]" aria-hidden="true" /> ENCYCLOPEDIA OF FINANCE
           </a>
           <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
-            <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
+            <BarChart3 size={11} className="text-[#FF00C8]" aria-hidden="true" /> Encyclopedia of Indicators
           </a>
           <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
+            <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
           </a>
-          <a href="#faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
+          <a href="#faq" className="text-zinc-300 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
         </div>
 
         {/* Action Buttons */}
@@ -620,9 +631,10 @@ export default function Auth() {
           <button 
             type="button"
             onClick={() => setBoardModalOpen(true)}
-            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+            aria-haspopup="dialog"
+            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-200 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
           >
-            <Lock size={12} className="text-[#B026FF]" />
+            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
             <span className="hidden sm:inline">Board Members</span>
             <span className="sm:hidden">Board</span>
           </button>
@@ -631,22 +643,23 @@ export default function Auth() {
             onClick={() => openPrivateLogin('login')}
             className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1 cursor-pointer"
           >
-            <Lock size={12} />
+            <Lock size={12} aria-hidden="true" />
             PRIVATE LOGIN
           </button>
         </div>
       </nav>
+      </header>
 
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
           ========================================== */}
-      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
+      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20" role="region" aria-label="System broadcast">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-400 font-bold">SYSTEM BROADCAST:</span>
+            <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" aria-hidden="true" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-300 font-bold">SYSTEM BROADCAST:</span>
           </div>
-          <div className="font-mono text-[10px] text-zinc-300 truncate pl-4 flex-1 items-center font-semibold">
+          <div className="font-mono text-[10px] text-zinc-200 truncate pl-4 flex-1 items-center font-semibold" aria-live="polite">
             <AnimatePresence mode="wait">
               <motion.span
                 key={curAnnIdx}
@@ -656,23 +669,25 @@ export default function Auth() {
                 transition={{ duration: 0.35 }}
                 className="text-zinc-100 flex items-center gap-1.5"
               >
-                <Sparkles size={11} className="text-[#FF1493] shrink-0" />
+                <Sparkles size={11} className="text-[#FF1493] shrink-0" aria-hidden="true" />
                 {announcements[curAnnIdx]}
               </motion.span>
             </AnimatePresence>
           </div>
-          <div className="hidden md:flex items-center gap-6 shrink-0 text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
-            <span>DXY INDEX: <strong className="text-zinc-300">104.82</strong></span>
-            <span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>
-            <span>USD/JPY: <strong className="text-zinc-300">156.42</strong></span>
+          <div className="hidden md:flex items-center gap-6 shrink-0 text-zinc-400 text-[9px] font-bold tracking-widest uppercase">
+            <span>DXY INDEX: <strong className="text-zinc-200">104.82</strong></span>
+            <span>BTC/USD: <strong className="text-zinc-200">$77,979.87</strong></span>
+            <span>USD/JPY: <strong className="text-zinc-200">156.42</strong></span>
           </div>
         </div>
       </div>
 
+      <main id="main-content" tabIndex={-1}>
+
       {/* ==========================================
           5. HERO SECTION
           ========================================== */}
-      <section id="home" className="relative pt-12 pb-24 px-4 sm:px-8 max-w-7xl mx-auto z-20 overflow-hidden flex flex-col items-center text-center">
+      <section id="home" className="relative pt-12 pb-24 px-4 sm:px-8 max-w-7xl mx-auto z-20 overflow-hidden flex flex-col items-center text-center" aria-labelledby="hero-heading">
         
         {/* Animated Pill Grid Tag */}
         <motion.div
@@ -685,7 +700,7 @@ export default function Auth() {
         </motion.div>
 
         {/* Glitch Headline Title */}
-        <h1 className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl select-none text-neon-glow font-sans mt-2">
+        <h1 id="hero-heading" className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl text-neon-glow font-sans mt-2">
           CLEARPATH TRADER
         </h1>
 
@@ -1734,6 +1749,8 @@ Not the other way around.`}
         </div>
       </section>
 
+      </main>
+
       {/* ==========================================
           11. LEGAL DISCLAIMER FOOTER
           ========================================== */}
@@ -1744,30 +1761,36 @@ Not the other way around.`}
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
-          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
+          <nav aria-label="Legal and site links" className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
             <a href="/if-trading-and-chatgpt-had-a-baby" className="text-[#FF1493] hover:text-[#00FFFF] transition-colors font-bold">
               Trading × AI
             </a>
-            <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+            <a href="/about" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
               About ClearPath
             </a>
-            <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <a href="/accessibility" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+              Accessibility
+            </a>
+            <a href="/ui" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+              UI Modes
+            </a>
+            <a href="/platform-scope.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
               Platform Scope
             </a>
-            <a href="/terms.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <a href="/terms.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
               Terms
             </a>
-            <a href="/privacy.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <a href="/privacy.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
               Privacy
             </a>
-            <a href="/disclaimer.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <a href="/disclaimer.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
               Disclaimer
             </a>
           </nav>
-          <p className="text-[11px] text-zinc-500 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
+          <p className="text-[11px] text-zinc-400 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
             RISK DISCLOSURE AND EDUCATIONAL DISCLAIMER: ClearPath Trader is strictly an academic learning universe. We do not operate as a financial broker, nor do we manage real client capital, execute trades, or recommend asset purchases. High-performance intermarket analysis carries substantial risk. All calculations and simulations represent general macroeconomic models.
           </p>
-          <div className="text-[10px] text-zinc-600 font-mono mt-4">
+          <div className="text-[10px] text-zinc-500 font-mono mt-4">
             © 2026 Clear Path Markets Science (CPMS). All academic rights reserved.
           </div>
         </div>
@@ -1798,9 +1821,10 @@ Not the other way around.`}
               <button
                 type="button"
                 onClick={() => setBoardModalOpen(false)}
+                aria-label="Close board login dialog"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="text-center space-y-2">
@@ -1903,9 +1927,10 @@ Not the other way around.`}
               <button
                 type="button"
                 onClick={() => setDemoOpen(false)}
+                aria-label="Close demo dialog"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-1">
@@ -2004,9 +2029,10 @@ Not the other way around.`}
               <button
                 type="button"
                 onClick={() => setEcosystemTvOpen(false)}
+                aria-label="Close media dialog"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="flex flex-col md:flex-row gap-6">
@@ -2124,9 +2150,10 @@ Not the other way around.`}
               <button
                 type="button"
                 onClick={() => setEcosystemYwcOpen(false)}
+                aria-label="Close Your World Connected dialog"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-2">

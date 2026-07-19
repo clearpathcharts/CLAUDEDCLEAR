@@ -325,3 +325,58 @@ input, textarea, select {
 .ywc-lava-drift {
   animation: ywc-drift 8s ease-in-out infinite;
 }
+
+/* ——— Accessibility (WCAG-oriented) ——— */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  background: #00e5ff;
+  color: #000;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  min-height: 44px;
+  min-width: auto;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 0;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ywc-section-title,
+  .ywc-lava-drift,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
+}
