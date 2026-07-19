@@ -66,6 +66,7 @@ Profile guide (id → friendly label → when to suggest it):
 10. adhd_hyperfocus → "Hyperfocus" — High contrast, high glow, tighter spacing, higher density — for deep focus sessions.
 11. autism_predictable → "Autism - Predictable" — Steady indigo/blue palette, motion off, predictable structure.
 12. tourette_tic_friendly → "Minimal Motion" — Motion off, wide spacing, low glow — reduces unexpected movement on screen.
+13. standard_red_green → "Standard Chart (Red & Green)" — Classic green bull / red bear candles. No neuro-adaptive palette — the familiar trading-desk look.
 
 When asked "which neuro chart should I use?":
 - Ask one short preference question (too bright? too busy? hard to read numbers? want calm vs energy?).

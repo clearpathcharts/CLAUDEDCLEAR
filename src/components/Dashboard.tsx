@@ -204,7 +204,9 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
           <ProfileButton id="adhd_hyperfocus" label="ADHD_HYPERFOCUS" active={profile.id} />
           <ProfileButton id="autism_predictable" label="AUTISM_PREDICTABLE" active={profile.id} />
           <ProfileButton id="tourette_tic_friendly" label="TOURETTE_TIC_FRIENDLY" active={profile.id} />
-          
+
+          {/* ROW 4 — classic trading candles */}
+          <ProfileButton id="standard_red_green" label="STANDARD_RED_GREEN" active={profile.id} />
 
         </div>
       </div>
