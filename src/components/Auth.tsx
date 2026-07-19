@@ -418,6 +418,19 @@ export default function Auth() {
     }
   }, [boardModalOpen]);
 
+  // Escape closes any open marketing modal (keyboard accessibility)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (boardModalOpen) setBoardModalOpen(false);
+      if (demoOpen) setDemoOpen(false);
+      if (ecosystemTvOpen) setEcosystemTvOpen(false);
+      if (ecosystemYwcOpen) setEcosystemYwcOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [boardModalOpen, demoOpen, ecosystemTvOpen, ecosystemYwcOpen]);
+
   // Cryptographic passcode quick checks
   useEffect(() => {
     if (passcode.length === 6) {
