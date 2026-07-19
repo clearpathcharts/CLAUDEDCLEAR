@@ -36,6 +36,18 @@ import {
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage } from './src/server/contentPages';
+import {
+  stockEntries,
+  cryptoEntries,
+  forexEntries,
+  commodityEntries,
+  economyEntries,
+  indicatorEntries,
+  educationEntries,
+  uiProfileEntries,
+  encyclopediaHubEntries,
+  catalogCounts,
+} from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
@@ -192,15 +204,14 @@ async function startServer() {
     // Fast-track essential files of sitemaps and direct platform assets
     if (
       pathLower === '/sitemap.xml' ||
-      pathLower === '/sitemap-pages.xml' ||
-      pathLower === '/sitemap-learn.xml' ||
-      pathLower === '/sitemap-guides.xml' ||
+      pathLower.startsWith('/sitemap-') ||
       pathLower === '/robots.txt' ||
       pathLower === '/favicon.ico' ||
       pathLower === '/manifest.json' ||
       pathLower === '/manifest.webmanifest' ||
       pathLower === '/logo.png' ||
-      pathLower === '/og-image.png'
+      pathLower === '/og-image.png' ||
+      pathLower === '/api/seo/catalog-counts'
     ) {
       return next();
     }
@@ -1968,28 +1979,51 @@ ${entries.map(e => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
+  // Cache generated urlsets — procedural catalogs are large (~30k URLs).
+  type CrawlEntryLike = { path: string; lastmod: string; changefreq: string; priority: string };
+  const sitemapCache = new Map<string, string>();
+  const cachedUrlset = (key: string, factory: () => CrawlEntryLike[]) => {
+    let xml = sitemapCache.get(key);
+    if (!xml) {
+      xml = buildUrlset(factory());
+      sitemapCache.set(key, xml);
+    }
+    return xml;
+  };
+
+  const SITEMAP_CHILDREN = [
+    'sitemap-pages.xml',
+    'sitemap-learn.xml',
+    'sitemap-guides.xml',
+    'sitemap-stocks.xml',
+    'sitemap-crypto.xml',
+    'sitemap-forex.xml',
+    'sitemap-commodities.xml',
+    'sitemap-economy.xml',
+    'sitemap-indicators.xml',
+    'sitemap-education.xml',
+    'sitemap-ui.xml',
+  ];
+
   app.get('/sitemap.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>${SITEMAP_BASE}/sitemap-pages.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_BASE}/sitemap-learn.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>${SITEMAP_BASE}/sitemap-guides.xml</loc>
-  </sitemap>
+${SITEMAP_CHILDREN.map((name) => `  <sitemap>
+    <loc>${SITEMAP_BASE}/${name}</loc>
+  </sitemap>`).join('\n')}
 </sitemapindex>`);
+  });
+
+  app.get('/api/seo/catalog-counts', (_req, res) => {
+    res.json(catalogCounts());
   });
 
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(buildUrlset([
       { path: '/', lastmod: '2026-07-19', changefreq: 'daily', priority: '1.0' },
-      // NOTE: /trading-ai is a canonical alias of the URL below — sitemaps
-      // must only list canonical URLs, so the alias is intentionally omitted.
+      // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
       { path: '/if-trading-and-chatgpt-had-a-baby', lastmod: '2026-07-10', changefreq: 'weekly', priority: '0.95' },
       { path: '/about', lastmod: '2026-07-10', changefreq: 'monthly', priority: '0.85' },
       { path: '/encyclopedia', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
@@ -2000,6 +2034,7 @@ ${entries.map(e => `  <url>
       { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
       { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
       { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
+      ...encyclopediaHubEntries(),
     ]));
   });
 
@@ -2025,6 +2060,39 @@ ${entries.map(e => `  <url>
         priority: '0.85',
       }))
     ));
+  });
+
+  app.get('/sitemap-stocks.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('stocks', stockEntries));
+  });
+  app.get('/sitemap-crypto.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('crypto', cryptoEntries));
+  });
+  app.get('/sitemap-forex.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('forex', forexEntries));
+  });
+  app.get('/sitemap-commodities.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('commodities', commodityEntries));
+  });
+  app.get('/sitemap-economy.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('economy', economyEntries));
+  });
+  app.get('/sitemap-indicators.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('indicators', indicatorEntries));
+  });
+  app.get('/sitemap-education.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('education', educationEntries));
+  });
+  app.get('/sitemap-ui.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('ui', uiProfileEntries));
   });
 
   // 5. AI-READABLE CONTENT ENDPOINTS
@@ -2161,12 +2229,29 @@ ${entries.map(e => `  <url>
     '/encyclopedia',
     '/financial-encyclopedia',
     '/education',
+    '/education/:schoolId',
+    '/education/:schoolId/:unitId',
+    '/education/:schoolId/:unitId/:lessonId',
     '/clearpath-education',
     '/indicators',
+    '/indicators/:slug',
     '/encyclopedia-of-indicators',
     '/literacy',
     '/literacy-os',
-    '/market-universe'
+    '/market-universe',
+    '/stocks',
+    '/stocks/:symbol',
+    '/crypto',
+    '/crypto/:coin',
+    '/forex',
+    '/forex/:pair',
+    '/commodities',
+    '/commodities/:commodity',
+    '/companies',
+    '/companies/:slug',
+    '/economy/:topic',
+    '/ui',
+    '/ui/:profileId',
   ];
 
   SEO_PAGES.forEach(pagePath => {

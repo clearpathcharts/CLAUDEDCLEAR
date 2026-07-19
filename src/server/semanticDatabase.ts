@@ -8,6 +8,18 @@ import {
   SPEED_COPY,
 } from '../content/tradingReimaginedLanding';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import {
+  lookupStock,
+  lookupCrypto,
+  lookupForex,
+  lookupCommodity,
+  lookupIndicator,
+  lookupProfile,
+  lookupEconomy,
+  getLessonSeo,
+  PROFILE_SEO,
+} from './crawlCatalog';
+import { getSchool, getUnit } from '../education/curriculumData';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -607,6 +619,234 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Home", url: "" },
       { name: "Market Universe", url: "/market-universe" }
     ]));
+  } else if (pathClean === '/stocks' || pathClean === '/crypto' || pathClean === '/forex' || pathClean === '/commodities' || pathClean === '/companies') {
+    const hubMeta: Record<string, { title: string; description: string; crumb: string }> = {
+      '/stocks': {
+        title: 'Stock Encyclopedia: Equity Profiles & Market Data | ClearPathTrader',
+        description: 'Browse the ClearPath stock encyclopedia — equity profiles, sectors, and educational context across the market universe.',
+        crumb: 'Stocks',
+      },
+      '/crypto': {
+        title: 'Crypto Encyclopedia: Coins, Tokens & Protocols | ClearPathTrader',
+        description: 'Explore cryptocurrency profiles — Layer 1s, DeFi, and digital assets — inside the ClearPath financial encyclopedia.',
+        crumb: 'Crypto',
+      },
+      '/forex': {
+        title: 'Forex Encyclopedia: Currency Pairs & Macro Drivers | ClearPathTrader',
+        description: 'Study major, cross, and exotic FX pairs with the macro drivers that move exchange rates.',
+        crumb: 'Forex',
+      },
+      '/commodities': {
+        title: 'Commodities Encyclopedia: Metals, Energy & Agriculture | ClearPathTrader',
+        description: 'Gold, oil, grains, and more — commodity profiles with the supply and demand forces behind them.',
+        crumb: 'Commodities',
+      },
+      '/companies': {
+        title: 'Company Directory | ClearPathTrader Encyclopedia',
+        description: 'Company directory for the ClearPath financial encyclopedia — explore issuers behind listed equities.',
+        crumb: 'Companies',
+      },
+    };
+    const hub = hubMeta[pathClean];
+    title = hub.title;
+    description = hub.description;
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Encyclopedia', url: '/encyclopedia' },
+      { name: hub.crumb, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/stocks/')) {
+    const symbol = pathClean.slice('/stocks/'.length);
+    const stock = lookupStock(symbol);
+    const ticker = (stock?.ticker || symbol).toUpperCase();
+    const company = stock?.company || ticker;
+    title = `${ticker} Stock Profile — ${company} | ClearPathTrader`;
+    description = stock?.description
+      || `${company} (${ticker}) equity profile in the ClearPath financial encyclopedia — sector context, educational overview, and market structure.`;
+    keywords = [ticker, company, stock?.sector, 'stock profile', 'equity encyclopedia'].filter(Boolean).join(', ');
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Stocks', url: '/stocks' },
+      { name: ticker, url: pathClean },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'Corporation',
+      name: company,
+      tickerSymbol: ticker,
+      description,
+      url: canonicalUrl,
+    });
+  } else if (pathClean.startsWith('/crypto/')) {
+    const symbol = pathClean.slice('/crypto/'.length);
+    const coin = lookupCrypto(symbol);
+    const sym = (coin?.symbol || symbol).toUpperCase();
+    const name = coin?.name || sym;
+    title = `${name} (${sym}) Crypto Profile | ClearPathTrader`;
+    description = coin?.description
+      || `${name} (${sym}) cryptocurrency profile — category, market context, and educational overview in ClearPath.`;
+    keywords = [sym, name, coin?.category, 'crypto', 'digital asset'].filter(Boolean).join(', ');
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Crypto', url: '/crypto' },
+      { name: name, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/forex/')) {
+    const pairKey = pathClean.slice('/forex/'.length);
+    const fx = lookupForex(pairKey);
+    const pair = fx?.pair || pairKey.toUpperCase();
+    title = `${pair} Forex Pair — Drivers & Education | ClearPathTrader`;
+    description = fx?.description
+      || `${pair} currency pair profile — type, macro drivers, and educational context in the ClearPath forex encyclopedia.`;
+    keywords = [pair, 'forex', 'currency pair', ...(fx?.affectedBy || [])].join(', ');
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Forex', url: '/forex' },
+      { name: pair, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/commodities/')) {
+    const symbol = pathClean.slice('/commodities/'.length);
+    const c = lookupCommodity(symbol);
+    const name = c?.name || symbol.toUpperCase();
+    const sym = (c?.symbol || symbol).toUpperCase();
+    title = `${name} (${sym}) Commodity Profile | ClearPathTrader`;
+    description = c?.description
+      || `${name} commodity profile — category, drivers, and educational context in ClearPath.`;
+    keywords = [name, sym, c?.category, 'commodity'].filter(Boolean).join(', ');
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Commodities', url: '/commodities' },
+      { name: name, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/economy/')) {
+    const slug = pathClean.slice('/economy/'.length);
+    const topic = lookupEconomy(slug);
+    title = topic
+      ? `${topic.title} — Economy Encyclopedia | ClearPathTrader`
+      : `${slug.replace(/-/g, ' ')} — Economy Encyclopedia | ClearPathTrader`;
+    description = topic?.summary
+      || `Economic concept explainer in the ClearPath financial encyclopedia.`;
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Encyclopedia', url: '/encyclopedia' },
+      { name: topic?.title || slug, url: pathClean },
+    ]));
+    if (topic) {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: topic.title,
+        description: topic.summary,
+        url: canonicalUrl,
+        publisher: { '@type': 'Organization', name: 'ClearPathTrader', url: baseUrl },
+      });
+    }
+  } else if (pathClean.startsWith('/indicators/')) {
+    const slug = pathClean.slice('/indicators/'.length);
+    const ind = lookupIndicator(slug);
+    if (ind) {
+      title = `${ind.name} Indicator Explained | ClearPathTrader`;
+      description = `${ind.description} Category: ${ind.category}. Complexity ${ind.complexity}/5. Part of the ClearPath Encyclopedia of Indicators.`;
+      keywords = [ind.name, ind.category, ...ind.tags, 'trading indicator'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Indicators', url: '/indicators' },
+        { name: ind.name, url: pathClean },
+      ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: `${ind.name} Indicator`,
+        description,
+        url: canonicalUrl,
+        image: `${baseUrl}${ind.img}`,
+        publisher: { '@type': 'Organization', name: 'ClearPathTrader', url: baseUrl },
+      });
+    }
+  } else if (pathClean.startsWith('/education/')) {
+    const parts = pathClean.split('/').filter(Boolean); // education, school, unit?, lesson?
+    if (parts.length === 2) {
+      const school = getSchool(parts[1]);
+      if (school) {
+        title = `${school.name} Trading School — ClearPath Education`;
+        description = school.tagline;
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Education', url: '/education' },
+          { name: school.name, url: pathClean },
+        ]));
+      }
+    } else if (parts.length === 3) {
+      const school = getSchool(parts[1]);
+      const unit = getUnit(parts[1], parts[2]);
+      if (school && unit) {
+        title = `${unit.title} | ${school.name} — ClearPath Education`;
+        description = `${unit.lessons.length} lessons in ${school.name}: ${unit.title}. Plain-language trading curriculum on ClearPath.`;
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Education', url: '/education' },
+          { name: school.name, url: `/education/${school.id}` },
+          { name: unit.title, url: pathClean },
+        ]));
+      }
+    } else if (parts.length === 4) {
+      const seo = getLessonSeo(parts[1], parts[2], parts[3]);
+      if (seo) {
+        title = `${seo.lesson.title} | ${seo.school.name} — ClearPath Education`;
+        description = seo.summary;
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Education', url: '/education' },
+          { name: seo.school.name, url: `/education/${seo.school.id}` },
+          { name: seo.unit.title.split('—')[0].trim(), url: `/education/${seo.school.id}/${seo.unit.id}` },
+          { name: seo.lesson.title, url: pathClean },
+        ]));
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'LearningResource',
+          name: seo.lesson.title,
+          description: seo.summary,
+          url: canonicalUrl,
+          learningResourceType: 'Lesson',
+          isPartOf: {
+            '@type': 'Course',
+            name: `${seo.school.name} School`,
+            url: `${baseUrl}/education/${seo.school.id}`,
+          },
+          provider: { '@type': 'Organization', name: 'ClearPathTrader', url: baseUrl },
+        });
+      }
+    }
+  } else if (pathClean === '/ui') {
+    title = 'Neurodivergent Trading UI Modes | ClearPathTrader';
+    description = `${PROFILE_SEO.length} accessible trading interfaces — calm focus, reading support, ADHD modes, autism-predictable layouts, minimal motion, and more.`;
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'UI Modes', url: '/ui' },
+    ]));
+  } else if (pathClean.startsWith('/ui/')) {
+    const slug = pathClean.slice('/ui/'.length);
+    const profile = lookupProfile(slug);
+    if (profile) {
+      title = `${profile.name} Trading Interface | ClearPathTrader`;
+      description = `${profile.headline}. ${profile.summary}`;
+      keywords = [profile.name, 'neurodivergent trading UI', 'accessible trading interface', 'ClearPath Trader'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'UI Modes', url: '/ui' },
+        { name: profile.name, url: pathClean },
+      ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: `ClearPath Trader — ${profile.name}`,
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        description,
+        url: canonicalUrl,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      });
+    }
   }
 
   // Construct final Schema script blocks to inject
@@ -670,7 +910,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         <h2>${SPEED_COPY.headline}</h2>
         <p>${SPEED_COPY.body}</p>
         <h2>Neurodivergence</h2>
-        <p>Custom colors and layouts from traditional trading desks to autism-friendly designs — you choose what works for you.</p>
+        <p>Custom colors and layouts from traditional trading desks to autism-friendly designs — you choose what works for you. Browse all modes at <a href="/ui">/ui</a>.</p>
         <h2>Customization</h2>
         <p>Your platform: colors, layouts, windows, social links, and news without leaving your charts.</p>
         <h2>Indicators</h2>
@@ -680,6 +920,25 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       </article>
     </noscript>`;
     html = html.replace('<div id="root">', `${noscriptArticle}\n    <div id="root">`);
+  } else if (
+    pathClean.startsWith('/stocks/') ||
+    pathClean.startsWith('/crypto/') ||
+    pathClean.startsWith('/forex/') ||
+    pathClean.startsWith('/commodities/') ||
+    pathClean.startsWith('/economy/')
+  ) {
+    // Encyclopedia entity pages are SPA-rendered; give non-JS crawlers the unique title/description.
+    const safeTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeDesc = description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const noscriptEntity = `
+    <noscript>
+      <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
+        <h1>${safeTitle}</h1>
+        <p>${safeDesc}</p>
+        <p><a href="/encyclopedia">Browse the Financial Encyclopedia</a> · <a href="/education">ClearPath Education</a> · <a href="/indicators">Indicator Encyclopedia</a></p>
+      </article>
+    </noscript>`;
+    html = html.replace('<div id="root">', `${noscriptEntity}\n    <div id="root">`);
   }
 
   return html;
