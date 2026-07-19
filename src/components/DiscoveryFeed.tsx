@@ -15,6 +15,7 @@ import {
   Award,
   ExternalLink,
   Server,
+  Library,
 } from 'lucide-react';
 import {
   APPEALING_CERTIFICATES,
@@ -25,6 +26,11 @@ import {
   AWESOME_SELFHOSTED_MONEY_SECTION,
   AWESOME_SELFHOSTED_REPO,
 } from '../content/appealingSelfhosted';
+import {
+  APPEALING_ACADEMIC_RESEARCH,
+  EBSCO_ACADEMIC_LIBRARIES,
+  EBSCO_FREE_DATABASES,
+} from '../content/appealingAcademicResearch';
 
 interface DiscoveryFeedProps {
   onTabChange: (tabId: string) => void;
@@ -245,6 +251,13 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
                 icon: Server,
                 color: '#00E5FF',
                 href: '#selfhosted-toolkit',
+              },
+              {
+                title: 'Academic research desk',
+                blurb: 'Free EBSCO scholarly databases & open-access entry points — peer-reviewed literacy, not paywalled advice.',
+                icon: Library,
+                color: '#B9A6FF',
+                href: '#academic-research-desk',
               },
             ].map((item) => {
               const Icon = item.icon;
