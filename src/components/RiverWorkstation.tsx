@@ -190,7 +190,12 @@ export default function RiverWorkstation() {
   const saveLocal = useCallback(() => {
     if (!state.compiled) return;
     saveToCatalog(entryFromActive(
-      { name: state.fileName || `${state.compiled.title}.pine`, source: state.rawSource, inputs: state.inputValues },
+      {
+        name: state.fileName || `${state.compiled.title}.pine`,
+        source: state.rawSource,
+        inputs: state.inputValues,
+        savedAt: Date.now(),
+      },
       { author: 'You', source: 'local', version: state.compiled.version, tags: ['local'] },
     ));
     setCatalogRefresh(n => n + 1);

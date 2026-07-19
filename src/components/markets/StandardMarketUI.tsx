@@ -56,7 +56,7 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
         />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
-        <i className="fas fa-chart-line mr-2"></i> CLEAR PATH TRADER
+        <img src="/logo.png" alt="Clear Path Markets Science" className="h-7 w-auto max-w-[140px] object-contain opacity-90 drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
       </div>
     </div>
   );
