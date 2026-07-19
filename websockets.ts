@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
+import { getFinnhubApiKey } from './src/server/secrets';
 
 let wssInstance: WebSocketServer | null = null;
 
@@ -241,7 +242,7 @@ export function setupWebSockets(server: Server) {
   });
 
   // Start Finnhub Connection or Simulation
-  const apiKey = process.env.FINNHUB_API_KEY;
+  const apiKey = getFinnhubApiKey();
   if (apiKey) {
     console.log("🔌 [Finnhub Connection] Initializing streaming API tunnel...");
     // Open standard connection to Finnhub as requested
