@@ -34,6 +34,8 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
+import { GUIDE_RECORDS } from './src/server/contentData';
+import { renderStaticContentPage } from './src/server/contentPages';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
@@ -1939,171 +1941,90 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
     res.header('Content-Type', 'text/plain');
     res.send(`User-agent: *
 Allow: /
-Allow: /macro
-Allow: /learn
-Allow: /learn/*
-Allow: /guides
-Allow: /glossary
-Allow: /faq
-Allow: /research
-Allow: /about
-Allow: /if-trading-and-chatgpt-had-a-baby
-Allow: /trading-ai
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
 Disallow: /dashboard
 
-# Crawl Delay to protect institutional database resources
-Crawl-delay: 2
-
 Sitemap: https://clearpathtrader.com/sitemap.xml`);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
+  // Only URLs that serve real content to logged-out visitors (and crawlers)
+  // belong here — sitemap URLs that render a login wall get dropped by
+  // Google and drag down crawl trust for the rest of the site.
+  const SITEMAP_BASE = 'https://clearpathtrader.com';
+
+  interface SitemapEntry { path: string; lastmod: string; changefreq: string; priority: string; }
+
+  const buildUrlset = (entries: SitemapEntry[]) =>
+    `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries.map(e => `  <url>
+    <loc>${SITEMAP_BASE}${e.path}</loc>
+    <lastmod>${e.lastmod}</lastmod>
+    <changefreq>${e.changefreq}</changefreq>
+    <priority>${e.priority}</priority>
+  </url>`).join('\n')}
+</urlset>`;
+
   app.get('/sitemap.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-pages.xml</loc>
+    <loc>${SITEMAP_BASE}/sitemap-pages.xml</loc>
   </sitemap>
   <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-learn.xml</loc>
+    <loc>${SITEMAP_BASE}/sitemap-learn.xml</loc>
   </sitemap>
   <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-guides.xml</loc>
+    <loc>${SITEMAP_BASE}/sitemap-guides.xml</loc>
   </sitemap>
 </sitemapindex>`);
   });
 
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/trading-ai</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/if-trading-and-chatgpt-had-a-baby</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/macro</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/glossary</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/faq</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/about</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/research</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset([
+      { path: '/', lastmod: '2026-07-19', changefreq: 'daily', priority: '1.0' },
+      // NOTE: /trading-ai is a canonical alias of the URL below — sitemaps
+      // must only list canonical URLs, so the alias is intentionally omitted.
+      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod: '2026-07-10', changefreq: 'weekly', priority: '0.95' },
+      { path: '/about', lastmod: '2026-07-10', changefreq: 'monthly', priority: '0.85' },
+      { path: '/encyclopedia', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/indicators', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/education', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/literacy', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/learn', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
+      { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
+    ]));
   });
 
   app.get('/sitemap-learn.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/learn/inflation</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/liquidity</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/valuation</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/microstructure</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/correlations</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset(
+      Object.values(SEMANTIC_RECORDS).map(record => ({
+        path: `/learn/${record.id}`,
+        lastmod: record.updatedDate,
+        changefreq: 'weekly',
+        priority: '0.9',
+      }))
+    ));
   });
 
   app.get('/sitemap-guides.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/guides/macro-spreads</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides/arbitrage-mechanics</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides/leverage-risk</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset(
+      Object.values(GUIDE_RECORDS).map(guide => ({
+        path: `/guides/${guide.id}`,
+        lastmod: guide.updatedDate,
+        changefreq: 'weekly',
+        priority: '0.85',
+      }))
+    ));
   });
 
   // 5. AI-READABLE CONTENT ENDPOINTS
@@ -2185,6 +2106,16 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
 
   const handlePageServing = async (req: express.Request, res: express.Response) => {
     try {
+      // Public content routes (learn/guides/glossary/faq) are served as fully
+      // crawlable static HTML documents — the SPA has no logged-out UI for
+      // them, so this is what both visitors and search engines should see.
+      const staticContentHtml = renderStaticContentPage(req.path);
+      if (staticContentHtml !== null) {
+        const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(enriched);
+      }
+
       if (isDev) {
         const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
         let html = fs.readFileSync(indexHtmlPath, 'utf-8');
@@ -2223,6 +2154,7 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/learn',
     '/learn/:topic',
     '/guides',
+    '/guides/:slug',
     '/glossary',
     '/faq',
     '/research',
@@ -2232,6 +2164,8 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/clearpath-education',
     '/indicators',
     '/encyclopedia-of-indicators',
+    '/literacy',
+    '/literacy-os',
     '/market-universe'
   ];
 

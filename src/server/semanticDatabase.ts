@@ -7,6 +7,7 @@ import {
   TRADING_REIMAGINED_SEO,
   SPEED_COPY,
 } from '../content/tradingReimaginedLanding';
+import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -259,6 +260,16 @@ function stripConflictingHeadTags(html: string): string {
     .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
 }
 
+// Alias routes whose canonical must point at the primary URL to avoid
+// duplicate-content signals (each alias serves identical page content).
+const CANONICAL_ALIASES: Record<string, string> = {
+  [TRADING_REIMAGINED_SHORT_PATH]: TRADING_REIMAGINED_PATH,
+  '/financial-encyclopedia': '/encyclopedia',
+  '/encyclopedia-of-indicators': '/indicators',
+  '/clearpath-education': '/education',
+  '/literacy-os': '/literacy',
+};
+
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
@@ -266,15 +277,14 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   let description = "Premium institutional macroeconomic science interface, financial terminal, and educational database. High-fidelity analytics & AI content graph systems.";
   let keywords = "trading platform, market analysis, financial terminal, ClearPath Trader, forex charts, crypto charts";
   const baseUrl = "https://clearpathtrader.com";
-  const canonicalUrl =
-    pathClean === TRADING_REIMAGINED_SHORT_PATH
-      ? `${baseUrl}${TRADING_REIMAGINED_PATH}`
-      : `${baseUrl}${pathClean === '/' ? '' : pathClean}`;
+  const canonicalPath = CANONICAL_ALIASES[pathClean] ?? pathClean;
+  const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
 
   // Organization + WebSite schema (brand trust — no personal founder attribution)
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": `${baseUrl}/#organization`,
     "name": "ClearPathTrader",
     "alternateName": "Clear Path Markets Science",
     "url": baseUrl,
@@ -417,12 +427,25 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Guides", url: "/guides" }
     ]));
   } else if (pathClean === '/glossary') {
-    title = "Comprehensive Alphabetical Financial Glossary Dictionary | ClearPathTrader";
-    description = "Crawlable list of verified financial vocabulary, business metrics, and structural economic terms with precise documentation.";
+    title = "Financial Glossary: Trading & Market Terms Defined | ClearPathTrader";
+    description = `Plain-language definitions of ${GLOSSARY_TERMS.length}+ essential trading terms: leverage, liquidity, margin, order books, spreads, volatility, and more.`;
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Glossary", url: "/glossary" }
     ]));
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "DefinedTermSet",
+      "@id": `${canonicalUrl}#glossary`,
+      "name": "ClearPathTrader Financial Glossary",
+      "url": canonicalUrl,
+      "hasDefinedTerm": GLOSSARY_TERMS.map(t => ({
+        "@type": "DefinedTerm",
+        "name": t.term,
+        "description": t.definition,
+        "inDefinedTermSet": `${canonicalUrl}#glossary`
+      }))
+    });
   } else if (pathClean === '/faq') {
     title = "Frequently Asked Questions (FAQ) & Entity Validation | ClearPathTrader";
     description = "Find verified structured listings on platform architecture, macroeconomic definitions, and institutional compliance details.";
@@ -455,6 +478,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     if (record) {
       title = `${record.title} | ClearPathTrader`;
       description = record.summary;
+      keywords = record.keywords.join(', ');
       
       schemas.push(makeBreadcrumb([
         { name: "Home", url: "" },
@@ -465,7 +489,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       // 12. AUTHOR SYSTEM with precise EEAT metrics
       schemas.push({
         "@context": "https://schema.org",
-        "@type": "NewsArticle",
+        "@type": "Article",
         "mainEntityOfPage": {
           "@type": "WebPage",
           "@id": canonicalUrl
@@ -505,6 +529,84 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         });
       }
     }
+  } else if (pathClean.startsWith('/guides/')) {
+    const slug = pathClean.replace('/guides/', '');
+    const guide = GUIDE_RECORDS[slug];
+    if (guide) {
+      title = `${guide.title} | ClearPathTrader`;
+      description = guide.summary;
+      keywords = guide.keywords.join(', ');
+
+      schemas.push(makeBreadcrumb([
+        { name: "Home", url: "" },
+        { name: "Guides", url: "/guides" },
+        { name: guide.title.split(':')[0], url: `/guides/${slug}` }
+      ]));
+
+      schemas.push({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl },
+        "headline": guide.title,
+        "description": guide.summary,
+        "image": `${baseUrl}/og-image.png`,
+        "datePublished": `${guide.publishDate}T08:00:00Z`,
+        "dateModified": `${guide.updatedDate}T15:00:00Z`,
+        "author": { "@type": "Organization", "name": "ClearPathTrader Editorial", "url": baseUrl },
+        "publisher": {
+          "@type": "Organization",
+          "name": "ClearPathTrader",
+          "logo": { "@type": "ImageObject", "url": `${baseUrl}/logo.png` }
+        }
+      });
+
+      if (guide.faqs.length > 0) {
+        schemas.push({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": guide.faqs.map(faq => ({
+            "@type": "Question",
+            "name": faq.question,
+            "acceptedAnswer": { "@type": "Answer", "text": faq.answer }
+          }))
+        });
+      }
+    }
+  } else if (canonicalPath === '/encyclopedia') {
+    title = "Financial Encyclopedia: Stocks, Crypto, Forex & Commodities | ClearPathTrader";
+    description = "Explore the ClearPath financial encyclopedia — company profiles, crypto assets, forex pairs, commodities, and economic concepts in one knowledge base.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Encyclopedia", url: "/encyclopedia" }
+    ]));
+  } else if (canonicalPath === '/indicators') {
+    title = "Encyclopedia of 185+ Trading Indicators, Explained Visually | ClearPathTrader";
+    description = "Browse 185+ technical and fundamental indicators — RSI, MACD, Bollinger Bands, Ichimoku, order flow, and more — each with a visual explainer.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Indicator Encyclopedia", url: "/indicators" }
+    ]));
+  } else if (canonicalPath === '/education') {
+    title = "ClearPath Education: Beginner to Advanced Trading Curriculum | ClearPathTrader";
+    description = "A structured, plain-language trading curriculum with lessons, quizzes, and progress tracking — from candlesticks to advanced market structure.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Education", url: "/education" }
+    ]));
+  } else if (canonicalPath === '/literacy') {
+    title = "Literacy OS: Financial Literacy Study System | ClearPathTrader";
+    description = "A self-paced financial literacy operating system: concept wiki, study feeds, and vocabulary building for reading markets with confidence.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Literacy OS", url: "/literacy" }
+    ]));
+  } else if (pathClean === '/market-universe') {
+    title = "Market Universe: Global Asset Catalog | ClearPathTrader";
+    description = "Navigate the full ClearPath market universe — equities, crypto, forex, commodities, and indices — in a single explorable catalog.";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Market Universe", url: "/market-universe" }
+    ]));
   }
 
   // Construct final Schema script blocks to inject
