@@ -30,27 +30,11 @@ export interface ChatRoomMessage {
   isSystem?: boolean;
 }
 
-const CHAT_ROOM_SEEDS: Record<string, ChatRoomMessage[]> = {
-  lobby: [
-    { id: 'lobby-1', roomId: 'lobby', author: 'ClearPath Host', text: 'Welcome to the public trading lobby. Create a free account to unlock private guilds.', timestamp: Date.now() - 7200000, isSystem: true },
-    { id: 'lobby-2', roomId: 'lobby', author: 'MacroMaven', text: 'Anyone watching the 10Y auction today? Curve looks stressed.', timestamp: Date.now() - 3600000 },
-    { id: 'lobby-3', roomId: 'lobby', author: 'FX_Scout', text: 'EURUSD holding the London open range — patience on breakouts.', timestamp: Date.now() - 1800000 },
-  ],
-  'macro-minds': [
-    { id: 'macro-1', roomId: 'macro-minds', author: 'YieldWatcher', text: '2s10s inversion tightening again. Risk-off tone into NY.', timestamp: Date.now() - 5400000 },
-    { id: 'macro-2', roomId: 'macro-minds', author: 'SovereignDesk', text: 'Watching DXY 104.20 as the line in the sand this week.', timestamp: Date.now() - 2400000 },
-  ],
-  'forex-syndicate': [
-    { id: 'fx-1', roomId: 'forex-syndicate', author: 'SessionHunter', text: 'Asia sweep on GBPUSD cleared — watching 1.2680 reaction.', timestamp: Date.now() - 4200000 },
-    { id: 'fx-2', roomId: 'forex-syndicate', author: 'PipArchitect', text: 'NY overlap volatility window opens in 40 minutes.', timestamp: Date.now() - 1200000 },
-  ],
-  'liquidity-alchemists': [
-    { id: 'liq-1', roomId: 'liquidity-alchemists', author: 'RepoRadar', text: 'Overnight RRP usage ticked lower — liquidity pulse improving.', timestamp: Date.now() - 3000000 },
-  ],
-};
+/** Rooms start empty — no seeded fake people or demo conversations. */
+const CHAT_ROOM_IDS = ['lobby', 'macro-minds', 'forex-syndicate', 'liquidity-alchemists'] as const;
 
 const chatRoomMessages: Record<string, ChatRoomMessage[]> = Object.fromEntries(
-  Object.entries(CHAT_ROOM_SEEDS).map(([roomId, messages]) => [roomId, [...messages]])
+  CHAT_ROOM_IDS.map((roomId) => [roomId, [] as ChatRoomMessage[]])
 );
 
 const chatRoomOnline: Record<string, Set<WebSocket>> = {};
