@@ -317,6 +317,65 @@ export function lookupEconomy(slug: string) {
   return ECONOMY_TOPICS.find((t) => t.slug === slug) || null;
 }
 
+/** Curated + first-N samples for hub index pages (internal linking). */
+export function featuredStocks(limit = 12) {
+  ensureLookups();
+  const prefer = ['aapl', 'tsla', 'msft', 'nvda', 'amzn', 'googl', 'meta', 'jpm'];
+  const out: any[] = [];
+  for (const t of prefer) {
+    const s = stockByTicker!.get(t);
+    if (s) out.push(s);
+  }
+  for (const s of stockByTicker!.values()) {
+    if (out.length >= limit) break;
+    if (out.some((x) => x.ticker === s.ticker)) continue;
+    out.push(s);
+  }
+  return out;
+}
+
+export function featuredCrypto(limit = 12) {
+  ensureLookups();
+  const prefer = ['btc', 'eth', 'sol', 'aave', 'link', 'dot', 'avax', 'matic'];
+  const out: any[] = [];
+  for (const t of prefer) {
+    const c = cryptoBySymbol!.get(t);
+    if (c) out.push(c);
+  }
+  for (const c of cryptoBySymbol!.values()) {
+    if (out.length >= limit) break;
+    if (out.some((x) => x.symbol === c.symbol)) continue;
+    out.push(c);
+  }
+  return out;
+}
+
+export function featuredForex(limit = 10) {
+  ensureLookups();
+  const prefer = ['eurusd', 'usdjpy', 'gbpusd', 'audusd', 'usdcad', 'usdchf'];
+  const out: any[] = [];
+  for (const t of prefer) {
+    const f = forexByPair!.get(t);
+    if (f) out.push(f);
+  }
+  for (const f of forexByPair!.values()) {
+    if (out.length >= limit) break;
+    if (out.some((x) => x.pair === f.pair)) continue;
+    out.push(f);
+  }
+  return out;
+}
+
+export function featuredCommodities(limit = 10) {
+  ensureLookups();
+  return [...commodityBySymbol!.values()].slice(0, limit);
+}
+
+export function allIndicators() {
+  ensureLookups();
+  return [...indicatorBySlug!.entries()].map(([slug, ind]) => ({ slug, ...ind }));
+}
+
 export function getLessonSeo(schoolId: string, unitId: string, lessonId: string) {
   const school = getSchool(schoolId);
   const unit = getUnit(schoolId, unitId);
