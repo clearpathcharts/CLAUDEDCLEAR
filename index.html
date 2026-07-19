@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <script>
+      // Apply WCAG display prefs before paint (avoids neuro→high-contrast flash)
+      try {
+        var hc = localStorage.getItem('cp_a11y_high_contrast') === 'true';
+        var rs = localStorage.getItem('cp_a11y_reduced_sensory') === 'true';
+        var root = document.documentElement;
+        root.setAttribute('data-high-contrast', hc ? 'true' : 'false');
+        root.setAttribute('data-reduced-sensory', rs ? 'true' : 'false');
+        // CTA fills always use mid-tone WCAG-safe pink/orange
+        root.style.setProperty('--cpt-pink', '#d81b60');
+        root.style.setProperty('--cpt-orange', '#e65100');
+        root.style.setProperty('--cpt-cta-on-pink', '#ffffff');
+        root.style.setProperty('--cpt-cta-on-orange', '#ffffff');
+        root.style.setProperty('--cpt-text-pink', hc ? '#f9a8d4' : '#f472b6');
+        root.style.setProperty('--cpt-text-orange', hc ? '#fdba74' : '#fb923c');
+        root.style.setProperty('--cpt-text-purple', hc ? '#f3e8ff' : '#e9d5ff');
+      } catch (e) {}
+    </script>
+    <script>
       // Force-unregister stale/old service workers that cause frozen black screens
       try {
         if (typeof navigator !== 'undefined' && navigator.serviceWorker) {

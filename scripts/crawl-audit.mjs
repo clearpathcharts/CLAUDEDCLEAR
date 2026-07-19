@@ -93,15 +93,18 @@ for (const path of toCheck) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ');
 
-  const isStaticContent = /^\/(learn|guides|glossary|faq|ui|indicators\/.|education\/.)/.test(path);
+  const isStaticContent = /^\/(learn|guides|glossary|faq|ui|indicators\/.|education\/.|stocks\/.|crypto\/.|forex\/.|commodities\/.|economy\/.)/.test(path);
   if (isStaticContent && bodyText.length < 800) {
     problems.push(`thin server-rendered content (${bodyText.length} chars)`);
   }
 
-  // Entity pages must not use the default homepage title
+  // Entity pages must not use the default homepage title and must include waitlist capture
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy/.test(title)) {
+    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—/.test(title)) {
       problems.push('entity page still has default title');
+    }
+    if (!html.includes('cpt-waitlist')) {
+      problems.push('missing waitlist lead capture');
     }
   }
 
