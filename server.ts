@@ -1398,7 +1398,11 @@ ${CPT_SITE_GUIDE}`;
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
       }
 
-      res.json(data);
+      res.json({
+        ...data,
+        price: data.price ?? data.close,
+        percent_change: data.percent_change ?? data.change_percent,
+      });
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });

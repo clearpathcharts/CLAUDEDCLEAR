@@ -53,9 +53,12 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
               throw new Error(`HTTP Error ${response.status}`);
             }
             const data = await response.json();
-            if (data && !data.error && data.price) {
-              const livePrice = parseFloat(data.price);
-              const changePct = parseFloat(data.percent_change || data.change_percent || "0");
+            const rawPrice = data?.price ?? data?.close;
+            const livePrice = rawPrice != null ? parseFloat(String(rawPrice)) : NaN;
+            if (data && !data.error && Number.isFinite(livePrice) && livePrice > 0) {
+              const changePct = parseFloat(
+                data.percent_change ?? data.change_percent ?? data.percentChange ?? "0"
+              );
               return {
                 ...asset,
                 price: livePrice,

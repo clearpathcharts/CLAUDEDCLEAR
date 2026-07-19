@@ -237,6 +237,8 @@ export function isSyntheticOrIndex(symbol: string): boolean {
 export function formatSymbolForTwelveData(symbol: string): string {
   const clean = symbol.trim().toUpperCase();
   if (clean === 'DXY') return 'DX-Y.F';
+  if (clean === 'XAUUSD' || clean === 'XAU/USD') return 'XAU/USD';
+  if (clean === 'XAGUSD' || clean === 'XAG/USD') return 'XAG/USD';
   // Forex checks (e.g. GBPUSD or GBP/USD)
   if (clean.length === 6 && (clean.startsWith('USD') || clean.endsWith('USD') || clean.endsWith('JPY') || clean.endsWith('GBP') || clean.endsWith('EUR'))) {
     return `${clean.slice(0, 3)}/${clean.slice(3)}`;
