@@ -657,6 +657,54 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Home", url: "" },
       { name: "Education", url: "/education" }
     ]));
+  } else if (pathClean === '/tools' || pathClean === '/tools/position-size') {
+    if (pathClean === '/tools') {
+      title = 'Free Trading Calculators & Tools | ClearPathTrader';
+      description = 'Free trading tools starting with a position size calculator — size trades from equity, risk percent, and stop distance.';
+    } else {
+      title = 'Position Size Calculator — Risk % × Stop Distance | ClearPathTrader';
+      description = 'Free position size calculator: account equity × risk percent ÷ stop distance. Learn fixed-fractional sizing used to survive losing streaks.';
+      keywords = 'position size calculator, risk percent, stop loss sizing, fixed fractional position sizing, trading calculator';
+    }
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Tools', url: '/tools' },
+      ...(pathClean === '/tools/position-size' ? [{ name: 'Position size', url: '/tools/position-size' }] : []),
+    ]));
+    if (pathClean === '/tools/position-size') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'ClearPath Position Size Calculator',
+        applicationCategory: 'FinanceApplication',
+        operatingSystem: 'Web',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+        description,
+        url: canonicalUrl,
+      });
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+          {
+            '@type': 'Question',
+            name: 'What risk percent should I use?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'Many educators suggest 0.5%–2% of equity per trade. Lower is safer during learning. The calculator sizes to the percent you choose.',
+            },
+          },
+          {
+            '@type': 'Question',
+            name: 'Does this include fees or slippage?',
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: 'No. Treat fees and slippage as extra stop distance, or reduce size further. The tool is an educational sizing aid, not an order ticket.',
+            },
+          },
+        ],
+      });
+    }
   } else if (canonicalPath === '/literacy') {
     title = "Literacy OS: Financial Literacy Study System | ClearPathTrader";
     description = "A self-paced financial literacy operating system: concept wiki, study feeds, and vocabulary building for reading markets with confidence.";

@@ -16,6 +16,7 @@ import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
+import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -29,11 +30,6 @@ const ParticleCanvas = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     let animationId: number;
-
-    // Respect OS/browser reduced-motion preference (WCAG 2.3.3)
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
 
     // ClearPath aesthetic color palette
     const colors = [
@@ -149,8 +145,7 @@ const ParticleCanvas = () => {
 
   return (
     <canvas 
-      ref={canvasRef}
-      aria-hidden="true"
+      ref={canvasRef} 
       className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-[0.08]" 
     />
   );
@@ -411,25 +406,30 @@ export default function Auth() {
     return () => clearInterval(cycle);
   }, [announcements.length]);
 
-  // Focus input automatically when Board Modal opens
-  useEffect(() => {
-    if (boardModalOpen && passcodeRef.current) {
-      setTimeout(() => passcodeRef.current?.focus(), 150);
-    }
-  }, [boardModalOpen]);
+  const boardDialogRef = useRef<HTMLDivElement>(null);
+  const demoDialogRef = useRef<HTMLDivElement>(null);
+  const tvDialogRef = useRef<HTMLDivElement>(null);
+  const ywcDialogRef = useRef<HTMLDivElement>(null);
+  const anyModalOpen =
+    boardModalOpen || demoOpen || ecosystemTvOpen || ecosystemYwcOpen || privateLoginOpen;
 
-  // Escape closes any open marketing modal (keyboard accessibility)
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (boardModalOpen) setBoardModalOpen(false);
-      if (demoOpen) setDemoOpen(false);
-      if (ecosystemTvOpen) setEcosystemTvOpen(false);
-      if (ecosystemYwcOpen) setEcosystemYwcOpen(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [boardModalOpen, demoOpen, ecosystemTvOpen, ecosystemYwcOpen]);
+  useAccessibleDialog(boardDialogRef, {
+    open: boardModalOpen,
+    onClose: () => setBoardModalOpen(false),
+    initialFocusRef: passcodeRef,
+  });
+  useAccessibleDialog(demoDialogRef, {
+    open: demoOpen,
+    onClose: () => setDemoOpen(false),
+  });
+  useAccessibleDialog(tvDialogRef, {
+    open: ecosystemTvOpen,
+    onClose: () => setEcosystemTvOpen(false),
+  });
+  useAccessibleDialog(ywcDialogRef, {
+    open: ecosystemYwcOpen,
+    onClose: () => setEcosystemYwcOpen(false),
+  });
 
   // Cryptographic passcode quick checks
   useEffect(() => {
@@ -550,49 +550,48 @@ export default function Auth() {
 
   return (
     <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
-      
+      <a href="#main-content" className="cp-skip-link">
+        Skip to main content
+      </a>
+
       {/* GLOBAL HELPER COLOR STYLE INJECTIONS */}
       <style>{`
         :root {
           --cpt-black: #050505;
-          --cpt-pink: #FF1493;
           --cpt-cyan: #00FFFF;
           --cpt-purple: #B026FF;
           --cpt-white: #FFFFFF;
+          /* --cpt-pink / --cpt-orange owned by a11y prefs (High Contrast toggle) */
         }
         .text-neon-glow {
           text-shadow: 
-            0 0 10px #FF1493,
-            0 0 20px #FF1493,
+            0 0 10px var(--cpt-pink),
+            0 0 20px var(--cpt-pink),
             0 0 40px #B026FF,
             0 0 70px #00FFFF;
         }
-        @media (prefers-reduced-motion: reduce) {
-          .text-neon-glow { text-shadow: none; }
-        }
         .border-neon {
-          border-color: rgba(255, 20, 147, 0.3);
-          box-shadow: 0 0 15px rgba(255, 20, 147, 0.1);
+          border-color: color-mix(in srgb, var(--cpt-pink) 30%, transparent);
+          box-shadow: 0 0 15px color-mix(in srgb, var(--cpt-pink) 10%, transparent);
         }
         .border-neon:hover {
           border-color: #00FFFF;
           box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
         }
         .gradient-bg {
-          background: linear-gradient(135deg, #FF1493 0%, #B026FF 50%, #00FFFF 100%);
+          background: linear-gradient(135deg, var(--cpt-pink) 0%, #B026FF 50%, #00FFFF 100%);
         }
       `}</style>
 
       {/* BACKGROUND LAYERS */}
       {/* Living Atmospheric Deep Jet-black Luxury canvas backdrop */}
-      <div className="absolute inset-0 bg-transparent z-0" aria-hidden="true" />
+      <div className="absolute inset-0 bg-transparent z-0" />
 
       {/* Layer 2: Particle Engine */}
       <ParticleCanvas />
 
       {/* Layer 3: Cyber grid overlay */}
       <div 
-        aria-hidden="true"
         className="absolute inset-0 pointer-events-none opacity-5 z-0" 
         style={{
           backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)`,
@@ -603,9 +602,9 @@ export default function Auth() {
       {/* ==========================================
           3. NAVIGATION HEADER
           ========================================== */}
-      <header className="sticky top-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80">
-      <nav aria-label="Primary" className="px-4 sm:px-8 py-4 flex items-center justify-between">
-        <a href="#main-content" className="flex items-center gap-2 min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00FFFF]">
+      <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
+      <nav aria-label="Primary" className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
           {/* Logo element matches specified clearpath branding icon */}
           <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]" aria-hidden="true">
             <ShieldCheck className="text-white w-5 h-5" />
@@ -613,30 +612,35 @@ export default function Auth() {
           <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-lg uppercase">
             CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
           </span>
-        </a>
+        </div>
 
         {/* Dynamic Desktop Links */}
         <div className="hidden lg:flex items-center gap-6">
           <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
             Trading × AI
           </a>
-          <a href="/about" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
+          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
             About
           </a>
-          <a href="#home" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
-          <a href="#why-clearpath" className="text-zinc-300 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
-          <a href="#ecosystem" className="text-zinc-300 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
-          <a href="#soft-launch" className="text-zinc-300 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
+          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
+          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
+          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
+          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
           <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
-            <BookOpen size={11} className="text-[#00FFFF]" aria-hidden="true" /> ENCYCLOPEDIA OF FINANCE
+            <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
           </a>
           <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
-            <BarChart3 size={11} className="text-[#FF00C8]" aria-hidden="true" /> Encyclopedia of Indicators
+            <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
           </a>
           <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
+            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
           </a>
-          <a href="#faq" className="text-zinc-300 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
+          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            UI Modes
+          </a>
+          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Learn</a>
+          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Guides</a>
+          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
         </div>
 
         {/* Action Buttons */}
@@ -644,10 +648,9 @@ export default function Auth() {
           <button 
             type="button"
             onClick={() => setBoardModalOpen(true)}
-            aria-haspopup="dialog"
-            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-200 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
           >
-            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
+            <Lock size={12} className="text-[#B026FF]" />
             <span className="hidden sm:inline">Board Members</span>
             <span className="sm:hidden">Board</span>
           </button>
@@ -656,23 +659,30 @@ export default function Auth() {
             onClick={() => openPrivateLogin('login')}
             className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1 cursor-pointer"
           >
-            <Lock size={12} aria-hidden="true" />
+            <Lock size={12} />
             PRIVATE LOGIN
           </button>
         </div>
       </nav>
       </header>
 
+      <main
+        id="main-content"
+        tabIndex={-1}
+        aria-hidden={anyModalOpen || undefined}
+        className="relative outline-none"
+      >
+
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
           ========================================== */}
-      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20" role="region" aria-label="System broadcast">
+      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" aria-hidden="true" />
-            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-300 font-bold">SYSTEM BROADCAST:</span>
+            <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" />
+            <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-400 font-bold">SYSTEM BROADCAST:</span>
           </div>
-          <div className="font-mono text-[10px] text-zinc-200 truncate pl-4 flex-1 items-center font-semibold" aria-live="polite">
+          <div className="font-mono text-[10px] text-zinc-300 truncate pl-4 flex-1 items-center font-semibold">
             <AnimatePresence mode="wait">
               <motion.span
                 key={curAnnIdx}
@@ -682,25 +692,23 @@ export default function Auth() {
                 transition={{ duration: 0.35 }}
                 className="text-zinc-100 flex items-center gap-1.5"
               >
-                <Sparkles size={11} className="text-[#FF1493] shrink-0" aria-hidden="true" />
+                <Sparkles size={11} className="text-[#FF1493] shrink-0" />
                 {announcements[curAnnIdx]}
               </motion.span>
             </AnimatePresence>
           </div>
-          <div className="hidden md:flex items-center gap-6 shrink-0 text-zinc-400 text-[9px] font-bold tracking-widest uppercase">
-            <span>DXY INDEX: <strong className="text-zinc-200">104.82</strong></span>
-            <span>BTC/USD: <strong className="text-zinc-200">$77,979.87</strong></span>
-            <span>USD/JPY: <strong className="text-zinc-200">156.42</strong></span>
+          <div className="hidden md:flex items-center gap-6 shrink-0 text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
+            <span>DXY INDEX: <strong className="text-zinc-300">104.82</strong></span>
+            <span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>
+            <span>USD/JPY: <strong className="text-zinc-300">156.42</strong></span>
           </div>
         </div>
       </div>
 
-      <main id="main-content" tabIndex={-1}>
-
       {/* ==========================================
           5. HERO SECTION
           ========================================== */}
-      <section id="home" className="relative pt-12 pb-24 px-4 sm:px-8 max-w-7xl mx-auto z-20 overflow-hidden flex flex-col items-center text-center" aria-labelledby="hero-heading">
+      <section id="home" className="relative pt-12 pb-24 px-4 sm:px-8 max-w-7xl mx-auto z-20 overflow-hidden flex flex-col items-center text-center">
         
         {/* Animated Pill Grid Tag */}
         <motion.div
@@ -713,7 +721,7 @@ export default function Auth() {
         </motion.div>
 
         {/* Glitch Headline Title */}
-        <h1 id="hero-heading" className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl text-neon-glow font-sans mt-2">
+        <h1 className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl select-none text-neon-glow font-sans mt-2">
           CLEARPATH TRADER
         </h1>
 
@@ -761,7 +769,7 @@ CLARITY BEFORE DECISIONS.`}
           <button
             type="button"
             onClick={() => openPrivateLogin('register')}
-            className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
+            className="cpt-cta-gradient w-full md:w-auto px-6 py-4 text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
           >
             CREATE PRIVATE ACCOUNT
           </button>
@@ -935,11 +943,17 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF1493]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF1493]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF1493] font-black uppercase tracking-wider bg-[#FF1493]/5 px-3 py-1 rounded-full border border-[#FF1493]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF1493]/10 px-3 py-1 rounded-full border border-[#FF1493]/35"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
                   CPMS TV™ • LIVE STREAM
                 </span>
-                <span className="flex items-center gap-1.5 font-mono text-[8px] text-[#FF1493] font-extrabold uppercase bg-[#FF1493]/10 px-2.5 py-0.5 rounded-full border border-[#FF1493]/35 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> 14,204 LIVE WATCHING
+                <span
+                  className="flex items-center gap-1.5 font-mono text-[8px] font-extrabold uppercase bg-[#FF1493]/15 px-2.5 py-0.5 rounded-full border border-[#FF1493]/40 animate-pulse"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true" /> 14,204 LIVE WATCHING
                 </span>
               </div>
 
@@ -951,9 +965,9 @@ Not the other way around.`}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%)] bg-[size:100%_4px] pointer-events-none" />
 
                 {/* Receiver Info Bar */}
-                <div className="flex items-center justify-between text-[8px] text-zinc-500 border-b border-zinc-900/60 pb-2">
+                <div className="flex items-center justify-between text-[8px] text-zinc-300 border-b border-zinc-900/60 pb-2">
                   <span>HD 1080P STREAM</span>
-                  <span className="text-[#FF1493] font-black animate-pulse">● BROADCAST_SECURE</span>
+                  <span className="font-black animate-pulse" style={{ color: 'var(--cpt-text-pink)' }}>● BROADCAST_SECURE</span>
                 </div>
 
                 {/* Play Glass Overlay */}
@@ -967,28 +981,28 @@ Not the other way around.`}
                 <div className="py-2 flex-grow flex flex-col justify-end z-10">
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         📡 Fed Repo Facilities Explained
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🌊 Global Sovereign Debt Flows
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
-                      </h4>
+                      </h3>
                     </div>
                   )}
                 </div>
@@ -1002,7 +1016,7 @@ Not the other way around.`}
                       <div 
                         key={i} 
                         className="flex-1 bg-[#FF1493] rounded-t-[1px]" 
-                        style={{ height: `${val}%`, backgroundColor: '#FF1493' }} 
+                        style={{ height: `${val}%`, backgroundColor: 'var(--cpt-pink)' }} 
                       />
                     );
                   })}
@@ -1019,6 +1033,7 @@ Not the other way around.`}
                   <button
                     key={b.id}
                     type="button"
+                    aria-pressed={activeTvChannel === b.id}
                     onClick={() => setActiveTvChannel(b.id as any)}
                     className={`px-1 py-2 sm:py-2.5 border border-zinc-800 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                       activeTvChannel === b.id ? b.activeBg : `text-zinc-400 ${b.bg}`
@@ -1035,8 +1050,8 @@ Not the other way around.`}
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
                 <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
-                  <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
+                  <span className="text-[9px] text-zinc-300 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
+                  <span className="text-[9px] font-mono font-black uppercase" style={{ color: 'var(--cpt-text-pink)' }}>SOVEREIGN COLLATERAL SHOCKS</span>
                 </div>
               </div>
 
@@ -1051,7 +1066,12 @@ Not the other way around.`}
                     } catch { /* ignore */ }
                     setEcosystemTvOpen(true);
                   }}
-                  className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="cpt-cta-pink w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-pink)',
+                    color: 'var(--cpt-cta-on-pink)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-pink) 25%, transparent)',
+                  }}
                 >
                   <Tv size={14} /> TUNE IN NOW — LIVE MARKETS
                 </button>
@@ -1075,10 +1095,13 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF7B00]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF7B00]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-wider bg-[#FF7B00]/5 px-3 py-1 rounded-full border border-[#FF7B00]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF7B00]/15 px-3 py-1 rounded-full border border-[#FF7B00]/40"
+                  style={{ color: 'var(--cpt-text-orange)' }}
+                >
                   COMMUNITIES • DISCOVER SWARMS
                 </span>
-                <span className="font-mono text-[8px] text-zinc-500 font-extrabold uppercase animate-pulse">
+                <span className="font-mono text-[8px] text-zinc-300 font-extrabold uppercase animate-pulse">
                   ONLINE HUB ACTIVE
                 </span>
               </div>
@@ -1091,7 +1114,8 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/20 border border-[#FF7B00]/45 text-[10px] font-black uppercase tracking-widest hover:bg-[var(--cpt-orange)] hover:text-white transition-all"
+                  style={{ color: 'var(--cpt-text-orange)' }}
                 >
                   Open Live Chat Lobby ↓
                 </button>
@@ -1101,14 +1125,17 @@ Not the other way around.`}
               <div className="mt-4 border-t border-zinc-900/60 pt-3 text-left">
                 <button
                   type="button"
+                  aria-expanded={ecosystemCommOpen}
+                  aria-controls="custom-swarm-seed-panel"
                   onClick={() => setEcosystemCommOpen(!ecosystemCommOpen)}
-                  className="text-[9px] font-mono font-bold text-zinc-500 hover:text-[#FF7B00] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="text-[9px] font-mono font-bold text-zinc-300 hover:text-[var(--cpt-text-orange)] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {ecosystemCommOpen ? '[-] CLOSE CUSTOM SEED PORT' : '[+] SPAWN CUSTOM SWARM NODE'}
                 </button>
                 
                 {ecosystemCommOpen && (
                   <motion.div 
+                    id="custom-swarm-seed-panel"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     className="mt-3 space-y-2 bg-black/40 border border-[#FF7B00]/15 p-2.5 rounded-xl text-left"
@@ -1154,12 +1181,12 @@ Not the other way around.`}
                 <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   Join direct communication swarms immediately. Tap in with sovereign macro networks across the world, exchange layout setups, share visual indicators, and learn together.
                 </p>
-                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-500 font-mono font-bold leading-none">
+                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-300 font-mono font-bold leading-none">
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> CRYPTOGRAPHIC VERIFIED CHATS
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> CRYPTOGRAPHIC VERIFIED CHATS
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> FIRESTORE PERSISTENT GROUP SYNC
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> FIRESTORE PERSISTENT GROUP SYNC
                   </span>
                 </div>
               </div>
@@ -1169,7 +1196,12 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => setBoardModalOpen(true)}
-                  className="w-full py-4 bg-[#FF7B00] hover:bg-[#FF7B00]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,123,0,0.25)] hover:shadow-[0_4px_35px_rgba(255,123,0,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="cpt-cta-orange w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-orange)',
+                    color: 'var(--cpt-cta-on-orange)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-orange) 25%, transparent)',
+                  }}
                 >
                   <Users size={14} /> FIND MY PEOPLE
                 </button>
@@ -1692,13 +1724,13 @@ Not the other way around.`}
             <button
               type="button"
               onClick={() => openPrivateLogin('register')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="cpt-cta-gradient w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               Create Private Account
               <ArrowRight size={14} />
             </button>
           </div>
-          <p className="relative z-10 text-[10px] text-zinc-500 font-mono">
+          <p className="relative z-10 text-[10px] text-zinc-300 font-mono">
             Passwords are hashed on the server. Each desk opens only for its owner.
           </p>
         </div>
@@ -1731,19 +1763,25 @@ Not the other way around.`}
               >
                 <button
                   type="button"
+                  id={`faq-trigger-${i}`}
+                  aria-expanded={openFaq === i}
+                  aria-controls={`faq-panel-${i}`}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full py-5 px-6 flex items-center justify-between text-left focus:outline-none hover:bg-neutral-900/20 cursor-pointer"
+                  className="w-full py-5 px-6 flex items-center justify-between text-left hover:bg-neutral-900/20 cursor-pointer focus-visible:bg-neutral-900/30"
                 >
                   <span className="text-sm font-bold text-[#FF4500] uppercase tracking-wide text-shadow-[0_0_8px_rgba(255,69,0,0.5)]">
                     {f.q}
                   </span>
-                  <span className="text-[#FF4500] text-lg font-bold">
+                  <span className="text-[#FF4500] text-lg font-bold" aria-hidden="true">
                     {openFaq === i ? '−' : '+'}
                   </span>
                 </button>
                 <AnimatePresence>
                   {openFaq === i && (
                     <motion.div
+                      id={`faq-panel-${i}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${i}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -1767,43 +1805,64 @@ Not the other way around.`}
       {/* ==========================================
           11. LEGAL DISCLAIMER FOOTER
           ========================================== */}
-      <footer className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center">
+      <footer
+        className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center"
+        aria-hidden={anyModalOpen || undefined}
+      >
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-2">
             <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-sm uppercase">
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
-          <nav aria-label="Legal and site links" className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
             <a href="/if-trading-and-chatgpt-had-a-baby" className="text-[#FF1493] hover:text-[#00FFFF] transition-colors font-bold">
               Trading × AI
             </a>
-            <a href="/about" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+            <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
+            </a>
+            <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Learn
+            </a>
+            <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Guides
+            </a>
+            <a href="/glossary" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Glossary
             </a>
             <a href="/accessibility" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
               Accessibility
             </a>
-            <a href="/ui" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+            <a href="/faq" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              FAQ
+            </a>
+            <a href="/ui" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
               UI Modes
             </a>
-            <a href="/platform-scope.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <a href="/education" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              Education
+            </a>
+            <a href="/tools/position-size" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Position Size
+            </a>
+            <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Platform Scope
             </a>
-            <a href="/terms.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <a href="/terms.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Terms
             </a>
-            <a href="/privacy.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <a href="/privacy.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Privacy
             </a>
-            <a href="/disclaimer.html" className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <a href="/disclaimer.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Disclaimer
             </a>
           </nav>
-          <p className="text-[11px] text-zinc-400 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
+          <p className="text-[11px] text-zinc-500 leading-relaxed max-w-3xl mx-auto uppercase tracking-wide">
             RISK DISCLOSURE AND EDUCATIONAL DISCLAIMER: ClearPath Trader is strictly an academic learning universe. We do not operate as a financial broker, nor do we manage real client capital, execute trades, or recommend asset purchases. High-performance intermarket analysis carries substantial risk. All calculations and simulations represent general macroeconomic models.
           </p>
-          <div className="text-[10px] text-zinc-500 font-mono mt-4">
+          <div className="text-[10px] text-zinc-600 font-mono mt-4">
             © 2026 Clear Path Markets Science (CPMS). All academic rights reserved.
           </div>
         </div>
@@ -1822,19 +1881,25 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setBoardModalOpen(false)}
               className="absolute inset-0 bg-[#050505]/90 backdrop-blur-lg cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={boardDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="board-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6 outline-none"
             >
               {/* Close Button Trigger */}
               <button
                 type="button"
                 onClick={() => setBoardModalOpen(false)}
-                aria-label="Close board login dialog"
+                aria-label="Close board verification"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
                 <X size={18} aria-hidden="true" />
@@ -1844,7 +1909,7 @@ Not the other way around.`}
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   BOARD CREDENTIAL AUDIT
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                <h3 id="board-dialog-title" className="text-xl font-black text-white uppercase tracking-wide">
                   Board Verification
                 </h3>
                 <p className="text-[11px] text-zinc-400 max-w-xs mx-auto leading-normal">
@@ -1885,9 +1950,11 @@ Not the other way around.`}
                     <button
                       type="button"
                       onClick={() => setShowPasscode(!showPasscode)}
+                      aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                      aria-pressed={showPasscode}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
                     >
-                      {showPasscode ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPasscode ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1896,7 +1963,7 @@ Not the other way around.`}
                   <button
                     type="submit"
                     disabled={boardSuccess}
-                    className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
+                    className="cpt-cta-gradient w-full py-4 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
                   >
                     Verify Passcode
                   </button>
@@ -1929,18 +1996,24 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setDemoOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={demoDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="demo-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setDemoOpen(false)}
-                aria-label="Close demo dialog"
+                aria-label="Close showcase"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
                 <X size={18} aria-hidden="true" />
@@ -1950,7 +2023,7 @@ Not the other way around.`}
                 <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.2em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15 inline-block">
                   ACADEMIC PREVIEW DECK
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">
+                <h3 id="demo-dialog-title" className="text-xl font-black text-white uppercase tracking-wider">
                   ClearPath Trader Showcase
                 </h3>
                 <p className="text-xs text-zinc-400">
@@ -2009,7 +2082,7 @@ Not the other way around.`}
                     setDemoOpen(false);
                     openPrivateLogin('register');
                   }}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
+                  className="cpt-cta-gradient px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
                 >
                   Create Private Account
                 </button>
@@ -2031,18 +2104,24 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemTvOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={tvDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="tv-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemTvOpen(false)}
-                aria-label="Close media dialog"
+                aria-label="Close TV broadcast deck"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
                 <X size={18} aria-hidden="true" />
@@ -2064,7 +2143,7 @@ Not the other way around.`}
                     <span className="text-[10px] font-mono text-[#FF1493] uppercase tracking-widest font-black bg-[#FF1493]/5 border border-[#FF1493]/20 px-2 py-0.5 rounded-full inline-block">
                       {activeTvChannel === 'review' ? 'MACRO DIRECT' : activeTvChannel === 'liquidity' ? 'LIQUIDITY FEED' : 'VISUAL CLASSROOM'}
                     </span>
-                    <h3 className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
+                    <h3 id="tv-dialog-title" className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
                       {activeTvChannel === 'review' 
                         ? 'Federal Reserve Bond Buyback Rates Adjustments'
                         : activeTvChannel === 'liquidity'
@@ -2101,6 +2180,7 @@ Not the other way around.`}
                         <button
                           key={ch.id}
                           type="button"
+                          aria-pressed={activeTvChannel === ch.id}
                           onClick={() => setActiveTvChannel(ch.id as any)}
                           className={`w-full p-3 text-left border rounded-2xl transition-all cursor-pointer ${
                             activeTvChannel === ch.id 
@@ -2151,24 +2231,26 @@ Not the other way around.`}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemYwcOpen(false)}
-              aria-hidden="true"
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={ywcDialogRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="ywc-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemYwcOpen(false)}
-                aria-label="Close Your World Connected dialog"
-                className="absolute top-5 right-5 text-zinc-300 hover:text-white cursor-pointer"
+                aria-label="Close Your World Connected terminal"
+                className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
                 <X size={18} aria-hidden="true" />
               </button>
@@ -2190,7 +2272,7 @@ Not the other way around.`}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-4">
                   <div>
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">COGNITIVE COMPASS PROFILE</span>
-                    <h4 className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</h4>
+                    <p className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</p>
                   </div>
                   <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-850">
                     {[
@@ -2200,6 +2282,7 @@ Not the other way around.`}
                       <button
                         key={st.id}
                         type="button"
+                        aria-pressed={adaptationMode === st.id}
                         onClick={() => setAdaptationMode(st.id as any)}
                         className={`px-4 py-2 sm:py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                           adaptationMode === st.id 
@@ -2225,14 +2308,14 @@ Not the other way around.`}
                     >
                       <div className="p-4 bg-zinc-900/60 border border-[#B026FF]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#00FFFF] font-extrabold uppercase">FED TREASURY ACTION</span>
-                        <h5 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h5>
+                        <p className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           This introduces cash into financial avenues, easing loan constraints and boosting long-term investment queues.
                         </p>
                       </div>
                       <div className="p-4 bg-zinc-900/60 border border-[#FF7B00]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#FF7B00] font-extrabold uppercase">LIQUIDITY ALERT</span>
-                        <h5 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h5>
+                        <p className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           Capital cash reserves show a strong tick up, creating a healthy backdrop for stock and coin indicators.
                         </p>
