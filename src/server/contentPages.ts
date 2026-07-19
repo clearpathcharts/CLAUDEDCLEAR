@@ -6,6 +6,13 @@ import {
   PROFILE_SEO,
   ECONOMY_TOPICS,
   lookupIndicator,
+  lookupStock,
+  lookupCrypto,
+  lookupForex,
+  lookupCommodity,
+  lookupEconomy,
+  relatedStocksBySector,
+  relatedCryptoByCategory,
   featuredStocks,
   featuredCrypto,
   featuredForex,
@@ -14,6 +21,7 @@ import {
   catalogCounts,
 } from './crawlCatalog';
 import { buildIndicators } from '../components/indicatorsData';
+import { ENCYCLOPEDIA_KNOWLEDGE_BASE } from '../components/encyclopedia/KnowledgeBaseData';
 import { CURRICULUM } from '../education/curriculumData';
 import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
@@ -180,6 +188,18 @@ const PAGE_CSS = `
   .alpha-block .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .alpha-block a.chip { font-size: 0.78rem; color: #00D9FF; text-decoration: none; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; padding: 0.25rem 0.65rem; background: rgba(255,255,255,0.03); }
   .alpha-block a.chip:hover { border-color: rgba(0,229,255,0.5); }
+  aside.cta a.btn { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
+  aside.cta .cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; }
+  aside.cta form.waitlist { display: grid; gap: 0.65rem; max-width: 28rem; }
+  aside.cta form.waitlist label { display: grid; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  aside.cta form.waitlist input, aside.cta form.waitlist select { background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; padding: 0.55rem 0.7rem; font-size: 0.9rem; }
+  aside.cta form.waitlist button { background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.7rem 1.1rem; border: 0; border-radius: 8px; cursor: pointer; }
+  aside.cta form.waitlist .status { font-size: 0.85rem; min-height: 1.2em; color: #00E5FF; }
+  aside.cta form.waitlist .status.err { color: #ff6b8a; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 0 0 1.5rem; }
+  .meta-grid div { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.03); }
+  .meta-grid .k { display: block; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 0.25rem; }
+  .meta-grid .v { color: #fff; font-weight: 700; font-size: 0.95rem; }
   footer.site { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 2rem; }
   footer.site .inner { max-width: 60rem; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.72rem; color: rgba(255,255,255,0.45); }
   footer.site a { color: rgba(255,255,255,0.55); text-decoration: none; }
@@ -215,12 +235,35 @@ ${bodyHtml}
       <aside class="cta">
         <h2>Put this knowledge on a live chart</h2>
         <p>ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.</p>
-        <a href="/">Launch the terminal</a>
+        <div class="cta-actions">
+          <a class="btn" href="/">Launch the terminal</a>
+          <a class="btn" href="/education" style="background:transparent;color:#00E5FF;border:1px solid rgba(0,229,255,0.5)">Start education</a>
+        </div>
+        <h2 style="margin-top:0.5rem">Join the soft-launch waitlist</h2>
+        <p>Get activation updates when new desks and features open. No spam — education and launch notes only.</p>
+        <form class="waitlist" id="cpt-waitlist" novalidate>
+          <label>First name<input name="firstName" required maxlength="200" autocomplete="given-name" /></label>
+          <label>Email<input name="emailAddress" type="email" required maxlength="320" autocomplete="email" /></label>
+          <label>Country<input name="country" required maxlength="120" autocomplete="country-name" placeholder="United States" /></label>
+          <label>Experience
+            <select name="experienceLevel">
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+              <option>Professional</option>
+            </select>
+          </label>
+          <button type="submit">Join waitlist</button>
+          <div class="status" id="cpt-waitlist-status" aria-live="polite"></div>
+        </form>
       </aside>
     </main>
     <footer class="site">
       <div class="inner">
         <span>&copy; ClearPathTrader — analytics &amp; education, not a brokerage.</span>
+        <a href="/learn">Learn</a>
+        <a href="/guides">Guides</a>
+        <a href="/glossary">Glossary</a>
         <a href="/encyclopedia">Encyclopedia</a>
         <a href="/indicators">Indicators</a>
         <a href="/education">Education</a>
@@ -232,6 +275,44 @@ ${bodyHtml}
         <a href="/disclaimer.html">Disclaimer</a>
       </div>
     </footer>
+    <script>
+      (function () {
+        var form = document.getElementById('cpt-waitlist');
+        if (!form) return;
+        var status = document.getElementById('cpt-waitlist-status');
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          status.className = 'status';
+          status.textContent = 'Submitting…';
+          var data = new FormData(form);
+          var body = {
+            firstName: String(data.get('firstName') || ''),
+            emailAddress: String(data.get('emailAddress') || ''),
+            country: String(data.get('country') || ''),
+            experienceLevel: String(data.get('experienceLevel') || 'Beginner')
+          };
+          fetch('/api/registrations/waitlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          }).then(function (res) {
+            return res.json().then(function (j) { return { ok: res.ok, j: j }; });
+          }).then(function (r) {
+            if (r.ok) {
+              status.className = 'status';
+              status.textContent = 'You are on the waitlist. Check your email for confirmation.';
+              form.reset();
+            } else {
+              status.className = 'status err';
+              status.textContent = (r.j && (r.j.message || r.j.error)) || 'Could not join waitlist.';
+            }
+          }).catch(function () {
+            status.className = 'status err';
+            status.textContent = 'Network error — try again in a moment.';
+          });
+        });
+      })();
+    </script>
   </body>
 </html>`;
 }
@@ -750,6 +831,281 @@ function renderToolsIndex(): string {
  * or null when the path is not a static content page (SPA handles it).
  * The result is passed through enrichHtmlWithMetadata for meta/JSON-LD.
  */
+function listHtml(items: string[]): string {
+  if (!items.length) return '';
+  return `<ul>${items.map((i) => `<li>${escapeHtml(i)}</li>`).join('\n')}</ul>`;
+}
+
+function metaGrid(rows: { k: string; v: string }[]): string {
+  return `<div class="meta-grid">${rows
+    .filter((r) => r.v)
+    .map((r) => `<div><span class="k">${escapeHtml(r.k)}</span><span class="v">${escapeHtml(r.v)}</span></div>`)
+    .join('')}</div>`;
+}
+
+function relatedLinksSection(title: string, links: { href: string; label: string; blurb?: string }[]): string {
+  if (!links.length) return '';
+  const cards = links
+    .map(
+      (l) =>
+        `<li><a class="card" href="${l.href}"><h2>${escapeHtml(l.label)}</h2>${
+          l.blurb ? `<p>${escapeHtml(l.blurb)}</p>` : ''
+        }</a></li>`
+    )
+    .join('\n');
+  return `<h2>${escapeHtml(title)}</h2>\n<ul class="card-list">${cards}</ul>`;
+}
+
+function renderStockProfile(symbol: string): string | null {
+  const stock = lookupStock(symbol);
+  if (!stock) return null;
+  const ticker = String(stock.ticker).toUpperCase();
+  const peers = relatedStocksBySector(stock.sector || '', ticker, 4);
+  const whatMoves = Array.isArray(stock.whatMoves) ? stock.whatMoves : [];
+  const tags = Array.isArray(stock.tags) ? stock.tags : [];
+  const relatedMarkets = Array.isArray(stock.relatedMarkets) ? stock.relatedMarkets : [];
+
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Stocks', url: '/stocks' },
+    { name: ticker },
+  ])}
+<h1>${escapeHtml(ticker)} — ${escapeHtml(stock.company || ticker)}</h1>
+<p class="lead">${escapeHtml(stock.description || `${stock.company} equity profile in the ClearPath financial encyclopedia.`)}</p>
+${metaGrid([
+  { k: 'Exchange', v: String(stock.exchange || '') },
+  { k: 'Sector', v: String(stock.sector || '') },
+  { k: 'Industry', v: String(stock.industry || '') },
+  { k: 'Market cap', v: String(stock.marketCap || '') },
+  { k: 'Founded', v: stock.founded != null ? String(stock.founded) : '' },
+  { k: 'Headquarters', v: String(stock.headquarters || '') },
+])}
+<article>
+<h2>What ${escapeHtml(ticker)} is</h2>
+<p>${escapeHtml(stock.company || ticker)} (${escapeHtml(ticker)}) is listed on ${escapeHtml(
+    stock.exchange || 'a major exchange'
+  )} in the ${escapeHtml(stock.sector || 'equity')} sector${
+    stock.industry ? `, specifically ${escapeHtml(stock.industry)}` : ''
+  }. ClearPath profiles equities for education — this page is not a brokerage quote or trade recommendation.</p>
+${
+  whatMoves.length
+    ? `<h2>What tends to move the stock</h2>
+<p>Traders and analysts commonly watch these drivers when studying ${escapeHtml(ticker)}:</p>
+${listHtml(whatMoves)}`
+    : ''
+}
+${tags.length ? `<h2>Theme tags</h2>${listHtml(tags)}` : ''}
+${
+  relatedMarkets.length
+    ? `<h2>Related market themes</h2>
+<p>Macro and sector themes often discussed alongside ${escapeHtml(ticker)}:</p>
+${listHtml(relatedMarkets)}`
+    : ''
+}
+<h2>How to study ${escapeHtml(ticker)} on ClearPath</h2>
+<ol>
+<li>Open the <a href="/encyclopedia">Financial Encyclopedia</a> for interactive charts and knowledge panels.</li>
+<li>Review valuation mechanics in <a href="/learn/valuation">Discounted Cash Flow &amp; CAPM</a>.</li>
+<li>Walk the <a href="/education/stocks">Stocks school</a> in ClearPath Education for a structured path.</li>
+<li>Add context indicators from the <a href="/indicators">Indicator Encyclopedia</a> before drawing conclusions.</li>
+<li>Launch the <a href="/">live terminal</a> to put ${escapeHtml(ticker)} on a chart with your preferred <a href="/ui">UI mode</a>.</li>
+</ol>
+${relatedLinksSection(
+  'Related equity profiles',
+  peers.map((p) => ({
+    href: `/stocks/${String(p.ticker).toLowerCase()}`,
+    label: `${String(p.ticker).toUpperCase()} — ${p.company}`,
+    blurb: p.industry || p.sector,
+  }))
+)}
+<p><a href="/stocks">← All stocks</a> · <a href="/encyclopedia">Encyclopedia hub</a> · <a href="/learn/liquidity">Liquidity primer</a></p>
+</article>`;
+}
+
+function renderCryptoProfile(symbol: string): string | null {
+  const coin = lookupCrypto(symbol);
+  if (!coin) return null;
+  const sym = String(coin.symbol).toUpperCase();
+  const peers = relatedCryptoByCategory(coin.category || '', sym, 4);
+  const whatMoves = Array.isArray(coin.whatMoves) ? coin.whatMoves : [];
+  const related = Array.isArray(coin.relatedTopics) ? coin.relatedTopics : [];
+
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Crypto', url: '/crypto' },
+    { name: sym },
+  ])}
+<h1>${escapeHtml(coin.name || sym)} (${escapeHtml(sym)})</h1>
+<p class="lead">${escapeHtml(coin.description || `${coin.name} cryptocurrency profile.`)}</p>
+${metaGrid([
+  { k: 'Symbol', v: sym },
+  { k: 'Category', v: String(coin.category || '') },
+  { k: 'Founded', v: coin.founded != null ? String(coin.founded) : '' },
+  { k: 'Creator / origin', v: String(coin.creator || '') },
+])}
+<article>
+<h2>Educational overview</h2>
+<p>${escapeHtml(coin.description || '')}</p>
+<p>${escapeHtml(coin.name || sym)} is documented here for literacy — ClearPath does not custody crypto, execute trades, or promise returns.</p>
+${
+  whatMoves.length
+    ? `<h2>Common price drivers</h2>${listHtml(whatMoves)}`
+    : ''
+}
+${related.length ? `<h2>Related concepts</h2>${listHtml(related)}` : ''}
+<h2>Study path</h2>
+<ol>
+<li>Start with <a href="/education/crypto">Crypto school</a> if you are new to ledgers and wallets.</li>
+<li>Read <a href="/learn/microstructure">market microstructure</a> to understand order books and spreads.</li>
+<li>Browse related coins below, then open charts in the <a href="/">terminal</a>.</li>
+</ol>
+${relatedLinksSection(
+  'Related crypto profiles',
+  peers.map((c) => ({
+    href: `/crypto/${String(c.symbol).toLowerCase()}`,
+    label: `${c.name} (${String(c.symbol).toUpperCase()})`,
+    blurb: c.category,
+  }))
+)}
+<p><a href="/crypto">← All crypto</a> · <a href="/guides/leverage-risk">Leverage &amp; risk guide</a></p>
+</article>`;
+}
+
+function renderForexProfile(pairKey: string): string | null {
+  const fx = lookupForex(pairKey);
+  if (!fx) return null;
+  const pair = String(fx.pair);
+  const affected = Array.isArray(fx.affectedBy) ? fx.affectedBy : [];
+  const educationMoves = fx.education?.whatMoves || [];
+  const relatedAssets = fx.education?.relatedAssets || [];
+
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Forex', url: '/forex' },
+    { name: pair },
+  ])}
+<h1>${escapeHtml(pair)} Forex Pair</h1>
+<p class="lead">${escapeHtml(fx.description || `${pair} currency pair profile.`)}</p>
+${metaGrid([
+  { k: 'Pair', v: pair },
+  { k: 'Type', v: String(fx.type || '') },
+  {
+    k: 'Countries',
+    v: Array.isArray(fx.countries) ? fx.countries.join(', ') : '',
+  },
+])}
+<article>
+<h2>How to read ${escapeHtml(pair)}</h2>
+<p>${escapeHtml(fx.description || '')} FX prices reflect relative interest rates, growth differentials, and risk sentiment between the two currencies — not a single “stock story.”</p>
+${affected.length ? `<h2>Primary drivers</h2>${listHtml(affected)}` : ''}
+${educationMoves.length ? `<h2>What students should watch</h2>${listHtml(educationMoves)}` : ''}
+${relatedAssets.length ? `<h2>Related assets</h2>${listHtml(relatedAssets)}` : ''}
+<h2>Continue learning</h2>
+<ul>
+<li><a href="/learn/correlations">Intermarket correlations</a> — how FX, yields, and commodities connect</li>
+<li><a href="/learn/inflation">Inflation</a> — purchasing-power pressure on currencies</li>
+<li><a href="/education/forex">Forex school</a> — structured lessons</li>
+<li><a href="/guides/macro-spreads">Macro spreads guide</a> — yield curves and credit</li>
+</ul>
+<p><a href="/forex">← All forex pairs</a></p>
+</article>`;
+}
+
+function renderCommodityProfile(symbol: string): string | null {
+  const c = lookupCommodity(symbol);
+  if (!c) return null;
+  const sym = String(c.symbol).toUpperCase();
+  const affected = Array.isArray(c.affectedBy) ? c.affectedBy : [];
+
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Commodities', url: '/commodities' },
+    { name: c.name || sym },
+  ])}
+<h1>${escapeHtml(c.name || sym)} (${escapeHtml(sym)})</h1>
+<p class="lead">${escapeHtml(c.description || `${c.name} commodity profile.`)}</p>
+${metaGrid([
+  { k: 'Symbol', v: sym },
+  { k: 'Category', v: String(c.category || '') },
+])}
+<article>
+<h2>Market context</h2>
+<p>${escapeHtml(c.description || '')}</p>
+<p>Commodity prices are driven by physical supply, inventories, shipping, and the dollar’s path — study those forces before treating any chart pattern as a signal.</p>
+${affected.length ? `<h2>Common drivers</h2>${listHtml(affected)}` : ''}
+<h2>Related study</h2>
+<ul>
+<li><a href="/learn/correlations">Gold, yields, and intermarket links</a></li>
+<li><a href="/education/commodities">Commodities school</a></li>
+<li><a href="/guides/macro-spreads">Macro spreads</a></li>
+<li><a href="/indicators">Indicator encyclopedia</a></li>
+</ul>
+<p><a href="/commodities">← All commodities</a></p>
+</article>`;
+}
+
+function renderEconomyTopic(slug: string): string | null {
+  const topic = lookupEconomy(slug);
+  const kb = ENCYCLOPEDIA_KNOWLEDGE_BASE[`encyclopedia/economy/${slug}.html`];
+  if (!topic && !kb) return null;
+
+  const title = kb?.title || topic?.title || slug;
+  const lead = kb?.definition || topic?.summary || '';
+  const otherTopics = ECONOMY_TOPICS.filter((t) => t.slug !== slug).slice(0, 5);
+
+  let body = '';
+  if (kb) {
+    body = `
+<p><em>${escapeHtml(kb.tagline)}</em></p>
+<p>${escapeHtml(kb.simplifiedExplanation)}</p>
+<h2>Academic framing</h2>
+<p>${escapeHtml(kb.academicDeconstruction)}</p>
+<h2>Causal chain</h2>
+<ol>
+${kb.relationshipDiagram.map((r) => `<li><strong>${escapeHtml(r.label)}:</strong> ${escapeHtml(r.explanation)}</li>`).join('\n')}
+</ol>
+<h2>Historical markers</h2>
+<ul>
+${kb.timeline.map((t) => `<li><strong>${escapeHtml(t.year)} — ${escapeHtml(t.title)}:</strong> ${escapeHtml(t.desc)}</li>`).join('\n')}
+</ul>
+<p><strong>Key takeaway:</strong> ${escapeHtml(kb.keyTakeaway)}</p>
+${faqSectionHtml(kb.detailsDisclosures.map((d) => ({ question: d.q, answer: d.a })))}
+`;
+  } else if (topic) {
+    body = `<p>${escapeHtml(topic.summary)}</p>
+<p>Read the related primers in <a href="/learn">Learn</a> and the <a href="/guides/macro-spreads">macro spreads guide</a> to connect this concept to live market structure.</p>`;
+  }
+
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: title },
+  ])}
+<h1>${escapeHtml(title)}</h1>
+<p class="lead">${escapeHtml(lead)}</p>
+<article>
+${body}
+${relatedLinksSection(
+  'More economy topics',
+  otherTopics.map((t) => ({
+    href: `/economy/${t.slug}`,
+    label: t.title,
+    blurb: t.summary,
+  }))
+)}
+<p><a href="/learn/inflation">Inflation lesson</a> · <a href="/education/econ">Economics school</a> · <a href="/encyclopedia">Encyclopedia</a></p>
+</article>`;
+}
+
+/**
+ * Returns a complete crawlable HTML document for public content routes,
+ * or null when the path is not a static content page (SPA handles it).
+ * The result is passed through enrichHtmlWithMetadata for meta/JSON-LD.
+ */
 export function renderStaticContentPage(reqPath: string): string | null {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   const parts = pathClean.split('/').filter(Boolean);
@@ -779,7 +1135,11 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (parts[0] === 'ui' && parts.length === 2) body = renderUiProfile(parts[1]);
   else if (pathClean === '/tools' || pathClean === '/tools/position-size') {
     body = pathClean === '/tools' ? renderToolsIndex() : renderPositionSizeTool();
-  }
+  } else if (parts[0] === 'stocks' && parts.length === 2) body = renderStockProfile(parts[1]);
+  else if (parts[0] === 'crypto' && parts.length === 2) body = renderCryptoProfile(parts[1]);
+  else if (parts[0] === 'forex' && parts.length === 2) body = renderForexProfile(parts[1]);
+  else if (parts[0] === 'commodities' && parts.length === 2) body = renderCommodityProfile(parts[1]);
+  else if (parts[0] === 'economy' && parts.length === 2) body = renderEconomyTopic(parts[1]);
 
   if (body === null) return null;
   return renderShell(pathClean, body);

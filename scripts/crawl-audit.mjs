@@ -101,13 +101,13 @@ for (const path of toCheck) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ');
 
-  // Hubs + authored content pages must be thick. Entity deep links (/stocks/aapl)
-  // may still be SPA-thin until the entity-depth PR merges — only title-check those.
+  // Hubs + authored content + entity SSR pages must be thick.
   const isThickStatic =
     /^\/(learn|guides|glossary|faq)(\/|$)/.test(path) ||
     /^\/(encyclopedia|literacy|companies|tools)(\/|$)/.test(path) ||
     /^\/(indicators|education|ui)(\/|$)/.test(path) ||
-    ['/stocks', '/crypto', '/forex', '/commodities'].includes(path);
+    ['/stocks', '/crypto', '/forex', '/commodities'].includes(path) ||
+    /^\/(stocks|crypto|forex|commodities|economy)\//.test(path);
   if (isThickStatic && bodyText.length < 800) {
     problems.push(`thin server-rendered content (${bodyText.length} chars)`);
   }
@@ -120,8 +120,11 @@ for (const path of toCheck) {
 
   // Entity pages must not use the default homepage title
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy/.test(title)) {
+    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—/.test(title)) {
       problems.push('entity page still has default title');
+    }
+    if (!html.includes('cpt-waitlist')) {
+      problems.push('missing waitlist lead capture');
     }
   }
 
