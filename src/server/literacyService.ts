@@ -38,7 +38,7 @@ export async function fetchPageFingerprint(url: string): Promise<{
         "User-Agent": "ClearPathLiteracyOS/1.0 (+https://clearpathtrader.com; education research)",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
-      redirect: "follow",
+      redirect: "error",
     });
     if (!res.ok) {
       throw new Error(`Upstream returned ${res.status}`);

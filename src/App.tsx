@@ -134,7 +134,7 @@ export default function App() {
       window.addEventListener('popstate', handleLocationChange);
       
       // Periodically check path in case hash routing / pushState is triggered from inside code
-      const interval = setInterval(handleLocationChange, 500);
+      const interval = setInterval(handleLocationChange, 2000);
       try {
         const params = new URLSearchParams(window.location.search);
         if (params.get('profile') !== currentProfileId) {

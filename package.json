@@ -75,7 +75,6 @@
     "passport-github2": "^0.1.12",
     "passport-tiktok-auth": "^1.0.12",
     "passport-twitch-new": "^0.0.3",
-    "passport-twitter": "^1.0.4",
     "pg": "^8.21.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",

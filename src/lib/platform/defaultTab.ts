@@ -1,6 +1,6 @@
+/** Default dashboard tab for web vs native. */
 import { Capacitor } from '@capacitor/core';
 
-/** Default dashboard tab — ClearPath Cinema for launch (APK + first visits). */
 export function getDefaultDashboardTab(): string {
   if (typeof window !== 'undefined') {
     try {
@@ -12,6 +12,6 @@ export function getDefaultDashboardTab(): string {
   }
   // Native APK builds open straight into the cinema experience.
   if (Capacitor.isNativePlatform()) return 'CpmsApk';
-  // Web launch default: financial live streams front and center for new visitors.
-  return 'CpmsApk';
+  // Web default: Home / Discovery (not cinema) for faster first paint.
+  return 'Discovery';
 }

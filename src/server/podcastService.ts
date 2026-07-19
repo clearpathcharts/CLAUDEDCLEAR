@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import RSSParser from 'rss-parser';
+import { getPodcastIndexCredentials } from './secrets';
 
 const podcastParser = new RSSParser({
   customFields: {
@@ -29,8 +30,7 @@ export interface PodcastSearchHit {
 }
 
 function podcastIndexHeaders(): Record<string, string> | null {
-  const apiKey = process.env.PODCAST_INDEX_API_KEY?.trim();
-  const apiSecret = process.env.PODCAST_INDEX_API_SECRET?.trim();
+  const { key: apiKey, secret: apiSecret } = getPodcastIndexCredentials();
   if (!apiKey || !apiSecret) return null;
 
   const apiHeaderTime = Math.floor(Date.now() / 1000);
@@ -150,5 +150,6 @@ export async function searchPodcastsByTerm(
 }
 
 export function podcastIndexConfigured(): boolean {
-  return Boolean(process.env.PODCAST_INDEX_API_KEY?.trim() && process.env.PODCAST_INDEX_API_SECRET?.trim());
+  const { key, secret } = getPodcastIndexCredentials();
+  return Boolean(key && secret);
 }

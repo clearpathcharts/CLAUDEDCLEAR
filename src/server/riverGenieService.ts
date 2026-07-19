@@ -5,6 +5,7 @@
 import { getLocalHints } from "../river/assist/localHints";
 import { suggestPineMigration } from "../river/assist/pineMigrator";
 import { extractPineCode, suggestIndicatorFileName } from "../river/assist/extractPineCode";
+import { getGroqApiKey } from "./secrets";
 
 export type GenieMessage = { role: "user" | "assistant"; content: string };
 
@@ -158,7 +159,7 @@ export async function chatRiverGenie(req: RiverGenieRequest): Promise<RiverGenie
     return { answer: "Ask me what indicator you want to build, or paste Pine code to fix.", pineCode: null, suggestedFileName: null, suggestedFixes: [] };
   }
 
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = getGroqApiKey();
   if (!apiKey) {
     return offlineRiverGenieAnswer(req);
   }

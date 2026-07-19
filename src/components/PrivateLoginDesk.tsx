@@ -57,12 +57,13 @@ export default function PrivateLoginDesk({
     setBusy(true);
     try {
       const result = await lookupPrivateAccount(email);
+      const normalized = email.trim().toLowerCase();
       if (result.exists) {
-        setKnownName(result.displayName || 'Member');
-        setEmail(result.email || email.trim().toLowerCase());
+        setKnownName('Member');
+        setEmail(normalized);
         setStep('login');
       } else {
-        setEmail(result.email || email.trim().toLowerCase());
+        setEmail(normalized);
         setStep('register');
       }
     } catch (err: any) {

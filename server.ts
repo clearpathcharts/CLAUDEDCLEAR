@@ -91,22 +91,30 @@ import {
   savePublicEntry,
 } from './src/server/riverCatalogService';
 import { chatRiverGenie } from './src/server/riverGenieService';
+import {
+  getTwelveDataApiKey,
+  getGeminiApiKey,
+  getGroqApiKey,
+  getFredApiKey,
+  getFmpApiKey,
+  getNewsDataApiKey,
+  getSecretPresenceReport,
+  FMP_ALLOWED_ENDPOINTS,
+} from './src/server/secrets';
+import {
+  resolveAuthenticatedUid,
+  requireCatalogAdmin,
+  requireIntelligenceAdmin,
+} from './src/server/authGuards';
 
 const parser = new RSSParser();
 
 function getCleanTwelveDataApiKey(): string {
-  const rawKey = 
-    process.env.TWELVEDATA_API_KEY || 
-    process.env.VITE_TWELVEDATA_API_KEY || 
-    process.env.TWELVE_DATA_API_KEY || 
-    process.env.VITE_TWELVE_DATA_API_KEY || 
-    '';
-  if (!rawKey) {
+  const key = getTwelveDataApiKey();
+  if (!key) {
     console.warn('[Gateway] No Twelve Data API key found in environment. Live data will be unavailable until one is configured.');
-    return '';
   }
-  console.log(`[Gateway] API key found. Length: ${rawKey.length}, Starts: ${rawKey.slice(0, 4)}...`);
-  return rawKey.trim().replace(/^["']|["']$/g, '');
+  return key;
 }
 
 // SSRF PROTECTION
@@ -179,6 +187,7 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const isProd = process.env.NODE_ENV === 'production';
 
   // Enable trust proxy for Cloud Run environments
   // This allows express-rate-limit to see the real client IP
@@ -186,11 +195,14 @@ async function startServer() {
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
   app.use(helmet({
-    contentSecurityPolicy: false, // Vite needs this disabled for dev, but we can tune it for prod
+    // Keep CSP off in HTML shell for Vite HMR; tighten framing/referrer in all envs.
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
-    frameguard: false, // Disable X-Frame-Options: SAMEORIGIN so it loads inside the AI Studio iframe
+    frameguard: isProd ? { action: 'sameorigin' } : false,
+    referrerPolicy: { policy: 'no-referrer' },
+    hidePoweredBy: true,
   }));
   app.use(cors());
   app.use(compression());
@@ -255,7 +267,7 @@ async function startServer() {
   // Protects the institutional data streams from being overwhelmed
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100000, // Limit each IP to 1000 requests per window
+    max: 900, // General API ceiling per IP
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' }
@@ -271,11 +283,34 @@ async function startServer() {
     message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
   });
 
+  const aiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 40,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
+  });
+
+  const marketLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+  });
+
+  const logErrorLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many error reports.' },
+  });
+
   // Initialize WebSockets
   setupWebSockets(server);
 
   // Passport & Auth Middleware
-  const isProd = process.env.NODE_ENV === 'production';
   // Never ship the hard-coded fallback secret in production: a publicly known
   // signing key lets anyone forge session cookies. Prefer SESSION_SECRET; if it
   // is missing in production fall back to a per-boot random key (and warn loudly)
@@ -293,10 +328,12 @@ async function startServer() {
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    name: 'cpt.sid',
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   }));
 
@@ -456,7 +493,7 @@ async function startServer() {
     res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
   });
 
-  app.delete('/api/river/catalog/public/:id', (req, res) => {
+  app.delete('/api/river/catalog/public/:id', requireCatalogAdmin, (req, res) => {
     const ok = removePublicEntry(req.params.id);
     if (!ok) return res.status(404).json({ error: 'Not found.' });
     res.json({ ok: true });
@@ -510,7 +547,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -562,9 +599,9 @@ async function startServer() {
 
   // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
   app.get('/api/workspace/assets', async (req, res) => {
-    const { uid } = req.query;
-    if (!uid || typeof uid !== 'string') {
-      return res.status(400).json({ error: 'uid query is required' });
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
     }
     try {
       const userRecord = await db.query.users.findFirst({
@@ -582,8 +619,12 @@ async function startServer() {
   });
 
   app.post('/api/workspace/assets', async (req, res) => {
-    const { uid, email, assetId, title, type } = req.body;
-    if (!uid || !assetId || !title || !type) {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
+    }
+    const { email, assetId, title, type } = req.body;
+    if (!assetId || !title || !type) {
       return res.status(400).json({ error: 'Missing required field in request body' });
     }
     try {
@@ -622,20 +663,48 @@ async function startServer() {
   });
 
   app.delete('/api/workspace/assets/:id', async (req, res) => {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    }
     const { id } = req.params;
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return res.status(400).json({ error: 'Invalid asset id' });
+    }
     try {
-      await db.delete(schema.googleAssets).where(eq(schema.googleAssets.id, Number(id)));
+      const userRecord = await db.query.users.findFirst({
+        where: eq(schema.users.uid, uid),
+      });
+      if (!userRecord) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      const owned = await db.select().from(schema.googleAssets).where(
+        and(
+          eq(schema.googleAssets.id, numericId),
+          eq(schema.googleAssets.userId, userRecord.id)
+        )
+      );
+      if (!owned.length) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      await db.delete(schema.googleAssets).where(
+        and(
+          eq(schema.googleAssets.id, numericId),
+          eq(schema.googleAssets.userId, userRecord.id)
+        )
+      );
       res.json({ success: true });
     } catch (error: any) {
       console.error('SQL Assets DELETE failed:', error);
-      res.status(500).json({ error: 'Failed to delete asset', message: error.message });
+      res.status(500).json({ error: 'Failed to delete asset' });
     }
   });
 
   app.get('/api/workspace/notes', async (req, res) => {
-    const { uid } = req.query;
-    if (!uid || typeof uid !== 'string') {
-      return res.status(400).json({ error: 'uid query is required' });
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
     }
     try {
       const userRecord = await db.query.users.findFirst({
@@ -653,8 +722,12 @@ async function startServer() {
   });
 
   app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
-    const { uid, associatedId, content } = req.body;
-    if (!uid || !associatedId) {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    }
+    const { associatedId, content } = req.body;
+    if (!associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
     try {
@@ -699,10 +772,27 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', express.json(), (req, res) => {
-    fs.appendFileSync('frontend_errors.log', JSON.stringify(req.body) + '\n');
-    console.log('\n[FRONTEND ERROR]', req.body, '\n');
-    res.json({ ok: true });
+  app.post('/api/log_error', logErrorLimiter, (req, res) => {
+    try {
+      const raw = JSON.stringify(req.body ?? {});
+      if (raw.length > 4000) {
+        return res.status(413).json({ error: 'Payload too large' });
+      }
+      // Redact anything that looks like a key/token before disk write
+      const sanitized = raw
+        .replace(/("?(?:api[_-]?key|apikey|secret|token|authorization|password)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1[REDACTED]$3')
+        .replace(/(Bearer\s+)[A-Za-z0-9._\-]{8,}/gi, '$1[REDACTED]');
+      fs.appendFileSync('frontend_errors.log', sanitized + '\n');
+      console.log('\n[FRONTEND ERROR]', sanitized.slice(0, 500), '\n');
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: 'Failed to record error' });
+    }
+  });
+
+  app.get('/api/secrets/status', (req, res) => {
+    // Boolean presence only — never returns key material
+    res.json({ secrets: getSecretPresenceReport() });
   });
 
   app.get('/api/status', async (req, res) => {
@@ -940,13 +1030,13 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
       return res.json({
         answer: `I am currently operating in standalone educational demonstration mode. Setting a **GEMINI_API_KEY** in your Secrets manager will activate my live, highly specialized deep research neural network.
@@ -989,13 +1079,13 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = getGroqApiKey();
     if (!apiKey) {
       const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
       const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
@@ -1192,10 +1282,14 @@ ${CPT_SITE_GUIDE}`;
 
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
-    const cleanKey = getCleanTwelveDataApiKey();
-    const hasKeys = !!cleanKey;
-    const keyInfo = hasKeys ? `Paid Key active (Length: ${cleanKey.length}, Starts: ${cleanKey.slice(0, 4)}...)` : 'None detected. Configure TWELVEDATA_API_KEY.';
-    res.json({ ready: hasKeys, isApiExhaustedThisMonth: false, keyInfo });
+    const hasKeys = Boolean(getCleanTwelveDataApiKey());
+    res.json({
+      ready: hasKeys,
+      isApiExhaustedThisMonth: false,
+      keyInfo: hasKeys
+        ? 'Server-side Twelve Data key configured.'
+        : 'None detected. Configure TWELVEDATA_API_KEY on the server.',
+    });
   });
 
   app.get('/api/twelvedata/toggle-exhaustion', (req, res) => {
@@ -1216,7 +1310,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', async (req, res) => {
+  app.get('/api/quote', marketLimiter, async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1254,7 +1348,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', async (req, res) => {
+  app.get('/api/candles', marketLimiter, async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1297,7 +1391,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', async (req, res) => {
+  app.get('/api/market/history', marketLimiter, async (req, res) => {
     const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1373,7 +1467,7 @@ ${CPT_SITE_GUIDE}`;
   // NewsData Live Ingress API with fallback
   app.get('/api/newsdata/latest', async (req, res) => {
     try {
-      const apiKey = process.env.NEWSDATA_API_KEY;
+      const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
       if (isKeyValid) {
         // Try multiple endpoints: /api/1/news (standard compatibility) and /api/1/latest
@@ -1473,7 +1567,7 @@ ${CPT_SITE_GUIDE}`;
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { redirect: 'error' });
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
       }
@@ -1709,47 +1803,64 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  // FRED API Proxy Bridge
-  app.get('/api/fred/observations', async (req, res) => {
-    const { series_id, limit, api_key } = req.query;
+  // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
+  app.get('/api/fred/observations', marketLimiter, async (req, res) => {
+    const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
     }
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(series_id)) {
+      return res.status(400).json({ error: 'Invalid series_id' });
+    }
+    const apiKey = getFredApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'FRED unavailable', message: 'Configure FRED_API_KEY on the server.' });
+    }
+    const safeLimit = Math.min(Math.max(parseInt(String(limit || '1'), 10) || 1, 1), 100);
 
     try {
-      const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${series_id}&api_key=${api_key}&file_type=json&limit=${limit || 1}&sort_order=desc`;
-      
-      const fredRes = await fetch(fredUrl);
+      const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${encodeURIComponent(series_id)}&api_key=${encodeURIComponent(apiKey)}&file_type=json&limit=${safeLimit}&sort_order=desc`;
+      const fredRes = await fetch(fredUrl, { redirect: 'error' });
       if (!fredRes.ok) {
-         throw new Error(`FRED returned ${fredRes.status} ${fredRes.statusText}`);
+         throw new Error(`FRED returned ${fredRes.status}`);
       }
       const data = await fredRes.json();
       res.json(data);
     } catch (error: any) {
-      console.error('[FRED Proxy Error]', error);
+      console.error('[FRED Proxy Error]', error?.message || error);
       res.status(502).json({ error: 'FRED API node timed out or failed' });
     }
   });
 
-  // FMP API Proxy Bridge
-  app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
+  // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
+  app.get('/api/fmp/:endpoint/:symbol', marketLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
-    const { limit, apikey } = req.query;
+    const { limit } = req.query;
     if (!symbol || !endpoint) {
       return res.status(400).json({ error: 'symbol and endpoint required' });
     }
+    if (!FMP_ALLOWED_ENDPOINTS.has(endpoint)) {
+      return res.status(400).json({ error: 'Endpoint not allowed' });
+    }
+    if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
+      return res.status(400).json({ error: 'Invalid symbol' });
+    }
+    const apiKey = getFmpApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'FMP unavailable', message: 'Configure FMP_API_KEY on the server.' });
+    }
+    const safeLimit = limit ? Math.min(Math.max(parseInt(String(limit), 10) || 1, 1), 40) : undefined;
 
     try {
-      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?apikey=${apikey}${limit ? `&limit=${limit}` : ''}`;
-      
-      const fmpRes = await fetch(url);
+      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(apiKey)}${safeLimit ? `&limit=${safeLimit}` : ''}`;
+      const fmpRes = await fetch(url, { redirect: 'error' });
       if (!fmpRes.ok) {
-         throw new Error(`FMP returned ${fmpRes.status} ${fmpRes.statusText}`);
+         throw new Error(`FMP returned ${fmpRes.status}`);
       }
       const data = await fmpRes.json();
       res.json(data);
     } catch (error: any) {
-      console.error('[FMP Proxy Error]', error);
+      console.error('[FMP Proxy Error]', error?.message || error);
       res.status(502).json({ error: 'FMP API node timed out or failed' });
     }
   });
@@ -1770,13 +1881,13 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', async (req, res) => {
+  app.get('/api/news/search', aiLimiter, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
       return res.json({ 
         error: 'API key missing', 
@@ -2145,7 +2256,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.get('/api/intelligence/briefings', (req, res) => {
+  app.get('/api/intelligence/briefings', requireIntelligenceAdmin, (req, res) => {
     const limit = Math.min(parseInt(String(req.query.limit || '20'), 10) || 20, 100);
     const briefings = listIntelligenceBriefings(limit).map((record) => ({
       id: record.id,
@@ -2160,12 +2271,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json({ count: briefings.length, briefings });
   });
 
-  app.get('/api/intelligence/briefings/:id', (req, res) => {
+  app.get('/api/intelligence/briefings/:id', requireIntelligenceAdmin, (req, res) => {
     const record = getIntelligenceBriefing(req.params.id);
     if (!record) {
       return res.status(404).json({ error: 'Briefing not found' });
     }
-    res.json(record);
+    // Never return raw webhook payload to clients
+    const { rawPayload, ...safe } = record as any;
+    res.json(safe);
   });
 
   // 1 & 2. DYNAMIC PAGE INTERCEPTOR (SSR METADATA & SCHEMA INJECTION)
