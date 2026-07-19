@@ -12,7 +12,13 @@ import {
   Calculator,
   Newspaper,
   FlaskConical,
+  Award,
+  ExternalLink,
 } from 'lucide-react';
+import {
+  APPEALING_CERTIFICATES,
+  AWESOME_CERTIFICATES_REPO,
+} from '../content/appealingCertificates';
 
 interface DiscoveryFeedProps {
   onTabChange: (tabId: string) => void;
@@ -220,31 +226,123 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
                 color: '#00E5FF',
                 tab: 'Encyclopedia' as const,
               },
+              {
+                title: 'Certificate desk',
+                blurb: 'Free external courses with badges — finance literacy paths from the open Awesome Certificates list.',
+                icon: Award,
+                color: '#FFD700',
+                href: '#certificate-desk',
+              },
             ].map((item) => {
               const Icon = item.icon;
+              const sharedClass = `${bentoClass} p-5 text-left cursor-pointer hover:brightness-110`;
+              const body = (
+                <div className="relative z-10">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-3.5"
+                    style={{ backgroundColor: `${item.color}1a` }}
+                  >
+                    <Icon size={20} style={{ color: item.color }} aria-hidden="true" />
+                  </div>
+                  <div className="text-sm font-bold text-white mb-1">{item.title}</div>
+                  <div className="text-[11px] text-zinc-300 leading-relaxed">{item.blurb}</div>
+                  <div className="mt-3 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Educational · not advice
+                  </div>
+                </div>
+              );
+              if ('href' in item && item.href) {
+                return (
+                  <a key={item.title} href={item.href} className={sharedClass}>
+                    {body}
+                  </a>
+                );
+              }
               return (
                 <button
                   key={item.title}
                   type="button"
-                  onClick={() => onTabChange(item.tab)}
-                  className={`${bentoClass} p-5 text-left cursor-pointer hover:brightness-110`}
+                  onClick={() => onTabChange((item as { tab: string }).tab)}
+                  className={sharedClass}
                 >
-                  <div className="relative z-10">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3.5"
-                      style={{ backgroundColor: `${item.color}1a` }}
-                    >
-                      <Icon size={20} style={{ color: item.color }} aria-hidden="true" />
-                    </div>
-                    <div className="text-sm font-bold text-white mb-1">{item.title}</div>
-                    <div className="text-[11px] text-zinc-300 leading-relaxed">{item.blurb}</div>
-                    <div className="mt-3 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                      Educational · not advice
-                    </div>
-                  </div>
+                  {body}
                 </button>
               );
             })}
+          </div>
+
+          {/* Certificate desk — curated from Awesome Certificates (external free courses) */}
+          <div id="certificate-desk" className={`${bentoClass} p-5 md:p-6 scroll-mt-24`}>
+            <div className="relative z-10 space-y-5">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#FFD700] font-black mb-2 flex items-center gap-1.5">
+                    <Award size={12} aria-hidden="true" /> Certificate desk
+                  </p>
+                  <h3 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">
+                    Free literacy certificates
+                  </h3>
+                  <p className="mt-2 text-[12px] text-zinc-300 max-w-2xl leading-relaxed">
+                    External beginner courses with free badges or certificates of completion.
+                    ClearPath does not issue these credentials and does not recommend products or trades —
+                    this is a discovery shelf for self-paced learning only.
+                  </p>
+                </div>
+                <a
+                  href={AWESOME_CERTIFICATES_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 shrink-0 text-[10px] font-mono font-black uppercase tracking-widest text-[#00E5FF] hover:text-white border border-[#00E5FF]/35 hover:border-[#00E5FF] bg-[#00E5FF]/10 px-3 py-2 rounded-xl transition-colors"
+                >
+                  Full Awesome Certificates list
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              </div>
+
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0 m-0">
+                {APPEALING_CERTIFICATES.map((cert) => (
+                  <li key={`${cert.provider}-${cert.title}`}>
+                    <a
+                      href={cert.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block h-full rounded-2xl border border-white/10 bg-black/40 hover:border-[#FFD700]/45 hover:bg-black/55 p-4 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[9px] font-mono uppercase tracking-widest text-[#FFD700]/90">
+                            {cert.category}
+                          </span>
+                          <div className="text-sm font-bold text-white mt-1 leading-snug">{cert.title}</div>
+                          <div className="text-[11px] text-zinc-400 mt-1">{cert.provider}</div>
+                        </div>
+                        <ExternalLink size={14} className="text-zinc-500 shrink-0 mt-1" aria-hidden="true" />
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
+                        <span className="px-2 py-0.5 rounded-full border border-white/10">{cert.level}</span>
+                        <span className="px-2 py-0.5 rounded-full border border-white/10">{cert.hours}h</span>
+                        <span className="px-2 py-0.5 rounded-full border border-white/10">
+                          {cert.reward === 'badge' ? 'Digital badge' : 'Certificate'}
+                        </span>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-[10px] text-zinc-500 font-mono leading-relaxed">
+                Catalog curated from{' '}
+                <a
+                  href={AWESOME_CERTIFICATES_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00E5FF] hover:underline"
+                >
+                  PanXProject/awesome-certificates
+                </a>
+                . Course availability and rewards are controlled by each issuer.
+              </p>
+            </div>
           </div>
         </section>
 
