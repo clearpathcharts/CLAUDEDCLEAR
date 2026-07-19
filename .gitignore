@@ -9,7 +9,3 @@ coverage/
 data/registrations/
 data/intelligence/
 data/private_accounts/
-
-# Generated at server startup by the SEO asset node -- never commit
-public/logo.png
-public/og-image.png
