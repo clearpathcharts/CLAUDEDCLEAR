@@ -892,7 +892,7 @@ Not the other way around.`}
               </span>
             </div>
             
-            <p className="text-zinc-500 text-xs sm:text-xs max-w-lg mx-auto font-mono mt-4 font-black">
+            <p className="text-zinc-300 text-xs sm:text-xs max-w-lg mx-auto font-mono mt-4 font-black">
               ⚡ IMMERSIVE. SOCIAL. VISUAL. AND BUILT FOR HUMANS. ⚡
             </p>
           </div>
@@ -923,9 +923,9 @@ Not the other way around.`}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%)] bg-[size:100%_4px] pointer-events-none" />
 
                 {/* Receiver Info Bar */}
-                <div className="flex items-center justify-between text-[8px] text-zinc-500 border-b border-zinc-900/60 pb-2">
+                <div className="flex items-center justify-between text-[8px] text-zinc-300 border-b border-zinc-900/60 pb-2">
                   <span>HD 1080P STREAM</span>
-                  <span className="text-[#FF1493] font-black animate-pulse">● BROADCAST_SECURE</span>
+                  <span className="text-[#FF6EC7] font-black animate-pulse">● BROADCAST_SECURE</span>
                 </div>
 
                 {/* Play Glass Overlay */}
@@ -939,28 +939,28 @@ Not the other way around.`}
                 <div className="py-2 flex-grow flex flex-col justify-end z-10">
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         📡 Fed Repo Facilities Explained
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🌊 Global Sovereign Debt Flows
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-400 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
-                      </h4>
+                      </h3>
                     </div>
                   )}
                 </div>
@@ -1007,12 +1007,12 @@ Not the other way around.`}
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
                 <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
-                  <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
+                  <span className="text-[9px] text-zinc-300 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
+                  <span className="text-[9px] text-[#FF6EC7] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
                 </div>
               </div>
 
-              {/* Action Button */}
+              {/* Action Button — black text on pink for WCAG AA contrast (≥4.5:1) */}
               <div className="mt-8">
                 <button
                   type="button"
@@ -1023,9 +1023,9 @@ Not the other way around.`}
                     } catch { /* ignore */ }
                     setEcosystemTvOpen(true);
                   }}
-                  className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#FF1493] hover:bg-[#ff3da8] text-black font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Tv size={14} /> TUNE IN NOW — LIVE MARKETS
+                  <Tv size={14} aria-hidden="true" /> TUNE IN NOW — LIVE MARKETS
                 </button>
               </div>
             </div>
@@ -1050,20 +1050,20 @@ Not the other way around.`}
                 <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-wider bg-[#FF7B00]/5 px-3 py-1 rounded-full border border-[#FF7B00]/15">
                   COMMUNITIES • DISCOVER SWARMS
                 </span>
-                <span className="font-mono text-[8px] text-zinc-500 font-extrabold uppercase animate-pulse">
+                <span className="font-mono text-[8px] text-zinc-300 font-extrabold uppercase animate-pulse">
                   ONLINE HUB ACTIVE
                 </span>
               </div>
 
               {/* Live lobby preview — full chatroom below the ecosystem grid */}
               <div className="rounded-2xl border border-[#FF7B00]/25 bg-black/50 p-4 text-left">
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  Jump into the <strong className="text-[#FF7B00]">live public lobby</strong> below — no account required. Pick a room, set your trader handle, and chat in real time.
+                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                  Jump into the <strong className="text-[#FFB347]">live public lobby</strong> below — no account required. Pick a room, set your trader handle, and chat in real time.
                 </p>
                 <button
                   type="button"
                   onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FFB347] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-black transition-all"
                 >
                   Open Live Chat Lobby ↓
                 </button>
@@ -1074,7 +1074,7 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => setEcosystemCommOpen(!ecosystemCommOpen)}
-                  className="text-[9px] font-mono font-bold text-zinc-500 hover:text-[#FF7B00] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="text-[9px] font-mono font-bold text-zinc-300 hover:text-[#FFB347] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {ecosystemCommOpen ? '[-] CLOSE CUSTOM SEED PORT' : '[+] SPAWN CUSTOM SWARM NODE'}
                 </button>
@@ -1126,12 +1126,12 @@ Not the other way around.`}
                 <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   Join direct communication swarms immediately. Tap in with sovereign macro networks across the world, exchange layout setups, share visual indicators, and learn together.
                 </p>
-                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-500 font-mono font-bold leading-none">
+                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-300 font-mono font-bold leading-none">
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> CRYPTOGRAPHIC VERIFIED CHATS
+                    <CheckSquare size={11} className="text-[#FFB347]" aria-hidden="true" /> CRYPTOGRAPHIC VERIFIED CHATS
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> FIRESTORE PERSISTENT GROUP SYNC
+                    <CheckSquare size={11} className="text-[#FFB347]" aria-hidden="true" /> FIRESTORE PERSISTENT GROUP SYNC
                   </span>
                 </div>
               </div>
@@ -1141,9 +1141,9 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => setBoardModalOpen(true)}
-                  className="w-full py-4 bg-[#FF7B00] hover:bg-[#FF7B00]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,123,0,0.25)] hover:shadow-[0_4px_35px_rgba(255,123,0,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#FF7B00] hover:bg-[#ff9429] text-black font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,123,0,0.25)] hover:shadow-[0_4px_35px_rgba(255,123,0,0.38)] cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Users size={14} /> FIND MY PEOPLE
+                  <Users size={14} aria-hidden="true" /> FIND MY PEOPLE
                 </button>
               </div>
             </div>
@@ -1670,7 +1670,7 @@ Not the other way around.`}
               <ArrowRight size={14} />
             </button>
           </div>
-          <p className="relative z-10 text-[10px] text-zinc-500 font-mono">
+          <p className="relative z-10 text-[10px] text-zinc-300 font-mono">
             Passwords are hashed on the server. Each desk opens only for its owner.
           </p>
         </div>
@@ -2146,7 +2146,7 @@ Not the other way around.`}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-4">
                   <div>
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">COGNITIVE COMPASS PROFILE</span>
-                    <h4 className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</h4>
+                    <h3 className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</h3>
                   </div>
                   <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-850">
                     {[
@@ -2181,14 +2181,14 @@ Not the other way around.`}
                     >
                       <div className="p-4 bg-zinc-900/60 border border-[#B026FF]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#00FFFF] font-extrabold uppercase">FED TREASURY ACTION</span>
-                        <h5 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h5>
+                        <p className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           This introduces cash into financial avenues, easing loan constraints and boosting long-term investment queues.
                         </p>
                       </div>
                       <div className="p-4 bg-zinc-900/60 border border-[#FF7B00]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#FF7B00] font-extrabold uppercase">LIQUIDITY ALERT</span>
-                        <h5 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h5>
+                        <p className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           Capital cash reserves show a strong tick up, creating a healthy backdrop for stock and coin indicators.
                         </p>

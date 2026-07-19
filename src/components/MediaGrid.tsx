@@ -10,8 +10,8 @@ const BloombergLive = lazy(() => import('./BloombergLive'));
 
 const BloombergFallback = () => (
   <div className="h-[200px] bg-zinc-950/60 rounded-xl border border-white/5 flex items-center justify-center p-4">
-    <div className="flex flex-col items-center gap-2 text-zinc-500 font-mono text-[10px] uppercase">
-      <div className="w-1.5 h-1.5 rounded-full bg-[#ff1493] animate-ping" />
+    <div className="flex flex-col items-center gap-2 text-zinc-300 font-mono text-[10px] uppercase">
+      <div className="w-1.5 h-1.5 rounded-full bg-[#ff1493] animate-ping" aria-hidden="true" />
       <span>SYNCING TV DECK FEED...</span>
     </div>
   </div>
@@ -29,10 +29,10 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
       {/* Title block of the Grid */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-black font-serif italic text-[#ff1493] flex items-center gap-2 uppercase tracking-tight">
-            <Globe size={18} className="text-[#ff1493]" />
+          <h3 className="text-lg md:text-xl font-black font-serif italic text-[#ff1493] flex items-center gap-2 uppercase tracking-tight">
+            <Globe size={18} className="text-[#ff1493]" aria-hidden="true" />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
-          </h2>
+          </h3>
           <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1 max-w-2xl">
             Trading on a phone means waiting for every site to load — social, video, magazines, then hunting for your chart again. Your World Connected™ puts social media, online video, and your favorite reads (fashion, cars, and more) next to a movable live chart on the same screen so you can watch both without tab-hopping.
           </p>
@@ -48,7 +48,7 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
               Curation Settings
             </button>
           )}
-          <span className="font-mono text-[9px] bg-purple-950/25 text-[#B026FF] border border-[#B026FF]/20 px-2.5 py-1 rounded-full uppercase font-black tracking-widest">
+          <span className="font-mono text-[9px] bg-purple-950/40 text-[#E0A3FF] border border-[#B026FF]/35 px-2.5 py-1 rounded-full uppercase font-black tracking-widest">
             LIVE BROADCAST SYNCED
           </span>
         </div>
@@ -67,8 +67,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
                 onClick={() => setActiveTab('facebook')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'facebook'
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-extrabold shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 font-extrabold shadow-sm'
+                    : 'text-zinc-300 hover:text-white border border-transparent'
                 }`}
               >
                 Facebook Intel
@@ -78,8 +78,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
                 onClick={() => setActiveTab('instagram')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'instagram'
-                    ? 'bg-pink-600/20 text-pink-400 border border-[#ff1493]/30 font-extrabold shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                    ? 'bg-pink-600/20 text-pink-300 border border-[#ff1493]/30 font-extrabold shadow-sm'
+                    : 'text-zinc-300 hover:text-white border border-transparent'
                 }`}
               >
                 Instagram Signals
