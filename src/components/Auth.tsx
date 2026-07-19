@@ -597,29 +597,18 @@ export default function Auth() {
             </span>
           </div>
 
-          {/* Primary actions — pinned top-right, shrink-0 so the CTA never clips */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setBoardModalOpen(true)}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
-            >
-              <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
-              <span className="hidden sm:inline">Board Members</span>
-              <span className="sm:hidden">Board</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => openPrivateLogin('login')}
-              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            >
-              <Lock size={12} aria-hidden="true" />
-              Private Login
-            </button>
-          </div>
+          {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('login')}
+            className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <Lock size={12} aria-hidden="true" />
+            Private Login
+          </button>
         </div>
 
-        {/* Secondary link row — wraps instead of shoving actions off-screen */}
+        {/* Secondary link row — wraps; Board Members lives here so it never competes with the CTA */}
         <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pb-0.5">
           <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
             Trading × AI
@@ -646,6 +635,26 @@ export default function Auth() {
           <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Learn</a>
           <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Guides</a>
           <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">FAQ</a>
+          <button
+            type="button"
+            onClick={() => setBoardModalOpen(true)}
+            className="ml-auto px-3 py-1 border border-[#B026FF]/30 rounded-lg text-[11px] font-black uppercase tracking-widest text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+          >
+            <Lock size={11} className="text-[#B026FF]" aria-hidden="true" />
+            Board Members
+          </button>
+        </div>
+
+        {/* Mobile: Board Members still reachable without crowding Private Login */}
+        <div className="flex lg:hidden">
+          <button
+            type="button"
+            onClick={() => setBoardModalOpen(true)}
+            className="px-3 py-1.5 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+          >
+            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
+            Board
+          </button>
         </div>
       </nav>
 
