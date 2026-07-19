@@ -1,10 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, Tv, Eye, Maximize2 } from 'lucide-react';
+import { BLOOMBERG_HLS } from '../cpms/cpmsCatalog';
+import { bindVideoSource } from '../lib/cpms/hlsPlayer';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 export const BloombergLive: React.FC = React.memo(() => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [viewers] = useState('48.2k');
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const viewers = '48.2k';
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -13,6 +17,17 @@ export const BloombergLive: React.FC = React.memo(() => {
     onClose: () => setIsPlaying(false),
     initialFocusRef: closeRef,
   });
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const el = videoRef.current;
+    if (!el) return;
+    setStreamError(null);
+    return bindVideoSource(el, BLOOMBERG_HLS.us, {
+      autoPlay: true,
+      onError: () => setStreamError('Bloomberg live stream unavailable. Close and try again.'),
+    });
+  }, [isPlaying]);
 
   return (
     <div className="flex flex-col h-full justify-between font-sans text-neutral-200">
@@ -33,21 +48,24 @@ export const BloombergLive: React.FC = React.memo(() => {
         </span>
       </div>
 
-      {/* 2. Large Video Preview Layout (Netflix/YouTube style) */}
+      {/* 2. Large Video Preview Layout */}
       <button
         type="button"
         onClick={() => setIsPlaying(true)}
         aria-label="Play Bloomberg Live stream preview"
         className="relative flex-1 my-3 rounded-xl overflow-hidden group/tv cursor-pointer w-full aspect-video border border-white/10 bg-neutral-950 shadow-inner text-left p-0"
       >
-        <img 
-          src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=600" 
-          alt="Bloomberg Live News desk camera focus" 
+        <img
+          src="https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=600"
+          alt="Bloomberg Live News desk camera focus"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover group-hover/tv:scale-105 transition-transform duration-700 pointer-events-none"
         />
         {/* Play button overlay */}
-        <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center" aria-hidden="true">
+        <div
+          className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center"
+          aria-hidden="true"
+        >
           <div className="w-14 h-14 rounded-full bg-[#ff1493] text-white flex items-center justify-center shadow-[0_0_25px_rgba(255,20,147,0.55)] group-hover:shadow-[0_0_35px_rgba(255,20,147,0.75)] group-hover:scale-110 transition-all duration-300 transform">
             <Play size={20} className="fill-white ml-1" />
           </div>
@@ -76,18 +94,18 @@ export const BloombergLive: React.FC = React.memo(() => {
           <Play size={10} className="fill-white" aria-hidden="true" />
           ▶ WATCH LIVE STREAMING
         </button>
-        
+
         <button
           type="button"
           onClick={() => setIsPlaying(true)}
           className="p-3 bg-zinc-900 border border-white/5 text-zinc-400 hover:bg-zinc-800 hover:text-white rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-95"
-          aria-label="Fullscreen live stream"
+          aria-label="Open Bloomberg live fullscreen"
         >
           <Maximize2 size={12} aria-hidden="true" />
         </button>
       </div>
 
-      {/* Bloomberg TV Stream Overlay Modal */}
+      {/* Bloomberg TV Stream Overlay Modal — direct HLS, no YouTube */}
       {isPlaying && (
         <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8 animate-fade-in select-none">
           <div
@@ -98,8 +116,6 @@ export const BloombergLive: React.FC = React.memo(() => {
             tabIndex={-1}
             className="relative w-full max-w-4xl bg-zinc-950 border border-[#ff1493]/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(255,20,147,0.3)] flex flex-col justify-between max-h-[90vh] outline-none"
           >
-            
-            {/* Header of Modal */}
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/45 text-left">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2 w-2" aria-hidden="true">
@@ -114,7 +130,7 @@ export const BloombergLive: React.FC = React.memo(() => {
                   CLEARPATH BLOOMBERG TV STREAM
                 </span>
               </div>
-              
+
               <button
                 ref={closeRef}
                 type="button"
@@ -125,31 +141,32 @@ export const BloombergLive: React.FC = React.memo(() => {
               </button>
             </div>
 
-            {/* Video Live Frame */}
             <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-              <iframe
+              {streamError && (
+                <div className="absolute inset-x-4 top-4 z-10 rounded-lg border border-red-500/30 bg-red-950/90 px-3 py-2 text-[10px] font-mono text-red-200">
+                  {streamError}
+                </div>
+              )}
+              <video
+                ref={videoRef}
+                className="absolute inset-0 w-full h-full object-contain border-0"
+                playsInline
+                controls
+                autoPlay
                 title="Bloomberg Livestream Player"
-                width="100%"
-                height="100%"
-                src="https://www.youtube.com/embed/dp8PhLsUcFE?autoplay=1"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                className="absolute inset-0 w-full h-full border-0"
               />
             </div>
 
-            {/* Modal Footer information bar */}
             <div className="bg-black p-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2.5 font-mono text-[9px] text-zinc-500">
               <div className="flex items-center gap-1.5 uppercase font-bold text-zinc-400">
-                <span>FEED STATUS: STABLE CONNECTION</span>
+                <span>FEED: BLOOMBERG DIRECT HLS</span>
                 <span aria-hidden="true">•</span>
-                <span>PORT: 3000 BROADCAST</span>
+                <span>NO YOUTUBE</span>
               </div>
               <span className="uppercase text-zinc-600 font-extrabold tracking-wider">
                 © CPMS TV LIVE TRANSMISSION DECK
               </span>
             </div>
-
           </div>
         </div>
       )}

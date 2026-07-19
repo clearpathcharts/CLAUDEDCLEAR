@@ -5,10 +5,8 @@ export interface CpmsVideoItem {
   title: string;
   description: string;
   category: string;
-  /** Progressive MP4 or HLS (.m3u8) stream URL */
+  /** Progressive MP4 or HLS (.m3u8) stream URL — no YouTube embeds */
   videoUrl: string;
-  /** Official YouTube embed when HLS is geo-blocked (optional fallback) */
-  youtubeVideoId?: string;
   thumbnailUrl: string;
   duration: string;
   uploadedAt: string;
@@ -34,36 +32,29 @@ export interface CpmsChannelSeed {
   thumbnailUrl: string;
 }
 
+/** Official Bloomberg HLS manifests (direct — not YouTube). */
+export const BLOOMBERG_HLS = {
+  us: 'https://www.bloomberg.com/media-manifest/streams/us.m3u8',
+  eu: 'https://www.bloomberg.com/media-manifest/streams/eu.m3u8',
+  /** Bloomberg Originals / Quicktake-style live loop */
+  originals: 'https://www.bloomberg.com/media-manifest/streams/qt.m3u8',
+} as const;
+
 /** Opens automatically when a visitor enters ClearPath Cinema. */
-export const LAUNCH_FEATURED_VIDEO_ID = 'yahoo-finance-live';
+export const LAUNCH_FEATURED_VIDEO_ID = 'bloomberg-television';
 
 /**
- * Launch-day catalog — real financial market streams (HLS) plus official YouTube
- * embeds as backup. Works without Firestore; seed with `npm run cpms:seed` when ready.
+ * Launch-day catalog — direct HLS / MP4 only. No YouTube embeds or channel fallbacks
+ * (YouTube live_stream iframes freeze the cinema player).
+ * Works without Firestore; seed with `npm run cpms:seed` when ready.
  */
 export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
   {
-    id: 'yahoo-finance-live',
-    title: 'Yahoo Finance Live',
-    description: 'Live market coverage — equities, rates, commodities, and breaking business headlines from the Yahoo Finance desk.',
-    category: 'Market News TV',
-    videoUrl: 'https://yahoofinance-live.akamaized.net/hls/live/621757/yahoofinance/master.m3u8',
-    youtubeVideoId: 'UC62jmzP8mvX9T6o1P8yuSJA',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-    duration: 'LIVE',
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: 'ClearPath Curator',
-    relatedIndicatorId: 'Live Markets',
-    isLive: true,
-    viewers: '14K+',
-  },
-  {
     id: 'bloomberg-television',
     title: 'Bloomberg Television',
-    description: 'Global business and markets — futures, FX, fixed income, and corporate news from Bloomberg TV.',
+    description: 'Global business and markets — futures, FX, fixed income, and corporate news from Bloomberg TV (direct HLS).',
     category: 'Market News TV',
-    videoUrl: 'https://d35j504z0x2vu2.cloudfront.net/v1/master/0bc8e8376bd8417a1b6761138aa41c26c7309312/bloomberg-television/bloombergtv.m3u8',
-    youtubeVideoId: 'dp8PhLsUcFE',
+    videoUrl: BLOOMBERG_HLS.us,
     thumbnailUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80',
     duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
@@ -77,7 +68,7 @@ export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
     title: 'Bloomberg TV Europe',
     description: 'European session open, ECB watch, DAX/FTSE flows, and cross-Atlantic macro linkage.',
     category: 'Market News TV',
-    videoUrl: 'https://bloomberg.com/media-manifest/streams/eu.m3u8',
+    videoUrl: BLOOMBERG_HLS.eu,
     thumbnailUrl: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=80',
     duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
@@ -90,7 +81,7 @@ export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
     title: 'Bloomberg Originals — Markets & Macro',
     description: 'Documentary-style market explainers, CEO interviews, and macro deep dives from Bloomberg Originals.',
     category: 'Finance TV',
-    videoUrl: 'https://bloomberg.com/media-manifest/streams/qt.m3u8',
+    videoUrl: BLOOMBERG_HLS.originals,
     thumbnailUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
     duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
@@ -99,33 +90,18 @@ export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
     isLive: true,
   },
   {
-    id: 'tastylive',
-    title: 'tastylive — Live Market Talk',
-    description: 'Options, futures, and intraday strategy discussion from the tastylive desk (official YouTube embed).',
-    category: 'Trading Anarchy TV',
-    videoUrl: '',
-    youtubeVideoId: 'UCyUPBsrRkCyIkY4vFj84gXw',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+    id: 'yahoo-finance-live',
+    title: 'Yahoo Finance Live',
+    description: 'Live market coverage — equities, rates, commodities, and breaking business headlines from the Yahoo Finance desk.',
+    category: 'Market News TV',
+    videoUrl: 'https://yahoofinance-live.akamaized.net/hls/live/621757/yahoofinance/master.m3u8',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
     duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
     uploadedBy: 'ClearPath Curator',
-    relatedIndicatorId: 'Options Desk',
+    relatedIndicatorId: 'Live Markets',
     isLive: true,
-    viewers: '8K+',
-  },
-  {
-    id: 'schwab-network',
-    title: 'Schwab Network — Market Education',
-    description: 'Retail-focused market education, ETF explainers, and live desk Q&A from Charles Schwab.',
-    category: 'Finance TV',
-    videoUrl: '',
-    youtubeVideoId: 'UCqoFUb9L9P4HnWg9Yd4Wx6g',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
-    duration: 'LIVE',
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: 'ClearPath Curator',
-    relatedIndicatorId: 'Education',
-    isLive: true,
+    viewers: '14K+',
   },
   {
     id: 'abc-news-live',
@@ -207,17 +183,17 @@ export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
 export const STATIC_DEFAULT_CHANNELS: CpmsChannelSeed[] = [
   {
     name: 'Market News TV',
-    description: 'Live desks — Yahoo Finance, Bloomberg, ABC, CNA, and breaking macro headlines.',
+    description: 'Live desks — Bloomberg, Yahoo Finance, ABC, CNA, and breaking macro headlines.',
     thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #14532d 100%)',
   },
   {
     name: 'Finance TV',
-    description: 'Market education, Schwab Network, and institutional macro explainers.',
+    description: 'Bloomberg Originals and institutional macro explainers.',
     thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #1e3a8a 100%)',
   },
   {
     name: 'Trading Anarchy TV',
-    description: 'tastylive, Gold Bar systems, and high-volatility breakout frameworks.',
+    description: 'Gold Bar systems and high-volatility breakout frameworks.',
     thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #7f1d1d 100%)',
   },
   {
@@ -247,13 +223,37 @@ export function offlineChannelItems(): CpmsChannelItem[] {
   }));
 }
 
-/** YouTube embed URL for cinema items that use official live embeds. */
-export function cinemaYoutubeEmbed(video: CpmsVideoItem, autoplay = true): string | null {
-  const id = video.youtubeVideoId;
-  if (!id) return null;
-  // Channel IDs start with UC — use live_stream embed
-  if (id.startsWith('UC')) {
-    return `https://www.youtube.com/embed/live_stream?channel=${id}&autoplay=${autoplay ? 1 : 0}&mute=${autoplay ? 1 : 0}&rel=0`;
+/**
+ * Normalize cinema rows from Firestore/local cache:
+ * - force known-good Bloomberg HLS URLs
+ * - drop YouTube-only / empty-URL rows that freeze the player
+ */
+export function normalizeCinemaVideos(items: CpmsVideoItem[]): CpmsVideoItem[] {
+  const bloombergFix: Record<string, string> = {
+    'bloomberg-television': BLOOMBERG_HLS.us,
+    'bloomberg-europe': BLOOMBERG_HLS.eu,
+    'bloomberg-originals': BLOOMBERG_HLS.originals,
+  };
+
+  const cleaned: CpmsVideoItem[] = [];
+  for (const raw of items) {
+    const { youtubeVideoId: _yt, youtubeChannelId: _ch, ...rest } = raw as CpmsVideoItem & {
+      youtubeVideoId?: string;
+      youtubeChannelId?: string;
+    };
+    const id = rest.id || '';
+    let videoUrl = (rest.videoUrl || '').trim();
+    if (bloombergFix[id]) videoUrl = bloombergFix[id];
+    // Repair legacy CloudFront / non-www Bloomberg manifests
+    if (/bloomberg/i.test(id) || /bloomberg/i.test(videoUrl)) {
+      if (!videoUrl.includes('www.bloomberg.com/media-manifest')) {
+        if (/europe|\/eu\.m3u8/i.test(`${id} ${videoUrl}`)) videoUrl = BLOOMBERG_HLS.eu;
+        else if (/original|quicktake|\/qt\.m3u8/i.test(`${id} ${videoUrl}`)) videoUrl = BLOOMBERG_HLS.originals;
+        else if (/bloomberg/i.test(id)) videoUrl = BLOOMBERG_HLS.us;
+      }
+    }
+    if (!videoUrl) continue; // drop YouTube-only leftovers
+    cleaned.push({ ...rest, videoUrl });
   }
-  return `https://www.youtube.com/embed/${id}?autoplay=${autoplay ? 1 : 0}&mute=${autoplay ? 1 : 0}&rel=0`;
+  return cleaned.length > 0 ? cleaned : SAMPLE_LIBRARY_VIDEOS;
 }
