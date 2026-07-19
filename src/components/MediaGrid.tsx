@@ -29,10 +29,11 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
       {/* Title block of the Grid */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-black font-serif italic flex items-center gap-2 uppercase tracking-tight" style={{ color: 'var(--cpt-pink)' }}>
+          {/* h3 under Auth ecosystem h2 so tile titles can be h4 without skipping levels */}
+          <h3 className="text-lg md:text-xl font-black font-serif italic flex items-center gap-2 uppercase tracking-tight" style={{ color: 'var(--cpt-pink)' }}>
             <Globe size={18} style={{ color: 'var(--cpt-pink)' }} />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
-          </h2>
+          </h3>
           <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1 max-w-2xl">
             Trading on a phone means waiting for every site to load — social, video, magazines, then hunting for your chart again. Your World Connected™ puts social media, online video, and your favorite reads (fashion, cars, and more) next to a movable live chart on the same screen so you can watch both without tab-hopping.
           </p>

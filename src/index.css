@@ -100,6 +100,17 @@ html[data-reduced-sensory="true"] .a11y-prefs-root button {
   box-shadow: none !important;
 }
 
+/* Semantic heading tags keep sequential levels; visuals stay tiny (11px) */
+h3.text-tiny-heading,
+h4.text-tiny-heading {
+  font-size: 11px !important;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
 /* Shared CTAs that follow brand vars (High Contrast remaps --cpt-*) */
 .cpt-cta-gradient {
   background-image: linear-gradient(to right, var(--cpt-pink), #B026FF);

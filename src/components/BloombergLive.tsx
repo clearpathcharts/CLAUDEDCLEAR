@@ -49,9 +49,9 @@ export const BloombergLive: React.FC = React.memo(() => {
 
         {/* Anchor name and broadcast title */}
         <div className="absolute bottom-3 left-3 right-3 text-left">
-          <h3 className="font-bold text-white text-xs sm:text-sm tracking-wide leading-tight drop-shadow-md font-serif italic text-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          <h4 className="font-bold text-white text-xs sm:text-sm tracking-wide leading-tight drop-shadow-md font-serif italic text-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Fed Interest Rate Discussion & Quantitative Vector Update
-          </h3>
+          </h4>
         </div>
       </div>
 

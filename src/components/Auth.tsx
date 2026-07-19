@@ -940,7 +940,7 @@ Not the other way around.`}
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         📡 Fed Repo Facilities Explained
                       </h3>
                     </div>
@@ -949,7 +949,7 @@ Not the other way around.`}
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🌊 Global Sovereign Debt Flows
                       </h3>
                     </div>
@@ -958,7 +958,7 @@ Not the other way around.`}
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
                       </h3>
                     </div>
@@ -974,7 +974,7 @@ Not the other way around.`}
                       <div 
                         key={i} 
                         className="flex-1 bg-[#FF1493] rounded-t-[1px]" 
-                        style={{ height: `${val}%`, backgroundColor: '#FF1493' }} 
+                        style={{ height: `${val}%`, backgroundColor: 'var(--cpt-pink)' }} 
                       />
                     );
                   })}
@@ -1674,7 +1674,7 @@ Not the other way around.`}
             <button
               type="button"
               onClick={() => openPrivateLogin('register')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="cpt-cta-gradient w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               Create Private Account
               <ArrowRight size={14} />
@@ -1869,7 +1869,7 @@ Not the other way around.`}
                   <button
                     type="submit"
                     disabled={boardSuccess}
-                    className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
+                    className="cpt-cta-gradient w-full py-4 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
                   >
                     Verify Passcode
                   </button>
@@ -1981,7 +1981,7 @@ Not the other way around.`}
                     setDemoOpen(false);
                     openPrivateLogin('register');
                   }}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
+                  className="cpt-cta-gradient px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
                 >
                   Create Private Account
                 </button>
