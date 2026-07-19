@@ -1,5 +1,36 @@
 @import "tailwindcss";
 
+/* Keyboard focus — visible without relying on mouse hover */
+:focus-visible {
+  outline: 2px solid var(--cpt-cyan, #00ffff);
+  outline-offset: 2px;
+}
+
+/* Skip link — first focusable control on Auth / public shells */
+.cp-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  background: #00ffff;
+  color: #050505;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.15s ease;
+}
+.cp-skip-link:focus,
+.cp-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
 :root {
   --lava-supernova: #ff0000;
   --lava-magma: #ff4500;
@@ -8,6 +39,150 @@
   --lava-thumb-gradient: linear-gradient(180deg, var(--lava-supernova) 0%, var(--lava-magma) 52%, var(--lava-molten) 100%);
   --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
   --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
+
+  /* CTA fills — mid-tone WCAG-safe (4.5:1 with white). Neon stays in decorative accents. */
+  --cpt-pink: #d81b60;
+  --cpt-orange: #e65100;
+  --cpt-cta-on-pink: #ffffff;
+  --cpt-cta-on-orange: #ffffff;
+  /* Readable tinted copy on near-black */
+  --cpt-text-pink: #f472b6;
+  --cpt-text-orange: #fb923c;
+  --cpt-text-purple: #e9d5ff;
+}
+
+/* —— WCAG High Contrast — lift muted / tinted copy further —— */
+html[data-high-contrast="true"] {
+  --cpt-pink: #d81b60;
+  --cpt-orange: #e65100;
+  --cpt-cta-on-pink: #ffffff;
+  --cpt-cta-on-orange: #ffffff;
+  --cpt-text-pink: #f9a8d4;
+  --cpt-text-orange: #fdba74;
+  --cpt-text-purple: #f3e8ff;
+}
+
+/* Remap common hardcoded pink/orange utilities when High Contrast is on */
+html[data-high-contrast="true"] .bg-\[\#FF1493\],
+html[data-high-contrast="true"] .bg-\[\#ff1493\],
+html[data-high-contrast="true"] .hover\:bg-\[\#FF1493\]:hover,
+html[data-high-contrast="true"] .hover\:bg-\[\#ff1493\]:hover {
+  background-color: var(--cpt-pink) !important;
+}
+
+html[data-high-contrast="true"] .bg-\[\#FF7B00\],
+html[data-high-contrast="true"] .bg-\[\#FF7A00\],
+html[data-high-contrast="true"] .hover\:bg-\[\#FF7B00\]:hover,
+html[data-high-contrast="true"] .hover\:bg-\[\#FF7A00\]:hover {
+  background-color: var(--cpt-orange) !important;
+}
+
+html[data-high-contrast="true"] .text-\[\#FF1493\],
+html[data-high-contrast="true"] .text-\[\#ff1493\] {
+  color: var(--cpt-pink) !important;
+}
+
+html[data-high-contrast="true"] .text-\[\#FF7B00\],
+html[data-high-contrast="true"] .text-\[\#FF7A00\] {
+  color: var(--cpt-orange) !important;
+}
+
+html[data-high-contrast="true"] .border-\[\#FF1493\],
+html[data-high-contrast="true"] .border-\[\#ff1493\],
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/30,
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/35,
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/40,
+html[data-high-contrast="true"] .border-\[\#ff1493\]\/35 {
+  border-color: color-mix(in srgb, var(--cpt-pink) 55%, transparent) !important;
+}
+
+html[data-high-contrast="true"] .border-\[\#FF7B00\],
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/15,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/20,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/35,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/40,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/60 {
+  border-color: color-mix(in srgb, var(--cpt-orange) 55%, transparent) !important;
+}
+
+/* Muted body copy — default lift for near-black UI; High Contrast lifts further */
+.text-zinc-500 {
+  color: #a1a1aa; /* zinc-400 — ~4.5:1 on #050505 for normal text */
+}
+html[data-high-contrast="true"] .text-zinc-500 {
+  color: #d4d4d8 !important; /* zinc-300 */
+}
+html[data-high-contrast="true"] .text-zinc-400,
+html[data-high-contrast="true"] .text-zinc-300 {
+  color: #e4e4e7 !important; /* zinc-200 */
+}
+
+/* —— Reduced Sensory: calmer motion / less neon glow —— */
+html[data-reduced-sensory="true"],
+html[data-reduced-sensory="true"] * {
+  scroll-behavior: auto !important;
+}
+
+html[data-reduced-sensory="true"] *,
+html[data-reduced-sensory="true"] *::before,
+html[data-reduced-sensory="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+}
+
+html[data-reduced-sensory="true"] .text-neon-glow,
+html[data-reduced-sensory="true"] .neon-cyan-text {
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-reduced-sensory="true"] .a11y-prefs-root button {
+  box-shadow: none !important;
+}
+
+/* Semantic heading tags keep sequential levels; visuals stay tiny (11px) */
+h3.text-tiny-heading,
+h4.text-tiny-heading {
+  font-size: 11px !important;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Shared CTAs that follow brand vars (High Contrast remaps --cpt-*) */
+.cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #B026FF);
+  color: var(--cpt-cta-on-pink);
+}
+html[data-high-contrast="true"] .cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #6a1b9a);
+  color: #ffffff;
+}
+
+/* Tailwind gradient stops that hardcode neon pink */
+html[data-high-contrast="true"] .from-\[\#FF1493\],
+html[data-high-contrast="true"] .from-\[\#ff1493\] {
+  --tw-gradient-from: var(--cpt-pink) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
+}
+html[data-high-contrast="true"] .via-\[\#FF1493\],
+html[data-high-contrast="true"] .via-\[\#ff1493\] {
+  --tw-gradient-via: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .to-\[\#FF1493\],
+html[data-high-contrast="true"] .to-\[\#ff1493\] {
+  --tw-gradient-to: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .from-\[\#FF7B00\],
+html[data-high-contrast="true"] .from-\[\#FF7A00\],
+html[data-high-contrast="true"] .to-\[\#FF7B00\],
+html[data-high-contrast="true"] .to-\[\#FF7A00\] {
+  --tw-gradient-from: var(--cpt-orange) !important;
+  --tw-gradient-to: var(--cpt-orange) !important;
 }
 
 @import "./styles/codepen.css";
@@ -324,4 +499,59 @@ input, textarea, select {
 
 .ywc-lava-drift {
   animation: ywc-drift 8s ease-in-out infinite;
+}
+
+/* ——— Accessibility (WCAG-oriented) ——— */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  background: #00e5ff;
+  color: #000;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  min-height: 44px;
+  min-width: auto;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 0;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ywc-section-title,
+  .ywc-lava-drift,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
 }
