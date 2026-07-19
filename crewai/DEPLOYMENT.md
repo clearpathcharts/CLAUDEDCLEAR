@@ -37,7 +37,7 @@ SOCIAL LISTENING TARGETS: Reddit (r/Daytrading, r/Forex, r/options, r/thinkorswi
 r/TradingView, r/interactivebrokers, r/Binance, r/algotrading), public Discord/Telegram,
 YouTube comments, Forex Factory, Elite Trader, Trade2Win, BabyPips forums.
 
-CLEARPATH DIFFERENTIATORS: Four Up Three Down, Gold Bar Indicator, 12 Neuro-Adaptive Chart Profiles,
+CLEARPATH DIFFERENTIATORS: Four Up Three Down, Gold Bar Indicator, 13 Neuro-Adaptive Chart Profiles,
 Blackout Mode, C.P.T. Personal Buddy, Y.W.C., Encyclopedia of Finance/Indicators, Institutional Registry.
 ```
 
@@ -162,6 +162,7 @@ Social harvest tools: `src/clearpath_intelligence/tools/social_research.py`
 | `adhd_hyperfocus` | Hyperfocus |
 | `autism_predictable` | Autism - Predictable |
 | `tourette_tic_friendly` | Minimal Motion |
+| `standard_red_green` | Standard Chart (Red & Green) |
 
 ---
 
