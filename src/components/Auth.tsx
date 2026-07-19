@@ -1751,6 +1751,18 @@ Not the other way around.`}
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
             </a>
+            <a href="/encyclopedia" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Encyclopedia
+            </a>
+            <a href="/education" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Education
+            </a>
+            <a href="/tools/position-size" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Position Size
+            </a>
+            <a href="/ui" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              UI Modes
+            </a>
             <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Platform Scope
             </a>
