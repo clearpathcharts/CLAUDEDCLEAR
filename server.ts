@@ -51,6 +51,7 @@ import {
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import { readProfile, writeProfile } from './src/server/profileStore';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
@@ -209,7 +210,7 @@ async function startServer() {
   }));
   app.use(cors());
   app.use(compression());
-  app.use(express.json());
+  app.use(express.json({ limit: '2mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -347,35 +348,47 @@ async function startServer() {
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
   // Custom OAuth Routes for non-Firebase Native Providers
-  const customProviders = ['discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube'];
+  const customProviders = [
+    'discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube',
+    'google', 'facebook', 'instagram', 'twitter', 'snapchat', 'pinterest', 'threads', 'github',
+  ];
   
   customProviders.forEach(provider => {
     app.get(`/auth/${provider}`, (req, res, next) => {
-      // In production, this would call passport.authenticate(provider)(req, res, next)
-      // For preview environment, we simulate the OAuth handshake redirect
+      // In production with real OAuth keys, this would call passport.authenticate(provider).
+      // Until keys are configured, show an explicit login / authorize screen that returns to the app.
+      const rawReturn = typeof req.query.returnTo === 'string' ? req.query.returnTo : '/?tab=Yours#Yours';
+      const returnTo = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '/?tab=Yours#Yours';
+      const safeReturn = returnTo.replace(/[<>"']/g, '');
+      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase();
       res.send(`
         <html>
-          <body style="background: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; font-size: 14px;">
-            <div style="text-align: center;">
-              <h2 style="color: #00ff99;">OAUTH HANDSHAKE INITIATED</h2>
-              <p>Simulating Custom Passport OAuth Flow for: <b>${provider.toUpperCase()}</b></p>
-              <br/>
-              <p style="color: #ff2ea6;">Note: In production with real keys, you would be redirected to ${provider.toUpperCase()} to authorize.</p>
-              <p>Redirecting back to profile in 3 seconds...</p>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>${label} Login — ClearPath</title>
+          </head>
+          <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
+            <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
+              <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
+              <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
+              <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
+                Sign in with ${label} to link your ClearPath social node.
+                Production deploys with provider API keys redirect to the real ${label} authorize page.
+              </p>
+              <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
+                Continue to ClearPath
+              </a>
+              <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
+                Or use Private Login instead →
+              </a>
             </div>
-            <script>
-              setTimeout(() => {
-                window.location.href = '/#Biography';
-              }, 3000);
-            </script>
           </body>
         </html>
       `);
     });
     
     app.get(`/auth/${provider}/callback`, (req, res) => {
-      // Handle the provider callback here
-      res.redirect('/#Biography');
+      res.redirect('/?tab=Yours#Yours');
     });
   });
 
@@ -438,6 +451,48 @@ async function startServer() {
       /* ignore */
     }
     res.json({ ok: true });
+  });
+
+  // Profile save/load for private sessions (bypasses Firebase client permission errors)
+  app.get('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const uid = sessionUser?.uid || (typeof req.query.uid === 'string' ? req.query.uid : '');
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to load your profile.' });
+    }
+    try {
+      const profile = readProfile(uid) || { uid, displayName: sessionUser?.displayName || '' };
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Failed to load profile' });
+    }
+  });
+
+  app.post('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const bodyUid = typeof req.body?.uid === 'string' ? req.body.uid : '';
+    const uid = sessionUser?.uid || bodyUid;
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to save your profile.' });
+    }
+    // If session exists, only allow writing own profile
+    if (sessionUser?.uid && sessionUser.uid !== uid) {
+      return res.status(403).json({ error: 'Cannot save another member profile.' });
+    }
+    try {
+      const allowed = [
+        'displayName', 'username', 'bio', 'avatarUrl', 'coverUrl',
+        'photoURL', 'coverURL', 'instagramType', 'publishStatus',
+      ];
+      const patch: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (req.body?.[key] !== undefined) patch[key] = req.body[key];
+      }
+      const profile = writeProfile(uid, patch);
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
   });
 
   app.get('/api/auth/private/me', (req, res) => {
@@ -2313,16 +2368,24 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.send(enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = fs.readFileSync(destIndexPath, 'utf-8');
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           return res.send(enriched);
         } else {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -2397,11 +2460,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js')) {
+        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-          res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          if (filePath.endsWith('sw.js')) {
+            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          }
+          return;
+        }
+        // Vite emits content-hashed bundles under assets/ — safe to cache hard.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       }
     }));

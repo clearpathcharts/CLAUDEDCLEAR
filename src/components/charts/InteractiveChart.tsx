@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { ChartFrame } from "./ChartFrame";
 import { LightweightCandles } from "./LightweightCandles";
 import { useAuth } from "../../contexts/FirebaseContext";
@@ -131,7 +131,33 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
 
   const [showIndicatorPicker, setShowIndicatorPicker] = useState(false);
   const [indicatorSearchQuery, setIndicatorSearchQuery] = useState("");
-  const [activeIndicators, setActiveIndicators] = useState<string[]>(["SMA", "RSI"]);
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("clearpath_active_chart_indicators");
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
+        return parsed.length ? parsed : ["SMA", "RSI"];
+      }
+    } catch {}
+    return ["SMA", "RSI"];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("clearpath_active_chart_indicators", JSON.stringify(activeIndicators));
+    } catch {}
+  }, [activeIndicators]);
+
+  useEffect(() => {
+    const onAdd = (event: Event) => {
+      const abbr = (event as CustomEvent).detail?.abbr;
+      if (typeof abbr === "string" && abbr.trim()) {
+        setActiveIndicators((prev) => (prev.includes(abbr) ? prev : [...prev, abbr]));
+      }
+    };
+    window.addEventListener("clearpath-add-indicator", onAdd as EventListener);
+    return () => window.removeEventListener("clearpath-add-indicator", onAdd as EventListener);
+  }, []);
 
   const [ichimokuSettings, setIchimokuSettings] = useState({
     conversionPeriods: 9,
