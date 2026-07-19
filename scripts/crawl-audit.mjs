@@ -39,6 +39,14 @@ const mustCheck = [
   '/education/crypto',
   '/education/crypto/crypto-u1',
   '/education/crypto/crypto-u1/crypto-u1-l1',
+  '/literacy',
+  '/stocks',
+  '/crypto',
+  '/forex',
+  '/commodities',
+  '/companies',
+  '/tools',
+  '/tools/position-size',
   '/ui',
   '/ui/calm_focus',
   '/ui/autism_predictable',
@@ -93,9 +101,21 @@ for (const path of toCheck) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ');
 
-  const isStaticContent = /^\/(learn|guides|glossary|faq|ui|indicators\/.|education\/.)/.test(path);
-  if (isStaticContent && bodyText.length < 800) {
+  // Hubs + authored content pages must be thick. Entity deep links (/stocks/aapl)
+  // may still be SPA-thin until the entity-depth PR merges — only title-check those.
+  const isThickStatic =
+    /^\/(learn|guides|glossary|faq)(\/|$)/.test(path) ||
+    /^\/(encyclopedia|literacy|companies|tools)(\/|$)/.test(path) ||
+    /^\/(indicators|education|ui)(\/|$)/.test(path) ||
+    ['/stocks', '/crypto', '/forex', '/commodities'].includes(path);
+  if (isThickStatic && bodyText.length < 800) {
     problems.push(`thin server-rendered content (${bodyText.length} chars)`);
+  }
+  if (path === '/tools/position-size' && !html.includes('pos-tool')) {
+    problems.push('position size calculator missing');
+  }
+  if (['/encyclopedia', '/indicators', '/education'].includes(path) && !html.includes('live=1')) {
+    problems.push('missing interactive ?live=1 CTA');
   }
 
   // Entity pages must not use the default homepage title
