@@ -1061,9 +1061,17 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   return html;
 }
 
-// ==========================================
-// 8. BRONZE-PLATE SE0 PNG IMAGES GENERATION DUMMY WRITER (Avoids 404s completely!)
-// ==========================================
+// Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.
+const MIN_REAL_ASSET_BYTES = 1024;
+
+function hasRealAsset(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_REAL_ASSET_BYTES;
+  } catch {
+    return false;
+  }
+}
+
 export function ensureSeoAssetsExist() {
   const publicDir = path.join(process.cwd(), 'public');
   if (!fs.existsSync(publicDir)) {
@@ -1072,26 +1080,26 @@ export function ensureSeoAssetsExist() {
 
   const logoPath = path.join(publicDir, 'logo.png');
   const ogImgPath = path.join(publicDir, 'og-image.png');
+  const faviconPath = path.join(publicDir, 'favicon.png');
 
-  // Minimal valid 1x1 black pixel PNG for ultra fast loading and perfect SEO reference compatibility
   const pixelPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   const imageBuffer = Buffer.from(pixelPngBase64, 'base64');
 
-  if (!fs.existsSync(logoPath)) {
-    try {
-      fs.writeFileSync(logoPath, imageBuffer);
-      console.log('[SEO Asset Node] /public/logo.png successfully initialized.');
-    } catch (e) {
-      console.error('[SEO Asset Node] logo.png write failure:', e);
+  for (const [label, assetPath] of [
+    ['logo.png', logoPath],
+    ['og-image.png', ogImgPath],
+    ['favicon.png', faviconPath],
+  ] as const) {
+    if (hasRealAsset(assetPath)) continue;
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(`[SEO Asset Node] /public/${label} missing or too small — commit the real brand asset before deploy.`);
+      continue;
     }
-  }
-
-  if (!fs.existsSync(ogImgPath)) {
     try {
-      fs.writeFileSync(ogImgPath, imageBuffer);
-      console.log('[SEO Asset Node] /public/og-image.png successfully initialized.');
+      fs.writeFileSync(assetPath, imageBuffer);
+      console.log(`[SEO Asset Node] /public/${label} dev placeholder initialized.`);
     } catch (e) {
-      console.error('[SEO Asset Node] og-image.png write failure:', e);
+      console.error(`[SEO Asset Node] ${label} write failure:`, e);
     }
   }
 }

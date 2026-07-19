@@ -25,6 +25,7 @@ import { InstitutionalRegistry } from "./src/core/registry/InstitutionalRegistry
 import { RealityValidator } from "./src/core/audit/RealityValidator";
 import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
+import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
 import { ComplianceAuditEngine } from "./src/truth/ComplianceAuditEngine";
 import { LiveDataEnforcementEngine } from "./src/truth/LiveDataEnforcementEngine";
 import { 
@@ -108,6 +109,8 @@ import {
 } from './src/server/authGuards';
 
 const parser = new RSSParser();
+
+TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
 
 function getCleanTwelveDataApiKey(): string {
   const key = getTwelveDataApiKey();

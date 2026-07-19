@@ -51,6 +51,15 @@ export default defineConfig(({mode}) => {
               }
               return 'common-vendor';
             }
+            if (id.includes('/src/components/encyclopedia/') || id.includes('/src/components/EncyclopediaOfIndicators')) {
+              return 'encyclopedia-vendor';
+            }
+            if (id.includes('/src/literacy/')) {
+              return 'literacy-vendor';
+            }
+            if (id.includes('/src/education/')) {
+              return 'education-vendor';
+            }
           }
         }
       }
