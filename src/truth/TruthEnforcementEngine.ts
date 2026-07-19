@@ -144,13 +144,10 @@ export class TruthEnforcementEngine {
     // 2. Server-side / Node File System Backup
     if (typeof process !== 'undefined' && process.env && typeof window === 'undefined') {
       try {
-        // Dynamically get node modules to prevent frontend bundler issues
-        // We use a safe try/catch wrapper on node require
-        const req = eval('require');
-        const fsLib = req('fs');
-        const pathLib = req('path');
+        const fsLib = await import(/* @vite-ignore */ 'node:fs');
+        const pathLib = await import(/* @vite-ignore */ 'node:path');
         const dir = pathLib.join(process.cwd(), 'logs');
-        if (!fsLib.existsSync(dir)){
+        if (!fsLib.existsSync(dir)) {
           fsLib.mkdirSync(dir, { recursive: true });
         }
         const filePath = pathLib.join(dir, `truth_audit_recovery_${originId}.json`);

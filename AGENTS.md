@@ -12,7 +12,7 @@
 
 ### Build / lint
 - Build: `npm run build` (Vite build for the client + esbuild bundle of `server.ts` → `dist/server.cjs`). `npm start` runs the built server (`NODE_ENV=production`).
-- Lint: `npm run lint` is `tsc --noEmit` over the whole repo. **Known pre-existing failure:** `src/qubit/**` has broken/missing imports and fails type-check. That module is orphaned (not imported anywhere else) and does not affect the app, the Vite build, or the server bundle. Treat these specific `src/qubit` errors as pre-existing noise, not something to fix during unrelated work.
+- Lint: `npm run lint` is `tsc --noEmit` over the whole repo (client + `server.ts`).
 
 ### Environment variables
 - Copy `.env.example` to `.env`. The app runs **without** any secrets set: the Postgres pool (`src/db/index.ts`) is created lazily and only connects when a DB-backed route is hit, and the market-data gateway just logs a warning when `TWELVEDATA_API_KEY` is missing (live data disabled, app still renders).

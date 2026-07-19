@@ -641,7 +641,7 @@ export function moderateBodyFields(...fields: string[]) {
       const value = req.body?.[field];
       if (typeof value !== 'string' || !value.trim()) continue;
       const check = assertCleanText(value, { actorKey });
-      if (!check.ok) {
+      if (check.ok === false) {
         return res.status(check.status).json(check.body);
       }
       // Attach flags for downstream logging without blocking

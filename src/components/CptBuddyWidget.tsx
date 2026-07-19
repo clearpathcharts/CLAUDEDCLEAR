@@ -475,7 +475,7 @@ export const CptBuddyWidget: React.FC = () => {
               />
               <button
                 type="button"
-                onClick={setupStep === "name" ? handleNameSubmit : handleSend}
+                onClick={setupStep === "name" ? handleNameSubmit : () => { void handleSend(); }}
                 disabled={isLoading}
                 aria-label="Send"
                 style={{
