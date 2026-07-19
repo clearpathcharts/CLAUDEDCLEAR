@@ -30,11 +30,11 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1">
           {/* h3 under Auth ecosystem h2 so tile titles can be h4 without skipping levels */}
-          <h3 className="text-lg md:text-xl font-black font-serif italic flex items-center gap-2 uppercase tracking-tight" style={{ color: 'var(--cpt-pink)' }}>
-            <Globe size={18} style={{ color: 'var(--cpt-pink)' }} />
+          <h3 className="text-lg md:text-xl font-black font-serif italic flex items-center gap-2 uppercase tracking-tight" style={{ color: 'var(--cpt-text-pink)' }}>
+            <Globe size={18} style={{ color: 'var(--cpt-text-pink)' }} aria-hidden="true" />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
           </h3>
-          <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1 max-w-2xl">
+          <p className="text-[10px] md:text-xs text-zinc-300 font-sans leading-normal mt-1 max-w-2xl">
             Trading on a phone means waiting for every site to load — social, video, magazines, then hunting for your chart again. Your World Connected™ puts social media, online video, and your favorite reads (fashion, cars, and more) next to a movable live chart on the same screen so you can watch both without tab-hopping.
           </p>
         </div>
@@ -44,7 +44,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
             <button
               type="button"
               onClick={onConfigureYwc}
-              className="py-1 px-3 bg-[#ff1493]/10 hover:bg-[#ff1493] text-[#ff1493] hover:text-white border border-[#ff1493]/35 rounded-xl font-mono text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer"
+              className="py-1 px-3 bg-[#ff1493]/15 hover:bg-[var(--cpt-pink)] hover:text-white border border-[#ff1493]/40 rounded-xl font-mono text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer"
+              style={{ color: 'var(--cpt-text-pink)' }}
             >
               Curation Settings
             </button>
