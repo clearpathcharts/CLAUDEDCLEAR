@@ -12,6 +12,19 @@
 
 @import "./styles/codepen.css";
 
+/* Chart watermark — brand logo overlay on market terminals */
+.brand-mask-forced {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+}
+
 
 html, body {
   width: 100% !important;

@@ -583,9 +583,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   return html;
 }
 
-// ==========================================
-// 8. BRONZE-PLATE SE0 PNG IMAGES GENERATION DUMMY WRITER (Avoids 404s completely!)
-// ==========================================
+// Fallback SEO assets — only writes tiny placeholders when logo/og-image are missing locally.
 export function ensureSeoAssetsExist() {
   const publicDir = path.join(process.cwd(), 'public');
   if (!fs.existsSync(publicDir)) {

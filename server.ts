@@ -355,7 +355,7 @@ async function startServer() {
         displayName: req.body?.displayName || '',
       });
       const sessionUser = buildClientSessionUser(user);
-      (req.session as any).privateUser = sessionUser;
+      req.session.privateUser = sessionUser;
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -370,7 +370,7 @@ async function startServer() {
         password: req.body?.password || '',
       });
       const sessionUser = buildClientSessionUser(user);
-      (req.session as any).privateUser = sessionUser;
+      req.session.privateUser = sessionUser;
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -380,7 +380,7 @@ async function startServer() {
 
   app.post('/api/auth/private/logout', (req, res) => {
     try {
-      delete (req.session as any).privateUser;
+      delete req.session.privateUser;
     } catch {
       /* ignore */
     }
@@ -388,7 +388,7 @@ async function startServer() {
   });
 
   app.get('/api/auth/private/me', (req, res) => {
-    const user = (req.session as any)?.privateUser;
+    const user = req.session.privateUser;
     if (!user) return res.status(401).json({ error: 'Not signed in.' });
     res.json({ user });
   });
@@ -451,13 +451,13 @@ async function startServer() {
 
   // The River — private per-user vault (session auth)
   app.get('/api/river/catalog/mine', (req, res) => {
-    const user = (req.session as any)?.privateUser;
+    const user = req.session.privateUser;
     if (!user?.uid) return res.status(401).json({ error: 'Sign in to access your private vault.' });
     res.json({ entries: listPrivateCatalog(user.uid) });
   });
 
   app.post('/api/river/catalog/mine', moderateBodyFields('pineSource', 'description'), (req, res) => {
-    const user = (req.session as any)?.privateUser;
+    const user = req.session.privateUser;
     if (!user?.uid) return res.status(401).json({ error: 'Sign in to save to your private vault.' });
     const { name, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
@@ -479,7 +479,7 @@ async function startServer() {
   });
 
   app.post('/api/river/catalog/mine/:id/apply', (req, res) => {
-    const user = (req.session as any)?.privateUser;
+    const user = req.session.privateUser;
     if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
     const entries = listPrivateCatalog(user.uid);
     const entry = entries.find((e) => e.id === req.params.id);
@@ -489,7 +489,7 @@ async function startServer() {
   });
 
   app.delete('/api/river/catalog/mine/:id', (req, res) => {
-    const user = (req.session as any)?.privateUser;
+    const user = req.session.privateUser;
     if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
     const ok = removePrivateEntry(user.uid, req.params.id);
     if (!ok) return res.status(404).json({ error: 'Not found.' });
