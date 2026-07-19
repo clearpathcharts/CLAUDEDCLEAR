@@ -100,6 +100,38 @@ html[data-reduced-sensory="true"] .a11y-prefs-root button {
   box-shadow: none !important;
 }
 
+/* Shared CTAs that follow brand vars (High Contrast remaps --cpt-*) */
+.cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #B026FF);
+  color: var(--cpt-cta-on-pink);
+}
+html[data-high-contrast="true"] .cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #6a1b9a);
+  color: #ffffff;
+}
+
+/* Tailwind gradient stops that hardcode neon pink */
+html[data-high-contrast="true"] .from-\[\#FF1493\],
+html[data-high-contrast="true"] .from-\[\#ff1493\] {
+  --tw-gradient-from: var(--cpt-pink) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
+}
+html[data-high-contrast="true"] .via-\[\#FF1493\],
+html[data-high-contrast="true"] .via-\[\#ff1493\] {
+  --tw-gradient-via: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .to-\[\#FF1493\],
+html[data-high-contrast="true"] .to-\[\#ff1493\] {
+  --tw-gradient-to: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .from-\[\#FF7B00\],
+html[data-high-contrast="true"] .from-\[\#FF7A00\],
+html[data-high-contrast="true"] .to-\[\#FF7B00\],
+html[data-high-contrast="true"] .to-\[\#FF7A00\] {
+  --tw-gradient-from: var(--cpt-orange) !important;
+  --tw-gradient-to: var(--cpt-orange) !important;
+}
+
 @import "./styles/codepen.css";
 
 /* Chart watermark — brand logo overlay on market terminals */

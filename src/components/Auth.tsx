@@ -733,7 +733,7 @@ CLARITY BEFORE DECISIONS.`}
           <button
             type="button"
             onClick={() => openPrivateLogin('register')}
-            className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
+            className="cpt-cta-gradient w-full md:w-auto px-6 py-4 text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
           >
             CREATE PRIVATE ACCOUNT
           </button>
