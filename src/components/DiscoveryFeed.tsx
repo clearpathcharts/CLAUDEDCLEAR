@@ -6,6 +6,12 @@ import {
   Book,
   MessageSquare,
   ArrowRight,
+  Wallet,
+  LineChart,
+  PiggyBank,
+  Calculator,
+  Newspaper,
+  FlaskConical,
 } from 'lucide-react';
 
 interface DiscoveryFeedProps {
@@ -149,6 +155,98 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
             <div className="text-[11px] text-white/50 mt-0.5">Site help · neuro charts · The River · trading</div>
           </div>
         </button>
+
+        {/* Appealing Additions — educational sandboxes (not financial advice) */}
+        <section aria-labelledby="appealing-additions-title" className="pt-2 space-y-4">
+          <div className={`${bentoClass} p-5 md:p-6`}>
+            <div className="relative z-10">
+              <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#00E5FF] font-black mb-2">
+                Coming into the desk
+              </p>
+              <h2
+                id="appealing-additions-title"
+                className="ywc-section-title text-xl md:text-2xl font-black uppercase tracking-tight"
+              >
+                Appealing Additions
+              </h2>
+              <p className="mt-2 text-[12px] text-zinc-300 max-w-2xl leading-relaxed">
+                Literacy tools and personal sandboxes — calculators, journals, and explainers you run with your own numbers.
+                Educational only. Not financial advice.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                title: 'Budget sandbox',
+                blurb: 'Envelope-style categories using numbers you enter — pure math, your rules.',
+                icon: Wallet,
+                color: '#00E5FF',
+                tab: 'LiteracyOS' as const,
+              },
+              {
+                title: 'Cash-flow journal',
+                blurb: 'Log income and spending you already know. Visualize patterns, no tips.',
+                icon: LineChart,
+                color: '#FF7B00',
+                tab: 'LiteracyOS' as const,
+              },
+              {
+                title: 'Net-worth notebook',
+                blurb: 'Private assets / liabilities ledger you maintain. Track, don’t get told what to buy.',
+                icon: PiggyBank,
+                color: '#FFD700',
+                tab: 'LiteracyOS' as const,
+              },
+              {
+                title: 'Scenario lab',
+                blurb: 'What-if sliders for compound growth and inflation — illustrative models only.',
+                icon: Calculator,
+                color: '#B026FF',
+                tab: 'ClearPathEducation' as const,
+              },
+              {
+                title: 'Learning feeds',
+                blurb: 'Study RSS and explainers for literacy — information diet, not trade signals.',
+                icon: Newspaper,
+                color: '#FF1493',
+                tab: 'Yours' as const,
+              },
+              {
+                title: 'Concept flask',
+                blurb: 'Short labs that unpack market vocabulary without recommending products.',
+                icon: FlaskConical,
+                color: '#00E5FF',
+                tab: 'Encyclopedia' as const,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => onTabChange(item.tab)}
+                  className={`${bentoClass} p-5 text-left cursor-pointer hover:brightness-110`}
+                >
+                  <div className="relative z-10">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-3.5"
+                      style={{ backgroundColor: `${item.color}1a` }}
+                    >
+                      <Icon size={20} style={{ color: item.color }} aria-hidden="true" />
+                    </div>
+                    <div className="text-sm font-bold text-white mb-1">{item.title}</div>
+                    <div className="text-[11px] text-zinc-300 leading-relaxed">{item.blurb}</div>
+                    <div className="mt-3 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                      Educational · not advice
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
       </div>
     </div>
