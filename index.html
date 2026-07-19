@@ -9,10 +9,14 @@
         var root = document.documentElement;
         root.setAttribute('data-high-contrast', hc ? 'true' : 'false');
         root.setAttribute('data-reduced-sensory', rs ? 'true' : 'false');
-        root.style.setProperty('--cpt-pink', hc ? '#d81b60' : '#FF1493');
-        root.style.setProperty('--cpt-orange', hc ? '#e65100' : '#FF7B00');
-        root.style.setProperty('--cpt-cta-on-pink', hc ? '#ffffff' : '#000000');
-        root.style.setProperty('--cpt-cta-on-orange', hc ? '#ffffff' : '#000000');
+        // CTA fills always use mid-tone WCAG-safe pink/orange
+        root.style.setProperty('--cpt-pink', '#d81b60');
+        root.style.setProperty('--cpt-orange', '#e65100');
+        root.style.setProperty('--cpt-cta-on-pink', '#ffffff');
+        root.style.setProperty('--cpt-cta-on-orange', '#ffffff');
+        root.style.setProperty('--cpt-text-pink', hc ? '#f9a8d4' : '#f472b6');
+        root.style.setProperty('--cpt-text-orange', hc ? '#fdba74' : '#fb923c');
+        root.style.setProperty('--cpt-text-purple', hc ? '#f3e8ff' : '#e9d5ff');
       } catch (e) {}
     </script>
     <script>

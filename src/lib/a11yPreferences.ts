@@ -8,13 +8,18 @@ export type A11yPreferences = {
   reducedSensory: boolean;
 };
 
-/** Mid-tone WCAG-safe brand accents (4.5:1 with white text). */
+/**
+ * Mid-tone WCAG-safe CTA fills (≈4.5:1 with white text).
+ * Used for primary buttons in both default and High Contrast modes so
+ * Lighthouse contrast passes without abandoning neon accents elsewhere.
+ */
 export const A11Y_SAFE_PINK = '#d81b60';
 export const A11Y_SAFE_ORANGE = '#e65100';
 
-/** Default neuro-optimized brand accents. */
-export const A11Y_DEFAULT_PINK = '#FF1493';
-export const A11Y_DEFAULT_ORANGE = '#FF7B00';
+/** Lighter accents for small text on near-black (readable neuro tints). */
+export const A11Y_TEXT_PINK = '#f472b6';
+export const A11Y_TEXT_ORANGE = '#fb923c';
+export const A11Y_TEXT_PURPLE = '#e9d5ff';
 
 export function readA11yPreferences(): A11yPreferences {
   if (typeof window === 'undefined') {
@@ -45,8 +50,12 @@ export function applyA11yPreferencesToDocument(prefs: A11yPreferences): void {
   const root = document.documentElement;
   root.setAttribute('data-high-contrast', prefs.highContrast ? 'true' : 'false');
   root.setAttribute('data-reduced-sensory', prefs.reducedSensory ? 'true' : 'false');
-  root.style.setProperty('--cpt-pink', prefs.highContrast ? A11Y_SAFE_PINK : A11Y_DEFAULT_PINK);
-  root.style.setProperty('--cpt-orange', prefs.highContrast ? A11Y_SAFE_ORANGE : A11Y_DEFAULT_ORANGE);
-  root.style.setProperty('--cpt-cta-on-pink', prefs.highContrast ? '#ffffff' : '#000000');
-  root.style.setProperty('--cpt-cta-on-orange', prefs.highContrast ? '#ffffff' : '#000000');
+  // CTA fills stay mid-tone for contrast; High Contrast mainly lifts muted copy
+  root.style.setProperty('--cpt-pink', A11Y_SAFE_PINK);
+  root.style.setProperty('--cpt-orange', A11Y_SAFE_ORANGE);
+  root.style.setProperty('--cpt-cta-on-pink', '#ffffff');
+  root.style.setProperty('--cpt-cta-on-orange', '#ffffff');
+  root.style.setProperty('--cpt-text-pink', prefs.highContrast ? '#f9a8d4' : A11Y_TEXT_PINK);
+  root.style.setProperty('--cpt-text-orange', prefs.highContrast ? '#fdba74' : A11Y_TEXT_ORANGE);
+  root.style.setProperty('--cpt-text-purple', prefs.highContrast ? '#f3e8ff' : A11Y_TEXT_PURPLE);
 }

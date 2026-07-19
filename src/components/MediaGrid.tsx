@@ -49,7 +49,10 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
               Curation Settings
             </button>
           )}
-          <span className="font-mono text-[9px] bg-purple-950/25 text-[#B026FF] border border-[#B026FF]/20 px-2.5 py-1 rounded-full uppercase font-black tracking-widest">
+          <span
+            className="font-mono text-[9px] bg-purple-950/40 border border-[#B026FF]/40 px-2.5 py-1 rounded-full uppercase font-black tracking-widest"
+            style={{ color: 'var(--cpt-text-purple)' }}
+          >
             LIVE BROADCAST SYNCED
           </span>
         </div>
@@ -77,8 +80,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
                 onClick={() => setActiveTab('facebook')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'facebook'
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-extrabold shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                    ? 'bg-blue-600/20 text-blue-300 border border-blue-400/40 font-extrabold shadow-sm'
+                    : 'text-zinc-300 hover:text-white border border-transparent'
                 }`}
               >
                 Facebook Intel
@@ -93,9 +96,10 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
                 onClick={() => setActiveTab('instagram')}
                 className={`flex-1 py-1 px-3.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 cursor-pointer text-center ${
                   activeTab === 'instagram'
-                    ? 'bg-pink-600/20 text-pink-400 border border-[#ff1493]/30 font-extrabold shadow-sm'
-                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                    ? 'bg-pink-600/20 border border-[#ff1493]/40 font-extrabold shadow-sm'
+                    : 'text-zinc-300 hover:text-white border border-transparent'
                 }`}
+                style={activeTab === 'instagram' ? { color: 'var(--cpt-text-pink)' } : undefined}
               >
                 Instagram Signals
               </button>

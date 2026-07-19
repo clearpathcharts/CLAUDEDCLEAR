@@ -67,7 +67,7 @@ export default function A11yPreferencesToggle() {
                   <Contrast size={12} aria-hidden="true" /> High contrast
                 </span>
                 <span className="mt-1 block text-[10px] leading-relaxed text-zinc-400">
-                  Mid-tone pink (#d81b60) and orange (#e65100) for 4.5:1 readable CTAs.
+                  Brightens muted labels and tinted accents further for low vision.
                 </span>
               </span>
             </label>

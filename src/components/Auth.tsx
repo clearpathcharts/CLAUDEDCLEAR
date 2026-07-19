@@ -938,11 +938,17 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF1493]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF1493]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF1493] font-black uppercase tracking-wider bg-[#FF1493]/5 px-3 py-1 rounded-full border border-[#FF1493]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF1493]/10 px-3 py-1 rounded-full border border-[#FF1493]/35"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
                   CPMS TV™ • LIVE STREAM
                 </span>
-                <span className="flex items-center gap-1.5 font-mono text-[8px] text-[#FF1493] font-extrabold uppercase bg-[#FF1493]/10 px-2.5 py-0.5 rounded-full border border-[#FF1493]/35 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> 14,204 LIVE WATCHING
+                <span
+                  className="flex items-center gap-1.5 font-mono text-[8px] font-extrabold uppercase bg-[#FF1493]/15 px-2.5 py-0.5 rounded-full border border-[#FF1493]/40 animate-pulse"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true" /> 14,204 LIVE WATCHING
                 </span>
               </div>
 
@@ -954,9 +960,9 @@ Not the other way around.`}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%)] bg-[size:100%_4px] pointer-events-none" />
 
                 {/* Receiver Info Bar */}
-                <div className="flex items-center justify-between text-[8px] text-zinc-500 border-b border-zinc-900/60 pb-2">
+                <div className="flex items-center justify-between text-[8px] text-zinc-300 border-b border-zinc-900/60 pb-2">
                   <span>HD 1080P STREAM</span>
-                  <span className="text-[#FF1493] font-black animate-pulse">● BROADCAST_SECURE</span>
+                  <span className="font-black animate-pulse" style={{ color: 'var(--cpt-text-pink)' }}>● BROADCAST_SECURE</span>
                 </div>
 
                 {/* Play Glass Overlay */}
@@ -970,7 +976,7 @@ Not the other way around.`}
                 <div className="py-2 flex-grow flex flex-col justify-end z-10">
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
                       <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         📡 Fed Repo Facilities Explained
                       </h3>
@@ -979,7 +985,7 @@ Not the other way around.`}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
                       <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🌊 Global Sovereign Debt Flows
                       </h3>
@@ -988,7 +994,7 @@ Not the other way around.`}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
                       <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
                       </h3>
@@ -1039,8 +1045,8 @@ Not the other way around.`}
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
                 <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
-                  <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
+                  <span className="text-[9px] text-zinc-300 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
+                  <span className="text-[9px] font-mono font-black uppercase" style={{ color: 'var(--cpt-text-pink)' }}>SOVEREIGN COLLATERAL SHOCKS</span>
                 </div>
               </div>
 
@@ -1084,10 +1090,13 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF7B00]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF7B00]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-wider bg-[#FF7B00]/5 px-3 py-1 rounded-full border border-[#FF7B00]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF7B00]/15 px-3 py-1 rounded-full border border-[#FF7B00]/40"
+                  style={{ color: 'var(--cpt-text-orange)' }}
+                >
                   COMMUNITIES • DISCOVER SWARMS
                 </span>
-                <span className="font-mono text-[8px] text-zinc-500 font-extrabold uppercase animate-pulse">
+                <span className="font-mono text-[8px] text-zinc-300 font-extrabold uppercase animate-pulse">
                   ONLINE HUB ACTIVE
                 </span>
               </div>
@@ -1100,7 +1109,8 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/20 border border-[#FF7B00]/45 text-[10px] font-black uppercase tracking-widest hover:bg-[var(--cpt-orange)] hover:text-white transition-all"
+                  style={{ color: 'var(--cpt-text-orange)' }}
                 >
                   Open Live Chat Lobby ↓
                 </button>
@@ -1113,7 +1123,7 @@ Not the other way around.`}
                   aria-expanded={ecosystemCommOpen}
                   aria-controls="custom-swarm-seed-panel"
                   onClick={() => setEcosystemCommOpen(!ecosystemCommOpen)}
-                  className="text-[9px] font-mono font-bold text-zinc-500 hover:text-[#FF7B00] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="text-[9px] font-mono font-bold text-zinc-300 hover:text-[var(--cpt-text-orange)] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {ecosystemCommOpen ? '[-] CLOSE CUSTOM SEED PORT' : '[+] SPAWN CUSTOM SWARM NODE'}
                 </button>
@@ -1166,12 +1176,12 @@ Not the other way around.`}
                 <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   Join direct communication swarms immediately. Tap in with sovereign macro networks across the world, exchange layout setups, share visual indicators, and learn together.
                 </p>
-                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-500 font-mono font-bold leading-none">
+                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-300 font-mono font-bold leading-none">
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> CRYPTOGRAPHIC VERIFIED CHATS
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> CRYPTOGRAPHIC VERIFIED CHATS
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> FIRESTORE PERSISTENT GROUP SYNC
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> FIRESTORE PERSISTENT GROUP SYNC
                   </span>
                 </div>
               </div>
@@ -1715,7 +1725,7 @@ Not the other way around.`}
               <ArrowRight size={14} />
             </button>
           </div>
-          <p className="relative z-10 text-[10px] text-zinc-500 font-mono">
+          <p className="relative z-10 text-[10px] text-zinc-300 font-mono">
             Passwords are hashed on the server. Each desk opens only for its owner.
           </p>
         </div>

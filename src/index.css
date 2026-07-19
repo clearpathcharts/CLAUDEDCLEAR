@@ -40,19 +40,26 @@
   --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
   --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
 
-  /* Brand CTAs — default neuro palette; High Contrast toggle remaps these */
-  --cpt-pink: #FF1493;
-  --cpt-orange: #FF7B00;
-  --cpt-cta-on-pink: #000000;
-  --cpt-cta-on-orange: #000000;
+  /* CTA fills — mid-tone WCAG-safe (4.5:1 with white). Neon stays in decorative accents. */
+  --cpt-pink: #d81b60;
+  --cpt-orange: #e65100;
+  --cpt-cta-on-pink: #ffffff;
+  --cpt-cta-on-orange: #ffffff;
+  /* Readable tinted copy on near-black */
+  --cpt-text-pink: #f472b6;
+  --cpt-text-orange: #fb923c;
+  --cpt-text-purple: #e9d5ff;
 }
 
-/* —— WCAG High Contrast (mid-tone safe accents, 4.5:1 with white text) —— */
+/* —— WCAG High Contrast — lift muted / tinted copy further —— */
 html[data-high-contrast="true"] {
   --cpt-pink: #d81b60;
   --cpt-orange: #e65100;
   --cpt-cta-on-pink: #ffffff;
   --cpt-cta-on-orange: #ffffff;
+  --cpt-text-pink: #f9a8d4;
+  --cpt-text-orange: #fdba74;
+  --cpt-text-purple: #f3e8ff;
 }
 
 /* Remap common hardcoded pink/orange utilities when High Contrast is on */
@@ -98,12 +105,16 @@ html[data-high-contrast="true"] .border-\[\#FF7B00\]\/60 {
   border-color: color-mix(in srgb, var(--cpt-orange) 55%, transparent) !important;
 }
 
-/* Muted body copy → brighter for low vision when High Contrast is on */
-html[data-high-contrast="true"] .text-zinc-500 {
-  color: #a1a1aa !important; /* zinc-400 */
+/* Muted body copy — default lift for near-black UI; High Contrast lifts further */
+.text-zinc-500 {
+  color: #a1a1aa; /* zinc-400 — ~4.5:1 on #050505 for normal text */
 }
-html[data-high-contrast="true"] .text-zinc-400 {
+html[data-high-contrast="true"] .text-zinc-500 {
   color: #d4d4d8 !important; /* zinc-300 */
+}
+html[data-high-contrast="true"] .text-zinc-400,
+html[data-high-contrast="true"] .text-zinc-300 {
+  color: #e4e4e7 !important; /* zinc-200 */
 }
 
 /* —— Reduced Sensory: calmer motion / less neon glow —— */
