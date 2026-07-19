@@ -374,6 +374,12 @@ function UnitList({
           >
             Encyclopedia of Indicators
           </button>
+          <button
+            onClick={() => onNavigate?.("LiteracyOS")}
+            style={resourceLinkStyle("#FFD700")}
+          >
+            Literacy OS
+          </button>
         </div>
       </div>
     </div>
