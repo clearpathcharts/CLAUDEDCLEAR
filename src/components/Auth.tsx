@@ -2138,10 +2138,14 @@ Not the other way around.`}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemYwcOpen(false)}
+              aria-hidden="true"
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
             />
 
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ywc-dialog-title"
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
@@ -2151,7 +2155,7 @@ Not the other way around.`}
                 type="button"
                 onClick={() => setEcosystemYwcOpen(false)}
                 aria-label="Close Your World Connected dialog"
-                className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
+                className="absolute top-5 right-5 text-zinc-300 hover:text-white cursor-pointer"
               >
                 <X size={18} aria-hidden="true" />
               </button>
@@ -2160,7 +2164,7 @@ Not the other way around.`}
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   INFORMATION COSMIC ENGINE
                 </span>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                <h3 id="ywc-dialog-title" className="text-2xl font-black text-white uppercase tracking-tight">
                   Your World Connected™ Terminal
                 </h3>
                 <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
