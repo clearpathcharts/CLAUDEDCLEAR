@@ -118,7 +118,7 @@ export default function ClearPathSentinel({ onClose }: { onClose?: () => void })
     // Sequential diagnostic validation steps
     const steps = [
       { 
-        log: 'Checking critical routes: /dashboard, /charts, /screener...', 
+        log: 'Checking critical routes: /dashboard, /charts, /markets...', 
         targetId: 't1', 
         result: 'PASS', 
         msg: 'Route verification complete. No blank layouts or broken views.',
