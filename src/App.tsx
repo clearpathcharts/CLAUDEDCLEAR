@@ -7,6 +7,7 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
+import A11yPreferencesToggle from './components/A11yPreferencesToggle';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -151,39 +152,34 @@ export default function App() {
       };
     }
   }, [currentProfileId]);
+  let content: React.ReactNode;
   if (loading) {
-    return (
+    content = (
       <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
     );
-  }
-  // Route: /about should directly load the accessible disclosure page
-  if (currentPath === '/about') {
-    return <ExternalAboutPage />;
-  }
-  if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
-    return <TradingReimaginedLanding />;
-  }
-  // Public learning desks when logged out (Auth marketing links + direct URLs)
-  if (!user) {
+  } else if (currentPath === '/about') {
+    content = <ExternalAboutPage />;
+  } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
+    content = <TradingReimaginedLanding />;
+  } else if (!user) {
+    // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
-      return (
+      content = (
         <PublicLearnShell>
           <EncyclopediaLayout />
         </PublicLearnShell>
       );
-    }
-    if (isIndicatorsPath(currentPath)) {
-      return (
+    } else if (isIndicatorsPath(currentPath)) {
+      content = (
         <PublicLearnShell>
           <EncyclopediaOfIndicators />
         </PublicLearnShell>
       );
-    }
-    if (isEducationPath(currentPath)) {
-      return (
+    } else if (isEducationPath(currentPath)) {
+      content = (
         <PublicLearnShell>
           <ClearPathEducation
             onNavigate={(tabId) => {
@@ -194,9 +190,8 @@ export default function App() {
           />
         </PublicLearnShell>
       );
-    }
-    if (isLiteracyPath(currentPath)) {
-      return (
+    } else if (isLiteracyPath(currentPath)) {
+      content = (
         <PublicLearnShell>
           <LiteracyOSPage
             onNavigate={(tabId) => {
@@ -208,14 +203,24 @@ export default function App() {
           />
         </PublicLearnShell>
       );
+    } else {
+      content = <Auth />;
     }
-    return <Auth />;
+  } else {
+    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+    content = (
+      <div className="clearpath-glass-root">
+        <Dashboard profile={profile} onProfileChange={handleProfileChange} />
+        <CptBuddyWidget />
+      </div>
+    );
   }
-  const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+
   return (
-    <div className="clearpath-glass-root">
-      <Dashboard profile={profile} onProfileChange={handleProfileChange} />
-      <CptBuddyWidget />
-    </div>
+    <>
+      {content}
+      {/* Mandatory WCAG: High Contrast / Reduced Sensory on every page request */}
+      <A11yPreferencesToggle />
+    </>
   );
 }

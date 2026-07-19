@@ -38,9 +38,9 @@ export const FacebookIntel: React.FC = React.memo(() => {
           </div>
 
           <div className="space-y-0.5">
-            <h5 className="text-[11px] font-black tracking-wider uppercase text-white font-serif">
+            <h3 className="text-[11px] font-black tracking-wider uppercase text-white font-serif">
               Sovereign Market Traders
-            </h5>
+            </h3>
             <div className="flex items-center gap-1.5 text-[9px] text-[#00ffff] font-mono">
               <Globe size={10} className="text-[#00ffff]" />
               <span>Public Group • 142k Members</span>

@@ -536,28 +536,28 @@ export default function Auth() {
       <style>{`
         :root {
           --cpt-black: #050505;
-          --cpt-pink: #FF1493;
           --cpt-cyan: #00FFFF;
           --cpt-purple: #B026FF;
           --cpt-white: #FFFFFF;
+          /* --cpt-pink / --cpt-orange owned by a11y prefs (High Contrast toggle) */
         }
         .text-neon-glow {
           text-shadow: 
-            0 0 10px #FF1493,
-            0 0 20px #FF1493,
+            0 0 10px var(--cpt-pink),
+            0 0 20px var(--cpt-pink),
             0 0 40px #B026FF,
             0 0 70px #00FFFF;
         }
         .border-neon {
-          border-color: rgba(255, 20, 147, 0.3);
-          box-shadow: 0 0 15px rgba(255, 20, 147, 0.1);
+          border-color: color-mix(in srgb, var(--cpt-pink) 30%, transparent);
+          box-shadow: 0 0 15px color-mix(in srgb, var(--cpt-pink) 10%, transparent);
         }
         .border-neon:hover {
           border-color: #00FFFF;
           box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
         }
         .gradient-bg {
-          background: linear-gradient(135deg, #FF1493 0%, #B026FF 50%, #00FFFF 100%);
+          background: linear-gradient(135deg, var(--cpt-pink) 0%, #B026FF 50%, #00FFFF 100%);
         }
       `}</style>
 
@@ -940,27 +940,27 @@ Not the other way around.`}
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         📡 Fed Repo Facilities Explained
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🌊 Global Sovereign Debt Flows
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
                       <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
-                      </h4>
+                      </h3>
                     </div>
                   )}
                 </div>
@@ -1023,7 +1023,12 @@ Not the other way around.`}
                     } catch { /* ignore */ }
                     setEcosystemTvOpen(true);
                   }}
-                  className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="cpt-cta-pink w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-pink)',
+                    color: 'var(--cpt-cta-on-pink)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-pink) 25%, transparent)',
+                  }}
                 >
                   <Tv size={14} /> TUNE IN NOW — LIVE MARKETS
                 </button>
@@ -1141,7 +1146,12 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => setBoardModalOpen(true)}
-                  className="w-full py-4 bg-[#FF7B00] hover:bg-[#FF7B00]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,123,0,0.25)] hover:shadow-[0_4px_35px_rgba(255,123,0,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="cpt-cta-orange w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-orange)',
+                    color: 'var(--cpt-cta-on-orange)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-orange) 25%, transparent)',
+                  }}
                 >
                   <Users size={14} /> FIND MY PEOPLE
                 </button>
@@ -2146,7 +2156,7 @@ Not the other way around.`}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-4">
                   <div>
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">COGNITIVE COMPASS PROFILE</span>
-                    <h4 className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</h4>
+                    <p className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</p>
                   </div>
                   <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-850">
                     {[
@@ -2181,14 +2191,14 @@ Not the other way around.`}
                     >
                       <div className="p-4 bg-zinc-900/60 border border-[#B026FF]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#00FFFF] font-extrabold uppercase">FED TREASURY ACTION</span>
-                        <h5 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h5>
+                        <p className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           This introduces cash into financial avenues, easing loan constraints and boosting long-term investment queues.
                         </p>
                       </div>
                       <div className="p-4 bg-zinc-900/60 border border-[#FF7B00]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#FF7B00] font-extrabold uppercase">LIQUIDITY ALERT</span>
-                        <h5 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h5>
+                        <p className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           Capital cash reserves show a strong tick up, creating a healthy backdrop for stock and coin indicators.
                         </p>

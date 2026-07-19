@@ -29,8 +29,8 @@ export const MediaGrid: React.FC<MediaGridProps> = React.memo(({ onConfigureYwc 
       {/* Title block of the Grid */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1">
-          <h2 className="text-lg md:text-xl font-black font-serif italic text-[#ff1493] flex items-center gap-2 uppercase tracking-tight">
-            <Globe size={18} className="text-[#ff1493]" />
+          <h2 className="text-lg md:text-xl font-black font-serif italic flex items-center gap-2 uppercase tracking-tight" style={{ color: 'var(--cpt-pink)' }}>
+            <Globe size={18} style={{ color: 'var(--cpt-pink)' }} />
             YOUR WORLD CONNECTED™ — PREMIUM MEDIA HUB
           </h2>
           <p className="text-[10px] md:text-xs text-zinc-400 font-sans leading-normal mt-1 max-w-2xl">
