@@ -59,6 +59,7 @@ const mustCheck = [
   '/guides/macro-spreads',
   '/glossary',
   '/faq',
+  '/accessibility',
 ];
 
 const toCheck = [...new Set([...mustCheck, ...samples])];
@@ -103,7 +104,7 @@ for (const path of toCheck) {
 
   // Hubs + authored content + entity SSR pages must be thick.
   const isThickStatic =
-    /^\/(learn|guides|glossary|faq)(\/|$)/.test(path) ||
+    /^\/(learn|guides|glossary|faq|accessibility)(\/|$)/.test(path) ||
     /^\/(encyclopedia|literacy|companies|tools)(\/|$)/.test(path) ||
     /^\/(indicators|education|ui)(\/|$)/.test(path) ||
     ['/stocks', '/crypto', '/forex', '/commodities'].includes(path) ||
@@ -120,7 +121,7 @@ for (const path of toCheck) {
 
   // Entity pages must not use the default homepage title
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—/.test(title)) {
+    if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—|Accessibility/.test(title)) {
       problems.push('entity page still has default title');
     }
     if (!html.includes('cpt-waitlist')) {

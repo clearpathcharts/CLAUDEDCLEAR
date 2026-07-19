@@ -246,21 +246,42 @@ export function semanticLinkContent(text: string): string {
 export const GENERAL_FAQS = [
   {
     question: "What is macroeconomic analysis?",
-    answer: "Macroeconomic analysis parses aggregate national accounting metrics, sovereign interest rate differentials, inflation matrices, credit creation speeds, and central bank reserve assets to project broad market capital trends and forex exchange parities."
+    answer: "Macroeconomic analysis studies the big forces that move markets: inflation, interest rates, credit growth, central bank balance sheets, and currency differentials. ClearPathTrader teaches these concepts in plain language with charts and structured lessons."
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: "ClearPathTrader operates as an elite, high-fidelity financial intelligence platform, quantitative modeling terminal, and educational database designed for real-time asset analytics, sitemap crawler indexations, and micro-payment simulation sandbox panels."
+    answer: "ClearPathTrader is a free market intelligence terminal and education platform. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital."
   },
   {
     question: "Is ClearPathTrader a brokerage?",
-    answer: "No. ClearPathTrader is an analytics resource, financial knowledge entity, and market simulation terminal. It does not accept client trading capital deposits, clear exchange orders, provide direct brokerage accounts, or manage retail assets."
+    answer: "No. ClearPathTrader is analytics and education only. It does not accept client deposits, execute exchange orders, open brokerage accounts, or manage retail assets."
   },
   {
     question: "How does valuation analysis work?",
-    answer: "Valuation analysis utilizes strict discounted cash flow (DCF) models, CAPM formulations, and weighted average cost of capital (WACC) statistics to extract the long-term intrinsic value of a firm based on projected free cash flows, avoiding emotional market hype."
+    answer: "Valuation analysis estimates what a company is worth using models such as discounted cash flow (DCF), CAPM, and WACC — projecting free cash flows and discounting them to today instead of chasing short-term price hype."
+  },
+  {
+    question: "Is ClearPathTrader accessible for people with disabilities?",
+    answer: "Yes. The public site uses semantic HTML, skip links, keyboard-focusable controls, labeled forms, and reduced-motion support. The terminal also offers neurodivergent UI modes (calm focus, reading support, ADHD, autism-predictable, and more) at /ui. See our accessibility statement at /accessibility."
   }
 ];
+
+/** Keep titles under ~60 chars and descriptions in the 140–160 sweet spot when possible. */
+function clampTitle(raw: string, max = 60): string {
+  const t = raw.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const sp = cut.lastIndexOf(' ');
+  return `${(sp > 40 ? cut.slice(0, sp) : cut).trimEnd()}…`;
+}
+
+function clampDescription(raw: string, max = 160): string {
+  const t = raw.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const sp = cut.lastIndexOf(' ');
+  return `${(sp > 100 ? cut.slice(0, sp) : cut).trimEnd()}…`;
+}
 
 // ==========================================
 // 1. DYNAMIC JSON-LD SCHEMA INJECTION & SSR METADATA
@@ -269,6 +290,8 @@ function stripConflictingHeadTags(html: string): string {
   return html
     .replace(/<meta\s+property="og:[^"]+"[^>]*>/gi, '')
     .replace(/<meta\s+name="twitter:[^"]+"[^>]*>/gi, '')
+    .replace(/<meta\s+name="robots"[^>]*>/gi, '')
+    .replace(/<meta\s+name="theme-color"[^>]*>/gi, '')
     .replace(/<link\s+rel="canonical"[^>]*>/gi, '');
 }
 
@@ -285,9 +308,9 @@ const CANONICAL_ALIASES: Record<string, string> = {
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
-  let title = "CLEAR PATH MARKETS SCIENCE | Financial Intelligence Platform";
-  let description = "Premium institutional macroeconomic science interface, financial terminal, and educational database. High-fidelity analytics & AI content graph systems.";
-  let keywords = "trading platform, market analysis, financial terminal, ClearPath Trader, forex charts, crypto charts";
+  let title = "ClearPath Trader | Market Intelligence & Education Terminal";
+  let description = "Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage.";
+  let keywords = "ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks";
   const baseUrl = "https://clearpathtrader.com";
   const canonicalPath = CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
@@ -298,17 +321,20 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
     "name": "ClearPathTrader",
-    "alternateName": "Clear Path Markets Science",
+    "alternateName": ["Clear Path Markets Science", "ClearPath Trader"],
     "url": baseUrl,
     "logo": `${baseUrl}/logo.png`,
-    "description": "Board-governed market intelligence, charting, and financial education platform.",
+    "description": "Market intelligence, charting, and financial education platform. Analytics and learning — not a brokerage.",
+    "sameAs": [] as string[],
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "ClearPathTrader",
+    "alternateName": "Clear Path Markets Science",
     "url": baseUrl,
+    "inLanguage": "en-US",
     "publisher": { "@id": `${baseUrl}/#organization` },
   };
 
@@ -328,8 +354,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
-    title = "CLEAR PATH MARKETS SCIENCE | Financial Intelligence Platform";
-    description = "Premium institutional financial intelligence platform, macroeconomics terminal, and dynamic sitemap-optimized learning systems.";
+    title = "ClearPath Trader | Market Intelligence & Education Terminal";
+    description = "Free market intelligence terminal: live charts, unlimited indicators, automatic pattern context, and plain-language trading education. Not a brokerage.";
+    keywords = "ClearPath Trader, trading terminal, market charts, financial education, technical indicators, Clear Path Markets Science";
     
     // Homepage structured FAQ
     schemas.push({
@@ -346,7 +373,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Platform";
-    description = "Board-governed market intelligence platform: live charts, pattern context, macro education, and clarity-first design. Analytics and education — not brokerage.";
+    description = "Learn what ClearPath Trader is: live charts, pattern context, macro education, and clarity-first design. Analytics and education — not a brokerage.";
+    keywords = "about ClearPath Trader, market intelligence platform, trading education, financial analytics";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "About", url: "/about" }
@@ -358,6 +386,24 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "url": canonicalUrl,
       "name": "About ClearPath Trader",
       "description": description,
+      "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
+    });
+  } else if (pathClean === '/accessibility') {
+    title = "Accessibility Statement | ClearPath Trader";
+    description = "How ClearPath Trader supports keyboard navigation, screen readers, contrast, reduced motion, and neurodivergent trading UI modes (WCAG-oriented).";
+    keywords = "accessibility, WCAG, screen reader, keyboard navigation, neurodivergent trading UI, ClearPath Trader";
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Accessibility", url: "/accessibility" }
+    ]));
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": `${canonicalUrl}#webpage`,
+      "url": canonicalUrl,
+      "name": title,
+      "description": description,
+      "inLanguage": "en-US",
       "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
     });
   } else if (pathClean === TRADING_REIMAGINED_PATH || pathClean === TRADING_REIMAGINED_SHORT_PATH) {
@@ -410,8 +456,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       }))
     });
   } else if (pathClean === '/macro') {
-    title = "Macroeconomic Intelligence Desk & Yield Spread Metrics | ClearPathTrader";
-    description = "Live macroeconomic diagnostics, central bank balance sheets, interbank yield spread maps, and real-time sovereign debt parameters.";
+    title = "Macro Desk: Yield Spreads & Central Bank Data | ClearPathTrader";
+    description = "Track macro diagnostics — central bank balance sheets, yield spreads, and sovereign debt context — inside ClearPath Trader.";
+    keywords = "macro desk, yield spreads, central bank, inflation, interest rates, ClearPath Trader";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Macro Desk", url: "/macro" }
@@ -425,22 +472,25 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "description": description
     });
   } else if (pathClean === '/learn') {
-    title = "Academic Learning Universe & Financial Education Central | ClearPathTrader";
-    description = "Sitemap index of macroeconomic educational structures, including core tutorials on inflation, aggregate credit flows, and valuations.";
+    title = "Learn Markets: Inflation, Liquidity & Valuation | ClearPathTrader";
+    description = "Plain-language lessons on inflation, liquidity, valuation, market microstructure, and intermarket correlations — free financial education.";
+    keywords = "financial education, learn trading, inflation, liquidity, valuation, market microstructure";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Education", url: "/learn" }
     ]));
   } else if (pathClean === '/guides') {
-    title = "Strategic Trading Guides & Institutional Asset Management | ClearPathTrader";
-    description = "Access high-performance tactical reviews, leverage hedging limits, and standard macro balance sheet audit formulas.";
+    title = "Trading Guides: Macro Spreads, Arbitrage & Risk | ClearPathTrader";
+    description = "Practical trading guides on macro spreads, arbitrage mechanics, and leverage risk — written for practitioners, not hype.";
+    keywords = "trading guides, macro spreads, arbitrage, leverage risk, position sizing";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Guides", url: "/guides" }
     ]));
   } else if (pathClean === '/glossary') {
-    title = "Financial Glossary: Trading & Market Terms Defined | ClearPathTrader";
-    description = `Plain-language definitions of ${GLOSSARY_TERMS.length}+ essential trading terms: leverage, liquidity, margin, order books, spreads, volatility, and more.`;
+    title = "Financial Glossary: Trading Terms Defined | ClearPathTrader";
+    description = `Plain-language definitions of ${GLOSSARY_TERMS.length}+ trading terms: leverage, liquidity, margin, order books, spreads, volatility, and more.`;
+    keywords = "financial glossary, trading terms, leverage, liquidity, margin, volatility, order book";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Glossary", url: "/glossary" }
@@ -459,8 +509,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       }))
     });
   } else if (pathClean === '/faq') {
-    title = "Frequently Asked Questions (FAQ) & Entity Validation | ClearPathTrader";
-    description = "Find verified structured listings on platform architecture, macroeconomic definitions, and institutional compliance details.";
+    title = "FAQ: What ClearPath Trader Is (and Isn't) | ClearPathTrader";
+    description = "Answers on what ClearPathTrader does, whether it is a brokerage, valuation basics, and accessibility support for disabled users.";
+    keywords = "ClearPath Trader FAQ, is ClearPath a broker, trading education FAQ, accessibility";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "FAQ", url: "/faq" }
@@ -478,8 +529,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       }))
     });
   } else if (pathClean === '/research') {
-    title = "Quantitative Systems Research & Arbitrage Analytics | ClearPathTrader";
-    description = "Access sovereign balance sheet models, algorithmic microsecond trade queues, and multi-asset intermarket correlation formulas.";
+    title = "Market Research & Intermarket Analytics | ClearPathTrader";
+    description = "Explore quantitative research themes: balance-sheet models, intermarket correlations, and multi-asset structure — education-first analytics.";
+    keywords = "market research, intermarket correlations, quantitative analytics, ClearPath Trader";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Research Analytics", url: "/research" }
@@ -897,6 +949,17 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     }
   }
 
+  // Normalize length for SERP/social previews (entity pages may still be long; clamp soft)
+  title = clampTitle(title, 70);
+  description = clampDescription(description, 160);
+  // Keywords meta is low-weight for Google; keep a short phrase list (not hashtags — those belong on social posts)
+  keywords = keywords
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean)
+    .slice(0, 12)
+    .join(', ');
+
   // Construct final Schema script blocks to inject
   const schemaScripts = schemas.map(schema => {
     return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
@@ -905,44 +968,50 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   // Perform surgical replacements of metadata placeholders in standard index.html template
   let html = stripConflictingHeadTags(originalHtml);
 
+  const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
   // Replace default Title
   const titleRegex = /<title>[^]*?<\/title>/gi;
   if (titleRegex.test(html)) {
-    html = html.replace(titleRegex, `<title>${title}</title>`);
+    html = html.replace(titleRegex, `<title>${escAttr(title)}</title>`);
   } else {
-    html = html.replace('</head>', `<title>${title}</title>\n</head>`);
+    html = html.replace('</head>', `<title>${escAttr(title)}</title>\n</head>`);
   }
 
   // Inject or Replace Meta Description
   const descRegex = /<meta\s+name="description"\s+content="[^]*?"\s*\/?>/gi;
   if (descRegex.test(html)) {
-    html = html.replace(descRegex, `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />`);
+    html = html.replace(descRegex, `<meta name="description" content="${escAttr(description)}" />`);
   } else {
-    html = html.replace('</head>', `<meta name="description" content="${description.replace(/"/g, '&quot;')}" />\n</head>`);
+    html = html.replace('</head>', `<meta name="description" content="${escAttr(description)}" />\n</head>`);
   }
 
   const keywordsRegex = /<meta\s+name="keywords"\s+content="[^]*?"\s*\/?>/gi;
   if (keywordsRegex.test(html)) {
-    html = html.replace(keywordsRegex, `<meta name="keywords" content="${keywords.replace(/"/g, '&quot;')}" />`);
+    html = html.replace(keywordsRegex, `<meta name="keywords" content="${escAttr(keywords)}" />`);
   } else {
-    html = html.replace('</head>', `<meta name="keywords" content="${keywords.replace(/"/g, '&quot;')}" />\n</head>`);
+    html = html.replace('</head>', `<meta name="keywords" content="${escAttr(keywords)}" />\n</head>`);
   }
 
-  // OpenGraph SEO Meta Tags (100% compliant)
+  // Open Graph + Twitter + discoverability tags
   const ogTags = `
-    <!-- Crawlability Framework & OG Matrix -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
-    <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="${escAttr(title)}" />
+    <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
+    <meta property="og:image:alt" content="ClearPath Trader — market intelligence terminal" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="ClearPathTrader" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
-    <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:title" content="${escAttr(title)}" />
+    <meta name="twitter:description" content="${escAttr(description)}" />
     <meta name="twitter:image" content="${baseUrl}/og-image.png" />
+    <meta name="twitter:image:alt" content="ClearPath Trader — market intelligence terminal" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="theme-color" content="#0b0e11" />
     <link rel="canonical" href="${canonicalUrl}" />
   `;
 

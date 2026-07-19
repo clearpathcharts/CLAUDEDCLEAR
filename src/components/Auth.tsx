@@ -549,7 +549,7 @@ export default function Auth() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block select-none">
+    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
       <a href="#main-content" className="cp-skip-link">
         Skip to main content
       </a>
@@ -1830,6 +1830,9 @@ Not the other way around.`}
             </a>
             <a href="/glossary" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Glossary
+            </a>
+            <a href="/accessibility" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+              Accessibility
             </a>
             <a href="/faq" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               FAQ

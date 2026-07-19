@@ -131,6 +131,7 @@ const NAV_LINKS = [
   { href: '/guides', label: 'Guides' },
   { href: '/glossary', label: 'Glossary' },
   { href: '/faq', label: 'FAQ' },
+  { href: '/accessibility', label: 'Accessibility' },
   { href: '/education', label: 'Education' },
   { href: '/encyclopedia', label: 'Encyclopedia' },
   { href: '/indicators', label: 'Indicators' },
@@ -264,6 +265,7 @@ ${bodyHtml}
         <a href="/learn">Learn</a>
         <a href="/guides">Guides</a>
         <a href="/glossary">Glossary</a>
+        <a href="/accessibility">Accessibility</a>
         <a href="/encyclopedia">Encyclopedia</a>
         <a href="/indicators">Indicators</a>
         <a href="/education">Education</a>
@@ -1106,6 +1108,34 @@ ${relatedLinksSection(
  * or null when the path is not a static content page (SPA handles it).
  * The result is passed through enrichHtmlWithMetadata for meta/JSON-LD.
  */
+function renderAccessibilityPage(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Accessibility' }])}
+<h1>Accessibility Statement</h1>
+<p class="lead">ClearPath Trader aims to make market education and charting usable for people with disabilities, including keyboard-only users, screen-reader users, and neurodivergent traders.</p>
+<article>
+<h2>Our commitment</h2>
+<p>We design public pages and terminal UI modes to align with the spirit of <strong>WCAG 2.2 Level AA</strong>: perceivable content, operable controls, understandable language, and robust markup. Accessibility is an ongoing program, not a one-time badge.</p>
+<h2>What we support today</h2>
+<ul>
+<li><strong>Skip links</strong> to jump past navigation into main content</li>
+<li><strong>Landmarks</strong> — header, primary navigation, main, and footer</li>
+<li><strong>Keyboard focus</strong> with visible focus rings on interactive controls</li>
+<li><strong>Semantic structure</strong> — headings, lists, labeled form fields, and breadcrumb navigation</li>
+<li><strong>Reduced motion</strong> — decorative animation respects <code>prefers-reduced-motion</code></li>
+<li><strong>Neurodivergent UI modes</strong> — calm focus, reading support, ADHD, autism-predictable layouts, minimal motion, and more at <a href="/ui">/ui</a></li>
+<li><strong>Contrast-aware content pages</strong> — body text and links tuned for readable contrast on dark backgrounds</li>
+</ul>
+<h2>Known limitations</h2>
+<p>Live chart canvases and dense terminal workspaces are inherently visual. We provide alternate text for indicator illustrations, plain-language education pages, and UI modes that reduce motion and visual noise. Some third-party embeds may not meet the same standard as first-party pages.</p>
+<h2>How to get help or report a barrier</h2>
+<p>If you encounter an accessibility barrier on clearpathtrader.com, email <a href="mailto:accessibility@clearpathtrader.com">accessibility@clearpathtrader.com</a> with the page URL, what you were trying to do, and the assistive technology you use (if any). We prioritize fixes that block core tasks: reading education, browsing the encyclopedia, and signing in.</p>
+<h2>Standards &amp; scope</h2>
+<p>This statement covers the public marketing site, education content, encyclopedia pages, and the authenticated ClearPath terminal. Last reviewed: July 2026.</p>
+<p><a href="/ui">Explore accessible UI modes →</a> · <a href="/faq">FAQ</a> · <a href="/">Launch terminal</a></p>
+</article>`;
+}
+
+
 export function renderStaticContentPage(reqPath: string): string | null {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   const parts = pathClean.split('/').filter(Boolean);
@@ -1117,6 +1147,7 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean.startsWith('/guides/')) body = renderGuide(pathClean.slice('/guides/'.length));
   else if (pathClean === '/glossary') body = renderGlossary();
   else if (pathClean === '/faq') body = renderFaqPage();
+  else if (pathClean === '/accessibility') body = renderAccessibilityPage();
   else if (pathClean === '/encyclopedia' || pathClean === '/financial-encyclopedia') body = renderEncyclopediaHub();
   else if (pathClean === '/stocks') body = renderStocksHub();
   else if (pathClean === '/crypto') body = renderCryptoHub();
