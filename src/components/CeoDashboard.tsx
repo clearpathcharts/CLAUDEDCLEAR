@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
+import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
 
 export default function CeoDashboard() {
   const db = getDb();
@@ -21,9 +22,14 @@ export default function CeoDashboard() {
   const [logSearchQuery, setLogSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
   
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
+  const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
 
   useEffect(() => {
+    if (!founderOk) {
+      setLogsLoading(false);
+      return;
+    }
     let unsubscribeLogs = () => {};
 
     const setupLogsListener = () => {
@@ -61,9 +67,13 @@ export default function CeoDashboard() {
 
     setupLogsListener();
     return () => unsubscribeLogs();
-  }, []);
+  }, [founderOk]);
 
   useEffect(() => {
+    if (!founderOk) {
+      setIsLoading(false);
+      return;
+    }
     const fetchUsers = async () => {
       try {
         if (!auth.currentUser) {
@@ -103,19 +113,35 @@ export default function CeoDashboard() {
     };
 
     fetchUsers();
-  }, []);
+  }, [founderOk]);
 
-  const filteredUsers = users.filter(user => 
-    (user.email && user.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (user.displayName && user.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (user.username && user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredUsers = users.filter(u => 
+    (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (u.displayName && u.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (u.username && u.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // CEO Dashboard is Rick Floyd founder-only — never render data for anyone else.
+  if (!founderOk) {
+    return (
+      <div className="min-h-full flex items-center justify-center p-8 font-sans" style={{ backgroundColor: '#09090b' }}>
+        <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-zinc-950 p-8 text-center space-y-4">
+          <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
+          <h1 className="text-xl font-black uppercase tracking-widest text-white">CEO Dashboard Locked</h1>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            This console is restricted to the ClearPath founder account
+            (<span className="font-mono text-[#00FFFF]">{FOUNDER_EMAIL}</span>).
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full p-6 md:p-12 font-sans overflow-y-auto custom-scrollbar pb-32" style={{ backgroundColor: '#09090b' }}>
       {/* Header Section */}
       <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-6">
-        CEO Backdoor: Clear Path Understanding
+        CEO Dashboard — Founder Console
       </h1>
 
       {/* CEO Micro-Tabs */}
