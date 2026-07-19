@@ -258,6 +258,42 @@ export function lookupStock(symbol: string) {
   ensureLookups();
   return stockByTicker!.get(symbol.toLowerCase()) || null;
 }
+
+/** Same-sector peers for internal linking on stock profile pages. */
+export function relatedStocksBySector(sector: string, excludeTicker: string, limit = 4) {
+  ensureLookups();
+  const out: any[] = [];
+  const exclude = excludeTicker.toLowerCase();
+  for (const s of stockByTicker!.values()) {
+    if (String(s.ticker).toLowerCase() === exclude) continue;
+    if (s.sector !== sector) continue;
+    out.push(s);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+export function relatedCryptoByCategory(category: string, excludeSymbol: string, limit = 4) {
+  ensureLookups();
+  const out: any[] = [];
+  const exclude = excludeSymbol.toLowerCase();
+  for (const c of cryptoBySymbol!.values()) {
+    if (String(c.symbol).toLowerCase() === exclude) continue;
+    if (category && c.category !== category) continue;
+    out.push(c);
+    if (out.length >= limit) break;
+  }
+  // Fallback if category is sparse
+  if (out.length < limit) {
+    for (const c of cryptoBySymbol!.values()) {
+      if (String(c.symbol).toLowerCase() === exclude) continue;
+      if (out.some((x) => x.symbol === c.symbol)) continue;
+      out.push(c);
+      if (out.length >= limit) break;
+    }
+  }
+  return out;
+}
 export function lookupCrypto(symbol: string) {
   ensureLookups();
   return cryptoBySymbol!.get(symbol.toLowerCase()) || null;

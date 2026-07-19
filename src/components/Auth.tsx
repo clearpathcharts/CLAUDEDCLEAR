@@ -612,7 +612,12 @@ export default function Auth() {
           <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
             <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
           </a>
-          <a href="#faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
+          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            UI Modes
+          </a>
+          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Learn</a>
+          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Guides</a>
+          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
         </div>
 
         {/* Action Buttons */}
@@ -1750,6 +1755,24 @@ Not the other way around.`}
             </a>
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
+            </a>
+            <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Learn
+            </a>
+            <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Guides
+            </a>
+            <a href="/glossary" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Glossary
+            </a>
+            <a href="/faq" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              FAQ
+            </a>
+            <a href="/ui" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              UI Modes
+            </a>
+            <a href="/education" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              Education
             </a>
             <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Platform Scope
