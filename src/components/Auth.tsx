@@ -601,66 +601,82 @@ export default function Auth() {
 
       {/* ==========================================
           3. NAVIGATION HEADER
+          Brand + Private Login stay on row 1 (never clipped by link parade).
+          Site links wrap on a second row at desktop widths.
           ========================================== */}
       <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
-      <nav aria-label="Primary" className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Logo element matches specified clearpath branding icon */}
-          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]" aria-hidden="true">
-            <ShieldCheck className="text-white w-5 h-5" />
+      <nav
+        aria-label="Primary"
+        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-3 flex flex-col gap-2.5"
+      >
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            {/* Logo element matches specified clearpath branding icon */}
+            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)] shrink-0" aria-hidden="true">
+              <ShieldCheck className="text-white w-5 h-5" />
+            </div>
+            <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-base sm:text-lg uppercase truncate">
+              CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
+            </span>
           </div>
-          <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-lg uppercase">
-            CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
-          </span>
-        </div>
 
-        {/* Dynamic Desktop Links */}
-        <div className="hidden lg:flex items-center gap-6">
-          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
-            Trading × AI
-          </a>
-          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
-            About
-          </a>
-          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
-          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
-          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
-          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
-          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
-            <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
-          </a>
-          <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
-            <BarChart3 size={11} className="text-[#FF00C8]" /> Encyclopedia of Indicators
-          </a>
-          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
-          </a>
-          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            UI Modes
-          </a>
-          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Learn</a>
-          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Guides</a>
-          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <button 
-            type="button"
-            onClick={() => setBoardModalOpen(true)}
-            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
-          >
-            <Lock size={12} className="text-[#B026FF]" />
-            <span className="hidden sm:inline">Board Members</span>
-            <span className="sm:hidden">Board</span>
-          </button>
+          {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <button
             type="button"
             onClick={() => openPrivateLogin('login')}
-            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1 cursor-pointer"
+            className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
           >
-            <Lock size={12} />
-            PRIVATE LOGIN
+            <Lock size={12} aria-hidden="true" />
+            Private Login
+          </button>
+        </div>
+
+        {/* Secondary link row — wraps; Board Members lives here so it never competes with the CTA */}
+        <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pb-0.5">
+          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
+            Trading × AI
+          </a>
+          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">
+            About
+          </a>
+          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Home</a>
+          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">Why ClearPath</a>
+          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-[11px] font-black uppercase tracking-widest">The Ecosystem</a>
+          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Soft Launch</a>
+          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
+            <BookOpen size={11} className="text-[#00FFFF]" aria-hidden="true" /> Encyclopedia of Finance
+          </a>
+          <a href="/indicators" onClick={(e) => { e.preventDefault(); window.location.assign('/indicators'); }} className="text-[#FF00C8] hover:text-[#36E6FF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FF00C8]/20 bg-[#FF00C8]/5 px-2.5 py-1 rounded-lg">
+            <BarChart3 size={11} className="text-[#FF00C8]" aria-hidden="true" /> Encyclopedia of Indicators
+          </a>
+          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
+          </a>
+          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            UI Modes
+          </a>
+          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Learn</a>
+          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Guides</a>
+          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">FAQ</a>
+          <button
+            type="button"
+            onClick={() => setBoardModalOpen(true)}
+            className="ml-auto px-3 py-1 border border-[#B026FF]/30 rounded-lg text-[11px] font-black uppercase tracking-widest text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+          >
+            <Lock size={11} className="text-[#B026FF]" aria-hidden="true" />
+            Board Members
+          </button>
+        </div>
+
+        {/* Mobile: Board Members still reachable without crowding Private Login */}
+        <div className="flex lg:hidden">
+          <button
+            type="button"
+            onClick={() => setBoardModalOpen(true)}
+            className="px-3 py-1.5 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+          >
+            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
+            Board
           </button>
         </div>
       </nav>
