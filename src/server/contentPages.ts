@@ -1,5 +1,9 @@
 import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import { getSchool, getUnit } from '../education/curriculumData';
+import { getLessonBody } from '../education/lessonContent';
+import { PROFILE_SEO, lookupIndicator } from './crawlCatalog';
+import { buildIndicators } from '../components/indicatorsData';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -109,6 +113,7 @@ const NAV_LINKS = [
   { href: '/education', label: 'Education' },
   { href: '/encyclopedia', label: 'Encyclopedia' },
   { href: '/indicators', label: 'Indicators' },
+  { href: '/ui', label: 'UI Modes' },
 ];
 
 const PAGE_CSS = `
@@ -282,6 +287,128 @@ function renderFaqPage(): string {
 ${faqSectionHtml(GENERAL_FAQS)}`;
 }
 
+function renderIndicatorDetail(slug: string): string | null {
+  const ind = lookupIndicator(slug);
+  if (!ind) return null;
+  const stars = '★'.repeat(ind.complexity) + '☆'.repeat(Math.max(0, 5 - ind.complexity));
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Indicators', url: '/indicators' },
+    { name: ind.name },
+  ])}
+<h1>${escapeHtml(ind.name)}</h1>
+<p class="lead">${escapeHtml(ind.description)}</p>
+<article>
+<p><strong>Category:</strong> ${escapeHtml(ind.category)} · <strong>Complexity:</strong> ${stars} (${ind.complexity}/5)</p>
+<p><strong>Tags:</strong> ${ind.tags.map((t: string) => escapeHtml(t)).join(', ')}</p>
+<p><img src="${escapeHtml(ind.img)}" alt="${escapeHtml(ind.name)} chart illustration" width="640" height="360" style="max-width:100%;height:auto;border:1px solid rgba(255,255,255,0.12);border-radius:12px;margin:1rem 0;background:#0a0a0a" /></p>
+<p>${escapeHtml(ind.name)} is part of the ClearPath Encyclopedia of Indicators — ${buildIndicators().length}+ technical and fundamental models explained with visuals, so you can study an indicator before you put it on a live chart.</p>
+<p><a href="/indicators">Browse the full indicator directory →</a></p>
+</article>`;
+}
+
+function renderEducationSchool(schoolId: string): string | null {
+  const school = getSchool(schoolId);
+  if (!school) return null;
+  const units = school.units
+    .map(
+      (u) =>
+        `<li><a class="card" href="/education/${school.id}/${u.id}"><h2>${escapeHtml(u.title)}</h2><p>${u.lessons.length} lessons</p></a></li>`
+    )
+    .join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Education', url: '/education' },
+    { name: school.name },
+  ])}
+<h1>${escapeHtml(school.name)} School</h1>
+<p class="lead">${escapeHtml(school.tagline)}</p>
+<article><ul class="card-list">${units}</ul></article>`;
+}
+
+function renderEducationUnit(schoolId: string, unitId: string): string | null {
+  const school = getSchool(schoolId);
+  const unit = getUnit(schoolId, unitId);
+  if (!school || !unit) return null;
+  const lessons = unit.lessons
+    .map(
+      (l) =>
+        `<li><a class="card" href="/education/${school.id}/${unit.id}/${l.id}"><h2>${escapeHtml(l.title)}</h2></a></li>`
+    )
+    .join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Education', url: '/education' },
+    { name: school.name, url: `/education/${school.id}` },
+    { name: unit.title },
+  ])}
+<h1>${escapeHtml(unit.title)}</h1>
+<p class="lead">${escapeHtml(school.name)} · ${unit.lessons.length} lessons in this unit.</p>
+<article><ul class="card-list">${lessons}</ul></article>`;
+}
+
+function renderEducationLesson(schoolId: string, unitId: string, lessonId: string): string | null {
+  const school = getSchool(schoolId);
+  const unit = getUnit(schoolId, unitId);
+  const lesson = unit?.lessons.find((l) => l.id === lessonId);
+  if (!school || !unit || !lesson) return null;
+  const body = getLessonBody(lesson.id, lesson.title, school.name, unit.title);
+  const sections = body.sections
+    .map(
+      (s) =>
+        `<h2>${escapeHtml(s.heading)}</h2>\n${s.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n')}`
+    )
+    .join('\n');
+  const takeaways = body.takeaways.map((t) => `<li>${escapeHtml(t)}</li>`).join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Education', url: '/education' },
+    { name: school.name, url: `/education/${school.id}` },
+    { name: unit.title.split('—')[0].trim(), url: `/education/${school.id}/${unit.id}` },
+    { name: lesson.title },
+  ])}
+<h1>${escapeHtml(lesson.title)}</h1>
+<p class="lead">${escapeHtml(body.summary)}</p>
+<article>
+${sections}
+<h2>Key takeaways</h2>
+<ul>${takeaways}</ul>
+<p><a href="/education/${school.id}/${unit.id}">← Back to ${escapeHtml(unit.title)}</a> · <a href="/education">All schools</a></p>
+</article>`;
+}
+
+function renderUiIndex(): string {
+  const cards = PROFILE_SEO.map(
+    (p) =>
+      `<li><a class="card" href="/ui/${p.slug}"><h2>${escapeHtml(p.name)}</h2><p>${escapeHtml(p.summary)}</p></a></li>`
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'UI Modes' }])}
+<h1>Neurodivergent &amp; Accessible Trading Interfaces</h1>
+<p class="lead">ClearPath Trader ships ${PROFILE_SEO.length} purpose-built UI modes — from calm focus and reading support to ADHD hyperfocus, autism-predictable layouts, and minimal-motion desks. Pick the interface that fits how you process markets.</p>
+<article><ul class="card-list">${cards}</ul></article>`;
+}
+
+function renderUiProfile(slug: string): string | null {
+  const profile = PROFILE_SEO.find((p) => p.slug === slug);
+  if (!profile) return null;
+  const benefits = profile.benefits.map((b) => `<li>${escapeHtml(b)}</li>`).join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'UI Modes', url: '/ui' },
+    { name: profile.name },
+  ])}
+<h1>${escapeHtml(profile.name)}</h1>
+<p class="lead">${escapeHtml(profile.headline)}</p>
+<article>
+<p>${escapeHtml(profile.summary)}</p>
+<h2>What this mode optimizes for</h2>
+<ul>${benefits}</ul>
+<p>Open the ClearPath terminal with this interface pre-selected:</p>
+<p><a href="/?profile=${encodeURIComponent(profile.id)}" style="display:inline-block;background:#00E5FF;color:#000;font-weight:900;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.65rem 1.2rem;border-radius:8px;text-decoration:none;margin-top:0.5rem">Launch ${escapeHtml(profile.name)}</a></p>
+<p style="margin-top:1.5rem"><a href="/ui">← All UI modes</a></p>
+</article>`;
+}
+
 /**
  * Returns a complete crawlable HTML document for public content routes,
  * or null when the path is not a static content page (SPA handles it).
@@ -289,6 +416,7 @@ ${faqSectionHtml(GENERAL_FAQS)}`;
  */
 export function renderStaticContentPage(reqPath: string): string | null {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const parts = pathClean.split('/').filter(Boolean);
 
   let body: string | null = null;
   if (pathClean === '/learn') body = renderLearnIndex();
@@ -297,6 +425,13 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean.startsWith('/guides/')) body = renderGuide(pathClean.slice('/guides/'.length));
   else if (pathClean === '/glossary') body = renderGlossary();
   else if (pathClean === '/faq') body = renderFaqPage();
+  else if (parts[0] === 'indicators' && parts.length === 2) body = renderIndicatorDetail(parts[1]);
+  else if (parts[0] === 'education' && parts.length === 2) body = renderEducationSchool(parts[1]);
+  else if (parts[0] === 'education' && parts.length === 3) body = renderEducationUnit(parts[1], parts[2]);
+  else if (parts[0] === 'education' && parts.length === 4) {
+    body = renderEducationLesson(parts[1], parts[2], parts[3]);
+  } else if (pathClean === '/ui') body = renderUiIndex();
+  else if (parts[0] === 'ui' && parts.length === 2) body = renderUiProfile(parts[1]);
 
   if (body === null) return null;
   return renderShell(pathClean, body);

@@ -18,6 +18,7 @@ function isEncyclopediaPath(path: string): boolean {
   return (
     p === '/encyclopedia' ||
     p === '/financial-encyclopedia' ||
+    p === '/stocks' ||
     p.startsWith('/stocks/') ||
     p.startsWith('/companies/') ||
     p.startsWith('/crypto/') ||
@@ -34,11 +35,13 @@ function isEncyclopediaPath(path: string): boolean {
 
 function isIndicatorsPath(path: string): boolean {
   const p = path.toLowerCase().trim();
+  // Hub only — /indicators/:slug is server-rendered static HTML for crawlability.
   return p === '/indicators' || p === '/encyclopedia-of-indicators';
 }
 
 function isEducationPath(path: string): boolean {
   const p = path.toLowerCase().trim();
+  // Hub only — /education/:school/... is server-rendered static HTML for crawlability.
   return p === '/education' || p === '/clearpath-education';
 }
 
@@ -63,6 +66,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
           <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
           <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
           <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
+          <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
         </div>
       </div>
       <Suspense
