@@ -132,6 +132,7 @@ const NAV_LINKS = [
   { href: '/guides', label: 'Guides' },
   { href: '/glossary', label: 'Glossary' },
   { href: '/faq', label: 'FAQ' },
+  { href: '/regions', label: 'Regions' },
   { href: '/accessibility', label: 'Accessibility' },
   { href: '/education', label: 'Education' },
   { href: '/encyclopedia', label: 'Encyclopedia' },
@@ -266,6 +267,7 @@ ${bodyHtml}
         <a href="/learn">Learn</a>
         <a href="/guides">Guides</a>
         <a href="/glossary">Glossary</a>
+        <a href="/regions">Regions</a>
         <a href="/accessibility">Accessibility</a>
         <a href="/encyclopedia">Encyclopedia</a>
         <a href="/indicators">Indicators</a>
