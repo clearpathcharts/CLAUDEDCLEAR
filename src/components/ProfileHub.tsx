@@ -20,6 +20,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
   const [photoURL, setPhotoURL] = useState("");
   const [coverURL, setCoverURL] = useState("");
   const [socials, setSocials] = useState<any>(null);
+  const [contractorBadges, setContractorBadges] = useState<
+    { id: string; label: string; imageUrl: string }[]
+  >([]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -148,6 +151,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           setCoverURL(serverProfile.coverUrl || serverProfile.coverURL || "");
           setInstagramType(serverProfile.instagramType || "Creator");
           setPublishStatus(serverProfile.publishStatus || "Public");
+          setContractorBadges(
+            Array.isArray(serverProfile.contractorBadges) ? serverProfile.contractorBadges : []
+          );
           return;
         }
       } catch {}

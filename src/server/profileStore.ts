@@ -16,6 +16,14 @@ export type StoredProfile = {
   coverURL?: string;
   instagramType?: string;
   publishStatus?: string;
+  /** Admin-granted seals (e.g. Independent Contractor). Not writable via /api/profile/me. */
+  contractorBadges?: {
+    id: string;
+    label: string;
+    imageUrl: string;
+    grantedAt: string;
+    grantedBy?: string;
+  }[];
   updatedAt?: string;
 };
 
