@@ -427,11 +427,17 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
     }
 
+    // Always expose `price` alongside Twelve Data's `close` so ticker UI and
+    // chart adapters stay in sync (MarketTicker historically only read `price`).
+    const normalized = data && typeof data === 'object'
+      ? { ...data, price: data.price ?? data.close }
+      : data;
+
     marketCache[cacheKey] = {
-      data,
+      data: normalized,
       timestamp: now,
     }
-    return data
+    return normalized
   } finally {
     delete pendingRequests[cacheKey]
   }
