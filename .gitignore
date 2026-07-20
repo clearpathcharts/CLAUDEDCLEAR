@@ -14,3 +14,7 @@ data/profiles/
 # Generated at server startup by the SEO asset node -- never commit
 public/logo.png
 public/og-image.png
+
+.env
+.env.local
+
