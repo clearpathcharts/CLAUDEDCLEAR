@@ -17,14 +17,17 @@ ClearPath already ships ~30k indexable URLs. Ranking across **all** major engine
 | 9 | Ecosia | Bing-based → IndexNow |
 | 10 | Qwant | EU / Bing-influenced → IndexNow |
 
-## Priority follower markets
+## Live regional hubs (shipped)
 
-| Market | Engines | Language | First assets |
-|---|---|---|---|
-| Russia / CIS | Yandex, Google, Bing | `ru-RU` | RU hub + Yandex.Webmaster |
-| China | Baidu, Bing | `zh-CN` | ZH hub + Baidu Zhanzhang |
-| Japan (Tokyo) | Google, Yahoo Japan, Bing | `ja-JP` | JA learn/guides |
-| Philippines | Google, Bing | `fil-PH` + EN | Bilingual PH community pages |
+| Market | URL | Language |
+|---|---|---|
+| Index | https://clearpathtrader.com/regions | EN |
+| Russia / CIS | https://clearpathtrader.com/regions/ru | `ru-RU` |
+| China | https://clearpathtrader.com/regions/cn | `zh-CN` |
+| Japan (Tokyo) | https://clearpathtrader.com/regions/jp | `ja-JP` |
+| Philippines | https://clearpathtrader.com/regions/ph | `fil-PH` |
+
+On boot the server IndexNow-pings these hubs when `INDEXNOW_KEY` / `SESSION_SECRET` / `CATALOG_ADMIN_SECRET` is available.
 
 ## IndexNow (wired in app)
 
@@ -36,25 +39,36 @@ ClearPath already ships ~30k indexable URLs. Ranking across **all** major engine
 curl -X POST https://clearpathtrader.com/api/seo/indexnow \
   -H "x-catalog-admin-secret: $CATALOG_ADMIN_SECRET" \
   -H "Content-Type: application/json" \
-  -d '{"urls":["https://clearpathtrader.com/learn","https://clearpathtrader.com/guides"]}'
+  -d '{"urls":["https://clearpathtrader.com/learn","https://clearpathtrader.com/guides","https://clearpathtrader.com/regions/ru"]}'
 ```
 
 Also: `GET /api/seo/indexnow/status` (boolean presence only — never leaks the key).
 
 Participating notify targets: `api.indexnow.org` (Bing ecosystem) and `yandex.com/indexnow`.
 
-## Operator checklist (this week)
+## Independent Contractor badge
 
-1. Verify Google Search Console property + sitemap `https://clearpathtrader.com/sitemap.xml`
-2. Verify Bing Webmaster Tools + enable IndexNow key file
-3. Create **Yandex.Webmaster** for Russia following
-4. Create **Baidu Zhanzhang** for China following (plan ZH landing — EN alone will not convert Baidu share)
-5. Publish 1 thick regional hub each: `/learn` cluster or dedicated locale hubs when ready
-6. After every pillar/guide publish → `POST /api/seo/indexnow` with the new URLs
+Seeded emails (auto-queued on server boot): `dawnhobson@aol.com`, `barry.nicholl@hotmail.com`.
+
+Manual grant:
+
+```bash
+curl -X POST https://clearpathtrader.com/api/admin/profiles/contractor-badge/seed \
+  -H "x-catalog-admin-secret: $CATALOG_ADMIN_SECRET"
+```
+
+## Operator checklist (you still do these in browser)
+
+1. Google Search Console + sitemap `https://clearpathtrader.com/sitemap.xml`
+2. Bing Webmaster Tools + IndexNow key file
+3. **Yandex.Webmaster** (Russia)
+4. **Baidu Zhanzhang** (China)
+5. Share regional hub links with each audience (social → `/regions/{id}`)
+6. After every pillar/guide publish → IndexNow ping
 7. Keep Blogspot / Thinkific / guest articles linking to **canonical clearpathtrader.com** URLs
 
 ## What not to do
 
-- Do not add empty `/ru` `/zh` `/ja` URL trees to the sitemap until real translated content exists
+- Do not invent empty `/ru` `/zh` bare locale trees — use `/regions/{id}` until full translations exist
 - Do not expect IndexNow to replace Google Search Console
 - Do not chase Naver/Baidu with English-only thin encyclopedia pages

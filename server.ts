@@ -2588,6 +2588,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
+    // Applied immediately if the private account exists; otherwise pending until login.
+    try {
+      const seeded = seedIndependentContractorBadges();
+      const summary = seeded.results
+        .map((r) => `${r.email}:${r.status}`)
+        .join(', ');
+      console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
+    } catch (e: any) {
+      console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
+    }
     
     // Postpone heavy startup integrity audits and self-checks by 10s.
     // This allows the container to start instantly, keeps CPU usage at a minimum during boot,
@@ -2601,6 +2613,20 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } catch (e: any) {
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
+
+      // Notify Bing/Yandex ecosystem about regional hubs (no-op without IndexNow key).
+      void submitIndexNow([
+        'https://clearpathtrader.com/regions',
+        ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
+      ]).then((r) => {
+        if (r.skipped) {
+          console.log(`[STARTUP] IndexNow regional hubs skipped: ${r.skipped}`);
+        } else {
+          console.log(`[STARTUP] IndexNow regional hubs submitted=${r.submitted} ok=${r.ok}`);
+        }
+      }).catch((e) => {
+        console.warn('[STARTUP] IndexNow regional hub ping failed:', e?.message || e);
+      });
 
       // 1. ComplianceAuditEngine executes automatically on startup
       try {
