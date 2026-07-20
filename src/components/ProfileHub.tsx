@@ -440,9 +440,30 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           {displayName || "ClearPathTrader"}
         </div>
 
-        <div className="flex justify-center gap-3 mt-4 text-[26px]">
-          🥇 🥈 🥉 ☕ 🍦 🥧
-        </div>
+        {contractorBadges.length > 0 ? (
+          <div className="flex flex-col items-center gap-2 mt-4">
+            {contractorBadges.map((badge) => (
+              <div
+                key={badge.id}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF00AA]/40 bg-black/40"
+                title={badge.label}
+              >
+                <img
+                  src={badge.imageUrl || "/badges/independent-contractor-128.png"}
+                  alt={badge.label}
+                  className="h-8 w-8 object-contain"
+                />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#00F5FF]">
+                  {badge.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center gap-3 mt-4 text-[26px]">
+            🥇 🥈 🥉 ☕ 🍦 🥧
+          </div>
+        )}
 
         {onNavigate && (
           <button
