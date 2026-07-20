@@ -2,6 +2,7 @@ import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
+import { REGIONAL_MARKETS, getRegionalMarket } from './regionalSeo';
 import {
   PROFILE_SEO,
   ECONOMY_TOPICS,
@@ -207,14 +208,14 @@ const PAGE_CSS = `
   footer.site a:hover { color: #00E5FF; }
 `;
 
-function renderShell(currentPath: string, bodyHtml: string): string {
+function renderShell(currentPath: string, bodyHtml: string, htmlLang = 'en'): string {
   const nav = NAV_LINKS.map(
     (l) =>
       `<a href="${l.href}"${l.href === currentPath ? ' aria-current="page"' : ''}>${l.label}</a>`
   ).join('\n        ');
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${htmlLang}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1135,6 +1136,35 @@ function renderAccessibilityPage(): string {
 </article>`;
 }
 
+function renderRegionsIndex(): string {
+  const cards = REGIONAL_MARKETS.map(
+    (m) => `<li><a class="card" href="${m.hubPath}">
+  <h2>${escapeHtml(m.label)}</h2>
+  <p>${escapeHtml(m.headline)}</p>
+  <p>${escapeHtml(m.engines.join(' · '))}</p>
+</a></li>`
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Regions' }])}
+<h1>ClearPath worldwide regions</h1>
+<p class="lead">Hubs for follower markets — Russia / CIS, China, Japan (Tokyo), and the Philippines — with language-first landings that search engines can crawl.</p>
+<ul class="card-list">
+${cards}
+</ul>
+<p><a href="/learn">Learn</a> · <a href="/encyclopedia">Encyclopedia</a> · <a href="/">Launch terminal</a></p>`;
+}
+
+function renderRegionalHub(idOrAlias: string): string | null {
+  const market = getRegionalMarket(idOrAlias);
+  if (!market) return null;
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Regions', url: '/regions' },
+    { name: market.label },
+  ])}
+<h1>${escapeHtml(market.headline)}</h1>
+<p class="lead">${escapeHtml(market.lead)}</p>
+${market.bodyHtml}`;
+}
 
 export function renderStaticContentPage(reqPath: string): string | null {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
@@ -1148,6 +1178,8 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/glossary') body = renderGlossary();
   else if (pathClean === '/faq') body = renderFaqPage();
   else if (pathClean === '/accessibility') body = renderAccessibilityPage();
+  else if (pathClean === '/regions') body = renderRegionsIndex();
+  else if (parts[0] === 'regions' && parts.length === 2) body = renderRegionalHub(parts[1]);
   else if (pathClean === '/encyclopedia' || pathClean === '/financial-encyclopedia') body = renderEncyclopediaHub();
   else if (pathClean === '/stocks') body = renderStocksHub();
   else if (pathClean === '/crypto') body = renderCryptoHub();
@@ -1173,5 +1205,8 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (parts[0] === 'economy' && parts.length === 2) body = renderEconomyTopic(parts[1]);
 
   if (body === null) return null;
-  return renderShell(pathClean, body);
+  const market =
+    parts[0] === 'regions' && parts.length === 2 ? getRegionalMarket(parts[1]) : null;
+  const htmlLang = market?.lang?.split('-')[0] || 'en';
+  return renderShell(pathClean, body, htmlLang);
 }

@@ -20,7 +20,7 @@ import {
   PROFILE_SEO,
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
-import { regionalOgLocaleAlternates, regionalHreflangHints } from './regionalSeo';
+import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket } from './regionalSeo';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -713,6 +713,39 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Home", url: "" },
       { name: "Literacy OS", url: "/literacy" }
     ]));
+  } else if (canonicalPath === '/regions') {
+    title = 'ClearPath Worldwide Regions — Russia, China, Japan, Philippines';
+    description =
+      'Language hubs for ClearPath follower markets: Russia/CIS (Yandex), China (Baidu), Japan/Tokyo, and the Philippines — crawlable landings into education and encyclopedia.';
+    schemas.push(
+      makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Regions', url: '/regions' },
+      ])
+    );
+  } else if (canonicalPath.startsWith('/regions/')) {
+    const market = getRegionalMarket(canonicalPath.slice('/regions/'.length));
+    if (market) {
+      title = market.seoTitle;
+      description = market.seoDescription;
+      schemas.push(
+        makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Regions', url: '/regions' },
+          { name: market.label, url: market.hubPath },
+        ])
+      );
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        '@id': `${canonicalUrl}#webpage`,
+        url: canonicalUrl,
+        name: market.seoTitle,
+        description: market.seoDescription,
+        inLanguage: market.lang,
+        isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+      });
+    }
   } else if (pathClean === '/market-universe') {
     title = "Market Universe: Global Asset Catalog | ClearPathTrader";
     description = "Navigate the full ClearPath market universe — equities, crypto, forex, commodities, and indices — in a single explorable catalog.";
@@ -998,12 +1031,19 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   const localeAlternates = regionalOgLocaleAlternates()
     .map((loc) => `    <meta property="og:locale:alternate" content="${loc}" />`)
     .join('\n');
-  const hreflangTags = regionalHreflangHints(canonicalUrl)
+  const regionalMarket =
+    canonicalPath.startsWith('/regions/')
+      ? getRegionalMarket(canonicalPath.slice('/regions/'.length))
+      : null;
+  const hreflangTags = regionalHreflangHints(canonicalUrl, {
+    marketId: regionalMarket?.id,
+  })
     .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
     .join('\n');
+  const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const ogTags = `
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content="${primaryLocale}" />
 ${localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />

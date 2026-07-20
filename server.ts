@@ -42,7 +42,13 @@ import {
   submitIndexNow,
   indexNowKeyLocation,
 } from './src/server/indexNow';
-import { REGIONAL_MARKETS } from './src/server/regionalSeo';
+import { REGIONAL_MARKETS, regionalHubEntries } from './src/server/regionalSeo';
+import {
+  grantContractorBadgeByEmail,
+  seedIndependentContractorBadges,
+  applyPendingContractorBadges,
+  IC_BADGE_SEED_EMAILS,
+} from './src/server/contractorBadges';
 import {
   stockEntries,
   cryptoEntries,
@@ -476,7 +482,10 @@ async function startServer() {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
-      const profile = readProfile(uid) || { uid, displayName: sessionUser?.displayName || '' };
+      const profile =
+        applyPendingContractorBadges(uid, sessionUser?.email) ||
+        readProfile(uid) ||
+        { uid, displayName: sessionUser?.displayName || '' };
       res.json({ ok: true, profile });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Failed to load profile' });
@@ -2246,6 +2255,25 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
+  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email : '';
+      const result = grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err?.message || 'Grant failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, (_req, res) => {
+    try {
+      const result = seedIndependentContractorBadges();
+      res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'Seed failed' });
+    }
+  });
+
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(buildUrlset([
@@ -2265,6 +2293,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
+      ...regionalHubEntries(),
     ]));
   });
 
@@ -2467,6 +2496,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/glossary',
     '/faq',
     '/accessibility',
+    '/regions',
+    '/regions/:id',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
