@@ -6,6 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+data/
+secrets/
+*-firebase-adminsdk-*.json
+*.pem
 data/registrations/
 data/intelligence/
 data/private_accounts/
