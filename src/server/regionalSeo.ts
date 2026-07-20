@@ -51,6 +51,13 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
   <li><a href="/indicators">Индикаторы</a> — визуальные объяснения</li>
   <li><a href="/tools/position-size">Калькулятор размера позиции</a></li>
 </ul>
+<h2>Ключевые страницы энциклопедии</h2>
+<ul>
+  <li><a href="/commodities/xauusd">Золото (XAU/USD)</a></li>
+  <li><a href="/forex/eurusd">EUR/USD</a> · <a href="/forex/usdrub">USD/RUB</a></li>
+  <li><a href="/economy/inflation">Инфляция</a> · <a href="/economy/federal-reserve">ФРС</a></li>
+  <li><a href="/learn/liquidity">Ликвидность</a> · <a href="/guides/macro-spreads">Макро-спреды</a></li>
+</ul>
 <h2>Поисковые системы</h2>
 <p>Для России приоритетны <strong>Яндекс</strong> и Google. Мы отдаём sitemap и IndexNow; ваш контент и ссылки на clearpathtrader.com усиливают авторитет.</p>
 <p><a href="/">Открыть терминал</a> · <a href="/learn">Learn (EN)</a> · <a href="/regions">Все регионы</a></p>
@@ -81,6 +88,13 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
   <li><a href="/indicators">技术指标百科</a></li>
   <li><a href="/guides">进阶指南</a></li>
   <li><a href="/tools/position-size">仓位计算器</a></li>
+</ul>
+<h2>深度百科链接</h2>
+<ul>
+  <li><a href="/commodities/xauusd">黄金 XAU/USD</a></li>
+  <li><a href="/forex/usdcny">USD/CNY</a> · <a href="/crypto/btc">Bitcoin</a></li>
+  <li><a href="/economy/inflation">通胀</a> · <a href="/learn/liquidity">流动性</a></li>
+  <li><a href="/stocks/aapl">Apple</a> · <a href="/stocks/tsla">Tesla</a></li>
 </ul>
 <h2>搜索与收录</h2>
 <p>中国市场请优先配置 <strong>百度站长平台（Zhanzhang）</strong>，并配合 Bing。纯英文薄页很难在百度获得有效排名 — 请从本中文枢纽出发建立内链。</p>
@@ -113,6 +127,13 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
   <li><a href="/learn">学習トピック（英語）</a></li>
   <li><a href="/tools/position-size">ポジションサイズ計算</a></li>
 </ul>
+<h2>深掘りリンク</h2>
+<ul>
+  <li><a href="/forex/usdjpy">USD/JPY</a></li>
+  <li><a href="/stocks/aapl">Apple</a> · <a href="/stocks/tsla">Tesla</a></li>
+  <li><a href="/commodities/xauusd">金（XAU/USD）</a></li>
+  <li><a href="/economy/federal-reserve">FRB</a> · <a href="/learn/microstructure">マーケットマイクロ構造</a></li>
+</ul>
 <h2>検索エンジン</h2>
 <p>日本では <strong>Google</strong> が中心で、<strong>Yahoo! JAPAN</strong> も引き続き重要です。サイトマップと IndexNow（Bing 系）を併用しています。</p>
 <p><a href="/">ターミナルを開く</a> · <a href="/regions">地域一覧</a></p>
@@ -143,6 +164,13 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
   <li><a href="/indicators">Indicators</a></li>
   <li><a href="/guides">Guides</a></li>
   <li><a href="/tools/position-size">Position size calculator</a></li>
+</ul>
+<h2>Deep encyclopedia links</h2>
+<ul>
+  <li><a href="/stocks/aapl">Apple (AAPL)</a> · <a href="/crypto/btc">Bitcoin</a></li>
+  <li><a href="/forex/usdjpy">USD/JPY</a> · <a href="/commodities/xauusd">Gold</a></li>
+  <li><a href="/learn/valuation">Valuation</a> · <a href="/education">Full curriculum</a></li>
+  <li><a href="/ui">Neurodivergent UI modes</a></li>
 </ul>
 <h2>Search engines</h2>
 <p>Sa Pilipinas, <strong>Google</strong> ang primary; Bing/IndexNow tumutulong sa Yahoo, DuckDuckGo, at iba pa.</p>
