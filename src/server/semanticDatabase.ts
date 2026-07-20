@@ -20,6 +20,7 @@ import {
   PROFILE_SEO,
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
+import { regionalOgLocaleAlternates, regionalHreflangHints } from './regionalSeo';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -994,9 +995,16 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   }
 
   // Open Graph + Twitter + discoverability tags
+  const localeAlternates = regionalOgLocaleAlternates()
+    .map((loc) => `    <meta property="og:locale:alternate" content="${loc}" />`)
+    .join('\n');
+  const hreflangTags = regionalHreflangHints(canonicalUrl)
+    .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+    .join('\n');
   const ogTags = `
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
+${localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
@@ -1013,6 +1021,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#0b0e11" />
     <link rel="canonical" href="${canonicalUrl}" />
+${hreflangTags}
   `;
 
   // Inject OG Tags & Schema Script blocks right before closing head
