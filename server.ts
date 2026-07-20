@@ -62,6 +62,7 @@ import {
   catalogCounts,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import { readProfile, writeProfile } from './src/server/profileStore';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
@@ -415,11 +416,19 @@ async function startServer() {
 
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
+    const adminDb = getAdminFirestore();
     res.json({ 
       status: 'healthy', 
       version: '5.0.0-institutional',
       uptime: process.uptime(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      waitlist: {
+        firestoreAdmin: Boolean(adminDb),
+        appwriteConfigured: Boolean(
+          process.env.VITE_APPWRITE_PROJECT_ID &&
+          process.env.VITE_APPWRITE_PROJECT_ID !== 'YOUR_PROJECT_ID'
+        ),
+      },
     });
   });
 
