@@ -38,6 +38,12 @@ import {
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage } from './src/server/contentPages';
 import {
+  resolveIndexNowKey,
+  submitIndexNow,
+  indexNowKeyLocation,
+} from './src/server/indexNow';
+import { REGIONAL_MARKETS } from './src/server/regionalSeo';
+import {
   stockEntries,
   cryptoEntries,
   forexEntries,
@@ -227,8 +233,17 @@ async function startServer() {
       pathLower === '/manifest.webmanifest' ||
       pathLower === '/logo.png' ||
       pathLower === '/og-image.png' ||
-      pathLower === '/api/seo/catalog-counts'
+      pathLower === '/api/seo/catalog-counts' ||
+      pathLower === '/api/seo/indexnow' ||
+      pathLower === '/api/seo/indexnow/status' ||
+      pathLower === '/api/seo/regional-markets'
     ) {
+      return next();
+    }
+
+    // IndexNow ownership key file at site root: /{key}.txt
+    const indexNowKey = resolveIndexNowKey();
+    if (indexNowKey && pathLower === `/${indexNowKey.toLowerCase()}.txt`) {
       return next();
     }
 
@@ -2132,7 +2147,10 @@ Disallow: /auth/
 Disallow: /login
 Disallow: /dashboard
 
-Sitemap: https://clearpathtrader.com/sitemap.xml`);
+# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
+Sitemap: https://clearpathtrader.com/sitemap.xml
+Host: clearpathtrader.com
+`);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
@@ -2192,6 +2210,40 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   app.get('/api/seo/catalog-counts', (_req, res) => {
     res.json(catalogCounts());
+  });
+
+  // IndexNow key file (Bing / Yandex / Naver ecosystem ownership proof)
+  app.get(/^\/([a-zA-Z0-9_-]{8,128})\.txt$/i, (req, res, next) => {
+    const key = resolveIndexNowKey();
+    const requested = req.params[0];
+    if (!key || !requested || requested.toLowerCase() !== key.toLowerCase()) return next();
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(key);
+  });
+
+  app.get('/api/seo/indexnow/status', (_req, res) => {
+    const key = resolveIndexNowKey();
+    res.json({
+      configured: Boolean(key),
+      keyLocation: key ? indexNowKeyLocation(key) : null,
+      markets: REGIONAL_MARKETS.map((m) => ({ id: m.id, label: m.label, engines: m.engines })),
+      note: 'Google does not consume IndexNow — use Search Console + sitemaps.',
+    });
+  });
+
+  app.get('/api/seo/regional-markets', (_req, res) => {
+    res.json({ markets: REGIONAL_MARKETS });
+  });
+
+  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+    const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
+    try {
+      const result = await submitIndexNow(urls);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'IndexNow submit failed' });
+    }
   });
 
   app.get('/sitemap-pages.xml', (req, res) => {
