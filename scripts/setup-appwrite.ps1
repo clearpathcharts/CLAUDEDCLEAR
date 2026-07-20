@@ -13,20 +13,20 @@ $configPath = Join-Path (Get-Location) 'appwrite.config.json'
 $config = Get-Content $configPath -Raw | ConvertFrom-Json
 if (-not $config.projectId -or $config.projectId -eq 'YOUR_PROJECT_ID') {
   Write-Host "Open https://cloud.appwrite.io , create project 'clearpath-trader', then paste IDs:" -ForegroundColor Yellow
-  $pid = Read-Host 'VITE_APPWRITE_PROJECT_ID'
+  $projectId = Read-Host 'VITE_APPWRITE_PROJECT_ID'
   $endpoint = Read-Host 'VITE_APPWRITE_ENDPOINT (e.g. https://nyc.cloud.appwrite.io/v1)'
-  if (-not $pid) { throw 'Project ID required' }
+  if (-not $projectId) { throw 'Project ID required' }
   if (-not $endpoint) { $endpoint = 'https://cloud.appwrite.io/v1' }
-  $config.projectId = $pid
+  $config.projectId = $projectId
   $config.endpoint = $endpoint
   ($config | ConvertTo-Json -Depth 40) | Set-Content $configPath -Encoding utf8
 
   $envPath = Join-Path (Get-Location) '.env'
   if (-not (Test-Path $envPath)) { Copy-Item '.env.example' $envPath }
   $envText = Get-Content $envPath -Raw
-  $envText = $envText -replace '(?m)^VITE_APPWRITE_PROJECT_ID=.*$', "VITE_APPWRITE_PROJECT_ID=$pid"
+  $envText = $envText -replace '(?m)^VITE_APPWRITE_PROJECT_ID=.*$', "VITE_APPWRITE_PROJECT_ID=$projectId"
   $envText = $envText -replace '(?m)^VITE_APPWRITE_ENDPOINT=.*$', "VITE_APPWRITE_ENDPOINT=$endpoint"
-  if ($envText -notmatch '(?m)^VITE_APPWRITE_PROJECT_ID=') { $envText += "`nVITE_APPWRITE_PROJECT_ID=$pid`n" }
+  if ($envText -notmatch '(?m)^VITE_APPWRITE_PROJECT_ID=') { $envText += "`nVITE_APPWRITE_PROJECT_ID=$projectId`n" }
   if ($envText -notmatch '(?m)^VITE_APPWRITE_ENDPOINT=') { $envText += "`nVITE_APPWRITE_ENDPOINT=$endpoint`n" }
   [System.IO.File]::WriteAllText($envPath, $envText)
 }
