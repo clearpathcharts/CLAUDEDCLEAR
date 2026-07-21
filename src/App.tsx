@@ -12,7 +12,6 @@ import { CptBuddyWidget } from './components/CptBuddyWidget';
 import A11yPreferencesToggle from './components/A11yPreferencesToggle';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
-const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 
@@ -36,11 +35,6 @@ function isEncyclopediaPath(path: string): boolean {
   );
 }
 
-function isIndicatorsPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  // Hub only — /indicators/:slug is server-rendered static HTML for crawlability.
-  return p === '/indicators' || p === '/encyclopedia-of-indicators';
-}
 
 function isEducationPath(path: string): boolean {
   const p = path.toLowerCase().trim();
@@ -77,7 +71,6 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
-            <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
             <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
           </div>
         </nav>
@@ -190,19 +183,15 @@ export default function App() {
           <EncyclopediaLayout />
         </PublicLearnShell>
       );
-    } else if (isIndicatorsPath(currentPath)) {
-      content = (
-        <PublicLearnShell>
-          <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    } else if (isEducationPath(currentPath)) {
+    }
+    // Encyclopedia of Indicators SPA hub hidden while videos are broken (component kept).
+    else if (isEducationPath(currentPath)) {
       content = (
         <PublicLearnShell>
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
               else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
             }}
           />
@@ -214,7 +203,7 @@ export default function App() {
           <LiteracyOSPage
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
               else if (tabId === 'ClearPathEducation') window.location.assign('/education');
               else if (tabId === 'Yours') window.location.assign('/');
             }}
