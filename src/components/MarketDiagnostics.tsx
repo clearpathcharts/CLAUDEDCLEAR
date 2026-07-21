@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 import { 
   Activity, 
   ShieldCheck, 
@@ -41,7 +42,7 @@ export default function MarketDiagnostics() {
   const [selectedError, setSelectedError] = useState<BuildErrorItem | null>(null);
   const [lastCheck, setLastCheck] = useState<string>("");
 
-  const fetchLiveDiagnostics = async () => {
+  const fetchLiveDiagnostics = useCallback(async () => {
     setLoadingApis(true);
     try {
       const res = await fetch("/api/status");
@@ -55,7 +56,7 @@ export default function MarketDiagnostics() {
       setLoadingApis(false);
       setLastCheck(new Date().toLocaleTimeString());
     }
-  };
+  }, []);
 
   const fetchBuildErrors = async () => {
     try {
@@ -69,13 +70,12 @@ export default function MarketDiagnostics() {
     }
   };
 
+  const { refresh: refreshDiagnostics } = usePageAutoUpdate(fetchLiveDiagnostics, {
+    intervalMs: 15_000,
+  });
+
   useEffect(() => {
-    fetchLiveDiagnostics();
     fetchBuildErrors();
-    
-    // Auto refresh status every 15 seconds
-    const interval = setInterval(fetchLiveDiagnostics, 15000);
-    return () => clearInterval(interval);
   }, []);
 
   const getStatusBadge = (status: ApiStatusItem["status"]) => {
@@ -129,7 +129,7 @@ export default function MarketDiagnostics() {
         </div>
 
         <button
-          onClick={fetchLiveDiagnostics}
+          onClick={() => void refreshDiagnostics()}
           disabled={loadingApis}
           className="mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 rounded bg-zinc-900 border border-white/10 hover:border-cyan-500/40 hover:bg-zinc-800 transition text-xs font-mono text-cyan-400 cursor-pointer disabled:opacity-50"
         >
