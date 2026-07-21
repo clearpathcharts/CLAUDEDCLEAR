@@ -38,5 +38,10 @@
 - Keep `VITE_APP_VERSION` / `VITE_ANDROID_VERSION_*` in sync with shipped builds (`android/app/build.gradle` versionCode).
 - Self-test: `npm run test:app-update`.
 
+### Page auto-updater (SPA live data)
+- Shared hook: `src/hooks/usePageAutoUpdate.ts` (interval + immediate + visibility pause + in-flight guard).
+- Prefer it over ad-hoc `setInterval` in pages/panels that poll quotes, diagnostics, news, clocks, or demo ticks.
+- Unrelated to PR branch sync (`pr:auto-update`) and app/APK version banners.
+
 ### Host hardening (ops only)
 - Optional server hardening uses [grapheneX](https://github.com/grapheneX/grapheneX) on the **VPS/Docker host**, not inside the Node app. See `docs/ops-hardening.md` and `scripts/ops/run-graphenex.sh` (localhost `:9090` + SSH tunnel). Not applicable to managed Cloud Run.

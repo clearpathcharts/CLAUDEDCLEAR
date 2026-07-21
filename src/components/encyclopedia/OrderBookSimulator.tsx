@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, TrendingUp, DollarSign, Activity, Settings, RefreshCw, Layers } from 'lucide-react';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 
 interface Order {
   id: string;
@@ -51,28 +52,24 @@ export default function OrderBookSimulator() {
   }, []);
 
   // Periodic simulated market makers adding passive orders
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Passive market makers filling empty levels
-      setBids(prevBids => {
-        if (prevBids.length >= 7) return prevBids;
-        const newBidPrice = parseFloat((99.50 - Math.random() * 3).toFixed(2));
-        const newBidSize = Math.floor(Math.random() * 30) + 15;
-        const updated = [...prevBids, { id: 'mm-b-' + Date.now(), price: newBidPrice, size: newBidSize, total: 0, type: 'bid' as const }];
-        return updated.sort((a, b) => b.price - a.price);
-      });
+  usePageAutoUpdate(() => {
+    // Passive market makers filling empty levels
+    setBids(prevBids => {
+      if (prevBids.length >= 7) return prevBids;
+      const newBidPrice = parseFloat((99.50 - Math.random() * 3).toFixed(2));
+      const newBidSize = Math.floor(Math.random() * 30) + 15;
+      const updated = [...prevBids, { id: 'mm-b-' + Date.now(), price: newBidPrice, size: newBidSize, total: 0, type: 'bid' as const }];
+      return updated.sort((a, b) => b.price - a.price);
+    });
 
-      setAsks(prevAsks => {
-        if (prevAsks.length >= 7) return prevAsks;
-        const newAskPrice = parseFloat((100.50 + Math.random() * 3).toFixed(2));
-        const newAskSize = Math.floor(Math.random() * 30) + 15;
-        const updated = [...prevAsks, { id: 'mm-a-' + Date.now(), price: newAskPrice, size: newAskSize, total: 0, type: 'ask' as const }];
-        return updated.sort((a, b) => a.price - b.price);
-      });
-    }, 4500);
-
-    return () => clearInterval(interval);
-  }, []);
+    setAsks(prevAsks => {
+      if (prevAsks.length >= 7) return prevAsks;
+      const newAskPrice = parseFloat((100.50 + Math.random() * 3).toFixed(2));
+      const newAskSize = Math.floor(Math.random() * 30) + 15;
+      const updated = [...prevAsks, { id: 'mm-a-' + Date.now(), price: newAskPrice, size: newAskSize, total: 0, type: 'ask' as const }];
+      return updated.sort((a, b) => a.price - b.price);
+    });
+  }, { intervalMs: 4_500, immediate: false });
 
   // Recalculate totals
   const bidsWithTotals = bids.reduce<Order[]>((acc, curr, index) => {

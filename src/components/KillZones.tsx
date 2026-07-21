@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 interface Session {
   id: string;
@@ -103,12 +104,9 @@ export default function KillZones() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentUtcTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  usePageAutoUpdate(() => {
+    setCurrentUtcTime(new Date());
+  }, { intervalMs: 1_000 });
 
   // Update audio Volume
   useEffect(() => {

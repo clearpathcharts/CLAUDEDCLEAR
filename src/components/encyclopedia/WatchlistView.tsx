@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Layers, ExternalLink, Shield } from 'lucide-react';
 import { TradingHaltController } from '../../truth/TradingHaltController';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 
 interface WatchlistItem {
   symbol: string;
@@ -55,33 +56,29 @@ export default function WatchlistView({ selectFileNode }: { selectFileNode: (f: 
     localStorage.setItem('cp_watchlist_items', JSON.stringify(watchlist));
   }, [watchlist]);
 
-  // Small real-time simulation tick
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setWatchlist((prev) =>
-        prev.map((item) => {
-          const changePercent = (Math.random() - 0.495) * 0.4; // slight upward drift
-          const delta = item.price * (changePercent / 100);
-          const nextPrice = parseFloat((item.price + delta).toFixed(item.type === 'FOREX' ? 4 : 2));
-          const nextHigh = Math.max(item.high, nextPrice);
-          const nextLow = Math.min(item.low, nextPrice);
-          const accumulatedHistory = [...item.history.slice(-15), nextPrice];
-          const calculatedChange = parseFloat((item.change + changePercent).toFixed(2));
-          
-          return {
-            ...item,
-            price: nextPrice,
-            change: calculatedChange,
-            high: nextHigh,
-            low: nextLow,
-            history: accumulatedHistory
-          };
-        })
-      );
-    }, 4500);
-
-    return () => clearInterval(timer);
-  }, []);
+  // Small real-time simulation tick (paused while tab hidden)
+  usePageAutoUpdate(() => {
+    setWatchlist((prev) =>
+      prev.map((item) => {
+        const changePercent = (Math.random() - 0.495) * 0.4; // slight upward drift
+        const delta = item.price * (changePercent / 100);
+        const nextPrice = parseFloat((item.price + delta).toFixed(item.type === 'FOREX' ? 4 : 2));
+        const nextHigh = Math.max(item.high, nextPrice);
+        const nextLow = Math.min(item.low, nextPrice);
+        const accumulatedHistory = [...item.history.slice(-15), nextPrice];
+        const calculatedChange = parseFloat((item.change + changePercent).toFixed(2));
+        
+        return {
+          ...item,
+          price: nextPrice,
+          change: calculatedChange,
+          high: nextHigh,
+          low: nextLow,
+          history: accumulatedHistory
+        };
+      })
+    );
+  }, { intervalMs: 4_500, immediate: false });
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();

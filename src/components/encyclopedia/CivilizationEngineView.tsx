@@ -7,6 +7,7 @@ import {
   Flame, CloudRain, Sun, Info, Play, RefreshCw, BarChart4, MoveRight,
   ShoppingBag, Home, Truck, Briefcase, Activity, Compass, Hammer, ChevronRight
 } from 'lucide-react';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 
 interface CivilizationEngineViewProps {
   selectFileNode: (fileName: string) => void;
@@ -112,21 +113,13 @@ export default function CivilizationEngineView({ selectFileNode }: CivilizationE
   }, [activeWeather]);
 
   // Multi-step simulator for environmental cycle pulses
-  useEffect(() => {
-    let interval: any = null;
-    if (isPlayingWeather) {
-      interval = setInterval(() => {
-        const statuses: MacroWeather[] = ['normal', 'inflation_heat', 'recession_fog', 'liquidity_glow', 'energy_crisis', 'ai_pulse'];
-        setActiveWeather((prev) => {
-          const nextIdx = (statuses.indexOf(prev) + 1) % statuses.length;
-          return statuses[nextIdx];
-        });
-      }, 10000); // Shift atmospheric system every 10 seconds for user engagement
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlayingWeather]);
+  usePageAutoUpdate(() => {
+    const statuses: MacroWeather[] = ['normal', 'inflation_heat', 'recession_fog', 'liquidity_glow', 'energy_crisis', 'ai_pulse'];
+    setActiveWeather((prev) => {
+      const nextIdx = (statuses.indexOf(prev) + 1) % statuses.length;
+      return statuses[nextIdx];
+    });
+  }, { intervalMs: 10_000, enabled: isPlayingWeather, immediate: false });
 
   // Simulation run for high-impact world events
   const triggerWorldShock = (shock: ShockTrigger) => {
