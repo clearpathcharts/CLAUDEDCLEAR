@@ -8,6 +8,7 @@ import {
   SPEED_COPY,
 } from '../content/tradingReimaginedLanding';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import { injectFirebaseClientConfig } from './firebaseClientConfig';
 import {
   lookupStock,
   lookupCrypto,
@@ -1107,7 +1108,8 @@ ${hreflangTags}
     html = html.replace('<div id="root">', `${noscriptEntity}\n    <div id="root">`);
   }
 
-  return html;
+  // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
+  return injectFirebaseClientConfig(html);
 }
 
 // Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.

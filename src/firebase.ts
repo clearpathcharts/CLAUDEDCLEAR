@@ -12,6 +12,33 @@ let _db: any = null;
 let _storage: fbStorage.FirebaseStorage | null = null;
 
 /** Firebase web API keys are public client identifiers — supply via VITE_FIREBASE_API_KEY (never commit live keys). */
+function readRuntimeInjectedFirebase(): Partial<{
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  appId: string;
+  messagingSenderId: string;
+  storageBucket: string;
+}> {
+  try {
+    if (typeof window === 'undefined') return {};
+    const injected = (window as Window & { __CLEARPATH_FIREBASE_CONFIG__?: Record<string, string> })
+      .__CLEARPATH_FIREBASE_CONFIG__;
+    if (!injected || typeof injected !== 'object') return {};
+    return {
+      apiKey: typeof injected.apiKey === 'string' ? injected.apiKey.trim() : '',
+      authDomain: typeof injected.authDomain === 'string' ? injected.authDomain.trim() : '',
+      projectId: typeof injected.projectId === 'string' ? injected.projectId.trim() : '',
+      appId: typeof injected.appId === 'string' ? injected.appId.trim() : '',
+      messagingSenderId:
+        typeof injected.messagingSenderId === 'string' ? injected.messagingSenderId.trim() : '',
+      storageBucket: typeof injected.storageBucket === 'string' ? injected.storageBucket.trim() : '',
+    };
+  } catch {
+    return {};
+  }
+}
+
 function readPublicFirebaseEnv(name: string): string {
   const fromProcess =
     typeof process !== 'undefined' && process.env && typeof process.env[name] === 'string'
@@ -29,20 +56,33 @@ function readPublicFirebaseEnv(name: string): string {
 }
 
 function resolveFirebaseConfig() {
+  const runtime = readRuntimeInjectedFirebase();
   const apiKey =
+    runtime.apiKey ||
     readPublicFirebaseEnv('VITE_FIREBASE_API_KEY') ||
     (firebaseConfigJson as { apiKey?: string }).apiKey ||
     '';
   return {
     ...firebaseConfigJson,
     apiKey,
-    authDomain: readPublicFirebaseEnv('VITE_FIREBASE_AUTH_DOMAIN') || firebaseConfigJson.authDomain,
-    projectId: readPublicFirebaseEnv('VITE_FIREBASE_PROJECT_ID') || firebaseConfigJson.projectId,
-    appId: readPublicFirebaseEnv('VITE_FIREBASE_APP_ID') || firebaseConfigJson.appId,
+    authDomain:
+      runtime.authDomain ||
+      readPublicFirebaseEnv('VITE_FIREBASE_AUTH_DOMAIN') ||
+      firebaseConfigJson.authDomain,
+    projectId:
+      runtime.projectId ||
+      readPublicFirebaseEnv('VITE_FIREBASE_PROJECT_ID') ||
+      firebaseConfigJson.projectId,
+    appId:
+      runtime.appId || readPublicFirebaseEnv('VITE_FIREBASE_APP_ID') || firebaseConfigJson.appId,
     messagingSenderId:
-      readPublicFirebaseEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || firebaseConfigJson.messagingSenderId,
+      runtime.messagingSenderId ||
+      readPublicFirebaseEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') ||
+      firebaseConfigJson.messagingSenderId,
     storageBucket:
-      readPublicFirebaseEnv('VITE_FIREBASE_STORAGE_BUCKET') || firebaseConfigJson.storageBucket,
+      runtime.storageBucket ||
+      readPublicFirebaseEnv('VITE_FIREBASE_STORAGE_BUCKET') ||
+      firebaseConfigJson.storageBucket,
   };
 }
 

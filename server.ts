@@ -37,6 +37,7 @@ import {
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage } from './src/server/contentPages';
+import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import {
   resolveIndexNowKey,
   submitIndexNow,
@@ -2774,6 +2775,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    try {
+      if (firebaseWebClientConfigured()) {
+        console.log('[STARTUP] Firebase web client config present — will inject into HTML');
+      } else {
+        console.warn('[STARTUP] Firebase web client config missing (VITE_FIREBASE_API_KEY) — SPA uses safe offline mocks');
+      }
+    } catch (e: any) {
+      console.warn('[STARTUP] Firebase web config check skipped:', e?.message || e);
+    }
 
     // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
     // Applied immediately if the private account exists; otherwise pending until login.
