@@ -18,8 +18,8 @@ import {
   MEDIA_DRAWERS,
   PANTRY_CHANNELS,
   type MediaDrawerId,
-  youtubeEmbedUrl,
 } from '../../cpms/mediaPantryCatalog';
+import { bindVideoSource } from '../../lib/cpms/hlsPlayer';
 
 interface PodcastEpisode {
   id: string;
@@ -83,6 +83,8 @@ export function CpmsMediaPantry() {
   const [searchSource, setSearchSource] = useState<'itunes' | 'podcastindex'>('itunes');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const liveVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
   const bars = useAudioVisualizer(audioRef, isPlaying && drawer === 'radio');
 
   const channel = useMemo(
@@ -126,6 +128,18 @@ export function CpmsMediaPantry() {
     if (drawer !== 'radio') return;
     loadEpisodes(feedUrl);
   }, [drawer, feedUrl, loadEpisodes]);
+
+  // Direct Bloomberg HLS in the live drawer — never YouTube.
+  useEffect(() => {
+    if (drawer !== 'live') return;
+    const el = liveVideoRef.current;
+    if (!el || !liveSource.hlsUrl) return;
+    setLiveError(null);
+    return bindVideoSource(el, liveSource.hlsUrl, {
+      autoPlay: true,
+      onError: () => setLiveError('Live stream unavailable. Try another Bloomberg channel.'),
+    });
+  }, [drawer, liveSource.id, liveSource.hlsUrl]);
 
   useEffect(() => {
     fetch('/api/podcast/status')
@@ -406,17 +420,22 @@ export function CpmsMediaPantry() {
           </div>
           <p className="text-[10px] text-zinc-400 leading-relaxed">{liveSource.description}</p>
           <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-[#FF1493]/20">
-            <iframe
+            {liveError && (
+              <div className="absolute inset-x-2 top-2 z-10 rounded-lg border border-red-500/30 bg-red-950/80 px-2 py-1.5 text-[9px] font-mono text-red-200">
+                {liveError}
+              </div>
+            )}
+            <video
+              ref={liveVideoRef}
               title={liveSource.label}
-              src={youtubeEmbedUrl(liveSource)}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
+              className="absolute inset-0 w-full h-full object-contain"
+              playsInline
+              muted
+              controls
             />
           </div>
           <p className="text-[8px] font-mono text-zinc-500 leading-relaxed">
-            Official YouTube embed — views count toward {liveSource.network}. YouTube may show its own ads on creator content; ClearPath does not inject ads.
+            Direct {liveSource.network} HLS stream — ClearPath does not embed YouTube.
           </p>
         </>
       )}

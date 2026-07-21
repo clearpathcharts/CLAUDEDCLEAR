@@ -27,8 +27,8 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
 
   useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
 
-  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart').slice(-10) ?? [];
-  const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick').slice(-5) ?? [];
+  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart') ?? [];
+  const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick') ?? [];
   const patternCount = scan?.patterns.length ?? 0;
 
   if (!chartActive && (!scan || patternCount === 0)) return null;
@@ -81,7 +81,7 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
       {patternCount === 0 ? (
         <p className="text-[10px] leading-relaxed text-white/50">
           {scan
-            ? `Scanned ${scan.scannedBars.toLocaleString()} bars · continuation, reversal & bilateral shapes draw in hot pink / purple neon.`
+            ? `Scanned ${scan.scannedBars.toLocaleString()} bars · live-edge patterns only`
             : 'Loading chart… pattern geometry runs on every chart load.'}
         </p>
       ) : (
@@ -112,7 +112,7 @@ export default function PatternOverlay({ chartActive = false }: PatternOverlayPr
 
           {candlePatterns.length > 0 && (
             <div className="mt-2 max-h-28 space-y-1 overflow-y-auto border-t border-white/10 pt-2">
-              <p className="text-[8px] font-bold uppercase tracking-widest text-white/30">Candlesticks</p>
+              <p className="text-[8px] font-bold uppercase tracking-widest text-white/30">Latest Candlesticks</p>
               {candlePatterns.map((p, i) => {
                 const Icon = DIRECTION_ICON[p.direction];
                 return (

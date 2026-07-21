@@ -38,9 +38,9 @@ export const FacebookIntel: React.FC = React.memo(() => {
           </div>
 
           <div className="space-y-0.5">
-            <h5 className="text-[11px] font-black tracking-wider uppercase text-white font-serif">
+            <h4 className="text-tiny-heading font-black tracking-wider text-white font-serif">
               Sovereign Market Traders
-            </h5>
+            </h4>
             <div className="flex items-center gap-1.5 text-[9px] text-[#00ffff] font-mono">
               <Globe size={10} className="text-[#00ffff]" />
               <span>Public Group • 142k Members</span>
@@ -98,9 +98,13 @@ export const FacebookIntel: React.FC = React.memo(() => {
             </span>
           </div>
 
-          <span className="hover:underline cursor-pointer" onClick={handleComment}>
+          <button
+            type="button"
+            onClick={handleComment}
+            className="hover:underline cursor-pointer bg-transparent border-0 p-0 text-inherit font-inherit text-[inherit]"
+          >
             {commentsCount.toLocaleString()} comments
-          </span>
+          </button>
         </div>
 
         {/* Interactive Action Buttons */}
@@ -108,13 +112,14 @@ export const FacebookIntel: React.FC = React.memo(() => {
           <button
             type="button"
             onClick={handleLike}
+            aria-pressed={hasLiked}
             className={`py-1.5 rounded-xl border flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase font-black transition-all cursor-pointer active:scale-95 ${
               hasLiked
                 ? 'border-[#00ffff] bg-[#00ffff]/10 text-[#00ffff] shadow-[0_0_12px_rgba(0,255,255,0.15)]'
                 : 'border-white/5 bg-[#030307]/40 text-zinc-400 hover:text-white hover:border-zinc-800'
             }`}
           >
-            <ThumbsUp size={11} className={hasLiked ? "fill-[#00ffff] animate-bounce" : ""} />
+            <ThumbsUp size={11} className={hasLiked ? "fill-[#00ffff] animate-bounce" : ""} aria-hidden="true" />
             <span>{hasLiked ? "Liked" : "Like"}</span>
           </button>
 

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ClearPath CPMS</string>
-    <string name="title_activity_main">ClearPath CPMS</string>
+    <string name="app_name">ClearPath Cinema</string>
+    <string name="title_activity_main">ClearPath Cinema</string>
     <string name="package_name">com.clearpath.cpms</string>
     <string name="custom_url_scheme">com.clearpath.cpms</string>
 </resources>

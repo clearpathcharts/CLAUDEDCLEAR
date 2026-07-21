@@ -16,6 +16,7 @@
 // old one has been rotated.
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
+import { getTwelveDataApiKey } from "./secrets";
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -426,11 +427,17 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
     }
 
+    // Always expose `price` alongside Twelve Data's `close` so ticker UI and
+    // chart adapters stay in sync (MarketTicker historically only read `price`).
+    const normalized = data && typeof data === 'object'
+      ? { ...data, price: data.price ?? data.close }
+      : data;
+
     marketCache[cacheKey] = {
-      data,
+      data: normalized,
       timestamp: now,
     }
-    return data
+    return normalized
   } finally {
     delete pendingRequests[cacheKey]
   }
@@ -439,7 +446,10 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
 // ============================================
 // GET TIME SERIES CANDLES (Deduplicated & Cached)
 // ============================================
-export async function getMarketCandles(symbol: string, interval: string, limit: number, apiKey: string) {
+export async function getMarketCandles(symbol: string, interval: string, requestedLimit: number, apiKey: string) {
+  // Twelve Data only accepts outputsize in [1, 5000]; anything larger is
+  // rejected with HTTP 400, which would blank the chart entirely.
+  const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1), 5000);
   const cacheKey = `candles:${symbol}:${interval}:${limit}`
   const now = Date.now()
 
@@ -606,17 +616,11 @@ export async function getMarketCandles(symbol: string, interval: string, limit: 
  * silently using a leaked key.
  */
 export function getCleanApiKey(): string {
-  const rawKey =
-    process.env.TWELVEDATA_API_KEY ||
-    process.env.VITE_TWELVEDATA_API_KEY ||
-    process.env.TWELVE_DATA_API_KEY ||
-    process.env.VITE_TWELVE_DATA_API_KEY ||
-    '';
-  if (!rawKey) {
+  const key = getTwelveDataApiKey();
+  if (!key) {
     console.warn('[Gateway] No Twelve Data API key configured in environment. Live data is unavailable until one is set.');
-    return '';
   }
-  return rawKey.trim().replace(/^["']|["']$/g, '');
+  return key;
 }
 
 async function fetchPrice(symbol: string) {

@@ -1,6 +1,15 @@
 /* ==========================================================================
    CPMS VIDEO PLAYER - TOTAL INCLUSION GLOBAL MATRIX (AI STUDIO DIRECT)
    ========================================================================== */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 class CPMSVideoPlayer {
     constructor() {
         this.channels = [
@@ -263,8 +272,8 @@ class CPMSVideoPlayer {
                 <div class="flex items-center gap-3 overflow-hidden">
                     <div class="channel-logo-small text-lg flex-shrink-0"><span>📺</span></div>
                     <div class="channel-info-small flex-grow overflow-hidden select-none">
-                        <h5 class="text-xs font-bold leading-tight font-mono truncate uppercase tracking-wider text-zinc-100">${ch.name}</h5>
-                        <p class="text-[9px] text-zinc-500 font-mono mt-0.5 truncate uppercase">${ch.group}</p>
+                        <h5 class="text-xs font-bold leading-tight font-mono truncate uppercase tracking-wider text-zinc-100">${escapeHtml(ch.name)}</h5>
+                        <p class="text-[9px] text-zinc-500 font-mono mt-0.5 truncate uppercase">${escapeHtml(ch.group)}</p>
                     </div>
                 </div>
                 <span class="channel-live-badge status-live shrink-0 px-1 py-0.5 bg-red-600/95 text-white font-mono font-bold text-[8px] rounded uppercase">LIVE</span>

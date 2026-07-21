@@ -2,8 +2,10 @@ import React from "react";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   Cpu,
   Crown,
+  GraduationCap,
   Home,
   LogOut,
   Newspaper,
@@ -90,13 +92,37 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "CpmsApk",
       icon: Cpu,
-      label: "CPMS APK",
+      label: "CLEARPATH CINEMA",
     },
 
     {
       id: "Sentinel",
       icon: Shield,
       label: "SENTINEL",
+    },
+
+    {
+      id: "ClearPathEducation",
+      icon: BookOpen,
+      label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
+    },
+
+    {
+      id: "Encyclopedia",
+      icon: GraduationCap,
+      label: "ENCYCLOPEDIA OF FINANCE",
+    },
+
+    {
+      id: "EncyclopediaOfIndicators",
+      icon: BarChart3,
+      label: "ENCYCLOPEDIA OF INDICATORS",
     },
   ];
   const renderNavButton = (
@@ -120,7 +146,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "CpmsApk" ||
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
-      item.id === "EncyclopediaOfIndicators";
+      item.id === "EncyclopediaOfIndicators" ||
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

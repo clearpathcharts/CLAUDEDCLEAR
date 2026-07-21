@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   Cpu,
   Crown,
+  GraduationCap,
   Home,
   LogOut,
   Newspaper,
@@ -54,6 +56,37 @@ const WORK_ITEMS: NavItem[] = [
   },
 ];
 
+const LEARN_ITEMS: NavItem[] = [
+  {
+    id: "ClearPathEducation",
+    icon: BookOpen,
+    label: "CLEARPATH EDUCATION",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "LiteracyOS",
+    icon: BookOpen,
+    label: "LITERACY OS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "Encyclopedia",
+    icon: GraduationCap,
+    label: "ENCYCLOPEDIA OF FINANCE",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "EncyclopediaOfIndicators",
+    icon: BarChart3,
+    label: "ENCYCLOPEDIA OF INDICATORS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+];
+
 const TOOLS_ITEMS: NavItem[] = [
   {
     id: "TheRiver",
@@ -65,7 +98,7 @@ const TOOLS_ITEMS: NavItem[] = [
   {
     id: "CpmsApk",
     icon: Cpu,
-    label: "CPMS APK",
+    label: "CLEARPATH CINEMA",
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
@@ -135,6 +168,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const sections: { title: string; items: NavItem[] }[] = [
     { title: "WORK", items: WORK_ITEMS },
+    { title: "LEARN", items: LEARN_ITEMS },
     { title: "TOOLS", items: toolsItems },
     { title: "ACCOUNT", items: ACCOUNT_ITEMS },
   ];
@@ -230,8 +264,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               >
                 YOUR WORLD CONNECTED
               </span>
-              <span className="block text-[#AAAAAA] text-xs mt-1">
-                Everything you need. One place.
+              <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
+                Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
               <button
                 type="button"

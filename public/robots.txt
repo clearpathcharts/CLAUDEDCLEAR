@@ -1,4 +1,11 @@
+# Served dynamically by server.ts in production — this file is a dev/static fallback only.
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /dashboard
 
-Sitemap: https://clearpathmarkets.com/sitemap.xml
+# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
+Sitemap: https://clearpathtrader.com/sitemap.xml
+Host: clearpathtrader.com
