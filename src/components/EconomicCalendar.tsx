@@ -1,80 +1,119 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { Calendar, Clock, Globe, AlertTriangle, ChevronRight } from 'lucide-react';
-import { fetchEconomicCalendar } from '../services/economicService';
-import { EconomicEvent } from '../types';
+import React, { useState } from 'react';
+import { Calendar, AlertCircle, RefreshCw, Radio, Newspaper } from 'lucide-react';
+import { fetchEconomicNews, EconomicNewsItem } from '../services/economicService';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
+/**
+ * Economic News — live macro/economy headlines only.
+ * Replaces the old fake TradingEconomics-style calendar mock.
+ */
 export default function EconomicCalendar() {
-  const [events, setEvents] = useState<EconomicEvent[]>([]);
+  const [items, setItems] = useState<EconomicNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchEconomicCalendar().then(data => {
-      setEvents(data);
+  const { refresh, lastUpdatedAt } = usePageAutoUpdate(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchEconomicNews();
+      setItems(data);
+      setError(data.length === 0 ? 'No economic headlines returned from the wire.' : null);
+    } catch (e: unknown) {
+      setItems([]);
+      setError(e instanceof Error ? e.message : 'Economic news unavailable');
+    } finally {
       setLoading(false);
-    });
-  }, []);
-
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'High': return 'bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]';
-      case 'Medium': return 'bg-orange-500 text-white';
-      case 'Low': return 'bg-blue-500/20 text-blue-400';
-      default: return 'bg-gray-500/20 text-gray-400';
     }
-  };
+  }, { intervalMs: 60_000 });
 
   return (
-    <div className="p-6 bg-black/40 backdrop-blur-md rounded-3xl border border-white/5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-8">
+    <div className="flex h-full flex-col rounded-3xl border border-white/5 bg-black/40 p-6 backdrop-blur-md">
+      <div className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-            <Calendar className="w-6 h-6 text-emerald-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/20">
+            <Calendar className="h-6 w-6 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-lg font-black uppercase tracking-widest text-white italic">Calendar</h2>
-            <p className="text-[10px] text-emerald-400/60 font-mono uppercase tracking-[0.2em]">Alpha Schedule v2.0</p>
+            <h2 className="text-lg font-black uppercase tracking-widest text-white italic">Economic News</h2>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400/60">
+              Macro wire · /api/economic/news
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {lastUpdatedAt && (
+            <span className="hidden font-mono text-[9px] uppercase text-zinc-500 sm:inline">
+              Updated {new Date(lastUpdatedAt).toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={refresh}
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-[10px] uppercase text-zinc-300 hover:bg-white/10"
+          >
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[10px] uppercase ${
+              items.length > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-zinc-500/10 text-zinc-400'
+            }`}
+          >
+            <Radio className="h-3 w-3" />
+            {items.length > 0 ? `${items.length} items` : 'Empty'}
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-        {events.map((event, i) => (
-          <motion.div 
-            key={i}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="group p-5 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-emerald-500/30 transition-all flex items-center justify-between"
-          >
-            <div className="flex items-center gap-6">
-              <div className="w-14 flex flex-col items-center">
-                <span className="text-[10px] font-mono text-gray-500">{event.date.split(' ')[1]}</span>
-                <div className={`mt-1.5 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${getImpactColor(event.impact)}`}>
-                  {event.impact}
-                </div>
+      <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+        {loading && items.length === 0 ? (
+          <div className="flex h-40 items-center justify-center font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+            Loading economic news…
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/10 bg-zinc-950/50 px-6 py-12 text-center">
+            <AlertCircle className="h-8 w-8 text-zinc-500" />
+            <p className="max-w-sm text-sm text-zinc-300">
+              {error || 'No economic headlines available.'}
+            </p>
+            <p className="text-[11px] text-zinc-500">
+              Events and headlines are never invented. Configure the news vendor key on the server to populate this panel.
+            </p>
+          </div>
+        ) : (
+          items.map((item, i) => (
+            <article
+              key={`${item.title}-${i}`}
+              className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 transition-all hover:border-emerald-500/30"
+            >
+              <div className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-wider text-zinc-500">
+                <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-black text-emerald-500">
+                  {item.source}
+                </span>
+                {item.category && <span>· {item.category}</span>}
+                {item.pubDate && <span>· {item.pubDate}</span>}
               </div>
-
-              <div className="h-10 w-[1px] bg-white/10" />
-
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black text-emerald-500 px-1.5 py-0.5 bg-emerald-500/10 rounded uppercase">{event.country}</span>
-                  <span className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">{event.event}</span>
-                </div>
-                <div className="flex items-center gap-4 text-[9px] text-gray-500 font-mono uppercase">
-                   <span className="flex items-center gap-1.5">Act: <span className="text-white">{event.actual || '--'}</span></span>
-                   <span className="flex items-center gap-1.5">For: <span className="text-gray-400">{event.forecast || '--'}</span></span>
-                   <span className="flex items-center gap-1.5">Prev: <span className="text-gray-400">{event.previous || '--'}</span></span>
-                </div>
-              </div>
-            </div>
-
-            <button className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </motion.div>
-        ))}
+              {item.link ? (
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-bold text-white hover:text-emerald-400"
+                >
+                  {item.title}
+                </a>
+              ) : (
+                <h3 className="flex items-start gap-2 text-sm font-bold text-white">
+                  <Newspaper className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/70" />
+                  {item.title}
+                </h3>
+              )}
+              {item.description && (
+                <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-zinc-400">{item.description}</p>
+              )}
+            </article>
+          ))
+        )}
       </div>
     </div>
   );

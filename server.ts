@@ -1714,10 +1714,102 @@ ${CPT_SITE_GUIDE}`;
       res.json(newsList);
     } catch (error) {
       console.error('[NewsData Route Error]', error);
-      res.json([
-        { title: "Clear Path Engine: 2026 Roadmap Operational", source: "INTERNAL", category: "INFO" },
-        { title: "Neural Liquidity Models Ingress active", source: "INTERNAL", category: "INFO" }
-      ]);
+      // Honest empty — never invent INTERNAL marketing headlines
+      res.json([]);
+    }
+  });
+
+  // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
+  app.get('/api/economic/news', async (req, res) => {
+    try {
+      const apiKey = getNewsDataApiKey();
+      const isKeyValid =
+        apiKey &&
+        apiKey.trim() !== '' &&
+        apiKey.length > 8 &&
+        !apiKey.toLowerCase().includes('placeholder') &&
+        !apiKey.toLowerCase().includes('your_');
+
+      if (isKeyValid) {
+        const endpoints = [
+          `https://newsdata.io/api/1/news?apikey=${apiKey}&q=economy%20OR%20federal%20reserve%20OR%20inflation%20OR%20CPI%20OR%20GDP&language=en`,
+          `https://newsdata.io/api/1/latest?apikey=${apiKey}&q=economy&language=en`,
+          `https://newsdata.io/api/1/news?apikey=${apiKey}&q=central%20bank&language=en`,
+        ];
+
+        for (const url of endpoints) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (data && data.status === 'success' && Array.isArray(data.results) && data.results.length > 0) {
+              const mapped = data.results.map((art: any) => ({
+                title: art.title,
+                source: art.source_id ? String(art.source_id).toUpperCase() : 'NEWSDATA',
+                category: Array.isArray(art.category) && art.category[0]
+                  ? String(art.category[0]).toUpperCase()
+                  : 'ECONOMY',
+                pubDate: art.pubDate || undefined,
+                link: art.link || art.url || undefined,
+                description: art.description || undefined,
+              })).filter((n: { title?: string }) => n.title && String(n.title).trim().length > 0);
+              if (mapped.length > 0) {
+                return res.json(mapped);
+              }
+            }
+          } catch {
+            // try next endpoint
+          }
+        }
+      }
+
+      // Fallback: filter local curated news files for economy-related titles (if present)
+      const newsList: any[] = [];
+      const pushEconomic = (item: any, source: string) => {
+        const title = String(item.title || '');
+        const hay = `${title} ${item.category || ''} ${item.description || ''}`.toLowerCase();
+        const isEconomic =
+          /econom|fed|fomc|cpi|inflation|gdp|payroll|unemployment|ecb|boj|rate decision|treasury|macro/.test(
+            hay
+          );
+        if (!isEconomic || !title.trim()) return;
+        newsList.push({
+          title,
+          source: source.toUpperCase(),
+          category: (item.category || 'ECONOMY').toString().toUpperCase(),
+          pubDate: item.pubDate || undefined,
+          link: item.link || item.url || undefined,
+          description: item.description || undefined,
+        });
+      };
+
+      const newsPath = path.join(process.cwd(), 'news_data.json');
+      if (fs.existsSync(newsPath)) {
+        try {
+          const local = JSON.parse(safeReadTextFile(newsPath));
+          if (Array.isArray(local)) local.forEach((item: any) => pushEconomic(item, 'LOCAL'));
+        } catch (e) {
+          console.info('[Economic News] local parse skip:', e);
+        }
+      }
+
+      const masterPath = path.join(process.cwd(), 'master_news.json');
+      if (fs.existsSync(masterPath)) {
+        try {
+          const master = JSON.parse(safeReadTextFile(masterPath));
+          if (Array.isArray(master)) master.forEach((item: any) => pushEconomic(item, item.source || 'MASTER'));
+        } catch (e) {
+          console.info('[Economic News] master parse skip:', e);
+        }
+      }
+
+      res.json(newsList);
+    } catch (error) {
+      console.error('[Economic News Route Error]', error);
+      res.json([]);
     }
   });
 

@@ -106,16 +106,13 @@ const GetVerified = lazy(() => import('./GetVerified'));
 const ShareQRCode = lazy(() => import('./ShareQRCode'));
 const LightweightMarketUI = lazy(() => import('./markets/LightweightMarketUI').then(m => ({ default: m.LightweightMarketUI })));
 const StandardMarketUI = lazy(() => import('./markets/StandardMarketUI').then(m => ({ default: m.StandardMarketUI })));
-const MarketScanner = lazy(() => import('./MarketScanner'));
 const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
 const GeographicMap = lazy(() => import('./GeographicMap'));
-const CapitalFlowMap = lazy(() => import('./CapitalFlowMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
-const Leaderboard = lazy(() => import('./Leaderboard'));
 const CpmsApk = lazy(() => import('./CpmsApk'));
 const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
@@ -141,6 +138,11 @@ const RETIRED_TABS: Record<string, string> = {
   Screener: 'StrictlyCharts',
   Heatmap: 'StrictlyCharts',
   Journal: 'StrictlyCharts',
+  // Copycat / fabricated market surfaces — retired; keep News + Economic News
+  CapitalFlow: 'News',
+  Scanner: 'News',
+  Intelligence: 'News',
+  Leaderboard: 'News',
 };
 
 function normalizeTabId(tabId: string): string {
@@ -367,7 +369,6 @@ const TabContent = ({
           }}
         />
       );
-      case 'CapitalFlow': return <CapitalFlowMap />;
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
       case 'StrictlyCharts': return (
         <LightweightMarketUI
@@ -384,7 +385,6 @@ const TabContent = ({
       case 'Fundamentals': return <FundamentalsPanel />;
       case 'News': return <NewsPanel />;
       case 'Founders': return <FoundersPortal />;
-      case 'Intelligence': return <MarketScanner />;
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
       case 'Yours': return <YoursPage />;
@@ -414,10 +414,8 @@ const TabContent = ({
         </Suspense>
       );
       case 'Portfolio': return <PortfolioTracker />;
-      case 'Scanner': return <MarketScanner />;
       case 'Calendar': return <EconomicCalendar />;
       case 'Geomap': return <GeographicMap />;
-      case 'Leaderboard': return <Leaderboard />;
       case 'StrategyMarket': return <StrategyMarket />;
       case 'Alerts': return <AlertsCenter />;
       case 'Tasks': return <TodoList profile={profile} />;
@@ -936,6 +934,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
+      { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
       { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },
       { id: 'CeoDashboard', icon: Shield, label: 'CEO DASHBOARD' }, 
@@ -1088,9 +1087,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel']);
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard']);
         if (retiredTabs.has(hash)) {
-          setActiveTab('Discovery');
+          setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
         } else {
         const validHash = menuItems.find(m => m.id === hash) || 
           hash === 'TheRiver' || 
@@ -1102,8 +1101,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Fundamentals' || 
           hash === 'Portfolio' || 
           hash === 'News' || 
+          hash === 'Calendar' ||
           hash === 'Biography' || 
-          hash === 'CapitalFlow' || 
           hash === 'MeetTheBoard' || 
           hash === 'Yours' || 
           hash === 'CpmsApk' || 
