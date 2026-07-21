@@ -2,14 +2,15 @@ import React, { useState } from "react";
 import {
   Activity,
   BarChart3,
+  BookOpen,
   Cpu,
   Crown,
+  GraduationCap,
   Home,
   LogOut,
   Network,
   Newspaper,
   Share2,
-
   Terminal,
   Users,
   X,
