@@ -12,7 +12,7 @@ import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
 import { joinWaitlist } from "../appwrite";
-import { BOARD_ACCESS_CODE } from "../config/accessCodes";
+import { verifyBoardAccess } from "../api/privateAuth";
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { YwcPersonalCharts } from './yours/YwcPersonalCharts';
@@ -167,6 +167,7 @@ export default function Auth() {
   const [showPasscode, setShowPasscode] = useState(false);
   const [boardError, setBoardError] = useState('');
   const [boardSuccess, setBoardSuccess] = useState(false);
+  const boardVerifyingRef = useRef(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
   const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
   const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
@@ -236,12 +237,8 @@ export default function Auth() {
   const [ceoSyncError, setCeoSyncError] = useState('');
   const [ceoSyncSuccess, setCeoSyncSuccess] = useState('');
 
-  // Seeding and auth bypass checks
+  // Seeding — MASTER_BYPASS localStorage unlock removed (security hardening)
   useEffect(() => {
-    if (localStorage.getItem('MASTER_BYPASS') === 'true') {
-      setIsCEO(true);
-    }
-    
     // Auto seeding for globe country launch nodes
     const seedGlobeCountries = async () => {
       try {
@@ -443,14 +440,10 @@ export default function Auth() {
     onClose: () => setEcosystemYwcOpen(false),
   });
 
-  // Cryptographic passcode quick checks
+  // Board passcode — verify via server (timing-safe); auto-submit at 6 digits
   useEffect(() => {
     if (passcode.length === 6) {
-      if (passcode === BOARD_ACCESS_CODE) {
-        handleBoardLoginSubmit();
-      } else {
-        setBoardError('BOARD ACCESS CODE REJECTED. UNAUTHORIZED CREDENTIAL IDENTIFIER.');
-      }
+      void handleBoardLoginSubmit();
     } else {
       setBoardError('');
     }
@@ -459,37 +452,26 @@ export default function Auth() {
   // Board Member credentials verification handler
   const handleBoardLoginSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (boardVerifyingRef.current || boardSuccess) return;
     setBoardError('');
-    
-    if (passcode === BOARD_ACCESS_CODE) {
-      try {
-        // ALWAYS write local bypass user FIRST so they can successfully login even offline/without firebase!
-        const fallbackUser = {
-          uid: 'operator-local',
-          email: 'operator@clearpathtrader.com',
-          displayName: 'Clear Path Markets Science Agent',
-          isAnonymous: true,
-          emailVerified: true
-        };
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('cp_local_bypass_user', JSON.stringify(fallbackUser));
-        }
-        setBoardSuccess(true);
-        
-        // Fire and forget Firebase anonymous login to sync with firestore in the background if possible
-        loginAnonymously().catch(err => {
-          console.warn('Silent firebase sync lock failed, continuing with local bypass:', err);
-        });
-
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } catch (err) {
-        console.error('Local bypass setup error:', err);
-        setBoardError('Bypass setup error occurred. Please refresh.');
-      }
-    } else {
+    if (passcode.length < 6) {
       setBoardError('BOARD ACCESS CODE REJECTED. UNAUTHORIZED CREDENTIAL IDENTIFIER.');
+      return;
+    }
+    boardVerifyingRef.current = true;
+    try {
+      await verifyBoardAccess(passcode);
+      setBoardSuccess(true);
+      loginAnonymously().catch((err) => {
+        console.warn('Silent firebase sync lock failed, continuing with board session:', err);
+      });
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err: any) {
+      console.error('Board verify error:', err);
+      setBoardError(err?.message || 'BOARD ACCESS CODE REJECTED. UNAUTHORIZED CREDENTIAL IDENTIFIER.');
+      boardVerifyingRef.current = false;
     }
   };
 
@@ -1335,7 +1317,6 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.removeItem('MASTER_BYPASS');
                     setIsCEO(false);
                     window.location.reload();
                   }}

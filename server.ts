@@ -119,6 +119,8 @@ import {
   getFmpApiKey,
   getNewsDataApiKey,
   getSecretPresenceReport,
+  getSessionSecret,
+  getBoardAccessCode,
   FMP_ALLOWED_ENDPOINTS,
 } from './src/server/secrets';
 import {
@@ -252,16 +254,54 @@ async function startServer() {
   app.set('trust proxy', 1);
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
+  // Dev: CSP off so Vite HMR works. Prod: enforce CSP + HSTS + framing defenses.
   app.use(helmet({
-    // Keep CSP off in HTML shell for Vite HMR; tighten framing/referrer in all envs.
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: isProd
+      ? {
+          useDefaults: true,
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+            fontSrc: ["'self'", 'data:', 'https:'],
+            connectSrc: [
+              "'self'",
+              'https:',
+              'wss:',
+              'https://*.googleapis.com',
+              'https://*.firebaseio.com',
+              'https://*.firebasestorage.app',
+              'https://*.cloud.appwrite.io',
+              'https://fra.cloud.appwrite.io',
+            ],
+            frameSrc: ["'self'", 'https:'],
+            mediaSrc: ["'self'", 'blob:', 'https:'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+            upgradeInsecureRequests: [],
+          },
+        }
+      : false,
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: false,
-    frameguard: isProd ? { action: 'sameorigin' } : false,
+    crossOriginOpenerPolicy: isProd ? { policy: 'same-origin-allow-popups' } : false,
+    crossOriginResourcePolicy: isProd ? { policy: 'same-site' } : false,
+    frameguard: { action: 'sameorigin' },
     referrerPolicy: { policy: 'no-referrer' },
     hidePoweredBy: true,
+    hsts: isProd
+      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+      : false,
   }));
+  // Reduce fingerprinting / version leaks
+  app.disable('x-powered-by');
+  app.use((_req, res, next) => {
+    res.removeHeader('Server');
+    res.removeHeader('X-Powered-By');
+    next();
+  });
   // Same-origin by default in production. Set CORS_ALLOWED_ORIGINS=https://a.com,https://b.com for multi-origin.
   const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '')
     .split(',')
@@ -418,29 +458,29 @@ async function startServer() {
   setupWebSockets(server);
 
   // Passport & Auth Middleware
-  // Never ship the hard-coded fallback secret in production: a publicly known
-  // signing key lets anyone forge session cookies. Prefer SESSION_SECRET; if it
-  // is missing in production fall back to a per-boot random key (and warn loudly)
-  // rather than the guessable literal.
-  let sessionSecret = process.env.SESSION_SECRET;
-  if (!sessionSecret) {
-    if (isProd) {
+  // Never use a guessable/hardcoded signing key — forged cookies = account takeover.
+  // Prefer SESSION_SECRET (min 32 chars). Missing → per-boot random (warn).
+  let sessionSecret = getSessionSecret();
+  if (!sessionSecret || sessionSecret.length < 32) {
+    if (sessionSecret && sessionSecret.length < 32) {
+      console.warn('[Security] SESSION_SECRET is shorter than 32 characters; generating a stronger ephemeral secret.');
+    } else if (isProd) {
       console.warn('[Security] SESSION_SECRET is not set in production. Generating an ephemeral random secret; set SESSION_SECRET to keep sessions valid across restarts.');
-      sessionSecret = crypto.randomBytes(32).toString('hex');
-    } else {
-      sessionSecret = 'clear-path-institutional-secret';
     }
+    sessionSecret = crypto.randomBytes(48).toString('hex');
   }
   app.use(session({
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     name: 'cpt.sid',
+    proxy: true,
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
     },
   }));
 
@@ -591,16 +631,60 @@ async function startServer() {
   app.post('/api/auth/private/logout', (req, res) => {
     try {
       delete (req.session as any).privateUser;
+      delete (req.session as any).boardAccess;
     } catch {
       /* ignore */
     }
-    res.json({ ok: true });
+    req.session.destroy((err) => {
+      res.clearCookie('cpt.sid', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProd,
+      });
+      if (err) {
+        return res.status(500).json({ error: 'Logout incomplete.' });
+      }
+      return res.json({ ok: true });
+    });
+  });
+
+  // Board / Founders code — verified server-side only (timing-safe). No default code.
+  app.post('/api/auth/board/verify', registrationLimiter, (req, res) => {
+    const expected = getBoardAccessCode();
+    const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+    if (!expected || expected.length < 6) {
+      return res.status(503).json({ error: 'Board access is not configured on this server.' });
+    }
+    if (!provided || provided.length > 64) {
+      return res.status(401).json({ error: 'Invalid board access code.' });
+    }
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    const match =
+      a.length === b.length && crypto.timingSafeEqual(a, b);
+    if (!match) {
+      return res.status(401).json({ error: 'Invalid board access code.' });
+    }
+    const sessionUser = {
+      uid: 'board-operator',
+      email: 'operator@clearpathtrader.com',
+      displayName: 'Clear Path Markets Science Agent',
+      isAnonymous: true,
+      emailVerified: true,
+      privateAccount: false,
+      boardAccess: true,
+    };
+    (req.session as any).boardAccess = true;
+    (req.session as any).privateUser = sessionUser;
+    res.json({ ok: true, user: sessionUser });
   });
 
   // Profile save/load for private sessions (bypasses Firebase client permission errors)
+  // UID must come from the signed session — never from query/body (IDOR).
   app.get('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
-    const uid = sessionUser?.uid || (typeof req.query.uid === 'string' ? req.query.uid : '');
+    const uid = sessionUser?.uid;
     if (!uid) {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
@@ -617,14 +701,9 @@ async function startServer() {
 
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
-    const bodyUid = typeof req.body?.uid === 'string' ? req.body.uid : '';
-    const uid = sessionUser?.uid || bodyUid;
+    const uid = sessionUser?.uid;
     if (!uid) {
       return res.status(401).json({ error: 'Sign in to save your profile.' });
-    }
-    // If session exists, only allow writing own profile
-    if (sessionUser?.uid && sessionUser.uid !== uid) {
-      return res.status(403).json({ error: 'Cannot save another member profile.' });
     }
     try {
       const allowed = [

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BOARD_ACCESS_CODE } from '../config/accessCodes';
+import { fetchPrivateSession, verifyBoardAccess } from '../api/privateAuth';
 import ReidsGamesWidget from './ReidsGamesWidget';
 import { SkateboardVideoSandbox } from './SkateboardVideoSandbox';
 import { 
@@ -138,18 +138,35 @@ export default function FoundersPortal() {
   });
 
   const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    return localStorage.getItem('founders_unlocked') === 'true';
+    return typeof sessionStorage !== 'undefined' && sessionStorage.getItem('founders_unlocked') === 'true';
   });
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<boolean>(false);
 
-  const handlePinSubmit = (val?: string) => {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const session = await fetchPrivateSession();
+      if (cancelled) return;
+      if (session?.boardAccess) {
+        setIsUnlocked(true);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('founders_unlocked', 'true');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handlePinSubmit = async (val?: string) => {
     const codeToVerify = val !== undefined ? val : pinInput;
-    if (codeToVerify === BOARD_ACCESS_CODE) {
+    try {
+      await verifyBoardAccess(codeToVerify);
       setIsUnlocked(true);
-      localStorage.setItem('founders_unlocked', 'true');
       setPinError(false);
-    } else {
+    } catch {
       setPinError(true);
       setPinInput('');
       if (typeof window !== 'undefined' && navigator.vibrate) {
@@ -612,7 +629,10 @@ export default function FoundersPortal() {
               <button 
                 onClick={() => {
                   setIsUnlocked(false);
-                  localStorage.removeItem('founders_unlocked');
+                  try {
+                    sessionStorage.removeItem('founders_unlocked');
+                    sessionStorage.removeItem('cp_board_unlocked');
+                  } catch {}
                   setPinInput('');
                 }}
                 title="Lock Founders Portal"

@@ -3,7 +3,7 @@ import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, query, collection, orderBy, limit, updateDoc, deleteDoc, addDoc } from '../firebase';
 import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase';
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
-import { clearPrivateSession, getStoredPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
+import { clearClientAuthArtifacts, clearPrivateSession, fetchPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
 
 interface FirebaseContextType {
   user: User | null;
@@ -63,35 +63,12 @@ const defaultUserProfile: UserProfile = {
 
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   // const getFirestoreDb = () => getDb(); // REMOVED FOR EMERGENCY ROLLBACK
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof localStorage !== 'undefined') {
-      try {
-        const privateSession = getStoredPrivateSession();
-        if (privateSession) return privateSession as unknown as User;
-        const localUser = localStorage.getItem('cp_local_bypass_user');
-        if (localUser) {
-          return JSON.parse(localUser);
-        }
-      } catch (e) {}
-    }
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
-    const privateSession = getStoredPrivateSession();
     let savedImages: { photoURL?: string; coverURL?: string } = {};
     try {
       savedImages = JSON.parse(localStorage.getItem('clearpath_user_images') || '{}');
     } catch {}
-    if (privateSession) {
-      return {
-        ...defaultUserProfile,
-        uid: privateSession.uid,
-        email: privateSession.email,
-        displayName: privateSession.displayName,
-        photoURL: savedImages.photoURL || '',
-        coverURL: savedImages.coverURL || '',
-      };
-    }
     return {
       ...defaultUserProfile,
       photoURL: savedImages.photoURL || '',
@@ -128,37 +105,38 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
 
+  // Hydrate auth from httpOnly cookie session (not localStorage).
   useEffect(() => {
-    const authInstance = getAuth();
-    if (!authInstance) {
-      setLoading(false);
-      return;
-    }
-    const unsubscribe = authInstance.onAuthStateChanged((firebaseUser: any) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-      } else {
-        if (typeof localStorage !== 'undefined') {
-          try {
-            const privateSession = getStoredPrivateSession();
-            if (privateSession) {
-              setUser(privateSession as unknown as User);
-              setLoading(false);
-              return;
-            }
-            const localUser = localStorage.getItem('cp_local_bypass_user');
-            if (localUser) {
-              setUser(JSON.parse(localUser));
-              setLoading(false);
-              return;
-            }
-          } catch (e) {}
-        }
-        setUser(null);
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    clearPrivateSession(); // drop legacy localStorage auth mirrors
+    (async () => {
+      const privateSession = await fetchPrivateSession();
+      if (cancelled) return;
+      if (privateSession) {
+        setUser(privateSession as unknown as User);
+        setUserProfile((prev) => ({
+          ...(prev || defaultUserProfile),
+          uid: privateSession.uid,
+          email: privateSession.email,
+          displayName: privateSession.displayName,
+        }));
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
+      const authInstance = getAuth();
+      if (!authInstance) {
+        setLoading(false);
+        return;
+      }
+      unsubscribe = authInstance.onAuthStateChanged((firebaseUser: any) => {
+        if (cancelled) return;
+        setUser(firebaseUser || null);
+        setLoading(false);
+      });
+    })();
     return () => {
+      cancelled = true;
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, []);
@@ -322,7 +300,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         }
       },
       purgeAuthCache: () => {
-        clearPrivateSession();
+        clearClientAuthArtifacts();
         if (typeof localStorage !== 'undefined') {
           try {
             localStorage.clear();

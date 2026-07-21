@@ -240,7 +240,7 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     const link = `${window.location.origin}/checkout?${queryParams}`;
     setGeneratedLink(link);
 
-    const embedCode = `<!-- Custom ClearPath Link Button -->\n<a href="${link}" target="_blank" style="display:inline-block;background:#7F00FF;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-family:sans-serif;font-weight:bold;box-shadow:0 4px 14px rgba(127,0,255,0.4);">\n  Pay ${linkInterval === 'recurring' ? 'Subscription' : 'Invoice'} via Stripe\n</a>`;
+    const embedCode = `<!-- Custom ClearPath Link Button -->\n<a href="${link}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#7F00FF;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-family:sans-serif;font-weight:bold;box-shadow:0 4px 14px rgba(127,0,255,0.4);">\n  Pay ${linkInterval === 'recurring' ? 'Subscription' : 'Invoice'} via Stripe\n</a>`;
     setGeneratedHtml(embedCode);
 
     setWebhookLogs(prev => [

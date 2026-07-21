@@ -80,6 +80,11 @@ export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
 
+/** Board / Founders portal code — server-only; never expose via client APIs. */
+export function getBoardAccessCode(): string {
+  return first(process.env.BOARD_ACCESS_CODE, process.env.VITE_BOARD_ACCESS_CODE);
+}
+
 /** Safe boolean presence flags for diagnostics — never include key material. */
 export function getSecretPresenceReport(): Record<string, boolean> {
   return {
@@ -95,6 +100,7 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     INTELLIGENCE_WEBHOOK_SECRET: Boolean(getIntelligenceWebhookSecret()),
     CATALOG_ADMIN_SECRET: Boolean(getCatalogAdminSecret()),
     SESSION_SECRET: Boolean(getSessionSecret()),
+    BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
     MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
     SQL_HOST: Boolean(clean(process.env.SQL_HOST)),
     FIREBASE_SERVICE_ACCOUNT: Boolean(clean(process.env.FIREBASE_SERVICE_ACCOUNT)),
