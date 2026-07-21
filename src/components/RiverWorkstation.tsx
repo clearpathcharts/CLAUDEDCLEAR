@@ -17,6 +17,8 @@ import { saveToPrivateVault } from '../river/storage/privateCatalog';
 import type { Value } from '../river/pine/interpreter';
 import RiverCatalogPanel from './RiverCatalogPanel';
 import RiverGeniePanel from './RiverGeniePanel';
+import RiverHero from './RiverHero';
+import { RIVER_PAGE_CONTENT } from '../river/marketing/riverPageContent';
 
 type WorkflowStep = 'upload' | 'compiling' | 'compiled' | 'failed' | 'applied';
 
@@ -250,15 +252,16 @@ export default function RiverWorkstation() {
     <div className="min-h-screen bg-[#050505] text-white font-mono p-4 md:p-8" id="river-terminal-workstation">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
         <div>
+      <RiverHero />
+
       <div className="mb-8 border-b border-white/10 pb-6">
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
-          <h1 className="text-2xl font-black tracking-tight uppercase text-white">The River</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Pine Script v4 / v5 / v6</span>
+          <h1 className="text-2xl font-black tracking-tight uppercase text-white">Workstation</h1>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-[#00D9FF]/10 text-[#00D9FF] border border-[#00D9FF]/20 uppercase tracking-widest">Compile · Apply · Catalog</span>
         </div>
         <p className="text-sm text-white/40 max-w-xl">
-          Bring your Pine Script indicator from TradingView. The River tokenizes, parses and runs it bar-by-bar
-          against real market candles — then plots it on every ClearPath chart. Honest errors, never fake success.
+          {RIVER_PAGE_CONTENT.discovery.subtitle}
         </p>
         {activeName && (
           <div className="mt-4 flex items-center gap-3 text-xs bg-[#FFD700]/5 border border-[#FFD700]/20 rounded-xl px-4 py-2.5 max-w-xl">

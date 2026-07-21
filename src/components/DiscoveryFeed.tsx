@@ -6,7 +6,10 @@ import {
   Book,
   MessageSquare,
   ArrowRight,
+  Waves,
+  Sparkles,
 } from 'lucide-react';
+import { RIVER_PAGE_CONTENT } from '../river/marketing/riverPageContent';
 
 interface DiscoveryFeedProps {
   onTabChange: (tabId: string) => void;
@@ -43,6 +46,37 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
             Your markets, your methodology, your pace.
           </div>
         </div>
+
+        {/* The River + River Genie */}
+        <button
+          onClick={() => onTabChange('TheRiver')}
+          className="w-full bg-black/70 hover:bg-black/85 backdrop-blur-md border border-[#00D9FF]/20 rounded-[20px] p-5 flex items-center justify-between transition-all cursor-pointer text-left overflow-hidden relative"
+        >
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <video
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              src={RIVER_PAGE_CONTENT.hero.videos.genieWorkstation}
+              aria-hidden
+            />
+          </div>
+          <div className="relative z-10 flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#00D9FF]/15 flex items-center justify-center shrink-0 border border-[#00D9FF]/30">
+              <Waves size={20} className="text-[#00D9FF]" />
+            </div>
+            <div>
+              <div className="text-[17px] font-bold text-white mb-0.5 flex items-center gap-2">
+                {RIVER_PAGE_CONTENT.discovery.title}
+                <Sparkles size={14} className="text-[#FFD700]" />
+              </div>
+              <div className="text-xs text-[#AAA] max-w-md">{RIVER_PAGE_CONTENT.discovery.subtitle}</div>
+            </div>
+          </div>
+          <ArrowRight size={18} className="text-[#00D9FF] shrink-0 relative z-10" />
+        </button>
 
         {/* Charts wide card */}
         <button
