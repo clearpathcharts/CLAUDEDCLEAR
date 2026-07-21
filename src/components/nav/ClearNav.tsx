@@ -23,6 +23,8 @@ interface ClearNavProps {
   onNavigate: (tab: string) => void;
   isAdmin: boolean;
   onLogout?: () => void;
+  /** Lean APK / installed PWA — trading-focused nav only */
+  lean?: boolean;
 }
 
 interface NavItem {
@@ -36,6 +38,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   onNavigate,
   isAdmin,
   onLogout,
+  lean = false,
 }) => {
   const primaryNavItems: NavItem[] = [
     {
@@ -258,22 +261,22 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   };
   return (
     <>
-      {/* ================= MOBILE NAV (Command Center) ================= */}
-      <div className="md:hidden">
+      {/* ================= MOBILE / APP SHELL NAV ================= */}
+      <div className={lean ? 'block' : 'md:hidden'}>
         <MobileCommandCenter
           activeTab={activeTab}
           onNavigate={onNavigate}
           isAdmin={isAdmin}
           onLogout={onLogout}
+          lean={lean}
         />
       </div>
 
-      {/* ================= DESKTOP NAV (original) ================= */}
+      {/* ================= DESKTOP NAV (website only) ================= */}
       <div
         id="nav-bar"
-        className="
-        hidden
-        md:block
+        className={`
+        ${lean ? 'hidden' : 'hidden md:block'}
 
         sticky
         top-0
@@ -290,7 +293,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
         py-3
 
         space-y-3
-      "
+      `}
       >
         {/* ================= PRIMARY NAVIGATION ================= */}
 

@@ -11,10 +11,27 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import A11yPreferencesToggle from './components/A11yPreferencesToggle';
 import AppUpdateBanner from './components/AppUpdateBanner';
+import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
+
+function AuthenticatedShell({
+  profile,
+  onProfileChange,
+}: {
+  profile: (typeof advancedProfiles)[keyof typeof advancedProfiles];
+  onProfileChange: (id: string) => void;
+}) {
+  const { isAppShell } = useAppShell();
+  return (
+    <div className="clearpath-glass-root">
+      <Dashboard profile={profile} onProfileChange={onProfileChange} />
+      {!isAppShell && <CptBuddyWidget />}
+    </div>
+  );
+}
 
 function isEncyclopediaPath(path: string): boolean {
   const p = path.toLowerCase().trim();
@@ -217,10 +234,9 @@ export default function App() {
   } else {
     const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
     content = (
-      <div className="clearpath-glass-root">
-        <Dashboard profile={profile} onProfileChange={handleProfileChange} />
-        <CptBuddyWidget />
-      </div>
+      <AppShellProvider>
+        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+      </AppShellProvider>
     );
   }
 
