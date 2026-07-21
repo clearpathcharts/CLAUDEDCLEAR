@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">CCI (COMMODITY CHANNEL INDEX)</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">OSCILLATOR PANEL</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="215.20000000000005" x2="772" y2="215.20000000000005" stroke="#FF2D95" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="211.20000000000005" fill="#FF2D95" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">70</text>
+    <line x1="48" y1="400.8" x2="772" y2="400.8" stroke="#00FFD1" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="396.8" fill="#00FFD1" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">30</text>
+    <line x1="48" y1="308" x2="772" y2="308" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">50</text>
+    <path d="M48.0,308.0 L60.3,330.7 L72.5,328.7 L84.8,342.4 L97.1,361.2 L109.4,381.3 L121.6,411.5 L133.9,431.1 L146.2,417.1 L158.4,374.3 L170.7,402.8 L183.0,414.1 L195.3,420.4 L207.5,384.0 L219.8,375.1 L232.1,376.0 L244.3,327.7 L256.6,339.6 L268.9,289.4 L281.2,273.3 L293.4,247.7 L305.7,239.0 L318.0,253.3 L330.2,303.7 L342.5,265.6 L354.8,229.9 L367.1,270.1 L379.3,289.7 L391.6,259.0 L403.9,258.7 L416.1,263.5 L428.4,277.5 L440.7,259.3 L452.9,283.5 L465.2,295.8 L477.5,276.2 L489.8,318.0 L502.0,336.4 L514.3,290.4 L526.6,314.8 L538.8,328.4 L551.1,332.7 L563.4,314.4 L575.7,347.8 L587.9,326.7 L600.2,319.7 L612.5,306.3 L624.7,314.5 L637.0,269.6 L649.3,266.8 L661.6,270.5 L673.8,315.4 L686.1,281.9 L698.4,325.4 L710.6,306.8 L722.9,296.9 L735.2,305.2 L747.5,319.0 L759.7,324.9 L772.0,301.4 L772.0,308.0 L759.7,308.0 L747.5,308.0 L735.2,308.0 L722.9,308.0 L710.6,308.0 L698.4,308.0 L686.1,308.0 L673.8,308.0 L661.6,308.0 L649.3,308.0 L637.0,308.0 L624.7,308.0 L612.5,308.0 L600.2,308.0 L587.9,308.0 L575.7,308.0 L563.4,308.0 L551.1,308.0 L538.8,308.0 L526.6,308.0 L514.3,308.0 L502.0,308.0 L489.8,308.0 L477.5,308.0 L465.2,308.0 L452.9,308.0 L440.7,308.0 L428.4,308.0 L416.1,308.0 L403.9,308.0 L391.6,308.0 L379.3,308.0 L367.1,308.0 L354.8,308.0 L342.5,308.0 L330.2,308.0 L318.0,308.0 L305.7,308.0 L293.4,308.0 L281.2,308.0 L268.9,308.0 L256.6,308.0 L244.3,308.0 L232.1,308.0 L219.8,308.0 L207.5,308.0 L195.3,308.0 L183.0,308.0 L170.7,308.0 L158.4,308.0 L146.2,308.0 L133.9,308.0 L121.6,308.0 L109.4,308.0 L97.1,308.0 L84.8,308.0 L72.5,308.0 L60.3,308.0 L48.0,308.0 Z" fill="url(#magentaFill)" opacity="0.5"/>
+    <path d="M48.0,308.0 L60.3,330.7 L72.5,328.7 L84.8,342.4 L97.1,361.2 L109.4,381.3 L121.6,411.5 L133.9,431.1 L146.2,417.1 L158.4,374.3 L170.7,402.8 L183.0,414.1 L195.3,420.4 L207.5,384.0 L219.8,375.1 L232.1,376.0 L244.3,327.7 L256.6,339.6 L268.9,289.4 L281.2,273.3 L293.4,247.7 L305.7,239.0 L318.0,253.3 L330.2,303.7 L342.5,265.6 L354.8,229.9 L367.1,270.1 L379.3,289.7 L391.6,259.0 L403.9,258.7 L416.1,263.5 L428.4,277.5 L440.7,259.3 L452.9,283.5 L465.2,295.8 L477.5,276.2 L489.8,318.0 L502.0,336.4 L514.3,290.4 L526.6,314.8 L538.8,328.4 L551.1,332.7 L563.4,314.4 L575.7,347.8 L587.9,326.7 L600.2,319.7 L612.5,306.3 L624.7,314.5 L637.0,269.6 L649.3,266.8 L661.6,270.5 L673.8,315.4 L686.1,281.9 L698.4,325.4 L710.6,306.8 L722.9,296.9 L735.2,305.2 L747.5,319.0 L759.7,324.9 L772.0,301.4" fill="none" stroke="#D946EF" stroke-width="2.5"/>
+    
+  
+</svg>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">ELLIOTT WAVE OSCILLATOR</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">MACD / HISTOGRAM</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="316" x2="772" y2="316" stroke="#00B6FF" stroke-opacity="0.4" stroke-dasharray="4 4"/>
+    <rect x="44.121428571428574" y="316" width="7.757142857142857" height="1" fill="#00FFD1" opacity="0.85"/>
+<rect x="57.28506493506494" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="70.4487012987013" y="316" width="7.757142857142857" height="1.2593693842161724" fill="#FF2D95" opacity="0.85"/>
+<rect x="83.61233766233767" y="316" width="7.757142857142857" height="3.134082047406037" fill="#FF2D95" opacity="0.85"/>
+<rect x="96.77597402597402" y="316" width="7.757142857142857" height="4.080647457931603" fill="#FF2D95" opacity="0.85"/>
+<rect x="109.93961038961038" y="316" width="7.757142857142857" height="2.3774332359554915" fill="#FF2D95" opacity="0.85"/>
+<rect x="123.10324675324675" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="136.2668831168831" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="149.43051948051948" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="162.59415584415584" y="314.9742008220129" width="7.757142857142857" height="1.0257991779870919" fill="#00FFD1" opacity="0.85"/>
+<rect x="175.7577922077922" y="314.29064270739224" width="7.757142857142857" height="1.7093572926077705" fill="#00FFD1" opacity="0.85"/>
+<rect x="188.92142857142858" y="311.781756923619" width="7.757142857142857" height="4.218243076380959" fill="#00FFD1" opacity="0.85"/>
+<rect x="202.08506493506493" y="308.0614162987042" width="7.757142857142857" height="7.938583701295784" fill="#00FFD1" opacity="0.85"/>
+<rect x="215.2487012987013" y="305.89886542378855" width="7.757142857142857" height="10.10113457621144" fill="#00FFD1" opacity="0.85"/>
+<rect x="228.41233766233765" y="306.326428522748" width="7.757142857142857" height="9.673571477252008" fill="#00FFD1" opacity="0.85"/>
+<rect x="241.575974025974" y="309.4459361330258" width="7.757142857142857" height="6.554063866974214" fill="#00FFD1" opacity="0.85"/>
+<rect x="254.7396103896104" y="311.45869281199987" width="7.757142857142857" height="4.541307188000152" fill="#00FFD1" opacity="0.85"/>
+<rect x="267.9032467532467" y="310.612734670466" width="7.757142857142857" height="5.387265329534003" fill="#00FFD1" opacity="0.85"/>
+<rect x="281.0668831168831" y="310.1121013038025" width="7.757142857142857" height="5.88789869619751" fill="#00FFD1" opacity="0.85"/>
+<rect x="294.2305194805195" y="312.112616627642" width="7.757142857142857" height="3.887383372357986" fill="#00FFD1" opacity="0.85"/>
+<rect x="307.3941558441558" y="315.46363193291734" width="7.757142857142857" height="1" fill="#00FFD1" opacity="0.85"/>
+<rect x="320.5577922077922" y="315.01288014321165" width="7.757142857142857" height="1" fill="#00FFD1" opacity="0.85"/>
+<rect x="333.7214285714286" y="312.1702623113034" width="7.757142857142857" height="3.829737688696569" fill="#00FFD1" opacity="0.85"/>
+<rect x="346.8850649350649" y="311.85448229479465" width="7.757142857142857" height="4.145517705205328" fill="#00FFD1" opacity="0.85"/>
+<rect x="360.0487012987013" y="312.26263530880135" width="7.757142857142857" height="3.7373646911986773" fill="#00FFD1" opacity="0.85"/>
+<rect x="373.21233766233763" y="310.26512186141053" width="7.757142857142857" height="5.7348781385894405" fill="#00FFD1" opacity="0.85"/>
+<rect x="386.375974025974" y="308.90329611386323" width="7.757142857142857" height="7.0967038861367815" fill="#00FFD1" opacity="0.85"/>
+<rect x="399.5396103896104" y="308.9763724792673" width="7.757142857142857" height="7.023627520732715" fill="#00FFD1" opacity="0.85"/>
+<rect x="412.70324675324673" y="309.2634189762544" width="7.757142857142857" height="6.736581023745608" fill="#00FFD1" opacity="0.85"/>
+<rect x="425.86688311688306" y="308.7811728007581" width="7.757142857142857" height="7.218827199241904" fill="#00FFD1" opacity="0.85"/>
+<rect x="439.03051948051944" y="310.1827871812375" width="7.757142857142857" height="5.817212818762528" fill="#00FFD1" opacity="0.85"/>
+<rect x="452.19415584415583" y="311.99024279094175" width="7.757142857142857" height="4.00975720905826" fill="#00FFD1" opacity="0.85"/>
+<rect x="465.35779220779216" y="313.91688631816777" width="7.757142857142857" height="2.083113681832237" fill="#00FFD1" opacity="0.85"/>
+<rect x="478.52142857142854" y="314.49166535650016" width="7.757142857142857" height="1.508334643499838" fill="#00FFD1" opacity="0.85"/>
+<rect x="491.68506493506493" y="315.77979278335994" width="7.757142857142857" height="1" fill="#00FFD1" opacity="0.85"/>
+<rect x="504.8487012987013" y="316" width="7.757142857142857" height="1.739193507621744" fill="#FF2D95" opacity="0.85"/>
+<rect x="518.0123376623377" y="316" width="7.757142857142857" height="1.0020874194598806" fill="#FF2D95" opacity="0.85"/>
+<rect x="531.175974025974" y="315.1306783736205" width="7.757142857142857" height="1" fill="#00FFD1" opacity="0.85"/>
+<rect x="544.3396103896105" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="557.5032467532468" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="570.6668831168831" y="316" width="7.757142857142857" height="2.9527763289298" fill="#FF2D95" opacity="0.85"/>
+<rect x="583.8305194805196" y="316" width="7.757142857142857" height="2.9156689228524573" fill="#FF2D95" opacity="0.85"/>
+<rect x="596.9941558441559" y="316" width="7.757142857142857" height="2.1100248357326645" fill="#FF2D95" opacity="0.85"/>
+<rect x="610.1577922077923" y="316" width="7.757142857142857" height="1.821906322479793" fill="#FF2D95" opacity="0.85"/>
+<rect x="623.3214285714287" y="316" width="7.757142857142857" height="1.350015924606033" fill="#FF2D95" opacity="0.85"/>
+<rect x="636.485064935065" y="316" width="7.757142857142857" height="3.983270549470589" fill="#FF2D95" opacity="0.85"/>
+<rect x="649.6487012987013" y="316" width="7.757142857142857" height="3.0960884778270756" fill="#FF2D95" opacity="0.85"/>
+<rect x="662.8123376623377" y="316" width="7.757142857142857" height="2.5146639994089313" fill="#FF2D95" opacity="0.85"/>
+<rect x="675.9759740259741" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="689.1396103896104" y="316" width="7.757142857142857" height="1" fill="#FF2D95" opacity="0.85"/>
+<rect x="702.3032467532468" y="316" width="7.757142857142857" height="1.285696944016823" fill="#FF2D95" opacity="0.85"/>
+<rect x="715.4668831168832" y="316" width="7.757142857142857" height="2.8103776742453452" fill="#FF2D95" opacity="0.85"/>
+<rect x="728.6305194805195" y="316" width="7.757142857142857" height="6.4239456111679605" fill="#FF2D95" opacity="0.85"/>
+<rect x="741.7941558441559" y="316" width="7.757142857142857" height="7.874972069497251" fill="#FF2D95" opacity="0.85"/>
+<rect x="754.9577922077923" y="316" width="7.757142857142857" height="11.365140007674942" fill="#FF2D95" opacity="0.85"/>
+<rect x="768.1214285714286" y="316" width="7.757142857142857" height="12.176523726915326" fill="#FF2D95" opacity="0.85"/>
+    <path d="M48.0,316.0 L61.2,316.9 L74.3,317.7 L87.5,320.4 L100.7,322.4 L113.8,321.3 L127.0,319.6 L140.1,319.8 L153.3,319.4 L166.5,317.9 L179.6,316.8 L192.8,313.3 L206.0,307.6 L219.1,302.9 L232.3,300.9 L245.5,302.4 L258.6,303.2 L271.8,301.0 L284.9,299.1 L298.1,300.1 L311.3,303.3 L324.4,302.6 L337.6,298.8 L350.8,297.5 L363.9,296.9 L377.1,293.5 L390.3,290.4 L403.4,288.7 L416.6,287.3 L429.7,285.0 L442.9,284.9 L456.1,285.8 L469.2,287.2 L482.4,287.4 L495.6,288.6 L508.7,291.0 L521.9,290.5 L535.1,288.4 L548.2,289.9 L561.4,290.3 L574.5,293.3 L587.7,294.0 L600.9,293.7 L614.0,293.8 L627.2,293.7 L640.4,297.3 L653.5,297.2 L666.7,297.3 L679.9,295.5 L693.0,295.2 L706.2,296.6 L719.3,298.8 L732.5,304.0 L745.7,307.4 L758.8,313.8 L772.0,317.6" fill="none" stroke="#00B6FF" stroke-width="2.5"/>
+    <path d="M48.0,316.0 L61.2,316.2 L74.3,316.5 L87.5,317.3 L100.7,318.3 L113.8,318.9 L127.0,319.0 L140.1,319.2 L153.3,319.2 L166.5,319.0 L179.6,318.5 L192.8,317.5 L206.0,315.5 L219.1,313.0 L232.3,310.5 L245.5,308.9 L258.6,307.8 L271.8,306.4 L284.9,305.0 L298.1,304.0 L311.3,303.8 L324.4,303.6 L337.6,302.6 L350.8,301.6 L363.9,300.7 L377.1,299.2 L390.3,297.5 L403.4,295.7 L416.6,294.0 L429.7,292.2 L442.9,290.8 L456.1,289.8 L469.2,289.2 L482.4,288.9 L495.6,288.8 L508.7,289.2 L521.9,289.5 L535.1,289.3 L548.2,289.4 L561.4,289.6 L574.5,290.3 L587.7,291.0 L600.9,291.6 L614.0,292.0 L627.2,292.4 L640.4,293.4 L653.5,294.1 L666.7,294.8 L679.9,294.9 L693.0,295.0 L706.2,295.3 L719.3,296.0 L732.5,297.6 L745.7,299.6 L758.8,302.4 L772.0,305.5" fill="none" stroke="#FFF000" stroke-width="2"/>
+  
+</svg>

@@ -157,13 +157,25 @@ function parsePayload(payload: unknown): ParsedPayload {
 
 export function verifyIntelligenceWebhookSecret(header?: string): boolean {
   const secret = process.env.INTELLIGENCE_WEBHOOK_SECRET?.trim();
+  const isProd = process.env.NODE_ENV === 'production';
   if (!secret) {
+    if (isProd) {
+      console.error(
+        '[Intelligence Webhook] INTELLIGENCE_WEBHOOK_SECRET missing in production — rejecting all webhook writes.'
+      );
+      return false;
+    }
     console.warn(
-      '[Intelligence Webhook] INTELLIGENCE_WEBHOOK_SECRET not set — accepting unauthenticated requests (dev only).'
+      '[Intelligence Webhook] INTELLIGENCE_WEBHOOK_SECRET not set — accepting unauthenticated requests (non-production only).'
     );
     return true;
   }
-  return header === secret;
+  if (!header) return false;
+  const a = Buffer.from(header);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  const { timingSafeEqual } = require('crypto') as typeof import('crypto');
+  return timingSafeEqual(a, b);
 }
 
 export async function ingestIntelligenceWebhook(payload: unknown): Promise<IntelligenceBriefingRecord> {

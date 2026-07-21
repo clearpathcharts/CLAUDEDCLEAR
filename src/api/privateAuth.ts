@@ -57,8 +57,6 @@ async function parseJson(res: Response) {
 
 export async function lookupPrivateAccount(email: string): Promise<{
   exists: boolean;
-  displayName?: string;
-  email?: string;
 }> {
   const res = await fetch('/api/auth/private/lookup', {
     method: 'POST',
