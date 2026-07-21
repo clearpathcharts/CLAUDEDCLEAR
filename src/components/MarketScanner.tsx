@@ -1,38 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Activity, Zap, Shield, Search } from 'lucide-react';
 import { ScannerItem } from '../types';
 import { MARKET_PAIRS } from '../constants/marketPairs';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 export default function MarketScanner() {
   const [data, setData] = useState<ScannerItem[]>([]);
   const [scanning, setScanning] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    // Select 20 random pairs for the scan
+  usePageAutoUpdate(() => {
+    // Select 20 random pairs for the scan (demo UI — local synthetic scores)
     const selectedSymbols = MARKET_PAIRS
       .sort(() => 0.5 - Math.random())
       .slice(0, 25)
       .map(s => s.replace('/', ''));
-    
-    const generateData = () => {
-      const items: ScannerItem[] = selectedSymbols.map(s => ({
-        symbol: s,
-        price: Math.random() * 2000 + 10,
-        change: (Math.random() * 6) - 3, // More volatile
-        volume: Math.random() * 5000000 + 100000,
-        score: Math.random() * 100
-      }));
-      setData(items.sort((a, b) => b.score - a.score));
-      setScanning(false);
-    };
 
-    const interval = setInterval(generateData, 8000);
-    generateData();
-
-    return () => clearInterval(interval);
-  }, []);
+    const items: ScannerItem[] = selectedSymbols.map(s => ({
+      symbol: s,
+      price: Math.random() * 2000 + 10,
+      change: (Math.random() * 6) - 3,
+      volume: Math.random() * 5000000 + 100000,
+      score: Math.random() * 100
+    }));
+    setData(items.sort((a, b) => b.score - a.score));
+    setScanning(false);
+  }, { intervalMs: 8_000 });
 
   const filteredData = data.filter(item => 
     item.symbol.toLowerCase().includes(searchTerm.toLowerCase())

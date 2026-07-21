@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 export default function TradingSessionsCollapse() {
   const [currentUtcTime, setCurrentUtcTime] = useState(new Date());
@@ -18,12 +19,9 @@ export default function TradingSessionsCollapse() {
     return true;
   });
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentUtcTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  usePageAutoUpdate(() => {
+    setCurrentUtcTime(new Date());
+  }, { intervalMs: 1_000 });
 
   // Sync state to localStorage on changes
   const toggleCollapse = () => {

@@ -28,6 +28,7 @@ import MarketPsychologyView from './MarketPsychologyView';
 import StockDetailsView from './StockDetailsView';
 import CompaniesDirectoryView from './CompaniesDirectoryView';
 import MasterMarketExplorerView from './MasterMarketExplorerView';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 import ForexPage from '../../pages/forex';
 import CryptoPage from '../../pages/crypto';
 import CommoditiesPage from '../../pages/commodities';
@@ -884,27 +885,24 @@ export default function EncyclopediaLayout() {
     vix: { val: 14.32, change: -4.21 }
   });
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSimPrices(prev => {
-        const drift = (min: number, max: number) => Math.random() * (max - min) + min;
-        const applyDrift = (curr: number, scale: number) => {
-          const changePct = drift(-0.04, 0.04) * scale;
-          return +(curr * (1 + changePct / 100)).toFixed(2);
-        };
-        return {
-          sp500: { val: applyDrift(prev.sp500.val, 1), change: +(prev.sp500.change + drift(-0.02, 0.02)).toFixed(2) },
-          nasdaq: { val: applyDrift(prev.nasdaq.val, 1.5), change: +(prev.nasdaq.change + drift(-0.03, 0.03)).toFixed(2) },
-          dow: { val: applyDrift(prev.dow.val, 0.8), change: +(prev.dow.change + drift(-0.01, 0.01)).toFixed(2) },
-          gold: { val: applyDrift(prev.gold.val, 0.5), change: +(prev.gold.change + drift(-0.015, 0.015)).toFixed(2) },
-          bitcoin: { val: applyDrift(prev.bitcoin.val, 4), change: +(prev.bitcoin.change + drift(-0.08, 0.08)).toFixed(2) },
-          oil: { val: applyDrift(prev.oil.val, 1.1), change: +(prev.oil.change + drift(-0.04, 0.04)).toFixed(2) },
-          vix: { val: Math.max(8.5, +(prev.vix.val + drift(-0.1, 0.1)).toFixed(2)), change: +(prev.vix.change + drift(-0.1, 0.1)).toFixed(2) }
-        };
-      });
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
+  usePageAutoUpdate(() => {
+    setSimPrices(prev => {
+      const drift = (min: number, max: number) => Math.random() * (max - min) + min;
+      const applyDrift = (curr: number, scale: number) => {
+        const changePct = drift(-0.04, 0.04) * scale;
+        return +(curr * (1 + changePct / 100)).toFixed(2);
+      };
+      return {
+        sp500: { val: applyDrift(prev.sp500.val, 1), change: +(prev.sp500.change + drift(-0.02, 0.02)).toFixed(2) },
+        nasdaq: { val: applyDrift(prev.nasdaq.val, 1.5), change: +(prev.nasdaq.change + drift(-0.03, 0.03)).toFixed(2) },
+        dow: { val: applyDrift(prev.dow.val, 0.8), change: +(prev.dow.change + drift(-0.01, 0.01)).toFixed(2) },
+        gold: { val: applyDrift(prev.gold.val, 0.5), change: +(prev.gold.change + drift(-0.015, 0.015)).toFixed(2) },
+        bitcoin: { val: applyDrift(prev.bitcoin.val, 4), change: +(prev.bitcoin.change + drift(-0.08, 0.08)).toFixed(2) },
+        oil: { val: applyDrift(prev.oil.val, 1.1), change: +(prev.oil.change + drift(-0.04, 0.04)).toFixed(2) },
+        vix: { val: Math.max(8.5, +(prev.vix.val + drift(-0.1, 0.1)).toFixed(2)), change: +(prev.vix.change + drift(-0.1, 0.1)).toFixed(2) }
+      };
+    });
+  }, { intervalMs: 4_500, immediate: false });
 
   useEffect(() => {
     const handleUrlRouting = () => {

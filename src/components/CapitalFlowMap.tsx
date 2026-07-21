@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Globe, TrendingUp, TrendingDown, Clock, Maximize2 } from 'lucide-react';
 import { FlowState, buildFlowState, updateFlow, normalizeFlow } from '../lib/trading/capitalFlowEngine';
 import { LowLatencyStream } from '../lib/trading/lowLatencyStream';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 const stream = new LowLatencyStream();
 
@@ -18,20 +19,18 @@ export default function CapitalFlowMap() {
       setFlow(normalizeFlow(flowState));
       setLastUpdate(Date.now());
     });
-
-    // Simulate flow for preview
-    const interval = setInterval(() => {
-      const symbols = ["AAPL", "MSFT", "EUR/USD", "BTC", "DAX", "USD/JPY"];
-      const s = symbols[Math.floor(Math.random() * symbols.length)];
-      stream.ingest({
-        symbol: s,
-        price: 100 + Math.random() * 20,
-        volume: Math.random() * 1000
-      });
-    }, 200);
-
-    return () => clearInterval(interval);
   }, []);
+
+  // Demo ingest loop (local synthetic ticks — paused while tab hidden)
+  usePageAutoUpdate(() => {
+    const symbols = ["AAPL", "MSFT", "EUR/USD", "BTC", "DAX", "USD/JPY"];
+    const s = symbols[Math.floor(Math.random() * symbols.length)];
+    stream.ingest({
+      symbol: s,
+      price: 100 + Math.random() * 20,
+      volume: Math.random() * 1000
+    });
+  }, { intervalMs: 200 });
 
   return (
     <div className="p-8 bg-black/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 h-full flex flex-col">

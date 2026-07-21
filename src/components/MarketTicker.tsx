@@ -1,5 +1,6 @@
 // /src/components/MarketTicker.tsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
+import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 
 interface MarketAsset {
   symbol: string;
@@ -95,22 +96,9 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
     }
   };
 
-  // 2. Setup Intervals
-  useEffect(() => {
-    // Initial fetch immediately on mount
-    fetchQuotes();
-
-    // Poll server-side proxy every 30 seconds for real updates.
-    // There is intentionally NO fake "micro-tick" simulator anymore — every number
-    // shown on screen now comes directly from a real quote or is marked stale.
-    const quoteInterval = setInterval(() => {
-      fetchQuotes();
-    }, 30000);
-
-    return () => {
-      clearInterval(quoteInterval);
-    };
-  }, []);
+  // Poll server-side proxy every 30s for real quotes (paused while tab hidden).
+  // No fake micro-tick simulator — every number is a real quote or marked stale.
+  usePageAutoUpdate(fetchQuotes, { intervalMs: 30_000 });
 
   // Format helper based on price values — hide until a real quote has arrived
   const formatPrice = (symbol: string, val: number, hasQuote: boolean) => {

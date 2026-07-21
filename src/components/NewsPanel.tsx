@@ -31,6 +31,7 @@ import rssFeedsData from '../data/rss-feeds.json';
 import calendarData from '../data/economic-calendar.json';
 import initialAssetsData from '../data/market-assets.json';
 import { CalendarBridgeWidget } from './CalendarBridgeWidget';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 interface Source {
   name: string;
@@ -220,34 +221,28 @@ export default function NewsPanel() {
   const [pipelineTestCategory, setPipelineTestCategory] = useState<string>('Forex');
   const [testResultFeedback, setTestResultFeedback] = useState<string | null>(null);
 
-  // Auto Tick Simulated background prices & live incoming articles
-  useEffect(() => {
-    const assetTimer = setInterval(() => {
-      setAssets(prev => prev.map(a => {
-        const factor = Math.random() > 0.48 ? 1 : -1;
-        const changeVal = (Math.random() * (parseFloat(a.price) * 0.0008)) * factor;
-        const newPrice = (parseFloat(a.price) + changeVal).toFixed(a.id.includes('USD') || a.id.includes('GC') ? 4 : 2);
-        const originalPrice = parseFloat(initialAssetsData.find(ia => ia.id === a.id)?.price || '0');
-        const calculatedChange = (parseFloat(newPrice) - originalPrice);
-        const calculatedPct = ((calculatedChange / originalPrice) * 100).toFixed(2);
-        
-        return {
-          ...a,
-          price: newPrice,
-          change: (calculatedChange >= 0 ? '+' : '') + calculatedChange.toFixed(a.id.includes('USD') ? 4 : 2),
-          pct: (calculatedChange >= 0 ? '+' : '') + calculatedPct + '%',
-          direction: calculatedChange >= 0 ? 'up' : 'down'
-        };
-      }));
-    }, 4500);
-
-    return () => clearInterval(assetTimer);
-  }, []);
+  // Auto Tick Simulated background prices (demo-only; paused while tab hidden)
+  usePageAutoUpdate(() => {
+    setAssets(prev => prev.map(a => {
+      const factor = Math.random() > 0.48 ? 1 : -1;
+      const changeVal = (Math.random() * (parseFloat(a.price) * 0.0008)) * factor;
+      const newPrice = (parseFloat(a.price) + changeVal).toFixed(a.id.includes('USD') || a.id.includes('GC') ? 4 : 2);
+      const originalPrice = parseFloat(initialAssetsData.find(ia => ia.id === a.id)?.price || '0');
+      const calculatedChange = (parseFloat(newPrice) - originalPrice);
+      const calculatedPct = ((calculatedChange / originalPrice) * 100).toFixed(2);
+      
+      return {
+        ...a,
+        price: newPrice,
+        change: (calculatedChange >= 0 ? '+' : '') + calculatedChange.toFixed(a.id.includes('USD') ? 4 : 2),
+        pct: (calculatedChange >= 0 ? '+' : '') + calculatedPct + '%',
+        direction: calculatedChange >= 0 ? 'up' : 'down'
+      };
+    }));
+  }, { intervalMs: 4_500, immediate: false });
 
   // Continuous background simulated news flow
-  useEffect(() => {
-    if (!isPipelineLive) return;
-
+  usePageAutoUpdate(() => {
     const pipelineStoriesToIngest = [
       {
         title: "Federal Reserve hints at July rate cuts",
@@ -286,71 +281,67 @@ export default function NewsPanel() {
       }
     ];
 
-    const pipelineTimer = setInterval(() => {
-      const story = pipelineStoriesToIngest[Math.floor(Math.random() * pipelineStoriesToIngest.length)];
-      const currentTime = new Date().toTimeString().split(' ')[0];
+    const story = pipelineStoriesToIngest[Math.floor(Math.random() * pipelineStoriesToIngest.length)];
+    const currentTime = new Date().toTimeString().split(' ')[0];
 
-      if (story.duplicateType === 'exact') {
-        const exactHash = Math.abs(story.title.split("").reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)).toString(16);
-        setIngestionLogs(prev => [
-          { time: currentTime, type: 'incoming', message: `Scanning source wire feed: [${story.source}]` },
-          { time: currentTime, type: 'rejected_exact', message: `❌ DUPLICATE BLOCKED - Hash [SHA256-${exactHash}] exists. Rejected Article: "${story.title}"` },
-          ...prev.slice(0, 40)
-        ]);
-      } else if (story.duplicateType === 'near') {
-        const simScore = (88 + Math.random() * 8).toFixed(1);
-        setIngestionLogs(prev => [
-          { time: currentTime, type: 'incoming', message: `Scanning source wire: "${story.title}"` },
-          { time: currentTime, type: 'rejected_sim', message: `⚠️ NEAR DUPLICATE (Cosine Similarity: ${simScore}% with Federal Reserve Signal) block-cached! Clustered references to existing card [art-1].` },
-          ...prev.slice(0, 40)
-        ]);
+    if (story.duplicateType === 'exact') {
+      const exactHash = Math.abs(story.title.split("").reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0)).toString(16);
+      setIngestionLogs(prev => [
+        { time: currentTime, type: 'incoming', message: `Scanning source wire feed: [${story.source}]` },
+        { time: currentTime, type: 'rejected_exact', message: `❌ DUPLICATE BLOCKED - Hash [SHA256-${exactHash}] exists. Rejected Article: "${story.title}"` },
+        ...prev.slice(0, 40)
+      ]);
+    } else if (story.duplicateType === 'near') {
+      const simScore = (88 + Math.random() * 8).toFixed(1);
+      setIngestionLogs(prev => [
+        { time: currentTime, type: 'incoming', message: `Scanning source wire: "${story.title}"` },
+        { time: currentTime, type: 'rejected_sim', message: `⚠️ NEAR DUPLICATE (Cosine Similarity: ${simScore}% with Federal Reserve Signal) block-cached! Clustered references to existing card [art-1].` },
+        ...prev.slice(0, 40)
+      ]);
 
-        // Append to sources of active card 1
-        setArticles(prev => prev.map(art => {
-          if (art.id === 'art-1') {
-            const hasSource = art.sources.some(s => s.name === story.source);
-            if (hasSource) return art;
-            return {
-              ...art,
-              sources: [...art.sources, { name: story.source, url: '#', date: 'Just now' }]
-            };
-          }
-          return art;
-        }));
-      } else {
-        // Unique clean new article
-        const newId = `art-${Date.now()}`;
-        const newArt: Article = {
-          id: newId,
-          title: story.title as string,
-          description: story.description as string,
-          sources: [{ name: story.source, url: '#', date: 'Just now' }],
-          category: story.category as string,
-          subcategory: story.subcategory as string,
-          asset: story.asset as string,
-          importance: 'Medium',
-          marketImpact: story.marketImpact as string,
-          sentiment: story.sentiment as any,
-          confidence: '96%',
-          timestamp: 'Just now',
-          bulletPoints: ['Decentralized compliance verification passed.', 'Calculated overall sentiment score vectors.', 'Integrated into active subscriber feed.'],
-          content: `${story.description} Analytical data models indicate immediate portfolio relevance score of ${(Math.random() * 10 + 90).toFixed(1)}% with extremely fast local execution times.`
-        };
+      // Append to sources of active card 1
+      setArticles(prev => prev.map(art => {
+        if (art.id === 'art-1') {
+          const hasSource = art.sources.some(s => s.name === story.source);
+          if (hasSource) return art;
+          return {
+            ...art,
+            sources: [...art.sources, { name: story.source, url: '#', date: 'Just now' }]
+          };
+        }
+        return art;
+      }));
+    } else {
+      // Unique clean new article
+      const newId = `art-${Date.now()}`;
+      const newArt: Article = {
+        id: newId,
+        title: story.title as string,
+        description: story.description as string,
+        sources: [{ name: story.source, url: '#', date: 'Just now' }],
+        category: story.category as string,
+        subcategory: story.subcategory as string,
+        asset: story.asset as string,
+        importance: 'Medium',
+        marketImpact: story.marketImpact as string,
+        sentiment: story.sentiment as any,
+        confidence: '96%',
+        timestamp: 'Just now',
+        bulletPoints: ['Decentralized compliance verification passed.', 'Calculated overall sentiment score vectors.', 'Integrated into active subscriber feed.'],
+        content: `${story.description} Analytical data models indicate immediate portfolio relevance score of ${(Math.random() * 10 + 90).toFixed(1)}% with extremely fast local execution times.`
+      };
 
-        setIngestionLogs(prev => [
-          { time: currentTime, type: 'approved', message: `✅ CLEAN WIRE COMPLIANT - Deployed to subcategory [${story.subcategory}]. Article published.` },
-          ...prev.slice(0, 40)
-        ]);
+      setIngestionLogs(prev => [
+        { time: currentTime, type: 'approved', message: `✅ CLEAN WIRE COMPLIANT - Deployed to subcategory [${story.subcategory}]. Article published.` },
+        ...prev.slice(0, 40)
+      ]);
 
-        setArticles(prev => {
-          if (prev.some(a => a.title === story.title)) return prev;
-          return [newArt, ...prev];
-        });
-      }
-    }, 18000);
-
-    return () => clearInterval(pipelineTimer);
-  }, [isPipelineLive]);
+      setArticles(prev => {
+        if (prev.some(a => a.title === story.title)) return prev;
+        return [newArt, ...prev];
+      });
+    }
+  }, { intervalMs: 18_000, enabled: isPipelineLive, immediate: false });
 
   // Handle custom user manual sandbox test article ingestion simulation
   const handleTestIngestion = (e: React.FormEvent) => {
