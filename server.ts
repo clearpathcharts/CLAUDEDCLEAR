@@ -1489,6 +1489,7 @@ ${CPT_SITE_GUIDE}`;
       const normalized = {
         ...data,
         price: data.price ?? data.close,
+        percent_change: data.percent_change ?? data.change_percent,
       };
       res.json(normalized);
     } catch (error: any) {

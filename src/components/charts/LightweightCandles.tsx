@@ -364,7 +364,15 @@ export function LightweightCandles({
           },
         );
 
-        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 6 : 8, minBarSpacing: 3 });
+
+        const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+        const visibleBars = embedMode ? 72 : isMobile ? 96 : 160;
+        const totalBars = tierOptimizedData.length;
+        if (totalBars > 0) {
+          const from = Math.max(0, totalBars - Math.min(visibleBars, totalBars));
+          chart.timeScale().setVisibleLogicalRange({ from, to: totalBars });
+        }
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -661,7 +669,6 @@ export function LightweightCandles({
           lastCandle = { ...updateObj, time: updateTime as number };
         }, tickDelay);
 
-        chart.timeScale().fitContent();
         if (active) setIsLoading(false);
       } catch (err) {
         if (!active) return;
