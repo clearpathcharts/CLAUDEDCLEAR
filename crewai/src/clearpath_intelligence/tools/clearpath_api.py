@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, Type
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from crewai.tools import BaseTool
@@ -13,10 +13,20 @@ from pydantic import BaseModel, Field
 
 
 def _api_base() -> str:
-    return os.getenv("CLEARPATH_API_BASE", "https://clearpathtrader.com").rstrip("/")
+    base = os.getenv("CLEARPATH_API_BASE", "https://clearpathtrader.com").rstrip("/")
+    parsed = urlparse(base)
+    host = (parsed.hostname or "").lower()
+    allowed = {"localhost", "127.0.0.1", "clearpathtrader.com", "www.clearpathtrader.com"}
+    if parsed.scheme not in {"http", "https"} or (
+        host not in allowed and not host.endswith(".clearpathtrader.com")
+    ):
+        raise ValueError(f"CLEARPATH_API_BASE host not allowlisted: {host}")
+    return base
 
 
 def _http_get(path: str, params: dict[str, str]) -> dict[str, Any]:
+    if not path.startswith("/api/") or ".." in path:
+        raise ValueError(f"Refusing non-API path: {path}")
     query = urlencode(params)
     url = f"{_api_base()}{path}?{query}"
     request = Request(url, headers={"Accept": "application/json"})

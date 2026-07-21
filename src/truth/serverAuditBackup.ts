@@ -10,7 +10,12 @@ export async function writeTruthAuditRecoveryFile(
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  const filePath = path.join(dir, `truth_audit_recovery_${originId}.json`);
+  const safeId = String(originId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'unknown';
+  const filePath = path.resolve(dir, `truth_audit_recovery_${safeId}.json`);
+  const realDir = fs.realpathSync(dir);
+  if (!filePath.startsWith(realDir + path.sep)) {
+    throw new Error('Blocked audit backup path outside logs/');
+  }
   fs.writeFileSync(filePath, payload, 'utf8');
   return filePath;
 }

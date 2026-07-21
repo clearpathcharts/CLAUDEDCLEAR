@@ -254,7 +254,7 @@ export default function GlobalNetworkGlobe() {
         console.warn("Globe cleanup warning:", err);
       }
       if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+        containerRef.current.replaceChildren();
       }
     };
   }, [webGlSupported]);
@@ -315,40 +315,57 @@ export default function GlobalNetworkGlobe() {
     g.htmlElementsData(combinedData);
     g.htmlElement((d: any) => {
       const el = document.createElement("div");
-      
+      const safeColor = (value: unknown, fallback: string) =>
+        typeof value === 'string' && /^#[0-9A-Fa-f]{3,8}$/.test(value) ? value : fallback;
+
       if (d.type === 'city') {
         el.className = "flex flex-col items-center select-none pointer-events-none";
-        el.innerHTML = `
-          <div class="relative flex flex-col items-center">
-            <div class="w-1.5 h-1.5 rounded-full bg-[#00B7FF] shadow-[0_0_10px_#00B7FF]"></div>
-            <div class="mt-0.5 text-[7px] font-mono text-[#00B7FF] tracking-widest uppercase opacity-80" style="text-shadow: 0 0 4px #00B7FF">${d.name}</div>
-          </div>
-        `;
+        const wrap = document.createElement('div');
+        wrap.className = 'relative flex flex-col items-center';
+        const dot = document.createElement('div');
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-[#00B7FF] shadow-[0_0_10px_#00B7FF]';
+        const label = document.createElement('div');
+        label.className = 'mt-0.5 text-[7px] font-mono text-[#00B7FF] tracking-widest uppercase opacity-80';
+        label.style.textShadow = '0 0 4px #00B7FF';
+        label.textContent = String(d.name || '');
+        wrap.append(dot, label);
+        el.append(wrap);
         return el;
       }
 
       el.className = "flex flex-col items-center select-none group pointer-events-auto cursor-pointer";
       
       const isSelected = d.isSelected;
-      const themeColor = d.launchColor || "#FF1493";
+      const themeColor = safeColor(d.launchColor, "#FF1493");
 
-      // Dynamically style the node marker and labels with conditional sizes/classes based on fresh state values
-      el.innerHTML = `
-        <div class="relative flex items-center justify-center">
-          ${
-            d.highlightEnabled 
-              ? `<div class="absolute w-12 h-12 rounded-full animate-ping opacity-35" style="border: 2.5px solid ${themeColor};"></div>` 
-              : ""
-          }
-          <div class="w-4 h-4 rounded-full z-10 transition-all duration-300 group-hover:scale-135 shadow-lg flex items-center justify-center" 
-               style="background-color: ${themeColor}; border: 2.5px solid #FFFFFF; box-shadow: 0 0 25px ${themeColor}, 0 0 10px ${themeColor}; transform: ${isSelected ? 'scale(1.4)' : 'scale(1)'}; border-color: ${isSelected ? '#00FFFF' : '#FFFFFF'};">
-          </div>
-        </div>
-        <div class="mt-2 px-2.5 py-1 rounded-lg bg-black/95 border shadow-2xl backdrop-blur-md transition-all duration-300 flex flex-col items-center select-none ${isSelected ? 'border-[#00FFFF] opacity-100 scale-105' : 'border-zinc-800 opacity-80 group-hover:opacity-100'}">
-          <span class="text-[9px] font-sans font-black uppercase text-white tracking-widest leading-none">${d.countryName}</span>
-          <span class="text-[7.5px] font-mono font-bold uppercase mt-0.5" style="color: ${themeColor}">${d.launchPhase}</span>
-        </div>
-      `;
+      // Build DOM nodes (no innerHTML) so country labels cannot inject markup
+      const markerWrap = document.createElement('div');
+      markerWrap.className = 'relative flex items-center justify-center';
+      if (d.highlightEnabled) {
+        const ping = document.createElement('div');
+        ping.className = 'absolute w-12 h-12 rounded-full animate-ping opacity-35';
+        ping.style.border = `2.5px solid ${themeColor}`;
+        markerWrap.append(ping);
+      }
+      const marker = document.createElement('div');
+      marker.className = 'w-4 h-4 rounded-full z-10 transition-all duration-300 group-hover:scale-135 shadow-lg flex items-center justify-center';
+      marker.style.backgroundColor = themeColor;
+      marker.style.border = `2.5px solid ${isSelected ? '#00FFFF' : '#FFFFFF'}`;
+      marker.style.boxShadow = `0 0 25px ${themeColor}, 0 0 10px ${themeColor}`;
+      marker.style.transform = isSelected ? 'scale(1.4)' : 'scale(1)';
+      markerWrap.append(marker);
+
+      const caption = document.createElement('div');
+      caption.className = `mt-2 px-2.5 py-1 rounded-lg bg-black/95 border shadow-2xl backdrop-blur-md transition-all duration-300 flex flex-col items-center select-none ${isSelected ? 'border-[#00FFFF] opacity-100 scale-105' : 'border-zinc-800 opacity-80 group-hover:opacity-100'}`;
+      const country = document.createElement('span');
+      country.className = 'text-[9px] font-sans font-black uppercase text-white tracking-widest leading-none';
+      country.textContent = String(d.countryName || '');
+      const phase = document.createElement('span');
+      phase.className = 'text-[7.5px] font-mono font-bold uppercase mt-0.5';
+      phase.style.color = themeColor;
+      phase.textContent = String(d.launchPhase || '');
+      caption.append(country, phase);
+      el.append(markerWrap, caption);
 
       el.onclick = () => {
         // Pause rotate momentarily and slide to clicked country

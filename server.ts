@@ -134,6 +134,28 @@ function getCleanTwelveDataApiKey(): string {
   return key;
 }
 
+/** Read a UTF-8 file only when it resolves inside an allowlisted root (blocks path traversal / file inclusion). */
+function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cwd()]): string {
+  const resolved = path.resolve(filePath);
+  const ok = allowedRoots.some((root) => {
+    const base = path.resolve(root);
+    return resolved === base || resolved.startsWith(base + path.sep);
+  });
+  if (!ok) {
+    throw new Error(`Blocked path outside allowlist: ${filePath}`);
+  }
+  // Reject symlink escapes that land outside the allowlist
+  const real = fs.realpathSync(resolved);
+  const realOk = allowedRoots.some((root) => {
+    const base = fs.realpathSync(path.resolve(root));
+    return real === base || real.startsWith(base + path.sep);
+  });
+  if (!realOk) {
+    throw new Error(`Blocked symlink path outside allowlist: ${filePath}`);
+  }
+  return fs.readFileSync(real, 'utf8');
+}
+
 // SSRF PROTECTION
 // The stream and RSS proxies fetch caller-supplied URLs. Without validation they
 // can be abused to reach internal-only targets (cloud metadata at 169.254.169.254,
@@ -569,7 +591,7 @@ async function startServer() {
   app.get('/api/river/compiler/manifest', (_req, res) => {
     try {
       const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
-      const raw = fs.readFileSync(manifestPath, 'utf8');
+      const raw = safeReadTextFile(manifestPath);
       res.setHeader('Cache-Control', 'public, max-age=300');
       res.json(JSON.parse(raw));
     } catch (error: any) {
@@ -1581,7 +1603,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
-        const data = fs.readFileSync(newsPath, 'utf8');
+        const data = safeReadTextFile(newsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -1641,7 +1663,7 @@ ${CPT_SITE_GUIDE}`;
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
         try {
-          const local = JSON.parse(fs.readFileSync(newsPath, 'utf8'));
+          const local = JSON.parse(safeReadTextFile(newsPath));
           local.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1658,7 +1680,7 @@ ${CPT_SITE_GUIDE}`;
       const masterPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterPath)) {
         try {
-          const master = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+          const master = JSON.parse(safeReadTextFile(masterPath));
           master.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -2016,7 +2038,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const masterNewsPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterNewsPath)) {
-        const data = fs.readFileSync(masterNewsPath, 'utf8');
+        const data = safeReadTextFile(masterNewsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -2506,7 +2528,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
       if (isDev) {
         const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
-        let html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        let html = safeReadTextFile(indexHtmlPath);
         
         if (vite) {
           html = await vite.transformIndexHtml(req.url, html);
@@ -2522,7 +2544,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
-          const html = fs.readFileSync(destIndexPath, 'utf-8');
+          const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
           res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
