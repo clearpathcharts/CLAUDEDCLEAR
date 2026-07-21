@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as d3 from 'd3';
 import { 
@@ -65,10 +65,7 @@ export default function TerminalConfigWidget() {
   }, [activePairs, traderType]);
 
   // Load active session dynamically based on current UTC time or override
-  const selectedSessionOverrideRef = useRef(selectedSessionOverride);
-  selectedSessionOverrideRef.current = selectedSessionOverride;
-
-  const updateSession = () => {
+  usePageAutoUpdate(() => {
     const now = new Date();
     const utcHour = now.getUTCHours();
     const minutes = now.getUTCMinutes().toString().padStart(2, '0');
@@ -84,7 +81,7 @@ export default function TerminalConfigWidget() {
       sessionKey = 'us';
     }
 
-    const activeSession = selectedSessionOverrideRef.current || sessionKey;
+    const activeSession = selectedSessionOverride || sessionKey;
 
     if (activeSession === 'asian') {
       setActiveSessionName("Asian / Pacific Session (Tokyo, Sydney, Singapore)");
@@ -96,13 +93,7 @@ export default function TerminalConfigWidget() {
       setActiveSessionName("US / New York Session");
       setActivePairs(["USD/CAD", "EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD (Gold)"]);
     }
-  };
-
-  const { refresh: refreshSession } = usePageAutoUpdate(updateSession, { intervalMs: 2_000 });
-
-  useEffect(() => {
-    void refreshSession();
-  }, [selectedSessionOverride]);
+  }, { intervalMs: 2_000 });
 
   const handleTraderTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;

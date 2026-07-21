@@ -73,7 +73,7 @@ export default function MarketDiagnostics() {
   usePageAutoUpdate(fetchLiveDiagnostics, { intervalMs: 15_000 });
 
   useEffect(() => {
-    fetchBuildErrors();
+    void fetchBuildErrors();
   }, []);
 
   const getStatusBadge = (status: ApiStatusItem["status"]) => {

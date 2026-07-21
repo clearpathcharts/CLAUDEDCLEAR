@@ -1,32 +1,32 @@
 # Page Auto Updater — Reference
 
-## Existing refresh surfaces (inventory + migration status)
+## Shared hook
 
-| Surface | Path | Typical interval | Status |
-|---------|------|------------------|--------|
-| Market ticker quotes | `src/components/MarketTicker.tsx` | 30s | **Wired** → `usePageAutoUpdate` |
-| Market diagnostics | `src/components/MarketDiagnostics.tsx` | 15s | **Wired** → `usePageAutoUpdate` (build errors: mount-only) |
-| Breaking news ticker | `src/components/BreakingNewsTicker.tsx` | 60s | **Wired** → `usePageAutoUpdate` (ticker cadence; not editorial 6h) |
-| Kill zones clock | `src/components/KillZones.tsx` | 1s | **Wired** → `usePageAutoUpdate` |
-| Trading sessions | `src/components/TradingSessionsCollapse.tsx` | 1s | **Wired** → `usePageAutoUpdate` |
-| Terminal session clock | `src/components/widgets/TerminalConfigWidget.tsx` | 2s | **Wired** → `usePageAutoUpdate` (session/UTC only) |
-| Lightweight candles | `src/components/charts/LightweightCandles.tsx` | chart-specific | **Visibility guard** inside existing tick loop |
-| Twelve Data health | `src/services/dataStreamService.ts` | 4s | Service-level; prefer subscribe — leave as service |
+- `src/hooks/usePageAutoUpdate.ts` — poll + visibility pause + in-flight guard + `refresh` / `lastUpdatedAt`
+- Reuses `src/hooks/useVisibilityPause.ts`
+- `src/services/dataStreamService.ts` — WebSocket + health polling + subscriber API (service-level; pages subscribe)
+
+## Existing refresh surfaces
+
+| Surface | Path | Interval | Status |
+|---------|------|----------|--------|
+| Market ticker quotes | `src/components/MarketTicker.tsx` | 30s | **wired** `usePageAutoUpdate` |
+| Market diagnostics | `src/components/MarketDiagnostics.tsx` | 15s | **wired** (build-errors fetch once on mount) |
+| Breaking news ticker | `src/components/BreakingNewsTicker.tsx` | 60s | **wired** (ticker cadence; not editorial 6h) |
+| Kill zones clock | `src/components/KillZones.tsx` | 1s | **wired** |
+| Trading sessions | `src/components/TradingSessionsCollapse.tsx` | 1s | **wired** |
+| Terminal session clock | `src/components/widgets/TerminalConfigWidget.tsx` | 2s | **wired** (session/UTC only) |
+| Twelve Data health | `src/services/dataStreamService.ts` | 4s | Service-level — leave; pages subscribe |
+| Lightweight candles | `src/components/charts/LightweightCandles.tsx` | chart-specific | Uses `useVisibilityPause`; tick loop also skips when tab hidden |
+| Capital flow map | `src/components/CapitalFlowMap.tsx` | 200ms sim | Demo simulator — keep local |
+| Market scanner | `src/components/MarketScanner.tsx` | 8s sim | Demo simulator — keep local |
+| News panel | `src/components/NewsPanel.tsx` | asset + pipeline | Simulated pipeline — keep local |
+| ClearPath Sentinel | `src/components/ClearPathSentinel.tsx` | scan progress | One-shot scan UX — keep local |
+| Encyclopedia watchlist | `src/components/encyclopedia/WatchlistView.tsx` | 4.5s sim | Demo tick — migrate when live quotes land |
 | App location poll | `src/App.tsx` | 2s | Routing helper — do not conflate |
-| Capital flow map | `src/components/CapitalFlowMap.tsx` | 200ms sim | Simulated — keep local |
-| ClearPath Sentinel | `src/components/ClearPathSentinel.tsx` | scan progress | Simulated one-shot — keep local |
-| News panel | `src/components/NewsPanel.tsx` | asset + pipeline | Simulated — keep local |
-| Market scanner | `src/components/MarketScanner.tsx` | 8s sim | Simulated — keep local |
-| Yours RSS console | `src/components/yours/YoursPage.tsx` | 6h / 12h UI | Manual force fetch / sim — leave until real feed |
-| Encyclopedia views | `src/components/encyclopedia/*` | various sims | Keep local until real data; migrate when touching |
-| EurUsd sparkline widget | `TerminalConfigWidget` inner | 400ms sim | Simulated — keep local |
+| EurUsd sparkline widget | `TerminalConfigWidget` inner | 400ms sim | Demo sparkline — keep local |
+| Yours RSS simulator | `src/components/yours/YoursPage.tsx` | 6h / 12h UI | Wire when real fetch exists |
 | Affiliate / Auth / Membership timers | various | UI timers | Not page data refresh — leave |
-
-## Shared primitives
-
-- `src/hooks/usePageAutoUpdate.ts` — canonical page poll hook
-- `src/hooks/useVisibilityPause.ts` — `document.visibilityState`
-- `src/services/dataStreamService.ts` — WebSocket + health polling + subscriber API
 
 ## Hook API
 
@@ -37,6 +37,26 @@ const { refresh, lastUpdatedAt } = usePageAutoUpdate(fetchQuotes, {
   intervalMs: 30_000,
   immediate: true, // default
   enabled: true,   // default
+})
+```
+
+## Migration pattern
+
+**Before:**
+
+```tsx
+useEffect(() => {
+  fetchQuotes()
+  const id = setInterval(fetchQuotes, 30000)
+  return () => clearInterval(id)
+}, [])
+```
+
+**After:**
+
+```tsx
+const { refresh, lastUpdatedAt } = usePageAutoUpdate(fetchQuotes, {
+  intervalMs: 30_000,
 })
 ```
 
@@ -52,6 +72,10 @@ Behavior: immediate run when enabled+visible; interval ticks skip when tab hidde
 | CI schedule | `.github/workflows/pr-auto-updater.yml` |
 
 Never rename or overload those scripts for SPA page refresh.
+
+## River media script (different concern)
+
+`npm run page:auto-update` → `scripts/pageAutoUpdater.ts` syncs River hero videos / manifest. Unrelated to SPA poll intervals.
 
 ## Verification
 

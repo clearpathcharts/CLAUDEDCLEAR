@@ -96,7 +96,7 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
     }
   };
 
-  // Real quotes only — no fake micro-ticks. Shared auto-update pauses when tab hidden.
+  // Poll server-side proxy every 30s for real updates (no fake micro-ticks).
   usePageAutoUpdate(fetchQuotes, { intervalMs: 30_000 });
 
   // Format helper based on price values — hide until a real quote has arrived
