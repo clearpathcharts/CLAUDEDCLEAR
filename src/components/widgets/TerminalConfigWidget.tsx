@@ -16,6 +16,7 @@ import {
   Sliders,
   RefreshCw
 } from 'lucide-react';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 
 export default function TerminalConfigWidget() {
   const [traderType, setTraderType] = useState<string>(() => {
@@ -64,41 +65,35 @@ export default function TerminalConfigWidget() {
   }, [activePairs, traderType]);
 
   // Load active session dynamically based on current UTC time or override
-  useEffect(() => {
-    const updateSession = () => {
-      const now = new Date();
-      const utcHour = now.getUTCHours();
-      const minutes = now.getUTCMinutes().toString().padStart(2, '0');
-      const seconds = now.getUTCSeconds().toString().padStart(2, '0');
-      setUtcTime(`${utcHour.toString().padStart(2, '0')}:${minutes}:${seconds} UTC`);
+  usePageAutoUpdate(() => {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = now.getUTCSeconds().toString().padStart(2, '0');
+    setUtcTime(`${utcHour.toString().padStart(2, '0')}:${minutes}:${seconds} UTC`);
 
-      let sessionKey = 'asian';
-      if (utcHour >= 22 || utcHour < 8) {
-        sessionKey = 'asian';
-      } else if (utcHour >= 8 && utcHour < 13) {
-        sessionKey = 'european';
-      } else if (utcHour >= 13 && utcHour < 22) {
-        sessionKey = 'us';
-      }
+    let sessionKey = 'asian';
+    if (utcHour >= 22 || utcHour < 8) {
+      sessionKey = 'asian';
+    } else if (utcHour >= 8 && utcHour < 13) {
+      sessionKey = 'european';
+    } else if (utcHour >= 13 && utcHour < 22) {
+      sessionKey = 'us';
+    }
 
-      const activeSession = selectedSessionOverride || sessionKey;
+    const activeSession = selectedSessionOverride || sessionKey;
 
-      if (activeSession === 'asian') {
-        setActiveSessionName("Asian / Pacific Session (Tokyo, Sydney, Singapore)");
-        setActivePairs(["AUD/USD", "USD/JPY", "NZD/USD", "AUD/JPY", "USD/SGD"]);
-      } else if (activeSession === 'european') {
-        setActiveSessionName("London / European Session (London, Frankfurt)");
-        setActivePairs(["EUR/USD", "GBP/USD", "EUR/GBP", "USD/CHF", "EUR/JPY"]);
-      } else if (activeSession === 'us') {
-        setActiveSessionName("US / New York Session");
-        setActivePairs(["USD/CAD", "EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD (Gold)"]);
-      }
-    };
-
-    updateSession();
-    const interval = setInterval(updateSession, 2000); // 2-second high frequency loop
-    return () => clearInterval(interval);
-  }, [selectedSessionOverride]);
+    if (activeSession === 'asian') {
+      setActiveSessionName("Asian / Pacific Session (Tokyo, Sydney, Singapore)");
+      setActivePairs(["AUD/USD", "USD/JPY", "NZD/USD", "AUD/JPY", "USD/SGD"]);
+    } else if (activeSession === 'european') {
+      setActiveSessionName("London / European Session (London, Frankfurt)");
+      setActivePairs(["EUR/USD", "GBP/USD", "EUR/GBP", "USD/CHF", "EUR/JPY"]);
+    } else if (activeSession === 'us') {
+      setActiveSessionName("US / New York Session");
+      setActivePairs(["USD/CAD", "EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD (Gold)"]);
+    }
+  }, { intervalMs: 2_000 });
 
   const handleTraderTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;

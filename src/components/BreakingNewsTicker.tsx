@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Newspaper, Radio, AlertCircle, RefreshCw, Layers } from 'lucide-react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 interface NewsItem {
   title: string;
@@ -39,14 +40,7 @@ export default function BreakingNewsTicker() {
     }
   };
 
-  useEffect(() => {
-    fetchNews();
-    // Refresh news every 60 seconds
-    const interval = setInterval(() => {
-      fetchNews();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
 
   return (
     <>
