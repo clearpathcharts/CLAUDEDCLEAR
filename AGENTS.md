@@ -31,5 +31,12 @@
 - Skip a PR entirely: label it `no-auto-update`.
 - Scheduled GitHub Action: `.github/workflows/pr-auto-updater.yml` (every 6h + manual dispatch). Report artifact: `pr-auto-updater-report`.
 
+### App / APK auto-updater (consent-first)
+- `GET /api/app-update` publishes latest web + Android versions from env (see `.env.example`).
+- SPA shows `AppUpdateBanner`: web → Refresh; Android → Play Store (preferred) or APK mirror.
+- **Never silent install.** APK URLs are omitted unless `APP_UPDATE_ALLOW_APK=true` **and** HTTPS allowlisted host **and** `APP_UPDATE_APK_SHA256` (64-hex) are set.
+- Keep `VITE_APP_VERSION` / `VITE_ANDROID_VERSION_*` in sync with shipped builds (`android/app/build.gradle` versionCode).
+- Self-test: `npm run test:app-update`.
+
 ### Host hardening (ops only)
 - Optional server hardening uses [grapheneX](https://github.com/grapheneX/grapheneX) on the **VPS/Docker host**, not inside the Node app. See `docs/ops-hardening.md` and `scripts/ops/run-graphenex.sh` (localhost `:9090` + SSH tunnel). Not applicable to managed Cloud Run.

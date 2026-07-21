@@ -50,6 +50,7 @@ import {
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
+import { buildAppUpdateManifest } from './src/server/appUpdate';
 import {
   stockEntries,
   cryptoEntries,
@@ -486,6 +487,12 @@ async function startServer() {
         ),
       },
     });
+  });
+
+  /** Consent-first app/APK update manifest (no secrets; APK only when allowlisted + sha256). */
+  app.get('/api/app-update', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(buildAppUpdateManifest());
   });
 
   // Private member accounts (email + password, per-user login desk)
