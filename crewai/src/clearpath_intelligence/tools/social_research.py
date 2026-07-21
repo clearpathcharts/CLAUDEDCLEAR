@@ -5,11 +5,32 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, Type
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+
+# Outbound HTTP allowlist — blocks SSRF to internal/metadata hosts (Aikido).
+_ALLOWED_HTTP_HOST_SUFFIXES = (
+    "api.apify.com",
+    "apify.com",
+    "www.googleapis.com",
+    "youtube.googleapis.com",
+    "clearpathtrader.com",
+    "www.clearpathtrader.com",
+)
+
+
+def _assert_safe_outbound_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("https",):
+        raise ValueError("Only https outbound URLs are permitted")
+    host = (parsed.hostname or "").lower()
+    if not host or host == "localhost" or host.endswith(".local"):
+        raise ValueError("Blocked host")
+    if not any(host == suffix or host.endswith("." + suffix) for suffix in _ALLOWED_HTTP_HOST_SUFFIXES):
+        raise ValueError(f"Host not allowlisted for outbound fetch: {host}")
 
 
 def _http_json(
@@ -20,6 +41,7 @@ def _http_json(
     body: dict[str, Any] | None = None,
     timeout: int = 120,
 ) -> dict[str, Any]:
+    _assert_safe_outbound_url(url)
     data = None
     req_headers = {"Accept": "application/json", **(headers or {})}
     if body is not None:

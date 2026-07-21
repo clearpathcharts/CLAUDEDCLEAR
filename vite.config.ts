@@ -35,7 +35,7 @@ export default defineConfig(({mode}) => {
               if (id.includes('jspdf') || id.includes('html2canvas')) {
                 return 'pdf-canvas-vendor';
               }
-              if (id.includes('framer-motion') || id.includes('motion')) {
+              if (id.includes('framer-motion') || id.includes('/motion/')) {
                 return 'motion-vendor';
               }
               if (id.includes('firebase')) {
@@ -48,6 +48,9 @@ export default defineConfig(({mode}) => {
                 id.includes('recharts')
               ) {
                 return 'charts-vendor';
+              }
+              if (id.includes('lucide-react')) {
+                return 'icons-vendor';
               }
               return 'common-vendor';
             }

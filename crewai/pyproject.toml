@@ -5,7 +5,9 @@ description = "ClearPath Trader — Market Intelligence & Competitive Intelligen
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "crewai[tools]>=0.108.0,<1.0.0",
+    # Avoid crewai[tools] extras (pulls chromadb/litellm attack surface unused by ClearPath tools).
+    "crewai>=0.150.0,<1.0.0",
+    "requests>=2.32.4",
 ]
 
 [project.scripts]

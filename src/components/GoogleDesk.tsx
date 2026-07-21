@@ -10,14 +10,23 @@ import { getAuth, db, doc, setDoc, collection, getDocs } from '../firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function GoogleDesk() {
-  const [idToken, setIdToken] = useState<string | null>(() => {
-    return localStorage.getItem('google_workspace_id_token');
-  });
-  const [accessToken, setAccessToken] = useState<string | null>(() => {
-    return localStorage.getItem('google_workspace_access_token');
-  });
+  const workspaceStore = typeof window !== 'undefined' ? window.sessionStorage : null;
+  const migrateWorkspaceSecret = (key: string): string | null => {
+    if (!workspaceStore) return null;
+    const fromSession = workspaceStore.getItem(key);
+    if (fromSession) return fromSession;
+    const fromLocal = localStorage.getItem(key);
+    if (fromLocal) {
+      workspaceStore.setItem(key, fromLocal);
+      localStorage.removeItem(key);
+    }
+    return fromLocal;
+  };
+
+  const [idToken, setIdToken] = useState<string | null>(() => migrateWorkspaceSecret('google_workspace_id_token'));
+  const [accessToken, setAccessToken] = useState<string | null>(() => migrateWorkspaceSecret('google_workspace_access_token'));
   const [googleUser, setGoogleUser] = useState<any | null>(() => {
-    const saved = localStorage.getItem('google_workspace_user');
+    const saved = migrateWorkspaceSecret('google_workspace_user');
     return saved ? JSON.parse(saved) : null;
   });
 
@@ -29,7 +38,8 @@ export default function GoogleDesk() {
       if (current) {
         token = await current.getIdToken(/* forceRefresh */ false);
         setIdToken(token);
-        localStorage.setItem('google_workspace_id_token', token);
+        workspaceStore?.setItem('google_workspace_id_token', token);
+        localStorage.removeItem('google_workspace_id_token');
       }
     } catch {
       /* keep cached token */
@@ -111,14 +121,17 @@ export default function GoogleDesk() {
         setAccessToken(token);
         setIdToken(firebaseIdToken);
         setGoogleUser(result.user);
-        localStorage.setItem('google_workspace_access_token', token);
-        localStorage.setItem('google_workspace_id_token', firebaseIdToken);
-        localStorage.setItem('google_workspace_user', JSON.stringify({
+        workspaceStore?.setItem('google_workspace_access_token', token);
+        workspaceStore?.setItem('google_workspace_id_token', firebaseIdToken);
+        workspaceStore?.setItem('google_workspace_user', JSON.stringify({
           uid: result.user.uid,
           email: result.user.email,
           displayName: result.user.displayName,
           photoURL: result.user.photoURL,
         }));
+        localStorage.removeItem('google_workspace_access_token');
+        localStorage.removeItem('google_workspace_id_token');
+        localStorage.removeItem('google_workspace_user');
       } else {
         throw new Error('No OAuth access token was returned by the Google login popup.');
       }
@@ -134,6 +147,9 @@ export default function GoogleDesk() {
     setAccessToken(null);
     setIdToken(null);
     setGoogleUser(null);
+    workspaceStore?.removeItem('google_workspace_access_token');
+    workspaceStore?.removeItem('google_workspace_id_token');
+    workspaceStore?.removeItem('google_workspace_user');
     localStorage.removeItem('google_workspace_access_token');
     localStorage.removeItem('google_workspace_id_token');
     localStorage.removeItem('google_workspace_user');

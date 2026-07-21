@@ -50,7 +50,8 @@ const REGIONAL_MARKETS = [
 
 assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'clearpath_indexnow_testkey_01' }), 'clearpath_indexnow_testkey_01');
 assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'bad' }), null);
-assert.match(resolveIndexNowKey({ SESSION_SECRET: 'abc123secret' }), /^[a-f0-9]{32}$/);
+// Deterministic fixture — not a live credential (Aikido secret scanners)
+assert.match(resolveIndexNowKey({ SESSION_SECRET: 'test-fixture-not-a-real-secret' }), /^[a-f0-9]{32}$/);
 
 assert.deepEqual(
   normalizeIndexNowUrls([
