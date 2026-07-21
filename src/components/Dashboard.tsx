@@ -121,6 +121,7 @@ const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators')
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
 const ClearPathEducationPage = lazy(() => import('../education/ClearPathEducation'));
+const ReferralPage = lazy(() => import('./ReferralPage'));
 const LiteracyOSPage = lazy(() => import('../literacy/LiteracyOSPage'));
 
 function TabLoading() {
@@ -433,6 +434,11 @@ const TabContent = ({
       case 'ClearPathEducation': return (
         <Suspense fallback={<TabLoading />}>
           <ClearPathEducationPage onNavigate={setActiveTab} />
+        </Suspense>
+      );
+      case 'ReferralDesk': return (
+        <Suspense fallback={<TabLoading />}>
+          <ReferralPage onNavigate={setActiveTab} />
         </Suspense>
       );
       case 'LiteracyOS': return (
@@ -1093,6 +1099,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
+          hash === 'ReferralDesk' ||
           hash === 'LiteracyOS' ||
           hash === 'ApiMonitor' || 
           hash === 'Diagnostics' || 

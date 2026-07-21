@@ -9,6 +9,7 @@ import {
   Home,
   LogOut,
   Newspaper,
+  Share2,
   Shield,
   Terminal,
   Users,
@@ -124,6 +125,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: BarChart3,
       label: "ENCYCLOPEDIA OF INDICATORS",
     },
+
+    {
+      id: "ReferralDesk",
+      icon: Share2,
+      label: "REFERRALS",
+    },
   ];
   const renderNavButton = (
     item: NavItem,
@@ -136,7 +143,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isGold =
       item.id === "Membership" ||
-      item.id === "Founders";
+      item.id === "Founders" ||
+      item.id === "ReferralDesk";
 
     const isPink =
       item.id === "Biography" ||
