@@ -101,6 +101,10 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const TELEMETRY_HOOK_URL = 'https://api.clearpathtrader.com/v1/telemetry/desk/7101';
+  const [cockpitTheme, setCockpitTheme] = useState<'lava' | 'slate'>('lava');
+  const [messagesChannelFilter, setMessagesChannelFilter] = useState<string>('all');
+
   // 2. Watchlist & Live Ticker Rates
   const [watchlist, setWatchlist] = useState<{ [symbol: string]: { price: number; change: number; isUp: boolean; lastUpdate: string } }>({
     'EURUSD': { price: 1.08425, change: 0.34, isUp: true, lastUpdate: 'Just now' },
@@ -249,6 +253,14 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
       }
     };
   }, [mediaStream]);
+
+  // Mute/unmute live microphone tracks when presenter toggles mic
+  useEffect(() => {
+    if (!mediaStream) return;
+    mediaStream.getAudioTracks().forEach((track) => {
+      track.enabled = !isMicMuted;
+    });
+  }, [isMicMuted, mediaStream]);
 
   const initCameraStream = async (fMode: 'user' | 'environment') => {
     try {
@@ -744,23 +756,34 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
     }));
   };
 
-  /** Open the platform login / OAuth screen, then the live channel URL. */
-  const openPlatformLogin = (plat: (typeof socialPlatforms)[number]) => {
+  /** Open OAuth login desk + live channel URL for this platform. */
+  const openPlatformConnector = (plat: (typeof socialPlatforms)[number]) => {
     addTelemetryLog(`Opening ${plat.name} login + channel link…`, 'success');
     const returnTo = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
-    // Primary: ClearPath OAuth / login desk for this provider
-    window.open(`/auth/${plat.authId}?returnTo=${returnTo}`, '_blank', 'noopener,noreferrer');
-    // Also surface the public channel so the social destination actually loads
+    if (plat.authId) {
+      window.open(`/auth/${plat.authId}?returnTo=${returnTo}`, '_blank', 'noopener,noreferrer');
+    }
     if (plat.url) {
       window.setTimeout(() => {
         window.open(plat.url, '_blank', 'noopener,noreferrer');
-      }, 350);
+      }, plat.authId ? 350 : 0);
+    }
+  };
+
+  const copyTelemetryHook = async () => {
+    try {
+      await navigator.clipboard.writeText(TELEMETRY_HOOK_URL);
+      addTelemetryLog('Telemetry hook URL copied to clipboard.', 'success');
+    } catch {
+      addTelemetryLog('Clipboard copy blocked — copy the hook URL manually from Settings.', 'warn');
     }
   };
 
   const handleCreateInvitationPacket = () => {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    addTelemetryLog(`Commission Ledger Sync Code created: CFT-PARTNER-${code}`, 'success');
+    const packet = `CFT-PARTNER-${code}`;
+    void navigator.clipboard.writeText(packet).catch(() => {});
+    addTelemetryLog(`Commission Ledger Sync Code created: ${packet}`, 'success');
   };
 
   const getFilterCss = () => {
@@ -1261,7 +1284,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                       CONNECTED CHANNELS & AUDIENCE NETWORK (TOP 10)
                     </h4>
                     <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-1 block">
-                      Tap a platform to open its login screen and live channel
+                      Tap a platform to open login + channel · toggle sync with the link icon
                     </p>
                   </div>
                   <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-black text-emerald-400 uppercase tracking-widest animate-pulse">
@@ -1273,27 +1296,41 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                   {socialPlatforms.map((plat) => {
                     const PlatIcon = plat.icon;
                     return (
-                      <button
+                      <div
                         key={plat.id}
-                        type="button"
-                        onClick={() => openPlatformLogin(plat)}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          togglePlatformSyncState(plat.id);
-                        }}
-                        title={`Open ${plat.name} login · long-press/right-click toggles sync`}
-                        className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer relative ${
+                        className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center ${
+
                           plat.activeSync 
                             ? 'bg-[#050914] border-[#00ffe1]/50 shadow-[0_0_15px_rgba(0,255,225,0.08)]' 
                             : 'bg-black/40 border-zinc-900 text-zinc-500'
                         }`}
                       >
-                        <span className={`absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full ${plat.activeSync ? 'bg-emerald-500' : 'bg-zinc-800'}`} />
-                        <PlatIcon className={`w-4 h-4 mb-1.5 ${plat.activeSync ? plat.color : 'text-zinc-650'}`} />
-                        <span className="font-cinzel text-[9px] font-black uppercase text-white tracking-wider max-w-full truncate">{plat.name}</span>
-                        <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full mt-0.5">{plat.handle}</span>
-                        <span className="text-[10px] font-mono text-[#00ffe1] font-bold mt-1">{plat.followers}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => openPlatformConnector(plat)}
+                          className="flex flex-col items-center justify-center w-full cursor-pointer"
+                          title={`Open ${plat.name}`}
+                        >
+                          <span className={`absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full ${plat.activeSync ? 'bg-emerald-500' : 'bg-zinc-800'}`} />
+                          <PlatIcon className={`w-4 h-4 mb-1.5 ${plat.activeSync ? plat.color : 'text-zinc-650'}`} />
+                          <span className="font-cinzel text-[9px] font-black uppercase text-white tracking-wider max-w-full truncate">{plat.name}</span>
+                          <span className="text-[9px] font-mono text-zinc-500 truncate max-w-full mt-0.5">{plat.handle}</span>
+                          <span className="text-[10px] font-mono text-[#00ffe1] font-bold mt-1">{plat.followers}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => togglePlatformSyncState(plat.id)}
+                          className={`absolute top-1.5 right-1.5 p-1 rounded-md border transition-colors cursor-pointer text-[8px] font-black uppercase tracking-wider ${
+                            plat.activeSync
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                              : 'bg-zinc-950/90 border-zinc-800 text-zinc-500 hover:text-[#00ffe1] hover:border-[#00ffe1]/40'
+                          }`}
+                          title={plat.activeSync ? 'Cross-post sync ON — click to disable' : 'Cross-post sync OFF — click to enable'}
+                          aria-pressed={plat.activeSync}
+                        >
+                          <RefreshCw className={`w-3 h-3 ${plat.activeSync ? 'text-emerald-400' : ''}`} />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -1312,6 +1349,18 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                 </div>
 
                 <form onSubmit={handlePostCreationSubmit} className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="text-[9px] font-mono text-zinc-500 uppercase font-black">Feed category</label>
+                    <select
+                      value={selectedPostCategory}
+                      onChange={(e) => setSelectedPostCategory(e.target.value as typeof selectedPostCategory)}
+                      className="bg-zinc-950 border border-zinc-900 text-[10px] font-mono text-[#ff007f] rounded-lg px-2 py-1 outline-none uppercase font-extrabold"
+                    >
+                      {(['Macro', 'Liquidity', 'Strategy', 'Private Broadcast', 'Education'] as const).map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                   <textarea
                     value={composerText}
                     onChange={(e) => setComposerText(e.target.value)}
@@ -1679,6 +1728,108 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                   />
                   <button
                     onClick={() => sendRoomMessage(selectedCommunity)}
+                    className="bg-[#00ffe1] hover:bg-[#00d8bf] text-black w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all shrink-0"
+                  >
+                    <Send className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: MESSAGES (Radio Channels inbox) */}
+          {activeMenu === 'Messages' && (
+            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+              <div className="border-b border-zinc-900 pb-3 flex flex-wrap justify-between items-start gap-3">
+                <div>
+                  <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
+                    RADIO CHANNELS & DIRECT MESSAGES
+                  </h4>
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-1">
+                    Encrypted downline comms across guild channels
+                  </p>
+                </div>
+                <select
+                  value={messagesChannelFilter}
+                  onChange={(e) => setMessagesChannelFilter(e.target.value)}
+                  className="bg-zinc-950 border border-zinc-900 text-[10px] font-mono text-[#00ffe1] rounded-lg px-2 py-1.5 outline-none uppercase font-extrabold"
+                >
+                  <option value="all">All Channels</option>
+                  {communities.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {communities.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setMessagesChannelFilter(c.id);
+                      setSelectedCommunity(c.id);
+                      addTelemetryLog(`Messages inbox focused: ${c.name}`);
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      messagesChannelFilter === c.id
+                        ? 'bg-[#090b14] border-[#00ffe1]'
+                        : 'bg-black/50 border-zinc-900 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className="text-[9px] font-mono text-zinc-500 uppercase">{c.type}</span>
+                    <p className="text-xs font-bold text-[#ff007f] mt-1">{c.name}</p>
+                    <p className="text-[9px] text-zinc-500 mt-1">{messages.filter((m) => m.channelId === c.id).length} packets</p>
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-black/60 border border-zinc-900 rounded-3xl p-5 space-y-4">
+                <span className="text-zinc-550 block font-mono text-[9px] font-black uppercase tracking-wider">
+                  INBOX STREAM
+                </span>
+
+                <div className="space-y-3 h-56 overflow-y-auto pr-1">
+                  {messages
+                    .filter((m) => messagesChannelFilter === 'all' || m.channelId === messagesChannelFilter)
+                    .map((m) => (
+                      <div key={m.id} className="flex gap-2 text-xs font-mono relative bg-zinc-950/50 p-2.5 rounded-xl border border-zinc-900">
+                        <img src={m.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <strong className="text-[#00ffe1] uppercase text-[9px] font-bold">{m.author}</strong>
+                            <span className="text-[8px] text-zinc-650">{m.time}</span>
+                            <span className="text-[8px] text-zinc-600 uppercase">#{communities.find((c) => c.id === m.channelId)?.name ?? m.channelId}</span>
+                          </div>
+                          <p className="text-zinc-300 font-semibold mt-0.5 break-words">{m.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  {messages.filter((m) => messagesChannelFilter === 'all' || m.channelId === messagesChannelFilter).length === 0 && (
+                    <p className="text-[10px] font-mono text-zinc-600 text-center py-8 uppercase">No messages in this channel yet</p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMessageText}
+                    onChange={(e) => setNewMessageText(e.target.value)}
+                    placeholder="Transmit on selected channel..."
+                    className="flex-1 bg-zinc-950 border border-zinc-900 focus:border-[#00ffe1] rounded-xl px-3 text-xs outline-none text-white font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const target = messagesChannelFilter === 'all' ? selectedCommunity : messagesChannelFilter;
+                        sendRoomMessage(target);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = messagesChannelFilter === 'all' ? selectedCommunity : messagesChannelFilter;
+                      sendRoomMessage(target);
+                    }}
                     className="bg-[#00ffe1] hover:bg-[#00d8bf] text-black w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all shrink-0"
                   >
                     <Send className="w-4 h-4 fill-current" />
@@ -2314,11 +2465,33 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                 <div className="space-y-2 bg-black border border-zinc-900 p-4 rounded-xl">
                   <span className="text-zinc-550 font-black text-[9px] uppercase tracking-wider block">1. COCKPIT THEME SPECTRUM:</span>
                   <div className="grid grid-cols-2 gap-2">
-                    <button className="p-2 bg-zinc-950 border border-[#ff5a1f] text-[#ff5a1f] rounded font-bold uppercase text-[9px] tracking-wider text-center">
-                      Industrial Molten Lava [ACTIVE]
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCockpitTheme('lava');
+                        addTelemetryLog('Cockpit theme set: Industrial Molten Lava', 'success');
+                      }}
+                      className={`p-2 bg-zinc-950 border rounded font-bold uppercase text-[9px] tracking-wider text-center cursor-pointer ${
+                        cockpitTheme === 'lava'
+                          ? 'border-[#ff5a1f] text-[#ff5a1f]'
+                          : 'border-zinc-850 text-zinc-500 hover:text-white'
+                      }`}
+                    >
+                      Industrial Molten Lava {cockpitTheme === 'lava' ? '[ACTIVE]' : ''}
                     </button>
-                    <button className="p-2 bg-zinc-950 border border-zinc-850 text-zinc-500 hover:text-white rounded font-bold uppercase text-[9px] tracking-wider text-center cursor-pointer">
-                      Sovereign Dark Slate
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCockpitTheme('slate');
+                        addTelemetryLog('Cockpit theme set: Sovereign Dark Slate', 'success');
+                      }}
+                      className={`p-2 bg-zinc-950 border rounded font-bold uppercase text-[9px] tracking-wider text-center cursor-pointer ${
+                        cockpitTheme === 'slate'
+                          ? 'border-[#00ffe1] text-[#00ffe1]'
+                          : 'border-zinc-850 text-zinc-500 hover:text-white'
+                      }`}
+                    >
+                      Sovereign Dark Slate {cockpitTheme === 'slate' ? '[ACTIVE]' : ''}
                     </button>
                   </div>
                 </div>
@@ -2326,12 +2499,21 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                 {/* Simulated web hook settings */}
                 <div className="space-y-2 bg-black border border-zinc-900 p-4 rounded-xl">
                   <label className="text-zinc-550 font-black text-[9px] uppercase tracking-wider block">2. WEB TELEMETRY HOOK URL:</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value="https://api.clearpathtrader.com/v1/telemetry/desk/7101"
-                    className="w-full bg-zinc-950 border border-zinc-850 rounded px-2.5 py-1.5 text-[#00ffe1] outline-none"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={TELEMETRY_HOOK_URL}
+                      className="flex-1 bg-zinc-950 border border-zinc-850 rounded px-2.5 py-1.5 text-[#00ffe1] outline-none text-[10px] font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void copyTelemetryHook()}
+                      className="shrink-0 px-3 py-1.5 bg-[#00ffe1]/10 border border-[#00ffe1]/30 text-[#00ffe1] hover:bg-[#00ffe1] hover:text-black rounded text-[9px] font-black uppercase tracking-wider cursor-pointer"
+                    >
+                      Copy
+                    </button>
+                  </div>
                   <p className="text-[8px] text-zinc-500 leading-relaxed">
                     Direct RPC websocket connection string for external downline tickers integrations.
                   </p>
