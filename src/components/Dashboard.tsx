@@ -115,7 +115,6 @@ const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
 const Leaderboard = lazy(() => import('./Leaderboard'));
 const CpmsApk = lazy(() => import('./CpmsApk'));
-const ClearPathSentinel = lazy(() => import('./ClearPathSentinel'));
 const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
@@ -399,7 +398,8 @@ const TabContent = ({
         </Suspense>
       );
       case 'CpmsApk': return <CpmsApk />;
-      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isFounder ? 'CeoDashboard' : 'StrictlyCharts')} />;
+      // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
+
       case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
@@ -714,7 +714,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         // Map common spoken words to tab IDs
         const targetMap: Record<string, string> = {
           'home': 'Discovery',
-          'sentinel': 'Sentinel',
           'insights': 'Insights',
           'market': 'StrictlyCharts',
           'markets': 'StrictlyCharts',
@@ -1083,6 +1082,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel']);
+        if (retiredTabs.has(hash)) {
+          setActiveTab('Discovery');
+        } else {
         const validHash = menuItems.find(m => m.id === hash) || 
           hash === 'TheRiver' || 
           hash === 'Founders' || 
@@ -1105,8 +1108,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'ReferralDesk' ||
           hash === 'LiteracyOS' ||
           hash === 'ApiMonitor' || 
-          hash === 'Diagnostics' || 
-          hash === 'Sentinel';
+          hash === 'Diagnostics';
         if (validHash) {
           const next = normalizeTabId(hash);
           // CEO Dashboard hash is founder-only
@@ -1115,6 +1117,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           } else {
             setActiveTab(next);
           }
+        }
         }
       }
     }

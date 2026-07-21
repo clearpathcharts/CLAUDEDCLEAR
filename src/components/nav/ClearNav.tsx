@@ -2,15 +2,15 @@ import React from "react";
 import {
   Activity,
   BarChart3,
-  BookOpen,
   Cpu,
   Crown,
+  BookOpen,
   GraduationCap,
   Home,
   LogOut,
   Newspaper,
   Share2,
-  Shield,
+
   Terminal,
   Users,
 } from "lucide-react";
@@ -97,12 +97,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
-      id: "Sentinel",
-      icon: Shield,
-      label: "SENTINEL",
-    },
-
-    {
       id: "ClearPathEducation",
       icon: BookOpen,
       label: "CLEARPATH EDUCATION",
@@ -133,6 +127,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Share2,
       label: "REFERRALS",
     },
+
   ];
   const renderNavButton = (
     item: NavItem,
@@ -154,7 +149,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isCyan =
       item.id === "CpmsApk" ||
-      item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
       item.id === "ClearPathEducation" ||
