@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">OPTION DELTA</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">OPTIONS / DERIVATIVES</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="308" x2="772" y2="308" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">0</text>
+    <path d="M48.0,513.9 L62.8,513.3 L77.6,512.5 L92.3,511.6 L107.1,510.4 L121.9,509.0 L136.7,507.4 L151.4,505.3 L166.2,502.8 L181.0,499.8 L195.8,496.1 L210.5,491.7 L225.3,486.5 L240.1,480.3 L254.9,472.9 L269.6,464.2 L284.4,454.1 L299.2,442.4 L314.0,429.2 L328.7,414.2 L343.5,397.6 L358.3,379.5 L373.1,360.1 L387.8,339.7 L402.6,318.6 L417.4,297.4 L432.2,276.3 L446.9,255.9 L461.7,236.5 L476.5,218.4 L491.3,201.8 L506.0,186.8 L520.8,173.6 L535.6,161.9 L550.4,151.8 L565.1,143.1 L579.9,135.7 L594.7,129.5 L609.5,124.3 L624.2,119.9 L639.0,116.2 L653.8,113.2 L668.6,110.7 L683.3,108.6 L698.1,107.0 L712.9,105.6 L727.7,104.4 L742.4,103.5 L757.2,102.7 L772.0,102.1" fill="none" stroke="#D946EF" stroke-width="3"/>
+    <path d="M48.0,513.9 L62.8,513.3 L77.6,512.5 L92.3,511.6 L107.1,510.4 L121.9,509.0 L136.7,507.4 L151.4,505.3 L166.2,502.8 L181.0,499.8 L195.8,496.1 L210.5,491.7 L225.3,486.5 L240.1,480.3 L254.9,472.9 L269.6,464.2 L284.4,454.1 L299.2,442.4 L314.0,429.2 L328.7,414.2 L343.5,397.6 L358.3,379.5 L373.1,360.1 L387.8,339.7 L402.6,318.6 L417.4,297.4 L432.2,276.3 L446.9,255.9 L461.7,236.5 L476.5,218.4 L491.3,201.8 L506.0,186.8 L520.8,173.6 L535.6,161.9 L550.4,151.8 L565.1,143.1 L579.9,135.7 L594.7,129.5 L609.5,124.3 L624.2,119.9 L639.0,116.2 L653.8,113.2 L668.6,110.7 L683.3,108.6 L698.1,107.0 L712.9,105.6 L727.7,104.4 L742.4,103.5 L757.2,102.7 L772.0,102.1 L772.0,308.0 L757.2,308.0 L742.4,308.0 L727.7,308.0 L712.9,308.0 L698.1,308.0 L683.3,308.0 L668.6,308.0 L653.8,308.0 L639.0,308.0 L624.2,308.0 L609.5,308.0 L594.7,308.0 L579.9,308.0 L565.1,308.0 L550.4,308.0 L535.6,308.0 L520.8,308.0 L506.0,308.0 L491.3,308.0 L476.5,308.0 L461.7,308.0 L446.9,308.0 L432.2,308.0 L417.4,308.0 L402.6,308.0 L387.8,308.0 L373.1,308.0 L358.3,308.0 L343.5,308.0 L328.7,308.0 L314.0,308.0 L299.2,308.0 L284.4,308.0 L269.6,308.0 L254.9,308.0 L240.1,308.0 L225.3,308.0 L210.5,308.0 L195.8,308.0 L181.0,308.0 L166.2,308.0 L151.4,308.0 L136.7,308.0 L121.9,308.0 L107.1,308.0 L92.3,308.0 L77.6,308.0 L62.8,308.0 L48.0,308.0 Z" fill="url(#magentaFill)"/>
+  
+</svg>

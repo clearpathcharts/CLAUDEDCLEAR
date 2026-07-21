@@ -34,6 +34,9 @@ import {
   STATIC_DEFAULT_CHANNELS,
   CPMS_CURATOR,
   CPMS_FOUNDER_EMAIL,
+  LAUNCH_FEATURED_VIDEO_ID,
+  offlineChannelItems,
+  normalizeCinemaVideos,
 } from '../cpms/cpmsCatalog';
 import { bindVideoSource } from '../lib/cpms/hlsPlayer';
 import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
@@ -85,6 +88,8 @@ export default function CpmsApk() {
   const [volume, setVolume] = useState<number>(85);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isPlaybackFinished, setIsPlaybackFinished] = useState<boolean>(false);
+  const [hasAutoLaunched, setHasAutoLaunched] = useState<boolean>(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
 
   // CHECKS IF USER IS GIVEN ACCESS TO CABINET CREATION
   // SECURITY: locked to the founder's real account only. No client-side bypass exists anymore.
@@ -106,64 +111,69 @@ export default function CpmsApk() {
     }
   }, []);
 
-  // LOAD VIDEOS FROM FIRESTORE OR FALLBACK
+  // Launch-ready catalog: show financial streams immediately, sync Firestore in background.
+  useEffect(() => {
+    setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
+    setChannels(offlineChannelItems());
+    setLoadingVideos(false);
+    setLoadingChannels(false);
+  }, []);
+
+  // LOAD VIDEOS FROM FIRESTORE (optional upgrade when seeded)
   useEffect(() => {
     setLoadingVideos(true);
     const colRef = collection(db, 'cpms_videos');
-    
+
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       if (snapshot.empty) {
-        console.log("No remote tracks found. Seeding beautiful CPMS library sample...");
-        seedDbWithVideos();
+        // Firestore empty — keep bundled catalog; attempt server seed only when founder is signed in.
+        if (isUserAuthorized()) seedDbWithVideos();
+        setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
+        setLoadingVideos(false);
       } else {
-        const list: VideoItem[] = [];
-        snapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() } as VideoItem);
+        const list: CpmsVideoItem[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as CpmsVideoItem);
         });
-        setVideos(list);
+        setVideos(normalizeCinemaVideos(list.length > 0 ? list : SAMPLE_LIBRARY_VIDEOS));
         setLoadingVideos(false);
       }
     }, (error) => {
-      console.warn("Dynamic cloud sync disabled, engaging beautiful pre-seeded database:", error);
-      setVideos(SAMPLE_LIBRARY_VIDEOS);
+      console.warn('Dynamic cloud sync disabled, using bundled launch catalog:', error);
+      setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
       setLoadingVideos(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.email, userProfile?.email]);
 
-  // LOAD CHANNELS FROM FIRESTORE OR FALLBACK
+  // LOAD CHANNELS FROM FIRESTORE (optional upgrade when seeded)
   useEffect(() => {
     setLoadingChannels(true);
     const colRef = collection(db, 'cpms_channels');
-    
+
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       if (snapshot.empty) {
-        console.log("No channels found. Seeding standard cinema categories...");
-        seedDbWithChannels();
+        if (isUserAuthorized()) seedDbWithChannels();
+        setChannels(offlineChannelItems());
+        setLoadingChannels(false);
       } else {
-        const list: ChannelItem[] = [];
-        snapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() } as ChannelItem);
+        const list: CpmsChannelItem[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as CpmsChannelItem);
         });
         list.sort((a, b) => a.name.localeCompare(b.name));
-        setChannels(list);
+        setChannels(list.length > 0 ? list : offlineChannelItems());
         setLoadingChannels(false);
       }
     }, (error) => {
-      console.warn("Using offline premium channels hierarchy:", error);
-      const mapped = STATIC_DEFAULT_CHANNELS.map((ch, idx) => ({
-        id: `offline-ch-${idx}`,
-        ...ch,
-        createdAt: new Date().toISOString(),
-        createdBy: CPMS_CURATOR
-      }));
-      setChannels(mapped);
+      console.warn('Using bundled channel lineup:', error);
+      setChannels(offlineChannelItems());
       setLoadingChannels(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.email, userProfile?.email]);
 
   // SEED FUNCTIONS ENABLING AUTOMATIC HIGH-STAKES POPULATION
   const seedDbWithVideos = async () => {
@@ -173,8 +183,9 @@ export default function CpmsApk() {
         await addDoc(colRef, item);
       }
     } catch (err) {
-      console.error("Could not write seed packs:", err);
+      console.error('Could not write seed packs:', err);
       setVideos(SAMPLE_LIBRARY_VIDEOS);
+      setLoadingVideos(false);
     }
   };
 
@@ -185,13 +196,28 @@ export default function CpmsApk() {
         await addDoc(colRef, {
           ...item,
           createdAt: new Date().toISOString(),
-          createdBy: CPMS_CURATOR
+          createdBy: CPMS_CURATOR,
         });
       }
     } catch (err) {
-      console.error("Could not write channels seed pack:", err);
+      console.error('Could not write channels seed pack:', err);
+      setChannels(offlineChannelItems());
+      setLoadingChannels(false);
     }
   };
+
+  // Auto-open the launch featured live feed so something is playing on first visit.
+  useEffect(() => {
+    if (hasAutoLaunched || videos.length === 0) return;
+    const featured =
+      videos.find(v => v.id === LAUNCH_FEATURED_VIDEO_ID) ??
+      videos.find(v => v.isLive) ??
+      videos[0];
+    if (!featured) return;
+    setSelectedVideo(featured);
+    setIsMuted(true);
+    setHasAutoLaunched(true);
+  }, [videos, hasAutoLaunched]);
 
   // HANDLE RECENT CONTINUED WATCHING LIST
   const addToContinueWatching = (vid: VideoItem) => {
@@ -253,10 +279,20 @@ export default function CpmsApk() {
   }, [volume, isMuted, selectedVideo]);
 
   // HLS / progressive stream binding (cleans up on video change or unmount)
+  // Direct streams only — YouTube embeds are not used (they freeze the cinema player).
   useEffect(() => {
     const url = selectedVideo?.videoUrl;
     const el = videoRef.current;
-    if (!url || !el) return;
+    setStreamError(null);
+
+    if (!selectedVideo) return;
+
+    if (!url?.trim()) {
+      setStreamError('No direct stream URL for this channel. Pick another broadcast.');
+      return;
+    }
+
+    if (!el) return;
 
     setCurrentTime(0);
     setVideoDuration(0);
@@ -268,10 +304,21 @@ export default function CpmsApk() {
         setVideoPlaying(true);
         setIsPlaybackFinished(false);
       },
+      onError: (message) => {
+        console.warn('[ClearPath Cinema] HLS error:', message);
+        setStreamError('Live stream temporarily unavailable. Try Bloomberg TV or another channel.');
+      },
     });
 
     return cleanup;
   }, [selectedVideo?.id, selectedVideo?.videoUrl]);
+
+  const openVideo = (item: VideoItem) => {
+    setSelectedVideo(item);
+    setStreamError(null);
+    setIsMuted(item.isLive ?? false);
+    addToContinueWatching(item);
+  };
 
   // CATEGORY LIST SELECTION
   const getCategoriesList = () => {
@@ -426,7 +473,10 @@ export default function CpmsApk() {
 
   // GET A SUITABLE FEATURED HERO VIDEO FOR THE LUXURY BILLBOARD
   const getHeroVideo = () => {
-    const featured = videos.find(v => v.title.includes("Debt") || v.category === "Documentary TV");
+    const featured =
+      videos.find(v => v.id === LAUNCH_FEATURED_VIDEO_ID) ??
+      videos.find(v => v.isLive) ??
+      videos.find(v => v.title.includes('Debt') || v.category === 'Documentary TV');
     return featured || videos[0] || SAMPLE_LIBRARY_VIDEOS[0];
   };
 
@@ -452,7 +502,7 @@ export default function CpmsApk() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-black text-amber-500 tracking-[0.3em] uppercase">CPMS PRIVATE STATION</span>
+                <span className="text-[10px] font-mono font-black text-amber-500 tracking-[0.3em] uppercase">CLEARPATH CINEMA</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               </div>
               <h1 className="text-2xl md:text-3xl font-cinzel font-black tracking-wide bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
@@ -847,10 +897,7 @@ export default function CpmsApk() {
         {/* --- LUXURIOUS HERO BILLBOARD SECTION (MasterClass style) --- */}
         {hero && (
           <div 
-            onClick={() => {
-              setSelectedVideo(hero);
-              addToContinueWatching(hero);
-            }}
+            onClick={() => openVideo(hero)}
             className="w-full relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-gradient-to-r from-black via-zinc-950/90 to-indigo-950/20 group cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.8)] min-h-[340px] md:min-h-[460px] flex flex-col justify-end text-left relative animate-fadeIn"
           >
             {/* LARGE CLINEMATIC IMAGE BACKGROUND */}
@@ -868,10 +915,10 @@ export default function CpmsApk() {
               <div className="flex flex-wrap items-center gap-3">
                 <span className="bg-amber-400/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold tracking-widest px-3 py-1 rounded-full uppercase flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  FEATURED LUXURY MASTERCLASS
+                  {hero.isLive ? 'LIVE MARKETS NOW' : 'FEATURED MASTERCLASS'}
                 </span>
                 <span className="bg-zinc-950/80 text-zinc-400 border border-white/5 text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full">
-                  {hero.duration} MINUTES
+                  {hero.isLive ? 'LIVE' : `${hero.duration} MIN`}
                 </span>
                 <span className="bg-indigo-950/80 text-indigo-300 border border-indigo-500/20 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase">
                   {hero.relatedIndicatorId}
@@ -897,7 +944,7 @@ export default function CpmsApk() {
               <div className="pt-2 flex items-center gap-4">
                 <div className="px-6 py-3 bg-white hover:bg-amber-400 text-black hover:text-black font-semibold rounded-full flex items-center gap-2.5 shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all transform group-hover:scale-105 active:scale-95 duration-300 shrink-0">
                   <Play className="w-4 h-4 fill-current text-black" />
-                  <span className="text-xs uppercase font-black tracking-wider">Play Masterclass</span>
+                  <span className="text-xs uppercase font-black tracking-wider">{hero.isLive ? 'Watch Live' : 'Play Masterclass'}</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-amber-500 group-hover:underline uppercase tracking-widest hidden sm:inline-block">
                   Click to launch standard cinema broadcast
@@ -960,10 +1007,7 @@ export default function CpmsApk() {
                 {continueWatching.map((item, index) => (
                   <div
                     key={`continue-watch-${index}`}
-                    onClick={() => {
-                      setSelectedVideo(item);
-                      addToContinueWatching(item);
-                    }}
+                    onClick={() => openVideo(item)}
                     className="relative group cursor-pointer bg-zinc-950/80 border border-white/5 rounded-2xl p-3 flex items-center gap-3.5 hover:border-amber-500/20 hover:bg-zinc-900/40 transition-all shadow-md shrink-0"
                   >
                     <div 
@@ -1017,10 +1061,7 @@ export default function CpmsApk() {
                     {filtered.map((item) => (
                       <div
                         key={item.id || item.title}
-                        onClick={() => {
-                          setSelectedVideo(item);
-                          addToContinueWatching(item);
-                        }}
+                        onClick={() => openVideo(item)}
                         className="bg-zinc-950/80 border border-white/[0.04] p-4 rounded-3xl w-[280px] md:w-[350px] shrink-0 snap-start cursor-pointer hover:border-amber-400/20 hover:bg-zinc-900/40 hover:shadow-[0_15px_30px_rgba(0,0,0,0.6)] group transition-all duration-300 transform hover:-translate-y-1 relative flex flex-col justify-between"
                       >
                         {/* DECORATIVE TOP DESIGN GLOW BAR */}
@@ -1044,7 +1085,7 @@ export default function CpmsApk() {
                             </div>
 
                             <span className="absolute bottom-2.5 right-2.5 bg-black/90 font-mono text-[9px] font-black text-amber-400 px-2.5 py-0.5 rounded border border-white/10 select-none">
-                              {item.duration} MIN
+                              {item.isLive ? 'LIVE' : `${item.duration} MIN`}
                             </span>
                           </div>
 
@@ -1133,14 +1174,31 @@ export default function CpmsApk() {
                 </button>
               </div>
 
-              {/* CINEMATIC HTML5 PLAYER WRAPPER */}
+              {/* CINEMATIC PLAYER — direct HLS/MP4 only (no YouTube) */}
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden border-b border-white/5 group">
-                
-                {selectedVideo.videoUrl ? (
+
+                {isMuted && selectedVideo.isLive && (
+                  <button
+                    type="button"
+                    onClick={() => setIsMuted(false)}
+                    className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-amber-400 text-black px-4 py-2 rounded-full text-[10px] font-mono font-black uppercase tracking-widest shadow-lg hover:bg-amber-300 transition-colors"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Tap to unmute live markets
+                  </button>
+                )}
+
+                {streamError && (
+                  <div className="absolute top-3 left-3 right-3 z-30 bg-red-950/80 border border-red-500/30 text-red-200 text-[10px] font-mono px-3 py-2 rounded-lg">
+                    {streamError}
+                  </div>
+                )}
+
+                {selectedVideo.videoUrl?.trim() ? (
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
+                    muted={isMuted}
                     onTimeUpdate={updateTime}
                     onLoadedMetadata={loadMetadata}
                     onEnded={handleVideoEnded}

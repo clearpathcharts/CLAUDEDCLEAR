@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">SMA (SIMPLE MOVING AVERAGE)</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">MOVING AVERAGE OVERLAY</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <path d="M48.0,506.9 L62.2,487.6 L76.4,480.0 L90.6,507.2 L104.8,507.2 L119.0,487.5 L133.2,515.7 L147.4,506.8 L161.6,487.7 L175.8,467.4 L190.0,487.9 L204.2,444.6 L218.4,403.5 L232.5,362.5 L246.7,360.2 L260.9,320.8 L275.1,298.7 L289.3,303.6 L303.5,285.1 L317.7,307.1 L331.9,267.5 L346.1,240.1 L360.3,263.3 L374.5,285.5 L388.7,270.6 L402.9,235.0 L417.1,225.3 L431.3,215.0 L445.5,197.0 L459.7,176.4 L473.9,176.3 L488.1,172.6 L502.3,196.0 L516.5,211.3 L530.7,219.6 L544.9,238.7 L559.1,245.3 L573.3,219.5 L587.5,198.4 L601.6,204.6 L615.8,226.4 L630.0,220.2 L644.2,185.1 L658.4,160.5 L672.6,182.4 L686.8,165.3 L701.0,187.4 L715.2,163.9 L729.4,183.2 L743.6,164.1 L757.8,136.5 L772.0,100.3" fill="none" stroke="#94a3b8" stroke-width="1.5" opacity="0.7"/>
+    <path d="M48.0,506.9 L62.2,505.1 L76.4,502.7 L90.6,503.1 L104.8,503.5 L119.0,502.0 L133.2,503.3 L147.4,503.6 L161.6,502.1 L175.8,498.8 L190.0,497.8 L204.2,492.7 L218.4,484.2 L232.5,472.6 L246.7,461.9 L260.9,448.5 L275.1,434.2 L289.3,421.8 L303.5,408.8 L317.7,399.1 L331.9,386.6 L346.1,372.6 L360.3,362.2 L374.5,354.9 L388.7,346.9 L402.9,336.2 L417.1,325.6 L431.3,315.1 L445.5,303.9 L459.7,291.7 L473.9,280.7 L488.1,270.4 L502.3,263.3 L516.5,258.4 L530.7,254.7 L544.9,253.2 L559.1,252.4 L573.3,249.3 L587.5,244.4 L601.6,240.6 L615.8,239.3 L630.0,237.5 L644.2,232.5 L658.4,225.6 L672.6,221.5 L686.8,216.2 L701.0,213.4 L715.2,208.7 L729.4,206.3 L743.6,202.3 L757.8,196.0 L772.0,186.9" fill="none" stroke="#00FFD1" stroke-width="2.5"/>
+    <path d="M48.0,506.9 L62.2,505.5 L76.4,503.6 L90.6,503.9 L104.8,504.1 L119.0,502.9 L133.2,503.9 L147.4,504.1 L161.6,502.9 L175.8,500.2 L190.0,499.3 L204.2,495.3 L218.4,488.5 L232.5,479.1 L246.7,470.3 L260.9,459.3 L275.1,447.4 L289.3,436.7 L303.5,425.5 L317.7,416.7 L331.9,405.7 L346.1,393.4 L360.3,383.8 L374.5,376.5 L388.7,368.6 L402.9,358.7 L417.1,348.9 L431.3,338.9 L445.5,328.4 L459.7,317.2 L473.9,306.7 L488.1,296.8 L502.3,289.3 L516.5,283.5 L530.7,278.8 L544.9,275.8 L559.1,273.6 L573.3,269.6 L587.5,264.3 L601.6,259.9 L615.8,257.4 L630.0,254.6 L644.2,249.5 L658.4,242.9 L672.6,238.4 L686.8,233.0 L701.0,229.6 L715.2,224.8 L729.4,221.7 L743.6,217.4 L757.8,211.4 L772.0,203.2" fill="none" stroke="#FF2D95" stroke-width="2"/>
+    
+  
+</svg>

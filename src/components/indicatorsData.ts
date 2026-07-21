@@ -1,3 +1,5 @@
+import { INDICATOR_DESCRIPTIONS } from './indicatorDescriptions';
+
 export const INDICATOR_NAMES = [
   "Acceleration Bands", "Accumulation/Distribution Line", "Advance/Decline Line", "Advance-Decline Ratio",
   "ADX (Average Directional Index)", "Alligator Indicator", "Alpha", "Andrews Pitchfork", "Aroon Indicator",
@@ -62,6 +64,53 @@ const FUNDAMENTAL = new Set([
   "Sortino Ratio",
 ]);
 
+/** Matches scripts/generate-indicator-svgs.mjs slugify output. */
+export function indicatorImageSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[()%/]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function indicatorImagePath(name: string): string {
+  return `/encyclopedia-indicators/${indicatorImageSlug(name)}.svg`;
+}
+
+/** Map encyclopedia names → chart bank abbreviations when a live overlay exists. */
+const CHART_ABBR_BY_NAME: Record<string, string> = {
+  "SMA (Simple Moving Average)": "SMA",
+  "Moving Average": "SMA",
+  "EMA (Exponential Moving Average)": "EMA",
+  "Relative Strength Index (RSI)": "RSI",
+  "MACD": "MACD",
+  "MACD Histogram": "MACD",
+  "Bollinger Bands": "BB",
+  "ATR (Average True Range)": "ATR",
+  "ADX (Average Directional Index)": "ADX",
+  "Directional Movement Index (DMI)": "ADX",
+  "OBV (On Balance Volume)": "OBV",
+  "Volume Weighted Average Price (VWAP)": "VWAP",
+  "Ichimoku Cloud": "ICHIMOKU",
+  "Lagging Span": "ICHIMOKU",
+};
+
+export function indicatorChartAbbr(name: string): string | null {
+  if (CHART_ABBR_BY_NAME[name]) return CHART_ABBR_BY_NAME[name];
+  const upper = name.toUpperCase();
+  if (upper.includes("BOLLINGER") && !upper.includes("WIDTH")) return "BB";
+  if (upper.startsWith("RSI") || upper.includes("RELATIVE STRENGTH INDEX")) return "RSI";
+  if (upper.includes("MACD")) return "MACD";
+  if (upper.includes("VWAP")) return "VWAP";
+  if (upper.includes("ICHIMOKU")) return "ICHIMOKU";
+  if (/\bATR\b/.test(upper) || upper.includes("AVERAGE TRUE RANGE")) return "ATR";
+  if (/\bADX\b/.test(upper)) return "ADX";
+  if (/\bOBV\b/.test(upper) || upper.includes("ON BALANCE VOLUME")) return "OBV";
+  if (/\bEMA\b/.test(upper) && !upper.includes("ZERO")) return "EMA";
+  if (/\bSMA\b/.test(upper) || upper === "MOVING AVERAGE") return "SMA";
+  return null;
+}
+
 export function buildIndicators() {
   const tagPool = ["volatility", "volume", "institutional", "retail", "high-frequency", "oscillator", "overlay", "momentum"];
 
@@ -72,7 +121,7 @@ export function buildIndicators() {
     const category = isFundamental ? "Fundamental" : "Technical";
     
     const hasVideo = i % 5 === 0;
-    const img = `https://picsum.photos/800/600?random=${i + 50}`;
+    const img = indicatorImagePath(name);
     const videoUrl = hasVideo ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : null;
     
     let complexity = Math.round(2 + ((i * 13) % 18) / 10);
@@ -85,16 +134,23 @@ export function buildIndicators() {
       category.toLowerCase()
     ];
 
+    const description =
+      INDICATOR_DESCRIPTIONS[name] ||
+      (isFundamental
+        ? `Macro-economic indicator tracking ${name} for growth, risk, and policy context.`
+        : `Technical indicator used to analyze ${name} on price, volume, or volatility.`);
+
     items.push({
       id: `ind${i + 1}`,
       name: name,
-      description: isFundamental ? `Macro-economic or fundamental indicator for ${name.toLowerCase()}` : `Technical analysis model measuring the ${name.toLowerCase()}`,
+      description,
       category,
       complexity,
       hasVideo,
       tags,
       img,
-      videoUrl
+      videoUrl,
+      chartAbbr: indicatorChartAbbr(name),
     });
   }
   return items;

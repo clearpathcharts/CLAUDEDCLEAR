@@ -4,6 +4,12 @@ import { X, ShieldAlert, FileDown, Mail, AlertTriangle, Check, Search, Lock } fr
 import { doc, updateDoc } from '../firebase';
 import { getDb, handleFirestoreError, OperationType } from '../firebase';
 
+// Recipient for abuse / law-enforcement reports. Configurable via
+// VITE_ABUSE_REPORT_EMAIL so reports go to a real, monitored inbox instead of a
+// placeholder address.
+const ABUSE_REPORT_EMAIL: string =
+  (import.meta.env.VITE_ABUSE_REPORT_EMAIL as string | undefined)?.trim() || 'abuse@clearpathtrader.com';
+
 interface QuarantineModalProps {
   user: any;
   onClose: () => void;
@@ -99,7 +105,7 @@ REASON FOR QUARANTINE
 ${reason || 'No specific reason provided by officer.'}
     `);
     
-    window.location.href = `mailto:law_enforcement@example.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${ABUSE_REPORT_EMAIL}?subject=${subject}&body=${body}`;
   };
 
   return (
