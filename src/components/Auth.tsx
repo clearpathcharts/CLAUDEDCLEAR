@@ -17,11 +17,8 @@ import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
-<<<<<<< HEAD
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
-=======
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
->>>>>>> origin/main
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
