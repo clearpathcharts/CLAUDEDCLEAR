@@ -474,16 +474,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
             🔥 Affiliate Network
           </button>
         )}
-        {onNavigate && (
-          <button
-            type="button"
-            onClick={() => onNavigate('ReferralDesk')}
-            className="w-full mt-3 flex items-center justify-center gap-2 uppercase tracking-wider text-xs sm:text-sm py-3.5 select-none font-bold font-mono rounded-xl border border-[#FFD700]/35 text-[#FFD700] bg-[#FFD700]/10 hover:bg-[#FFD700]/20 transition-colors"
-          >
-            Referrals · Polsia
-          </button>
-        )}
-
         <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
           <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
             Followers: 12,450

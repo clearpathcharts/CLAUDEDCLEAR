@@ -4,7 +4,6 @@ import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
-import PolsiaPaidAdPage from './components/PolsiaPaidAdPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
@@ -63,11 +62,6 @@ function isEducationPath(path: string): boolean {
 function isLiteracyPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return p === '/literacy' || p === '/literacy-os';
-}
-
-function isPolsiaAdPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  return p === '/ads/polsia' || p === '/polsia' || p === '/advertise/polsia';
 }
 
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
@@ -191,8 +185,6 @@ export default function App() {
     content = <PressKitPage />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
-  } else if (isPolsiaAdPath(currentPath)) {
-    content = <PolsiaPaidAdPage />;
   } else if (!user) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {

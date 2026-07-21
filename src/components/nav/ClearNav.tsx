@@ -11,7 +11,6 @@ import {
   Network,
 
   Newspaper,
-  Share2,
 
   Terminal,
   Users,
@@ -133,12 +132,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     //   label: "ENCYCLOPEDIA OF INDICATORS",
     // },
 
-    {
-      id: "ReferralDesk",
-      icon: Share2,
-      label: "REFERRALS",
-    },
-
   ];
   const renderNavButton = (
     item: NavItem,
@@ -151,8 +144,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isGold =
       item.id === "Membership" ||
-      item.id === "Founders" ||
-      item.id === "ReferralDesk";
+      item.id === "Founders";
 
     const isPink =
       item.id === "Biography" ||
