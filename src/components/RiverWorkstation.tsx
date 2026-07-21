@@ -18,6 +18,7 @@ import type { Value } from '../river/pine/interpreter';
 import RiverCatalogPanel from './RiverCatalogPanel';
 import RiverGeniePanel from './RiverGeniePanel';
 import RiverHero from './RiverHero';
+import RiverHonestLimitsBento from './RiverHonestLimitsBento';
 import { RIVER_PAGE_CONTENT } from '../river/marketing/riverPageContent';
 import {
   detectSourceLanguage,
@@ -289,6 +290,8 @@ export default function RiverWorkstation() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6 items-start">
         <div>
       <RiverHero />
+
+      <RiverHonestLimitsBento />
 
       <div className="mb-8 border-b border-white/10 pb-6">
         <div className="flex items-center gap-3 mb-2">

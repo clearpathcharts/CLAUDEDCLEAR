@@ -53,6 +53,26 @@ export const RIVER_PAGE_CONTENT = {
     subtitle: "Build custom Pine indicators with AI — compile and apply to every chart.",
     cta: "Open The River",
   },
+
+  /** Public trust warning — always visible on The River workstation. */
+  honestLimits: {
+    title: "Honest limits",
+    tagline: "Trust is the moat",
+    intro:
+      "You will not get 100% auto-conversion on every script from every platform. Some code depends on feeds and APIs ClearPath does not host.",
+    wontConvert: [
+      "Multi-symbol security() / request.security() / iCustom() chains",
+      "Broker order routing and live execution (OrderSend, strategy bots as trades)",
+      "Proprietary drawing, DOM, footprint, and vendor-only data feeds",
+    ],
+    wePromise: [
+      "These 47 lines converted.",
+      "These 3 lines need a manual swap — Genie suggests the fix.",
+      "This is a strategy bot — we import the signal math, not live orders.",
+    ],
+    closing:
+      "That beats platforms that pretend full compatibility and break on bar 2. The River reports honestly — never fake success.",
+  },
 } as const;
 
 export type RiverPageContent = typeof RIVER_PAGE_CONTENT;
