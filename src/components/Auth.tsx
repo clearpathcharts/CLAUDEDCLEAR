@@ -12,6 +12,7 @@ import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
 import { joinWaitlist } from "../appwrite";
+import { BOARD_ACCESS_CODE } from "../config/accessCodes";
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
@@ -434,7 +435,7 @@ export default function Auth() {
   // Cryptographic passcode quick checks
   useEffect(() => {
     if (passcode.length === 6) {
-      if (passcode === '142879') {
+      if (passcode === BOARD_ACCESS_CODE) {
         handleBoardLoginSubmit();
       } else {
         setBoardError('BOARD ACCESS CODE REJECTED. UNAUTHORIZED CREDENTIAL IDENTIFIER.');
@@ -449,7 +450,7 @@ export default function Auth() {
     if (e) e.preventDefault();
     setBoardError('');
     
-    if (passcode === '142879') {
+    if (passcode === BOARD_ACCESS_CODE) {
       try {
         // ALWAYS write local bypass user FIRST so they can successfully login even offline/without firebase!
         const fallbackUser = {

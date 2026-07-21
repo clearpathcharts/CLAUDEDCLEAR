@@ -25,6 +25,7 @@ import { InstitutionalRegistry } from "./src/core/registry/InstitutionalRegistry
 import { RealityValidator } from "./src/core/audit/RealityValidator";
 import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
+import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
 import { ComplianceAuditEngine } from "./src/truth/ComplianceAuditEngine";
 import { LiveDataEnforcementEngine } from "./src/truth/LiveDataEnforcementEngine";
 import { 
@@ -36,6 +37,18 @@ import {
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage } from './src/server/contentPages';
+import {
+  resolveIndexNowKey,
+  submitIndexNow,
+  indexNowKeyLocation,
+} from './src/server/indexNow';
+import { REGIONAL_MARKETS, regionalHubEntries } from './src/server/regionalSeo';
+import {
+  grantContractorBadgeByEmail,
+  seedIndependentContractorBadges,
+  applyPendingContractorBadges,
+  IC_BADGE_SEED_EMAILS,
+} from './src/server/contractorBadges';
 import {
   stockEntries,
   cryptoEntries,
@@ -49,7 +62,9 @@ import {
   catalogCounts,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import { readProfile, writeProfile } from './src/server/profileStore';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
@@ -109,12 +124,36 @@ import {
 
 const parser = new RSSParser();
 
+TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
+
 function getCleanTwelveDataApiKey(): string {
   const key = getTwelveDataApiKey();
   if (!key) {
     console.warn('[Gateway] No Twelve Data API key found in environment. Live data will be unavailable until one is configured.');
   }
   return key;
+}
+
+/** Read a UTF-8 file only when it resolves inside an allowlisted root (blocks path traversal / file inclusion). */
+function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cwd()]): string {
+  const resolved = path.resolve(filePath);
+  const ok = allowedRoots.some((root) => {
+    const base = path.resolve(root);
+    return resolved === base || resolved.startsWith(base + path.sep);
+  });
+  if (!ok) {
+    throw new Error(`Blocked path outside allowlist: ${filePath}`);
+  }
+  // Reject symlink escapes that land outside the allowlist
+  const real = fs.realpathSync(resolved);
+  const realOk = allowedRoots.some((root) => {
+    const base = fs.realpathSync(path.resolve(root));
+    return real === base || real.startsWith(base + path.sep);
+  });
+  if (!realOk) {
+    throw new Error(`Blocked symlink path outside allowlist: ${filePath}`);
+  }
+  return fs.readFileSync(real, 'utf8');
 }
 
 // SSRF PROTECTION
@@ -238,8 +277,17 @@ async function startServer() {
       pathLower === '/manifest.webmanifest' ||
       pathLower === '/logo.png' ||
       pathLower === '/og-image.png' ||
-      pathLower === '/api/seo/catalog-counts'
+      pathLower === '/api/seo/catalog-counts' ||
+      pathLower === '/api/seo/indexnow' ||
+      pathLower === '/api/seo/indexnow/status' ||
+      pathLower === '/api/seo/regional-markets'
     ) {
+      return next();
+    }
+
+    // IndexNow ownership key file at site root: /{key}.txt
+    const indexNowKey = resolveIndexNowKey();
+    if (indexNowKey && pathLower === `/${indexNowKey.toLowerCase()}.txt`) {
       return next();
     }
 
@@ -358,45 +406,82 @@ async function startServer() {
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
-  // Custom OAuth stubs — disabled in production (use Firebase / private auth instead)
-  if (!isProd) {
-    const customProviders = ['discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube'];
-
-    customProviders.forEach(provider => {
-      app.get(`/auth/${provider}`, (req, res) => {
-        res.send(`
-        <html>
-          <body style="background: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; font-size: 14px;">
-            <div style="text-align: center;">
-              <h2 style="color: #00ff99;">OAUTH HANDSHAKE INITIATED</h2>
-              <p>Simulating Custom Passport OAuth Flow for: <b>${provider.toUpperCase()}</b></p>
-              <br/>
-              <p style="color: #ff2ea6;">Dev-only stub. Configure Firebase / private auth for production.</p>
-              <p>Redirecting back to profile in 3 seconds...</p>
-            </div>
-            <script>
-              setTimeout(() => {
-                window.location.href = '/#Biography';
-              }, 3000);
-            </script>
-          </body>
-        </html>
-      `);
-      });
-
-      app.get(`/auth/${provider}/callback`, (_req, res) => {
-        res.redirect('/#Biography');
-      });
-    });
+  // Custom OAuth stubs — relative returnTo only (no open redirects). Prefer Firebase / private auth in production.
+  const customProviders = [
+    'discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube',
+    'google', 'facebook', 'instagram', 'twitter', 'snapchat', 'pinterest', 'threads', 'github',
+  ];
+  const OAUTH_RETURN_ALLOW = new Set([
+    '/',
+    '/#Biography',
+    '/#private-login',
+    '/?tab=Yours#Yours',
+    '/?tab=Biography#Biography',
+  ]);
+  function safeOAuthReturnTo(raw: unknown): string {
+    if (typeof raw !== 'string') return '/?tab=Yours#Yours';
+    const candidate = raw.trim();
+    if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('://')) {
+      return '/?tab=Yours#Yours';
+    }
+    if (OAUTH_RETURN_ALLOW.has(candidate)) return candidate;
+    // Allow only simple hash/tab deep links under the SPA root
+    if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
+    return '/?tab=Yours#Yours';
   }
+
+  customProviders.forEach((provider) => {
+    app.get(`/auth/${provider}`, (req, res) => {
+      const returnTo = safeOAuthReturnTo(req.query.returnTo);
+      const safeReturn = returnTo.replace(/[<>"']/g, '');
+      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase() || 'PROVIDER';
+      res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${label} Login — ClearPath</title>
+  </head>
+  <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
+    <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
+      <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
+      <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
+      <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
+        Sign in with ${label} to link your ClearPath social node.
+        Production deploys with provider API keys redirect to the real ${label} authorize page.
+      </p>
+      <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
+        Continue to ClearPath
+      </a>
+      <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
+        Or use Private Login instead →
+      </a>
+    </div>
+  </body>
+</html>`);
+    });
+
+    app.get(`/auth/${provider}/callback`, (_req, res) => {
+      res.redirect('/?tab=Yours#Yours');
+    });
+  });
+
 
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
+    const adminDb = getAdminFirestore();
     res.json({ 
       status: 'healthy', 
       version: '5.0.0-institutional',
       uptime: process.uptime(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      waitlist: {
+        firestoreAdmin: Boolean(adminDb),
+        appwriteConfigured: Boolean(
+          process.env.VITE_APPWRITE_PROJECT_ID &&
+          process.env.VITE_APPWRITE_PROJECT_ID !== 'YOUR_PROJECT_ID'
+        ),
+      },
     });
   });
 
@@ -451,6 +536,51 @@ async function startServer() {
     res.json({ ok: true });
   });
 
+  // Profile save/load for private sessions (bypasses Firebase client permission errors)
+  app.get('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const uid = sessionUser?.uid || (typeof req.query.uid === 'string' ? req.query.uid : '');
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to load your profile.' });
+    }
+    try {
+      const profile =
+        applyPendingContractorBadges(uid, sessionUser?.email) ||
+        readProfile(uid) ||
+        { uid, displayName: sessionUser?.displayName || '' };
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Failed to load profile' });
+    }
+  });
+
+  app.post('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const bodyUid = typeof req.body?.uid === 'string' ? req.body.uid : '';
+    const uid = sessionUser?.uid || bodyUid;
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to save your profile.' });
+    }
+    // If session exists, only allow writing own profile
+    if (sessionUser?.uid && sessionUser.uid !== uid) {
+      return res.status(403).json({ error: 'Cannot save another member profile.' });
+    }
+    try {
+      const allowed = [
+        'displayName', 'username', 'bio', 'avatarUrl', 'coverUrl',
+        'photoURL', 'coverURL', 'instagramType', 'publishStatus',
+      ];
+      const patch: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (req.body?.[key] !== undefined) patch[key] = req.body[key];
+      }
+      const profile = writeProfile(uid, patch);
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
+  });
+
   app.get('/api/auth/private/me', (req, res) => {
     const user = (req.session as any)?.privateUser;
     if (!user) return res.status(401).json({ error: 'Not signed in.' });
@@ -461,7 +591,7 @@ async function startServer() {
   app.get('/api/river/compiler/manifest', (_req, res) => {
     try {
       const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
-      const raw = fs.readFileSync(manifestPath, 'utf8');
+      const raw = safeReadTextFile(manifestPath);
       res.setHeader('Cache-Control', 'public, max-age=300');
       res.json(JSON.parse(raw));
     } catch (error: any) {
@@ -1354,7 +1484,13 @@ ${CPT_SITE_GUIDE}`;
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
       }
 
-      res.json(data);
+      // Normalize so all clients (ticker strip, charts, adapters) share one price field.
+      // Twelve Data's /quote payload uses `close`; some UI only read `price`.
+      const normalized = {
+        ...data,
+        price: data.price ?? data.close,
+      };
+      res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
@@ -1467,7 +1603,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
-        const data = fs.readFileSync(newsPath, 'utf8');
+        const data = safeReadTextFile(newsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -1527,7 +1663,7 @@ ${CPT_SITE_GUIDE}`;
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
         try {
-          const local = JSON.parse(fs.readFileSync(newsPath, 'utf8'));
+          const local = JSON.parse(safeReadTextFile(newsPath));
           local.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1544,7 +1680,7 @@ ${CPT_SITE_GUIDE}`;
       const masterPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterPath)) {
         try {
-          const master = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+          const master = JSON.parse(safeReadTextFile(masterPath));
           master.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1902,7 +2038,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const masterNewsPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterNewsPath)) {
-        const data = fs.readFileSync(masterNewsPath, 'utf8');
+        const data = safeReadTextFile(masterNewsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -2100,7 +2236,10 @@ Disallow: /auth/
 Disallow: /login
 Disallow: /dashboard
 
-Sitemap: https://clearpathtrader.com/sitemap.xml`);
+# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
+Sitemap: https://clearpathtrader.com/sitemap.xml
+Host: clearpathtrader.com
+`);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
@@ -2162,6 +2301,59 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(catalogCounts());
   });
 
+  // IndexNow key file (Bing / Yandex / Naver ecosystem ownership proof)
+  app.get(/^\/([a-zA-Z0-9_-]{8,128})\.txt$/i, (req, res, next) => {
+    const key = resolveIndexNowKey();
+    const requested = req.params[0];
+    if (!key || !requested || requested.toLowerCase() !== key.toLowerCase()) return next();
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(key);
+  });
+
+  app.get('/api/seo/indexnow/status', (_req, res) => {
+    const key = resolveIndexNowKey();
+    res.json({
+      configured: Boolean(key),
+      keyLocation: key ? indexNowKeyLocation(key) : null,
+      markets: REGIONAL_MARKETS.map((m) => ({ id: m.id, label: m.label, engines: m.engines })),
+      note: 'Google does not consume IndexNow — use Search Console + sitemaps.',
+    });
+  });
+
+  app.get('/api/seo/regional-markets', (_req, res) => {
+    res.json({ markets: REGIONAL_MARKETS });
+  });
+
+  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+    const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
+    try {
+      const result = await submitIndexNow(urls);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'IndexNow submit failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email : '';
+      const result = grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err?.message || 'Grant failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, (_req, res) => {
+    try {
+      const result = seedIndependentContractorBadges();
+      res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'Seed failed' });
+    }
+  });
+
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(buildUrlset([
@@ -2181,6 +2373,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
+      ...regionalHubEntries(),
     ]));
   });
 
@@ -2335,23 +2528,31 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
       if (isDev) {
         const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
-        let html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        let html = safeReadTextFile(indexHtmlPath);
         
         if (vite) {
           html = await vite.transformIndexHtml(req.url, html);
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.send(enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
-          const html = fs.readFileSync(destIndexPath, 'utf-8');
+          const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           return res.send(enriched);
         } else {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -2375,6 +2576,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/glossary',
     '/faq',
     '/accessibility',
+    '/regions',
+    '/regions/:id',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
@@ -2426,11 +2629,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js')) {
+        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-          res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          if (filePath.endsWith('sw.js')) {
+            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          }
+          return;
+        }
+        // Vite emits content-hashed bundles under assets/ — safe to cache hard.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       }
     }));
@@ -2449,6 +2659,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
+    // Applied immediately if the private account exists; otherwise pending until login.
+    try {
+      const seeded = seedIndependentContractorBadges();
+      const summary = seeded.results
+        .map((r) => `${r.email}:${r.status}`)
+        .join(', ');
+      console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
+    } catch (e: any) {
+      console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
+    }
     
     // Postpone heavy startup integrity audits and self-checks by 10s.
     // This allows the container to start instantly, keeps CPU usage at a minimum during boot,
@@ -2462,6 +2684,20 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } catch (e: any) {
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
+
+      // Notify Bing/Yandex ecosystem about regional hubs (no-op without IndexNow key).
+      void submitIndexNow([
+        'https://clearpathtrader.com/regions',
+        ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
+      ]).then((r) => {
+        if (r.skipped) {
+          console.log(`[STARTUP] IndexNow regional hubs skipped: ${r.skipped}`);
+        } else {
+          console.log(`[STARTUP] IndexNow regional hubs submitted=${r.submitted} ok=${r.ok}`);
+        }
+      }).catch((e) => {
+        console.warn('[STARTUP] IndexNow regional hub ping failed:', e?.message || e);
+      });
 
       // 1. ComplianceAuditEngine executes automatically on startup
       try {

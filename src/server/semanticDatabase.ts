@@ -20,6 +20,7 @@ import {
   PROFILE_SEO,
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
+import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket } from './regionalSeo';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -712,6 +713,39 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Home", url: "" },
       { name: "Literacy OS", url: "/literacy" }
     ]));
+  } else if (canonicalPath === '/regions') {
+    title = 'ClearPath Worldwide Regions — Russia, China, Japan, Philippines';
+    description =
+      'Language hubs for ClearPath follower markets: Russia/CIS (Yandex), China (Baidu), Japan/Tokyo, and the Philippines — crawlable landings into education and encyclopedia.';
+    schemas.push(
+      makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Regions', url: '/regions' },
+      ])
+    );
+  } else if (canonicalPath.startsWith('/regions/')) {
+    const market = getRegionalMarket(canonicalPath.slice('/regions/'.length));
+    if (market) {
+      title = market.seoTitle;
+      description = market.seoDescription;
+      schemas.push(
+        makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Regions', url: '/regions' },
+          { name: market.label, url: market.hubPath },
+        ])
+      );
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        '@id': `${canonicalUrl}#webpage`,
+        url: canonicalUrl,
+        name: market.seoTitle,
+        description: market.seoDescription,
+        inLanguage: market.lang,
+        isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+      });
+    }
   } else if (pathClean === '/market-universe') {
     title = "Market Universe: Global Asset Catalog | ClearPathTrader";
     description = "Navigate the full ClearPath market universe — equities, crypto, forex, commodities, and indices — in a single explorable catalog.";
@@ -994,9 +1028,23 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   }
 
   // Open Graph + Twitter + discoverability tags
+  const localeAlternates = regionalOgLocaleAlternates()
+    .map((loc) => `    <meta property="og:locale:alternate" content="${loc}" />`)
+    .join('\n');
+  const regionalMarket =
+    canonicalPath.startsWith('/regions/')
+      ? getRegionalMarket(canonicalPath.slice('/regions/'.length))
+      : null;
+  const hreflangTags = regionalHreflangHints(canonicalUrl, {
+    marketId: regionalMarket?.id,
+  })
+    .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+    .join('\n');
+  const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const ogTags = `
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content="${primaryLocale}" />
+${localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${canonicalUrl}" />
@@ -1013,6 +1061,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#0b0e11" />
     <link rel="canonical" href="${canonicalUrl}" />
+${hreflangTags}
   `;
 
   // Inject OG Tags & Schema Script blocks right before closing head
@@ -1061,9 +1110,17 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   return html;
 }
 
-// ==========================================
-// 8. BRONZE-PLATE SE0 PNG IMAGES GENERATION DUMMY WRITER (Avoids 404s completely!)
-// ==========================================
+// Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.
+const MIN_REAL_ASSET_BYTES = 1024;
+
+function hasRealAsset(filePath: string): boolean {
+  try {
+    return fs.existsSync(filePath) && fs.statSync(filePath).size >= MIN_REAL_ASSET_BYTES;
+  } catch {
+    return false;
+  }
+}
+
 export function ensureSeoAssetsExist() {
   const publicDir = path.join(process.cwd(), 'public');
   if (!fs.existsSync(publicDir)) {
@@ -1072,26 +1129,26 @@ export function ensureSeoAssetsExist() {
 
   const logoPath = path.join(publicDir, 'logo.png');
   const ogImgPath = path.join(publicDir, 'og-image.png');
+  const faviconPath = path.join(publicDir, 'favicon.png');
 
-  // Minimal valid 1x1 black pixel PNG for ultra fast loading and perfect SEO reference compatibility
   const pixelPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   const imageBuffer = Buffer.from(pixelPngBase64, 'base64');
 
-  if (!fs.existsSync(logoPath)) {
-    try {
-      fs.writeFileSync(logoPath, imageBuffer);
-      console.log('[SEO Asset Node] /public/logo.png successfully initialized.');
-    } catch (e) {
-      console.error('[SEO Asset Node] logo.png write failure:', e);
+  for (const [label, assetPath] of [
+    ['logo.png', logoPath],
+    ['og-image.png', ogImgPath],
+    ['favicon.png', faviconPath],
+  ] as const) {
+    if (hasRealAsset(assetPath)) continue;
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(`[SEO Asset Node] /public/${label} missing or too small — commit the real brand asset before deploy.`);
+      continue;
     }
-  }
-
-  if (!fs.existsSync(ogImgPath)) {
     try {
-      fs.writeFileSync(ogImgPath, imageBuffer);
-      console.log('[SEO Asset Node] /public/og-image.png successfully initialized.');
+      fs.writeFileSync(assetPath, imageBuffer);
+      console.log(`[SEO Asset Node] /public/${label} dev placeholder initialized.`);
     } catch (e) {
-      console.error('[SEO Asset Node] og-image.png write failure:', e);
+      console.error(`[SEO Asset Node] ${label} write failure:`, e);
     }
   }
 }

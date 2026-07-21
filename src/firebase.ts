@@ -2,7 +2,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import * as fbAuth from 'firebase/auth';
 import * as fbFirestore from 'firebase/firestore';
 import * as fbStorage from 'firebase/storage';
-import firebaseConfig from '../firebase-applet-config.json';
+import firebaseConfigJson from '../firebase-applet-config.json';
 
 let _initialized = false;
 let _app: FirebaseApp | null = null;
@@ -10,10 +10,49 @@ let _auth: any = null;
 let _db: any = null;
 let _storage: fbStorage.FirebaseStorage | null = null;
 
+/** Firebase web API keys are public client identifiers — supply via VITE_FIREBASE_API_KEY (never commit live keys). */
+function readPublicFirebaseEnv(name: string): string {
+  const fromProcess =
+    typeof process !== 'undefined' && process.env && typeof process.env[name] === 'string'
+      ? String(process.env[name]).trim()
+      : '';
+  if (fromProcess) return fromProcess;
+  try {
+    // Vite injects import.meta.env in the browser bundle only.
+    const env = (import.meta as ImportMeta & { env?: Record<string, string> }).env;
+    const v = env?.[name];
+    return typeof v === 'string' ? v.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+function resolveFirebaseConfig() {
+  const apiKey =
+    readPublicFirebaseEnv('VITE_FIREBASE_API_KEY') ||
+    (firebaseConfigJson as { apiKey?: string }).apiKey ||
+    '';
+  return {
+    ...firebaseConfigJson,
+    apiKey,
+    authDomain: readPublicFirebaseEnv('VITE_FIREBASE_AUTH_DOMAIN') || firebaseConfigJson.authDomain,
+    projectId: readPublicFirebaseEnv('VITE_FIREBASE_PROJECT_ID') || firebaseConfigJson.projectId,
+    appId: readPublicFirebaseEnv('VITE_FIREBASE_APP_ID') || firebaseConfigJson.appId,
+    messagingSenderId:
+      readPublicFirebaseEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || firebaseConfigJson.messagingSenderId,
+    storageBucket:
+      readPublicFirebaseEnv('VITE_FIREBASE_STORAGE_BUCKET') || firebaseConfigJson.storageBucket,
+  };
+}
+
 function init() {
   if (_initialized) return { auth: _auth, db: _db, storage: _storage, app: _app };
   
   try {
+    const firebaseConfig = resolveFirebaseConfig();
+    if (!firebaseConfig.apiKey) {
+      throw new Error('VITE_FIREBASE_API_KEY is not set');
+    }
     const app = initializeApp(firebaseConfig);
     _app = app;
     _auth = fbAuth.getAuth(app);

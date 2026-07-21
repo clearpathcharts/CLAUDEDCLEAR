@@ -19,14 +19,20 @@ export function ensureAdminApp(): App | null {
           credential: cert(JSON.parse(serviceAccountJson)),
           projectId: firebaseConfig.projectId,
         });
-      } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        adminApp = initializeApp({
-          credential: applicationDefault(),
-          projectId: firebaseConfig.projectId,
-        });
       } else {
-        console.warn('[Firebase Admin] No credentials configured. Registration data will use local file fallback.');
-        return null;
+        // Prefer GOOGLE_APPLICATION_CREDENTIALS, else gcloud application-default credentials.
+        try {
+          adminApp = initializeApp({
+            credential: applicationDefault(),
+            projectId: firebaseConfig.projectId,
+          });
+        } catch (adcError) {
+          console.warn(
+            '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / ADC). Registration data will use local file fallback.',
+            adcError
+          );
+          return null;
+        }
       }
     } else {
       adminApp = getApps()[0]!;

@@ -979,6 +979,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   };
 
   useEffect(() => {
+    const onSetTab = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail === 'string' && detail.trim()) {
+        handleTabChange(detail);
+      }
+    };
+    window.addEventListener('clearpath-set-tab', onSetTab as EventListener);
+    return () => window.removeEventListener('clearpath-set-tab', onSetTab as EventListener);
+  }, []);
+
+  useEffect(() => {
     if (typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('clearpath_active_tab', activeTab);

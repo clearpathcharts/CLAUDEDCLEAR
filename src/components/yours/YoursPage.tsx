@@ -444,52 +444,33 @@ export default function YoursPageHub() {
     });
   };
 
-  // Social account simulation login triggering handshakes
+  // Social OAuth: route each platform to its login / OAuth handshake screen
   const handleTriggerSocialConnect = (id: string, name: string) => {
     setSocialPlatforms(prev => prev.map(p => {
       if (p.id === id) {
         if (p.connected) {
-          // Disconnect
           return { ...p, connected: false, username: '' };
-        } else {
-          // Trigger connecting state
-          return { ...p, isConnecting: true };
         }
+        return { ...p, isConnecting: true };
       }
       return p;
     }));
 
-    // If connecting, wait 1.5 seconds to simulate API websocket handshake
     const platform = socialPlatforms.find(p => p.id === id);
-    if (platform && !platform.connected) {
-      setTimeout(() => {
-        const seedUsername = `@${name.toLowerCase().replace(/\s/g, '')}_cpms_node`;
-        
-        setSocialPlatforms(prev => prev.map(p => {
-          if (p.id === id) {
-            return {
-              ...p,
-              connected: true,
-              isConnecting: false,
-              username: seedUsername
-            };
-          }
-          return p;
-        }));
-
-        // Add dummy broadcast signal log to feed
-        const dummyPost = {
-          id: 'sys_' + Date.now(),
-          platform: id,
-          author: `${name} Cloud Gateway`,
-          handle: seedUsername,
-          content: `⚡ Secure OAuth Handshake successful! WS Pipeline anchored verified on gateway broker node port 3000. Ready to stream data matrices.`,
-          time: 'Just now'
-        };
-        setSocialFeed(prev => [dummyPost, ...prev]);
-
-      }, 1500);
+    if (platform && platform.connected) {
+      return; // disconnect only — already handled above
     }
+
+    // Send the member to the real OAuth / login route for this provider.
+    // Server serves /auth/:provider as the handshake / login screen.
+    const authPath = `/auth/${encodeURIComponent(id)}`;
+    try {
+      sessionStorage.setItem('clearpath_oauth_return', window.location.href);
+      sessionStorage.setItem('clearpath_oauth_platform', id);
+    } catch {}
+    window.setTimeout(() => {
+      window.location.assign(authPath);
+    }, 400);
   };
 
   const handlePublishPost = (e: React.FormEvent) => {

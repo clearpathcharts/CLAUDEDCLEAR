@@ -90,6 +90,14 @@ export async function lookupPrivateUser(email: string): Promise<{
   return { exists: Boolean(found) };
 }
 
+/** Admin-only: resolve uid for grant/badge tooling. Do not expose via public routes. */
+export function findPrivateUserByEmail(email: string): PublicPrivateUser | null {
+  const normalized = normalizeEmail(email);
+  if (!normalized.includes('@')) return null;
+  const found = readUsers().find((u) => u.email === normalized);
+  return found ? toPublic(found) : null;
+}
+
 export async function registerPrivateUser(input: {
   email: string;
   password: string;
