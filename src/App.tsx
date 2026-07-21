@@ -10,6 +10,7 @@ import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import A11yPreferencesToggle from './components/A11yPreferencesToggle';
+import AppUpdateBanner from './components/AppUpdateBanner';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
@@ -226,6 +227,8 @@ export default function App() {
   return (
     <>
       {content}
+      {/* Consent-first web/APK update prompt — never silent install */}
+      <AppUpdateBanner />
       {/* Mandatory WCAG: High Contrast / Reduced Sensory on every page request */}
       <A11yPreferencesToggle />
     </>

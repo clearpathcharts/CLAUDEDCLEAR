@@ -13,6 +13,7 @@
     "pr:auto-update": "bash scripts/pr-auto-updater.sh",
     "pr:auto-update:merge": "bash scripts/pr-auto-updater.sh --merge-ready",
     "pr:auto-update:dry": "bash scripts/pr-auto-updater.sh --dry-run",
+    "test:app-update": "tsx scripts/app-update.selftest.ts",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",
