@@ -9,6 +9,7 @@
 - Start with `npm run dev` (runs `tsx server.ts`). It serves at `http://localhost:3000` (override with `PORT`).
 - The Express server also injects SSR SEO metadata and exposes JSON APIs (e.g. `GET /api/semantic/faqs`).
 - The React entry is `src/main.tsx` / `index.html`. On first load the page briefly shows a `Loading New Architecture...` placeholder before React mounts — this is expected, not an error.
+- **Black-screen prevention:** `BootErrorBoundary` + HTML boot watchdog (12s) must never leave users on a blank black loader. Firebase without `VITE_FIREBASE_*` must use safe mocks (`src/firebase.ts`); CI runs `npm run test:firebase-mock`. Do not “fix” missing Firebase by calling real Firestore APIs with a fake `db`.
 
 ### Build / lint
 - Build: `npm run build` (Vite build for the client + esbuild bundle of `server.ts` → `dist/server.cjs`). `npm start` runs with `NODE_ENV=production` (`Dockerfile` also sets it).
@@ -19,7 +20,7 @@
 - **All vendor API keys are server-side only** (see `.env.example`). Never use `VITE_` for secrets. FRED/FMP proxies reject client-supplied keys. Diagnostics expose **boolean presence** only (`GET /api/secrets/status`, `/api/twelvedata/config`).
 - Core optional secrets: `GEMINI_API_KEY`, `GROQ_API_KEY`, `TWELVEDATA_API_KEY`, `FRED_API_KEY`, `FMP_API_KEY`, `SESSION_SECRET`, `INTELLIGENCE_WEBHOOK_SECRET`, `CATALOG_ADMIN_SECRET`, and `SQL_*` Cloud SQL credentials.
 - Production CORS is same-origin by default; set `CORS_ALLOWED_ORIGINS` only if a separate frontend origin must call the API.
-- Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console.
+- Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` / Cloud Run build env — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console. Missing keys must degrade to offline mocks that still render the SPA (`npm run test:firebase-mock` guards this).
 - OAuth `/auth/:provider` stubs only allow relative SPA returnTo paths (open-redirect hardened).
 
 ### Startup log gotcha

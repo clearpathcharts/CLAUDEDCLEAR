@@ -27,5 +27,8 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      - name: Firebase mock safety (no black-screen regressions)
+        run: npm run test:firebase-mock
+
       - name: Build
         run: npm run build

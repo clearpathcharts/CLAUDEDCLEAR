@@ -33,6 +33,39 @@
         }
       } catch (e) {}
     </script>
+    <script>
+      // Boot watchdog: if React never replaces the black loader, show recovery UI.
+      // Cleared when window.__CP_BOOT_OK is set by main.tsx / BootReadySignal.
+      (function () {
+        var BOOT_MS = 12000;
+        window.setTimeout(function () {
+          try {
+            if (window.__CP_BOOT_OK) return;
+            if (document.documentElement.getAttribute('data-cp-boot') === 'ok') return;
+            var root = document.getElementById('root');
+            if (!root) return;
+            // If React already rendered substantial UI, stand down.
+            if (root.querySelector('.clearpath-glass-root, [data-cp-app], main, #main-content')) {
+              window.__CP_BOOT_OK = true;
+              return;
+            }
+            var reason = window.__CP_BOOT_FAILED || 'App did not become ready in time';
+            root.innerHTML =
+              '<div role="alert" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1.5rem;background:#050505;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
+              '<p style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:#fb7185">ClearPath boot timeout</p>' +
+              '<p style="max-width:28rem;color:#a1a1aa;font-size:14px;line-height:1.5">The page stayed on the loading screen too long. This is usually a JavaScript crash or a blocked script — not an empty site. Try reload. If it keeps failing, check the browser console and Cloud Run client env (Firebase).</p>' +
+              '<pre style="max-width:36rem;overflow:auto;padding:1rem;border:1px solid #27272a;border-radius:12px;background:#000;color:#fecdd3;font-size:11px;text-align:left"></pre>' +
+              '<button type="button" style="padding:0.65rem 1.25rem;border-radius:999px;border:1px solid #22d3ee55;background:#083344;color:#a5f3fc;font-size:12px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer">Reload</button>' +
+              '</div>';
+            var pre = root.querySelector('pre');
+            if (pre) pre.textContent = String(reason);
+            var btn = root.querySelector('button');
+            if (btn) btn.onclick = function () { location.reload(); };
+            document.documentElement.setAttribute('data-cp-boot', 'timeout');
+          } catch (e) {}
+        }, BOOT_MS);
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob: 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src * ws: wss: data: blob: http://0.0.0.0:3000; frame-src *; font-src * data:;" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
