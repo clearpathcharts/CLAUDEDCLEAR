@@ -10,7 +10,6 @@ import { CptBuddyWidget } from './components/CptBuddyWidget';
 import A11yPreferencesToggle from './components/A11yPreferencesToggle';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
-const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 
@@ -181,7 +180,7 @@ export default function App() {
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
               else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
             }}
           />
@@ -193,7 +192,7 @@ export default function App() {
           <LiteracyOSPage
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
               else if (tabId === 'ClearPathEducation') window.location.assign('/education');
               else if (tabId === 'Yours') window.location.assign('/');
             }}
