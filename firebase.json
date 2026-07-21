@@ -1,0 +1,23 @@
+{
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "ai-studio-07abf355-23d5-4502-80d4-a2318b36e718",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "ai-studio-f544fbce-0e7e-4a8b-b7e3-6356cb380f6b",
+      "rules": "firestore.rules"
+    },
+    {
+      "database": "ai-studio-remixclearpathma-e2b95abc-893a-4744-af48-ea0653a80834",
+      "rules": "firestore.rules"
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

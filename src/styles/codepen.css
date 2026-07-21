@@ -41,7 +41,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('https://i.postimg.cc/Xq0rgQc2/Chat-GPT-Image-May-26-2026-11-58-06-AM.png');
+  background-image: url('/logo.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -817,12 +817,12 @@
   animation: strokeGlow 8s linear infinite;
 }
 
-/* Glassy styling overrides for academic content scrollbar */
+/* Glassy styling overrides for academic content scrollbar — Lava-Hot Industrial */
 .clearpath-glass-root .custom-scrollbar,
 .clearpath-glass-root .custom-scrollbar-ice,
 .clearpath-glass-root .custom-scrollbar-lava {
-  scrollbar-width: auto;
-  scrollbar-color: rgba(0, 217, 255, 0.75) rgba(0, 0, 0, 0.6);
+  scrollbar-width: thin;
+  scrollbar-color: var(--lava-magma) var(--lava-track);
 }
 .clearpath-glass-root .custom-scrollbar::-webkit-scrollbar,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar,
@@ -833,35 +833,25 @@
 .clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-track,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-track,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.65);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--lava-track);
+  border-left: 1px solid rgba(255, 0, 0, 0.15);
   border-radius: 4px;
+  box-shadow: inset 0 0 12px rgba(255, 0, 0, 0.15);
 }
 .clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-thumb,
-.clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb {
-  background: #00D9FF;
-  background-image: linear-gradient(180deg, #00D9FF, #0077ff);
-  border: 2px solid rgba(0, 0, 0, 0.84);
-  border-radius: 99px;
-  box-shadow: 0 0 10px rgba(0, 217, 255, 0.45);
-}
+.clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-thumb {
-  background: #ff4500;
-  background-image: linear-gradient(180deg, #ff4500, #ff8c00);
-  border: 2px solid rgba(0, 0, 0, 0.84);
+  background: var(--lava-magma);
+  background-image: var(--lava-thumb-gradient);
+  border: 2px solid rgba(0, 0, 0, 0.75);
   border-radius: 99px;
-  box-shadow: 0 0 10px rgba(255, 69, 0, 0.45);
+  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
 }
 .clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-thumb:hover,
-.clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb:hover {
-  background: #ff007f;
-  background-image: linear-gradient(180deg, #ff007f, #FF00C8);
-  box-shadow: 0 0 15px rgba(255, 0, 200, 0.8);
-}
+.clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-thumb:hover {
-  background: #ff6347;
-  background-image: linear-gradient(180deg, #ff6347, #ff8c00);
-  box-shadow: 0 0 15px rgba(255, 99, 71, 0.8);
+  background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);
+  box-shadow: inset 0 0 9px rgba(255, 0, 0, 1), inset 0 0 16px rgba(255, 69, 0, 0.65), 0 0 14px rgba(255, 0, 0, 0.8), 0 0 22px rgba(255, 69, 0, 0.55);
 }
 
 /* CLEARPATH ENCYCLOPEDIA V0.1 CORE COLORS & CARDS framework */

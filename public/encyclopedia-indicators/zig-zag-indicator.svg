@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+      
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">ZIG ZAG INDICATOR</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">SWING STRUCTURE</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+      <path d="M48.0,475.5 L64.8,438.3 L81.7,401.1 L98.5,363.8 L115.3,326.6 L132.2,289.4 L149.0,252.2 L165.9,214.9 L182.7,177.7 L199.5,210.3 L216.4,242.8 L233.2,275.4 L250.0,308.0 L266.9,340.6 L283.7,373.2 L300.6,405.7 L317.4,438.3 L334.2,401.1 L351.1,363.8 L367.9,326.6 L384.7,289.4 L401.6,252.2 L418.4,214.9 L435.3,177.7 L452.1,140.5 L468.9,173.0 L485.8,205.6 L502.6,238.2 L519.4,270.8 L536.3,303.3 L553.1,335.9 L570.0,368.5 L586.8,401.1 L603.6,382.1 L620.5,363.2 L637.3,344.2 L654.1,325.3 L671.0,306.3 L687.8,287.4 L704.7,268.4 L721.5,249.4 L738.3,230.5 L755.2,211.5 L772.0,192.6" fill="none" stroke="#94a3b8" stroke-width="1.5" opacity="0.5"/>
+      <path d="M48,475.53846153846155 L182.69767441860466,177.69230769230768 L317.3953488372093,438.3076923076923 L452.09302325581393,140.46153846153845 L586.7906976744187,401.0769230769231 L772,192.58461538461535" fill="none" stroke="#FFF000" stroke-width="3"/>
+      <circle cx="48" cy="475.53846153846155" r="5" fill="#FF2D95"/>
+<circle cx="182.69767441860466" cy="177.69230769230768" r="5" fill="#FF2D95"/>
+<circle cx="317.3953488372093" cy="438.3076923076923" r="5" fill="#FF2D95"/>
+<circle cx="452.09302325581393" cy="140.46153846153845" r="5" fill="#FF2D95"/>
+<circle cx="586.7906976744187" cy="401.0769230769231" r="5" fill="#FF2D95"/>
+<circle cx="772" cy="192.58461538461535" r="5" fill="#FF2D95"/>
+    
+</svg>

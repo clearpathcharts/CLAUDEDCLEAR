@@ -5,16 +5,14 @@ import {
   BookOpen,
   Cpu,
   Crown,
-  Folder,
   GraduationCap,
   Home,
-  Landmark,
   LogOut,
   Network,
-  Navigation,
+
   Newspaper,
+  Share2,
   Shield,
-  SlidersHorizontal,
   Terminal,
   Users,
 } from "lucide-react";
@@ -61,16 +59,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "CHARTS",
     },
     {
-      id: "Screener",
-      icon: SlidersHorizontal,
-      label: "SCREENER",
-    },
-    {
-      id: "Journal",
-      icon: BookOpen,
-      label: "JOURNAL",
-    },
-    {
       id: "News",
       icon: Newspaper,
       label: "NEWS",
@@ -113,13 +101,45 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "CpmsApk",
       icon: Cpu,
-      label: "CPMS APK",
+      label: "CLEARPATH CINEMA",
     },
 
     {
       id: "Sentinel",
       icon: Shield,
       label: "SENTINEL",
+    },
+
+    {
+      id: "ClearPathEducation",
+      icon: BookOpen,
+      label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
+    },
+
+    {
+      id: "Encyclopedia",
+      icon: GraduationCap,
+      label: "ENCYCLOPEDIA OF FINANCE",
+    },
+
+    // Encyclopedia of Indicators — hidden from nav while videos are broken.
+    // Component + Dashboard tab id remain; re-add this item when ready.
+    // {
+    //   id: "EncyclopediaOfIndicators",
+    //   icon: BarChart3,
+    //   label: "ENCYCLOPEDIA OF INDICATORS",
+    // },
+
+    {
+      id: "ReferralDesk",
+      icon: Share2,
+      label: "REFERRALS",
     },
   ];
   const renderNavButton = (
@@ -133,7 +153,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isGold =
       item.id === "Membership" ||
-      item.id === "Founders";
+      item.id === "Founders" ||
+      item.id === "ReferralDesk";
 
     const isPink =
       item.id === "Biography" ||
@@ -144,7 +165,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "CpmsApk" ||
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
-      item.id === "EncyclopediaOfIndicators";
+      item.id === "EncyclopediaOfIndicators" ||
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

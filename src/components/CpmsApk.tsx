@@ -27,205 +27,22 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { db, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, onSnapshot } from '../firebase';
+import {
+  type CpmsVideoItem,
+  type CpmsChannelItem,
+  SAMPLE_LIBRARY_VIDEOS,
+  STATIC_DEFAULT_CHANNELS,
+  CPMS_CURATOR,
+  CPMS_FOUNDER_EMAIL,
+  LAUNCH_FEATURED_VIDEO_ID,
+  offlineChannelItems,
+  normalizeCinemaVideos,
+} from '../cpms/cpmsCatalog';
+import { bindVideoSource } from '../lib/cpms/hlsPlayer';
+import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
 
-// MASTER VIDEO DATA STRUCTURE
-interface VideoItem {
-  id?: string;
-  title: string;
-  description: string;
-  category: string;
-  videoUrl: string;
-  thumbnailUrl: string;
-  duration: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  relatedIndicatorId: string;
-  viewers?: string;
-}
-
-// MASTER CHANNEL DATA STRUCTURE
-interface ChannelItem {
-  id?: string;
-  name: string;
-  description: string;
-  thumbnailUrl: string;
-  createdAt: string;
-  createdBy: string;
-}
-
-// 12 CURATED PREMIUM VIDEOS FOR CPMS MEDIA LIBRARY
-const SAMPLE_LIBRARY_VIDEOS: VideoItem[] = [
-  // --- FINANCE TV (3 Videos) ---
-  {
-    title: "Global Debt Expansion & Central Collateral Systems",
-    description: "An immersive masterclass breaking down national obligations, sovereign gold backing suspensions, and global liquid collateral velocity across modern tier-1 banking systems.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
-    duration: "09:56",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "ClearPath Director",
-    relatedIndicatorId: "Global Reserve"
-  },
-  {
-    title: "Order Flow Liquidity & Swaps Infrastructure",
-    description: "Evaluating sovereign interest swap spreads, capital collateral requirements, and how the Federal Reserve discount system governs physical money creation.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80",
-    duration: "10:53",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief quantitative Officer",
-    relatedIndicatorId: "Market Microstructure"
-  },
-  {
-    title: "The Sovereign Yield Curve & Inflation Vectors",
-    description: "Mastering yield curve inversions to anticipate macroeconomic shifts, interest premium behaviors, and strategic liquidity rotations ahead of volatile quarters.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Macro Specialist",
-    relatedIndicatorId: "Yield Curve"
-  },
-
-  // --- INDICATOR TV (3 Videos) ---
-  {
-    title: "RSI Momentum: Advanced Overbought Fallacies",
-    description: "Stripping out standard retail misconceptions surrounding Relative Strength Index boundaries. We rebuild true momentum divergence curves and volatility models.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Lead Engineer",
-    relatedIndicatorId: "Relative Strength Index"
-  },
-  {
-    title: "MACD Crossings & Signal Smoothing Calibration",
-    description: "A mathematical teardown on tuning exponential moving average lookback thresholds to completely remove market noise in choppy horizontal range environments.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Lead Engineer",
-    relatedIndicatorId: "MACD"
-  },
-  {
-    title: "Average True Range (ATR): Scientific Volatility Boundaries",
-    description: "How top-tier hedge funds construct mechanical target structures and stop thresholds using true session physical volatility metrics rather than arbitrary price variables.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Quantitative Specialist",
-    relatedIndicatorId: "Average True Range"
-  },
-
-  // --- TRADING ANARCHY TV (2 Videos) ---
-  {
-    title: "Gold Bar Sovereign Havens & High-Volume Collateral",
-    description: "Tracing international bullion gold storage chains, global physical clearing flows, and historical safe havens during debt limits collapses.",
-    category: "Trading Anarchy TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1610375228957-80da9977ce25?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Anarchy Strategist",
-    relatedIndicatorId: "Gold Reserves"
-  },
-  {
-    title: "The 4-Up 3-Down Session Momentum Breakout",
-    description: "An intensive strategy study focused on detecting breakout sequences by monitoring daily highs, daily lows, and target volatility expansion limits.",
-    category: "Trading Anarchy TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
-    duration: "00:30",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Anarchy Strategist",
-    relatedIndicatorId: "Breakout Models"
-  },
-
-  // --- MARKET NEWS TV (2 Videos) ---
-  {
-    title: "Macroeconomic Pulse: Central Bank Rates Decisions",
-    description: "Live brief and quantitative reaction tracking after central bank corridors shift national benchmark rates.",
-    category: "Market News TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=800&q=80",
-    duration: "12:14",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief Editor",
-    relatedIndicatorId: "Rates Watch"
-  },
-  {
-    title: "Global Currency Flows: Flight to Sovereign Debt Reserves",
-    description: "A chronological look at active liquid flight routes into stable sovereign government bonds during session stress levels.",
-    category: "Market News TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=800&q=80",
-    duration: "00:46",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief News Editor",
-    relatedIndicatorId: "Sovereign Debt"
-  },
-
-  // --- DOCUMENTARY TV (2 Videos) ---
-  {
-    title: "Monetary Empires: Bretton Woods & the Suspension of Convertibility",
-    description: "A historical investigation of Bretton Woods, the Nixon Shock suspension of gold convertibility, and the emergence of floating fiat paper standards.",
-    category: "Documentary TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=800&q=80",
-    duration: "08:52",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Media Archivist",
-    relatedIndicatorId: "Monetary History"
-  },
-  {
-    title: "Futuristic Ledger Ecosystems & Private Digital Trust",
-    description: "A cinematic review of cryptographic clearing corridors, decentralized transaction engines, and asset preservation rules across safe network sectors.",
-    category: "Documentary TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=800&q=80",
-    duration: "12:14",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Media Archivist",
-    relatedIndicatorId: "Trust Protocols"
-  }
-];
-
-// PRE-CONFIGURED PREMIUM CATEGORY CHANNELS
-const STATIC_DEFAULT_CHANNELS = [
-  {
-    name: "Finance TV",
-    description: "Sovereign debt systems, high-tier credit creation, and institutional liquid corridors.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #1e3a8a 100%)",
-  },
-  {
-    name: "Indicator TV",
-    description: "Quantitative analysis, advanced RSI models, and mechanical signal line smoothing formulas.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #581c87 100%)",
-  },
-  {
-    name: "Trading Anarchy TV",
-    description: "High-volatility breakouts, bullion gold standards, and decentralized liquidity flows.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #7f1d1d 100%)",
-  },
-  {
-    name: "Market News TV",
-    description: "Macroeconomic rates adjustments, Federal Reserve metrics, and safe haven market pulses.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #14532d 100%)",
-  },
-  {
-    name: "Documentary TV",
-    description: "Cinematic documentaries outlining historic currencies collapses and cryptographic futures.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #1e293b 100%)",
-  }
-];
+type VideoItem = CpmsVideoItem;
+type ChannelItem = CpmsChannelItem;
 
 export default function CpmsApk() {
   const { user, userProfile } = useAuth();
@@ -271,12 +88,14 @@ export default function CpmsApk() {
   const [volume, setVolume] = useState<number>(85);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isPlaybackFinished, setIsPlaybackFinished] = useState<boolean>(false);
+  const [hasAutoLaunched, setHasAutoLaunched] = useState<boolean>(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
 
   // CHECKS IF USER IS GIVEN ACCESS TO CABINET CREATION
   // SECURITY: locked to the founder's real account only. No client-side bypass exists anymore.
   const isUserAuthorized = () => {
-    if (user?.email === 'forexanarchy@gmail.com') return true;
-    if (userProfile?.email === 'forexanarchy@gmail.com') return true;
+    if (user?.email === CPMS_FOUNDER_EMAIL) return true;
+    if (userProfile?.email === CPMS_FOUNDER_EMAIL) return true;
     return false;
   };
 
@@ -292,64 +111,69 @@ export default function CpmsApk() {
     }
   }, []);
 
-  // LOAD VIDEOS FROM FIRESTORE OR FALLBACK
+  // Launch-ready catalog: show financial streams immediately, sync Firestore in background.
+  useEffect(() => {
+    setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
+    setChannels(offlineChannelItems());
+    setLoadingVideos(false);
+    setLoadingChannels(false);
+  }, []);
+
+  // LOAD VIDEOS FROM FIRESTORE (optional upgrade when seeded)
   useEffect(() => {
     setLoadingVideos(true);
     const colRef = collection(db, 'cpms_videos');
-    
+
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       if (snapshot.empty) {
-        console.log("No remote tracks found. Seeding beautiful CPMS library sample...");
-        seedDbWithVideos();
+        // Firestore empty — keep bundled catalog; attempt server seed only when founder is signed in.
+        if (isUserAuthorized()) seedDbWithVideos();
+        setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
+        setLoadingVideos(false);
       } else {
-        const list: VideoItem[] = [];
-        snapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() } as VideoItem);
+        const list: CpmsVideoItem[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as CpmsVideoItem);
         });
-        setVideos(list);
+        setVideos(normalizeCinemaVideos(list.length > 0 ? list : SAMPLE_LIBRARY_VIDEOS));
         setLoadingVideos(false);
       }
     }, (error) => {
-      console.warn("Dynamic cloud sync disabled, engaging beautiful pre-seeded database:", error);
-      setVideos(SAMPLE_LIBRARY_VIDEOS);
+      console.warn('Dynamic cloud sync disabled, using bundled launch catalog:', error);
+      setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
       setLoadingVideos(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.email, userProfile?.email]);
 
-  // LOAD CHANNELS FROM FIRESTORE OR FALLBACK
+  // LOAD CHANNELS FROM FIRESTORE (optional upgrade when seeded)
   useEffect(() => {
     setLoadingChannels(true);
     const colRef = collection(db, 'cpms_channels');
-    
+
     const unsubscribe = onSnapshot(colRef, (snapshot) => {
       if (snapshot.empty) {
-        console.log("No channels found. Seeding standard cinema categories...");
-        seedDbWithChannels();
+        if (isUserAuthorized()) seedDbWithChannels();
+        setChannels(offlineChannelItems());
+        setLoadingChannels(false);
       } else {
-        const list: ChannelItem[] = [];
-        snapshot.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() } as ChannelItem);
+        const list: CpmsChannelItem[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as CpmsChannelItem);
         });
         list.sort((a, b) => a.name.localeCompare(b.name));
-        setChannels(list);
+        setChannels(list.length > 0 ? list : offlineChannelItems());
         setLoadingChannels(false);
       }
     }, (error) => {
-      console.warn("Using offline premium channels hierarchy:", error);
-      const mapped = STATIC_DEFAULT_CHANNELS.map((ch, idx) => ({
-        id: `offline-ch-${idx}`,
-        ...ch,
-        createdAt: new Date().toISOString(),
-        createdBy: "ClearPath Curator"
-      }));
-      setChannels(mapped);
+      console.warn('Using bundled channel lineup:', error);
+      setChannels(offlineChannelItems());
       setLoadingChannels(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user?.email, userProfile?.email]);
 
   // SEED FUNCTIONS ENABLING AUTOMATIC HIGH-STAKES POPULATION
   const seedDbWithVideos = async () => {
@@ -359,8 +183,9 @@ export default function CpmsApk() {
         await addDoc(colRef, item);
       }
     } catch (err) {
-      console.error("Could not write seed packs:", err);
+      console.error('Could not write seed packs:', err);
       setVideos(SAMPLE_LIBRARY_VIDEOS);
+      setLoadingVideos(false);
     }
   };
 
@@ -371,13 +196,28 @@ export default function CpmsApk() {
         await addDoc(colRef, {
           ...item,
           createdAt: new Date().toISOString(),
-          createdBy: "ClearPath Curator"
+          createdBy: CPMS_CURATOR,
         });
       }
     } catch (err) {
-      console.error("Could not write channels seed pack:", err);
+      console.error('Could not write channels seed pack:', err);
+      setChannels(offlineChannelItems());
+      setLoadingChannels(false);
     }
   };
+
+  // Auto-open the launch featured live feed so something is playing on first visit.
+  useEffect(() => {
+    if (hasAutoLaunched || videos.length === 0) return;
+    const featured =
+      videos.find(v => v.id === LAUNCH_FEATURED_VIDEO_ID) ??
+      videos.find(v => v.isLive) ??
+      videos[0];
+    if (!featured) return;
+    setSelectedVideo(featured);
+    setIsMuted(true);
+    setHasAutoLaunched(true);
+  }, [videos, hasAutoLaunched]);
 
   // HANDLE RECENT CONTINUED WATCHING LIST
   const addToContinueWatching = (vid: VideoItem) => {
@@ -438,6 +278,48 @@ export default function CpmsApk() {
     }
   }, [volume, isMuted, selectedVideo]);
 
+  // HLS / progressive stream binding (cleans up on video change or unmount)
+  // Direct streams only — YouTube embeds are not used (they freeze the cinema player).
+  useEffect(() => {
+    const url = selectedVideo?.videoUrl;
+    const el = videoRef.current;
+    setStreamError(null);
+
+    if (!selectedVideo) return;
+
+    if (!url?.trim()) {
+      setStreamError('No direct stream URL for this channel. Pick another broadcast.');
+      return;
+    }
+
+    if (!el) return;
+
+    setCurrentTime(0);
+    setVideoDuration(0);
+    setIsPlaybackFinished(false);
+
+    const cleanup = bindVideoSource(el, url, {
+      autoPlay: true,
+      onReady: () => {
+        setVideoPlaying(true);
+        setIsPlaybackFinished(false);
+      },
+      onError: (message) => {
+        console.warn('[ClearPath Cinema] HLS error:', message);
+        setStreamError('Live stream temporarily unavailable. Try Bloomberg TV or another channel.');
+      },
+    });
+
+    return cleanup;
+  }, [selectedVideo?.id, selectedVideo?.videoUrl]);
+
+  const openVideo = (item: VideoItem) => {
+    setSelectedVideo(item);
+    setStreamError(null);
+    setIsMuted(item.isLive ?? false);
+    addToContinueWatching(item);
+  };
+
   // CATEGORY LIST SELECTION
   const getCategoriesList = () => {
     const list = channels.map(c => c.name);
@@ -446,6 +328,23 @@ export default function CpmsApk() {
   };
 
   // VIDEO METADATA PUBLISH ACTION
+  const handleMediaFileUpload = async (
+    file: File,
+    folder: 'videos' | 'thumbnails',
+    applyUrl: (url: string) => void
+  ) => {
+    setUploadProgress(0);
+    try {
+      const url = await uploadCpmsMedia(file, folder, setUploadProgress);
+      applyUrl(url);
+      setUploadProgress(null);
+    } catch (err) {
+      console.error(err);
+      setUploadProgress(null);
+      alert('Upload failed. Sign in as the founder account and deploy storage.rules.');
+    }
+  };
+
   const handleAddNewVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newVideoUrl.trim()) {
@@ -574,7 +473,10 @@ export default function CpmsApk() {
 
   // GET A SUITABLE FEATURED HERO VIDEO FOR THE LUXURY BILLBOARD
   const getHeroVideo = () => {
-    const featured = videos.find(v => v.title.includes("Debt") || v.category === "Documentary TV");
+    const featured =
+      videos.find(v => v.id === LAUNCH_FEATURED_VIDEO_ID) ??
+      videos.find(v => v.isLive) ??
+      videos.find(v => v.title.includes('Debt') || v.category === 'Documentary TV');
     return featured || videos[0] || SAMPLE_LIBRARY_VIDEOS[0];
   };
 
@@ -600,7 +502,7 @@ export default function CpmsApk() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-black text-amber-500 tracking-[0.3em] uppercase">CPMS PRIVATE STATION</span>
+                <span className="text-[10px] font-mono font-black text-amber-500 tracking-[0.3em] uppercase">CLEARPATH CINEMA</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
               </div>
               <h1 className="text-2xl md:text-3xl font-cinzel font-black tracking-wide bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
@@ -759,9 +661,22 @@ export default function CpmsApk() {
                             required
                             value={newVideoUrl}
                             onChange={(e) => setNewVideoUrl(e.target.value)}
-                            placeholder="https://commondatastorage.googleapis.com/..."
+                            placeholder="https://example.com/stream.m3u8 or .mp4"
                             className="w-full bg-zinc-900 border border-zinc-800/80 focus:border-amber-400/30 rounded-xl px-3 py-2 text-xs text-white font-mono text-[11px]"
                           />
+                          <label className="inline-flex items-center gap-2 mt-1 text-[10px] font-mono text-amber-500/80 uppercase cursor-pointer hover:text-amber-400">
+                            <input
+                              type="file"
+                              accept="video/*,video/mp4,video/webm,.m3u8"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) void handleMediaFileUpload(file, 'videos', setNewVideoUrl);
+                                e.target.value = '';
+                              }}
+                            />
+                            <span>↑ Upload video file to Storage</span>
+                          </label>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -774,6 +689,19 @@ export default function CpmsApk() {
                               placeholder="https://unsplash.com/..."
                               className="w-full bg-zinc-900 border border-zinc-800/80 focus:border-amber-400/30 rounded-xl px-3 py-2 text-xs text-white"
                             />
+                            <label className="inline-flex items-center gap-2 mt-1 text-[10px] font-mono text-amber-500/80 uppercase cursor-pointer hover:text-amber-400">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) void handleMediaFileUpload(file, 'thumbnails', setNewThumbnailUrl);
+                                  e.target.value = '';
+                                }}
+                              />
+                              <span>↑ Upload thumbnail</span>
+                            </label>
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-mono text-zinc-500 uppercase block font-bold">Linked Indicator Metric</label>
@@ -969,10 +897,7 @@ export default function CpmsApk() {
         {/* --- LUXURIOUS HERO BILLBOARD SECTION (MasterClass style) --- */}
         {hero && (
           <div 
-            onClick={() => {
-              setSelectedVideo(hero);
-              addToContinueWatching(hero);
-            }}
+            onClick={() => openVideo(hero)}
             className="w-full relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-gradient-to-r from-black via-zinc-950/90 to-indigo-950/20 group cursor-pointer shadow-[0_20px_50px_rgba(0,0,0,0.8)] min-h-[340px] md:min-h-[460px] flex flex-col justify-end text-left relative animate-fadeIn"
           >
             {/* LARGE CLINEMATIC IMAGE BACKGROUND */}
@@ -990,10 +915,10 @@ export default function CpmsApk() {
               <div className="flex flex-wrap items-center gap-3">
                 <span className="bg-amber-400/10 text-amber-400 border border-amber-500/30 text-[10px] font-mono font-bold tracking-widest px-3 py-1 rounded-full uppercase flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  FEATURED LUXURY MASTERCLASS
+                  {hero.isLive ? 'LIVE MARKETS NOW' : 'FEATURED MASTERCLASS'}
                 </span>
                 <span className="bg-zinc-950/80 text-zinc-400 border border-white/5 text-[10px] font-mono font-semibold px-2.5 py-1 rounded-full">
-                  {hero.duration} MINUTES
+                  {hero.isLive ? 'LIVE' : `${hero.duration} MIN`}
                 </span>
                 <span className="bg-indigo-950/80 text-indigo-300 border border-indigo-500/20 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase">
                   {hero.relatedIndicatorId}
@@ -1019,7 +944,7 @@ export default function CpmsApk() {
               <div className="pt-2 flex items-center gap-4">
                 <div className="px-6 py-3 bg-white hover:bg-amber-400 text-black hover:text-black font-semibold rounded-full flex items-center gap-2.5 shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all transform group-hover:scale-105 active:scale-95 duration-300 shrink-0">
                   <Play className="w-4 h-4 fill-current text-black" />
-                  <span className="text-xs uppercase font-black tracking-wider">Play Masterclass</span>
+                  <span className="text-xs uppercase font-black tracking-wider">{hero.isLive ? 'Watch Live' : 'Play Masterclass'}</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-amber-500 group-hover:underline uppercase tracking-widest hidden sm:inline-block">
                   Click to launch standard cinema broadcast
@@ -1082,10 +1007,7 @@ export default function CpmsApk() {
                 {continueWatching.map((item, index) => (
                   <div
                     key={`continue-watch-${index}`}
-                    onClick={() => {
-                      setSelectedVideo(item);
-                      addToContinueWatching(item);
-                    }}
+                    onClick={() => openVideo(item)}
                     className="relative group cursor-pointer bg-zinc-950/80 border border-white/5 rounded-2xl p-3 flex items-center gap-3.5 hover:border-amber-500/20 hover:bg-zinc-900/40 transition-all shadow-md shrink-0"
                   >
                     <div 
@@ -1139,10 +1061,7 @@ export default function CpmsApk() {
                     {filtered.map((item) => (
                       <div
                         key={item.id || item.title}
-                        onClick={() => {
-                          setSelectedVideo(item);
-                          addToContinueWatching(item);
-                        }}
+                        onClick={() => openVideo(item)}
                         className="bg-zinc-950/80 border border-white/[0.04] p-4 rounded-3xl w-[280px] md:w-[350px] shrink-0 snap-start cursor-pointer hover:border-amber-400/20 hover:bg-zinc-900/40 hover:shadow-[0_15px_30px_rgba(0,0,0,0.6)] group transition-all duration-300 transform hover:-translate-y-1 relative flex flex-col justify-between"
                       >
                         {/* DECORATIVE TOP DESIGN GLOW BAR */}
@@ -1166,7 +1085,7 @@ export default function CpmsApk() {
                             </div>
 
                             <span className="absolute bottom-2.5 right-2.5 bg-black/90 font-mono text-[9px] font-black text-amber-400 px-2.5 py-0.5 rounded border border-white/10 select-none">
-                              {item.duration} MIN
+                              {item.isLive ? 'LIVE' : `${item.duration} MIN`}
                             </span>
                           </div>
 
@@ -1255,15 +1174,31 @@ export default function CpmsApk() {
                 </button>
               </div>
 
-              {/* CINEMATIC HTML5 PLAYER WRAPPER */}
+              {/* CINEMATIC PLAYER — direct HLS/MP4 only (no YouTube) */}
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden border-b border-white/5 group">
-                
-                {selectedVideo.videoUrl ? (
+
+                {isMuted && selectedVideo.isLive && (
+                  <button
+                    type="button"
+                    onClick={() => setIsMuted(false)}
+                    className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 bg-amber-400 text-black px-4 py-2 rounded-full text-[10px] font-mono font-black uppercase tracking-widest shadow-lg hover:bg-amber-300 transition-colors"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" /> Tap to unmute live markets
+                  </button>
+                )}
+
+                {streamError && (
+                  <div className="absolute top-3 left-3 right-3 z-30 bg-red-950/80 border border-red-500/30 text-red-200 text-[10px] font-mono px-3 py-2 rounded-lg">
+                    {streamError}
+                  </div>
+                )}
+
+                {selectedVideo.videoUrl?.trim() ? (
                   <video
                     ref={videoRef}
-                    src={selectedVideo.videoUrl}
                     autoPlay
                     playsInline
+                    muted={isMuted}
                     onTimeUpdate={updateTime}
                     onLoadedMetadata={loadMetadata}
                     onEnded={handleVideoEnded}

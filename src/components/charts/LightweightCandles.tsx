@@ -1,24 +1,28 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, createSeriesMarkers } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
+import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
   themeProfiles,
   type ThemeProfileId,
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
+import { intensifyCandleColors } from "../../lib/charts/intensifyColor";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, setActivePatternScan, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, analyzeFormingStructure, setActiveFormingBrief, clearFormingBrief } from "../../patterns";
+import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
-import { Crosshair } from "lucide-react";
+import { ChartZoomControls } from "./ChartZoomControls";
+import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
+import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
 type Candle = {
   time: number;
@@ -58,6 +62,8 @@ export function LightweightCandles({
     laggingSpan2Periods: 52,
     displacement: 26
   },
+  embedMode = false,
+  useDedicatedPatternPanel = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -78,13 +84,38 @@ export function LightweightCandles({
     displacement: number;
   };
   blackoutMode?: boolean;
+  /** Compact embed: hide HUD chrome for bento mini-charts. */
+  embedMode?: boolean;
+  /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
+  useDedicatedPatternPanel?: boolean;
 }) {
+  const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
+  const [showPatternHud, setShowPatternHud] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [showFormingWatch, setShowFormingWatch] = useState(() => {
+    try {
+      const stored = localStorage.getItem("cp_chart_forming_watch_open");
+      return stored === null ? true : stored === "1";
+    } catch {
+      return true;
+    }
+  });
   const visible = useVisibilityPause();
+  const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -146,6 +177,7 @@ export function LightweightCandles({
           color: activeCustomTheme ? activeCustomTheme.background : theme.layout.background.bottomColor,
         },
         textColor: activeCustomTheme ? activeCustomTheme.text : theme.layout.textColor,
+        fontSize: 13,
         attributionLogo: false,
       },
       grid: activeCustomTheme ? {
@@ -173,8 +205,10 @@ export function LightweightCandles({
         horzTouchDrag: true,
         vertTouchDrag: isExpanded,
       },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true },
+      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
+
+    chartRef.current = chart;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -196,14 +230,19 @@ export function LightweightCandles({
       };
     }
 
-    const series = chart.addSeries(CandlestickSeries, {
+    const rawCandleColors = {
       upColor: activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor,
       downColor: activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor,
       wickUpColor: activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor,
       wickDownColor: activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor,
       borderUpColor: activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor,
       borderDownColor: activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor,
-    });
+    };
+    const vividCandles = activeCustomTheme
+      ? intensifyCandleColors(rawCandleColors, 1.1)
+      : rawCandleColors;
+
+    const series = chart.addSeries(CandlestickSeries, vividCandles);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
@@ -228,8 +267,6 @@ export function LightweightCandles({
     const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
     const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
 
-    const sym = symbol.toUpperCase();
-
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
     let interval: any;
@@ -237,7 +274,10 @@ export function LightweightCandles({
     async function load() {
       try {
         if (!active) return;
+        // Clear any error left over from a previous load (e.g. a transient
+        // rate-limit) so a stale overlay never covers freshly loaded candles.
         setError(null);
+        setIsLoading(true);
 
         const allowedLimit = getCandleLimit(userTier);
 
@@ -269,11 +309,15 @@ export function LightweightCandles({
           if (fetched && fetched.length > 0) {
             displayData = fetched;
           } else {
+            const hint = lastFetchError?.includes("API Key not configured")
+              ? " Set TWELVEDATA_API_KEY in .env and restart the server."
+              : "";
             setError(
               lastFetchError
-                ? `No historical data available for this timeframe. (${lastFetchError})`
+                ? `No historical data available for this timeframe. (${lastFetchError})${hint}`
                 : "No historical data available for this timeframe."
             );
+            setIsLoading(false);
             return;
           }
         }
@@ -282,14 +326,6 @@ export function LightweightCandles({
 
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
         const tierOptimizedData = displayData.slice(-allowedLimit);
-
-        const patternScan = scanAllPatterns(tierOptimizedData);
-        setPatternScan(patternScan);
-        setActivePatternScan(patternScan);
-
-        const formingBrief = analyzeFormingStructure(tierOptimizedData, sym, timeframe);
-        setFormingBrief(formingBrief);
-        setActiveFormingBrief(formingBrief);
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
@@ -301,30 +337,59 @@ export function LightweightCandles({
 
         series.setData(chartCandles);
 
-        // Pattern geometry — bold trendlines on wedges/triangles/triple tops
-        const patternLines = buildPatternLineOverlays(tierOptimizedData, patternScan.patterns);
-        for (const overlay of patternLines) {
-          const line = chart.addSeries(LineSeries, {
-            color: overlay.color,
-            lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
-            lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
-            title: '',
-            priceLineVisible: false,
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-          });
-          line.setData(overlay.points);
+        scheduleChartVisionImmediate(
+          { candles: tierOptimizedData, symbol: sym, timeframe },
+          (output) => {
+            if (!active) return;
+            setPatternScan(output.scan);
+            setFormingBrief(output.forming);
+
+            try {
+              const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
+              for (const overlay of patternLines) {
+                const line = chart.addSeries(LineSeries, {
+                  color: overlay.color,
+                  lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
+                  lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+                  title: '',
+                  priceLineVisible: false,
+                  lastValueVisible: false,
+                  crosshairMarkerVisible: false,
+                });
+                line.setData(overlay.points);
+              }
+
+              const candleMarkers = [
+                ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
+                ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
+              ];
+              if (candleMarkers.length > 0) {
+                createSeriesMarkers(series, candleMarkers as any);
+              }
+            } catch (overlayErr) {
+              console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
+            }
+          },
+        );
+
+        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 6 : 8, minBarSpacing: 3 });
+
+        const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+        const visibleBars = embedMode ? 72 : isMobile ? 96 : 160;
+        const totalBars = tierOptimizedData.length;
+        if (totalBars > 0) {
+          const from = Math.max(0, totalBars - Math.min(visibleBars, totalBars));
+          chart.timeScale().setVisibleLogicalRange({ from, to: totalBars });
         }
 
-        const candleMarkers = [
-          ...buildCandlestickMarkers(tierOptimizedData, patternScan.patterns),
-          ...buildPatternPeakMarkers(tierOptimizedData, patternScan.patterns),
-        ];
-        if (candleMarkers.length > 0) {
-          createSeriesMarkers(series, candleMarkers as any);
-        }
-
-        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+        barCountRef.current = tierOptimizedData.length;
+        const isMobileViewport =
+          typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+        focusRecentBars(
+          chart.timeScale(),
+          tierOptimizedData.length,
+          visibleBarTarget(isMobileViewport, isExpanded),
+        );
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -487,27 +552,81 @@ export function LightweightCandles({
           });
         }
 
-        // Plot "The River" (Mine) Custom Indicator if active (price-based overlay)
+        // THE RIVER: execute the user's compiled Pine Script bar-by-bar over the
+        // REAL candles on this chart and render its actual output — plots,
+        // buy/sell shape markers, and signal-colored (gold) candles.
         if (showMineIndicator) {
           try {
-            const period = 14;
-            const lineData = tierOptimizedData.map((d, idx) => {
-              const start = Math.max(0, idx - period + 1);
-              const slice = tierOptimizedData.slice(start, idx + 1);
-              const avg = slice.reduce((acc, curr) => acc + curr.close, 0) / slice.length;
-              const offsetAngle = idx * 0.12;
-              const rirFactor = Math.sin(offsetAngle) * (d.close * 0.0015) + Math.cos(offsetAngle * 0.5) * (d.close * 0.0006);
-              return { time: d.time as Time, value: avg + rirFactor };
-            });
+            const activeScript = getActiveRiverIndicator();
+            if (!activeScript) {
+              console.warn("[The River] MINE is on but no compiled indicator is active. Import one in The River workstation.");
+            } else {
+              const result = runPine(activeScript.source, tierOptimizedData, {
+                inputOverrides: activeScript.inputs,
+                symbol: sym,
+                timeframe,
+              });
 
-            const riverLine = chart.addSeries(LineSeries, {
-              color: "#FF007F",
-              lineWidth: 3,
-              title: (mineIndicatorName || "the river").split('.')[0].toUpperCase(),
-            });
-            riverLine.setData(lineData);
+              const RIVER_PLOT_FALLBACKS = ["#FF007F", "#00D9FF", "#FFD700", "#00FF66", "#FFAA00", "#7A3BFF"];
+              result.plots.forEach((plot, plotIdx) => {
+                const color = plot.color || RIVER_PLOT_FALLBACKS[plotIdx % RIVER_PLOT_FALLBACKS.length];
+                const isHistogram = plot.style === "histogram" || plot.style === "columns";
+                let plotSeries;
+                if (isHistogram) {
+                  plotSeries = chart.addSeries(HistogramSeries, {
+                    color,
+                    title: plot.title,
+                    priceScaleId: result.meta.overlay ? "right" : OSCILLATOR_SCALE_ID,
+                  });
+                } else if (result.meta.overlay) {
+                  plotSeries = chart.addSeries(LineSeries, {
+                    color,
+                    lineWidth: (plot.lineWidth || 2) as any,
+                    title: plot.title,
+                    lineStyle: plot.style === "circles" || plot.style === "cross" ? LineStyle.Dotted : LineStyle.Solid,
+                  });
+                } else {
+                  // Non-overlay scripts (RSI-like) live on the oscillator sub-scale.
+                  plotSeries = addOscillatorSeries({ color, lineWidth: (plot.lineWidth || 2) as any, title: plot.title });
+                  series_priceScaleMargins(chart, true);
+                }
+                // na points become whitespace so warm-up gaps render honestly.
+                const plotData = plot.points.map(p =>
+                  p.value === null ? { time: p.time as Time } : { time: p.time as Time, value: p.value }
+                );
+                plotSeries.setData(plotData as any[]);
+              });
+
+              if (result.markers.length > 0) {
+                const markers: SeriesMarker<Time>[] = result.markers.map(m => ({
+                  time: m.time as Time,
+                  position: m.position,
+                  shape: m.shape,
+                  color: m.color,
+                  text: m.text,
+                }));
+                createSeriesMarkers(series, markers);
+              }
+
+              // barcolor(): repaint the exact candles the script flagged (Gold Bars).
+              if (result.barColors.length > 0) {
+                const colorByTime = new Map(result.barColors.map(bc => [bc.time, bc.color]));
+                series.setData(tierOptimizedData.map(d => {
+                  const c = colorByTime.get(d.time);
+                  return c
+                    ? ({ ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as CandlestickData<Time>)
+                    : (d as CandlestickData<Time>);
+                }));
+              }
+
+              result.hlines.forEach(hl => {
+                series.createPriceLine({ price: hl.value, color: hl.color, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: hl.title });
+              });
+
+              result.warnings.forEach(w => console.warn(`[The River] ${activeScript.name}: ${w}`));
+            }
           } catch (err) {
-            console.error("Error setting custom river indicator line", err);
+            console.error("[The River] Compiled indicator failed on this chart's data:", err);
           }
         }
 
@@ -567,14 +686,22 @@ export function LightweightCandles({
           lastCandle = { ...updateObj, time: updateTime as number };
         }, tickDelay);
 
-        chart.timeScale().fitContent();
+        if (active) setIsLoading(false);
       } catch (err) {
-        console.warn("[LightweightCandles load error handler] Recovered from load failure gracefully:", err);
+        if (!active) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn("[LightweightCandles load error]", err);
+        setError(msg || "Chart failed to load.");
+        setIsLoading(false);
       }
     }
 
     load().catch(err => {
-      console.warn("[LightweightCandles load promise catch] Suppressed chart loading promise rejection:", err);
+      console.warn("[LightweightCandles load promise catch]", err);
+      if (active) {
+        setError(err instanceof Error ? err.message : String(err));
+        setIsLoading(false);
+      }
     });
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -592,7 +719,9 @@ export function LightweightCandles({
 
     return () => {
       active = false;
-      clearFormingBrief(sym, timeframe);
+      chartRef.current = null;
+      barCountRef.current = 0;
+      cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }
@@ -600,7 +729,21 @@ export function LightweightCandles({
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, symbol, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
+  // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
+  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+
+  const handleFocusRecent = () => {
+    const chart = chartRef.current;
+    if (!chart || barCountRef.current <= 0) return;
+    const isMobileViewport =
+      typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    focusRecentBars(
+      chart.timeScale(),
+      barCountRef.current,
+      visibleBarTarget(isMobileViewport, isExpanded),
+    );
+  };
 
   return (
     <div
@@ -620,22 +763,104 @@ export function LightweightCandles({
       }}
     >
       {/* FLOATING COORDINATE TRACKER CONTROL (HUD SWITCH) */}
-      {error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 text-red-500 font-mono text-sm p-4 text-center">
-          {error}
+      {isLoading && !error && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 text-cyan-400 font-mono text-xs p-4 text-center">
+          <span className="animate-pulse">Loading {sym} chart…</span>
         </div>
       )}
-      <ChartFormingWatch symbol={sym} brief={formingBrief} />
-      <ChartPatternHud symbol={sym} scan={patternScan} />
-      <button
-        onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-        className="absolute top-3 right-3 z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95"
-        title="Toggle Crosshair Coordinates tracking"
-        id={`crosshair_toggle_${symbol}`}
-      >
-        <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-        <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
-      </button>
+      {error && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-black/85 text-red-400 font-mono text-sm p-6 text-center">
+          <span className="text-red-500 font-bold uppercase tracking-wider text-xs">Chart data unavailable</span>
+          <span>{error}</span>
+        </div>
+      )}
+      <ChartFormingWatch
+        symbol={sym}
+        brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
+        onClose={() => {
+          setShowFormingWatch(false);
+          try {
+            localStorage.setItem("cp_chart_forming_watch_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!hidePatternChrome && !showFormingWatch && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowFormingWatch(true);
+            try {
+              localStorage.setItem("cp_chart_forming_watch_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open forming watch"
+          className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+        >
+          <Radio size={10} className="animate-pulse" />
+          Forming
+        </button>
+      )}
+      <ChartPatternHud
+        symbol={sym}
+        scan={!hidePatternChrome && showPatternHud ? patternScan : null}
+        onClose={() => {
+          setShowPatternHud(false);
+          try {
+            localStorage.setItem("cp_chart_pattern_hud_open", "0");
+          } catch {
+            /* ignore */
+          }
+        }}
+      />
+      {!hidePatternChrome && !showPatternHud && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowPatternHud(true);
+            try {
+              localStorage.setItem("cp_chart_pattern_hud_open", "1");
+            } catch {
+              /* ignore */
+            }
+          }}
+          aria-label="Open pattern scanner"
+          className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+        >
+          <Scan size={10} />
+          Patterns
+        </button>
+      )}
+      {!embedMode && (
+        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1">
+          <button
+            type="button"
+            onClick={handleFocusRecent}
+            aria-label="Focus recent bars"
+            title="Snap to recent price action"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00D9FF]/25 bg-black/85 text-[#00D9FF] shadow-lg backdrop-blur-md transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+          >
+            <Focus size={13} strokeWidth={2.5} />
+          </button>
+          <ChartZoomControls chartRef={chartRef} />
+        </div>
+      )}
+      {!embedMode && (
+        <button
+          onClick={() => setCrosshairEnabled(!crosshairEnabled)}
+          className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+            !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+          }`}
+          title="Toggle Crosshair Coordinates tracking"
+          id={`crosshair_toggle_${symbol}`}
+        >
+          <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
+          <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
+        </button>
+      )}
     </div>
   );
 }

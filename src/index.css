@@ -1,5 +1,204 @@
 @import "tailwindcss";
+
+/* Keyboard focus — visible without relying on mouse hover */
+:focus-visible {
+  outline: 2px solid var(--cpt-cyan, #00ffff);
+  outline-offset: 2px;
+}
+
+/* Skip link — first focusable control on Auth / public shells */
+.cp-skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  background: #00ffff;
+  color: #050505;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.15s ease;
+}
+.cp-skip-link:focus,
+.cp-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+:root {
+  --lava-supernova: #ff0000;
+  --lava-magma: #ff4500;
+  --lava-molten: #ff8c00;
+  --lava-track: rgba(0, 0, 0, 0.55);
+  --lava-thumb-gradient: linear-gradient(180deg, var(--lava-supernova) 0%, var(--lava-magma) 52%, var(--lava-molten) 100%);
+  --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
+  --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
+
+  /* CTA fills — mid-tone WCAG-safe (4.5:1 with white). Neon stays in decorative accents. */
+  --cpt-pink: #d81b60;
+  --cpt-orange: #e65100;
+  --cpt-cta-on-pink: #ffffff;
+  --cpt-cta-on-orange: #ffffff;
+  /* Readable tinted copy on near-black */
+  --cpt-text-pink: #f472b6;
+  --cpt-text-orange: #fb923c;
+  --cpt-text-purple: #e9d5ff;
+}
+
+/* —— WCAG High Contrast — lift muted / tinted copy further —— */
+html[data-high-contrast="true"] {
+  --cpt-pink: #d81b60;
+  --cpt-orange: #e65100;
+  --cpt-cta-on-pink: #ffffff;
+  --cpt-cta-on-orange: #ffffff;
+  --cpt-text-pink: #f9a8d4;
+  --cpt-text-orange: #fdba74;
+  --cpt-text-purple: #f3e8ff;
+}
+
+/* Remap common hardcoded pink/orange utilities when High Contrast is on */
+html[data-high-contrast="true"] .bg-\[\#FF1493\],
+html[data-high-contrast="true"] .bg-\[\#ff1493\],
+html[data-high-contrast="true"] .hover\:bg-\[\#FF1493\]:hover,
+html[data-high-contrast="true"] .hover\:bg-\[\#ff1493\]:hover {
+  background-color: var(--cpt-pink) !important;
+}
+
+html[data-high-contrast="true"] .bg-\[\#FF7B00\],
+html[data-high-contrast="true"] .bg-\[\#FF7A00\],
+html[data-high-contrast="true"] .hover\:bg-\[\#FF7B00\]:hover,
+html[data-high-contrast="true"] .hover\:bg-\[\#FF7A00\]:hover {
+  background-color: var(--cpt-orange) !important;
+}
+
+html[data-high-contrast="true"] .text-\[\#FF1493\],
+html[data-high-contrast="true"] .text-\[\#ff1493\] {
+  color: var(--cpt-pink) !important;
+}
+
+html[data-high-contrast="true"] .text-\[\#FF7B00\],
+html[data-high-contrast="true"] .text-\[\#FF7A00\] {
+  color: var(--cpt-orange) !important;
+}
+
+html[data-high-contrast="true"] .border-\[\#FF1493\],
+html[data-high-contrast="true"] .border-\[\#ff1493\],
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/30,
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/35,
+html[data-high-contrast="true"] .border-\[\#FF1493\]\/40,
+html[data-high-contrast="true"] .border-\[\#ff1493\]\/35 {
+  border-color: color-mix(in srgb, var(--cpt-pink) 55%, transparent) !important;
+}
+
+html[data-high-contrast="true"] .border-\[\#FF7B00\],
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/15,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/20,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/35,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/40,
+html[data-high-contrast="true"] .border-\[\#FF7B00\]\/60 {
+  border-color: color-mix(in srgb, var(--cpt-orange) 55%, transparent) !important;
+}
+
+/* Muted body copy — default lift for near-black UI; High Contrast lifts further */
+.text-zinc-500 {
+  color: #a1a1aa; /* zinc-400 — ~4.5:1 on #050505 for normal text */
+}
+html[data-high-contrast="true"] .text-zinc-500 {
+  color: #d4d4d8 !important; /* zinc-300 */
+}
+html[data-high-contrast="true"] .text-zinc-400,
+html[data-high-contrast="true"] .text-zinc-300 {
+  color: #e4e4e7 !important; /* zinc-200 */
+}
+
+/* —— Reduced Sensory: calmer motion / less neon glow —— */
+html[data-reduced-sensory="true"],
+html[data-reduced-sensory="true"] * {
+  scroll-behavior: auto !important;
+}
+
+html[data-reduced-sensory="true"] *,
+html[data-reduced-sensory="true"] *::before,
+html[data-reduced-sensory="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+}
+
+html[data-reduced-sensory="true"] .text-neon-glow,
+html[data-reduced-sensory="true"] .neon-cyan-text {
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-reduced-sensory="true"] .a11y-prefs-root button {
+  box-shadow: none !important;
+}
+
+/* Semantic heading tags keep sequential levels; visuals stay tiny (11px) */
+h3.text-tiny-heading,
+h4.text-tiny-heading {
+  font-size: 11px !important;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Shared CTAs that follow brand vars (High Contrast remaps --cpt-*) */
+.cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #B026FF);
+  color: var(--cpt-cta-on-pink);
+}
+html[data-high-contrast="true"] .cpt-cta-gradient {
+  background-image: linear-gradient(to right, var(--cpt-pink), #6a1b9a);
+  color: #ffffff;
+}
+
+/* Tailwind gradient stops that hardcode neon pink */
+html[data-high-contrast="true"] .from-\[\#FF1493\],
+html[data-high-contrast="true"] .from-\[\#ff1493\] {
+  --tw-gradient-from: var(--cpt-pink) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important;
+}
+html[data-high-contrast="true"] .via-\[\#FF1493\],
+html[data-high-contrast="true"] .via-\[\#ff1493\] {
+  --tw-gradient-via: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .to-\[\#FF1493\],
+html[data-high-contrast="true"] .to-\[\#ff1493\] {
+  --tw-gradient-to: var(--cpt-pink) !important;
+}
+html[data-high-contrast="true"] .from-\[\#FF7B00\],
+html[data-high-contrast="true"] .from-\[\#FF7A00\],
+html[data-high-contrast="true"] .to-\[\#FF7B00\],
+html[data-high-contrast="true"] .to-\[\#FF7A00\] {
+  --tw-gradient-from: var(--cpt-orange) !important;
+  --tw-gradient-to: var(--cpt-orange) !important;
+}
+
 @import "./styles/codepen.css";
+
+/* Chart watermark — brand logo overlay on market terminals */
+.brand-mask-forced {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+}
 
 
 html, body {
@@ -73,21 +272,77 @@ canvas {
   }
 }
 
-/* Custom scrollbar -- visible on desktop, invisible but functional on mobile */
-.custom-scrollbar {
+/* Lava-Hot Industrial scrollbars — global (page + every scroll container) */
+html,
+body,
+.custom-scrollbar,
+.custom-scrollbar-lava,
+.custom-scrollbar-ice,
+*:not(.no-scrollbar):not(.scrollbar-none) {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: var(--lava-magma) var(--lava-track);
 }
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.custom-scrollbar-lava::-webkit-scrollbar,
+.custom-scrollbar-ice::-webkit-scrollbar,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.custom-scrollbar-lava::-webkit-scrollbar-track,
+.custom-scrollbar-ice::-webkit-scrollbar-track,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track {
+  background: var(--lava-track);
+  border-radius: 4px;
+  box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.12);
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.custom-scrollbar-lava::-webkit-scrollbar-thumb,
+.custom-scrollbar-ice::-webkit-scrollbar-thumb,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb {
+  background: var(--lava-magma);
+  background-image: var(--lava-thumb-gradient);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar-lava::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);
+  box-shadow: inset 0 0 9px rgba(255, 0, 0, 1), inset 0 0 16px rgba(255, 69, 0, 0.65), 0 0 12px rgba(255, 0, 0, 0.75), 0 0 20px rgba(255, 69, 0, 0.5);
+}
+
+*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+/* Intentionally hidden scrollbars (nav chips, tickers, etc.) */
+.no-scrollbar,
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Mobile nav -- make sure bottom nav doesn't cover content */
@@ -142,3 +397,201 @@ input, textarea, select {
   transform: translateY(0);
 }
 
+/* Charts / Market Terminal — bump micro type for legibility (was 8–10px) */
+.market-terminal-ui {
+  font-size: 1rem;
+}
+
+.market-terminal-ui [class*="text-[8px]"] {
+  font-size: 0.6875rem !important; /* 11px */
+}
+
+.market-terminal-ui [class*="text-[9px]"] {
+  font-size: 0.8125rem !important; /* 13px */
+}
+
+.market-terminal-ui [class*="text-[10px]"] {
+  font-size: 0.875rem !important; /* 14px */
+}
+
+.market-terminal-ui .text-xs {
+  font-size: 0.875rem !important; /* 14px */
+}
+
+.market-terminal-ui h1.text-2xl {
+  font-size: 1.875rem !important; /* was text-2xl */
+}
+
+.market-terminal-ui h1.text-3xl {
+  font-size: 2.25rem !important; /* was text-3xl */
+}
+
+.market-terminal-ui .time-unit {
+  font-size: 0.875rem !important;
+  padding: 0.375rem 0.625rem !important;
+}
+
+/* Ticker bar above charts — slightly larger prices */
+.market-ticker .ticker-item {
+  font-size: 0.875rem !important;
+}
+
+.market-ticker .ticker-item [class*="text-[10px]"] {
+  font-size: 0.8125rem !important;
+}
+
+/* Y.W.C. — lava / neon hero title */
+@keyframes ywc-lava-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: drop-shadow(0 0 18px rgba(255, 0, 128, 0.85)) drop-shadow(0 0 32px rgba(255, 69, 0, 0.55));
+  }
+  33% {
+    background-position: 50% 50%;
+    filter: drop-shadow(0 0 22px rgba(255, 69, 0, 0.9)) drop-shadow(0 0 36px rgba(191, 0, 255, 0.5));
+  }
+  66% {
+    background-position: 100% 50%;
+    filter: drop-shadow(0 0 20px rgba(255, 20, 147, 0.9)) drop-shadow(0 0 40px rgba(255, 140, 0, 0.6));
+  }
+}
+
+.ywc-title-lava {
+  background: linear-gradient(
+    90deg,
+    #ff0080 0%,
+    #ff1493 15%,
+    #ff4500 35%,
+    #ff6a00 50%,
+    #ff0080 65%,
+    #bf00ff 82%,
+    #00e5ff 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ywc-lava-shift 4s ease-in-out infinite;
+}
+
+.ywc-lava-border {
+  background-image: linear-gradient(#0a0008, #0a0008), linear-gradient(135deg, #ff0080, #ff4500, #ff1493, #bf00ff, #00e5ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/* Lava panel — hero + every Y.W.C. section module */
+.ywc-lava-panel {
+  border: 2px solid transparent;
+  background-color: rgba(10, 0, 8, 0.92);
+  background-image: linear-gradient(rgba(10, 0, 8, 0.92), rgba(10, 0, 8, 0.92)),
+    linear-gradient(135deg, #ff0080, #ff4500, #ff1493, #bf00ff, #00e5ff);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 40px rgba(255, 20, 147, 0.32), 0 0 64px rgba(255, 69, 0, 0.18);
+}
+
+.ywc-lava-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff0000, #ff4500, #ff8c00, #ff1493, #bf00ff, #00e5ff);
+  z-index: 5;
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.ywc-section-title {
+  background: linear-gradient(90deg, #ff4500 0%, #ff0080 35%, #ff1493 55%, #bf00ff 78%, #00e5ff 100%);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 69, 0, 0.6)) drop-shadow(0 0 18px rgba(255, 0, 128, 0.45));
+  animation: ywc-lava-shift 4s ease-in-out infinite;
+}
+
+@keyframes ywc-drift {
+  0%, 100% { transform: translateX(0) translateY(0); opacity: 0.25; }
+  50% { transform: translateX(-40px) translateY(20px); opacity: 0.4; }
+}
+
+.ywc-lava-drift {
+  animation: ywc-drift 8s ease-in-out infinite;
+}
+
+/* Compact industrial lava chat dock */
+.cp-chatroom-lava {
+  --cp-chat-accent: #ff4500;
+  background: linear-gradient(180deg, #1a0800 0%, #0c0400 50%, #050505 100%) !important;
+  border-color: #ff4500 !important;
+  box-shadow:
+    0 0 28px rgba(255, 69, 0, 0.4),
+    inset 0 0 40px rgba(255, 69, 0, 0.08) !important;
+}
+
+.cp-chatroom-lava .cp-chat-send,
+.cp-chatroom-lava button[type='submit'] {
+  background: linear-gradient(135deg, #ff0000 0%, #ff4500 52%, #ff8c00 100%) !important;
+  color: #000 !important;
+  border-color: rgba(255, 140, 0, 0.65) !important;
+  font-weight: 900;
+}
+
+/* ——— Accessibility (WCAG-oriented) ——— */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  background: #00e5ff;
+  color: #000;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.25rem;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  min-height: 44px;
+  min-width: auto;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 0;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .ywc-section-title,
+  .ywc-lava-drift,
+  .animate-ping,
+  .animate-pulse {
+    animation: none !important;
+  }
+}

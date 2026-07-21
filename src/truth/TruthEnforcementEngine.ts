@@ -23,6 +23,13 @@ export interface EnforcementReport {
  */
 export class TruthEnforcementEngine {
   private static evaluationCallbacks: ((report: EnforcementReport) => void)[] = [];
+  private static serverFilesystemBackup: ((payload: string, originId: string) => Promise<string | null>) | null = null;
+
+  static registerServerFilesystemBackup(
+    handler: (payload: string, originId: string) => Promise<string | null>,
+  ): void {
+    this.serverFilesystemBackup = handler;
+  }
 
   static registerEvaluationCallback(cb: (report: EnforcementReport) => void): void {
     this.evaluationCallbacks.push(cb);
@@ -141,21 +148,18 @@ export class TruthEnforcementEngine {
       }
     }
 
-    // 2. Server-side / Node File System Backup
-    if (typeof process !== 'undefined' && process.env && typeof window === 'undefined') {
+    // 2. Server-side / Node File System Backup (injected from server.ts — keeps node:fs out of the client bundle)
+    if (
+      typeof process !== 'undefined' &&
+      process.env &&
+      typeof window === 'undefined' &&
+      this.serverFilesystemBackup
+    ) {
       try {
-        // Dynamically get node modules to prevent frontend bundler issues
-        // We use a safe try/catch wrapper on node require
-        const req = eval('require');
-        const fsLib = req('fs');
-        const pathLib = req('path');
-        const dir = pathLib.join(process.cwd(), 'logs');
-        if (!fsLib.existsSync(dir)){
-          fsLib.mkdirSync(dir, { recursive: true });
+        const filePath = await this.serverFilesystemBackup(payloadStr, originId);
+        if (filePath) {
+          console.warn(`[TRUTH RESILIENCE BACKUP] Saved audit recovery file to server: ${filePath}`);
         }
-        const filePath = pathLib.join(dir, `truth_audit_recovery_${originId}.json`);
-        fsLib.writeFileSync(filePath, payloadStr, 'utf8');
-        console.warn(`[TRUTH RESILIENCE BACKUP] Saved audit recovery file to server: ${filePath}`);
       } catch (e) {
         console.warn('[TRUTH RESILIENCE BACKUP] Native fs backup bypass or error:', e);
       }

@@ -733,16 +733,16 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
   // Top 10 connected social media platforms array
   const [socialPlatforms, setSocialPlatforms] = useState([
-    { id: 'insta', name: 'Instagram', handle: '@rick_floyd_fx', followers: '142K', activeSync: true, icon: Flame, color: 'text-[#E1306C]', url: 'https://instagram.com' },
-    { id: 'fb', name: 'Facebook', handle: 'RickFloydFX', followers: '89K', activeSync: true, icon: Users, color: 'text-[#1877F2]', url: 'https://facebook.com' },
-    { id: 'tiktok', name: 'TikTok', handle: '@rickthetrader', followers: '210K', activeSync: true, icon: Video, color: 'text-[#a6e22e]', url: 'https://tiktok.com' },
-    { id: 'yt', name: 'YouTube', handle: 'ClearPathFX_Sovereign', followers: '345K', activeSync: true, icon: Tv, color: 'text-[#FF0000]', url: 'https://youtube.com' },
-    { id: 'twitter', name: 'X / Twitter', handle: '@rickfloyd_fx', followers: '76K', activeSync: true, icon: RefreshCw, color: 'text-white', url: 'https://x.com' },
-    { id: 'tg', name: 'Telegram', handle: 't.me/clearpath_signals', followers: '185K', activeSync: true, icon: Send, color: 'text-[#229ED9]', url: 'https://telegram.org' },
-    { id: 'discord', name: 'Discord', handle: 'discord.gg/clearpath', followers: '62K', activeSync: true, icon: MessageSquare, color: 'text-[#5865F2]', url: 'https://discord.com' },
-    { id: 'twitch', name: 'Twitch', handle: 'rickfloyd_live', followers: '28K', activeSync: false, icon: Radio, color: 'text-[#9146FF]', url: 'https://twitch.tv' },
-    { id: 'linkedin', name: 'LinkedIn', handle: 'rick-floyd-sovereign', followers: '14K', activeSync: false, icon: Award, color: 'text-[#0A66C2]', url: 'https://linkedin.com' },
-    { id: 'reddit', name: 'Reddit', handle: 'r/ClearPathAnarchy', followers: '41K', activeSync: true, icon: Activity, color: 'text-[#FF4500]', url: 'https://reddit.com' }
+    { id: 'insta', authId: 'instagram', name: 'Instagram', handle: '@rick_floyd_fx', followers: '142K', activeSync: true, icon: Flame, color: 'text-[#E1306C]', url: 'https://instagram.com/rick_floyd_fx' },
+    { id: 'fb', authId: 'facebook', name: 'Facebook', handle: 'RickFloydFX', followers: '89K', activeSync: true, icon: Users, color: 'text-[#1877F2]', url: 'https://facebook.com/RickFloydFX' },
+    { id: 'tiktok', authId: 'tiktok', name: 'TikTok', handle: '@rickthetrader', followers: '210K', activeSync: true, icon: Video, color: 'text-[#a6e22e]', url: 'https://tiktok.com/@rickthetrader' },
+    { id: 'yt', authId: 'youtube', name: 'YouTube', handle: 'ClearPathFX_Sovereign', followers: '345K', activeSync: true, icon: Tv, color: 'text-[#FF0000]', url: 'https://youtube.com/@ClearPathFX_Sovereign' },
+    { id: 'twitter', authId: 'twitter', name: 'X / Twitter', handle: '@rickfloyd_fx', followers: '76K', activeSync: true, icon: RefreshCw, color: 'text-white', url: 'https://x.com/rickfloyd_fx' },
+    { id: 'tg', authId: 'telegram', name: 'Telegram', handle: 't.me/clearpath_signals', followers: '185K', activeSync: true, icon: Send, color: 'text-[#229ED9]', url: 'https://t.me/clearpath_signals' },
+    { id: 'discord', authId: 'discord', name: 'Discord', handle: 'discord.gg/clearpath', followers: '62K', activeSync: true, icon: MessageSquare, color: 'text-[#5865F2]', url: 'https://discord.gg/clearpath' },
+    { id: 'twitch', authId: 'twitch', name: 'Twitch', handle: 'rickfloyd_live', followers: '28K', activeSync: false, icon: Radio, color: 'text-[#9146FF]', url: 'https://twitch.tv/rickfloyd_live' },
+    { id: 'linkedin', authId: 'linkedin', name: 'LinkedIn', handle: 'rick-floyd-sovereign', followers: '14K', activeSync: false, icon: Award, color: 'text-[#0A66C2]', url: 'https://linkedin.com/in/rick-floyd-sovereign' },
+    { id: 'reddit', authId: 'reddit', name: 'Reddit', handle: 'r/ClearPathAnarchy', followers: '41K', activeSync: true, icon: Activity, color: 'text-[#FF4500]', url: 'https://reddit.com/r/ClearPathAnarchy' }
   ]);
 
   const togglePlatformSyncState = (platId: string) => {
@@ -756,9 +756,18 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
     }));
   };
 
+  /** Open OAuth login desk + live channel URL for this platform. */
   const openPlatformConnector = (plat: (typeof socialPlatforms)[number]) => {
-    window.open(plat.url, '_blank', 'noopener,noreferrer');
-    addTelemetryLog(`Opened external connector: ${plat.name} (${plat.handle})`, 'success');
+    addTelemetryLog(`Opening ${plat.name} login + channel link…`, 'success');
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+    if (plat.authId) {
+      window.open(`/auth/${plat.authId}?returnTo=${returnTo}`, '_blank', 'noopener,noreferrer');
+    }
+    if (plat.url) {
+      window.setTimeout(() => {
+        window.open(plat.url, '_blank', 'noopener,noreferrer');
+      }, plat.authId ? 350 : 0);
+    }
   };
 
   const copyTelemetryHook = async () => {
@@ -1275,7 +1284,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                       CONNECTED CHANNELS & AUDIENCE NETWORK (TOP 10)
                     </h4>
                     <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-1 block">
-                      Click a platform to open its connector · toggle sync with the link icon
+                      Tap a platform to open login + channel · toggle sync with the link icon
                     </p>
                   </div>
                   <span className="text-[9px] bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-black text-emerald-400 uppercase tracking-widest animate-pulse">
@@ -1290,6 +1299,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                       <div
                         key={plat.id}
                         className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center ${
+
                           plat.activeSync 
                             ? 'bg-[#050914] border-[#00ffe1]/50 shadow-[0_0_15px_rgba(0,255,225,0.08)]' 
                             : 'bg-black/40 border-zinc-900 text-zinc-500'

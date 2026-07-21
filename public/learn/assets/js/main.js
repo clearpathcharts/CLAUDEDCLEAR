@@ -1,5 +1,19 @@
 // ClearPath Public Financial Encyclopedia - PWA Engine and Interactive Controller
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Allow only intentional <br> markers from static MODULES_DATA copy. */
+function sanitizeLearnHtml(value) {
+  return escapeHtml(value).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+}
+
 // Module data structure for local offline search and interactive mode changes
 const MODULES_DATA = {
   // --- EDUCATIONAL CATEGORY BLOCKS ---
@@ -559,22 +573,22 @@ function updateTemplatePage(mode) {
           <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 10px;">
             <span style="font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; color: var(--color-neon-pink); display: block; margin-bottom: 4px;">Target Core Formula</span>
             <span style="font-family: var(--font-mono); font-size: 0.9rem; font-weight: bold; color: #fff;">
-              ${formulas[topic] || 'T = f(I, R, G, S)'}
+              ${escapeHtml(formulas[topic] || 'T = f(I, R, G, S)')}
             </span>
           </div>
           <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.25rem; border-radius: 10px;">
             <span style="font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; color: var(--color-neon-cyan); display: block; margin-bottom: 4px;">Primary Volatility Benchmark</span>
             <span style="font-family: var(--font-mono); font-size: 0.9rem; font-weight: bold; color: #fff;">
-              ${benchmarks[topic] || 'Market Volatility Index'}
+              ${escapeHtml(benchmarks[topic] || 'Market Volatility Index')}
             </span>
           </div>
         </div>
         
         <div style="margin-top: 2.5rem; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 1.5rem;">
           <h4 style="font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--color-neon-cyan); letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">Spectrum Comparison</h4>
-          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 8px;"><strong style="color: #FF66B2;">Kids View:</strong> ${data.kids}</p>
-          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 8px;"><strong style="color: var(--color-neon-cyan);">High School View:</strong> ${data.highSchool}</p>
-          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6;"><strong style="color: var(--color-neon-purple);">Researcher View:</strong> ${data.researcher}</p>
+          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 8px;"><strong style="color: #FF66B2;">Kids View:</strong> ${sanitizeLearnHtml(data.kids)}</p>
+          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 8px;"><strong style="color: var(--color-neon-cyan);">High School View:</strong> ${sanitizeLearnHtml(data.highSchool)}</p>
+          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6;"><strong style="color: var(--color-neon-purple);">Researcher View:</strong> ${sanitizeLearnHtml(data.researcher)}</p>
         </div>
       `;
       displayArea.innerHTML = extraHtml;
@@ -599,7 +613,7 @@ function openModuleDrawer(key) {
     // Construct rich visual comparisons
     let rHtml = `
       <p class="text-white/80 style-body mb-6 text-base" style="margin-bottom: 24px; line-height: 1.8;">
-        ${data[currentMode] || data['beginner']}
+        ${sanitizeLearnHtml(data[currentMode] || data['beginner'])}
       </p>
       
       <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1.5rem; border-radius: 12px;" class="mb-4">
@@ -607,15 +621,15 @@ function openModuleDrawer(key) {
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 4px;">
             <span style="color: #FF66B2;">🎈 Kids mode:</span>
-            <span style="color: rgba(255,255,255,0.5);">${data.kids}</span>
+            <span style="color: rgba(255,255,255,0.5);">${sanitizeLearnHtml(data.kids)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 4px;">
             <span style="color: #00D9FF;">🎓 High School:</span>
-            <span style="color: rgba(255,255,255,0.5);">${data.highSchool}</span>
+            <span style="color: rgba(255,255,255,0.5);">${sanitizeLearnHtml(data.highSchool)}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span style="color: #7A3BFF;">🔬 Researcher:</span>
-            <span style="color: rgba(255,255,255,0.5);">${data.researcher}</span>
+            <span style="color: rgba(255,255,255,0.5);">${sanitizeLearnHtml(data.researcher)}</span>
           </div>
         </div>
       </div>

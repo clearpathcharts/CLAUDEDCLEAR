@@ -91,12 +91,20 @@ export function resolveTwelveDataInterval(interval: string): string {
  * Returns candles sorted oldest -> newest (required by lightweight-charts).
  * Throws on failure. Never returns mock/simulated data.
  */
+/**
+ * Twelve Data's time_series endpoint accepts outputsize in [1, 5000] and
+ * returns HTTP 400 for anything larger. Tier limits above 5000 (GOLD/VIP)
+ * must therefore be clamped before hitting the API, otherwise EVERY request
+ * for those tiers fails and every chart shows "no data".
+ */
+const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
+
 export const fetchTieredHistoricalData = async (
   symbol: string,
   interval: string,
   userTier: string
 ): Promise<NormalizedCandle[]> => {
-  const limit = getCandleLimit(userTier);
+  const limit = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
   const resolvedInterval = resolveTwelveDataInterval(interval);
 
   const proxyUrl =

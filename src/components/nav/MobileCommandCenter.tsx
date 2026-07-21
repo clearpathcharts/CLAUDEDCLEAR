@@ -10,8 +10,8 @@ import {
   LogOut,
   Network,
   Newspaper,
+  Share2,
   Shield,
-  SlidersHorizontal,
   Terminal,
   Users,
   X,
@@ -50,19 +50,37 @@ const WORK_ITEMS: NavItem[] = [
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
   {
-    id: "Journal",
-    icon: BookOpen,
-    label: "JOURNAL",
-    colorClass: "text-[#4D00FF] border-[#4D00FF]/25 hover:bg-[#4D00FF]/10",
-    glowClass: "bg-[#4D00FF]/25 text-[#4D00FF] border-[#4D00FF] shadow-[0_0_18px_rgba(77,0,255,.8)]",
-  },
-  {
     id: "News",
     icon: Newspaper,
     label: "NEWS",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
+];
+
+const LEARN_ITEMS: NavItem[] = [
+  {
+    id: "ClearPathEducation",
+    icon: BookOpen,
+    label: "CLEARPATH EDUCATION",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "LiteracyOS",
+    icon: BookOpen,
+    label: "LITERACY OS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
+    id: "Encyclopedia",
+    icon: GraduationCap,
+    label: "ENCYCLOPEDIA OF FINANCE",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  // Encyclopedia of Indicators — hidden while videos are broken (component kept).
 ];
 
 const TOOLS_ITEMS: NavItem[] = [
@@ -74,16 +92,9 @@ const TOOLS_ITEMS: NavItem[] = [
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
   {
-    id: "Screener",
-    icon: SlidersHorizontal,
-    label: "SCREENER",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
-  },
-  {
     id: "CpmsApk",
     icon: Cpu,
-    label: "CPMS APK",
+    label: "CLEARPATH CINEMA",
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
@@ -119,6 +130,14 @@ const ACCOUNT_ITEMS: NavItem[] = [
     label: "AFFILIATE",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+  {
+    id: "ReferralDesk",
+    icon: Share2,
+    label: "REFERRALS",
+    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
+
   },
   {
     id: "Membership",
@@ -160,6 +179,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
   const sections: { title: string; items: NavItem[] }[] = [
     { title: "WORK", items: WORK_ITEMS },
+    { title: "LEARN", items: LEARN_ITEMS },
     { title: "TOOLS", items: toolsItems },
     { title: "ACCOUNT", items: ACCOUNT_ITEMS },
   ];
@@ -255,8 +275,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               >
                 YOUR WORLD CONNECTED
               </span>
-              <span className="block text-[#AAAAAA] text-xs mt-1">
-                Everything you need. One place.
+              <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
+                Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
               <button
                 type="button"

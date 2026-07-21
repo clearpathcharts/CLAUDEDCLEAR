@@ -1,373 +1,309 @@
-// Pine Script v5 lexer — Layer 1 of The River compiler.
-// Turns raw Pine source into an honest token stream. No parsing, no faking.
+// /src/river/pine/lexer.ts
+//
+// The River's Pine Script lexer (tokenizer). Turns raw Pine Script v4/v5/v6
+// source text into a token stream the parser can consume.
+//
+// Pine is indentation-scoped like Python, so beyond classic tokens this lexer
+// emits synthetic NEWLINE / INDENT / DEDENT tokens. It also handles the two
+// ways Pine lets a logical line span physical lines:
+//   1. Inside unclosed ( or [ brackets, newlines are ignored.
+//   2. A line whose previous line ended with a binary operator, comma,
+//      assignment, '?' , ':' or '=>' is treated as a continuation.
 
-import {
-  PineLexError,
-  PineLexResult,
-  PineToken,
-  PineTokenType,
-} from './token';
+import { Token, TokenType, KEYWORDS, PineError } from "./tokens";
 
-const KEYWORDS: Record<string, PineTokenType> = {
-  indicator: PineTokenType.INDICATOR,
-  strategy: PineTokenType.STRATEGY,
-  library: PineTokenType.LIBRARY,
-  true: PineTokenType.TRUE,
-  false: PineTokenType.FALSE,
-  and: PineTokenType.AND,
-  or: PineTokenType.OR,
-  not: PineTokenType.NOT,
-  na: PineTokenType.NA,
-  if: PineTokenType.IF,
-  else: PineTokenType.ELSE,
-  for: PineTokenType.FOR,
-  while: PineTokenType.WHILE,
-  var: PineTokenType.VAR,
-  varip: PineTokenType.VARIP,
-  import: PineTokenType.IMPORT,
-  export: PineTokenType.EXPORT,
-};
+export interface LexResult {
+  tokens: Token[];
+  /** Declared //@version (4, 5, 6, ...). Defaults to 5 when not declared. */
+  version: number;
+}
 
-const SIGNIFICANT = new Set<PineTokenType>([
-  PineTokenType.NUMBER,
-  PineTokenType.STRING,
-  PineTokenType.IDENTIFIER,
-  PineTokenType.INDICATOR,
-  PineTokenType.STRATEGY,
-  PineTokenType.LIBRARY,
-  PineTokenType.TRUE,
-  PineTokenType.FALSE,
-  PineTokenType.AND,
-  PineTokenType.OR,
-  PineTokenType.NOT,
-  PineTokenType.NA,
-  PineTokenType.IF,
-  PineTokenType.ELSE,
-  PineTokenType.FOR,
-  PineTokenType.WHILE,
-  PineTokenType.VAR,
-  PineTokenType.VARIP,
-  PineTokenType.IMPORT,
-  PineTokenType.EXPORT,
-  PineTokenType.COLON_ASSIGN,
-  PineTokenType.EQUAL,
-  PineTokenType.EQUAL_EQUAL,
-  PineTokenType.BANG_EQUAL,
-  PineTokenType.GREATER,
-  PineTokenType.GREATER_EQUAL,
-  PineTokenType.LESS,
-  PineTokenType.LESS_EQUAL,
-  PineTokenType.PLUS,
-  PineTokenType.MINUS,
-  PineTokenType.STAR,
-  PineTokenType.SLASH,
-  PineTokenType.PERCENT,
-  PineTokenType.QUESTION,
-  PineTokenType.COLON,
-  PineTokenType.BANG,
-  PineTokenType.LEFT_PAREN,
-  PineTokenType.RIGHT_PAREN,
-  PineTokenType.LEFT_BRACKET,
-  PineTokenType.RIGHT_BRACKET,
-  PineTokenType.COMMA,
-  PineTokenType.DOT,
-  PineTokenType.SEMICOLON,
-  PineTokenType.VERSION,
+const CONTINUATION_ENDINGS = new Set<TokenType>([
+  TokenType.PLUS, TokenType.MINUS, TokenType.STAR, TokenType.SLASH, TokenType.PERCENT,
+  TokenType.ASSIGN, TokenType.REASSIGN,
+  TokenType.PLUS_ASSIGN, TokenType.MINUS_ASSIGN, TokenType.STAR_ASSIGN, TokenType.SLASH_ASSIGN,
+  TokenType.EQ, TokenType.NEQ, TokenType.LT, TokenType.LTE, TokenType.GT, TokenType.GTE,
+  TokenType.AND, TokenType.OR, TokenType.NOT,
+  TokenType.COMMA, TokenType.QUESTION, TokenType.COLON,
+  TokenType.LPAREN, TokenType.LBRACKET, TokenType.DOT,
 ]);
+// Note: ARROW (`=>`) is intentionally excluded — a newline after `=>` starts the
+// function body on the next line, it is NOT a line continuation.
 
 export class PineLexer {
-  private readonly source: string;
-  private readonly tokens: PineToken[] = [];
-  private readonly errors: PineLexError[] = [];
-  private start = 0;
-  private startLine = 1;
-  private startColumn = 1;
-  private current = 0;
+  private src: string;
+  private pos = 0;
   private line = 1;
-  private column = 1;
-  private version: number | null = null;
+  private col = 1;
+  private tokens: Token[] = [];
+  private bracketDepth = 0;
+  private indentStack: number[] = [0];
+  private version = 5;
 
   constructor(source: string) {
-    this.source = source;
+    // Normalize line endings so \r never leaks into tokens.
+    this.src = source.replace(/\r\n?/g, "\n");
   }
 
-  scan(): PineLexResult {
+  tokenize(): LexResult {
+    this.readVersionAnnotation();
+
+    let atLineStart = true;
+
     while (!this.isAtEnd()) {
-      this.start = this.current;
-      this.startLine = this.line;
-      this.startColumn = this.column;
+      if (atLineStart && this.bracketDepth === 0) {
+        atLineStart = false;
+        const consumed = this.handleIndentation();
+        if (consumed) { atLineStart = true; continue; }
+      }
+
+      const c = this.peek();
+
+      if (c === "\n") {
+        this.advance();
+        if (this.bracketDepth > 0 || this.lastTokenIsContinuation()) {
+          // Logical line continues — swallow the newline entirely.
+          atLineStart = this.bracketDepth === 0;
+          continue;
+        }
+        this.pushSimple(TokenType.NEWLINE, "\\n");
+        atLineStart = true;
+        continue;
+      }
+
+      if (c === " " || c === "\t") { this.advance(); continue; }
+
+      if (c === "/" && this.peek(1) === "/") { this.skipComment(); continue; }
+
       this.scanToken();
     }
 
-    this.tokens.push(this.makeToken(PineTokenType.EOF, '', null));
+    // Close any open blocks at EOF.
+    if (this.lastToken()?.type !== TokenType.NEWLINE && this.tokens.length > 0) {
+      this.pushSimple(TokenType.NEWLINE, "\\n");
+    }
+    while (this.indentStack.length > 1) {
+      this.indentStack.pop();
+      this.pushSimple(TokenType.DEDENT, "");
+    }
+    this.pushSimple(TokenType.EOF, "");
 
-    const significantTokenCount = this.tokens.filter((t) => SIGNIFICANT.has(t.type)).length;
-
-    return {
-      tokens: this.tokens,
-      errors: this.errors,
-      version: this.version,
-      significantTokenCount,
-    };
+    return { tokens: this.tokens, version: this.version };
   }
 
-  private scanToken(): void {
+  // ---------------------------------------------------------------- helpers
+
+  private readVersionAnnotation() {
+    const m = this.src.match(/^\s*\/\/@version\s*=\s*(\d+)/m);
+    if (m) this.version = parseInt(m[1], 10);
+  }
+
+  /**
+   * At the start of a physical line: measure leading whitespace and emit
+   * INDENT/DEDENT tokens. Returns true if the whole line was blank/comment
+   * (in which case indentation must NOT change block structure).
+   */
+  private handleIndentation(): boolean {
+    let width = 0;
+    let i = this.pos;
+    while (i < this.src.length && (this.src[i] === " " || this.src[i] === "\t")) {
+      width += this.src[i] === "\t" ? 4 : 1;
+      i++;
+    }
+
+    // Blank line or comment-only line: consume it without touching indents.
+    if (i >= this.src.length) { this.pos = i; return false; }
+    if (this.src[i] === "\n") {
+      this.pos = i + 1;
+      this.line++; this.col = 1;
+      return true;
+    }
+    if (this.src[i] === "/" && this.src[i + 1] === "/") {
+      while (i < this.src.length && this.src[i] !== "\n") i++;
+      if (i < this.src.length) { i++; this.line++; }
+      this.pos = i; this.col = 1;
+      return true;
+    }
+
+    // Continuation lines keep the previous logical line going; their odd
+    // indentation (Pine wraps must not align to the block grid) is ignored.
+    if (this.lastTokenIsContinuation()) {
+      this.col += i - this.pos;
+      this.pos = i;
+      return false;
+    }
+
+    this.col += i - this.pos;
+    this.pos = i;
+
+    const current = this.indentStack[this.indentStack.length - 1];
+    if (width > current) {
+      this.indentStack.push(width);
+      this.pushSimple(TokenType.INDENT, "");
+    } else if (width < current) {
+      while (this.indentStack.length > 1 && this.indentStack[this.indentStack.length - 1] > width) {
+        this.indentStack.pop();
+        this.pushSimple(TokenType.DEDENT, "");
+      }
+      if (this.indentStack[this.indentStack.length - 1] !== width) {
+        // Tolerate slightly inconsistent dedents (common in hand-edited scripts).
+        this.indentStack.push(width);
+      }
+    }
+    return false;
+  }
+
+  private lastToken(): Token | undefined {
+    for (let i = this.tokens.length - 1; i >= 0; i--) {
+      const t = this.tokens[i];
+      if (t.type !== TokenType.NEWLINE && t.type !== TokenType.INDENT && t.type !== TokenType.DEDENT) return t;
+      if (t.type === TokenType.NEWLINE) return t;
+    }
+    return undefined;
+  }
+
+  private lastTokenIsContinuation(): boolean {
+    const t = this.lastToken();
+    return !!t && CONTINUATION_ENDINGS.has(t.type);
+  }
+
+  private skipComment() {
+    while (!this.isAtEnd() && this.peek() !== "\n") this.advance();
+  }
+
+  private scanToken() {
+    const startLine = this.line;
+    const startCol = this.col;
     const c = this.advance();
 
     switch (c) {
-      case '(':
-        this.addToken(PineTokenType.LEFT_PAREN);
-        break;
-      case ')':
-        this.addToken(PineTokenType.RIGHT_PAREN);
-        break;
-      case '[':
-        this.addToken(PineTokenType.LEFT_BRACKET);
-        break;
-      case ']':
-        this.addToken(PineTokenType.RIGHT_BRACKET);
-        break;
-      case ',':
-        this.addToken(PineTokenType.COMMA);
-        break;
-      case '.':
-        this.addToken(PineTokenType.DOT);
-        break;
-      case ';':
-        this.addToken(PineTokenType.SEMICOLON);
-        break;
-      case '+':
-        this.addToken(PineTokenType.PLUS);
-        break;
-      case '*':
-        this.addToken(PineTokenType.STAR);
-        break;
-      case '%':
-        this.addToken(PineTokenType.PERCENT);
-        break;
-      case '?':
-        this.addToken(PineTokenType.QUESTION);
-        break;
-      case ':':
-        if (this.match('=')) {
-          this.addToken(PineTokenType.COLON_ASSIGN);
-        } else {
-          this.addToken(PineTokenType.COLON);
-        }
-        break;
-      case '-':
-        this.addToken(PineTokenType.MINUS);
-        break;
-      case '/':
-        if (this.match('/')) {
-          this.lineComment();
-        } else {
-          this.addToken(PineTokenType.SLASH);
-        }
-        break;
-      case '=':
-        if (this.match('=')) {
-          this.addToken(PineTokenType.EQUAL_EQUAL);
-        } else {
-          this.addToken(PineTokenType.EQUAL);
-        }
-        break;
-      case '!':
-        if (this.match('=')) {
-          this.addToken(PineTokenType.BANG_EQUAL);
-        } else {
-          this.addToken(PineTokenType.BANG);
-        }
-        break;
-      case '>':
-        this.addToken(this.match('=') ? PineTokenType.GREATER_EQUAL : PineTokenType.GREATER);
-        break;
-      case '<':
-        this.addToken(this.match('=') ? PineTokenType.LESS_EQUAL : PineTokenType.LESS);
-        break;
-      case ' ':
-      case '\r':
-      case '\t':
-        break;
-      case '\n':
-        this.addToken(PineTokenType.NEWLINE, '\n');
-        this.line++;
-        this.column = 1;
-        break;
+      case "(": this.bracketDepth++; return this.push(TokenType.LPAREN, c, startLine, startCol);
+      case ")": this.bracketDepth = Math.max(0, this.bracketDepth - 1); return this.push(TokenType.RPAREN, c, startLine, startCol);
+      case "[": this.bracketDepth++; return this.push(TokenType.LBRACKET, c, startLine, startCol);
+      case "]": this.bracketDepth = Math.max(0, this.bracketDepth - 1); return this.push(TokenType.RBRACKET, c, startLine, startCol);
+      case ",": return this.push(TokenType.COMMA, c, startLine, startCol);
+      case ".": return this.push(TokenType.DOT, c, startLine, startCol);
+      case "?": return this.push(TokenType.QUESTION, c, startLine, startCol);
+      case "%": return this.push(TokenType.PERCENT, c, startLine, startCol);
+      case "+":
+        if (this.match("=")) return this.push(TokenType.PLUS_ASSIGN, "+=", startLine, startCol);
+        return this.push(TokenType.PLUS, c, startLine, startCol);
+      case "-":
+        if (this.match("=")) return this.push(TokenType.MINUS_ASSIGN, "-=", startLine, startCol);
+        return this.push(TokenType.MINUS, c, startLine, startCol);
+      case "*":
+        if (this.match("=")) return this.push(TokenType.STAR_ASSIGN, "*=", startLine, startCol);
+        return this.push(TokenType.STAR, c, startLine, startCol);
+      case "/":
+        if (this.match("=")) return this.push(TokenType.SLASH_ASSIGN, "/=", startLine, startCol);
+        return this.push(TokenType.SLASH, c, startLine, startCol);
+      case ":":
+        if (this.match("=")) return this.push(TokenType.REASSIGN, ":=", startLine, startCol);
+        return this.push(TokenType.COLON, c, startLine, startCol);
+      case "=":
+        if (this.match("=")) return this.push(TokenType.EQ, "==", startLine, startCol);
+        if (this.match(">")) return this.push(TokenType.ARROW, "=>", startLine, startCol);
+        return this.push(TokenType.ASSIGN, c, startLine, startCol);
+      case "!":
+        if (this.match("=")) return this.push(TokenType.NEQ, "!=", startLine, startCol);
+        throw new PineError(`Unexpected character '!' (did you mean '!=' or 'not'?)`, startLine, startCol);
+      case "<":
+        if (this.match("=")) return this.push(TokenType.LTE, "<=", startLine, startCol);
+        return this.push(TokenType.LT, c, startLine, startCol);
+      case ">":
+        if (this.match("=")) return this.push(TokenType.GTE, ">=", startLine, startCol);
+        return this.push(TokenType.GT, c, startLine, startCol);
       case '"':
       case "'":
-        this.string(c);
-        break;
-      default:
-        if (this.isDigit(c)) {
-          this.number();
-        } else if (this.isAlpha(c)) {
-          this.identifier();
-        } else {
-          this.error(`Unexpected character '${c}'.`);
-        }
-        break;
+        return this.scanString(c, startLine, startCol);
+      case "#":
+        return this.scanColor(startLine, startCol);
     }
+
+    if (this.isDigit(c)) return this.scanNumber(startLine, startCol);
+    if (this.isIdentStart(c)) return this.scanIdent(startLine, startCol);
+
+    throw new PineError(`Unexpected character '${c}'`, startLine, startCol);
   }
 
-  private lineComment(): void {
-    while (this.peek() !== '\n' && !this.isAtEnd()) {
-      this.advance();
+  private scanString(quote: string, line: number, col: number) {
+    let value = "";
+    while (!this.isAtEnd() && this.peek() !== quote && this.peek() !== "\n") {
+      if (this.peek() === "\\" && this.peek(1) === quote) { this.advance(); value += this.advance(); continue; }
+      value += this.advance();
     }
-    const text = this.source.slice(this.start, this.current);
-
-    const versionMatch = /^\/\/@version\s*=\s*(\d+)/.exec(text);
-    if (versionMatch) {
-      this.version = parseInt(versionMatch[1], 10);
-      this.tokens.push({
-        type: PineTokenType.VERSION,
-        lexeme: text,
-        literal: this.version,
-        line: this.startLine,
-        column: this.startColumn,
-      });
-    } else {
-      this.tokens.push({
-        type: PineTokenType.COMMENT,
-        lexeme: text,
-        literal: null,
-        line: this.startLine,
-        column: this.startColumn,
-      });
+    if (this.isAtEnd() || this.peek() === "\n") {
+      throw new PineError(`Unterminated string`, line, col);
     }
-  }
-
-  private string(quote: string): void {
-    const startLine = this.startLine;
-    const startColumn = this.startColumn;
-
-    while (this.peek() !== quote && !this.isAtEnd()) {
-      if (this.peek() === '\n') {
-        this.line++;
-        this.column = 1;
-      }
-      this.advance();
-    }
-
-    if (this.isAtEnd()) {
-      this.errors.push({
-        message: 'Unterminated string literal.',
-        line: startLine,
-        column: startColumn,
-      });
-      return;
-    }
-
     this.advance(); // closing quote
-    const value = this.source.slice(this.start + 1, this.current - 1);
-    this.tokens.push({
-      type: PineTokenType.STRING,
-      lexeme: this.source.slice(this.start, this.current),
-      literal: value,
-      line: startLine,
-      column: startColumn,
-    });
+    this.push(TokenType.STRING, `${quote}${value}${quote}`, line, col, value);
   }
 
-  private number(): void {
-    while (this.isDigit(this.peek())) {
-      this.advance();
+  private scanColor(line: number, col: number) {
+    let hex = "";
+    while (!this.isAtEnd() && /[0-9a-fA-F]/.test(this.peek())) hex += this.advance();
+    if (hex.length !== 6 && hex.length !== 8) {
+      throw new PineError(`Invalid color literal '#${hex}' (expected #RRGGBB or #RRGGBBAA)`, line, col);
     }
+    this.push(TokenType.COLOR_LITERAL, `#${hex}`, line, col, `#${hex}`);
+  }
 
-    if (this.peek() === '.' && this.isDigit(this.peekNext())) {
+  private scanNumber(line: number, col: number) {
+    let start = this.pos - 1;
+    while (!this.isAtEnd() && this.isDigit(this.peek())) this.advance();
+    if (this.peek() === "." && this.isDigit(this.peek(1))) {
       this.advance();
-      while (this.isDigit(this.peek())) {
-        this.advance();
-      }
+      while (!this.isAtEnd() && this.isDigit(this.peek())) this.advance();
     }
-
-    const text = this.source.slice(this.start, this.current);
-    this.tokens.push({
-      type: PineTokenType.NUMBER,
-      lexeme: text,
-      literal: parseFloat(text),
-      line: this.startLine,
-      column: this.startColumn,
-    });
-  }
-
-  private identifier(): void {
-    while (this.isAlphaNumeric(this.peek())) {
+    // Scientific notation: 1e5, 2.5e-3
+    if ((this.peek() === "e" || this.peek() === "E") && (this.isDigit(this.peek(1)) || ((this.peek(1) === "+" || this.peek(1) === "-") && this.isDigit(this.peek(2))))) {
       this.advance();
+      if (this.peek() === "+" || this.peek() === "-") this.advance();
+      while (!this.isAtEnd() && this.isDigit(this.peek())) this.advance();
     }
-
-    const text = this.source.slice(this.start, this.current);
-    const keyword = KEYWORDS[text];
-    const type = keyword ?? PineTokenType.IDENTIFIER;
-
-    this.tokens.push({
-      type,
-      lexeme: text,
-      literal: null,
-      line: this.startLine,
-      column: this.startColumn,
-    });
+    const lexeme = this.src.slice(start, this.pos);
+    this.push(TokenType.NUMBER, lexeme, line, col, parseFloat(lexeme));
   }
 
-  private error(message: string): void {
-    this.errors.push({ message, line: this.line, column: this.column });
+  private scanIdent(line: number, col: number) {
+    let start = this.pos - 1;
+    while (!this.isAtEnd() && this.isIdentPart(this.peek())) this.advance();
+    const lexeme = this.src.slice(start, this.pos);
+    const kw = KEYWORDS[lexeme];
+    this.push(kw ?? TokenType.IDENT, lexeme, line, col);
   }
 
-  private isAtEnd(): boolean {
-    return this.current >= this.source.length;
-  }
+  // ------------------------------------------------------------- primitives
 
-  private peek(): string {
-    if (this.isAtEnd()) return '\0';
-    return this.source[this.current];
-  }
+  private isAtEnd(): boolean { return this.pos >= this.src.length; }
 
-  private peekNext(): string {
-    if (this.current + 1 >= this.source.length) return '\0';
-    return this.source[this.current + 1];
-  }
-
-  private match(expected: string): boolean {
-    if (this.isAtEnd()) return false;
-    if (this.source[this.current] !== expected) return false;
-    this.current++;
-    this.column++;
-    return true;
-  }
+  private peek(ahead = 0): string { return this.src[this.pos + ahead] ?? "\0"; }
 
   private advance(): string {
-    const c = this.source[this.current++];
-    this.column++;
+    const c = this.src[this.pos++];
+    if (c === "\n") { this.line++; this.col = 1; } else { this.col++; }
     return c;
   }
 
-  private addToken(type: PineTokenType, lexeme?: string, literal: string | number | boolean | null = null): void {
-    const text = lexeme ?? this.source.slice(this.start, this.current);
-    this.tokens.push(this.makeToken(type, text, literal));
+  private match(expected: string): boolean {
+    if (this.peek() !== expected) return false;
+    this.advance();
+    return true;
   }
 
-  private makeToken(
-    type: PineTokenType,
-    lexeme: string,
-    literal: string | number | boolean | null,
-  ): PineToken {
-    return { type, lexeme, literal, line: this.startLine, column: this.startColumn };
+  private isDigit(c: string): boolean { return c >= "0" && c <= "9"; }
+  private isIdentStart(c: string): boolean { return /[a-zA-Z_]/.test(c); }
+  private isIdentPart(c: string): boolean { return /[a-zA-Z0-9_]/.test(c); }
+
+  private push(type: TokenType, lexeme: string, line: number, col: number, literal?: number | string) {
+    this.tokens.push({ type, lexeme, literal, line, col });
   }
 
-  private isDigit(c: string): boolean {
-    return c >= '0' && c <= '9';
-  }
-
-  private isAlpha(c: string): boolean {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_';
-  }
-
-  private isAlphaNumeric(c: string): boolean {
-    return this.isAlpha(c) || this.isDigit(c);
+  private pushSimple(type: TokenType, lexeme: string) {
+    this.tokens.push({ type, lexeme, line: this.line, col: this.col });
   }
 }
 
-/** Public entry point for Layer 1 tokenization. */
-export function lexPineScript(source: string): PineLexResult {
-  return new PineLexer(source).scan();
+export function tokenizePine(source: string): LexResult {
+  return new PineLexer(source).tokenize();
 }
