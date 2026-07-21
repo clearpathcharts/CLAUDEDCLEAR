@@ -17,6 +17,7 @@ import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
+import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 // ==========================================
@@ -1885,6 +1886,7 @@ Not the other way around.`}
           <div className="text-[10px] text-zinc-600 font-mono mt-4">
             © 2026 Clear Path Markets Science (CPMS). All academic rights reserved.
           </div>
+          <GovernmentFinanceLinks />
         </div>
       </footer>
 
