@@ -38,6 +38,7 @@ import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
+import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
@@ -690,6 +691,11 @@ export default function YoursPageHub() {
         </YwcLavaPanel>
 
       </div>
+
+      {/* Personal trading chart workspace */}
+      <YwcLavaPanel className="space-y-4">
+        <YwcPersonalCharts />
+      </YwcLavaPanel>
 
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
