@@ -17,4 +17,4 @@ COPY --from=build /app/public ./public
 
 # Cloud Run sets PORT automatically -- the server now reads it correctly
 EXPOSE 8080
-CMD ["node", "dist/server.cjs"]
+CMD ["npm", "start"]

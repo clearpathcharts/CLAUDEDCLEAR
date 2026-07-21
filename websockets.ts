@@ -13,13 +13,25 @@ interface SocialPost {
   timestamp: number;
 }
 
-// Initial default social posts
-let activeSocialPosts: SocialPost[] = [
-  { id: 'p1', platform: 'x', handle: '@CryptoWhaleCPMS', text: '📈 BTC/USD break out confirmed through master zone resistance node. Volume validation complete.', timestamp: Date.now() - 3600000 },
-  { id: 'p2', platform: 'stocktwits', handle: 'PatternSurfer', text: 'Bullish divergence forming on $TSLA relative to the CPM-6 Support. Ready to launch.', timestamp: Date.now() - 1800000 },
-  { id: 'p3', platform: 'discord', handle: 'ExecutiveTradeDesk', text: '🎙 Connecting to terminal voice node #04 for Live Capital Flow session starting in 5 mins.', timestamp: Date.now() - 900000 },
-  { id: 'p4', platform: 'linkedin', handle: 'Apex Capital Partners', text: 'Announcing our institutional integration with Clear Path Markets Science Reader terminal layer.', timestamp: Date.now() - 450000 }
-];
+/** Live social posts only — no seeded fake people. */
+let activeSocialPosts: SocialPost[] = [];
+
+/** Per-socket sliding window to limit chat/social spam. */
+const WS_MSG_LIMIT = 30;
+const WS_MSG_WINDOW_MS = 60_000;
+
+function allowWsMessage(ws: WebSocket): boolean {
+  const now = Date.now();
+  let stamps: number[] = (ws as any).__cpMsgStamps || [];
+  stamps = stamps.filter((t) => now - t < WS_MSG_WINDOW_MS);
+  if (stamps.length >= WS_MSG_LIMIT) {
+    (ws as any).__cpMsgStamps = stamps;
+    return false;
+  }
+  stamps.push(now);
+  (ws as any).__cpMsgStamps = stamps;
+  return true;
+}
 
 export interface ChatRoomMessage {
   id: string;
@@ -105,22 +117,7 @@ export function setupWebSockets(server: Server) {
       timestamp: Date.now()
     }));
 
-    // Simulate real-time institutional news pushes
-    const newsInterval = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'NEWS_UPDATE',
-          data: {
-            title: 'Institutional Liquidity Shift Detected',
-            source: 'Clear Path Markets Science Engine',
-            impact: 'High',
-            timestamp: Date.now()
-          }
-        }));
-      }
-    }, 15000);
-
-    // Simulate real-time price alerts or system heartbeats
+    // Heartbeat only — no fake news spam
     const heartbeatInterval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -134,9 +131,17 @@ export function setupWebSockets(server: Server) {
 
     ws.on('message', (message: string) => {
       try {
+        if (!allowWsMessage(ws)) {
+          ws.send(JSON.stringify({
+            type: 'RATE_LIMIT',
+            error: 'Too many websocket messages. Slow down.',
+            timestamp: Date.now(),
+          }));
+          return;
+        }
+
         const parsed = JSON.parse(message);
-        console.log('Received from client:', parsed);
-        
+
         if (parsed.type === 'SOCIAL_CONNECT') {
           // Broadcast that user connected to gateway
           broadcastToAll({
@@ -146,14 +151,16 @@ export function setupWebSockets(server: Server) {
             timestamp: Date.now()
           });
         } else if (parsed.type === 'SOCIAL_POST') {
+          const text = String(parsed.text || '').trim().slice(0, 2000);
+          if (!text) return;
           const newPost: SocialPost = {
-            id: 'post_' + Math.random().toString(36).substr(2, 9),
+            id: 'post_' + Math.random().toString(36).slice(2, 11),
             platform: parsed.platform,
-            handle: parsed.handle,
-            text: parsed.text,
+            handle: String(parsed.handle || 'Guest').slice(0, 64),
+            text,
             timestamp: Date.now()
           };
-          
+
           // Prepend and keep latest 50
           activeSocialPosts = [newPost, ...activeSocialPosts].slice(0, 50);
           
@@ -231,7 +238,6 @@ export function setupWebSockets(server: Server) {
     });
 
     ws.on('close', () => {
-      clearInterval(newsInterval);
       clearInterval(heartbeatInterval);
       leaveAllChatRooms(ws);
     });

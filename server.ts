@@ -221,9 +221,24 @@ async function startServer() {
     referrerPolicy: { policy: 'no-referrer' },
     hidePoweredBy: true,
   }));
-  app.use(cors());
+  // Same-origin by default in production. Set CORS_ALLOWED_ORIGINS=https://a.com,https://b.com for multi-origin.
+  const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.use(cors({
+    origin: isProd
+      ? (corsAllowedOrigins.length
+          ? (origin, callback) => {
+              if (!origin || corsAllowedOrigins.includes(origin)) callback(null, true);
+              else callback(new Error('Not allowed by CORS'));
+            }
+          : false)
+      : true,
+    credentials: true,
+  }));
   app.use(compression());
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -369,50 +384,66 @@ async function startServer() {
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
-  // Custom OAuth Routes for non-Firebase Native Providers
+  // Custom OAuth stubs — relative returnTo only (no open redirects). Prefer Firebase / private auth in production.
   const customProviders = [
     'discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube',
     'google', 'facebook', 'instagram', 'twitter', 'snapchat', 'pinterest', 'threads', 'github',
   ];
-  
-  customProviders.forEach(provider => {
-    app.get(`/auth/${provider}`, (req, res, next) => {
-      // In production with real OAuth keys, this would call passport.authenticate(provider).
-      // Until keys are configured, show an explicit login / authorize screen that returns to the app.
-      const rawReturn = typeof req.query.returnTo === 'string' ? req.query.returnTo : '/?tab=Yours#Yours';
-      const returnTo = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '/?tab=Yours#Yours';
+  const OAUTH_RETURN_ALLOW = new Set([
+    '/',
+    '/#Biography',
+    '/#private-login',
+    '/?tab=Yours#Yours',
+    '/?tab=Biography#Biography',
+  ]);
+  function safeOAuthReturnTo(raw: unknown): string {
+    if (typeof raw !== 'string') return '/?tab=Yours#Yours';
+    const candidate = raw.trim();
+    if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('://')) {
+      return '/?tab=Yours#Yours';
+    }
+    if (OAUTH_RETURN_ALLOW.has(candidate)) return candidate;
+    // Allow only simple hash/tab deep links under the SPA root
+    if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
+    return '/?tab=Yours#Yours';
+  }
+
+  customProviders.forEach((provider) => {
+    app.get(`/auth/${provider}`, (req, res) => {
+      const returnTo = safeOAuthReturnTo(req.query.returnTo);
       const safeReturn = returnTo.replace(/[<>"']/g, '');
-      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase();
-      res.send(`
-        <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>${label} Login — ClearPath</title>
-          </head>
-          <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
-            <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
-              <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
-              <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
-              <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
-                Sign in with ${label} to link your ClearPath social node.
-                Production deploys with provider API keys redirect to the real ${label} authorize page.
-              </p>
-              <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
-                Continue to ClearPath
-              </a>
-              <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
-                Or use Private Login instead →
-              </a>
-            </div>
-          </body>
-        </html>
-      `);
+      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase() || 'PROVIDER';
+      res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${label} Login — ClearPath</title>
+  </head>
+  <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
+    <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
+      <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
+      <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
+      <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
+        Sign in with ${label} to link your ClearPath social node.
+        Production deploys with provider API keys redirect to the real ${label} authorize page.
+      </p>
+      <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
+        Continue to ClearPath
+      </a>
+      <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
+        Or use Private Login instead →
+      </a>
+    </div>
+  </body>
+</html>`);
     });
-    
-    app.get(`/auth/${provider}/callback`, (req, res) => {
+
+    app.get(`/auth/${provider}/callback`, (_req, res) => {
       res.redirect('/?tab=Yours#Yours');
     });
   });
+
 
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
@@ -1651,7 +1682,7 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  // RSS Proxy API with timeout handling
+  // Stream proxy — SSRF-guarded, timed, size-capped
   app.get('/api/stream-proxy', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
@@ -1663,10 +1694,19 @@ ${CPT_SITE_GUIDE}`;
       console.warn('[Stream Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
+    const STREAM_PROXY_TIMEOUT_MS = 15_000;
+    const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { redirect: 'error' });
+      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
+      }
+
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      if (contentLength > STREAM_PROXY_MAX_BYTES) {
+        return res.status(413).json({ error: 'Upstream payload too large' });
       }
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1677,6 +1717,9 @@ ${CPT_SITE_GUIDE}`;
 
       if (isM3u8) {
         const text = await response.text();
+        if (text.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream playlist too large' });
+        }
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -1713,12 +1756,18 @@ ${CPT_SITE_GUIDE}`;
       } else {
         // Transparent binary segment forwarding for TS chunks loaded through the proxy
         res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = await response.arrayBuffer();
-        return res.send(Buffer.from(buffer));
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream segment too large' });
+        }
+        return res.send(buffer);
       }
     } catch (error: any) {
       console.error('[Stream Proxy Error]', error);
-      res.status(502).json({ error: 'Failed to proxy stream details', message: error.message });
+      const status = error?.name === 'AbortError' ? 504 : 502;
+      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
+    } finally {
+      clearTimeout(timeout);
     }
   });
 
