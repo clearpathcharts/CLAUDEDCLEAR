@@ -81,7 +81,10 @@ export async function emailExistsInIdentity(email: string): Promise<boolean> {
 export async function saveWaitlistRegistration(record: WaitlistRegistration): Promise<string> {
   const db = getAdminFirestore();
   if (db) {
-    const docRef = await db.collection('site_registrations').add(record);
+    const payload = Object.fromEntries(
+      Object.entries(record).filter(([, value]) => value !== undefined)
+    );
+    const docRef = await db.collection('site_registrations').add(payload);
     return docRef.id;
   }
 
@@ -95,7 +98,10 @@ export async function saveWaitlistRegistration(record: WaitlistRegistration): Pr
 export async function saveIdentityPreregistration(record: IdentityPreregistration): Promise<string> {
   const db = getAdminFirestore();
   if (db) {
-    const docRef = await db.collection('identity_preregistrations').add(record);
+    const payload = Object.fromEntries(
+      Object.entries(record).filter(([, value]) => value !== undefined)
+    );
+    const docRef = await db.collection('identity_preregistrations').add(payload);
     return docRef.id;
   }
 

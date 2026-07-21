@@ -4,9 +4,13 @@ import {
   BarChart3,
   Cpu,
   Crown,
+  BookOpen,
+  GraduationCap,
   Home,
   LogOut,
   Newspaper,
+  Share2,
+
   Terminal,
   Users,
 } from "lucide-react";
@@ -89,8 +93,41 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "CpmsApk",
       icon: Cpu,
-      label: "CPMS APK",
+      label: "CLEARPATH CINEMA",
     },
+
+    {
+      id: "ClearPathEducation",
+      icon: BookOpen,
+      label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
+    },
+
+    {
+      id: "Encyclopedia",
+      icon: GraduationCap,
+      label: "ENCYCLOPEDIA OF FINANCE",
+    },
+
+    // Encyclopedia of Indicators — hidden from nav while videos are broken.
+    // Component + Dashboard tab id remain; re-add this item when ready.
+    // {
+    //   id: "EncyclopediaOfIndicators",
+    //   icon: BarChart3,
+    //   label: "ENCYCLOPEDIA OF INDICATORS",
+    // },
+
+    {
+      id: "ReferralDesk",
+      icon: Share2,
+      label: "REFERRALS",
+    },
+
   ];
   const renderNavButton = (
     item: NavItem,
@@ -103,7 +140,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isGold =
       item.id === "Membership" ||
-      item.id === "Founders";
+      item.id === "Founders" ||
+      item.id === "ReferralDesk";
 
     const isPink =
       item.id === "Biography" ||
@@ -112,7 +150,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     const isCyan =
       item.id === "CpmsApk" ||
       item.id === "Encyclopedia" ||
-      item.id === "EncyclopediaOfIndicators";
+      item.id === "EncyclopediaOfIndicators" ||
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

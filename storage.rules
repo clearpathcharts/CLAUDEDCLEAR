@@ -5,7 +5,14 @@ service firebase.storage {
     match /cpms_media/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null
-                   && request.auth.token.email == "forexanarchy@gmail.com";
+                   && request.auth.token.email_verified == true
+                   && request.auth.token.email == "forexanarchy@gmail.com"
+                   && request.resource.size < 500 * 1024 * 1024;
+    }
+
+    // Deny everything else (closes previously open public bucket)
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

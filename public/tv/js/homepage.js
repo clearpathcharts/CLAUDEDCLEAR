@@ -1,3 +1,12 @@
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 class CPMSHomepageEngine {
     constructor() {
         this.localChannels = [
@@ -170,26 +179,34 @@ class CPMSHomepageEngine {
         }
 
         const visible = this.allChannelsSource.slice(0, this.allChannelsVisibleCount);
-        this.allChannelsGrid.innerHTML = visible.map(ch => `
-            <div class="channel-card cursor-pointer" data-channel-id="${ch.id}">
+        this.allChannelsGrid.innerHTML = visible.map(ch => {
+            const id = escapeHtml(ch.id);
+            const name = escapeHtml(ch.name);
+            const group = escapeHtml(ch.group);
+            const logo = typeof ch.logo === 'string' && /^https?:\/\//i.test(ch.logo)
+                ? escapeHtml(ch.logo)
+                : '';
+            return `
+            <div class="channel-card cursor-pointer" data-channel-id="${id}">
                 <div class="channel-thumbnail relative overflow-hidden bg-zinc-950 aspect-video rounded-lg">
                     <div class="channel-placeholder absolute inset-0 flex items-center justify-center text-zinc-600">
                         <i class="fas fa-tv text-2xl"></i>
                     </div>
-                    ${ch.logo ? `<img class="channel-thumb-img w-full h-full object-cover absolute inset-0" src="${ch.logo}" onerror="this.style.display='none'" referrerPolicy="no-referrer">` : ''}
+                    ${logo ? `<img class="channel-thumb-img w-full h-full object-cover absolute inset-0" src="${logo}" onerror="this.style.display='none'" referrerPolicy="no-referrer" alt="">` : ''}
                     <span class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">LIVE</span>
                     <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                        <button class="play-button bg-[#FF4500] text-white p-3 rounded-full shadow-lg" data-channel-id="${ch.id}">
+                        <button class="play-button bg-[#FF4500] text-white p-3 rounded-full shadow-lg" data-channel-id="${id}">
                             <i class="fas fa-play"></i>
                         </button>
                     </div>
                 </div>
                 <div class="p-2 text-left">
-                    <h3 class="text-xs font-bold leading-tight line-clamp-2 uppercase font-mono tracking-wide mt-1">${ch.name}</h3>
-                    <p class="text-[10px] text-zinc-500 font-mono mt-0.5">${ch.group}</p>
+                    <h3 class="text-xs font-bold leading-tight line-clamp-2 uppercase font-mono tracking-wide mt-1">${name}</h3>
+                    <p class="text-[10px] text-zinc-500 font-mono mt-0.5">${group}</p>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         if (this.loadMoreHomeBtn) {
             this.loadMoreHomeBtn.style.display = this.allChannelsVisibleCount < this.allChannelsSource.length ? 'inline-flex' : 'none';

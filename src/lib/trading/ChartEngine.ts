@@ -103,10 +103,10 @@ export class ChartEngine {
       const highY = mainChartHeight - (candle.high - displayMin) * scaleY;
       const lowY = mainChartHeight - (candle.low - displayMin) * scaleY;
 
-      const upColor = options.colors?.candleUp || "#00FF00";
-      const downColor = options.colors?.candleDown || "#FF0000";
-      const wickUpolor = options.colors?.wickUp || "rgba(0, 255, 0, 0.4)";
-      const wickDownColor = options.colors?.wickDown || "rgba(255, 0, 0, 0.4)";
+      const upColor = options.colors?.candleUp || "#00ff66";
+      const downColor = options.colors?.candleDown || "#ff1744";
+      const wickUpolor = options.colors?.wickUp || "#80ffb0";
+      const wickDownColor = options.colors?.wickDown || "#ff8a80";
 
       ctx.strokeStyle = candle.close >= candle.open ? wickUpolor : wickDownColor;
       ctx.lineWidth = 1;

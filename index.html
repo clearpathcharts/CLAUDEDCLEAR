@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <script>
+      // Apply WCAG display prefs before paint (avoids neuro→high-contrast flash)
+      try {
+        var hc = localStorage.getItem('cp_a11y_high_contrast') === 'true';
+        var rs = localStorage.getItem('cp_a11y_reduced_sensory') === 'true';
+        var root = document.documentElement;
+        root.setAttribute('data-high-contrast', hc ? 'true' : 'false');
+        root.setAttribute('data-reduced-sensory', rs ? 'true' : 'false');
+        // CTA fills always use mid-tone WCAG-safe pink/orange
+        root.style.setProperty('--cpt-pink', '#d81b60');
+        root.style.setProperty('--cpt-orange', '#e65100');
+        root.style.setProperty('--cpt-cta-on-pink', '#ffffff');
+        root.style.setProperty('--cpt-cta-on-orange', '#ffffff');
+        root.style.setProperty('--cpt-text-pink', hc ? '#f9a8d4' : '#f472b6');
+        root.style.setProperty('--cpt-text-orange', hc ? '#fdba74' : '#fb923c');
+        root.style.setProperty('--cpt-text-purple', hc ? '#f3e8ff' : '#e9d5ff');
+      } catch (e) {}
+    </script>
+    <script>
       // Force-unregister stale/old service workers that cause frozen black screens
       try {
         if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
@@ -18,33 +36,41 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob: 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src * ws: wss: data: blob: http://0.0.0.0:3000; frame-src *; font-src * data:;" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>CLEAR PATH MARKETS SCIENCE | Market Terminal</title>
-    <meta name="description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta name="keywords" content="analysis, institutional data, market intelligence, clear path markets science, financial terminal, market science" />
+    <title>ClearPath Trader | Market Intelligence &amp; Education Terminal</title>
+    <meta name="description" content="Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage." />
+    <meta name="keywords" content="ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks" />
     <link rel="canonical" href="https://clearpathtrader.com/" />
-    <meta property="og:title" content="Clear Path Markets Science | Market Terminal" />
-    <meta property="og:description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta property="og:image" content="https://i.postimg.cc/q70JSyWy/Gemini-Generated-Image-bztme2bztme2bztm.jpg" />
+    <meta property="og:title" content="ClearPath Trader | Market Intelligence &amp; Education Terminal" />
+    <meta property="og:description" content="Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage." />
+    <meta property="og:image" content="https://clearpathtrader.com/og-image.png" />
+    <meta property="og:image:alt" content="ClearPath Trader — market intelligence terminal" />
     <meta property="og:url" content="https://clearpathtrader.com/" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="ClearPathTrader" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Clear Path Markets Science | Market Terminal" />
-    <meta name="twitter:description" content="Premium institutional market science interface and market research terminal. High-fidelity data visualization and analysis." />
-    <meta name="twitter:image" content="https://i.postimg.cc/q70JSyWy/Gemini-Generated-Image-bztme2bztme2bztm.jpg" />
+    <meta name="twitter:title" content="ClearPath Trader | Market Intelligence &amp; Education Terminal" />
+    <meta name="twitter:description" content="Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage." />
+    <meta name="twitter:image" content="https://clearpathtrader.com/og-image.png" />
+    <meta name="twitter:image:alt" content="ClearPath Trader — market intelligence terminal" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#0b0e11" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Clear Path Markets Science" />
-    
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div id="root">
-      <div style="height: 100vh; width: 100vw; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; font-size: 10px;">
-        <span style="opacity: 0.5; margin-right: 10px;">[</span> 
-        <div id="loader-text">Loading New Architecture...</div> 
-        <span style="opacity: 0.5; margin-left: 10px;">]</span>
+      <div role="status" aria-live="polite" style="height: 100vh; width: 100vw; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; font-size: 10px;">
+        <span aria-hidden="true" style="opacity: 0.5; margin-right: 10px;">[</span>
+        <div id="loader-text">Loading New Architecture...</div>
+        <span aria-hidden="true" style="opacity: 0.5; margin-left: 10px;">]</span>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

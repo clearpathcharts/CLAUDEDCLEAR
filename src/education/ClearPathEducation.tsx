@@ -20,8 +20,9 @@
 // home page — a reader who finishes a book naturally gets pointed to them.
 // ============================================================================
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CURRICULUM, getSchool, type School } from "./curriculumData";
+import { getLessonBody } from "./lessonContent";
 import { hasQuiz } from "./quizData";
 import { QuizEngine } from "./QuizEngine";
 import { useEducationProgress } from "./useEducationProgress";
@@ -34,7 +35,8 @@ const GOOD = "#00F5D4";
 type View =
   | { kind: "schools" }
   | { kind: "units"; schoolId: string }
-  | { kind: "lessons"; schoolId: string; unitId: string };
+  | { kind: "lessons"; schoolId: string; unitId: string }
+  | { kind: "lesson"; schoolId: string; unitId: string; lessonId: string };
 
 export function ClearPathEducation({
   onNavigate,
@@ -82,6 +84,33 @@ export function ClearPathEducation({
           unitId={view.unitId}
           isPassed={progress.isPassed}
           recordQuizPass={progress.recordQuizPass}
+          onOpenLesson={(lessonId) =>
+            setView({
+              kind: "lesson",
+              schoolId: view.schoolId,
+              unitId: view.unitId,
+              lessonId,
+            })
+          }
+        />
+      )}
+
+      {view.kind === "lesson" && (
+        <LessonReader
+          schoolId={view.schoolId}
+          unitId={view.unitId}
+          lessonId={view.lessonId}
+          onBack={() =>
+            setView({ kind: "lessons", schoolId: view.schoolId, unitId: view.unitId })
+          }
+          onOpenLesson={(lessonId) =>
+            setView({
+              kind: "lesson",
+              schoolId: view.schoolId,
+              unitId: view.unitId,
+              lessonId,
+            })
+          }
         />
       )}
     </div>
@@ -93,6 +122,14 @@ export function ClearPathEducation({
 // ---------------------------------------------------------------------------
 function Header({ view, setView }: { view: View; setView: (v: View) => void }) {
   const school = "schoolId" in view ? getSchool(view.schoolId) : null;
+  const unit =
+    school && "unitId" in view
+      ? school.units.find((u) => u.id === view.unitId)
+      : null;
+  const lesson =
+    unit && view.kind === "lesson"
+      ? unit.lessons.find((l) => l.id === view.lessonId)
+      : null;
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -123,7 +160,25 @@ function Header({ view, setView }: { view: View; setView: (v: View) => void }) {
             </button>
           </>
         )}
-        {view.kind === "lessons" && <span aria-hidden>› Unit</span>}
+        {unit && (view.kind === "lessons" || view.kind === "lesson") && (
+          <>
+            <span aria-hidden>›</span>
+            <button
+              onClick={() =>
+                setView({ kind: "lessons", schoolId: school!.id, unitId: unit.id })
+              }
+              style={{ ...crumbStyle, color: school!.colors.unit }}
+            >
+              {unit.title}
+            </button>
+          </>
+        )}
+        {lesson && (
+          <>
+            <span aria-hidden>›</span>
+            <span style={{ color: school!.colors.lesson }}>{lesson.title}</span>
+          </>
+        )}
       </div>
 
       {view.kind === "schools" && (
@@ -313,11 +368,12 @@ function UnitList({
           >
             Encyclopedia of Finance
           </button>
+          {/* Encyclopedia of Indicators link hidden while videos are broken — component kept */}
           <button
-            onClick={() => onNavigate?.("EncyclopediaOfIndicators")}
-            style={resourceLinkStyle("#00E5FF")}
+            onClick={() => onNavigate?.("LiteracyOS")}
+            style={resourceLinkStyle("#FFD700")}
           >
-            Encyclopedia of Indicators
+            Literacy OS
           </button>
         </div>
       </div>
@@ -333,11 +389,13 @@ function LessonList({
   unitId,
   isPassed,
   recordQuizPass,
+  onOpenLesson,
 }: {
   schoolId: string;
   unitId: string;
   isPassed: (unitId: string) => boolean;
   recordQuizPass: (unitId: string) => string | null;
+  onOpenLesson: (lessonId: string) => void;
 }) {
   const school = getSchool(schoolId);
   const unit = school?.units.find((u) => u.id === unitId);
@@ -351,28 +409,61 @@ function LessonList({
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: school.colors.unit, margin: "4px 0 16px" }}>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: school.colors.unit, margin: "4px 0 8px" }}>
         {unit.title}
       </h2>
+      <p style={{ color: SUBTLE, fontSize: 13, margin: "0 0 16px" }}>
+        Tap a chapter to open and read it. When you finish the unit, take the quiz to unlock the next one.
+      </p>
 
       <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         {unit.lessons.map((lesson, i) => (
-          <li
-            key={lesson.id}
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "baseline",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 10,
-              padding: "12px 14px",
-            }}
-          >
-            <span style={{ color: SUBTLE, fontVariantNumeric: "tabular-nums", minWidth: 24 }}>
-              {i + 1}.
-            </span>
-            <span style={{ color: school.colors.lesson, lineHeight: 1.5 }}>{lesson.title}</span>
+          <li key={lesson.id}>
+            <button
+              type="button"
+              onClick={() => onOpenLesson(lesson.id)}
+              style={{
+                width: "100%",
+                display: "flex",
+                gap: 12,
+                alignItems: "center",
+                textAlign: "left",
+                background: "rgba(255,255,255,0.03)",
+                border: `1px solid ${school.colors.lesson}33`,
+                borderRadius: 10,
+                padding: "12px 14px",
+                cursor: "pointer",
+                color: BODY,
+                transition: "border-color 0.15s, background 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = school.colors.lesson;
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = `${school.colors.lesson}33`;
+                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+              }}
+            >
+              <span style={{ color: SUBTLE, fontVariantNumeric: "tabular-nums", minWidth: 24 }}>
+                {i + 1}.
+              </span>
+              <span style={{ color: school.colors.lesson, lineHeight: 1.5, flex: 1, fontWeight: 600 }}>
+                {lesson.title}
+              </span>
+              <span
+                style={{
+                  color: school.colors.head,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Open →
+              </span>
+            </button>
           </li>
         ))}
       </ol>
@@ -448,6 +539,171 @@ function LessonList({
 }
 
 // ---------------------------------------------------------------------------
+// View 4 — one lesson reader
+// ---------------------------------------------------------------------------
+function LessonReader({
+  schoolId,
+  unitId,
+  lessonId,
+  onBack,
+  onOpenLesson,
+}: {
+  schoolId: string;
+  unitId: string;
+  lessonId: string;
+  onBack: () => void;
+  onOpenLesson: (lessonId: string) => void;
+}) {
+  const school = getSchool(schoolId);
+  const unit = school?.units.find((u) => u.id === unitId);
+  const lessonIndex = unit?.lessons.findIndex((l) => l.id === lessonId) ?? -1;
+  const lesson = lessonIndex >= 0 ? unit!.lessons[lessonIndex] : undefined;
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [lessonId]);
+
+  if (!school || !unit || !lesson) {
+    return <Empty>That chapter could not be found.</Empty>;
+  }
+
+  const body = getLessonBody(lesson.id, lesson.title, school.name, unit.title);
+  const prev = lessonIndex > 0 ? unit.lessons[lessonIndex - 1] : null;
+  const next =
+    lessonIndex < unit.lessons.length - 1 ? unit.lessons[lessonIndex + 1] : null;
+
+  return (
+    <article style={{ maxWidth: 760 }}>
+      <button type="button" onClick={onBack} style={{ ...crumbStyle, marginBottom: 16, color: school.colors.head }}>
+        ← Back to unit chapters
+      </button>
+
+      <p
+        style={{
+          fontSize: 12,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          color: SUBTLE,
+          margin: "0 0 8px",
+        }}
+      >
+        Chapter {lessonIndex + 1} of {unit.lessons.length}
+      </p>
+      <h2
+        style={{
+          fontSize: 26,
+          fontWeight: 800,
+          color: school.colors.lesson,
+          margin: "0 0 12px",
+          lineHeight: 1.25,
+        }}
+      >
+        {lesson.title}
+      </h2>
+      <p style={{ color: BODY, fontSize: 16, lineHeight: 1.65, margin: "0 0 24px" }}>
+        {body.summary}
+      </p>
+
+      {body.sections.map((section) => (
+        <section key={section.heading} style={{ marginBottom: 22 }}>
+          <h3
+            style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: school.colors.unit,
+              margin: "0 0 10px",
+            }}
+          >
+            {section.heading}
+          </h3>
+          {section.paragraphs.map((p, i) => (
+            <p
+              key={i}
+              style={{
+                color: BODY,
+                fontSize: 15,
+                lineHeight: 1.7,
+                margin: "0 0 12px",
+              }}
+            >
+              {p}
+            </p>
+          ))}
+        </section>
+      ))}
+
+      <div
+        style={{
+          marginTop: 8,
+          marginBottom: 28,
+          padding: 16,
+          borderRadius: 12,
+          border: `1px solid ${school.colors.head}55`,
+          background: "rgba(255,255,255,0.03)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+            color: school.colors.head,
+            fontWeight: 700,
+            marginBottom: 10,
+          }}
+        >
+          Key takeaways
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 18, color: BODY, lineHeight: 1.7 }}>
+          {body.takeaways.map((t) => (
+            <li key={t} style={{ marginBottom: 6 }}>
+              {t}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        {prev ? (
+          <button
+            type="button"
+            onClick={() => onOpenLesson(prev.id)}
+            style={navChapterStyle(school.colors.unit)}
+          >
+            ← Previous chapter
+          </button>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <button
+            type="button"
+            onClick={() => onOpenLesson(next.id)}
+            style={navChapterStyle(school.colors.head)}
+          >
+            Next chapter →
+          </button>
+        ) : (
+          <button type="button" onClick={onBack} style={navChapterStyle(school.colors.head)}>
+            Done — back to unit quiz →
+          </button>
+        )}
+      </div>
+    </article>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function Empty({ children }: { children: React.ReactNode }) {
@@ -470,6 +726,19 @@ function resourceLinkStyle(color: string): React.CSSProperties {
     background: "rgba(255,255,255,0.03)",
     border: `1px solid ${color}55`,
     color: color,
+    borderRadius: 10,
+    padding: "10px 16px",
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+  };
+}
+
+function navChapterStyle(color: string): React.CSSProperties {
+  return {
+    background: color,
+    color: "#06121A",
+    border: "none",
     borderRadius: 10,
     padding: "10px 16px",
     fontWeight: 700,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { InterfaceProfile } from '../types';
+import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 
 interface LegalFooterProps {
   profile?: InterfaceProfile;
@@ -8,9 +9,9 @@ interface LegalFooterProps {
 
 export default function LegalFooter({ profile, onShowTerms }: LegalFooterProps) {
   return (
-    <footer className="mt-auto py-8 px-6 border-t text-sm font-bold font-mono text-center opacity-70 glass" 
+    <footer className="mt-auto py-8 px-6 border-t text-sm font-bold font-mono text-center glass" 
             style={{ borderColor: profile ? `${profile.borderA}22` : '#272a3a', color: profile ? profile.text : '#5c5e6e' }}>
-      <div className="flex flex-col space-y-3">
+      <div className="flex flex-col space-y-3 opacity-70">
         <div className="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff3333] via-[#ff6633] to-[#ff9933]" style={{ fontFamily: "'Cinzel', serif" }}>
           <span className="mr-2" style={{ color: profile?.borderA }}>⚖</span>
           <span style={{ color: profile?.borderA }}>Legal Positioning</span> — “Provides financial data visualization with optional user-controlled presentation adjustments for accessibility and visual clarity. The system does not evaluate, alter, or advise on financial decisions.”
@@ -37,6 +38,7 @@ export default function LegalFooter({ profile, onShowTerms }: LegalFooterProps) 
           <span className="opacity-50">© {new Date().getFullYear()} Clear Path Markets Science</span>
         </div>
       </div>
+      <GovernmentFinanceLinks compact />
     </footer>
   );
 }
