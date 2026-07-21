@@ -13,6 +13,7 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
@@ -125,7 +126,21 @@ import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
   requireIntelligenceAdmin,
+  getPrivateSessionUser,
 } from './src/server/authGuards';
+import {
+  AFFILIATE_COOKIE,
+  AFFILIATE_COOKIE_MAX_AGE_MS,
+  TIER_PRICE_CENTS,
+  adminListAffiliates,
+  attributeSignup,
+  ensureAffiliateMember,
+  getAffiliateDashboard,
+  getLeaderboard,
+  markReferredPaid,
+  recordClick,
+  resolveCode,
+} from './src/server/affiliateService';
 
 const parser = new RSSParser();
 
@@ -265,6 +280,7 @@ async function startServer() {
     credentials: true,
   }));
   app.use(compression());
+  app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
@@ -514,6 +530,17 @@ async function startServer() {
         password: req.body?.password || '',
         displayName: req.body?.displayName || '',
       });
+      // Affiliate: ensure code for new member + attribute from cookie/body
+      try {
+        ensureAffiliateMember(user.uid);
+        const fromBody =
+          typeof req.body?.referralCode === 'string' ? req.body.referralCode : '';
+        const fromCookie =
+          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
+        attributeSignup({ newUid: user.uid, referralCode: fromBody || fromCookie });
+      } catch (affErr: any) {
+        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
+      }
       const sessionUser = buildClientSessionUser(user);
       (req.session as any).privateUser = sessionUser;
       res.json({ ok: true, user: sessionUser });
@@ -595,7 +622,95 @@ async function startServer() {
   app.get('/api/auth/private/me', (req, res) => {
     const user = (req.session as any)?.privateUser;
     if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    try {
+      if (user.uid) ensureAffiliateMember(user.uid);
+    } catch {
+      /* ignore */
+    }
     res.json({ user });
+  });
+
+  // ——— Affiliate / referral rewards ———
+  const siteOrigin = () =>
+    (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
+      /\/$/,
+      ''
+    );
+
+  /** Public share link — sets attribution cookie and redirects home. */
+  app.get('/r/:code', (req, res) => {
+    const code = String(req.params.code || '');
+    const hit = recordClick({
+      code,
+      ip: req.ip,
+      userAgent: req.get('user-agent') || undefined,
+    });
+    if (hit.ok && hit.code) {
+      res.cookie(AFFILIATE_COOKIE, hit.code, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
+        path: '/',
+      });
+    }
+    const dest = hit.ok ? `/?ref=${encodeURIComponent(hit.code || code)}` : '/';
+    return res.redirect(302, dest);
+  });
+
+  app.get('/api/affiliate/me', (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    if (!sessionUser?.uid) {
+      return res.status(401).json({ error: 'Sign in to view your affiliate desk.' });
+    }
+    try {
+      const desk = getAffiliateDashboard(sessionUser.uid, siteOrigin());
+      res.json({ ok: true, ...desk });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Affiliate desk failed' });
+    }
+  });
+
+  app.get('/api/affiliate/leaderboard', (_req, res) => {
+    try {
+      res.json({ ok: true, ...getLeaderboard(25) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Leaderboard failed' });
+    }
+  });
+
+  app.post('/api/affiliate/claim', (req, res) => {
+    const code = typeof req.body?.code === 'string' ? req.body.code : '';
+    const member = resolveCode(code);
+    if (!member) return res.status(404).json({ error: 'Unknown referral code' });
+    recordClick({ code: member.code, ip: req.ip, userAgent: req.get('user-agent') || undefined });
+    res.cookie(AFFILIATE_COOKIE, member.code, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
+      path: '/',
+    });
+    res.json({ ok: true, code: member.code });
+  });
+
+  app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
+    res.json({ ok: true, members: adminListAffiliates() });
+  });
+
+  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
+    const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
+    const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
+    if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
+    if (!(tierRaw in TIER_PRICE_CENTS)) {
+      return res.status(400).json({ error: 'tier must be plus | premium | ultimate' });
+    }
+    const result = markReferredPaid({
+      referredUid,
+      tier: tierRaw as keyof typeof TIER_PRICE_CENTS,
+    });
+    if (!result.ok) return res.status(400).json({ error: result.error || 'Failed' });
+    res.json({ ok: true, ...result });
   });
 
   // The River — compiler manifest (controlled self-update channel)
