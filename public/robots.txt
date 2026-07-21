@@ -1,4 +1,4 @@
-# Served dynamically by server.ts in production — this file is a dev/static fallback only.
+# Served dynamically by server.ts in production — keep in sync with src/server/robotsTxt.ts
 User-agent: *
 Allow: /
 Disallow: /api/

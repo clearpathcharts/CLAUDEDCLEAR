@@ -65,7 +65,9 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
             const data = await response.json();
             const livePrice = resolveQuotePrice(data);
             if (livePrice !== null) {
-              const changePct = parseFloat(data.percent_change || data.change_percent || "0");
+              const changePct = parseFloat(
+                data.percent_change ?? data.change_percent ?? data.percentChange ?? "0"
+              );
               return {
                 ...asset,
                 price: livePrice,
