@@ -18,7 +18,13 @@ import type { Value } from '../river/pine/interpreter';
 import RiverCatalogPanel from './RiverCatalogPanel';
 import RiverGeniePanel from './RiverGeniePanel';
 import RiverHero from './RiverHero';
+import RiverHonestLimitsBento from './RiverHonestLimitsBento';
 import { RIVER_PAGE_CONTENT } from '../river/marketing/riverPageContent';
+import {
+  detectSourceLanguage,
+  importForeignSource,
+  type LanguageDetection,
+} from '../river/importers';
 
 type WorkflowStep = 'upload' | 'compiling' | 'compiled' | 'failed' | 'applied';
 
@@ -81,6 +87,9 @@ export default function RiverWorkstation() {
   const [catalogRefresh, setCatalogRefresh] = useState(0);
   const [compilerNote, setCompilerNote] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
+  const [detectedLang, setDetectedLang] = useState<LanguageDetection | null>(null);
+  const [pendingImport, setPendingImport] = useState<{ source: string; fileName: string } | null>(null);
+  const [importStatus, setImportStatus] = useState('');
 
   useEffect(() => {
     const onUpdate = (e: any) => setActiveName(e?.detail?.name ?? null);
@@ -143,11 +152,36 @@ export default function RiverWorkstation() {
         setState(s => ({ ...s, step: 'failed', errorMessage: 'The file appears to be empty.', errorLine: null }));
         return;
       }
-      processSource(source, file.name);
+      const detection = detectSourceLanguage(source);
+      setDetectedLang(detection);
+      setImportStatus('');
+      if (detection.language === 'pine') {
+        setPendingImport(null);
+        processSource(source, file.name);
+        return;
+      }
+      setPendingImport({ source, fileName: file.name });
+      setState(s => ({ ...s, step: 'upload', rawSource: source, fileName: file.name }));
     } catch {
       setState(s => ({ ...s, step: 'failed', errorMessage: 'Could not read the file. Try pasting your code directly.', errorLine: null }));
     }
   }, [processSource]);
+
+  const convertPendingImport = useCallback(() => {
+    if (!pendingImport || !detectedLang) return;
+    setImportStatus('');
+    const result = importForeignSource(pendingImport.source, detectedLang.language);
+    if (!result.ok || !result.pineSource) {
+      setImportStatus(result.errors[0] || 'Conversion failed — try River Genie.');
+      return;
+    }
+    const outName = pendingImport.fileName.replace(/\.(mq4|mq5|ex4|ex5)$/i, '') + '-converted.pine';
+    setPendingImport(null);
+    processSource(result.pineSource, outName);
+    if (result.warnings.length) {
+      setImportStatus(result.warnings.join(' '));
+    }
+  }, [pendingImport, detectedLang, processSource]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -180,6 +214,9 @@ export default function RiverWorkstation() {
 
   const reset = useCallback(() => {
     setSaveStatus('');
+    setDetectedLang(null);
+    setPendingImport(null);
+    setImportStatus('');
     setState(INITIAL_STATE);
   }, []);
 
@@ -254,6 +291,8 @@ export default function RiverWorkstation() {
         <div>
       <RiverHero />
 
+      <RiverHonestLimitsBento />
+
       <div className="mb-8 border-b border-white/10 pb-6">
         <div className="flex items-center gap-3 mb-2">
           <Waves size={28} className="text-[#00D9FF]" />
@@ -289,16 +328,53 @@ export default function RiverWorkstation() {
               className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${isDragOver ? 'border-[#00D9FF] bg-[#00D9FF]/5' : 'border-white/10 hover:border-white/20'}`}
             >
               <Upload size={40} className="mx-auto mb-4 text-white/20" />
-              <p className="text-white/60 mb-2">Drop your Pine Script file here</p>
-              <p className="text-white/30 text-xs mb-6">.pine or .txt — v4, v5 or v6</p>
+              <p className="text-white/60 mb-2">Drop indicator code from any platform</p>
+              <p className="text-white/30 text-xs mb-6">Pine · MQL4/MQL5 · thinkScript · EasyLanguage · and more</p>
               <label className="px-6 py-2.5 bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] rounded-xl text-sm cursor-pointer hover:bg-[#00D9FF]/20 transition-all">
                 Browse Files
-                <input type="file" accept=".pine,.txt" className="hidden" onChange={handleFileInput} />
+                <input type="file" accept=".pine,.txt,.mq4,.mq5,.ts,.eld,.afl,.cs" className="hidden" onChange={handleFileInput} />
               </label>
             </div>
 
+            {pendingImport && detectedLang && detectedLang.language !== 'pine' && (
+              <div className="bg-[#FFD700]/5 border border-[#FFD700]/30 rounded-xl p-5 space-y-3">
+                <p className="text-[#FFD700] text-xs font-bold uppercase tracking-wider">
+                  Detected: {detectedLang.platform} · {detectedLang.label}
+                  <span className="text-white/40 font-normal normal-case ml-2">({detectedLang.confidence} confidence)</span>
+                </p>
+                <p className="text-white/50 text-xs">
+                  Your code is not trapped here — The River can convert supported scripts to Pine and run them on your private charts.
+                </p>
+                {(detectedLang.language === 'mql4' || detectedLang.language === 'mql5') ? (
+                  <button
+                    type="button"
+                    onClick={convertPendingImport}
+                    className="px-4 py-2 bg-[#FFD700] text-black text-xs font-black uppercase tracking-wider rounded-lg hover:bg-[#FFE44D]"
+                  >
+                    Convert MQL → Pine & Compile
+                  </button>
+                ) : (
+                  <p className="text-white/40 text-xs">
+                    Native importer coming soon — use River Genie (right panel) to describe what this script should do.
+                  </p>
+                )}
+                {importStatus && <p className="text-xs text-white/50">{importStatus}</p>}
+              </div>
+            )}
+
             <PastePanel
-              onSubmit={src => processSource(src, 'pasted-code.pine')}
+              onSubmit={src => {
+                const detection = detectSourceLanguage(src);
+                setDetectedLang(detection);
+                setImportStatus('');
+                if (detection.language === 'pine') {
+                  setPendingImport(null);
+                  processSource(src, 'pasted-code.pine');
+                } else {
+                  setPendingImport({ source: src, fileName: `pasted-import.${detection.language}` });
+                  setState(s => ({ ...s, step: 'upload', rawSource: src, fileName: s.fileName || 'pasted-import' }));
+                }
+              }}
               onLoadExample={() => processSource(EXAMPLE_SCRIPT, 'gold-bar-atr-trailing-stop.pine')}
             />
 
