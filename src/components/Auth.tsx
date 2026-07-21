@@ -266,16 +266,20 @@ export default function Auth() {
     };
     seedGlobeCountries();
 
-    // Subscribe to real-time country list
-    const unsub = onSnapshot(collection(getDb(), "globe_country_configs"), (snapshot) => {
+    // Subscribe to real-time country list (safe no-op unsubscribe if Firebase is mocked)
+    const unsub = onSnapshot(collection(getDb(), "globe_country_configs"), (snapshot: any) => {
       const list: any[] = [];
-      snapshot.forEach(doc => {
-        list.push({ docId: doc.id, ...doc.data() });
-      });
+      if (snapshot && typeof snapshot.forEach === 'function') {
+        snapshot.forEach((d: any) => {
+          list.push({ docId: d.id, ...d.data() });
+        });
+      }
       setDbCountries(list);
     });
 
-    return () => unsub();
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
   }, []);
 
   // Pre-load editor inputs when a country is selected in the CEO form
