@@ -20,7 +20,7 @@
 - **All vendor API keys are server-side only** (see `.env.example`). Never use `VITE_` for secrets. FRED/FMP proxies reject client-supplied keys. Diagnostics expose **boolean presence** only (`GET /api/secrets/status`, `/api/twelvedata/config`).
 - Core optional secrets: `GEMINI_API_KEY`, `GROQ_API_KEY`, `TWELVEDATA_API_KEY`, `FRED_API_KEY`, `FMP_API_KEY`, `SESSION_SECRET`, `INTELLIGENCE_WEBHOOK_SECRET`, `CATALOG_ADMIN_SECRET`, and `SQL_*` Cloud SQL credentials.
 - Production CORS is same-origin by default; set `CORS_ALLOWED_ORIGINS` only if a separate frontend origin must call the API.
-- Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` / Cloud Run build env — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console. Missing keys must degrade to offline mocks that still render the SPA (`npm run test:firebase-mock` guards this).
+- Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` / **Cloud Run service env** — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console. The server injects `window.__CLEARPATH_FIREBASE_CONFIG__` at HTML serve time (`src/server/firebaseClientConfig.ts`), so production does **not** require rebuilding the Vite bundle just to add the key — set the vars on the running Cloud Run service and redeploy/restart. Missing keys must degrade to offline mocks that still render the SPA (`npm run test:firebase-mock` guards this).
 - OAuth `/auth/:provider` stubs only allow relative SPA returnTo paths (open-redirect hardened).
 
 ### Startup log gotcha

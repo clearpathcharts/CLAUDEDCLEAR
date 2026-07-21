@@ -98,6 +98,7 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
     SQL_HOST: Boolean(clean(process.env.SQL_HOST)),
     FIREBASE_SERVICE_ACCOUNT: Boolean(clean(process.env.FIREBASE_SERVICE_ACCOUNT)),
+    VITE_FIREBASE_API_KEY: Boolean(clean(process.env.VITE_FIREBASE_API_KEY) || clean(process.env.FIREBASE_WEB_API_KEY)),
   };
 }
 
