@@ -1453,6 +1453,12 @@ ${CPT_SITE_GUIDE}`;
     });
   });
 
+  // Defense in depth: upstream error messages can embed request URLs, which
+  // carry the Twelve Data API key. Strip any key before a message leaves the
+  // server so it can never surface in the browser UI.
+  const scrubApiKey = (message: unknown): string =>
+    String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
+
   // Twelve Data Proxy for Quotes
   app.get('/api/quote', marketLimiter, async (req, res) => {
     const { symbol } = req.query;
@@ -1494,7 +1500,7 @@ ${CPT_SITE_GUIDE}`;
       res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
@@ -1537,7 +1543,7 @@ ${CPT_SITE_GUIDE}`;
       res.json(data);
     } catch (error: any) {
       console.error('[TwelveData Candles Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
@@ -1595,7 +1601,7 @@ ${CPT_SITE_GUIDE}`;
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
