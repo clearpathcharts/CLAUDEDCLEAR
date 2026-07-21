@@ -25,5 +25,11 @@
 ### Startup log gotcha
 - Startup runs "compliance"/"truth" audits ~10s after boot that print messages like `[TRUTH ENGINE COMPLIANCE ALERT] ... breach(es) found! Score: 67%`. These are **internal application scoring logic**, not server errors — the server is healthy.
 
+### PR auto-updater
+- Local: `npm run pr:auto-update` (merge `main` into open PR branches; conflicts are reported, not force-fixed).
+- Squash-merge ready PRs: `npm run pr:auto-update:merge` (skips PRs labeled `no-automerge`).
+- Skip a PR entirely: label it `no-auto-update`.
+- Scheduled GitHub Action: `.github/workflows/pr-auto-updater.yml` (every 6h + manual dispatch). Report artifact: `pr-auto-updater-report`.
+
 ### Host hardening (ops only)
 - Optional server hardening uses [grapheneX](https://github.com/grapheneX/grapheneX) on the **VPS/Docker host**, not inside the Node app. See `docs/ops-hardening.md` and `scripts/ops/run-graphenex.sh` (localhost `:9090` + SSH tunnel). Not applicable to managed Cloud Run.
