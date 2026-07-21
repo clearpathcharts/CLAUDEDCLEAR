@@ -1,8 +1,17 @@
 import type { ThemeProfile } from "../theme/profiles";
 import { chartPhysics } from "../theme/chartPhysics";
+import { intensifyCandleColors } from "./intensifyColor";
 
 export function lightweightThemeAdapter(profile: ThemeProfile) {
   const physics = chartPhysics(profile);
+  const candleSeries = intensifyCandleColors({
+    upColor: profile.upColor,
+    downColor: profile.downColor,
+    wickUpColor: profile.wickUpColor,
+    wickDownColor: profile.wickDownColor,
+    borderUpColor: profile.borderUpColor,
+    borderDownColor: profile.borderDownColor,
+  }, profile.id === "low_stim_emergency" ? 0.65 : 1.15);
 
   return {
     layout: {
@@ -34,14 +43,7 @@ export function lightweightThemeAdapter(profile: ThemeProfile) {
       timeVisible: true,
       secondsVisible: false,
     },
-    candleSeries: {
-      upColor: profile.upColor,
-      downColor: profile.downColor,
-      wickUpColor: profile.wickUpColor,
-      wickDownColor: profile.wickDownColor,
-      borderUpColor: profile.borderUpColor,
-      borderDownColor: profile.borderDownColor,
-    },
+    candleSeries,
     physics,
   };
 }

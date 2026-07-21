@@ -10,6 +10,7 @@ import {
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
+import { intensifyCandleColors } from "../../lib/charts/intensifyColor";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
@@ -229,14 +230,19 @@ export function LightweightCandles({
       };
     }
 
-    const series = chart.addSeries(CandlestickSeries, {
+    const rawCandleColors = {
       upColor: activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor,
       downColor: activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor,
       wickUpColor: activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor,
       wickDownColor: activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor,
       borderUpColor: activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor,
       borderDownColor: activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor,
-    });
+    };
+    const vividCandles = activeCustomTheme
+      ? intensifyCandleColors(rawCandleColors, 1.1)
+      : rawCandleColors;
+
+    const series = chart.addSeries(CandlestickSeries, vividCandles);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
