@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 48" role="img" aria-label="Federal Deposit Insurance Corporation">
+  <rect width="120" height="48" rx="4" fill="#003366"/>
+  <rect x="1" y="1" width="118" height="46" rx="3" fill="none" stroke="#FDB913" stroke-width="1.5"/>
+  <text x="60" y="22" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="16" font-weight="700" fill="#FFFFFF" letter-spacing="2">FDIC</text>
+  <text x="60" y="36" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="6" fill="#FDB913" letter-spacing="1.5">FDIC.GOV</text>
+</svg>

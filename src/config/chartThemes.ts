@@ -5,14 +5,14 @@ export const chartThemes = {
     grid: "#0f172a",
     text: "#94a3b8",
 
-    candleUp: "#00eaff",       // neon cyan
-    candleDown: "#ff2dfc",     // fluorescent pink
+    candleUp: "#00ffff",       // intense neon cyan
+    candleDown: "#ff00ff",     // intense magenta
 
-    wickUp: "#67e8f9",
-    wickDown: "#f472b6",
+    wickUp: "#7fffff",
+    wickDown: "#ff7dff",
 
-    borderUp: "#00eaff",
-    borderDown: "#ff2dfc",
+    borderUp: "#00ffff",
+    borderDown: "#ff00ff",
   },
 
   // 📊 CLASSIC (Professional default style)
@@ -21,14 +21,14 @@ export const chartThemes = {
     grid: "#363c4e",
     text: "#d1d4dc",
 
-    candleUp: "#26a69a",
-    candleDown: "#ef5350",
+    candleUp: "#00e676",
+    candleDown: "#ff1744",
 
-    wickUp: "#26a69a",
-    wickDown: "#ef5350",
+    wickUp: "#69f0ae",
+    wickDown: "#ff5252",
 
-    borderUp: "#26a69a",
-    borderDown: "#ef5350",
+    borderUp: "#00e676",
+    borderDown: "#ff1744",
   },
 
   // 🔵 BLUE / ORANGE (colorblind friendly)
@@ -37,14 +37,14 @@ export const chartThemes = {
     grid: "#1e293b",
     text: "#cbd5f5",
 
-    candleUp: "#3b82f6",     // blue
-    candleDown: "#f97316",   // orange
+    candleUp: "#2979ff",
+    candleDown: "#ff6d00",
 
-    wickUp: "#60a5fa",
-    wickDown: "#fb923c",
+    wickUp: "#82b1ff",
+    wickDown: "#ff9e40",
 
-    borderUp: "#3b82f6",
-    borderDown: "#f97316",
+    borderUp: "#2979ff",
+    borderDown: "#ff6d00",
   },
 
   // ⚫ BLACK / WHITE HIGH CONTRAST
@@ -54,13 +54,13 @@ export const chartThemes = {
     text: "#ffffff",
 
     candleUp: "#ffffff",
-    candleDown: "#888888",
+    candleDown: "#ff4444",
 
     wickUp: "#ffffff",
-    wickDown: "#888888",
+    wickDown: "#ff6666",
 
     borderUp: "#ffffff",
-    borderDown: "#888888",
+    borderDown: "#ff4444",
   },
 
   // ⚪ WHITE MODE (light theme users)
@@ -69,30 +69,30 @@ export const chartThemes = {
     grid: "#e5e7eb",
     text: "#111827",
 
-    candleUp: "#16a34a",
-    candleDown: "#dc2626",
+    candleUp: "#00c853",
+    candleDown: "#d50000",
 
-    wickUp: "#16a34a",
-    wickDown: "#dc2626",
+    wickUp: "#00e676",
+    wickDown: "#ff1744",
 
-    borderUp: "#16a34a",
-    borderDown: "#dc2626",
+    borderUp: "#00c853",
+    borderDown: "#d50000",
   },
 
   // 🔴 RED / BLACK (High intensity mode)
   redBlack: {
     background: "#050505",
     grid: "#1a1a1a",
-    text: "#f87171",
+    text: "#ff6b6b",
 
-    candleUp: "#ff3b30",
-    candleDown: "#000000",
+    candleUp: "#ff2d20",
+    candleDown: "#111111",
 
-    wickUp: "#ff4d4d",
-    wickDown: "#1a1a1a",
+    wickUp: "#ff6659",
+    wickDown: "#333333",
 
-    borderUp: "#ff3b30",
-    borderDown: "#ff3b30",
+    borderUp: "#ff2d20",
+    borderDown: "#ff2d20",
   },
 
   // 🟣 PURPLE / CYAN (premium look)
@@ -101,13 +101,13 @@ export const chartThemes = {
     grid: "#1e1b4b",
     text: "#c4b5fd",
 
-    candleUp: "#22d3ee",
-    candleDown: "#a855f7",
+    candleUp: "#00e5ff",
+    candleDown: "#d500f9",
 
-    wickUp: "#67e8f9",
-    wickDown: "#c084fc",
+    wickUp: "#80f0ff",
+    wickDown: "#ea80fc",
 
-    borderUp: "#22d3ee",
-    borderDown: "#a855f7",
+    borderUp: "#00e5ff",
+    borderDown: "#d500f9",
   },
 };

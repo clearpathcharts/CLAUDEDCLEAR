@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
+import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import {
   TRADING_REIMAGINED_FAQS,
   TRADING_REIMAGINED_SEO,
@@ -181,6 +182,7 @@ export default function TradingReimaginedLanding() {
           <a href="/disclaimer.html" className="hover:text-zinc-400 transition-colors">Disclaimer</a>
         </div>
         <p>&copy; {new Date().getFullYear()} Clear Path Markets Science</p>
+        <GovernmentFinanceLinks compact />
       </footer>
     </div>
   );

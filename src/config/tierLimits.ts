@@ -6,7 +6,7 @@ export const TIER_LIMITS = {
 };
 
 export const getCandleLimit = (userTier?: string): number => {
-  if (!userTier) return 20000; // Default fallback for upgraded tier
+  if (!userTier) return 5000;
   const normalized = userTier.toUpperCase();
   return TIER_LIMITS[normalized as keyof typeof TIER_LIMITS] || 1000;
 };

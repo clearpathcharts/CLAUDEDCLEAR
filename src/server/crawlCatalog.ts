@@ -23,7 +23,10 @@ export interface CrawlEntry {
   priority: string;
 }
 
-const TODAY = '2026-07-19';
+/** Fresh calendar date for sitemap lastmod (UTC). Avoids forever-stale hardcoded dates. */
+export function sitemapLastmod(date = new Date()): string {
+  return date.toISOString().slice(0, 10);
+}
 
 // ---------------------------------------------------------------------------
 // Economy topics (Encyclopedia of Finance — knowledge base)
@@ -404,7 +407,7 @@ export function stockEntries(): CrawlEntry[] {
   return dedupeEntries(
     [...stockByTicker!.entries()].map(([ticker, s]) => ({
       path: `/stocks/${ticker}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'weekly',
       priority: s.ticker === 'AAPL' || s.ticker === 'TSLA' ? '0.85' : '0.7',
     }))
@@ -416,7 +419,7 @@ export function cryptoEntries(): CrawlEntry[] {
   return dedupeEntries(
     [...cryptoBySymbol!.entries()].map(([symbol, c]) => ({
       path: `/crypto/${symbol}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'weekly',
       priority: symbol === 'btc' || symbol === 'eth' ? '0.85' : '0.7',
     }))
@@ -428,7 +431,7 @@ export function forexEntries(): CrawlEntry[] {
   return dedupeEntries(
     [...forexByPair!.entries()].map(([pairKey]) => ({
       path: `/forex/${pairKey}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'weekly',
       priority: pairKey === 'eurusd' || pairKey === 'usdjpy' ? '0.8' : '0.65',
     }))
@@ -440,7 +443,7 @@ export function commodityEntries(): CrawlEntry[] {
   return dedupeEntries(
     [...commodityBySymbol!.entries()].map(([symbol]) => ({
       path: `/commodities/${symbol}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'weekly',
       priority: symbol === 'xauusd' ? '0.8' : '0.65',
     }))
@@ -450,7 +453,7 @@ export function commodityEntries(): CrawlEntry[] {
 export function economyEntries(): CrawlEntry[] {
   return ECONOMY_TOPICS.map((t) => ({
     path: `/economy/${t.slug}`,
-    lastmod: TODAY,
+    lastmod: sitemapLastmod(),
     changefreq: 'monthly',
     priority: '0.8',
   }));
@@ -459,7 +462,7 @@ export function economyEntries(): CrawlEntry[] {
 export function indicatorEntries(): CrawlEntry[] {
   return INDICATOR_NAMES.map((name) => ({
     path: `/indicators/${indicatorImageSlug(name)}`,
-    lastmod: TODAY,
+    lastmod: sitemapLastmod(),
     changefreq: 'monthly',
     priority: '0.75',
   }));
@@ -470,21 +473,21 @@ export function educationEntries(): CrawlEntry[] {
   for (const school of CURRICULUM) {
     entries.push({
       path: `/education/${school.id}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'monthly',
       priority: '0.8',
     });
     for (const unit of school.units) {
       entries.push({
         path: `/education/${school.id}/${unit.id}`,
-        lastmod: TODAY,
+        lastmod: sitemapLastmod(),
         changefreq: 'monthly',
         priority: '0.75',
       });
       for (const lesson of unit.lessons) {
         entries.push({
           path: `/education/${school.id}/${unit.id}/${lesson.id}`,
-          lastmod: TODAY,
+          lastmod: sitemapLastmod(),
           changefreq: 'monthly',
           priority: '0.7',
         });
@@ -497,7 +500,7 @@ export function educationEntries(): CrawlEntry[] {
 export function uiProfileEntries(): CrawlEntry[] {
   const hub: CrawlEntry = {
     path: '/ui',
-    lastmod: TODAY,
+    lastmod: sitemapLastmod(),
     changefreq: 'monthly',
     priority: '0.85',
   };
@@ -505,7 +508,7 @@ export function uiProfileEntries(): CrawlEntry[] {
     hub,
     ...PROFILE_SEO.map((p) => ({
       path: `/ui/${p.slug}`,
-      lastmod: TODAY,
+      lastmod: sitemapLastmod(),
       changefreq: 'monthly',
       priority: '0.8',
     })),
@@ -515,11 +518,11 @@ export function uiProfileEntries(): CrawlEntry[] {
 /** Hub pages that belong in sitemap-pages (in addition to existing content hubs). */
 export function encyclopediaHubEntries(): CrawlEntry[] {
   return [
-    { path: '/stocks', lastmod: TODAY, changefreq: 'daily', priority: '0.85' },
-    { path: '/crypto', lastmod: TODAY, changefreq: 'daily', priority: '0.85' },
-    { path: '/forex', lastmod: TODAY, changefreq: 'weekly', priority: '0.8' },
-    { path: '/commodities', lastmod: TODAY, changefreq: 'weekly', priority: '0.8' },
-    { path: '/companies', lastmod: TODAY, changefreq: 'weekly', priority: '0.8' },
+    { path: '/stocks', lastmod: sitemapLastmod(), changefreq: 'daily', priority: '0.85' },
+    { path: '/crypto', lastmod: sitemapLastmod(), changefreq: 'daily', priority: '0.85' },
+    { path: '/forex', lastmod: sitemapLastmod(), changefreq: 'weekly', priority: '0.8' },
+    { path: '/commodities', lastmod: sitemapLastmod(), changefreq: 'weekly', priority: '0.8' },
+    { path: '/companies', lastmod: sitemapLastmod(), changefreq: 'weekly', priority: '0.8' },
   ];
 }
 

@@ -1,0 +1,63 @@
+{
+  "id": "demo-2026-07-11",
+  "editionDate": "2026-07-11",
+  "headline": "Market Prophets — demo edition (add GEMINI_API_KEY for live AI writing)",
+  "summary": "This demo brief was built from today's public RSS headlines. Configure GEMINI_API_KEY to enable full AI-assisted narrative generation.",
+  "bullets": [
+    "Investing.com News: US Democrat Ro Khanna detained by Israeli settlers during West Bank visit",
+    "MarketWatch: ‘An American tragedy’ in the making: The majority of small-business owners will retire in the next decade. What happens to their workers?",
+    "MarketWatch: ‘I’ve plenty of time on my hands’: Advisers bombard me with offers of free steak dinners. Is it wrong to go for the food?",
+    "CoinDesk: The UK has finally shown it’s serious about crypto",
+    "Investing.com News: China halts helium exports as renewed Middle East tensions threaten chip supplies"
+  ],
+  "traderLens": "Markets are digesting cross-asset headlines from macro, policy, and crypto feeds. Treat this demo as a layout preview — not trading advice.",
+  "watchToday": [
+    "Fed speakers",
+    "Earnings after the bell",
+    "FX liquidity into London open"
+  ],
+  "sources": [
+    {
+      "title": "US Democrat Ro Khanna detained by Israeli settlers during West Bank visit",
+      "url": "https://www.investing.com/news/world-news/us-democrat-ro-khanna-detained-by-israeli-settlers-during-west-bank-visit-4787240",
+      "source": "Investing.com News"
+    },
+    {
+      "title": "‘An American tragedy’ in the making: The majority of small-business owners will retire in the next decade. What happens to their workers?",
+      "url": "https://www.marketwatch.com/story/half-of-small-business-owners-hope-to-sell-their-companies-and-retire-in-the-next-decade-what-happens-to-their-workers-a03ae979?mod=mw_rss_topstories",
+      "source": "MarketWatch"
+    },
+    {
+      "title": "‘I’ve plenty of time on my hands’: Advisers bombard me with offers of free steak dinners. Is it wrong to go for the food?",
+      "url": "https://www.marketwatch.com/story/ive-plenty-of-time-on-my-hands-advisers-bombard-me-with-offers-for-free-steak-is-it-wrong-to-go-for-the-food-1b139f98?mod=mw_rss_topstories",
+      "source": "MarketWatch"
+    },
+    {
+      "title": "The UK has finally shown it’s serious about crypto",
+      "url": "https://www.coindesk.com/opinion/2026/07/11/the-uk-has-finally-shown-it-s-serious-about-crypto",
+      "source": "CoinDesk"
+    },
+    {
+      "title": "China halts helium exports as renewed Middle East tensions threaten chip supplies",
+      "url": "https://www.investing.com/news/stock-market-news/china-halts-helium-exports-as-renewed-middle-east-tensions-threaten-chip-supplies-4787283",
+      "source": "Investing.com News"
+    },
+    {
+      "title": "Six dead, dozens wounded as Russia strikes Ukraine with missiles, drones",
+      "url": "https://www.investing.com/news/world-news/two-dead-19-wounded-as-russia-strikes-ukraine-with-missiles-drones-4787226",
+      "source": "Investing.com News"
+    },
+    {
+      "title": "Summer travel season is here: Make this vital purchase before your next vacation",
+      "url": "https://www.marketwatch.com/story/8-things-i-learned-about-travel-expenses-after-a-family-tragedy-1bbb024f?mod=mw_rss_topstories",
+      "source": "MarketWatch"
+    },
+    {
+      "title": "Where to put cash right now: Should you lock in at 4% — or wait for the next Fed rate decision?",
+      "url": "https://www.marketwatch.com/story/should-you-lock-in-a-4-cd-rate-now-heres-how-to-decide-on-the-next-move-for-your-cash-41a7ef4c?mod=mw_rss_topstories",
+      "source": "MarketWatch"
+    }
+  ],
+  "generatedAt": "2026-07-11T15:21:23.337Z",
+  "aiAssisted": true
+}

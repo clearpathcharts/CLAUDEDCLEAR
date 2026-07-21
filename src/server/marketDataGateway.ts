@@ -150,7 +150,12 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
         twelvedataHealth.lastError = `HTTP ${response.status} failed for ${symbol}`;
         logHealthEvent('ERROR', `HTTP ${response.status} failure during ${symbol} fetch`, response.status);
       }
-      throw new Error(`API fetch failed with status ${response.status} for ${symbol} at ${url}`);
+      // NEVER include the raw URL here: it contains the API key, and these
+      // messages are forwarded to the browser by the market proxy routes.
+      if (response.status === 404) {
+        throw new Error(`Symbol "${symbol}" was not found by the market data provider. Check the ticker and try again.`);
+      }
+      throw new Error(`API fetch failed with status ${response.status} for ${symbol}`);
     }
 
     const data = await response.json();
@@ -237,6 +242,8 @@ export function isSyntheticOrIndex(symbol: string): boolean {
 export function formatSymbolForTwelveData(symbol: string): string {
   const clean = symbol.trim().toUpperCase();
   if (clean === 'DXY') return 'DX-Y.F';
+  if (clean === 'XAUUSD' || clean === 'XAU/USD') return 'XAU/USD';
+  if (clean === 'XAGUSD' || clean === 'XAG/USD') return 'XAG/USD';
   // Forex checks (e.g. GBPUSD or GBP/USD)
   if (clean.length === 6 && (clean.startsWith('USD') || clean.endsWith('USD') || clean.endsWith('JPY') || clean.endsWith('GBP') || clean.endsWith('EUR'))) {
     return `${clean.slice(0, 3)}/${clean.slice(3)}`;

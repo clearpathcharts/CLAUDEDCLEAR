@@ -49,6 +49,7 @@ import {
   applyPendingContractorBadges,
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
+import { ROBOTS_TXT } from './src/server/robotsTxt';
 import {
   stockEntries,
   cryptoEntries,
@@ -60,6 +61,8 @@ import {
   uiProfileEntries,
   encyclopediaHubEntries,
   catalogCounts,
+  sitemapLastmod,
+  lookupStock,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAdminFirestore } from './src/server/firebaseAdmin';
@@ -1453,6 +1456,12 @@ ${CPT_SITE_GUIDE}`;
     });
   });
 
+  // Defense in depth: upstream error messages can embed request URLs, which
+  // carry the Twelve Data API key. Strip any key before a message leaves the
+  // server so it can never surface in the browser UI.
+  const scrubApiKey = (message: unknown): string =>
+    String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
+
   // Twelve Data Proxy for Quotes
   app.get('/api/quote', marketLimiter, async (req, res) => {
     const { symbol } = req.query;
@@ -1489,11 +1498,12 @@ ${CPT_SITE_GUIDE}`;
       const normalized = {
         ...data,
         price: data.price ?? data.close,
+        percent_change: data.percent_change ?? data.change_percent,
       };
       res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
@@ -1536,7 +1546,7 @@ ${CPT_SITE_GUIDE}`;
       res.json(data);
     } catch (error: any) {
       console.error('[TwelveData Candles Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
@@ -1594,7 +1604,7 @@ ${CPT_SITE_GUIDE}`;
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
     }
   });
 
@@ -2228,18 +2238,8 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
 
   // 3. COMPREHENSIVE ROBOTS.TXT
   app.get('/robots.txt', (req, res) => {
-    res.header('Content-Type', 'text/plain');
-    res.send(`User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /auth/
-Disallow: /login
-Disallow: /dashboard
-
-# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
-Sitemap: https://clearpathtrader.com/sitemap.xml
-Host: clearpathtrader.com
-`);
+    res.header('Content-Type', 'text/plain; charset=utf-8');
+    res.send(ROBOTS_TXT);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
@@ -2356,22 +2356,23 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
+    const lastmod = sitemapLastmod();
     res.send(buildUrlset([
-      { path: '/', lastmod: '2026-07-19', changefreq: 'daily', priority: '1.0' },
+      { path: '/', lastmod, changefreq: 'daily', priority: '1.0' },
       // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
-      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod: '2026-07-10', changefreq: 'weekly', priority: '0.95' },
-      { path: '/about', lastmod: '2026-07-10', changefreq: 'monthly', priority: '0.85' },
-      { path: '/encyclopedia', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
-      { path: '/indicators', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
-      { path: '/education', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
-      { path: '/literacy', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
-      { path: '/learn', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
-      { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
-      { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
-      { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
-      { path: '/tools', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.8' },
-      { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
-      { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
+      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
+      { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
+      { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/literacy', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/learn', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/guides', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/glossary', lastmod, changefreq: 'weekly', priority: '0.75' },
+      { path: '/faq', lastmod, changefreq: 'monthly', priority: '0.7' },
+      { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
+      { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
+      { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
       ...regionalHubEntries(),
     ]));
@@ -2591,6 +2592,9 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/indicators',
     '/indicators/:slug',
     '/encyclopedia-of-indicators',
+    '/ads/polsia',
+    '/polsia',
+    '/advertise/polsia',
     '/literacy',
     '/literacy-os',
     '/market-universe',
@@ -2603,7 +2607,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/commodities',
     '/commodities/:commodity',
     '/companies',
-    '/companies/:slug',
+    // /companies/:slug → 301 to /stocks/:ticker (see redirect below); not a separate thin indexable surface
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
@@ -2613,6 +2617,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   SEO_PAGES.forEach(pagePath => {
     app.get(pagePath, handlePageServing);
+  });
+
+  // Company slugs are not a separate encyclopedia tree — canonical lives under /stocks/:ticker.
+  app.get('/companies/:slug', (req, res) => {
+    const slug = String(req.params.slug || '').toLowerCase();
+    const stock = lookupStock(slug);
+    if (stock?.ticker) {
+      return res.redirect(301, `/stocks/${String(stock.ticker).toLowerCase()}`);
+    }
+    return res.redirect(301, '/companies');
   });
 
   // 4. Vite / Static Serving
