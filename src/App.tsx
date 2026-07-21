@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PressKitPage from './components/PressKitPage';
 import PolsiaPaidAdPage from './components/PolsiaPaidAdPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
@@ -175,6 +176,8 @@ export default function App() {
     );
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
+  } else if (currentPath === '/press' || currentPath === '/press-kit') {
+    content = <PressKitPage />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
   } else if (isPolsiaAdPath(currentPath)) {
