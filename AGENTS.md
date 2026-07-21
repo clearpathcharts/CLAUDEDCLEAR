@@ -11,12 +11,19 @@
 - The React entry is `src/main.tsx` / `index.html`. On first load the page briefly shows a `Loading New Architecture...` placeholder before React mounts — this is expected, not an error.
 
 ### Build / lint
-- Build: `npm run build` (Vite build for the client + esbuild bundle of `server.ts` → `dist/server.cjs`). `npm start` runs the built server (`NODE_ENV=production`).
-- Lint: `npm run lint` is `tsc --noEmit` over the whole repo. **Known pre-existing failure:** `src/qubit/**` has broken/missing imports and fails type-check. That module is orphaned (not imported anywhere else) and does not affect the app, the Vite build, or the server bundle. Treat these specific `src/qubit` errors as pre-existing noise, not something to fix during unrelated work.
+- Build: `npm run build` (Vite build for the client + esbuild bundle of `server.ts` → `dist/server.cjs`). `npm start` runs with `NODE_ENV=production` (`Dockerfile` also sets it).
+- Lint: `npm run lint` is `tsc --noEmit` over the whole repo (client + `server.ts`).
 
 ### Environment variables
 - Copy `.env.example` to `.env`. The app runs **without** any secrets set: the Postgres pool (`src/db/index.ts`) is created lazily and only connects when a DB-backed route is hit, and the market-data gateway just logs a warning when `TWELVEDATA_API_KEY` is missing (live data disabled, app still renders).
-- Optional secrets for full functionality: `GEMINI_API_KEY`, `TWELVEDATA_API_KEY`, and the `SQL_*` Cloud SQL Postgres credentials. Passport OAuth strategies (Discord/GitHub/Twitter/etc.) are optional and only needed for social login flows.
+- **All vendor API keys are server-side only** (see `.env.example`). Never use `VITE_` for secrets. FRED/FMP proxies reject client-supplied keys. Diagnostics expose **boolean presence** only (`GET /api/secrets/status`, `/api/twelvedata/config`).
+- Core optional secrets: `GEMINI_API_KEY`, `GROQ_API_KEY`, `TWELVEDATA_API_KEY`, `FRED_API_KEY`, `FMP_API_KEY`, `SESSION_SECRET`, `INTELLIGENCE_WEBHOOK_SECRET`, `CATALOG_ADMIN_SECRET`, and `SQL_*` Cloud SQL credentials.
+- Production CORS is same-origin by default; set `CORS_ALLOWED_ORIGINS` only if a separate frontend origin must call the API.
+- Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console.
+- OAuth `/auth/:provider` stubs only allow relative SPA returnTo paths (open-redirect hardened).
 
 ### Startup log gotcha
 - Startup runs "compliance"/"truth" audits ~10s after boot that print messages like `[TRUTH ENGINE COMPLIANCE ALERT] ... breach(es) found! Score: 67%`. These are **internal application scoring logic**, not server errors — the server is healthy.
+
+### Host hardening (ops only)
+- Optional server hardening uses [grapheneX](https://github.com/grapheneX/grapheneX) on the **VPS/Docker host**, not inside the Node app. See `docs/ops-hardening.md` and `scripts/ops/run-graphenex.sh` (localhost `:9090` + SSH tunnel). Not applicable to managed Cloud Run.

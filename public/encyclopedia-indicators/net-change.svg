@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">NET CHANGE</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">STATISTICAL SIGNAL</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="175.42857142857144" x2="772" y2="175.42857142857144" stroke="#FF2D95" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="171.42857142857144" fill="#FF2D95" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">+2σ</text>
+    <line x1="48" y1="440.57142857142856" x2="772" y2="440.57142857142856" stroke="#00FFD1" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="436.57142857142856" fill="#00FFD1" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">-2σ</text>
+    <line x1="48" y1="308" x2="772" y2="308" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">0</text>
+    <path d="M48.0,308.0 L62.8,265.1 L77.6,264.4 L92.3,218.9 L107.1,220.0 L121.9,230.6 L136.7,247.0 L151.4,286.5 L166.2,262.1 L181.0,220.3 L195.8,248.7 L210.5,281.3 L225.3,318.2 L240.1,296.6 L254.9,346.0 L269.6,323.9 L284.4,314.6 L299.2,278.9 L314.0,313.5 L328.7,348.9 L343.5,316.5 L358.3,344.5 L373.1,324.0 L387.8,287.6 L402.6,255.8 L417.4,271.6 L432.2,264.3 L446.9,263.5 L461.7,234.7 L476.5,206.4 L491.3,169.9 L506.0,198.0 L520.8,175.4 L535.6,162.0 L550.4,151.2 L565.1,133.0 L579.9,139.7 L594.7,197.6 L609.5,201.9 L624.2,264.9 L639.0,244.0 L653.8,259.4 L668.6,233.2 L683.3,272.2 L698.1,222.2 L712.9,224.2 L727.7,237.2 L742.4,256.7 L757.2,264.1 L772.0,248.8" fill="none" stroke="#FFF000" stroke-width="2.5"/>
+  
+</svg>

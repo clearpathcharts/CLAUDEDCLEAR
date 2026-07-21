@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">EASE OF MOVEMENT</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">VOLUME / FLOW</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <path d="M48.0,266.8 L66.6,270.8 L85.1,251.2 L103.7,268.8 L122.3,230.5 L140.8,260.6 L159.4,297.1 L177.9,303.2 L196.5,274.6 L215.1,286.6 L233.6,292.2 L252.2,300.6 L270.8,306.8 L289.3,301.8 L307.9,270.6 L326.5,271.8 L345.0,238.9 L363.6,254.2 L382.2,240.4 L400.7,200.7 L419.3,238.9 L437.8,201.7 L456.4,229.5 L475.0,254.1 L493.5,257.0 L512.1,245.5 L530.7,212.1 L549.2,231.8 L567.8,258.8 L586.4,263.6 L604.9,230.8 L623.5,202.5 L642.1,241.4 L660.6,228.0 L679.2,193.6 L697.7,171.8 L716.3,140.6 L734.9,112.5 L753.4,116.7 L772.0,105.2" fill="none" stroke="#00FFD1" stroke-width="2.2"/>
+    
+    <line x1="48" y1="356" x2="772" y2="356" stroke="#00B6FF" stroke-opacity="0.25"/>
+    <rect x="42.1175" y="451" width="11.765" height="109" fill="#00B6FF" opacity="0.75"/>
+<rect x="60.68160256410257" y="439" width="11.765" height="121" fill="#D946EF" opacity="0.75"/>
+<rect x="79.24570512820512" y="462" width="11.765" height="98" fill="#00B6FF" opacity="0.75"/>
+<rect x="97.80980769230769" y="447" width="11.765" height="113" fill="#D946EF" opacity="0.75"/>
+<rect x="116.37391025641026" y="435" width="11.765" height="125" fill="#00B6FF" opacity="0.75"/>
+<rect x="134.93801282051282" y="451" width="11.765" height="109" fill="#D946EF" opacity="0.75"/>
+<rect x="153.5021153846154" y="436" width="11.765" height="124" fill="#D946EF" opacity="0.75"/>
+<rect x="172.06621794871796" y="493" width="11.765" height="67" fill="#D946EF" opacity="0.75"/>
+<rect x="190.6303205128205" y="438" width="11.765" height="122" fill="#00B6FF" opacity="0.75"/>
+<rect x="209.1944230769231" y="485" width="11.765" height="75" fill="#D946EF" opacity="0.75"/>
+<rect x="227.75852564102564" y="370" width="11.765" height="190" fill="#D946EF" opacity="0.75"/>
+<rect x="246.3226282051282" y="383" width="11.765" height="177" fill="#D946EF" opacity="0.75"/>
+<rect x="264.8867307692308" y="399" width="11.765" height="161" fill="#D946EF" opacity="0.75"/>
+<rect x="283.4508333333333" y="461" width="11.765" height="99" fill="#00B6FF" opacity="0.75"/>
+<rect x="302.0149358974359" y="404" width="11.765" height="156" fill="#00B6FF" opacity="0.75"/>
+<rect x="320.57903846153846" y="496" width="11.765" height="64" fill="#D946EF" opacity="0.75"/>
+<rect x="339.143141025641" y="470" width="11.765" height="90" fill="#00B6FF" opacity="0.75"/>
+<rect x="357.7072435897436" y="454" width="11.765" height="106" fill="#D946EF" opacity="0.75"/>
+<rect x="376.2713461538462" y="364" width="11.765" height="196" fill="#00B6FF" opacity="0.75"/>
+<rect x="394.83544871794874" y="398" width="11.765" height="162" fill="#00B6FF" opacity="0.75"/>
+<rect x="413.3995512820513" y="449" width="11.765" height="111" fill="#D946EF" opacity="0.75"/>
+<rect x="431.9636538461538" y="430" width="11.765" height="130" fill="#00B6FF" opacity="0.75"/>
+<rect x="450.5277564102564" y="398" width="11.765" height="162" fill="#D946EF" opacity="0.75"/>
+<rect x="469.091858974359" y="401" width="11.765" height="159" fill="#D946EF" opacity="0.75"/>
+<rect x="487.65596153846155" y="381" width="11.765" height="179" fill="#D946EF" opacity="0.75"/>
+<rect x="506.2200641025642" y="392" width="11.765" height="168" fill="#00B6FF" opacity="0.75"/>
+<rect x="524.7841666666666" y="403" width="11.765" height="157" fill="#00B6FF" opacity="0.75"/>
+<rect x="543.3482692307692" y="445" width="11.765" height="115" fill="#D946EF" opacity="0.75"/>
+<rect x="561.9123717948718" y="429" width="11.765" height="131" fill="#D946EF" opacity="0.75"/>
+<rect x="580.4764743589743" y="481" width="11.765" height="79" fill="#D946EF" opacity="0.75"/>
+<rect x="599.0405769230769" y="503" width="11.765" height="57" fill="#00B6FF" opacity="0.75"/>
+<rect x="617.6046794871794" y="501" width="11.765" height="59" fill="#00B6FF" opacity="0.75"/>
+<rect x="636.1687820512819" y="486" width="11.765" height="74" fill="#D946EF" opacity="0.75"/>
+<rect x="654.7328846153846" y="501" width="11.765" height="59" fill="#00B6FF" opacity="0.75"/>
+<rect x="673.2969871794871" y="396" width="11.765" height="164" fill="#00B6FF" opacity="0.75"/>
+<rect x="691.8610897435897" y="386" width="11.765" height="174" fill="#00B6FF" opacity="0.75"/>
+<rect x="710.4251923076923" y="430" width="11.765" height="130" fill="#00B6FF" opacity="0.75"/>
+<rect x="728.9892948717948" y="414" width="11.765" height="146" fill="#00B6FF" opacity="0.75"/>
+<rect x="747.5533974358974" y="443" width="11.765" height="117" fill="#D946EF" opacity="0.75"/>
+<rect x="766.1175" y="366" width="11.765" height="194" fill="#00B6FF" opacity="0.75"/>
+  
+</svg>

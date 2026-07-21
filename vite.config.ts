@@ -35,10 +35,33 @@ export default defineConfig(({mode}) => {
               if (id.includes('jspdf') || id.includes('html2canvas')) {
                 return 'pdf-canvas-vendor';
               }
-              if (id.includes('framer-motion') || id.includes('motion')) {
+              if (id.includes('framer-motion') || id.includes('/motion/')) {
                 return 'motion-vendor';
               }
+              if (id.includes('firebase')) {
+                return 'firebase-vendor';
+              }
+              if (
+                id.includes('lightweight-charts') ||
+                id.includes('chart.js') ||
+                id.includes('react-chartjs-2') ||
+                id.includes('recharts')
+              ) {
+                return 'charts-vendor';
+              }
+              if (id.includes('lucide-react')) {
+                return 'icons-vendor';
+              }
               return 'common-vendor';
+            }
+            if (id.includes('/src/components/encyclopedia/') || id.includes('/src/components/EncyclopediaOfIndicators')) {
+              return 'encyclopedia-vendor';
+            }
+            if (id.includes('/src/literacy/')) {
+              return 'literacy-vendor';
+            }
+            if (id.includes('/src/education/')) {
+              return 'education-vendor';
             }
           }
         }

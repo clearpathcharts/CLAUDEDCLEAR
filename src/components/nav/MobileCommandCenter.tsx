@@ -66,6 +66,13 @@ const LEARN_ITEMS: NavItem[] = [
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
   {
+    id: "LiteracyOS",
+    icon: BookOpen,
+    label: "LITERACY OS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
+  {
     id: "Encyclopedia",
     icon: GraduationCap,
     label: "ENCYCLOPEDIA OF FINANCE",
@@ -92,7 +99,7 @@ const TOOLS_ITEMS: NavItem[] = [
   {
     id: "CpmsApk",
     icon: Cpu,
-    label: "CPMS APK",
+    label: "CLEARPATH CINEMA",
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
@@ -265,8 +272,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               >
                 YOUR WORLD CONNECTED
               </span>
-              <span className="block text-[#AAAAAA] text-xs mt-1">
-                Everything you need. One place.
+              <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
+                Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
               <button
                 type="button"

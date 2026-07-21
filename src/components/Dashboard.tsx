@@ -64,31 +64,39 @@ import { useAuth } from '../contexts/FirebaseContext';
 import { setClearState } from '../lib/trading/clearState';
 
 import SEO from './SEO';
-import { ChartFrame } from './charts/ChartFrame';
-import { InteractiveChart } from './charts/InteractiveChart';
-import { LightweightCandles } from './charts/LightweightCandles';
 import ThemeSelector from './ThemeSelector';
-import MeetTheBoard from './MeetTheBoard';
-import { ProfileHub } from './ProfileHub';
-import AffiliateDashboard from './profile/AffiliateDashboard';
-import YoursPage from './yours/YoursPage';
-import MembershipTab from './MembershipTab';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
 
 import { ClearNav } from './nav/ClearNav';
+import { getDefaultDashboardTab } from '../lib/platform/defaultTab';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
+import { isFounderEmail } from '../lib/founder';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 
-// Lazy load sub-components
+// Lazy load heavy tabs / panels to keep the main Dashboard chunk smaller
+const InteractiveChart = lazy(() =>
+  import('./charts/InteractiveChart').then((m) => ({ default: m.InteractiveChart }))
+);
+const MeetTheBoard = lazy(() => import('./MeetTheBoard'));
+const ProfileHub = lazy(() =>
+  import('./ProfileHub').then((m) => ({ default: m.ProfileHub }))
+);
+const AffiliateDashboard = lazy(() => import('./profile/AffiliateDashboard'));
+const YoursPage = lazy(() => import('./yours/YoursPage'));
+const MembershipTab = lazy(() => import('./MembershipTab'));
+const NewsPanel = lazy(() => import('./NewsPanel'));
+const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
+const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
+const FoundersPortal = lazy(() => import('./FoundersPortal'));
+const KillZones = lazy(() => import('./KillZones'));
 const GoogleDesk = lazy(() => import('./GoogleDesk'));
 const LegalFooter = lazy(() => import('./LegalFooter'));
 const AdditionalTermsOfService = lazy(() => import('./AdditionalTermsOfService'));
-const LiveChart = lazy(() => import('./LiveChart'));
 const CeoDashboard = lazy(() => import('./CeoDashboard'));
 const TodoList = lazy(() => import('./TodoList'));
 const MarketTicker = lazy(() => import('./MarketTicker'));
@@ -97,7 +105,6 @@ const ShareQRCode = lazy(() => import('./ShareQRCode'));
 const LightweightMarketUI = lazy(() => import('./markets/LightweightMarketUI').then(m => ({ default: m.LightweightMarketUI })));
 const StandardMarketUI = lazy(() => import('./markets/StandardMarketUI').then(m => ({ default: m.StandardMarketUI })));
 const MarketScanner = lazy(() => import('./MarketScanner'));
-const MarketHeatmap = lazy(() => import('./MarketHeatmap'));
 const MacroDashboard = lazy(() => import('./MacroDashboard'));
 const EconomicCalendar = lazy(() => import('./EconomicCalendar'));
 const FundamentalsPanel = lazy(() => import('./FundamentalsPanel'));
@@ -110,11 +117,12 @@ const Leaderboard = lazy(() => import('./Leaderboard'));
 const CpmsApk = lazy(() => import('./CpmsApk'));
 const ClearPathSentinel = lazy(() => import('./ClearPathSentinel'));
 const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
-import EncyclopediaOfIndicators from './EncyclopediaOfIndicators';
-import EncyclopediaLayout from './encyclopedia/EncyclopediaLayout';
+const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
+const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
 const ClearPathEducationPage = lazy(() => import('../education/ClearPathEducation'));
 const ReferralPage = lazy(() => import('./ReferralPage'));
+const LiteracyOSPage = lazy(() => import('../literacy/LiteracyOSPage'));
 
 function TabLoading() {
   return (
@@ -128,15 +136,9 @@ const CustomNavIcon = ({ size = 16, className = '', style = {} }: { size?: numbe
   <Activity size={size} className={className} style={{ ...style, filter: style.color ? `drop-shadow(0 0 5px ${style.color})` : 'none' }} />
 );
 
-
-import NewsPanel from './NewsPanel';
-import DiscoveryFeed from './DiscoveryFeed';
-import ClearPathChatroom from './chat/ClearPathChatroom';
-import FoundersPortal from './FoundersPortal';
-import KillZones from './KillZones';
-
 const RETIRED_TABS: Record<string, string> = {
   Screener: 'StrictlyCharts',
+  Heatmap: 'StrictlyCharts',
   Journal: 'StrictlyCharts',
 };
 
@@ -203,7 +205,9 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
           <ProfileButton id="adhd_hyperfocus" label="ADHD_HYPERFOCUS" active={profile.id} />
           <ProfileButton id="autism_predictable" label="AUTISM_PREDICTABLE" active={profile.id} />
           <ProfileButton id="tourette_tic_friendly" label="TOURETTE_TIC_FRIENDLY" active={profile.id} />
-          
+
+          {/* ROW 4 — classic trading candles */}
+          <ProfileButton id="standard_red_green" label="STANDARD_RED_GREEN" active={profile.id} />
 
         </div>
       </div>
@@ -268,10 +272,12 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-[800px] mt-4">
-        <InteractiveChart title="BTCUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="ETHUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="AAPL" profileId={profile.id} theme={chartTheme} userTier={userTier} />
-        <InteractiveChart title="SPY" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+        <Suspense fallback={<TabLoading />}>
+          <InteractiveChart title="BTCUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="ETHUSD" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="AAPL" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+          <InteractiveChart title="SPY" profileId={profile.id} theme={chartTheme} userTier={userTier} />
+        </Suspense>
       </div>
     </div>
   );
@@ -302,6 +308,7 @@ const TabContent = ({
   onBack, 
   onProfileChange, 
   isAdmin,
+  isFounder,
   selectedLightweightSymbol,
   setSelectedLightweightSymbol,
   leftSide,
@@ -327,6 +334,7 @@ const TabContent = ({
   onBack: () => void, 
   onProfileChange: (p: any) => void, 
   isAdmin: boolean,
+  isFounder: boolean,
   selectedLightweightSymbol: string,
   setSelectedLightweightSymbol: (s: string) => void,
   leftSide: boolean,
@@ -391,7 +399,7 @@ const TabContent = ({
         </Suspense>
       );
       case 'CpmsApk': return <CpmsApk />;
-      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isAdmin ? 'CeoDashboard' : 'StrictlyCharts')} />;
+      case 'Sentinel': return <ClearPathSentinel onClose={() => setActiveTab(isFounder ? 'CeoDashboard' : 'StrictlyCharts')} />;
       case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
@@ -405,7 +413,6 @@ const TabContent = ({
       );
       case 'Portfolio': return <PortfolioTracker />;
       case 'Scanner': return <MarketScanner />;
-      case 'Heatmap': return <MarketHeatmap />;
       case 'Calendar': return <EconomicCalendar />;
       case 'Geomap': return <GeographicMap />;
       case 'Leaderboard': return <Leaderboard />;
@@ -414,7 +421,7 @@ const TabContent = ({
       case 'Tasks': return <TodoList profile={profile} />;
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
-      case 'CeoDashboard': return <CeoDashboard />;
+      case 'CeoDashboard': return isFounder ? <CeoDashboard /> : <YoursPage />;
       case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return (
         <div className="max-w-4xl mx-auto" id="view_global_trading_sessions">
@@ -432,6 +439,11 @@ const TabContent = ({
       case 'ReferralDesk': return (
         <Suspense fallback={<TabLoading />}>
           <ReferralPage onNavigate={setActiveTab} />
+        </Suspense>
+      );
+      case 'LiteracyOS': return (
+        <Suspense fallback={<TabLoading />}>
+          <LiteracyOSPage onNavigate={setActiveTab} onProfileChange={onProfileChange} />
         </Suspense>
       );
       case 'TrainingBoard': return (
@@ -456,7 +468,8 @@ const TabContent = ({
     setChartTheme, 
     onBack, 
     onProfileChange, 
-    isAdmin, 
+    isAdmin,
+    isFounder,
     leftSide, 
     setLeftSide, 
     rightSide, 
@@ -504,12 +517,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     purgeAuthCache
   } = useAuth();
   const [leftSide, setLeftSide] = useState(false);
-  const [rightSide, setRightSide] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('cp_contacts_sidebar_open');
-    if (saved !== null) return saved === 'true';
-    return window.matchMedia('(min-width: 1280px)').matches;
-  });
+  // Contacts rail stays closed on login — no auto-open faces/conversations.
+  const [rightSide, setRightSide] = useState(false);
+  const [chatDockOpen, setChatDockOpen] = useState(false);
 
   const handleSetRightSide = (open: boolean) => {
     setRightSide(open);
@@ -539,6 +549,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
         }
+        if (path === '/literacy' || path === '/literacy-os') {
+          return 'LiteracyOS';
+        }
         if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
           return 'EncyclopediaOfIndicators';
         }
@@ -566,7 +579,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         console.error('Failed to parse activeTab initial URL:', e);
       }
     }
-    return 'TheRiver';
+    return getDefaultDashboardTab();
   });
   const [showTicker, setShowTicker] = useState(() => localStorage.getItem('cp_show_ticker') !== 'false');
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');
@@ -904,7 +917,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = () => userRole?.role === 'admin' || authUser?.email === 'forexanarchy@gmail.com' || authUser?.email === 'creator@clearpatcharge.com';
+  const isAdmin = () => userRole?.role === 'admin' || isFounderEmail(authUser?.email) || authUser?.email === 'creator@clearpatcharge.com';
+  /** CEO Dashboard — Rick Floyd founder only */
+  const isFounder = () => isFounderEmail(authUser?.email);
   const isVerified = () => requireVerified();
 
   const menuItems = useMemo(() => {
@@ -917,32 +932,20 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
       { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },
-      { id: 'CeoDashboard', icon: Shield, label: 'ADMIN SETTINGS' }, 
+      { id: 'CeoDashboard', icon: Shield, label: 'CEO DASHBOARD' }, 
       { id: 'Logout', icon: LogOut, label: 'LOGOUT' },
     ];
 
     return allMenuItems.filter((item: any) => {
-      if (item.id === 'CeoDashboard') return isAdmin();
+      if (item.id === 'CeoDashboard') return isFounder();
       if (item.verified) return isVerified() || isAdmin();
       return true;
     });
   }, [userRole?.role, authUser?.email, profile?.vipStatus]);
 
-  const stories = [
-    { id: 1, name: 'Lisandro Matos', time: '12 hours ago', img: '' },
-    { id: 2, name: 'Gvozden Boskovsky', time: '29 minutes ago', img: '' },
-    { id: 3, name: 'Hnek Fortuin', time: '3 hours ago', img: '' },
-    { id: 4, name: 'Lubomir Dvorak', time: '18 hours ago', img: '' },
-  ];
-
-  const contacts = [
-    { id: 1, name: 'Andrei Mashrin', status: 'online', img: '' },
-    { id: 2, name: 'Aryn Jacobssen', status: 'offline', img: '' },
-    { id: 3, name: 'Carole Landu', status: 'offline', img: '' },
-    { id: 4, name: 'Chineze Afa', status: 'online', img: '' },
-    { id: 5, name: 'Mok Kwang', status: 'online', img: '' },
-    { id: 6, name: 'Naomi Yepes', status: 'online', img: '' },
-  ];
+  /** Real stories/contacts only — no seeded fake people. */
+  const stories: { id: number; name: string; time: string; img: string }[] = [];
+  const contacts: { id: number; name: string; status: string; img: string }[] = [];
 
   const getSeoData = () => {
     switch (activeTab) {
@@ -980,6 +983,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       }
     }
   };
+
+  useEffect(() => {
+    const onSetTab = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail === 'string' && detail.trim()) {
+        handleTabChange(detail);
+      }
+    };
+    window.addEventListener('clearpath-set-tab', onSetTab as EventListener);
+    return () => window.removeEventListener('clearpath-set-tab', onSetTab as EventListener);
+  }, []);
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
@@ -1086,11 +1100,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
           hash === 'ReferralDesk' ||
+          hash === 'LiteracyOS' ||
           hash === 'ApiMonitor' || 
           hash === 'Diagnostics' || 
           hash === 'Sentinel';
         if (validHash) {
-          setActiveTab(normalizeTabId(hash));
+          const next = normalizeTabId(hash);
+          // CEO Dashboard hash is founder-only
+          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
+            setActiveTab('StrictlyCharts');
+          } else {
+            setActiveTab(next);
+          }
         }
       }
     }
@@ -1421,16 +1442,20 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                 </form>
               </div>
               <div className="flex items-center space-x-4">
-                {!rightSide && (
-                  <button 
-                    onClick={() => handleSetRightSide(true)}
-                    aria-label="Open contacts"
-                    className="p-3 transition-colors rounded-full shadow-lg z-[60]"
-                    style={{ background: `${profile.borderA}ee`, color: '#000' }}
-                  >
-                    <MessageSquare size={24} />
-                  </button>
-                )}
+                <button 
+                  type="button"
+                  onClick={() => setChatDockOpen((v) => !v)}
+                  aria-label={chatDockOpen ? 'Close chat' : 'Open chat'}
+                  aria-expanded={chatDockOpen}
+                  className="p-3 transition-colors rounded-full shadow-lg z-[60] border border-[#ff4500]/50"
+                  style={{
+                    background: 'linear-gradient(135deg, #ff0000 0%, #ff4500 52%, #ff8c00 100%)',
+                    color: '#000',
+                    boxShadow: '0 0 18px rgba(255, 69, 0, 0.55)',
+                  }}
+                >
+                  <MessageSquare size={22} />
+                </button>
               </div>
             </div>
           </>
@@ -1464,7 +1489,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   <div className="px-6 lg:px-12 pb-16 pt-8 flex-1 flex flex-col min-h-[50vh]">
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
-                        <BackToDashboard onBack={() => handleTabChange(isAdmin() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
+                        <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>
                     )}
                     <Suspense fallback={<TabLoading />}>
@@ -1474,9 +1499,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         profile={profile} 
                         chartTheme={chartTheme} 
                         setChartTheme={handleSetChartTheme}
-                        onBack={() => handleTabChange(isAdmin() ? 'CeoDashboard' : 'StrictlyCharts')} 
+                        onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} 
                         onProfileChange={onProfileChange}
                         isAdmin={isAdmin()}
+                        isFounder={isFounder()}
                         selectedLightweightSymbol={selectedLightweightSymbol}
                         setSelectedLightweightSymbol={setSelectedLightweightSymbol}
                         leftSide={leftSide}
@@ -1558,25 +1584,31 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
           <div className="px-6 py-8 border-b" style={{ borderColor: `${profile.borderA}22` }}>
-            <div className="text-[15px] font-black uppercase tracking-[0.2em] mb-6 text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">Stories</div>
-            <div className="space-y-6">
-              {stories.map((story) => (
-                <div key={story.id} onClick={() => setActiveStory(story)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
-                  <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
-                    {story.img ? <img src={story.img} referrerPolicy="no-referrer" className="surfboard-img" /> : <div className="surfboard-img bg-[#111]" />}
+            <div className="text-[15px] font-black uppercase tracking-[0.2em] mb-6 text-[#ff8c00]">Stories</div>
+            {stories.length === 0 ? (
+              <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
+                No stories yet. When traders you follow share updates, they show up here.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {stories.map((story) => (
+                  <div key={story.id} onClick={() => setActiveStory(story)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
+                    <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
+                      {story.img ? <img src={story.img} referrerPolicy="no-referrer" className="surfboard-img" alt="" /> : <div className="surfboard-img bg-[#111]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-black uppercase tracking-tighter name-text truncate text-[#ff8c00]">{story.name}</div>
+                      <div className="opacity-70 text-[10px] uppercase font-mono mt-1 text-zinc-400">{story.time}</div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-black uppercase tracking-tighter name-text truncate text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">{story.name}</div>
-                    <div className="opacity-70 text-[10px] uppercase font-mono mt-1 text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">{story.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="px-6 py-8">
             <div className="flex items-center justify-between mb-6">
-              <div className="text-[15px] font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">Contacts</div>
+              <div className="text-[15px] font-black uppercase tracking-[0.2em] text-[#ff8c00]">Contacts</div>
               <button
                 type="button"
                 aria-label="Close contacts"
@@ -1586,19 +1618,38 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                 <X size={18} style={{ color: profile.borderA }} />
               </button>
             </div>
-            <div className="space-y-6">
-              {contacts.map((contact) => (
-                <div key={contact.id} onClick={() => setActiveChat(contact)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
-                  <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
-                    {contact.img ? <img src={contact.img} referrerPolicy="no-referrer" className="surfboard-img" /> : <div className="surfboard-img bg-[#111]" />}
+            {contacts.length === 0 ? (
+              <div className="space-y-4">
+                <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
+                  No contacts yet. Connect with real traders — this list stays empty until you add people.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSetRightSide(false);
+                    setChatDockOpen(true);
+                  }}
+                  className="w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-black border border-[#ff4500]/60"
+                  style={{ background: 'linear-gradient(135deg, #ff0000 0%, #ff4500 52%, #ff8c00 100%)' }}
+                >
+                  Open live chat
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {contacts.map((contact) => (
+                  <div key={contact.id} onClick={() => setActiveChat(contact)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
+                    <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
+                      {contact.img ? <img src={contact.img} referrerPolicy="no-referrer" className="surfboard-img" alt="" /> : <div className="surfboard-img bg-[#111]" />}
+                    </div>
+                    <div className="flex-1 flex items-center justify-between">
+                      <span className="text-[14px] font-black uppercase tracking-tighter text-[#ff8c00]">{contact.name}</span>
+                      <div className={`w-2 h-2 rounded-full ${contact.status === 'online' ? 'bg-[#ff4500]' : 'bg-[#606a8d] opacity-30'}`} />
+                    </div>
                   </div>
-                  <div className="flex-1 flex items-center justify-between">
-                    <span className="text-[14px] font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#FF1493] to-[#4D00FF]">{contact.name}</span>
-                    <div className={`w-2 h-2 rounded-full ${contact.status === 'online' ? 'bg-gradient-to-r from-[#FF1493] to-[#4D00FF]' : 'bg-[#606a8d] opacity-30'}`} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1640,7 +1691,34 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {isEditingIntro && null}
       </AnimatePresence>
 
-      {/* Live contact chat panel */}
+      {/* Compact lava-orange chat dock — closed on login; no fake faces */}
+      <AnimatePresence>
+        {chatDockOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 220 }}
+            className="fixed bottom-4 right-4 z-[90] w-[min(100vw-1.5rem,360px)] h-[min(70vh,480px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
+          >
+            <Suspense fallback={<TabLoading />}>
+              <ClearPathChatroom
+                variant="panel"
+                initialRoomId="lobby"
+                title="ClearPath Chat"
+                subtitle="Live lobby"
+                showRoomSidebar={false}
+                accentColor="#FF4500"
+                onClose={() => setChatDockOpen(false)}
+                className="rounded-none h-full border-0 cp-chatroom-lava"
+                heightClass="h-full"
+              />
+            </Suspense>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Live contact chat panel (real contacts only) */}
       <AnimatePresence>
         {activeChat && (
           <motion.div 
@@ -1650,16 +1728,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
           >
-            <ClearPathChatroom
-              variant="panel"
-              initialRoomId="lobby"
-              title={activeChat.name}
-              subtitle="Direct trader channel"
-              showRoomSidebar={false}
-              accentColor={profile.borderA}
-              onClose={() => setActiveChat(null)}
-              className="rounded-none border-l h-full"
-            />
+            <Suspense fallback={<TabLoading />}>
+              <ClearPathChatroom
+                variant="panel"
+                initialRoomId="lobby"
+                title={activeChat.name}
+                subtitle="Direct trader channel"
+                showRoomSidebar={false}
+                accentColor="#FF4500"
+                onClose={() => setActiveChat(null)}
+                className="rounded-none border-l h-full cp-chatroom-lava"
+              />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>
