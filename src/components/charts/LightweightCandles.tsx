@@ -638,6 +638,7 @@ export function LightweightCandles({
 
         interval = setInterval(async () => {
           if (!active || !lastCandle) return;
+          if (document.visibilityState !== "visible") return;
 
           let livePrice: number | null = null;
           try {
