@@ -12,9 +12,12 @@ import { auth, getDb, loginAnonymously } from "../firebase";
 import GlobalNetworkGlobe from './GlobalNetworkGlobe';
 import { SurfBackground } from './SurfBackground';
 import { joinWaitlist } from "../appwrite";
+import { BOARD_ACCESS_CODE } from "../config/accessCodes";
 import { MediaGrid } from './MediaGrid';
 import ClearPathChatroom from './chat/ClearPathChatroom';
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
+import PrivateLoginDesk from './PrivateLoginDesk';
+import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -159,6 +162,13 @@ export default function Auth() {
   const [boardError, setBoardError] = useState('');
   const [boardSuccess, setBoardSuccess] = useState(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
+  const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
+  const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
+
+  const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
+    setPrivateLoginMode(mode);
+    setPrivateLoginOpen(true);
+  };
 
   // Demo presentation state
   const [demoOpen, setDemoOpen] = useState(false);
@@ -397,17 +407,35 @@ export default function Auth() {
     return () => clearInterval(cycle);
   }, [announcements.length]);
 
-  // Focus input automatically when Board Modal opens
-  useEffect(() => {
-    if (boardModalOpen && passcodeRef.current) {
-      setTimeout(() => passcodeRef.current?.focus(), 150);
-    }
-  }, [boardModalOpen]);
+  const boardDialogRef = useRef<HTMLDivElement>(null);
+  const demoDialogRef = useRef<HTMLDivElement>(null);
+  const tvDialogRef = useRef<HTMLDivElement>(null);
+  const ywcDialogRef = useRef<HTMLDivElement>(null);
+  const anyModalOpen =
+    boardModalOpen || demoOpen || ecosystemTvOpen || ecosystemYwcOpen || privateLoginOpen;
+
+  useAccessibleDialog(boardDialogRef, {
+    open: boardModalOpen,
+    onClose: () => setBoardModalOpen(false),
+    initialFocusRef: passcodeRef,
+  });
+  useAccessibleDialog(demoDialogRef, {
+    open: demoOpen,
+    onClose: () => setDemoOpen(false),
+  });
+  useAccessibleDialog(tvDialogRef, {
+    open: ecosystemTvOpen,
+    onClose: () => setEcosystemTvOpen(false),
+  });
+  useAccessibleDialog(ywcDialogRef, {
+    open: ecosystemYwcOpen,
+    onClose: () => setEcosystemYwcOpen(false),
+  });
 
   // Cryptographic passcode quick checks
   useEffect(() => {
     if (passcode.length === 6) {
-      if (passcode === '142879') {
+      if (passcode === BOARD_ACCESS_CODE) {
         handleBoardLoginSubmit();
       } else {
         setBoardError('BOARD ACCESS CODE REJECTED. UNAUTHORIZED CREDENTIAL IDENTIFIER.');
@@ -422,7 +450,7 @@ export default function Auth() {
     if (e) e.preventDefault();
     setBoardError('');
     
-    if (passcode === '142879') {
+    if (passcode === BOARD_ACCESS_CODE) {
       try {
         // ALWAYS write local bypass user FIRST so they can successfully login even offline/without firebase!
         const fallbackUser = {
@@ -522,34 +550,37 @@ export default function Auth() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block select-none">
-      
+    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
+      <a href="#main-content" className="cp-skip-link">
+        Skip to main content
+      </a>
+
       {/* GLOBAL HELPER COLOR STYLE INJECTIONS */}
       <style>{`
         :root {
           --cpt-black: #050505;
-          --cpt-pink: #FF1493;
           --cpt-cyan: #00FFFF;
           --cpt-purple: #B026FF;
           --cpt-white: #FFFFFF;
+          /* --cpt-pink / --cpt-orange owned by a11y prefs (High Contrast toggle) */
         }
         .text-neon-glow {
           text-shadow: 
-            0 0 10px #FF1493,
-            0 0 20px #FF1493,
+            0 0 10px var(--cpt-pink),
+            0 0 20px var(--cpt-pink),
             0 0 40px #B026FF,
             0 0 70px #00FFFF;
         }
         .border-neon {
-          border-color: rgba(255, 20, 147, 0.3);
-          box-shadow: 0 0 15px rgba(255, 20, 147, 0.1);
+          border-color: color-mix(in srgb, var(--cpt-pink) 30%, transparent);
+          box-shadow: 0 0 15px color-mix(in srgb, var(--cpt-pink) 10%, transparent);
         }
         .border-neon:hover {
           border-color: #00FFFF;
           box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
         }
         .gradient-bg {
-          background: linear-gradient(135deg, #FF1493 0%, #B026FF 50%, #00FFFF 100%);
+          background: linear-gradient(135deg, var(--cpt-pink) 0%, #B026FF 50%, #00FFFF 100%);
         }
       `}</style>
 
@@ -571,58 +602,90 @@ export default function Auth() {
 
       {/* ==========================================
           3. NAVIGATION HEADER
+          Brand + Private Login stay on row 1 (never clipped by link parade).
+          Site links wrap on a second row at desktop widths.
           ========================================== */}
-      <nav className="sticky top-0 z-40 bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Logo element matches specified clearpath branding icon */}
-          <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)]">
-            <ShieldCheck className="text-white w-5 h-5" />
+      <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
+      <nav
+        aria-label="Primary"
+        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-3 flex flex-col gap-2.5"
+      >
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 shrink">
+            {/* Logo element matches specified clearpath branding icon */}
+            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)] shrink-0" aria-hidden="true">
+              <ShieldCheck className="text-white w-5 h-5" />
+            </div>
+            <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-base sm:text-lg uppercase truncate">
+              CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
+            </span>
           </div>
-          <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-lg uppercase">
-            CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
-          </span>
+
+          {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('login')}
+            className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <Lock size={12} aria-hidden="true" />
+            Private Login
+          </button>
         </div>
 
-        {/* Dynamic Desktop Links */}
-        <div className="hidden lg:flex items-center gap-6">
-          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
+        {/* Secondary link row — wraps; Board Members lives here so it never competes with the CTA */}
+        <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pb-0.5">
+          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
             Trading × AI
           </a>
-          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">
+          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">
             About
           </a>
-          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Home</a>
-          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">Why ClearPath</a>
-          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-xs font-black uppercase tracking-widest">The Ecosystem</a>
-          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest">Soft Launch</a>
-          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
-            <BookOpen size={11} className="text-[#00FFFF]" /> ENCYCLOPEDIA OF FINANCE
+          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Home</a>
+          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">Why ClearPath</a>
+          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-[11px] font-black uppercase tracking-widest">The Ecosystem</a>
+          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Soft Launch</a>
+          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
+            <BookOpen size={11} className="text-[#00FFFF]" aria-hidden="true" /> Encyclopedia of Finance
           </a>
-          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-xs font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            <GraduationCap size={11} className="text-[#B026FF]" /> ClearPath Education
+          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
           </a>
-          <a href="#faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-xs font-black uppercase tracking-widest">FAQ</a>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <button 
+          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
+            UI Modes
+          </a>
+          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Learn</a>
+          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Guides</a>
+          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">FAQ</a>
+          <button
             type="button"
             onClick={() => setBoardModalOpen(true)}
-            className="px-3.5 py-1.5 sm:px-4 sm:py-2 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+            className="ml-auto px-3 py-1 border border-[#B026FF]/30 rounded-lg text-[11px] font-black uppercase tracking-widest text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
           >
-            <Lock size={12} className="text-[#B026FF]" />
-            <span className="hidden sm:inline">Board Members</span>
-            <span className="sm:hidden">Board</span>
+            <Lock size={11} className="text-[#B026FF]" aria-hidden="true" />
+            Board Members
           </button>
-          <a
-            href="#waitlist"
-            className="px-4 py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1"
+        </div>
+
+        {/* Mobile: Board Members still reachable without crowding Private Login */}
+        <div className="flex lg:hidden">
+          <button
+            type="button"
+            onClick={() => setBoardModalOpen(true)}
+            className="px-3 py-1.5 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
           >
-            RESERVE ACCOUNT
-          </a>
+            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
+            Board
+          </button>
         </div>
       </nav>
+      </header>
+
+      <main
+        id="main-content"
+        tabIndex={-1}
+        aria-hidden={anyModalOpen || undefined}
+        className="relative outline-none"
+      >
 
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
@@ -668,7 +731,7 @@ export default function Auth() {
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-950/80 border border-zinc-800/80 text-xs font-mono tracking-widest text-[#00FFFF] mb-8"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] animate-pulse" />
-          SOFT LAUNCH WAITLIST DIRECTORY RUNNING
+          PRIVATE MEMBER LOGIN ACTIVE
         </motion.div>
 
         {/* Glitch Headline Title */}
@@ -717,12 +780,13 @@ CLARITY BEFORE DECISIONS.`}
 
         {/* Interactive Buttons Container */}
         <div className="flex flex-col md:flex-row items-center gap-4 mt-10 w-full max-w-3xl mx-auto justify-center z-30">
-          <a
-            href="#waitlist"
-            className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('register')}
+            className="cpt-cta-gradient w-full md:w-auto px-6 py-4 text-xs font-black uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(176,38,255,0.4)] hover:shadow-[0_0_30px_rgba(176,38,255,0.6)] hover:scale-[1.02] transition-colors cursor-pointer text-center whitespace-nowrap"
           >
-            🚀 START LEARNING
-          </a>
+            CREATE PRIVATE ACCOUNT
+          </button>
           <a
             href="/encyclopedia"
             onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
@@ -885,11 +949,17 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF1493]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF1493]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF1493] font-black uppercase tracking-wider bg-[#FF1493]/5 px-3 py-1 rounded-full border border-[#FF1493]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF1493]/10 px-3 py-1 rounded-full border border-[#FF1493]/35"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
                   CPMS TV™ • LIVE STREAM
                 </span>
-                <span className="flex items-center gap-1.5 font-mono text-[8px] text-[#FF1493] font-extrabold uppercase bg-[#FF1493]/10 px-2.5 py-0.5 rounded-full border border-[#FF1493]/35 animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> 14,204 LIVE WATCHING
+                <span
+                  className="flex items-center gap-1.5 font-mono text-[8px] font-extrabold uppercase bg-[#FF1493]/15 px-2.5 py-0.5 rounded-full border border-[#FF1493]/40 animate-pulse"
+                  style={{ color: 'var(--cpt-text-pink)' }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true" /> 14,204 LIVE WATCHING
                 </span>
               </div>
 
@@ -901,9 +971,9 @@ Not the other way around.`}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.3)_50%)] bg-[size:100%_4px] pointer-events-none" />
 
                 {/* Receiver Info Bar */}
-                <div className="flex items-center justify-between text-[8px] text-zinc-500 border-b border-zinc-900/60 pb-2">
+                <div className="flex items-center justify-between text-[8px] text-zinc-300 border-b border-zinc-900/60 pb-2">
                   <span>HD 1080P STREAM</span>
-                  <span className="text-[#FF1493] font-black animate-pulse">● BROADCAST_SECURE</span>
+                  <span className="font-black animate-pulse" style={{ color: 'var(--cpt-text-pink)' }}>● BROADCAST_SECURE</span>
                 </div>
 
                 {/* Play Glass Overlay */}
@@ -917,28 +987,28 @@ Not the other way around.`}
                 <div className="py-2 flex-grow flex flex-col justify-end z-10">
                   {activeTvChannel === 'review' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Macro Direct</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         📡 Fed Repo Facilities Explained
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'liquidity' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Liquidity Feed</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🌊 Global Sovereign Debt Flows
-                      </h4>
+                      </h3>
                     </div>
                   )}
 
                   {activeTvChannel === 'classroom' && (
                     <div className="space-y-1 bg-black/75 p-2 rounded-lg border border-zinc-900/60 animate-fade-in-quick">
-                      <span className="text-[8px] text-zinc-500 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
-                      <h4 className="text-[11px] font-black text-white uppercase tracking-wider">
+                      <span className="text-[8px] text-zinc-300 uppercase block font-sans">CURRENT CHANNEL: Visual Room</span>
+                      <h3 className="text-tiny-heading font-black text-white tracking-wider">
                         🎓 Debunking Chart Clutter Masterclass
-                      </h4>
+                      </h3>
                     </div>
                   )}
                 </div>
@@ -952,7 +1022,7 @@ Not the other way around.`}
                       <div 
                         key={i} 
                         className="flex-1 bg-[#FF1493] rounded-t-[1px]" 
-                        style={{ height: `${val}%`, backgroundColor: '#FF1493' }} 
+                        style={{ height: `${val}%`, backgroundColor: 'var(--cpt-pink)' }} 
                       />
                     );
                   })}
@@ -969,6 +1039,7 @@ Not the other way around.`}
                   <button
                     key={b.id}
                     type="button"
+                    aria-pressed={activeTvChannel === b.id}
                     onClick={() => setActiveTvChannel(b.id as any)}
                     className={`px-1 py-2 sm:py-2.5 border border-zinc-800 rounded-xl text-[8px] font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                       activeTvChannel === b.id ? b.activeBg : `text-zinc-400 ${b.bg}`
@@ -985,8 +1056,8 @@ Not the other way around.`}
                   Join continuous masterclasses, central bank reports, and interactive visual streams. Learn the truth behind macro charts with live community presenters broadcasted direct to your browser interface.
                 </p>
                 <div className="bg-zinc-950/85 p-3 rounded-xl border border-zinc-900 flex justify-between items-center">
-                  <span className="text-[9px] text-zinc-500 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
-                  <span className="text-[9px] text-[#FF1493] font-mono font-black uppercase">SOVEREIGN COLLATERAL SHOCKS</span>
+                  <span className="text-[9px] text-zinc-300 font-mono font-bold uppercase">NEXT UP IN 15 MIN:</span>
+                  <span className="text-[9px] font-mono font-black uppercase" style={{ color: 'var(--cpt-text-pink)' }}>SOVEREIGN COLLATERAL SHOCKS</span>
                 </div>
               </div>
 
@@ -994,10 +1065,21 @@ Not the other way around.`}
               <div className="mt-8">
                 <button
                   type="button"
-                  onClick={() => setEcosystemTvOpen(true)}
-                  className="w-full py-4 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,20,147,0.25)] hover:shadow-[0_4px_35px_rgba(255,20,147,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem('clearpath_active_tab', 'CpmsApk');
+                      window.location.hash = 'CpmsApk';
+                    } catch { /* ignore */ }
+                    setEcosystemTvOpen(true);
+                  }}
+                  className="cpt-cta-pink w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-pink)',
+                    color: 'var(--cpt-cta-on-pink)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-pink) 25%, transparent)',
+                  }}
                 >
-                  <Tv size={14} /> TUNE IN NOW
+                  <Tv size={14} /> TUNE IN NOW — LIVE MARKETS
                 </button>
               </div>
             </div>
@@ -1019,10 +1101,13 @@ Not the other way around.`}
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF7B00]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#FF7B00]/10 transition-all duration-500" />
               
               <div className="flex justify-between items-center mb-6">
-                <span className="font-mono text-[9px] text-[#FF7B00] font-black uppercase tracking-wider bg-[#FF7B00]/5 px-3 py-1 rounded-full border border-[#FF7B00]/15">
+                <span
+                  className="font-mono text-[9px] font-black uppercase tracking-wider bg-[#FF7B00]/15 px-3 py-1 rounded-full border border-[#FF7B00]/40"
+                  style={{ color: 'var(--cpt-text-orange)' }}
+                >
                   COMMUNITIES • DISCOVER SWARMS
                 </span>
-                <span className="font-mono text-[8px] text-zinc-500 font-extrabold uppercase animate-pulse">
+                <span className="font-mono text-[8px] text-zinc-300 font-extrabold uppercase animate-pulse">
                   ONLINE HUB ACTIVE
                 </span>
               </div>
@@ -1035,7 +1120,8 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/15 border border-[#FF7B00]/35 text-[#FF7B00] text-[10px] font-black uppercase tracking-widest hover:bg-[#FF7B00] hover:text-white transition-all"
+                  className="mt-3 w-full py-3 rounded-xl bg-[#FF7B00]/20 border border-[#FF7B00]/45 text-[10px] font-black uppercase tracking-widest hover:bg-[var(--cpt-orange)] hover:text-white transition-all"
+                  style={{ color: 'var(--cpt-text-orange)' }}
                 >
                   Open Live Chat Lobby ↓
                 </button>
@@ -1045,14 +1131,17 @@ Not the other way around.`}
               <div className="mt-4 border-t border-zinc-900/60 pt-3 text-left">
                 <button
                   type="button"
+                  aria-expanded={ecosystemCommOpen}
+                  aria-controls="custom-swarm-seed-panel"
                   onClick={() => setEcosystemCommOpen(!ecosystemCommOpen)}
-                  className="text-[9px] font-mono font-bold text-zinc-500 hover:text-[#FF7B00] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="text-[9px] font-mono font-bold text-zinc-300 hover:text-[var(--cpt-text-orange)] uppercase tracking-widest flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   {ecosystemCommOpen ? '[-] CLOSE CUSTOM SEED PORT' : '[+] SPAWN CUSTOM SWARM NODE'}
                 </button>
                 
                 {ecosystemCommOpen && (
                   <motion.div 
+                    id="custom-swarm-seed-panel"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     className="mt-3 space-y-2 bg-black/40 border border-[#FF7B00]/15 p-2.5 rounded-xl text-left"
@@ -1098,12 +1187,12 @@ Not the other way around.`}
                 <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   Join direct communication swarms immediately. Tap in with sovereign macro networks across the world, exchange layout setups, share visual indicators, and learn together.
                 </p>
-                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-500 font-mono font-bold leading-none">
+                <div className="flex flex-col gap-1.5 pt-0.5 text-[11px] text-zinc-300 font-mono font-bold leading-none">
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> CRYPTOGRAPHIC VERIFIED CHATS
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> CRYPTOGRAPHIC VERIFIED CHATS
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-[#FF7B00]" /> FIRESTORE PERSISTENT GROUP SYNC
+                    <CheckSquare size={11} style={{ color: 'var(--cpt-text-orange)' }} aria-hidden="true" /> FIRESTORE PERSISTENT GROUP SYNC
                   </span>
                 </div>
               </div>
@@ -1113,7 +1202,12 @@ Not the other way around.`}
                 <button
                   type="button"
                   onClick={() => setBoardModalOpen(true)}
-                  className="w-full py-4 bg-[#FF7B00] hover:bg-[#FF7B00]/90 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 shadow-[0_4px_25px_rgba(255,123,0,0.25)] hover:shadow-[0_4px_35px_rgba(255,123,0,0.38)] cursor-pointer flex items-center justify-center gap-2"
+                  className="cpt-cta-orange w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: 'var(--cpt-orange)',
+                    color: 'var(--cpt-cta-on-orange)',
+                    boxShadow: '0 4px 25px color-mix(in srgb, var(--cpt-orange) 25%, transparent)',
+                  }}
                 >
                   <Users size={14} /> FIND MY PEOPLE
                 </button>
@@ -1488,10 +1582,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#FF1493]/10 hover:bg-[#FF1493]/25 border border-[#FF1493]/50 rounded-lg hover:shadow-[0_0_20px_rgba(255,20,147,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="fire-pink-text">RESERVE TIER ONE</span>
+                    <span className="fire-pink-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1529,10 +1624,11 @@ Not the other way around.`}
                     </ul>
                   </div>
                   <button 
-                    onClick={() => document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300"
+                    type="button"
+                    onClick={() => openPrivateLogin('register')}
+                    className="card-cta mt-6 w-full py-3 text-center text-xs font-black tracking-widest bg-[#00FFFF]/10 hover:bg-[#00FFFF]/25 border border-[#00FFFF]/50 rounded-lg hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all duration-300 cursor-pointer"
                   >
-                    <span className="neon-cyan-text">ENTER TIER TWO DRAWING</span>
+                    <span className="neon-cyan-text">CREATE PRIVATE ACCOUNT</span>
                   </button>
                 </article>
               </div>
@@ -1600,177 +1696,49 @@ Not the other way around.`}
       </section>
 
       {/* ==========================================
-          9. WAITLIST REGISTRATION FORM
+          9. PRIVATE ACCOUNT ENTRY
           ========================================== */}
-      <section id="waitlist" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
+      <section id="private-login" className="relative py-24 max-w-4xl mx-auto px-4 sm:px-8 z-20">
         <div className="text-center mb-12 space-y-3">
           <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.25em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15">
-            SECURE ENTRY
+            PRIVATE MEMBER ACCESS
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white uppercase">
-            Join the Waitlist
+            Your Private Login Desk
           </h2>
-          <p className="text-zinc-400 text-xs sm:text-sm max-w-sm mx-auto">
-            Lock in your soft launch clearance passcode now. Registration automatically saves with primary database integration.
+          <p className="text-zinc-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+            Every ClearPath member gets a private login screen. Create your account, then unlock your own terminal with your email and password — no shared reserve waitlist.
           </p>
         </div>
 
-        <div className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden" style={{ backgroundColor: '#050505' }}>
-          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl" />
+        <div
+          className="border border-[#00FFFF]/60 hover:border-[#00FFFF] rounded-[2.5rem] p-6 sm:p-10 shadow-[0_0_25px_rgba(0,255,255,0.18)] hover:shadow-[0_0_55px_rgba(0,255,255,0.55)] transition-all duration-300 relative overflow-hidden text-center space-y-6"
+          style={{ backgroundColor: '#050505' }}
+        >
+          <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {isSubmitted ? (
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-center space-y-6 py-6"
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('login')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-[#00E5FF]/40 bg-[#00E5FF]/10 text-[#00E5FF] text-xs font-black uppercase tracking-widest hover:bg-[#00E5FF]/20 transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              <div className="w-16 h-16 bg-[#00FFFF]/10 rounded-full flex items-center justify-center mx-auto border border-[#00FFFF]/35">
-                <UserCheck size={32} className="text-[#00FFFF] animate-bounce" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-[#00FFFF] uppercase tracking-wide">
-                  ✓ ACCOUNT ALLOCATION SECURED
-                </h3>
-                <p className="text-xs text-zinc-300 leading-relaxed max-w-md mx-auto">
-                  {emailSent
-                    ? 'Your allocation credentials have been saved and a confirmation email with your private activation key has been sent.'
-                    : 'Your allocation credentials have been saved. Copy your private activation key below — email delivery is not configured on this server.'}
-                </p>
-              </div>
-              {activationKey && (
-                <div className="bg-black/60 border border-[#00FFFF]/30 rounded-2xl p-5 max-w-sm mx-auto space-y-2">
-                  <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">Private Activation Key</div>
-                  <code className="text-xl font-black text-[#FF1493] font-mono tracking-wider block">{activationKey}</code>
-                </div>
-              )}
-              <button 
-                onClick={() => { setIsSubmitted(false); setActivationKey(''); }}
-                className="px-6 py-2 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white rounded-xl text-xs font-mono tracking-wider transition-all cursor-pointer uppercase font-bold"
-              >
-                Register another email
-              </button>
-            </motion.div>
-          ) : (
-            <form onSubmit={handleWaitlistSubmit} className="space-y-6">
-              
-              {submitError && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-4 rounded-2xl font-mono leading-relaxed text-center uppercase tracking-wide">
-                  ⚠️ Error: {submitError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* First Name */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    First Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="text"
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="e.g. Satoshi"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Email Address */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. satoshi@clearpathtrader.com"
-                      className="w-full bg-black/60 border border-zinc-800 focus:border-[#B026FF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#B026FF]/30 transition-all font-mono"
-                    />
-                  </div>
-                </div>
-
-                {/* Country Selection */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Country of Residence
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      required
-                      className="w-full bg-black border border-zinc-800 focus:border-[#00FFFF] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#00FFFF]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="">Select country...</option>
-                      {countries.map((c) => (
-                        <option key={c} value={c} className="bg-neutral-950 text-white">{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Experience Level Dropdown */}
-                <div className="space-y-2">
-                  <label className="block text-zinc-300 text-[10px] font-black uppercase tracking-widest font-mono">
-                    Trading Experience Level
-                  </label>
-                  <div className="relative">
-                    <HelpCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                    <select
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      className="w-full bg-black border border-zinc-800 focus:border-[#FF1493] rounded-xl py-3.5 pl-11 pr-4 text-[#FFFFFF] text-xs focus:ring-1 focus:ring-[#FF1493]/30 transition-all font-mono appearance-none"
-                    >
-                      <option value="Beginner" className="bg-neutral-950 text-white">Beginner (1-2 years or learning)</option>
-                      <option value="Intermediate" className="bg-neutral-950 text-white">Intermediate (3-5 years active)</option>
-                      <option value="Advanced" className="bg-neutral-950 text-white">Advanced (Institutional trader)</option>
-                    </select>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] hover:brightness-110 text-[#FFFFFF] font-black uppercase tracking-widest text-xs transition-all shadow-lg rounded-xl cursor-pointer flex items-center justify-center gap-2 font-mono"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
-                      <span>SECURE RESERVATION TRANSMITTING...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>RESERVE MY ACCOUNT</span>
-                      <ArrowRight size={13} />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Secure Node Info */}
-              <div className="text-center pt-2">
-                <p className="text-[10px] text-zinc-500 font-mono flex items-center justify-center gap-1">
-                  🔒 Appwrite waitlist pipeline — reservations stored in ClearPath TablesDB.
-                </p>
-              </div>
-
-            </form>
-          )}
-
+              <Lock size={14} />
+              Private Login
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('register')}
+              className="cpt-cta-gradient w-full sm:w-auto px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              Create Private Account
+              <ArrowRight size={14} />
+            </button>
+          </div>
+          <p className="relative z-10 text-[10px] text-zinc-300 font-mono">
+            Passwords are hashed on the server. Each desk opens only for its owner.
+          </p>
         </div>
       </section>
 
@@ -1801,19 +1769,25 @@ Not the other way around.`}
               >
                 <button
                   type="button"
+                  id={`faq-trigger-${i}`}
+                  aria-expanded={openFaq === i}
+                  aria-controls={`faq-panel-${i}`}
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full py-5 px-6 flex items-center justify-between text-left focus:outline-none hover:bg-neutral-900/20 cursor-pointer"
+                  className="w-full py-5 px-6 flex items-center justify-between text-left hover:bg-neutral-900/20 cursor-pointer focus-visible:bg-neutral-900/30"
                 >
                   <span className="text-sm font-bold text-[#FF4500] uppercase tracking-wide text-shadow-[0_0_8px_rgba(255,69,0,0.5)]">
                     {f.q}
                   </span>
-                  <span className="text-[#FF4500] text-lg font-bold">
+                  <span className="text-[#FF4500] text-lg font-bold" aria-hidden="true">
                     {openFaq === i ? '−' : '+'}
                   </span>
                 </button>
                 <AnimatePresence>
                   {openFaq === i && (
                     <motion.div
+                      id={`faq-panel-${i}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${i}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -1832,10 +1806,15 @@ Not the other way around.`}
         </div>
       </section>
 
+      </main>
+
       {/* ==========================================
           11. LEGAL DISCLAIMER FOOTER
           ========================================== */}
-      <footer className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center">
+      <footer
+        className="relative bg-transparent border-t border-zinc-900/40 py-12 px-4 sm:px-8 z-20 text-center"
+        aria-hidden={anyModalOpen || undefined}
+      >
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-2">
             <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-sm uppercase">
@@ -1848,6 +1827,30 @@ Not the other way around.`}
             </a>
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
+            </a>
+            <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Learn
+            </a>
+            <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Guides
+            </a>
+            <a href="/glossary" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Glossary
+            </a>
+            <a href="/accessibility" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
+              Accessibility
+            </a>
+            <a href="/faq" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              FAQ
+            </a>
+            <a href="/ui" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              UI Modes
+            </a>
+            <a href="/education" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
+              Education
+            </a>
+            <a href="/tools/position-size" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Position Size
             </a>
             <a href="/platform-scope.html" className="text-zinc-500 hover:text-zinc-300 transition-colors">
               Platform Scope
@@ -1884,28 +1887,35 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setBoardModalOpen(false)}
               className="absolute inset-0 bg-[#050505]/90 backdrop-blur-lg cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={boardDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="board-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-md relative z-10 shadow-2xl space-y-6 outline-none"
             >
               {/* Close Button Trigger */}
               <button
                 type="button"
                 onClick={() => setBoardModalOpen(false)}
+                aria-label="Close board verification"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="text-center space-y-2">
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   BOARD CREDENTIAL AUDIT
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                <h3 id="board-dialog-title" className="text-xl font-black text-white uppercase tracking-wide">
                   Board Verification
                 </h3>
                 <p className="text-[11px] text-zinc-400 max-w-xs mx-auto leading-normal">
@@ -1946,9 +1956,11 @@ Not the other way around.`}
                     <button
                       type="button"
                       onClick={() => setShowPasscode(!showPasscode)}
+                      aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                      aria-pressed={showPasscode}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors cursor-pointer"
                     >
-                      {showPasscode ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPasscode ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -1957,7 +1969,7 @@ Not the other way around.`}
                   <button
                     type="submit"
                     disabled={boardSuccess}
-                    className="w-full py-4 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
+                    className="cpt-cta-gradient w-full py-4 font-black uppercase tracking-widest text-xs rounded-xl shadow-lg cursor-pointer"
                   >
                     Verify Passcode
                   </button>
@@ -1990,27 +2002,34 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setDemoOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={demoDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="demo-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-zinc-800 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-2xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setDemoOpen(false)}
+                aria-label="Close showcase"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-1">
                 <span className="font-mono text-[9px] text-[#00FFFF] font-black uppercase tracking-[0.2em] bg-[#00FFFF]/5 px-3 py-1 rounded-full border border-[#00FFFF]/15 inline-block">
                   ACADEMIC PREVIEW DECK
                 </span>
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">
+                <h3 id="demo-dialog-title" className="text-xl font-black text-white uppercase tracking-wider">
                   ClearPath Trader Showcase
                 </h3>
                 <p className="text-xs text-zinc-400">
@@ -2063,13 +2082,16 @@ Not the other way around.`}
                 >
                   Close Showcase
                 </button>
-                <a
-                  href="#waitlist"
-                  onClick={() => setDemoOpen(false)}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01]"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDemoOpen(false);
+                    openPrivateLogin('register');
+                  }}
+                  className="cpt-cta-gradient px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] cursor-pointer"
                 >
-                  Reserve Soft Launch Account
-                </a>
+                  Create Private Account
+                </button>
               </div>
             </motion.div>
           </div>
@@ -2088,20 +2110,27 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemTvOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={tvDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="tv-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#FF1493]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-4xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemTvOpen(false)}
+                aria-label="Close TV broadcast deck"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="flex flex-col md:flex-row gap-6">
@@ -2120,7 +2149,7 @@ Not the other way around.`}
                     <span className="text-[10px] font-mono text-[#FF1493] uppercase tracking-widest font-black bg-[#FF1493]/5 border border-[#FF1493]/20 px-2 py-0.5 rounded-full inline-block">
                       {activeTvChannel === 'review' ? 'MACRO DIRECT' : activeTvChannel === 'liquidity' ? 'LIQUIDITY FEED' : 'VISUAL CLASSROOM'}
                     </span>
-                    <h3 className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
+                    <h3 id="tv-dialog-title" className="text-xl md:text-2xl font-sans font-black text-white uppercase tracking-tight">
                       {activeTvChannel === 'review' 
                         ? 'Federal Reserve Bond Buyback Rates Adjustments'
                         : activeTvChannel === 'liquidity'
@@ -2157,6 +2186,7 @@ Not the other way around.`}
                         <button
                           key={ch.id}
                           type="button"
+                          aria-pressed={activeTvChannel === ch.id}
                           onClick={() => setActiveTvChannel(ch.id as any)}
                           className={`w-full p-3 text-left border rounded-2xl transition-all cursor-pointer ${
                             activeTvChannel === ch.id 
@@ -2208,31 +2238,38 @@ Not the other way around.`}
               exit={{ opacity: 0 }}
               onClick={() => setEcosystemYwcOpen(false)}
               className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md cursor-pointer"
+              aria-hidden="true"
             />
 
             <motion.div
+              ref={ywcDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ywc-dialog-title"
+              tabIndex={-1}
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6"
+              className="bg-neutral-950 border border-[#B026FF]/30 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-3xl relative z-10 shadow-2xl space-y-6 outline-none"
             >
               <button
                 type="button"
                 onClick={() => setEcosystemYwcOpen(false)}
+                aria-label="Close Your World Connected terminal"
                 className="absolute top-5 right-5 text-zinc-500 hover:text-white cursor-pointer"
               >
-                <X size={18} />
+                <X size={18} aria-hidden="true" />
               </button>
 
               <div className="space-y-2">
                 <span className="font-mono text-[9px] text-[#B026FF] font-black uppercase tracking-[0.2em] bg-[#B026FF]/5 px-3 py-1 rounded-full border border-[#B026FF]/15 inline-block">
                   INFORMATION COSMIC ENGINE
                 </span>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">
+                <h3 id="ywc-dialog-title" className="text-2xl font-black text-white uppercase tracking-tight">
                   Your World Connected™ Terminal
                 </h3>
-                <p className="text-xs text-zinc-400">
-                  Adapt the structural density of financial streams to fit your cognitive pattern preferences.
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-md">
+                  Stop waiting for every app to load on mobile. Bring social media, online video, and magazines (fashion, cars, and more) into one hub — then move a live chart on the same screen so you can see both.
                 </p>
               </div>
 
@@ -2241,7 +2278,7 @@ Not the other way around.`}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-900 pb-4">
                   <div>
                     <span className="text-[10px] font-mono text-zinc-500 uppercase">COGNITIVE COMPASS PROFILE</span>
-                    <h4 className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</h4>
+                    <p className="text-sm font-black text-white uppercase mt-0.5">Adapt To My Mind Pattern</p>
                   </div>
                   <div className="flex bg-zinc-900 p-1 rounded-2xl border border-zinc-850">
                     {[
@@ -2251,6 +2288,7 @@ Not the other way around.`}
                       <button
                         key={st.id}
                         type="button"
+                        aria-pressed={adaptationMode === st.id}
                         onClick={() => setAdaptationMode(st.id as any)}
                         className={`px-4 py-2 sm:py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                           adaptationMode === st.id 
@@ -2276,14 +2314,14 @@ Not the other way around.`}
                     >
                       <div className="p-4 bg-zinc-900/60 border border-[#B026FF]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#00FFFF] font-extrabold uppercase">FED TREASURY ACTION</span>
-                        <h5 className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</h5>
+                        <p className="text-xs font-black text-white uppercase">US Treasury starts buyback of old bonds</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           This introduces cash into financial avenues, easing loan constraints and boosting long-term investment queues.
                         </p>
                       </div>
                       <div className="p-4 bg-zinc-900/60 border border-[#FF7B00]/20 rounded-2xl space-y-2">
                         <span className="text-[9px] font-mono text-[#FF7B00] font-extrabold uppercase">LIQUIDITY ALERT</span>
-                        <h5 className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</h5>
+                        <p className="text-xs font-black text-white uppercase">Sovereign Debt Reserves are Rising</p>
                         <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
                           Capital cash reserves show a strong tick up, creating a healthy backdrop for stock and coin indicators.
                         </p>
@@ -2333,6 +2371,12 @@ Not the other way around.`}
           </div>
         )}
       </AnimatePresence>
+
+      <PrivateLoginDesk
+        open={privateLoginOpen}
+        initialMode={privateLoginMode}
+        onClose={() => setPrivateLoginOpen(false)}
+      />
 
     </div>
   );

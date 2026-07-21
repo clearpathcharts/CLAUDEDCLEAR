@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -27,8 +28,32 @@ class ClearPathAPIError(RuntimeError):
     """Raised when a ClearPath API call fails."""
 
 
+def _assert_api_path(path: str) -> None:
+    if not path.startswith("/api/") or ".." in path or path.startswith("//"):
+        raise ClearPathAPIError(f"Refusing non-API path: {path}")
+
+
+def _assert_api_base(url: str) -> None:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme not in ("http", "https"):
+        raise ClearPathAPIError("API base must be http(s)")
+    # Local/dev + production ClearPath hosts only
+    allowed = {
+        "localhost",
+        "127.0.0.1",
+        "clearpathtrader.com",
+        "www.clearpathtrader.com",
+    }
+    if host not in allowed and not host.endswith(".clearpathtrader.com"):
+        raise ClearPathAPIError(f"API host not allowlisted: {host}")
+
+
 def _get(path: str, params: dict[str, Any] | None = None) -> Any:
-    url = f"{api_base()}{path}"
+    _assert_api_path(path)
+    base = api_base().rstrip("/")
+    _assert_api_base(base)
+    url = f"{base}{path}"
     try:
         resp = requests.get(url, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
         resp.raise_for_status()
@@ -40,7 +65,10 @@ def _get(path: str, params: dict[str, Any] | None = None) -> Any:
 
 
 def _post(path: str, payload: dict[str, Any]) -> Any:
-    url = f"{api_base()}{path}"
+    _assert_api_path(path)
+    base = api_base().rstrip("/")
+    _assert_api_base(base)
+    url = f"{base}{path}"
     try:
         resp = requests.post(url, json=payload, timeout=REQUEST_TIMEOUT_SECONDS)
         resp.raise_for_status()

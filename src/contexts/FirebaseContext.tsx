@@ -3,6 +3,7 @@ import { User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, query, collection, orderBy, limit, updateDoc, deleteDoc, addDoc } from '../firebase';
 import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase';
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
+import { clearPrivateSession, getStoredPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
 
 interface FirebaseContextType {
   user: User | null;
@@ -65,6 +66,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     if (typeof localStorage !== 'undefined') {
       try {
+        const privateSession = getStoredPrivateSession();
+        if (privateSession) return privateSession as unknown as User;
         const localUser = localStorage.getItem('cp_local_bypass_user');
         if (localUser) {
           return JSON.parse(localUser);
@@ -73,7 +76,28 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(defaultUserProfile);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const privateSession = getStoredPrivateSession();
+    let savedImages: { photoURL?: string; coverURL?: string } = {};
+    try {
+      savedImages = JSON.parse(localStorage.getItem('clearpath_user_images') || '{}');
+    } catch {}
+    if (privateSession) {
+      return {
+        ...defaultUserProfile,
+        uid: privateSession.uid,
+        email: privateSession.email,
+        displayName: privateSession.displayName,
+        photoURL: savedImages.photoURL || '',
+        coverURL: savedImages.coverURL || '',
+      };
+    }
+    return {
+      ...defaultUserProfile,
+      photoURL: savedImages.photoURL || '',
+      coverURL: savedImages.coverURL || '',
+    };
+  });
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [analysisEntries, setAnalysisEntries] = useState<AnalysisEntry[]>(() => {
@@ -116,6 +140,12 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       } else {
         if (typeof localStorage !== 'undefined') {
           try {
+            const privateSession = getStoredPrivateSession();
+            if (privateSession) {
+              setUser(privateSession as unknown as User);
+              setLoading(false);
+              return;
+            }
             const localUser = localStorage.getItem('cp_local_bypass_user');
             if (localUser) {
               setUser(JSON.parse(localUser));
@@ -159,9 +189,75 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       aboutContent,
       quotaExceeded,
       retryConnection: async () => {},
-      updateProfile: async () => {},
-      updateUserImages: async () => {},
-      updateIntro: async () => {},
+      updateProfile: async (updates: Partial<UserProfile>) => {
+        setUserProfile((prev) => {
+          const next = { ...(prev || defaultUserProfile), ...updates };
+          try {
+            localStorage.setItem(
+              'clearpath_user_images',
+              JSON.stringify({ photoURL: next.photoURL || '', coverURL: next.coverURL || '' })
+            );
+          } catch {}
+          return next;
+        });
+        const uid = user?.uid;
+        if (!uid) return;
+        try {
+          const { updateBasicProfile } = await import('../services/profileService');
+          await updateBasicProfile(uid, {
+            displayName: updates.displayName,
+            bio: updates.intro?.bio,
+            avatarUrl: updates.photoURL,
+            coverUrl: updates.coverURL,
+          });
+        } catch (err) {
+          console.warn('[FirebaseContext] Cloud profile sync skipped:', err);
+        }
+      },
+      updateUserImages: async (updates: { avatar?: string; cover?: string }) => {
+        const photoURL = updates.avatar;
+        const coverURL = updates.cover;
+        setUserProfile((prev) => {
+          const base = prev || defaultUserProfile;
+          const next = {
+            ...base,
+            photoURL: photoURL !== undefined ? photoURL : base.photoURL,
+            coverURL: coverURL !== undefined ? coverURL : base.coverURL,
+          };
+          try {
+            localStorage.setItem(
+              'clearpath_user_images',
+              JSON.stringify({ photoURL: next.photoURL || '', coverURL: next.coverURL || '' })
+            );
+          } catch {}
+          return next;
+        });
+        const uid = user?.uid;
+        const payload: Record<string, string> = {};
+        if (uid) payload.uid = uid;
+        if (photoURL !== undefined) payload.avatarUrl = photoURL;
+        if (coverURL !== undefined) payload.coverUrl = coverURL;
+        try {
+          const { saveProfileToServer } = await import('../api/profileApi');
+          const result = await saveProfileToServer(payload);
+          if (result.ok) return;
+        } catch (err) {
+          console.warn('[FirebaseContext] Server image sync skipped:', err);
+        }
+        if (!uid) return;
+        try {
+          const { updateBasicProfile } = await import('../services/profileService');
+          const fsPayload: Record<string, string> = {};
+          if (photoURL !== undefined) fsPayload.avatarUrl = photoURL;
+          if (coverURL !== undefined) fsPayload.coverUrl = coverURL;
+          await updateBasicProfile(uid, fsPayload);
+        } catch (err) {
+          console.warn('[FirebaseContext] Cloud image sync skipped (local save kept):', err);
+        }
+      },
+      updateIntro: async (intro: { bio: string; location: string; company: string }) => {
+        setUserProfile((prev) => ({ ...(prev || defaultUserProfile), intro }));
+      },
       updateStatuses: async () => {},
       createPost: async () => {},
       toggleLike: async () => {},
@@ -204,6 +300,11 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       sendMessage: async () => {},
       requireVerified: () => true,
       logout: async () => {
+        try {
+          await logoutPrivateAccount();
+        } catch {
+          clearPrivateSession();
+        }
         if (typeof localStorage !== 'undefined') {
           try {
             localStorage.removeItem('cp_local_bypass_user');
@@ -214,17 +315,14 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         }
         if (typeof window !== 'undefined') {
           try {
-            const url = new URL(window.location.href);
-            url.searchParams.set('tab', 'Discovery');
-            url.hash = 'Discovery';
-            window.history.pushState(null, '', url.toString());
-            window.location.href = url.origin + url.pathname + '?tab=Discovery#Discovery';
+            window.location.href = '/';
           } catch (e) {
             window.location.reload();
           }
         }
       },
       purgeAuthCache: () => {
+        clearPrivateSession();
         if (typeof localStorage !== 'undefined') {
           try {
             localStorage.clear();

@@ -1,6 +1,6 @@
 {
-  "name": "Clear Path Trader",
-  "short_name": "CP Trader",
+  "name": "Clear Path Markets Science",
+  "short_name": "ClearPath",
   "description": "Professional Master Pattern Trading Platform",
   "start_url": "/",
   "display": "standalone",
@@ -9,14 +9,28 @@
   "theme_color": "#0b0e11",
   "icons": [
     {
-      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=clearpath&backgroundColor=4D00FF",
+      "src": "/favicon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=clearpath&backgroundColor=4D00FF",
+      "src": "/favicon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1280x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

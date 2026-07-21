@@ -5,7 +5,7 @@ import {
   PineProgram,
   PineStmt,
   PineCallArg,
-} from '../pine/ast';
+} from '../pine-legacy/ast';
 import {
   RirAssignStmt,
   RirExpr,

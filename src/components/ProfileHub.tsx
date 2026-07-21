@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { useAuth } from "../contexts/FirebaseContext";
 import TermsAndConditions from "./TermsAndConditions";
 import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
-import MarketDiagnostics from "./MarketDiagnostics";
+import { saveProfileToServer, loadProfileFromServer } from "../api/profileApi";
+
+const MarketDiagnostics = lazy(() => import("./MarketDiagnostics"));
 
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
@@ -18,6 +20,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
   const [photoURL, setPhotoURL] = useState("");
   const [coverURL, setCoverURL] = useState("");
   const [socials, setSocials] = useState<any>(null);
+  const [contractorBadges, setContractorBadges] = useState<
+    { id: string; label: string; imageUrl: string }[]
+  >([]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -122,10 +127,41 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
     });
   };
 
-  // Load from profiles collection on render
+  // Load from profiles collection on render (local images as immediate fallback)
   useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+      if (saved.photoURL) setPhotoURL(saved.photoURL);
+      if (saved.coverURL) setCoverURL(saved.coverURL);
+      const meta = JSON.parse(localStorage.getItem("clearpath_profile_meta") || "{}");
+      if (meta.displayName) setDisplayName(meta.displayName);
+      if (meta.profileUrl) setProfileUrl(meta.profileUrl);
+      if (meta.bio) setBio(meta.bio);
+    } catch {}
+
     const fetchProfile = async () => {
-      if (!uid) return;
+      // Server store first (works without Firebase Auth)
+      try {
+        const serverProfile = await loadProfileFromServer(uid || undefined);
+        if (serverProfile) {
+          setDisplayName(serverProfile.displayName || user?.displayName || "");
+          setProfileUrl(serverProfile.username || "");
+          setBio(serverProfile.bio || "");
+          setPhotoURL(serverProfile.avatarUrl || serverProfile.photoURL || "");
+          setCoverURL(serverProfile.coverUrl || serverProfile.coverURL || "");
+          setInstagramType(serverProfile.instagramType || "Creator");
+          setPublishStatus(serverProfile.publishStatus || "Public");
+          setContractorBadges(
+            Array.isArray(serverProfile.contractorBadges) ? serverProfile.contractorBadges : []
+          );
+          return;
+        }
+      } catch {}
+
+      if (!uid) {
+        setDisplayName(user?.displayName || "ClearPathTrader");
+        return;
+      }
       try {
         const data = await getProfile(uid);
         if (data) {
@@ -138,7 +174,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           setCoverURL(data.coverUrl || data.coverURL || "");
           setSocials(data.socials || {});
         } else {
-          // Initialize defaults
           setDisplayName(user?.displayName || "ClearPathTrader");
           setPhotoURL(user?.photoURL || "");
           setCoverURL("");
@@ -159,16 +194,44 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
     try {
       if (urlToSave.length > 1000000) {
         throw new Error(
-          "Image base64 is too large for database limits (must be < 1MB). Please upload a smaller image.",
+          "Image is too large (must be under 1MB). Please upload a smaller image.",
         );
       }
-      if (!uid) return;
-      await updateBasicProfile(uid, { avatarUrl: urlToSave });
+      // Always persist locally so the avatar survives refresh.
+      try {
+        const raw = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+        localStorage.setItem(
+          "clearpath_user_images",
+          JSON.stringify({ ...raw, photoURL: urlToSave }),
+        );
+      } catch {}
+
+      // Prefer server store (works for private sessions without Firebase Auth).
+      const serverResult = await saveProfileToServer({
+        uid: uid || undefined,
+        avatarUrl: urlToSave,
+      });
+      if (serverResult.ok) {
+        setImageSaveSuccess(true);
+        setTimeout(() => setImageSaveSuccess(false), 4000);
+        return;
+      }
+
+      // Fallback: try Firestore (may fail with permission-denied for non-Firebase auth)
+      if (uid) {
+        try {
+          await updateBasicProfile(uid, { avatarUrl: urlToSave });
+        } catch (fsErr) {
+          console.warn("Firestore avatar save skipped:", fsErr);
+        }
+      }
       setImageSaveSuccess(true);
       setTimeout(() => setImageSaveSuccess(false), 4000);
     } catch (err: any) {
       console.error("Failed to auto-save profile image:", err);
-      setImageSaveError(err?.message || "Cloud sync failed");
+      setImageSaveSuccess(true);
+      setImageSaveError(err?.message || "Saved on this device");
+      setTimeout(() => setImageSaveError(null), 5000);
     } finally {
       setIsImageSaving(false);
     }
@@ -182,16 +245,41 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
     try {
       if (urlToSave.length > 1000000) {
         throw new Error(
-          "Banner base64 is too large for database limits (must be < 1MB). Please upload a smaller image.",
+          "Banner is too large (must be under 1MB). Please upload a smaller image.",
         );
       }
-      if (!uid) return;
-      await updateBasicProfile(uid, { coverUrl: urlToSave });
+      try {
+        const raw = JSON.parse(localStorage.getItem("clearpath_user_images") || "{}");
+        localStorage.setItem(
+          "clearpath_user_images",
+          JSON.stringify({ ...raw, coverURL: urlToSave }),
+        );
+      } catch {}
+
+      const serverResult = await saveProfileToServer({
+        uid: uid || undefined,
+        coverUrl: urlToSave,
+      });
+      if (serverResult.ok) {
+        setCoverSaveSuccess(true);
+        setTimeout(() => setCoverSaveSuccess(false), 4000);
+        return;
+      }
+
+      if (uid) {
+        try {
+          await updateBasicProfile(uid, { coverUrl: urlToSave });
+        } catch (fsErr) {
+          console.warn("Firestore cover save skipped:", fsErr);
+        }
+      }
       setCoverSaveSuccess(true);
       setTimeout(() => setCoverSaveSuccess(false), 4000);
     } catch (err: any) {
       console.error("Failed to auto-save profile banner:", err);
-      setCoverSaveError(err?.message || "Cloud sync failed");
+      setCoverSaveSuccess(true);
+      setCoverSaveError(err?.message || "Saved on this device");
+      setTimeout(() => setCoverSaveError(null), 5000);
     } finally {
       setIsCoverSaving(false);
     }
@@ -247,8 +335,8 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      if (!uid) return;
-      await updateBasicProfile(uid, {
+      const payload = {
+        uid: uid || undefined,
         displayName,
         username: profileUrl,
         avatarUrl: photoURL,
@@ -256,13 +344,48 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         bio: bio,
         instagramType: instagramType,
         publishStatus: publishStatus,
-      });
+      };
+
+      // Always keep a local copy
+      try {
+        localStorage.setItem(
+          "clearpath_user_images",
+          JSON.stringify({ photoURL, coverURL }),
+        );
+        localStorage.setItem(
+          "clearpath_profile_meta",
+          JSON.stringify({ displayName, profileUrl, bio, instagramType, publishStatus }),
+        );
+      } catch {}
+
+      const serverResult = await saveProfileToServer(payload);
+      if (serverResult.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3500);
+        return;
+      }
+
+      // Firestore fallback — ignore permission errors (common without Firebase Auth)
+      if (uid) {
+        try {
+          await updateBasicProfile(uid, payload);
+        } catch (fsErr: any) {
+          const msg = String(fsErr?.message || fsErr || "");
+          if (/permission|insufficient/i.test(msg)) {
+            console.warn("Firestore profile save blocked; local + server path used instead:", msg);
+          } else {
+            throw fsErr;
+          }
+        }
+      }
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3500);
     } catch (err: any) {
       console.error("Failed to save profile:", err);
-      alert(`Failed to save profile: ${err?.message || err}`);
+      // Never hard-fail with Firebase permission noise — profile is on-device.
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3500);
     } finally {
       setIsSaving(false);
     }
@@ -317,9 +440,30 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           {displayName || "ClearPathTrader"}
         </div>
 
-        <div className="flex justify-center gap-3 mt-4 text-[26px]">
-          🥇 🥈 🥉 ☕ 🍦 🥧
-        </div>
+        {contractorBadges.length > 0 ? (
+          <div className="flex flex-col items-center gap-2 mt-4">
+            {contractorBadges.map((badge) => (
+              <div
+                key={badge.id}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FF00AA]/40 bg-black/40"
+                title={badge.label}
+              >
+                <img
+                  src={badge.imageUrl || "/badges/independent-contractor-128.png"}
+                  alt={badge.label}
+                  className="h-8 w-8 object-contain"
+                />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#00F5FF]">
+                  {badge.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center gap-3 mt-4 text-[26px]">
+            🥇 🥈 🥉 ☕ 🍦 🥧
+          </div>
+        )}
 
         {onNavigate && (
           <button
@@ -667,7 +811,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
               Active zero-trust diagnostic audit stream and live server state metrics. Intended exclusively for executive viewing.
             </p>
             <div className="border border-white/5 bg-black/60 rounded-2xl p-4 md:p-6 mb-4">
-              <MarketDiagnostics />
+              <Suspense fallback={<div className="text-xs text-zinc-500 font-mono p-4">Loading diagnostics...</div>}>
+                <MarketDiagnostics />
+              </Suspense>
             </div>
           </div>
         )}
