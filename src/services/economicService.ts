@@ -1,15 +1,43 @@
-import { EconomicEvent } from '../types';
+/** Economic news item from the live wire (not fabricated calendar rows). */
+export interface EconomicNewsItem {
+  title: string;
+  source: string;
+  category?: string;
+  pubDate?: string;
+  link?: string;
+  description?: string;
+}
 
-// Mock/Proxy for TradingEconomics or similar
-export async function fetchEconomicCalendar(): Promise<EconomicEvent[]> {
-  // In a real app, you'd fetch from an API. 
-  // We'll return high-quality mock data focusing on the "desc" requirement.
-  
-  return [
-    { event: "Non-Farm Payrolls", country: "USD", impact: "High", date: "2024-05-03 12:30", forecast: "243K", actual: "175K", previous: "315K" },
-    { event: "Unemployment Rate", country: "USD", impact: "High", date: "2024-05-03 12:30", forecast: "3.8%", actual: "3.9%", previous: "3.8%" },
-    { event: "CPI m/m", country: "USD", impact: "High", date: "2024-05-15 12:30", forecast: "0.3%", previous: "0.4%" },
-    { event: "ECB Interest Rate Decision", country: "EUR", impact: "High", date: "2024-06-06 12:15", forecast: "4.25%", previous: "4.50%" },
-    { event: "S&P Global Services PMI", country: "GBP", impact: "Medium", date: "2024-05-03 08:30", actual: "55.0", previous: "53.1" }
-  ];
+/**
+ * Economic news — real headlines only via `/api/economic/news`.
+ * Never invents CPI/NFP/Fed calendar rows or confidence scores.
+ */
+export async function fetchEconomicNews(): Promise<EconomicNewsItem[]> {
+  try {
+    const res = await fetch('/api/economic/news');
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+    return data
+      .map((item: Record<string, unknown>) => ({
+        title: String(item.title ?? ''),
+        source: String(item.source ?? item.source_id ?? 'Wire'),
+        category: item.category ? String(item.category) : undefined,
+        pubDate: item.pubDate
+          ? String(item.pubDate)
+          : item.published_at
+            ? String(item.published_at)
+            : undefined,
+        link: item.link ? String(item.link) : item.url ? String(item.url) : undefined,
+        description: item.description ? String(item.description) : undefined,
+      }))
+      .filter((n) => n.title.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** @deprecated Prefer fetchEconomicNews — kept for call sites that still import the old name. */
+export async function fetchEconomicCalendar(): Promise<EconomicNewsItem[]> {
+  return fetchEconomicNews();
 }
