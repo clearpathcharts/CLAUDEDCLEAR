@@ -85,10 +85,11 @@ export const InstagramSignals: React.FC = React.memo(() => {
             <button 
               type="button" 
               onClick={handleLike} 
-              aria-label="Like"
+              aria-label={hasLiked ? 'Unlike' : 'Like'}
+              aria-pressed={hasLiked}
               className="text-zinc-400 hover:text-[#ff1493] transition-colors cursor-pointer active:scale-90"
             >
-              <Heart size={14} className={hasLiked ? "fill-[#ff1493] text-[#ff1493]" : ""} />
+              <Heart size={14} className={hasLiked ? "fill-[#ff1493] text-[#ff1493]" : ""} aria-hidden="true" />
             </button>
             <button type="button" aria-label="Comment" className="text-zinc-400 hover:text-white transition-colors">
               <MessageCircle size={14} />
@@ -100,11 +101,12 @@ export const InstagramSignals: React.FC = React.memo(() => {
 
           <button 
             type="button" 
-            aria-label="Bookmark"
+            aria-label={hasBookmarked ? 'Remove bookmark' : 'Bookmark'}
+            aria-pressed={hasBookmarked}
             onClick={() => setHasBookmarked(!hasBookmarked)}
             className="text-zinc-400 hover:text-[#00ffff] transition-colors cursor-pointer active:scale-95"
           >
-            <Bookmark size={14} className={hasBookmarked ? "fill-[#00ffff] text-[#00ffff]" : ""} />
+            <Bookmark size={14} className={hasBookmarked ? "fill-[#00ffff] text-[#00ffff]" : ""} aria-hidden="true" />
           </button>
         </div>
 

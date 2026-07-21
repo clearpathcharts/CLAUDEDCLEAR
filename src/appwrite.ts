@@ -18,18 +18,15 @@ export type WaitlistPayload = {
 export type WaitlistResult = {
   rowId: string;
   passcode: string;
+  emailSent?: boolean;
+  backend: 'appwrite' | 'api';
 };
 
-function requireConfig() {
-  if (!projectId || projectId === 'YOUR_PROJECT_ID') {
-    throw new Error(
-      'Appwrite is not configured. Set VITE_APPWRITE_PROJECT_ID (and endpoint) in .env, then restart the dev server.'
-    );
-  }
+function isAppwriteConfigured(): boolean {
+  return Boolean(projectId && projectId !== 'YOUR_PROJECT_ID' && !endpoint.includes('<REGION>'));
 }
 
 function getClient() {
-  requireConfig();
   return new Client().setEndpoint(endpoint).setProject(projectId);
 }
 
@@ -49,12 +46,32 @@ function isDuplicateError(err: unknown): boolean {
 }
 
 /**
- * Soft-launch waitlist signup → Appwrite TablesDB.
- * Uses create-only permissions (no public reads) so emails stay private.
- * Duplicate emails rely on the unique index on emailAddress.
- * Country caps (15k) should be enforced later via an Appwrite Function.
+ * Server fallback: Express /api/registrations/waitlist
+ * (Firebase Admin when credentials exist, else local JSON under data/registrations).
  */
-export async function joinWaitlist(payload: WaitlistPayload): Promise<WaitlistResult> {
+async function joinWaitlistViaApi(payload: WaitlistPayload): Promise<WaitlistResult> {
+  const res = await fetch('/api/registrations/waitlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await res.json().catch(() => ({} as Record<string, unknown>));
+  if (!res.ok) {
+    throw new Error(
+      String(body.error || body.message || `Waitlist registration failed (${res.status})`)
+    );
+  }
+
+  return {
+    rowId: String(body.registrationId || ''),
+    passcode: String(body.activationKey || ''),
+    emailSent: Boolean(body.emailSent),
+    backend: 'api',
+  };
+}
+
+async function joinWaitlistViaAppwrite(payload: WaitlistPayload): Promise<WaitlistResult> {
   const tables = getTables();
   const passcode = makePasscode();
 
@@ -78,6 +95,8 @@ export async function joinWaitlist(payload: WaitlistPayload): Promise<WaitlistRe
     return {
       rowId: row.$id,
       passcode,
+      emailSent: false,
+      backend: 'appwrite',
     };
   } catch (err) {
     if (isDuplicateError(err)) {
@@ -87,10 +106,33 @@ export async function joinWaitlist(payload: WaitlistPayload): Promise<WaitlistRe
   }
 }
 
+/**
+ * Soft-launch waitlist signup.
+ * Prefers Appwrite TablesDB when configured; otherwise uses the ClearPath API
+ * (Firestore Admin / local file) so the landing page still works.
+ */
+export async function joinWaitlist(payload: WaitlistPayload): Promise<WaitlistResult> {
+  if (!isAppwriteConfigured()) {
+    return joinWaitlistViaApi(payload);
+  }
+
+  try {
+    return await joinWaitlistViaAppwrite(payload);
+  } catch (err) {
+    // Config present but cloud call failed — keep soft-launch alive via API.
+    if (isDuplicateError(err) || String((err as Error)?.message || '').includes('already on the ClearPath')) {
+      throw err;
+    }
+    console.warn('[waitlist] Appwrite failed, falling back to /api/registrations/waitlist:', err);
+    return joinWaitlistViaApi(payload);
+  }
+}
+
 export const appwriteConfig = {
   endpoint,
   projectId,
   databaseId,
   waitlistTableId,
   countryCap: COUNTRY_CAP,
+  configured: isAppwriteConfigured(),
 };

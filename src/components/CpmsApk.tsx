@@ -36,7 +36,7 @@ import {
   CPMS_FOUNDER_EMAIL,
   LAUNCH_FEATURED_VIDEO_ID,
   offlineChannelItems,
-  cinemaYoutubeEmbed,
+  normalizeCinemaVideos,
 } from '../cpms/cpmsCatalog';
 import { bindVideoSource } from '../lib/cpms/hlsPlayer';
 import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
@@ -90,7 +90,6 @@ export default function CpmsApk() {
   const [isPlaybackFinished, setIsPlaybackFinished] = useState<boolean>(false);
   const [hasAutoLaunched, setHasAutoLaunched] = useState<boolean>(false);
   const [streamError, setStreamError] = useState<string | null>(null);
-  const [useYoutubeFallback, setUseYoutubeFallback] = useState<boolean>(false);
 
   // CHECKS IF USER IS GIVEN ACCESS TO CABINET CREATION
   // SECURITY: locked to the founder's real account only. No client-side bypass exists anymore.
@@ -114,7 +113,7 @@ export default function CpmsApk() {
 
   // Launch-ready catalog: show financial streams immediately, sync Firestore in background.
   useEffect(() => {
-    setVideos(SAMPLE_LIBRARY_VIDEOS);
+    setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
     setChannels(offlineChannelItems());
     setLoadingVideos(false);
     setLoadingChannels(false);
@@ -129,19 +128,19 @@ export default function CpmsApk() {
       if (snapshot.empty) {
         // Firestore empty — keep bundled catalog; attempt server seed only when founder is signed in.
         if (isUserAuthorized()) seedDbWithVideos();
-        setVideos(SAMPLE_LIBRARY_VIDEOS);
+        setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
         setLoadingVideos(false);
       } else {
         const list: CpmsVideoItem[] = [];
         snapshot.forEach((docSnap) => {
           list.push({ id: docSnap.id, ...docSnap.data() } as CpmsVideoItem);
         });
-        setVideos(list.length > 0 ? list : SAMPLE_LIBRARY_VIDEOS);
+        setVideos(normalizeCinemaVideos(list.length > 0 ? list : SAMPLE_LIBRARY_VIDEOS));
         setLoadingVideos(false);
       }
     }, (error) => {
       console.warn('Dynamic cloud sync disabled, using bundled launch catalog:', error);
-      setVideos(SAMPLE_LIBRARY_VIDEOS);
+      setVideos(normalizeCinemaVideos(SAMPLE_LIBRARY_VIDEOS));
       setLoadingVideos(false);
     });
 
@@ -217,7 +216,6 @@ export default function CpmsApk() {
     if (!featured) return;
     setSelectedVideo(featured);
     setIsMuted(true);
-    setUseYoutubeFallback(!featured.videoUrl && !!featured.youtubeVideoId);
     setHasAutoLaunched(true);
   }, [videos, hasAutoLaunched]);
 
@@ -281,6 +279,7 @@ export default function CpmsApk() {
   }, [volume, isMuted, selectedVideo]);
 
   // HLS / progressive stream binding (cleans up on video change or unmount)
+  // Direct streams only — YouTube embeds are not used (they freeze the cinema player).
   useEffect(() => {
     const url = selectedVideo?.videoUrl;
     const el = videoRef.current;
@@ -288,13 +287,11 @@ export default function CpmsApk() {
 
     if (!selectedVideo) return;
 
-    // YouTube-only items (tastylive, Schwab) use iframe — no HTML5 bind.
     if (!url?.trim()) {
-      setUseYoutubeFallback(!!selectedVideo.youtubeVideoId);
+      setStreamError('No direct stream URL for this channel. Pick another broadcast.');
       return;
     }
 
-    setUseYoutubeFallback(false);
     if (!el) return;
 
     setCurrentTime(0);
@@ -308,22 +305,17 @@ export default function CpmsApk() {
         setIsPlaybackFinished(false);
       },
       onError: (message) => {
-        console.warn('[ClearPath Cinema] HLS error, trying YouTube fallback:', message);
-        if (selectedVideo.youtubeVideoId) {
-          setUseYoutubeFallback(true);
-        } else {
-          setStreamError('Live stream temporarily unavailable. Try another channel.');
-        }
+        console.warn('[ClearPath Cinema] HLS error:', message);
+        setStreamError('Live stream temporarily unavailable. Try Bloomberg TV or another channel.');
       },
     });
 
     return cleanup;
-  }, [selectedVideo?.id, selectedVideo?.videoUrl, selectedVideo?.youtubeVideoId]);
+  }, [selectedVideo?.id, selectedVideo?.videoUrl]);
 
   const openVideo = (item: VideoItem) => {
     setSelectedVideo(item);
     setStreamError(null);
-    setUseYoutubeFallback(!item.videoUrl?.trim() && !!item.youtubeVideoId);
     setIsMuted(item.isLive ?? false);
     addToContinueWatching(item);
   };
@@ -1182,7 +1174,7 @@ export default function CpmsApk() {
                 </button>
               </div>
 
-              {/* CINEMATIC PLAYER — HLS/MP4 or official YouTube live embed */}
+              {/* CINEMATIC PLAYER — direct HLS/MP4 only (no YouTube) */}
               <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden border-b border-white/5 group">
 
                 {isMuted && selectedVideo.isLive && (
@@ -1201,15 +1193,7 @@ export default function CpmsApk() {
                   </div>
                 )}
 
-                {useYoutubeFallback && selectedVideo.youtubeVideoId ? (
-                  <iframe
-                    src={cinemaYoutubeEmbed(selectedVideo, true) ?? undefined}
-                    className="w-full h-full"
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    title={selectedVideo.title}
-                  />
-                ) : selectedVideo.videoUrl?.trim() ? (
+                {selectedVideo.videoUrl?.trim() ? (
                   <video
                     ref={videoRef}
                     autoPlay

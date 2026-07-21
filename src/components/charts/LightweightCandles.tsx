@@ -10,6 +10,7 @@ import {
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
+import { intensifyCandleColors } from "../../lib/charts/intensifyColor";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
@@ -19,8 +20,9 @@ import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
-import { Crosshair, Scan, Radio } from "lucide-react";
+import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
+import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
 type Candle = {
   time: number;
@@ -90,6 +92,7 @@ export function LightweightCandles({
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,14 +230,19 @@ export function LightweightCandles({
       };
     }
 
-    const series = chart.addSeries(CandlestickSeries, {
+    const rawCandleColors = {
       upColor: activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor,
       downColor: activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor,
       wickUpColor: activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor,
       wickDownColor: activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor,
       borderUpColor: activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor,
       borderDownColor: activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor,
-    });
+    };
+    const vividCandles = activeCustomTheme
+      ? intensifyCandleColors(rawCandleColors, 1.1)
+      : rawCandleColors;
+
+    const series = chart.addSeries(CandlestickSeries, vividCandles);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
@@ -364,7 +372,24 @@ export function LightweightCandles({
           },
         );
 
-        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 4 : 6 });
+        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 6 : 8, minBarSpacing: 3 });
+
+        const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+        const visibleBars = embedMode ? 72 : isMobile ? 96 : 160;
+        const totalBars = tierOptimizedData.length;
+        if (totalBars > 0) {
+          const from = Math.max(0, totalBars - Math.min(visibleBars, totalBars));
+          chart.timeScale().setVisibleLogicalRange({ from, to: totalBars });
+        }
+
+        barCountRef.current = tierOptimizedData.length;
+        const isMobileViewport =
+          typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+        focusRecentBars(
+          chart.timeScale(),
+          tierOptimizedData.length,
+          visibleBarTarget(isMobileViewport, isExpanded),
+        );
 
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
@@ -661,7 +686,6 @@ export function LightweightCandles({
           lastCandle = { ...updateObj, time: updateTime as number };
         }, tickDelay);
 
-        chart.timeScale().fitContent();
         if (active) setIsLoading(false);
       } catch (err) {
         if (!active) return;
@@ -696,6 +720,7 @@ export function LightweightCandles({
     return () => {
       active = false;
       chartRef.current = null;
+      barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
@@ -707,6 +732,18 @@ export function LightweightCandles({
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
   }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+
+  const handleFocusRecent = () => {
+    const chart = chartRef.current;
+    if (!chart || barCountRef.current <= 0) return;
+    const isMobileViewport =
+      typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+    focusRecentBars(
+      chart.timeScale(),
+      barCountRef.current,
+      visibleBarTarget(isMobileViewport, isExpanded),
+    );
+  };
 
   return (
     <div
@@ -797,19 +834,32 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
-      {!embedMode && <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-[60]" />}
       {!embedMode && (
-      <button
-        onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-        className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-          !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
-        }`}
-        title="Toggle Crosshair Coordinates tracking"
-        id={`crosshair_toggle_${symbol}`}
-      >
-        <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-        <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
-      </button>
+        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1">
+          <button
+            type="button"
+            onClick={handleFocusRecent}
+            aria-label="Focus recent bars"
+            title="Snap to recent price action"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00D9FF]/25 bg-black/85 text-[#00D9FF] shadow-lg backdrop-blur-md transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+          >
+            <Focus size={13} strokeWidth={2.5} />
+          </button>
+          <ChartZoomControls chartRef={chartRef} />
+        </div>
+      )}
+      {!embedMode && (
+        <button
+          onClick={() => setCrosshairEnabled(!crosshairEnabled)}
+          className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+            !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
+          }`}
+          title="Toggle Crosshair Coordinates tracking"
+          id={`crosshair_toggle_${symbol}`}
+        >
+          <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
+          <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
+        </button>
       )}
     </div>
   );

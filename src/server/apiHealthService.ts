@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { getDb } from '../firebase';
 import { collection, addDoc, serverTimestamp, getDocs, limit, query } from '../firebase';
+import {
+  getTwelveDataApiKey,
+  getFredApiKey,
+  getNewsDataApiKey,
+  getFinnhubApiKey,
+} from './secrets';
 
 // ============================================
 // TYPES
@@ -99,8 +105,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
 
   // ---------- Market Data ----------
 
-  const twelveDataKey =
-    process.env.TWELVEDATA_API_KEY || process.env.VITE_TWELVEDATA_API_KEY || '';
+  const twelveDataKey = getTwelveDataApiKey();
   checks.push(
     twelveDataKey
       ? timedProbe('TwelveData', 'Market Data', async () => {
@@ -119,7 +124,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
       : Promise.resolve(notConfigured('TwelveData', 'Market Data', 'TWELVEDATA_API_KEY'))
   );
 
-  const finnhubKey = process.env.FINNHUB_API_KEY || '';
+  const finnhubKey = getFinnhubApiKey();
   checks.push(
     finnhubKey
       ? timedProbe('Finnhub', 'Market Data', async () => {
@@ -173,7 +178,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
 
   // ---------- Economic Data ----------
 
-  const fredKey = process.env.FRED_API_KEY || process.env.VITE_FRED_API_KEY || '';
+  const fredKey = getFredApiKey();
   checks.push(
     fredKey
       ? timedProbe('FRED', 'Economic Data', async () => {
@@ -191,7 +196,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
 
   // ---------- News ----------
 
-  const newsDataKey = process.env.NEWSDATA_API_KEY || '';
+  const newsDataKey = getNewsDataApiKey();
   checks.push(
     newsDataKey
       ? timedProbe('NewsData', 'News', async () => {

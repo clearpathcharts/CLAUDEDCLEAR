@@ -1,6 +1,7 @@
+/** Default dashboard tab for web vs native / lean app shell. */
 import { Capacitor } from '@capacitor/core';
+import { isAppShell } from '../appShell';
 
-/** Default dashboard tab — ClearPath Cinema for launch (APK + first visits). */
 export function getDefaultDashboardTab(): string {
   if (typeof window !== 'undefined') {
     try {
@@ -10,8 +11,10 @@ export function getDefaultDashboardTab(): string {
       /* ignore */
     }
   }
-  // Native APK builds open straight into the cinema experience.
+  // Lean APK / installed PWA → charts first (trading-focused shell).
+  if (isAppShell()) return 'StrictlyCharts';
+  // Legacy native without appshell detection still opens cinema.
   if (Capacitor.isNativePlatform()) return 'CpmsApk';
-  // Web launch default: financial live streams front and center for new visitors.
-  return 'CpmsApk';
+  // Web default: Home / Discovery (not cinema) for faster first paint.
+  return 'Discovery';
 }

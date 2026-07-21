@@ -3,7 +3,7 @@ import {
   Sliders, Search, RotateCcw, Frown, Info, Calculator, Tag, ArrowDown, 
   TriangleAlert, X, Check, Star, StarHalf, ChevronLeft, Layers, PlayCircle, BookOpen, Activity, ArrowRight
 } from 'lucide-react';
-import { buildIndicators } from './indicatorsData';
+import { buildIndicators, indicatorImageSlug } from './indicatorsData';
 
 const LS_KEY = "indicator_directory_v1";
 
@@ -259,12 +259,13 @@ export default function EncyclopediaOfIndicators() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-5 gap-4">
                 {filteredIndicators.map(p => {
                   const isActive = p.id === state.selectedIndicatorId;
+                  const permalink = `/indicators/${indicatorImageSlug(p.name)}`;
                   return (
-                    <article 
+                    <a
                       key={p.id}
-                      onClick={() => updateState({ selectedIndicatorId: isActive ? "" : p.id })}
+                      href={permalink}
                       className={`
-                        relative flex flex-col border rounded-2xl overflow-hidden cursor-pointer shadow-[0_12px_26px_rgba(0,0,0,0.5)] transition-all bg-[linear-gradient(135deg,#071226_0%,#0A1C3A_35%,rgba(0,182,255,0.15)_65%,rgba(0,255,209,0.1)_100%)]
+                        relative flex flex-col border rounded-2xl overflow-hidden cursor-pointer shadow-[0_12px_26px_rgba(0,0,0,0.5)] transition-all no-underline bg-[linear-gradient(135deg,#071226_0%,#0A1C3A_35%,rgba(0,182,255,0.15)_65%,rgba(0,255,209,0.1)_100%)]
                         ${isActive ? "border-[#00FFD1] shadow-[0_0_20px_rgba(0,255,209,0.3)] bg-gradient-to-r from-[#071226] to-[#0A1C3A]" : "border-[#00B6FF]/30 hover:-translate-y-0.5 hover:border-[#00B6FF]/70 hover:shadow-[0_0_15px_rgba(0,182,255,0.3)]"}
                       `}
                     >
@@ -295,7 +296,7 @@ export default function EncyclopediaOfIndicators() {
                             </div>
                          </div>
                       </div>
-                    </article>
+                    </a>
                   )
                 })}
               </div>
@@ -349,10 +350,55 @@ export default function EncyclopediaOfIndicators() {
                   </div>
                   
                   <div className="mt-auto shrink-0 pt-4">
-                    <button className="w-full bg-[#00B6FF] hover:bg-[#00FFD1] hover:text-[#071226] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px] uppercase font-mono tracking-widest shadow-[0_0_20px_rgba(0,182,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,209,0.6)]">
-                      Apply to Active Terminal <ArrowRight size={16} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const abbr = selectedIndicator.chartAbbr;
+                        const payload = {
+                          id: selectedIndicator.id,
+                          name: selectedIndicator.name,
+                          abbr: abbr || selectedIndicator.name,
+                          addedAt: Date.now(),
+                        };
+                        try {
+                          const raw = localStorage.getItem("clearpath_pending_indicators");
+                          const list = raw ? JSON.parse(raw) : [];
+                          const next = Array.isArray(list) ? list.filter((x: any) => x?.name !== payload.name) : [];
+                          next.push(payload);
+                          localStorage.setItem("clearpath_pending_indicators", JSON.stringify(next.slice(-40)));
+                          if (abbr) {
+                            const activeRaw = localStorage.getItem("clearpath_active_chart_indicators");
+                            const active = activeRaw ? JSON.parse(activeRaw) : ["SMA", "RSI"];
+                            const merged = Array.isArray(active) ? [...active] : ["SMA", "RSI"];
+                            if (!merged.includes(abbr)) merged.push(abbr);
+                            localStorage.setItem("clearpath_active_chart_indicators", JSON.stringify(merged));
+                          }
+                        } catch {}
+                        window.dispatchEvent(new CustomEvent("clearpath-add-indicator", { detail: payload }));
+                        window.history.pushState({}, "", "/");
+                        window.dispatchEvent(new Event("popstate"));
+                        try {
+                          localStorage.setItem("clearpath_active_tab", "StrictlyCharts");
+                        } catch {}
+                        window.dispatchEvent(new CustomEvent("clearpath-set-tab", { detail: "StrictlyCharts" }));
+                      }}
+                      className="w-full bg-[#00B6FF] hover:bg-[#00FFD1] hover:text-[#071226] text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px] uppercase font-mono tracking-widest shadow-[0_0_20px_rgba(0,182,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,209,0.6)]"
+                    >
+                      Add This Indicator <ArrowRight size={16} />
                     </button>
-                    <button className="w-full bg-transparent border border-[#00B6FF]/40 hover:border-[#00B6FF] text-[#00B6FF] font-mono tracking-widest py-3.5 rounded-xl transition-colors mt-3 text-[11px] uppercase hover:bg-[#00B6FF]/10">
+                    <p className="text-[10px] text-[#00B6FF]/60 font-mono text-center mt-2 tracking-wide">
+                      {selectedIndicator.chartAbbr
+                        ? `Adds ${selectedIndicator.chartAbbr} to Charts when a live overlay exists.`
+                        : "Saved to your indicator list — open Charts to apply related tools."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const q = encodeURIComponent(selectedIndicator.name);
+                        window.open(`https://www.tradingview.com/scripts/search/${q}/`, "_blank", "noopener,noreferrer");
+                      }}
+                      className="w-full bg-transparent border border-[#00B6FF]/40 hover:border-[#00B6FF] text-[#00B6FF] font-mono tracking-widest py-3.5 rounded-xl transition-colors mt-3 text-[11px] uppercase hover:bg-[#00B6FF]/10"
+                    >
                       Read Documentation
                     </button>
                   </div>

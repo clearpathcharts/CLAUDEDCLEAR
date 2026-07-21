@@ -3,20 +3,42 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PressKitPage from './components/PressKitPage';
+import PolsiaPaidAdPage from './components/PolsiaPaidAdPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
+import A11yPreferencesToggle from './components/A11yPreferencesToggle';
+import AppUpdateBanner from './components/AppUpdateBanner';
+import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
-const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
+const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
+
+function AuthenticatedShell({
+  profile,
+  onProfileChange,
+}: {
+  profile: (typeof advancedProfiles)[keyof typeof advancedProfiles];
+  onProfileChange: (id: string) => void;
+}) {
+  const { isAppShell } = useAppShell();
+  return (
+    <div className="clearpath-glass-root">
+      <Dashboard profile={profile} onProfileChange={onProfileChange} />
+      {!isAppShell && <CptBuddyWidget />}
+    </div>
+  );
+}
 
 function isEncyclopediaPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return (
     p === '/encyclopedia' ||
     p === '/financial-encyclopedia' ||
+    p === '/stocks' ||
     p.startsWith('/stocks/') ||
     p.startsWith('/companies/') ||
     p.startsWith('/crypto/') ||
@@ -31,42 +53,57 @@ function isEncyclopediaPath(path: string): boolean {
   );
 }
 
-function isIndicatorsPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  return p === '/indicators' || p === '/encyclopedia-of-indicators';
-}
 
 function isEducationPath(path: string): boolean {
   const p = path.toLowerCase().trim();
+  // Hub only — /education/:school/... is server-rendered static HTML for crawlability.
   return p === '/education' || p === '/clearpath-education';
+}
+
+function isLiteracyPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/literacy' || p === '/literacy-os';
+}
+
+function isPolsiaAdPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/ads/polsia' || p === '/polsia' || p === '/advertise/polsia';
 }
 
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
-      <div className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-3">
-        <a
-          href="/"
-          className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
-          style={{ fontFamily: "'Cinzel', serif" }}
-        >
-          ← ClearPath Home
-        </a>
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
-          <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
-          <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#FF00C8]/80 hover:text-[#FF00C8]">Indicators</a>
-        </div>
-      </div>
-      <Suspense
-        fallback={
-          <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
-            Loading learning desk...
+      <a href="#learn-main" className="cp-skip-link">
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3">
+        <nav aria-label="Learning desks" className="flex items-center justify-between gap-3">
+          <a
+            href="/"
+            className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            ← ClearPath Home
+          </a>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+            <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
+            <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
+            <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
           </div>
-        }
-      >
-        {children}
-      </Suspense>
+        </nav>
+      </header>
+      <main id="learn-main" tabIndex={-1} className="outline-none">
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+              Loading learning desk...
+            </div>
+          }
+        >
+          {children}
+        </Suspense>
+      </main>
     </div>
   );
 }
@@ -123,7 +160,7 @@ export default function App() {
       window.addEventListener('popstate', handleLocationChange);
       
       // Periodically check path in case hash routing / pushState is triggered from inside code
-      const interval = setInterval(handleLocationChange, 500);
+      const interval = setInterval(handleLocationChange, 2000);
       try {
         const params = new URLSearchParams(window.location.search);
         if (params.get('profile') !== currentProfileId) {
@@ -140,56 +177,76 @@ export default function App() {
       };
     }
   }, [currentProfileId]);
+  let content: React.ReactNode;
   if (loading) {
-    return (
+    content = (
       <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
     );
-  }
-  // Route: /about should directly load the accessible disclosure page
-  if (currentPath === '/about') {
-    return <ExternalAboutPage />;
-  }
-  if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
-    return <TradingReimaginedLanding />;
-  }
-  // Public learning desks when logged out (Auth marketing links + direct URLs)
-  if (!user) {
+  } else if (currentPath === '/about') {
+    content = <ExternalAboutPage />;
+  } else if (currentPath === '/press' || currentPath === '/press-kit') {
+    content = <PressKitPage />;
+  } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
+    content = <TradingReimaginedLanding />;
+  } else if (isPolsiaAdPath(currentPath)) {
+    content = <PolsiaPaidAdPage />;
+  } else if (!user) {
+    // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
-      return (
+      content = (
         <PublicLearnShell>
           <EncyclopediaLayout />
         </PublicLearnShell>
       );
     }
-    if (isIndicatorsPath(currentPath)) {
-      return (
-        <PublicLearnShell>
-          <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    }
-    if (isEducationPath(currentPath)) {
-      return (
+    // Encyclopedia of Indicators SPA hub hidden while videos are broken (component kept).
+    else if (isEducationPath(currentPath)) {
+      content = (
         <PublicLearnShell>
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
+              else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
             }}
           />
         </PublicLearnShell>
       );
+    } else if (isLiteracyPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <LiteracyOSPage
+            onNavigate={(tabId) => {
+              if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
+              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
+              else if (tabId === 'ClearPathEducation') window.location.assign('/education');
+              else if (tabId === 'Yours') window.location.assign('/');
+            }}
+          />
+        </PublicLearnShell>
+      );
+    } else {
+      content = <Auth />;
     }
-    return <Auth />;
+  } else {
+    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+    content = (
+      <AppShellProvider>
+        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+      </AppShellProvider>
+    );
   }
-  const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+
   return (
-    <div className="clearpath-glass-root">
-      <Dashboard profile={profile} onProfileChange={handleProfileChange} />
-      <CptBuddyWidget />
-    </div>
+    <>
+      {content}
+      {/* Consent-first web/APK update prompt — never silent install */}
+      <AppUpdateBanner />
+      {/* Mandatory WCAG: High Contrast / Reduced Sensory on every page request */}
+      <A11yPreferencesToggle />
+    </>
   );
 }

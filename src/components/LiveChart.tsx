@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries } from 'lightweight-charts';
 import { TradingHaltController } from '../truth/TradingHaltController';
+import { intensifyCandleColors } from '../lib/charts/intensifyColor';
 import { ChartZoomControls } from './charts/ChartZoomControls';
 
 interface LiveChartProps {
@@ -70,12 +71,21 @@ export default function LiveChart({
       handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
     });
 
+    const vivid = intensifyCandleColors({
+      upColor: upColor || '#00e5ff',
+      downColor: downColor || '#ff1744',
+      wickUpColor: upColor || '#00e5ff',
+      wickDownColor: downColor || '#ff1744',
+      borderUpColor: upColor || '#00e5ff',
+      borderDownColor: downColor || '#ff1744',
+    });
+
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
-      upColor: upColor || '#FF4500',
-      downColor: downColor || '#ef4444',
+      upColor: vivid.upColor,
+      downColor: vivid.downColor,
       borderVisible: false,
-      wickUpColor: upColor || '#FF4500',
-      wickDownColor: downColor || '#ef4444',
+      wickUpColor: vivid.wickUpColor,
+      wickDownColor: vivid.wickDownColor,
     });
 
     chartRef.current = chart;

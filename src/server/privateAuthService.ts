@@ -77,10 +77,9 @@ function toPublic(user: PrivateUserRecord): PublicPrivateUser {
   };
 }
 
+/** Existence check only — never leak displayName (email enumeration hardening). */
 export async function lookupPrivateUser(email: string): Promise<{
   exists: boolean;
-  displayName?: string;
-  email?: string;
 }> {
   const normalized = normalizeEmail(email);
   if (!normalized || !normalized.includes('@')) {
@@ -88,8 +87,15 @@ export async function lookupPrivateUser(email: string): Promise<{
   }
   const users = readUsers();
   const found = users.find((u) => u.email === normalized);
-  if (!found) return { exists: false, email: normalized };
-  return { exists: true, displayName: found.displayName, email: found.email };
+  return { exists: Boolean(found) };
+}
+
+/** Admin-only: resolve uid for grant/badge tooling. Do not expose via public routes. */
+export function findPrivateUserByEmail(email: string): PublicPrivateUser | null {
+  const normalized = normalizeEmail(email);
+  if (!normalized.includes('@')) return null;
+  const found = readUsers().find((u) => u.email === normalized);
+  return found ? toPublic(found) : null;
 }
 
 export async function registerPrivateUser(input: {
@@ -136,13 +142,14 @@ export async function loginPrivateUser(input: {
 
   const users = readUsers();
   const found = users.find((u) => u.email === email);
-  if (!found) throw new PrivateAuthError('No private account found for that email.', 404);
+  // Generic messages — avoid confirming whether the email is registered.
+  if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
 
   const { hash } = await hashPassword(password, found.passwordSalt);
   const a = Buffer.from(hash, 'hex');
   const b = Buffer.from(found.passwordHash, 'hex');
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    throw new PrivateAuthError('Incorrect password for this private account.', 401);
+    throw new PrivateAuthError('Invalid email or password.', 401);
   }
 
   found.lastLoginAt = new Date().toISOString();

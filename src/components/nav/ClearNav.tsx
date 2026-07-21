@@ -2,14 +2,17 @@ import React from "react";
 import {
   Activity,
   BarChart3,
-  BookOpen,
   Cpu,
   Crown,
+  BookOpen,
   GraduationCap,
   Home,
   LogOut,
+  Network,
+
   Newspaper,
-  Shield,
+  Share2,
+
   Terminal,
   Users,
 } from "lucide-react";
@@ -20,6 +23,8 @@ interface ClearNavProps {
   onNavigate: (tab: string) => void;
   isAdmin: boolean;
   onLogout?: () => void;
+  /** Lean APK / installed PWA — trading-focused nav only */
+  lean?: boolean;
 }
 
 interface NavItem {
@@ -33,6 +38,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   onNavigate,
   isAdmin,
   onLogout,
+  lean = false,
 }) => {
   const primaryNavItems: NavItem[] = [
     {
@@ -79,6 +85,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "PROFILE",
     },
 
+    {
+      id: "AffiliateNetwork",
+      icon: Network,
+      label: "AFFILIATE",
+    },
+
     ...(isAdmin
       ? [
           {
@@ -96,15 +108,15 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
-      id: "Sentinel",
-      icon: Shield,
-      label: "SENTINEL",
-    },
-
-    {
       id: "ClearPathEducation",
       icon: BookOpen,
       label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
     },
 
     {
@@ -113,11 +125,20 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "ENCYCLOPEDIA OF FINANCE",
     },
 
+    // Encyclopedia of Indicators — hidden from nav while videos are broken.
+    // Component + Dashboard tab id remain; re-add this item when ready.
+    // {
+    //   id: "EncyclopediaOfIndicators",
+    //   icon: BarChart3,
+    //   label: "ENCYCLOPEDIA OF INDICATORS",
+    // },
+
     {
-      id: "EncyclopediaOfIndicators",
-      icon: BarChart3,
-      label: "ENCYCLOPEDIA OF INDICATORS",
+      id: "ReferralDesk",
+      icon: Share2,
+      label: "REFERRALS",
     },
+
   ];
   const renderNavButton = (
     item: NavItem,
@@ -130,18 +151,20 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isGold =
       item.id === "Membership" ||
-      item.id === "Founders";
+      item.id === "Founders" ||
+      item.id === "ReferralDesk";
 
     const isPink =
       item.id === "Biography" ||
-      item.id === "Diagnostics";
+      item.id === "Diagnostics" ||
+      item.id === "AffiliateNetwork";
 
     const isCyan =
       item.id === "CpmsApk" ||
-      item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
-      item.id === "ClearPathEducation";
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;
@@ -238,22 +261,22 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   };
   return (
     <>
-      {/* ================= MOBILE NAV (Command Center) ================= */}
-      <div className="md:hidden">
+      {/* ================= MOBILE / APP SHELL NAV ================= */}
+      <div className={lean ? 'block' : 'md:hidden'}>
         <MobileCommandCenter
           activeTab={activeTab}
           onNavigate={onNavigate}
           isAdmin={isAdmin}
           onLogout={onLogout}
+          lean={lean}
         />
       </div>
 
-      {/* ================= DESKTOP NAV (original) ================= */}
+      {/* ================= DESKTOP NAV (website only) ================= */}
       <div
         id="nav-bar"
-        className="
-        hidden
-        md:block
+        className={`
+        ${lean ? 'hidden' : 'hidden md:block'}
 
         sticky
         top-0
@@ -270,7 +293,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
         py-3
 
         space-y-3
-      "
+      `}
       >
         {/* ================= PRIMARY NAVIGATION ================= */}
 

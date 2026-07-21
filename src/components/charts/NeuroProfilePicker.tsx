@@ -15,6 +15,7 @@ const PROFILE_ORDER: ThemeProfileId[] = [
   'adhd_hyperfocus',
   'autism_predictable',
   'tourette_tic_friendly',
+  'standard_red_green',
 ];
 
 interface NeuroProfilePickerProps {
