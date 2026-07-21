@@ -25,6 +25,7 @@ import { InstitutionalRegistry } from "./src/core/registry/InstitutionalRegistry
 import { RealityValidator } from "./src/core/audit/RealityValidator";
 import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
+import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
 import { ComplianceAuditEngine } from "./src/truth/ComplianceAuditEngine";
 import { LiveDataEnforcementEngine } from "./src/truth/LiveDataEnforcementEngine";
 import { 
@@ -34,29 +35,125 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
+import { GUIDE_RECORDS } from './src/server/contentData';
+import { renderStaticContentPage } from './src/server/contentPages';
+import {
+  resolveIndexNowKey,
+  submitIndexNow,
+  indexNowKeyLocation,
+} from './src/server/indexNow';
+import { REGIONAL_MARKETS, regionalHubEntries } from './src/server/regionalSeo';
+import {
+  grantContractorBadgeByEmail,
+  seedIndependentContractorBadges,
+  applyPendingContractorBadges,
+  IC_BADGE_SEED_EMAILS,
+} from './src/server/contractorBadges';
+import {
+  stockEntries,
+  cryptoEntries,
+  forexEntries,
+  commodityEntries,
+  economyEntries,
+  indicatorEntries,
+  educationEntries,
+  uiProfileEntries,
+  encyclopediaHubEntries,
+  catalogCounts,
+} from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
+import { readProfile, writeProfile } from './src/server/profileStore';
+import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
   searchPodcastsByTerm,
 } from './src/server/podcastService';
+import {
+  forwardIntelligenceToMake,
+  getIntelligenceBriefing,
+  ingestIntelligenceWebhook,
+  listIntelligenceBriefings,
+  verifyIntelligenceWebhookSecret,
+} from './src/server/intelligenceWebhookService';
+import {
+  moderateBodyFields,
+  runContentModerationSelfTest,
+} from './src/server/contentModeration';
+import {
+  fetchPageFingerprint,
+  runTruthSearch,
+  scoreMentorAnswer,
+} from './src/server/literacyService';
+import {
+  PrivateAuthError,
+  buildClientSessionUser,
+  lookupPrivateUser,
+  loginPrivateUser,
+  registerPrivateUser,
+} from './src/server/privateAuthService';
+import {
+  bumpPrivateApply,
+  bumpPublicApply,
+  getPublicEntry,
+  listPrivateCatalog,
+  listPublicCatalog,
+  removePrivateEntry,
+  removePublicEntry,
+  savePrivateEntry,
+  savePublicEntry,
+} from './src/server/riverCatalogService';
+import { chatRiverGenie } from './src/server/riverGenieService';
+import {
+  getTwelveDataApiKey,
+  getGeminiApiKey,
+  getGroqApiKey,
+  getFredApiKey,
+  getFmpApiKey,
+  getNewsDataApiKey,
+  getSecretPresenceReport,
+  FMP_ALLOWED_ENDPOINTS,
+} from './src/server/secrets';
+import {
+  resolveAuthenticatedUid,
+  requireCatalogAdmin,
+  requireIntelligenceAdmin,
+} from './src/server/authGuards';
 
 const parser = new RSSParser();
 
+TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
+
 function getCleanTwelveDataApiKey(): string {
-  const rawKey = 
-    process.env.TWELVEDATA_API_KEY || 
-    process.env.VITE_TWELVEDATA_API_KEY || 
-    process.env.TWELVE_DATA_API_KEY || 
-    process.env.VITE_TWELVE_DATA_API_KEY || 
-    '';
-  if (!rawKey) {
+  const key = getTwelveDataApiKey();
+  if (!key) {
     console.warn('[Gateway] No Twelve Data API key found in environment. Live data will be unavailable until one is configured.');
-    return '';
   }
-  console.log(`[Gateway] API key found. Length: ${rawKey.length}, Starts: ${rawKey.slice(0, 4)}...`);
-  return rawKey.trim().replace(/^["']|["']$/g, '');
+  return key;
+}
+
+/** Read a UTF-8 file only when it resolves inside an allowlisted root (blocks path traversal / file inclusion). */
+function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cwd()]): string {
+  const resolved = path.resolve(filePath);
+  const ok = allowedRoots.some((root) => {
+    const base = path.resolve(root);
+    return resolved === base || resolved.startsWith(base + path.sep);
+  });
+  if (!ok) {
+    throw new Error(`Blocked path outside allowlist: ${filePath}`);
+  }
+  // Reject symlink escapes that land outside the allowlist
+  const real = fs.realpathSync(resolved);
+  const realOk = allowedRoots.some((root) => {
+    const base = fs.realpathSync(path.resolve(root));
+    return real === base || real.startsWith(base + path.sep);
+  });
+  if (!realOk) {
+    throw new Error(`Blocked symlink path outside allowlist: ${filePath}`);
+  }
+  return fs.readFileSync(real, 'utf8');
 }
 
 // SSRF PROTECTION
@@ -129,6 +226,7 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const isProd = process.env.NODE_ENV === 'production';
 
   // Enable trust proxy for Cloud Run environments
   // This allows express-rate-limit to see the real client IP
@@ -136,15 +234,33 @@ async function startServer() {
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
   app.use(helmet({
-    contentSecurityPolicy: false, // Vite needs this disabled for dev, but we can tune it for prod
+    // Keep CSP off in HTML shell for Vite HMR; tighten framing/referrer in all envs.
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
-    frameguard: false, // Disable X-Frame-Options: SAMEORIGIN so it loads inside the AI Studio iframe
+    frameguard: isProd ? { action: 'sameorigin' } : false,
+    referrerPolicy: { policy: 'no-referrer' },
+    hidePoweredBy: true,
   }));
-  app.use(cors());
+  // Same-origin by default in production. Set CORS_ALLOWED_ORIGINS=https://a.com,https://b.com for multi-origin.
+  const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.use(cors({
+    origin: isProd
+      ? (corsAllowedOrigins.length
+          ? (origin, callback) => {
+              if (!origin || corsAllowedOrigins.includes(origin)) callback(null, true);
+              else callback(new Error('Not allowed by CORS'));
+            }
+          : false)
+      : true,
+    credentials: true,
+  }));
   app.use(compression());
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -154,16 +270,24 @@ async function startServer() {
     // Fast-track essential files of sitemaps and direct platform assets
     if (
       pathLower === '/sitemap.xml' ||
-      pathLower === '/sitemap-pages.xml' ||
-      pathLower === '/sitemap-learn.xml' ||
-      pathLower === '/sitemap-guides.xml' ||
+      pathLower.startsWith('/sitemap-') ||
       pathLower === '/robots.txt' ||
       pathLower === '/favicon.ico' ||
       pathLower === '/manifest.json' ||
       pathLower === '/manifest.webmanifest' ||
       pathLower === '/logo.png' ||
-      pathLower === '/og-image.png'
+      pathLower === '/og-image.png' ||
+      pathLower === '/api/seo/catalog-counts' ||
+      pathLower === '/api/seo/indexnow' ||
+      pathLower === '/api/seo/indexnow/status' ||
+      pathLower === '/api/seo/regional-markets'
     ) {
+      return next();
+    }
+
+    // IndexNow ownership key file at site root: /{key}.txt
+    const indexNowKey = resolveIndexNowKey();
+    if (indexNowKey && pathLower === `/${indexNowKey.toLowerCase()}.txt`) {
       return next();
     }
 
@@ -206,7 +330,7 @@ async function startServer() {
   // Protects the institutional data streams from being overwhelmed
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100000, // Limit each IP to 1000 requests per window
+    max: 900, // General API ceiling per IP
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' }
@@ -222,11 +346,34 @@ async function startServer() {
     message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
   });
 
+  const aiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 40,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
+  });
+
+  const marketLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+  });
+
+  const logErrorLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many error reports.' },
+  });
+
   // Initialize WebSockets
   setupWebSockets(server);
 
   // Passport & Auth Middleware
-  const isProd = process.env.NODE_ENV === 'production';
   // Never ship the hard-coded fallback secret in production: a publicly known
   // signing key lets anyone forge session cookies. Prefer SESSION_SECRET; if it
   // is missing in production fall back to a per-boot random key (and warn loudly)
@@ -244,10 +391,12 @@ async function startServer() {
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    name: 'cpt.sid',
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   }));
 
@@ -257,47 +406,319 @@ async function startServer() {
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
-  // Custom OAuth Routes for non-Firebase Native Providers
-  const customProviders = ['discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube'];
-  
-  customProviders.forEach(provider => {
-    app.get(`/auth/${provider}`, (req, res, next) => {
-      // In production, this would call passport.authenticate(provider)(req, res, next)
-      // For preview environment, we simulate the OAuth handshake redirect
-      res.send(`
-        <html>
-          <body style="background: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; font-size: 14px;">
-            <div style="text-align: center;">
-              <h2 style="color: #00ff99;">OAUTH HANDSHAKE INITIATED</h2>
-              <p>Simulating Custom Passport OAuth Flow for: <b>${provider.toUpperCase()}</b></p>
-              <br/>
-              <p style="color: #ff2ea6;">Note: In production with real keys, you would be redirected to ${provider.toUpperCase()} to authorize.</p>
-              <p>Redirecting back to profile in 3 seconds...</p>
-            </div>
-            <script>
-              setTimeout(() => {
-                window.location.href = '/#Biography';
-              }, 3000);
-            </script>
-          </body>
-        </html>
-      `);
+  // Custom OAuth stubs — relative returnTo only (no open redirects). Prefer Firebase / private auth in production.
+  const customProviders = [
+    'discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube',
+    'google', 'facebook', 'instagram', 'twitter', 'snapchat', 'pinterest', 'threads', 'github',
+  ];
+  const OAUTH_RETURN_ALLOW = new Set([
+    '/',
+    '/#Biography',
+    '/#private-login',
+    '/?tab=Yours#Yours',
+    '/?tab=Biography#Biography',
+  ]);
+  function safeOAuthReturnTo(raw: unknown): string {
+    if (typeof raw !== 'string') return '/?tab=Yours#Yours';
+    const candidate = raw.trim();
+    if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('://')) {
+      return '/?tab=Yours#Yours';
+    }
+    if (OAUTH_RETURN_ALLOW.has(candidate)) return candidate;
+    // Allow only simple hash/tab deep links under the SPA root
+    if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
+    return '/?tab=Yours#Yours';
+  }
+
+  customProviders.forEach((provider) => {
+    app.get(`/auth/${provider}`, (req, res) => {
+      const returnTo = safeOAuthReturnTo(req.query.returnTo);
+      const safeReturn = returnTo.replace(/[<>"']/g, '');
+      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase() || 'PROVIDER';
+      res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${label} Login — ClearPath</title>
+  </head>
+  <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
+    <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
+      <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
+      <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
+      <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
+        Sign in with ${label} to link your ClearPath social node.
+        Production deploys with provider API keys redirect to the real ${label} authorize page.
+      </p>
+      <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
+        Continue to ClearPath
+      </a>
+      <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
+        Or use Private Login instead →
+      </a>
+    </div>
+  </body>
+</html>`);
     });
-    
-    app.get(`/auth/${provider}/callback`, (req, res) => {
-      // Handle the provider callback here
-      res.redirect('/#Biography');
+
+    app.get(`/auth/${provider}/callback`, (_req, res) => {
+      res.redirect('/?tab=Yours#Yours');
     });
   });
 
+
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
+    const adminDb = getAdminFirestore();
     res.json({ 
       status: 'healthy', 
       version: '5.0.0-institutional',
       uptime: process.uptime(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      waitlist: {
+        firestoreAdmin: Boolean(adminDb),
+        appwriteConfigured: Boolean(
+          process.env.VITE_APPWRITE_PROJECT_ID &&
+          process.env.VITE_APPWRITE_PROJECT_ID !== 'YOUR_PROJECT_ID'
+        ),
+      },
     });
+  });
+
+  // Private member accounts (email + password, per-user login desk)
+  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+    try {
+      const result = await lookupPrivateUser(req.body?.email || '');
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+    try {
+      const user = await registerPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+        displayName: req.body?.displayName || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Registration failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+    try {
+      const user = await loginPrivateUser({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const sessionUser = buildClientSessionUser(user);
+      (req.session as any).privateUser = sessionUser;
+      res.json({ ok: true, user: sessionUser });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  app.post('/api/auth/private/logout', (req, res) => {
+    try {
+      delete (req.session as any).privateUser;
+    } catch {
+      /* ignore */
+    }
+    res.json({ ok: true });
+  });
+
+  // Profile save/load for private sessions (bypasses Firebase client permission errors)
+  app.get('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const uid = sessionUser?.uid || (typeof req.query.uid === 'string' ? req.query.uid : '');
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to load your profile.' });
+    }
+    try {
+      const profile =
+        applyPendingContractorBadges(uid, sessionUser?.email) ||
+        readProfile(uid) ||
+        { uid, displayName: sessionUser?.displayName || '' };
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Failed to load profile' });
+    }
+  });
+
+  app.post('/api/profile/me', (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    const bodyUid = typeof req.body?.uid === 'string' ? req.body.uid : '';
+    const uid = sessionUser?.uid || bodyUid;
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to save your profile.' });
+    }
+    // If session exists, only allow writing own profile
+    if (sessionUser?.uid && sessionUser.uid !== uid) {
+      return res.status(403).json({ error: 'Cannot save another member profile.' });
+    }
+    try {
+      const allowed = [
+        'displayName', 'username', 'bio', 'avatarUrl', 'coverUrl',
+        'photoURL', 'coverURL', 'instagramType', 'publishStatus',
+      ];
+      const patch: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (req.body?.[key] !== undefined) patch[key] = req.body[key];
+      }
+      const profile = writeProfile(uid, patch);
+      res.json({ ok: true, profile });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
+  });
+
+  app.get('/api/auth/private/me', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user });
+  });
+
+  // The River — compiler manifest (controlled self-update channel)
+  app.get('/api/river/compiler/manifest', (_req, res) => {
+    try {
+      const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
+      const raw = safeReadTextFile(manifestPath);
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.json(JSON.parse(raw));
+    } catch (error: any) {
+      res.status(500).json({ error: 'Compiler manifest unavailable.', message: error.message });
+    }
+  });
+
+  // The River — public community catalog (raw Pine, interpreter path)
+  app.get('/api/river/catalog/public', (_req, res) => {
+    res.json({ entries: listPublicCatalog() });
+  });
+
+  app.get('/api/river/catalog/public/:id', (req, res) => {
+    const entry = getPublicEntry(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    res.json({ entry });
+  });
+
+  app.post('/api/river/catalog/public', moderateBodyFields('pineSource', 'description'), (req, res) => {
+    const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
+    if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
+      return res.status(400).json({ error: 'pineSource is required.' });
+    }
+    try {
+      const entry = savePublicEntry({
+        name: name || 'Untitled Indicator',
+        author: author || 'Community',
+        description: description || '',
+        pineSource,
+        pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
+        tags: Array.isArray(tags) ? tags : [],
+      });
+      res.json({ ok: true, entry });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to save public catalog entry.', message: error.message });
+    }
+  });
+
+  app.post('/api/river/catalog/public/:id/apply', (req, res) => {
+    const entry = getPublicEntry(req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    bumpPublicApply(entry.id);
+    res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
+  });
+
+  app.delete('/api/river/catalog/public/:id', requireCatalogAdmin, (req, res) => {
+    const ok = removePublicEntry(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Not found.' });
+    res.json({ ok: true });
+  });
+
+  // The River — private per-user vault (session auth)
+  app.get('/api/river/catalog/mine', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in to access your private vault.' });
+    res.json({ entries: listPrivateCatalog(user.uid) });
+  });
+
+  app.post('/api/river/catalog/mine', moderateBodyFields('pineSource', 'description'), (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in to save to your private vault.' });
+    const { name, description, pineSource, pineVersion, tags } = req.body || {};
+    if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
+      return res.status(400).json({ error: 'pineSource is required.' });
+    }
+    try {
+      const entry = savePrivateEntry(user.uid, {
+        name: name || 'My Indicator',
+        author: user.displayName || user.email || 'You',
+        description: description || '',
+        pineSource,
+        pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
+        tags: Array.isArray(tags) ? tags : [],
+      });
+      res.json({ ok: true, entry });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to save private vault entry.', message: error.message });
+    }
+  });
+
+  app.post('/api/river/catalog/mine/:id/apply', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
+    const entries = listPrivateCatalog(user.uid);
+    const entry = entries.find((e) => e.id === req.params.id);
+    if (!entry) return res.status(404).json({ error: 'Not found.' });
+    bumpPrivateApply(user.uid, entry.id);
+    res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
+  });
+
+  app.delete('/api/river/catalog/mine/:id', (req, res) => {
+    const user = (req.session as any)?.privateUser;
+    if (!user?.uid) return res.status(401).json({ error: 'Sign in required.' });
+    const ok = removePrivateEntry(user.uid, req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Not found.' });
+    res.json({ ok: true });
+  });
+
+  // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
+  app.post('/api/river/genie/chat', aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+    const { question } = req.body || {};
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({ error: 'question required' });
+    }
+    try {
+      const result = await chatRiverGenie({
+        question,
+        userName: req.body?.userName,
+        conversationHistory: req.body?.conversationHistory,
+        pineSource: req.body?.pineSource,
+        compileError: req.body?.compileError,
+        errorLine: req.body?.errorLine,
+        activeIndicatorName: req.body?.activeIndicatorName,
+        compatSummary: req.body?.compatSummary,
+        compatIssues: req.body?.compatIssues,
+        localHints: req.body?.localHints,
+        chartContext: req.body?.chartContext,
+        catalogSnippet: req.body?.catalogSnippet,
+      });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[River Genie Error]', error);
+      res.status(500).json({
+        error: 'River Genie failed',
+        message: error.message || 'AI connection failure.',
+      });
+    }
   });
 
   app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
@@ -322,9 +743,9 @@ async function startServer() {
 
   // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
   app.get('/api/workspace/assets', async (req, res) => {
-    const { uid } = req.query;
-    if (!uid || typeof uid !== 'string') {
-      return res.status(400).json({ error: 'uid query is required' });
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
     }
     try {
       const userRecord = await db.query.users.findFirst({
@@ -342,8 +763,12 @@ async function startServer() {
   });
 
   app.post('/api/workspace/assets', async (req, res) => {
-    const { uid, email, assetId, title, type } = req.body;
-    if (!uid || !assetId || !title || !type) {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
+    }
+    const { email, assetId, title, type } = req.body;
+    if (!assetId || !title || !type) {
       return res.status(400).json({ error: 'Missing required field in request body' });
     }
     try {
@@ -382,20 +807,48 @@ async function startServer() {
   });
 
   app.delete('/api/workspace/assets/:id', async (req, res) => {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    }
     const { id } = req.params;
+    const numericId = Number(id);
+    if (!Number.isFinite(numericId)) {
+      return res.status(400).json({ error: 'Invalid asset id' });
+    }
     try {
-      await db.delete(schema.googleAssets).where(eq(schema.googleAssets.id, Number(id)));
+      const userRecord = await db.query.users.findFirst({
+        where: eq(schema.users.uid, uid),
+      });
+      if (!userRecord) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      const owned = await db.select().from(schema.googleAssets).where(
+        and(
+          eq(schema.googleAssets.id, numericId),
+          eq(schema.googleAssets.userId, userRecord.id)
+        )
+      );
+      if (!owned.length) {
+        return res.status(404).json({ error: 'Asset not found' });
+      }
+      await db.delete(schema.googleAssets).where(
+        and(
+          eq(schema.googleAssets.id, numericId),
+          eq(schema.googleAssets.userId, userRecord.id)
+        )
+      );
       res.json({ success: true });
     } catch (error: any) {
       console.error('SQL Assets DELETE failed:', error);
-      res.status(500).json({ error: 'Failed to delete asset', message: error.message });
+      res.status(500).json({ error: 'Failed to delete asset' });
     }
   });
 
   app.get('/api/workspace/notes', async (req, res) => {
-    const { uid } = req.query;
-    if (!uid || typeof uid !== 'string') {
-      return res.status(400).json({ error: 'uid query is required' });
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
     }
     try {
       const userRecord = await db.query.users.findFirst({
@@ -412,9 +865,13 @@ async function startServer() {
     }
   });
 
-  app.post('/api/workspace/notes', async (req, res) => {
-    const { uid, associatedId, content } = req.body;
-    if (!uid || !associatedId) {
+  app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
+    const uid = await resolveAuthenticatedUid(req);
+    if (!uid) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    }
+    const { associatedId, content } = req.body;
+    if (!associatedId) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
     try {
@@ -459,10 +916,27 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', express.json(), (req, res) => {
-    fs.appendFileSync('frontend_errors.log', JSON.stringify(req.body) + '\n');
-    console.log('\n[FRONTEND ERROR]', req.body, '\n');
-    res.json({ ok: true });
+  app.post('/api/log_error', logErrorLimiter, (req, res) => {
+    try {
+      const raw = JSON.stringify(req.body ?? {});
+      if (raw.length > 4000) {
+        return res.status(413).json({ error: 'Payload too large' });
+      }
+      // Redact anything that looks like a key/token before disk write
+      const sanitized = raw
+        .replace(/("?(?:api[_-]?key|apikey|secret|token|authorization|password)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1[REDACTED]$3')
+        .replace(/(Bearer\s+)[A-Za-z0-9._\-]{8,}/gi, '$1[REDACTED]');
+      fs.appendFileSync('frontend_errors.log', sanitized + '\n');
+      console.log('\n[FRONTEND ERROR]', sanitized.slice(0, 500), '\n');
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: 'Failed to record error' });
+    }
+  });
+
+  app.get('/api/secrets/status', (req, res) => {
+    // Boolean presence only — never returns key material
+    res.json({ secrets: getSecretPresenceReport() });
   });
 
   app.get('/api/status', async (req, res) => {
@@ -700,13 +1174,13 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', async (req, res) => {
+  app.post('/api/encyclopedia/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
       return res.json({
         answer: `I am currently operating in standalone educational demonstration mode. Setting a **GEMINI_API_KEY** in your Secrets manager will activate my live, highly specialized deep research neural network.
@@ -749,13 +1223,13 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', async (req, res) => {
+  app.post('/api/mentor/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = getGroqApiKey();
     if (!apiKey) {
       const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
       const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
@@ -765,8 +1239,12 @@ Frame your explanation with advanced professional rigor, making it scannable, st
           newFacts: [],
         });
       }
+      const siteHelp = offlineSiteGuideAnswer(question);
+      if (siteHelp) {
+        return res.json({ answer: siteHelp, newFacts: [] });
+      }
       return res.json({
-        answer: "The AI Mentor isn't fully activated yet. Setting a GROQ_API_KEY in your Secrets manager will turn on live mentor responses."
+        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, The River, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
       });
     }
 
@@ -834,7 +1312,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 - Never use pressure, urgency, or hype. Never push anyone to trade.
 - Never promise profits or guaranteed outcomes. Trading involves risk and you say so calmly when relevant.
 - You are a supportive companion and educator, not a therapist or doctor. If someone seems to be in serious emotional distress, or mentions wanting to hurt themselves, respond with genuine care and gently encourage them to reach out to someone they trust or a professional - in the US they can call or text 988 any time. Stay kind. Never lecture, never dismiss.
-=== END EMOTIONAL CARE ===`;
+=== END EMOTIONAL CARE ===
+
+${CPT_SITE_GUIDE}`;
 
     // Inject everything we remember about this specific user, so they NEVER
     // have to re-introduce themselves.
@@ -866,7 +1346,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
           model: 'llama-3.3-70b-versatile',
           messages,
           temperature: 0.4,
-          max_tokens: 800,
+          max_tokens: 1200,
         }),
       });
 
@@ -946,10 +1426,14 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
-    const cleanKey = getCleanTwelveDataApiKey();
-    const hasKeys = !!cleanKey;
-    const keyInfo = hasKeys ? `Paid Key active (Length: ${cleanKey.length}, Starts: ${cleanKey.slice(0, 4)}...)` : 'None detected. Configure TWELVEDATA_API_KEY.';
-    res.json({ ready: hasKeys, isApiExhaustedThisMonth: false, keyInfo });
+    const hasKeys = Boolean(getCleanTwelveDataApiKey());
+    res.json({
+      ready: hasKeys,
+      isApiExhaustedThisMonth: false,
+      keyInfo: hasKeys
+        ? 'Server-side Twelve Data key configured.'
+        : 'None detected. Configure TWELVEDATA_API_KEY on the server.',
+    });
   });
 
   app.get('/api/twelvedata/toggle-exhaustion', (req, res) => {
@@ -970,7 +1454,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
   });
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', async (req, res) => {
+  app.get('/api/quote', marketLimiter, async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1000,7 +1484,13 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
       }
 
-      res.json(data);
+      // Normalize so all clients (ticker strip, charts, adapters) share one price field.
+      // Twelve Data's /quote payload uses `close`; some UI only read `price`.
+      const normalized = {
+        ...data,
+        price: data.price ?? data.close,
+      };
+      res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
@@ -1008,7 +1498,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', async (req, res) => {
+  app.get('/api/candles', marketLimiter, async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1051,7 +1541,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', async (req, res) => {
+  app.get('/api/market/history', marketLimiter, async (req, res) => {
     const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -1113,7 +1603,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     try {
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
-        const data = fs.readFileSync(newsPath, 'utf8');
+        const data = safeReadTextFile(newsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -1127,7 +1617,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
   // NewsData Live Ingress API with fallback
   app.get('/api/newsdata/latest', async (req, res) => {
     try {
-      const apiKey = process.env.NEWSDATA_API_KEY;
+      const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
       if (isKeyValid) {
         // Try multiple endpoints: /api/1/news (standard compatibility) and /api/1/latest
@@ -1173,7 +1663,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
         try {
-          const local = JSON.parse(fs.readFileSync(newsPath, 'utf8'));
+          const local = JSON.parse(safeReadTextFile(newsPath));
           local.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1190,7 +1680,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       const masterPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterPath)) {
         try {
-          const master = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+          const master = JSON.parse(safeReadTextFile(masterPath));
           master.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1214,7 +1704,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
   });
 
-  // RSS Proxy API with timeout handling
+  // Stream proxy — SSRF-guarded, timed, size-capped
   app.get('/api/stream-proxy', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
@@ -1226,10 +1716,19 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       console.warn('[Stream Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
+    const STREAM_PROXY_TIMEOUT_MS = 15_000;
+    const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
+      }
+
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      if (contentLength > STREAM_PROXY_MAX_BYTES) {
+        return res.status(413).json({ error: 'Upstream payload too large' });
       }
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1240,6 +1739,9 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
 
       if (isM3u8) {
         const text = await response.text();
+        if (text.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream playlist too large' });
+        }
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -1276,16 +1778,100 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
       } else {
         // Transparent binary segment forwarding for TS chunks loaded through the proxy
         res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = await response.arrayBuffer();
-        return res.send(Buffer.from(buffer));
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream segment too large' });
+        }
+        return res.send(buffer);
       }
     } catch (error: any) {
       console.error('[Stream Proxy Error]', error);
-      res.status(502).json({ error: 'Failed to proxy stream details', message: error.message });
+      const status = error?.name === 'AbortError' ? 504 : 502;
+      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
+    } finally {
+      clearTimeout(timeout);
     }
   });
 
   // RSS Proxy API with timeout handling
+  // Literacy OS — page watch / truth search / mentor trust (education only)
+  app.post('/api/literacy/watch-check', moderateBodyFields('url'), async (req, res) => {
+    const url = typeof req.body?.url === 'string' ? req.body.url.trim() : '';
+    if (!url) {
+      return res.status(400).json({ error: 'url required' });
+    }
+    try {
+      await assertSafePublicUrl(url);
+    } catch (guardErr: any) {
+      console.warn('[Literacy Watch] Rejected unsafe URL:', url, '-', guardErr.message);
+      return res.status(400).json({ error: 'Requested URL is not permitted' });
+    }
+    try {
+      const fingerprint = await fetchPageFingerprint(url);
+      res.json(fingerprint);
+    } catch (error: any) {
+      console.error('[Literacy Watch Error]', error);
+      res.status(502).json({ error: error?.message || 'Failed to fetch page' });
+    }
+  });
+
+  app.post('/api/literacy/truth-search', moderateBodyFields('query'), async (req, res) => {
+    const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
+    if (!query) {
+      return res.status(400).json({ error: 'query required' });
+    }
+    const vault = Array.isArray(req.body?.vault) ? req.body.vault : [];
+    const wiki = Array.isArray(req.body?.wiki) ? req.body.wiki : [];
+    const symbol = typeof req.body?.symbol === 'string' ? req.body.symbol.trim().toUpperCase() : '';
+
+    let marketNote: string | undefined;
+    if (symbol) {
+      const apiKey = getCleanTwelveDataApiKey();
+      if (apiKey) {
+        try {
+          const data = await getMarketQuote(symbol, apiKey);
+          const price = data?.price || data?.close;
+          if (price) {
+            marketNote = `Live verified quote for ${symbol}: ${price}` +
+              (data?.percent_change != null ? ` (${data.percent_change}%)` : '') +
+              '. Context for study only — not advice.';
+          }
+        } catch (e: any) {
+          marketNote = `Live quote for ${symbol} unavailable (${e?.message || 'upstream error'}). Searching vault/wiki only.`;
+        }
+      } else {
+        marketNote = `Live market data key not configured; searching vault/wiki only for ${symbol}.`;
+      }
+    }
+
+    try {
+      const result = runTruthSearch({ query, vault, wiki, marketNote });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[Literacy Truth Search Error]', error);
+      res.status(500).json({ error: error?.message || 'Truth search failed' });
+    }
+  });
+
+  app.post('/api/literacy/mentor-trust', moderateBodyFields('question', 'answer'), async (req, res) => {
+    const question = typeof req.body?.question === 'string' ? req.body.question : '';
+    const answer = typeof req.body?.answer === 'string' ? req.body.answer : '';
+    if (!question.trim() || !answer.trim()) {
+      return res.status(400).json({ error: 'question and answer required' });
+    }
+    const vaultNotes = Array.isArray(req.body?.vaultNotes)
+      ? req.body.vaultNotes.filter((n: unknown) => typeof n === 'string')
+      : [];
+    const marketContext = typeof req.body?.marketContext === 'string' ? req.body.marketContext : undefined;
+    try {
+      const result = scoreMentorAnswer({ question, answer, vaultNotes, marketContext });
+      res.json(result);
+    } catch (error: any) {
+      console.error('[Literacy Mentor Trust Error]', error);
+      res.status(500).json({ error: error?.message || 'Trust scoring failed' });
+    }
+  });
+
   app.get('/api/rss', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
@@ -1385,47 +1971,64 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     }
   });
 
-  // FRED API Proxy Bridge
-  app.get('/api/fred/observations', async (req, res) => {
-    const { series_id, limit, api_key } = req.query;
+  // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
+  app.get('/api/fred/observations', marketLimiter, async (req, res) => {
+    const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
     }
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(series_id)) {
+      return res.status(400).json({ error: 'Invalid series_id' });
+    }
+    const apiKey = getFredApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'FRED unavailable', message: 'Configure FRED_API_KEY on the server.' });
+    }
+    const safeLimit = Math.min(Math.max(parseInt(String(limit || '1'), 10) || 1, 1), 100);
 
     try {
-      const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${series_id}&api_key=${api_key}&file_type=json&limit=${limit || 1}&sort_order=desc`;
-      
-      const fredRes = await fetch(fredUrl);
+      const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${encodeURIComponent(series_id)}&api_key=${encodeURIComponent(apiKey)}&file_type=json&limit=${safeLimit}&sort_order=desc`;
+      const fredRes = await fetch(fredUrl, { redirect: 'error' });
       if (!fredRes.ok) {
-         throw new Error(`FRED returned ${fredRes.status} ${fredRes.statusText}`);
+         throw new Error(`FRED returned ${fredRes.status}`);
       }
       const data = await fredRes.json();
       res.json(data);
     } catch (error: any) {
-      console.error('[FRED Proxy Error]', error);
+      console.error('[FRED Proxy Error]', error?.message || error);
       res.status(502).json({ error: 'FRED API node timed out or failed' });
     }
   });
 
-  // FMP API Proxy Bridge
-  app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
+  // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
+  app.get('/api/fmp/:endpoint/:symbol', marketLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
-    const { limit, apikey } = req.query;
+    const { limit } = req.query;
     if (!symbol || !endpoint) {
       return res.status(400).json({ error: 'symbol and endpoint required' });
     }
+    if (!FMP_ALLOWED_ENDPOINTS.has(endpoint)) {
+      return res.status(400).json({ error: 'Endpoint not allowed' });
+    }
+    if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
+      return res.status(400).json({ error: 'Invalid symbol' });
+    }
+    const apiKey = getFmpApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'FMP unavailable', message: 'Configure FMP_API_KEY on the server.' });
+    }
+    const safeLimit = limit ? Math.min(Math.max(parseInt(String(limit), 10) || 1, 1), 40) : undefined;
 
     try {
-      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?apikey=${apikey}${limit ? `&limit=${limit}` : ''}`;
-      
-      const fmpRes = await fetch(url);
+      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(apiKey)}${safeLimit ? `&limit=${safeLimit}` : ''}`;
+      const fmpRes = await fetch(url, { redirect: 'error' });
       if (!fmpRes.ok) {
-         throw new Error(`FMP returned ${fmpRes.status} ${fmpRes.statusText}`);
+         throw new Error(`FMP returned ${fmpRes.status}`);
       }
       const data = await fmpRes.json();
       res.json(data);
     } catch (error: any) {
-      console.error('[FMP Proxy Error]', error);
+      console.error('[FMP Proxy Error]', error?.message || error);
       res.status(502).json({ error: 'FMP API node timed out or failed' });
     }
   });
@@ -1435,7 +2038,7 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
     try {
       const masterNewsPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterNewsPath)) {
-        const data = fs.readFileSync(masterNewsPath, 'utf8');
+        const data = safeReadTextFile(masterNewsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -1446,13 +2049,13 @@ Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexi
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', async (req, res) => {
+  app.get('/api/news/search', aiLimiter, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
       return res.json({ 
         error: 'API key missing', 
@@ -1628,171 +2231,207 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
     res.header('Content-Type', 'text/plain');
     res.send(`User-agent: *
 Allow: /
-Allow: /macro
-Allow: /learn
-Allow: /learn/*
-Allow: /guides
-Allow: /glossary
-Allow: /faq
-Allow: /research
-Allow: /about
-Allow: /if-trading-and-chatgpt-had-a-baby
-Allow: /trading-ai
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
 Disallow: /dashboard
 
-# Crawl Delay to protect institutional database resources
-Crawl-delay: 2
-
-Sitemap: https://clearpathtrader.com/sitemap.xml`);
+# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
+Sitemap: https://clearpathtrader.com/sitemap.xml
+Host: clearpathtrader.com
+`);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
+  // Only URLs that serve real content to logged-out visitors (and crawlers)
+  // belong here — sitemap URLs that render a login wall get dropped by
+  // Google and drag down crawl trust for the rest of the site.
+  const SITEMAP_BASE = 'https://clearpathtrader.com';
+
+  interface SitemapEntry { path: string; lastmod: string; changefreq: string; priority: string; }
+
+  const buildUrlset = (entries: SitemapEntry[]) =>
+    `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${entries.map(e => `  <url>
+    <loc>${SITEMAP_BASE}${e.path}</loc>
+    <lastmod>${e.lastmod}</lastmod>
+    <changefreq>${e.changefreq}</changefreq>
+    <priority>${e.priority}</priority>
+  </url>`).join('\n')}
+</urlset>`;
+
+  // Cache generated urlsets — procedural catalogs are large (~30k URLs).
+  type CrawlEntryLike = { path: string; lastmod: string; changefreq: string; priority: string };
+  const sitemapCache = new Map<string, string>();
+  const cachedUrlset = (key: string, factory: () => CrawlEntryLike[]) => {
+    let xml = sitemapCache.get(key);
+    if (!xml) {
+      xml = buildUrlset(factory());
+      sitemapCache.set(key, xml);
+    }
+    return xml;
+  };
+
+  const SITEMAP_CHILDREN = [
+    'sitemap-pages.xml',
+    'sitemap-learn.xml',
+    'sitemap-guides.xml',
+    'sitemap-stocks.xml',
+    'sitemap-crypto.xml',
+    'sitemap-forex.xml',
+    'sitemap-commodities.xml',
+    'sitemap-economy.xml',
+    'sitemap-indicators.xml',
+    'sitemap-education.xml',
+    'sitemap-ui.xml',
+  ];
+
   app.get('/sitemap.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-pages.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-learn.xml</loc>
-  </sitemap>
-  <sitemap>
-    <loc>https://clearpathtrader.com/sitemap-guides.xml</loc>
-  </sitemap>
+${SITEMAP_CHILDREN.map((name) => `  <sitemap>
+    <loc>${SITEMAP_BASE}/${name}</loc>
+  </sitemap>`).join('\n')}
 </sitemapindex>`);
+  });
+
+  app.get('/api/seo/catalog-counts', (_req, res) => {
+    res.json(catalogCounts());
+  });
+
+  // IndexNow key file (Bing / Yandex / Naver ecosystem ownership proof)
+  app.get(/^\/([a-zA-Z0-9_-]{8,128})\.txt$/i, (req, res, next) => {
+    const key = resolveIndexNowKey();
+    const requested = req.params[0];
+    if (!key || !requested || requested.toLowerCase() !== key.toLowerCase()) return next();
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(key);
+  });
+
+  app.get('/api/seo/indexnow/status', (_req, res) => {
+    const key = resolveIndexNowKey();
+    res.json({
+      configured: Boolean(key),
+      keyLocation: key ? indexNowKeyLocation(key) : null,
+      markets: REGIONAL_MARKETS.map((m) => ({ id: m.id, label: m.label, engines: m.engines })),
+      note: 'Google does not consume IndexNow — use Search Console + sitemaps.',
+    });
+  });
+
+  app.get('/api/seo/regional-markets', (_req, res) => {
+    res.json({ markets: REGIONAL_MARKETS });
+  });
+
+  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+    const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
+    try {
+      const result = await submitIndexNow(urls);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'IndexNow submit failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email : '';
+      const result = grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err?.message || 'Grant failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, (_req, res) => {
+    try {
+      const result = seedIndependentContractorBadges();
+      res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'Seed failed' });
+    }
   });
 
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/trading-ai</loc>
-    <lastmod>2026-07-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/if-trading-and-chatgpt-had-a-baby</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/macro</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/glossary</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/faq</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/about</loc>
-    <lastmod>2026-07-10</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/research</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset([
+      { path: '/', lastmod: '2026-07-19', changefreq: 'daily', priority: '1.0' },
+      // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
+      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod: '2026-07-10', changefreq: 'weekly', priority: '0.95' },
+      { path: '/about', lastmod: '2026-07-10', changefreq: 'monthly', priority: '0.85' },
+      { path: '/encyclopedia', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/indicators', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/education', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.85' },
+      { path: '/literacy', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/learn', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/guides', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.8' },
+      { path: '/glossary', lastmod: '2026-07-19', changefreq: 'weekly', priority: '0.75' },
+      { path: '/faq', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.7' },
+      { path: '/tools', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.8' },
+      { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
+      { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
+      ...encyclopediaHubEntries(),
+      ...regionalHubEntries(),
+    ]));
   });
 
   app.get('/sitemap-learn.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/learn/inflation</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/liquidity</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/valuation</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/microstructure</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/learn/correlations</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset(
+      Object.values(SEMANTIC_RECORDS).map(record => ({
+        path: `/learn/${record.id}`,
+        lastmod: record.updatedDate,
+        changefreq: 'weekly',
+        priority: '0.9',
+      }))
+    ));
   });
 
   app.get('/sitemap-guides.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://clearpathtrader.com/guides/macro-spreads</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides/arbitrage-mechanics</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://clearpathtrader.com/guides/leverage-risk</loc>
-    <lastmod>2026-06-07</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-</urlset>`);
+    res.send(buildUrlset(
+      Object.values(GUIDE_RECORDS).map(guide => ({
+        path: `/guides/${guide.id}`,
+        lastmod: guide.updatedDate,
+        changefreq: 'weekly',
+        priority: '0.85',
+      }))
+    ));
+  });
+
+  app.get('/sitemap-stocks.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('stocks', stockEntries));
+  });
+  app.get('/sitemap-crypto.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('crypto', cryptoEntries));
+  });
+  app.get('/sitemap-forex.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('forex', forexEntries));
+  });
+  app.get('/sitemap-commodities.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('commodities', commodityEntries));
+  });
+  app.get('/sitemap-economy.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('economy', economyEntries));
+  });
+  app.get('/sitemap-indicators.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('indicators', indicatorEntries));
+  });
+  app.get('/sitemap-education.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('education', educationEntries));
+  });
+  app.get('/sitemap-ui.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('ui', uiProfileEntries));
   });
 
   // 5. AI-READABLE CONTENT ENDPOINTS
@@ -1812,31 +2451,108 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     res.json(GENERAL_FAQS);
   });
 
+  // CrewAI / Make.com intelligence briefing webhook receiver
+  app.post('/api/intelligence/webhook', async (req, res) => {
+    const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
+    if (!verifyIntelligenceWebhookSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid webhook secret.' });
+    }
+
+    try {
+      const record = await ingestIntelligenceWebhook(req.body);
+      const shouldForward =
+        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
+      const forwardResult = shouldForward
+        ? await forwardIntelligenceToMake(record)
+        : { forwarded: false };
+
+      res.status(201).json({
+        success: true,
+        id: record.id,
+        receivedAt: record.receivedAt,
+        publishMode: record.publishMode,
+        hasBriefing: Boolean(record.briefingMarkdown),
+        hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+        makeForward: forwardResult,
+      });
+    } catch (error: any) {
+      console.error('[Intelligence Webhook Error]', error);
+      res.status(500).json({
+        error: 'INTELLIGENCE_WEBHOOK_FAILED',
+        message: error?.message || 'Failed to ingest intelligence briefing.',
+      });
+    }
+  });
+
+  app.get('/api/intelligence/briefings', requireIntelligenceAdmin, (req, res) => {
+    const limit = Math.min(parseInt(String(req.query.limit || '20'), 10) || 20, 100);
+    const briefings = listIntelligenceBriefings(limit).map((record) => ({
+      id: record.id,
+      receivedAt: record.receivedAt,
+      source: record.source,
+      runMode: record.runMode,
+      activeNeuroProfile: record.activeNeuroProfile,
+      publishMode: record.publishMode,
+      hasBriefing: Boolean(record.briefingMarkdown),
+      hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
+    }));
+    res.json({ count: briefings.length, briefings });
+  });
+
+  app.get('/api/intelligence/briefings/:id', requireIntelligenceAdmin, (req, res) => {
+    const record = getIntelligenceBriefing(req.params.id);
+    if (!record) {
+      return res.status(404).json({ error: 'Briefing not found' });
+    }
+    // Never return raw webhook payload to clients
+    const { rawPayload, ...safe } = record as any;
+    res.json(safe);
+  });
+
   // 1 & 2. DYNAMIC PAGE INTERCEPTOR (SSR METADATA & SCHEMA INJECTION)
   let vite: any = null;
   const isDev = process.env.NODE_ENV !== 'production' || process.argv.some(arg => arg.includes('server.ts'));
 
   const handlePageServing = async (req: express.Request, res: express.Response) => {
     try {
+      // Public content routes are served as crawlable static HTML by default.
+      // Pass ?live=1 to load the interactive SPA shell instead (used by hub CTAs
+      // for encyclopedia / indicators / education live desks).
+      const wantLiveSpa = String(req.query.live || '') === '1';
+      const staticContentHtml = wantLiveSpa ? null : renderStaticContentPage(req.path);
+      if (staticContentHtml !== null) {
+        const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(enriched);
+      }
+
       if (isDev) {
         const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
-        let html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        let html = safeReadTextFile(indexHtmlPath);
         
         if (vite) {
           html = await vite.transformIndexHtml(req.url, html);
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.send(enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
-          const html = fs.readFileSync(destIndexPath, 'utf-8');
+          const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
           return res.send(enriched);
         } else {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -1858,16 +2574,41 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     '/learn',
     '/learn/:topic',
     '/guides',
+    '/guides/:slug',
     '/glossary',
     '/faq',
+    '/accessibility',
+    '/regions',
+    '/regions/:id',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
     '/education',
+    '/education/:schoolId',
+    '/education/:schoolId/:unitId',
+    '/education/:schoolId/:unitId/:lessonId',
     '/clearpath-education',
     '/indicators',
+    '/indicators/:slug',
     '/encyclopedia-of-indicators',
-    '/market-universe'
+    '/literacy',
+    '/literacy-os',
+    '/market-universe',
+    '/stocks',
+    '/stocks/:symbol',
+    '/crypto',
+    '/crypto/:coin',
+    '/forex',
+    '/forex/:pair',
+    '/commodities',
+    '/commodities/:commodity',
+    '/companies',
+    '/companies/:slug',
+    '/economy/:topic',
+    '/ui',
+    '/ui/:profileId',
+    '/tools',
+    '/tools/position-size',
   ];
 
   SEO_PAGES.forEach(pagePath => {
@@ -1890,11 +2631,18 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js')) {
+        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
           res.setHeader('Pragma', 'no-cache');
           res.setHeader('Expires', '0');
-          res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          if (filePath.endsWith('sw.js')) {
+            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+          }
+          return;
+        }
+        // Vite emits content-hashed bundles under assets/ — safe to cache hard.
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       }
     }));
@@ -1913,6 +2661,18 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
+    // Applied immediately if the private account exists; otherwise pending until login.
+    try {
+      const seeded = seedIndependentContractorBadges();
+      const summary = seeded.results
+        .map((r) => `${r.email}:${r.status}`)
+        .join(', ');
+      console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
+    } catch (e: any) {
+      console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
+    }
     
     // Postpone heavy startup integrity audits and self-checks by 10s.
     // This allows the container to start instantly, keeps CPU usage at a minimum during boot,
@@ -1926,6 +2686,20 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
       } catch (e: any) {
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
+
+      // Notify Bing/Yandex ecosystem about regional hubs (no-op without IndexNow key).
+      void submitIndexNow([
+        'https://clearpathtrader.com/regions',
+        ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
+      ]).then((r) => {
+        if (r.skipped) {
+          console.log(`[STARTUP] IndexNow regional hubs skipped: ${r.skipped}`);
+        } else {
+          console.log(`[STARTUP] IndexNow regional hubs submitted=${r.submitted} ok=${r.ok}`);
+        }
+      }).catch((e) => {
+        console.warn('[STARTUP] IndexNow regional hub ping failed:', e?.message || e);
+      });
 
       // 1. ComplianceAuditEngine executes automatically on startup
       try {
@@ -1952,6 +2726,23 @@ Sitemap: https://clearpathtrader.com/sitemap.xml`);
         console.log(`[STARTUP] TruthEnforcementEngine initialized. Compliance score: ${startupTruth.score}%`);
       } catch (e: any) {
         console.error("[CRITICAL] TruthEnforcementEngine postponed startup failure:", e);
+      }
+
+      // 3. Content moderation blocklist smoke test
+      try {
+        const modTest = runContentModerationSelfTest();
+        if (modTest.failed.length) {
+          console.error(
+            `[STARTUP] Content moderation self-test FAILED (${modTest.failed.length}):`,
+            modTest.failed
+          );
+        } else {
+          console.log(
+            `[STARTUP] Content moderation self-test passed (${modTest.passed} checks).`
+          );
+        }
+      } catch (e: any) {
+        console.error("[CRITICAL] Content moderation self-test failure:", e);
       }
     }, 10000); // 10-second delay to guarantee instant, responsive container cold starts
   });

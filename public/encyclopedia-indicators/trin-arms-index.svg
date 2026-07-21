@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">TRIN (ARMS INDEX)</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">MARKET BREADTH</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="48" y1="308.00000000000006" x2="772" y2="308.00000000000006" stroke="#00B6FF" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="4 4"/><text x="54" y="304.00000000000006" fill="#00B6FF" fill-opacity="0.85" font-family="ui-monospace, Menlo, monospace" font-size="9">0</text>
+    <path d="M48.0,367.3 L61.4,348.4 L74.8,295.6 L88.2,316.9 L101.6,322.6 L115.0,339.1 L128.4,379.2 L141.9,418.5 L155.3,458.2 L168.7,449.2 L182.1,429.3 L195.5,436.7 L208.9,442.0 L222.3,412.5 L235.7,361.8 L249.1,318.9 L262.5,316.9 L275.9,310.7 L289.3,279.7 L302.7,301.6 L316.1,303.7 L329.6,307.0 L343.0,270.1 L356.4,281.7 L369.8,300.0 L383.2,284.6 L396.6,265.6 L410.0,258.7 L423.4,280.7 L436.8,302.8 L450.2,285.5 L463.6,258.5 L477.0,279.7 L490.4,251.4 L503.9,202.0 L517.3,239.1 L530.7,211.9 L544.1,170.8 L557.5,206.0 L570.9,176.9 L584.3,196.3 L597.7,217.3 L611.1,182.2 L624.5,214.3 L637.9,202.9 L651.3,248.1 L664.7,273.6 L678.1,224.7 L691.6,218.8 L705.0,196.2 L718.4,157.8 L731.8,211.8 L745.2,205.6 L758.6,237.3 L772.0,290.0 L772.0,308.0 L758.6,308.0 L745.2,308.0 L731.8,308.0 L718.4,308.0 L705.0,308.0 L691.6,308.0 L678.1,308.0 L664.7,308.0 L651.3,308.0 L637.9,308.0 L624.5,308.0 L611.1,308.0 L597.7,308.0 L584.3,308.0 L570.9,308.0 L557.5,308.0 L544.1,308.0 L530.7,308.0 L517.3,308.0 L503.9,308.0 L490.4,308.0 L477.0,308.0 L463.6,308.0 L450.2,308.0 L436.8,308.0 L423.4,308.0 L410.0,308.0 L396.6,308.0 L383.2,308.0 L369.8,308.0 L356.4,308.0 L343.0,308.0 L329.6,308.0 L316.1,308.0 L302.7,308.0 L289.3,308.0 L275.9,308.0 L262.5,308.0 L249.1,308.0 L235.7,308.0 L222.3,308.0 L208.9,308.0 L195.5,308.0 L182.1,308.0 L168.7,308.0 L155.3,308.0 L141.9,308.0 L128.4,308.0 L115.0,308.0 L101.6,308.0 L88.2,308.0 L74.8,308.0 L61.4,308.0 L48.0,308.0 Z" fill="url(#cyanFill)"/>
+    <path d="M48.0,367.3 L61.4,348.4 L74.8,295.6 L88.2,316.9 L101.6,322.6 L115.0,339.1 L128.4,379.2 L141.9,418.5 L155.3,458.2 L168.7,449.2 L182.1,429.3 L195.5,436.7 L208.9,442.0 L222.3,412.5 L235.7,361.8 L249.1,318.9 L262.5,316.9 L275.9,310.7 L289.3,279.7 L302.7,301.6 L316.1,303.7 L329.6,307.0 L343.0,270.1 L356.4,281.7 L369.8,300.0 L383.2,284.6 L396.6,265.6 L410.0,258.7 L423.4,280.7 L436.8,302.8 L450.2,285.5 L463.6,258.5 L477.0,279.7 L490.4,251.4 L503.9,202.0 L517.3,239.1 L530.7,211.9 L544.1,170.8 L557.5,206.0 L570.9,176.9 L584.3,196.3 L597.7,217.3 L611.1,182.2 L624.5,214.3 L637.9,202.9 L651.3,248.1 L664.7,273.6 L678.1,224.7 L691.6,218.8 L705.0,196.2 L718.4,157.8 L731.8,211.8 L745.2,205.6 L758.6,237.3 L772.0,290.0" fill="none" stroke="#00B6FF" stroke-width="2.5"/>
+  
+</svg>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">GANN GRID</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">GANN GEOMETRY</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <line x1="88" y1="520" x2="772" y2="451.6" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="396.88" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="366.1" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="314.79999999999995" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="212.2" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="109.59999999999997" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="66" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="66" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="88" y1="520" x2="772" y2="66" stroke="#FFF000" stroke-opacity="0.55" stroke-width="1.2"/><line x1="48" y1="66" x2="48" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="66" x2="772" y2="66" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="138" y1="66" x2="138" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="121" x2="772" y2="121" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="228" y1="66" x2="228" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="176" x2="772" y2="176" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="318" y1="66" x2="318" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="231" x2="772" y2="231" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="408" y1="66" x2="408" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="286" x2="772" y2="286" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="498" y1="66" x2="498" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="341" x2="772" y2="341" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="588" y1="66" x2="588" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="396" x2="772" y2="396" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="678" y1="66" x2="678" y2="550" stroke="#00B6FF" stroke-opacity="0.2"/><line x1="48" y1="451" x2="772" y2="451" stroke="#00B6FF" stroke-opacity="0.2"/>
+    <circle cx="88" cy="520" r="5" fill="#FF2D95"/>
+    <path d="M48.0,460.9 L66.6,436.5 L85.1,425.9 L103.7,408.6 L122.3,377.8 L140.8,352.7 L159.4,334.3 L177.9,347.7 L196.5,325.3 L215.1,320.1 L233.6,343.4 L252.2,361.7 L270.8,330.6 L289.3,328.4 L307.9,307.3 L326.5,302.0 L345.0,305.0 L363.6,313.2 L382.2,288.8 L400.7,264.1 L419.3,256.9 L437.8,246.5 L456.4,229.0 L475.0,238.7 L493.5,224.7 L512.1,238.2 L530.7,262.9 L549.2,248.3 L567.8,227.3 L586.4,248.9 L604.9,273.5 L623.5,261.9 L642.1,258.8 L660.6,229.5 L679.2,230.2 L697.7,204.0 L716.3,189.4 L734.9,171.0 L753.4,156.5 L772.0,155.1" fill="none" stroke="#00FFD1" stroke-width="2"/>
+  
+</svg>

@@ -1,5 +1,19 @@
-export { lexPineScript, PineLexer } from './lexer';
-export { parsePineTokens, PineParser } from './parser';
+// Primary Pine pipeline — full interpreter (any indicator script).
+export { tokenizePine, PineLexer, type LexResult } from './lexer';
+export { parsePine, PineParser } from './parser';
+export { PineInterpreter, type Value } from './interpreter';
+export { TokenType, PineError, type Token } from './tokens';
+export type {
+  Script,
+  Stmt,
+  Expr,
+  Call,
+  IfExpr,
+  SwitchExpr,
+  FunctionDecl,
+} from './ast';
+
+// Legacy RIR pipeline — Gold Bar pattern matching + community catalog bytecode.
 export {
   compilePineScript,
   goldBarParamsFromCompile,
@@ -7,15 +21,15 @@ export {
   getStatements,
   type PineCompileResult,
   type PineCompileSummary,
-} from './compile';
-export type { RirProgram, RirLowerResult } from '../rir';
-export { lowerPineToRir, rirBytecodeId } from '../rir';
+} from '../pine-legacy/compile';
+export { lexPineScript } from '../pine-legacy/lexer';
+export { parsePineTokens, PineParser as LegacyPineParser } from '../pine-legacy/parser';
 export {
   PineTokenType,
   type PineToken,
   type PineLexError,
   type PineLexResult,
-} from './token';
+} from '../pine-legacy/token';
 export type {
   PineProgram,
   PineStmt,
@@ -23,4 +37,6 @@ export type {
   PineAssignStmt,
   PineParseResult,
   PineParseError,
-} from './ast';
+} from '../pine-legacy/ast';
+export type { RirProgram, RirLowerResult } from '../rir';
+export { lowerPineToRir, rirBytecodeId } from '../rir';

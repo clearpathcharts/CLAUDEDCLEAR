@@ -6,13 +6,13 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compilePineScript } from '../pine/compile';
+import { compilePineScript } from '../pine-legacy/compile';
 import { executeRir } from './execute';
 import { generateSampleCandles } from './fixtures/sampleCandles';
 import { isGoldBarRir } from './types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const fixturePath = join(__dirname, '../pine/fixtures/goldBarAlpha.pine');
+const fixturePath = join(__dirname, '../pine-legacy/fixtures/goldBarAlpha.pine');
 const source = readFileSync(fixturePath, 'utf-8');
 
 const compiled = compilePineScript(source);

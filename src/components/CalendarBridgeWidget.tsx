@@ -11,7 +11,7 @@ import { CALENDAR_PROVIDERS } from '../calendar-bridge/services/provider-registr
 import { connectCalendar } from '../calendar-bridge/api/connect';
 import { disconnectCalendar } from '../calendar-bridge/api/disconnect';
 import { syncAllCalendars } from '../calendar-bridge/api/sync';
-import { ConnectedCalendar } from '../calendar-bridge/services/calendar-sync';
+import { ConnectedCalendar, getConnectedCalendarsDb } from '../calendar-bridge/services/calendar-sync';
 import { NormalizedEvent } from '../calendar-bridge/services/event-normalizer';
 import { EconomicConflict, EconomicEvent } from '../calendar-bridge/services/economic-matcher';
 import { NotificationPreferences, DEFAULT_NOTIF_PREFERENCES, generateConflictWarning } from '../calendar-bridge/services/notification-engine';
@@ -91,7 +91,7 @@ export function CalendarBridgeWidget({ onConflictsUpdated }: CalendarBridgeWidge
     setIsLoading(true);
     try {
       const stats = await syncAllCalendars(SAMPLE_ECONOMIC_EVENTS, subscribedSymbols);
-      setCalendars(await import('../calendar-bridge/services/calendar-sync').then(m => m.getConnectedCalendarsDb()));
+      setCalendars(await getConnectedCalendarsDb());
       setUserEvents(stats.events);
       setConflicts(stats.conflicts);
       if (onConflictsUpdated) {

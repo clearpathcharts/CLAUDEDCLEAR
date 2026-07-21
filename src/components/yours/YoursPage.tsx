@@ -444,52 +444,33 @@ export default function YoursPageHub() {
     });
   };
 
-  // Social account simulation login triggering handshakes
+  // Social OAuth: route each platform to its login / OAuth handshake screen
   const handleTriggerSocialConnect = (id: string, name: string) => {
     setSocialPlatforms(prev => prev.map(p => {
       if (p.id === id) {
         if (p.connected) {
-          // Disconnect
           return { ...p, connected: false, username: '' };
-        } else {
-          // Trigger connecting state
-          return { ...p, isConnecting: true };
         }
+        return { ...p, isConnecting: true };
       }
       return p;
     }));
 
-    // If connecting, wait 1.5 seconds to simulate API websocket handshake
     const platform = socialPlatforms.find(p => p.id === id);
-    if (platform && !platform.connected) {
-      setTimeout(() => {
-        const seedUsername = `@${name.toLowerCase().replace(/\s/g, '')}_cpms_node`;
-        
-        setSocialPlatforms(prev => prev.map(p => {
-          if (p.id === id) {
-            return {
-              ...p,
-              connected: true,
-              isConnecting: false,
-              username: seedUsername
-            };
-          }
-          return p;
-        }));
-
-        // Add dummy broadcast signal log to feed
-        const dummyPost = {
-          id: 'sys_' + Date.now(),
-          platform: id,
-          author: `${name} Cloud Gateway`,
-          handle: seedUsername,
-          content: `⚡ Secure OAuth Handshake successful! WS Pipeline anchored verified on gateway broker node port 3000. Ready to stream data matrices.`,
-          time: 'Just now'
-        };
-        setSocialFeed(prev => [dummyPost, ...prev]);
-
-      }, 1500);
+    if (platform && platform.connected) {
+      return; // disconnect only — already handled above
     }
+
+    // Send the member to the real OAuth / login route for this provider.
+    // Server serves /auth/:provider as the handshake / login screen.
+    const authPath = `/auth/${encodeURIComponent(id)}`;
+    try {
+      sessionStorage.setItem('clearpath_oauth_return', window.location.href);
+      sessionStorage.setItem('clearpath_oauth_platform', id);
+    } catch {}
+    window.setTimeout(() => {
+      window.location.assign(authPath);
+    }, 400);
   };
 
   const handlePublishPost = (e: React.FormEvent) => {
@@ -555,8 +536,22 @@ export default function YoursPageHub() {
             </h1>
             
             <p className="text-sm md:text-base text-[#FFD4E8] font-sans max-w-2xl leading-relaxed drop-shadow-[0_0_12px_rgba(255,20,147,0.2)]">
-              Welcome to the <span className="text-[#FF1493] font-bold">premium interactive terminal</span>. This workspace fuses elite editorial columns, sports streams, global indices, AI insight systems, live audio monitors, and a <span className="text-[#FF4500] font-bold">15-platform OAuth</span> social sync hub — built for maximum energy, not faded wallpaper.
+              As a trader, jumping between apps on mobile burns time — open social, wait, open video, wait, open a magazine, lose the chart. <span className="text-[#FF1493] font-bold">Your World Connected™</span> keeps it on one screen: load social media and online video, read your favorite magazines (fashion, cars, and more), and <span className="text-[#FF4500] font-bold">move a live chart</span> beside it so you never leave price action behind.
             </p>
+            <ul className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 pt-1 text-[10px] md:text-[11px] font-mono uppercase tracking-wider text-[#FFB3D9]/90">
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF1493] shadow-[0_0_8px_#FF1493]" />
+                Social + video in-hub
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] shadow-[0_0_8px_#FF4500]" />
+                Magazines · fashion · cars
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00E5FF] shadow-[0_0_8px_#00E5FF]" />
+                Chart on the same screen
+              </li>
+            </ul>
           </div>
 
           {/* Sync status & manual simulator trigger */}

@@ -92,7 +92,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "CpmsApk",
       icon: Cpu,
-      label: "CPMS APK",
+      label: "CLEARPATH CINEMA",
     },
 
     {
@@ -105,6 +105,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "ClearPathEducation",
       icon: BookOpen,
       label: "CLEARPATH EDUCATION",
+    },
+
+    {
+      id: "LiteracyOS",
+      icon: BookOpen,
+      label: "LITERACY OS",
     },
 
     {
@@ -141,7 +147,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "Sentinel" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
-      item.id === "ClearPathEducation";
+      item.id === "ClearPathEducation" ||
+      item.id === "LiteracyOS";
 
     const isOrange =
       isSecondaryGroup || index % 2 === 1;

@@ -35,7 +35,8 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';
 
   if (!mailer) {
-    console.info('[Registration Email] SMTP not configured. Email preview:\n', payload.text);
+    // Never log activation keys / PII when SMTP is unset
+    console.info('[Registration Email] SMTP not configured — email not sent (preview suppressed).');
     return false;
   }
 

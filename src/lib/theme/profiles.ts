@@ -10,7 +10,8 @@ export type ThemeProfileId =
   | "adhd_dopamine_balanced"
   | "adhd_hyperfocus"
   | "autism_predictable"
-  | "tourette_tic_friendly";
+  | "tourette_tic_friendly"
+  | "standard_red_green";
 
 export type ThemeProfile = {
   id: ThemeProfileId;
@@ -286,5 +287,26 @@ export const themeProfiles: Record<ThemeProfileId, ThemeProfile> = {
     spacing: "Wide",
     dataDensity: "Low",
     motion: "Off",
+  },
+  standard_red_green: {
+    id: "standard_red_green",
+    label: "Standard Chart (Red & Green)",
+    bgTop: "#131722",
+    bgBottom: "#0b0e14",
+    panel: "rgba(19,23,34,0.96)",
+    text: "#d1d4dc",
+    grid: "rgba(54,60,78,0.55)",
+    borderA: "#26a69a",
+    borderB: "#ef5350",
+    upColor: "#26a69a",
+    downColor: "#ef5350",
+    wickUpColor: "#26a69a",
+    wickDownColor: "#ef5350",
+    borderUpColor: "#26a69a",
+    borderDownColor: "#ef5350",
+    glow: "Low",
+    spacing: "Normal",
+    dataDensity: "Medium",
+    motion: "Soft",
   },
 };
