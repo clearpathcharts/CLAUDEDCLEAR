@@ -89,9 +89,9 @@ const CARDS: HomeCard[] = [
   },
   {
     id: 'river',
-    title: 'The River',
+    title: 'The River + River Genie',
     blurb:
-      'Upload or paste Pine Script, compile it here, then apply your indicator so it can show on charts.',
+      'Upload or paste Pine Script — or ask River Genie to draft it. Compile honestly, then apply your indicator on every chart.',
     tabId: 'TheRiver',
     icon: Waves,
     accent: '#00FFE1',

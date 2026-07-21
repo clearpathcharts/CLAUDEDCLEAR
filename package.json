@@ -20,6 +20,7 @@
     "generate:indicator-svgs": "node scripts/generate-indicator-svgs.mjs",
     "test:river": "tsx scripts/riverSelfTest.ts",
     "river:seed-public": "tsx scripts/seed-river-public-catalog.ts",
+    "page:auto-update": "tsx scripts/pageAutoUpdater.ts",
     "river:lex-test": "tsx src/river/pine-legacy/lexer.selftest.ts",
     "river:parse-test": "tsx src/river/pine-legacy/parser.selftest.ts",
     "river:rir-test": "tsx src/river/rir/rir.selftest.ts",

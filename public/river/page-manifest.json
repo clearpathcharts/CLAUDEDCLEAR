@@ -1,0 +1,14 @@
+{
+  "page": "river",
+  "version": "1.2.0",
+  "updatedAt": "2026-07-21T02:52:07.163Z",
+  "videos": {
+    "genieWorkstation": "/river/hero-genie-workstation.mp4",
+    "tributariesCharts": "/river/hero-tributaries-charts.mp4"
+  },
+  "lastCopied": [
+    "hero-tributaries-charts.mp4",
+    "hero-genie-workstation.mp4"
+  ],
+  "contentSource": "src/river/marketing/riverPageContent.ts"
+}
