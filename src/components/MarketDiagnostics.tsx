@@ -15,6 +15,7 @@ import {
   Lock,
   Compass
 } from "lucide-react";
+import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 
 interface ApiStatusItem {
   name: string;
@@ -69,13 +70,10 @@ export default function MarketDiagnostics() {
     }
   };
 
+  usePageAutoUpdate(fetchLiveDiagnostics, { intervalMs: 15_000 });
+
   useEffect(() => {
-    fetchLiveDiagnostics();
-    fetchBuildErrors();
-    
-    // Auto refresh status every 15 seconds
-    const interval = setInterval(fetchLiveDiagnostics, 15000);
-    return () => clearInterval(interval);
+    void fetchBuildErrors();
   }, []);
 
   const getStatusBadge = (status: ApiStatusItem["status"]) => {
