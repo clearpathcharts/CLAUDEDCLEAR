@@ -1484,21 +1484,14 @@ ${CPT_SITE_GUIDE}`;
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
       }
 
-<<<<<<< HEAD
-      res.json({
-        ...data,
-        price: data.price ?? data.close,
-        percent_change: data.percent_change ?? data.change_percent,
-      });
-=======
       // Normalize so all clients (ticker strip, charts, adapters) share one price field.
       // Twelve Data's /quote payload uses `close`; some UI only read `price`.
       const normalized = {
         ...data,
         price: data.price ?? data.close,
+        percent_change: data.percent_change ?? data.change_percent,
       };
       res.json(normalized);
->>>>>>> origin/main
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
