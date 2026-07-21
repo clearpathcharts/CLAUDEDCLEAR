@@ -5,6 +5,7 @@ export interface CpmsVideoItem {
   title: string;
   description: string;
   category: string;
+  /** Progressive MP4 or HLS (.m3u8) stream URL — no YouTube embeds */
   videoUrl: string;
   thumbnailUrl: string;
   duration: string;
@@ -12,6 +13,8 @@ export interface CpmsVideoItem {
   uploadedBy: string;
   relatedIndicatorId: string;
   viewers?: string;
+  /** True for 24/7 market news feeds */
+  isLive?: boolean;
 }
 
 export interface CpmsChannelItem {
@@ -29,183 +32,228 @@ export interface CpmsChannelSeed {
   thumbnailUrl: string;
 }
 
-/** 12 curated premium videos for the CPMS media library. */
+/** Official Bloomberg HLS manifests (direct — not YouTube). */
+export const BLOOMBERG_HLS = {
+  us: 'https://www.bloomberg.com/media-manifest/streams/us.m3u8',
+  eu: 'https://www.bloomberg.com/media-manifest/streams/eu.m3u8',
+  /** Bloomberg Originals / Quicktake-style live loop */
+  originals: 'https://www.bloomberg.com/media-manifest/streams/qt.m3u8',
+} as const;
+
+/** Opens automatically when a visitor enters ClearPath Cinema. */
+export const LAUNCH_FEATURED_VIDEO_ID = 'bloomberg-television';
+
+/**
+ * Launch-day catalog — direct HLS / MP4 only. No YouTube embeds or channel fallbacks
+ * (YouTube live_stream iframes freeze the cinema player).
+ * Works without Firestore; seed with `npm run cpms:seed` when ready.
+ */
 export const SAMPLE_LIBRARY_VIDEOS: CpmsVideoItem[] = [
   {
-    title: "Global Debt Expansion & Central Collateral Systems",
-    description: "An immersive masterclass breaking down national obligations, sovereign gold backing suspensions, and global liquid collateral velocity across modern tier-1 banking systems.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
-    duration: "09:56",
+    id: 'bloomberg-television',
+    title: 'Bloomberg Television',
+    description: 'Global business and markets — futures, FX, fixed income, and corporate news from Bloomberg TV (direct HLS).',
+    category: 'Market News TV',
+    videoUrl: BLOOMBERG_HLS.us,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "ClearPath Director",
-    relatedIndicatorId: "Global Reserve"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'Bloomberg TV',
+    isLive: true,
+    viewers: '22K+',
   },
   {
-    title: "Order Flow Liquidity & Swaps Infrastructure",
-    description: "Evaluating sovereign interest swap spreads, capital collateral requirements, and how the Federal Reserve discount system governs physical money creation.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80",
-    duration: "10:53",
+    id: 'bloomberg-europe',
+    title: 'Bloomberg TV Europe',
+    description: 'European session open, ECB watch, DAX/FTSE flows, and cross-Atlantic macro linkage.',
+    category: 'Market News TV',
+    videoUrl: BLOOMBERG_HLS.eu,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief quantitative Officer",
-    relatedIndicatorId: "Market Microstructure"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'European Session',
+    isLive: true,
   },
   {
-    title: "The Sovereign Yield Curve & Inflation Vectors",
-    description: "Mastering yield curve inversions to anticipate macroeconomic shifts, interest premium behaviors, and strategic liquidity rotations ahead of volatile quarters.",
-    category: "Finance TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
+    id: 'bloomberg-originals',
+    title: 'Bloomberg Originals — Markets & Macro',
+    description: 'Documentary-style market explainers, CEO interviews, and macro deep dives from Bloomberg Originals.',
+    category: 'Finance TV',
+    videoUrl: BLOOMBERG_HLS.originals,
+    thumbnailUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Macro Specialist",
-    relatedIndicatorId: "Yield Curve"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'Macro Documentary',
+    isLive: true,
   },
   {
-    title: "RSI Momentum: Advanced Overbought Fallacies",
-    description: "Stripping out standard retail misconceptions surrounding Relative Strength Index boundaries. We rebuild true momentum divergence curves and volatility models.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
+    id: 'yahoo-finance-live',
+    title: 'Yahoo Finance Live',
+    description: 'Live market coverage — equities, rates, commodities, and breaking business headlines from the Yahoo Finance desk.',
+    category: 'Market News TV',
+    videoUrl: 'https://yahoofinance-live.akamaized.net/hls/live/621757/yahoofinance/master.m3u8',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Lead Engineer",
-    relatedIndicatorId: "Relative Strength Index"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'Live Markets',
+    isLive: true,
+    viewers: '14K+',
   },
   {
-    title: "MACD Crossings & Signal Smoothing Calibration",
-    description: "A mathematical teardown on tuning exponential moving average lookback thresholds to completely remove market noise in choppy horizontal range environments.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
+    id: 'abc-news-live',
+    title: 'ABC News Live — Business & World',
+    description: 'Breaking U.S. and global news with market-moving political and economic coverage.',
+    category: 'Market News TV',
+    videoUrl: 'https://abcnews-live.gcdn.anvato.net/hls/live/abcnews/master.m3u8',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1504711434967-e33886168f5c?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Lead Engineer",
-    relatedIndicatorId: "MACD"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'Breaking News',
+    isLive: true,
   },
   {
-    title: "Average True Range (ATR): Scientific Volatility Boundaries",
-    description: "How top-tier hedge funds construct mechanical target structures and stop thresholds using true session physical volatility metrics rather than arbitrary price variables.",
-    category: "Indicator TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
+    id: 'cna-business',
+    title: 'CNA — Asia Business & Markets',
+    description: 'Asian session coverage — China tech, ASEAN equities, and Pacific macro from CNA.',
+    category: 'Market News TV',
+    videoUrl: 'https://mediacorp-cna-en.akamaized.net/hls/live/2034701/cnaen/master.m3u8',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=1200&q=80',
+    duration: 'LIVE',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Quantitative Specialist",
-    relatedIndicatorId: "Average True Range"
+    uploadedBy: 'ClearPath Curator',
+    relatedIndicatorId: 'Asia Session',
+    isLive: true,
   },
   {
-    title: "Gold Bar Sovereign Havens & High-Volume Collateral",
-    description: "Tracing international bullion gold storage chains, global physical clearing flows, and historical safe havens during debt limits collapses.",
-    category: "Trading Anarchy TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1610375228957-80da9977ce25?auto=format&fit=crop&w=800&q=80",
-    duration: "00:15",
+    id: 'yield-curve-masterclass',
+    title: 'Yield Curve & Rate Decisions — Masterclass',
+    description: 'How to read the 2s10s spread, Fed funds futures, and rate-path pricing ahead of FOMC weeks.',
+    category: 'Indicator TV',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=1200&q=80',
+    duration: '12:00',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Anarchy Strategist",
-    relatedIndicatorId: "Gold Reserves"
+    uploadedBy: 'Macro Specialist',
+    relatedIndicatorId: 'Yield Curve',
   },
   {
-    title: "The 4-Up 3-Down Session Momentum Breakout",
-    description: "An intensive strategy study focused on detecting breakout sequences by monitoring daily highs, daily lows, and target volatility expansion limits.",
-    category: "Trading Anarchy TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
-    duration: "00:30",
+    id: 'atr-volatility-lab',
+    title: 'ATR Volatility Lab — Position Sizing',
+    description: 'Using Average True Range for stop placement and size calibration on Gold Bar / UT Bot style systems.',
+    category: 'Indicator TV',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    duration: '08:30',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Anarchy Strategist",
-    relatedIndicatorId: "Breakout Models"
+    uploadedBy: 'Lead Engineer',
+    relatedIndicatorId: 'Average True Range',
   },
   {
-    title: "Macroeconomic Pulse: Central Bank Rates Decisions",
-    description: "Live brief and quantitative reaction tracking after central bank corridors shift national benchmark rates.",
-    category: "Market News TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=800&q=80",
-    duration: "12:14",
+    id: 'gold-bar-strategy',
+    title: 'Gold Bar ATR Trailing Stop — Strategy Brief',
+    description: 'The ClearPath Gold Bar pattern: ATR trailing stops, crossover signals, and signal-colored candles on live charts.',
+    category: 'Trading Anarchy TV',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1610375228957-80da9977ce25?auto=format&fit=crop&w=1200&q=80',
+    duration: '06:45',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief Editor",
-    relatedIndicatorId: "Rates Watch"
+    uploadedBy: 'Anarchy Strategist',
+    relatedIndicatorId: 'Gold Bar',
   },
   {
-    title: "Global Currency Flows: Flight to Sovereign Debt Reserves",
-    description: "A chronological look at active liquid flight routes into stable sovereign government bonds during session stress levels.",
-    category: "Market News TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=800&q=80",
-    duration: "00:46",
+    id: 'bretton-woods-doc',
+    title: 'Monetary Empires: Bretton Woods to Fiat',
+    description: 'From gold convertibility to floating rates — the architecture behind modern FX and sovereign debt markets.',
+    category: 'Documentary TV',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80',
+    duration: '14:00',
     uploadedAt: new Date().toISOString(),
-    uploadedBy: "Chief News Editor",
-    relatedIndicatorId: "Sovereign Debt"
+    uploadedBy: 'Media Archivist',
+    relatedIndicatorId: 'Monetary History',
   },
-  {
-    title: "Monetary Empires: Bretton Woods & the Suspension of Convertibility",
-    description: "A historical investigation of Bretton Woods, the Nixon Shock suspension of gold convertibility, and the emergence of floating fiat paper standards.",
-    category: "Documentary TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=800&q=80",
-    duration: "08:52",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Media Archivist",
-    relatedIndicatorId: "Monetary History"
-  },
-  {
-    title: "Futuristic Ledger Ecosystems & Private Digital Trust",
-    description: "A cinematic review of cryptographic clearing corridors, decentralized transaction engines, and asset preservation rules across safe network sectors.",
-    category: "Documentary TV",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=800&q=80",
-    duration: "12:14",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "Media Archivist",
-    relatedIndicatorId: "Trust Protocols"
-  },
-  {
-    title: "NASA TV Live: Space Science & Mission Coverage (HLS)",
-    description: "Live HLS broadcast stream from NASA Television — validates adaptive bitrate playback in the CPMS theater player.",
-    category: "Market News TV",
-    videoUrl: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8",
-    thumbnailUrl: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80",
-    duration: "LIVE",
-    uploadedAt: new Date().toISOString(),
-    uploadedBy: "ClearPath Curator",
-    relatedIndicatorId: "Live Feed"
-  }
 ];
 
 /** Pre-configured premium category channels. */
 export const STATIC_DEFAULT_CHANNELS: CpmsChannelSeed[] = [
   {
-    name: "Finance TV",
-    description: "Sovereign debt systems, high-tier credit creation, and institutional liquid corridors.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #1e3a8a 100%)",
+    name: 'Market News TV',
+    description: 'Live desks — Bloomberg, Yahoo Finance, ABC, CNA, and breaking macro headlines.',
+    thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #14532d 100%)',
   },
   {
-    name: "Indicator TV",
-    description: "Quantitative analysis, advanced RSI models, and mechanical signal line smoothing formulas.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #581c87 100%)",
+    name: 'Finance TV',
+    description: 'Bloomberg Originals and institutional macro explainers.',
+    thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #1e3a8a 100%)',
   },
   {
-    name: "Trading Anarchy TV",
-    description: "High-volatility breakouts, bullion gold standards, and decentralized liquidity flows.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #7f1d1d 100%)",
+    name: 'Trading Anarchy TV',
+    description: 'Gold Bar systems and high-volatility breakout frameworks.',
+    thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #7f1d1d 100%)',
   },
   {
-    name: "Market News TV",
-    description: "Macroeconomic rates adjustments, Federal Reserve metrics, and safe haven market pulses.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #14532d 100%)",
+    name: 'Indicator TV',
+    description: 'RSI, MACD, ATR, and yield-curve mechanics for systematic traders.',
+    thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #581c87 100%)',
   },
   {
-    name: "Documentary TV",
-    description: "Cinematic documentaries outlining historic currencies collapses and cryptographic futures.",
-    thumbnailUrl: "linear-gradient(135deg, #050410 0%, #1e293b 100%)",
-  }
+    name: 'Documentary TV',
+    description: 'Monetary history, sovereign debt, and the architecture of modern markets.',
+    thumbnailUrl: 'linear-gradient(135deg, #050410 0%, #1e293b 100%)',
+  },
 ];
 
-export const CPMS_CURATOR = "ClearPath Curator";
+export const CPMS_CURATOR = 'ClearPath Curator';
 
 /** Founder account authorized for CPMS admin cabinet + Storage writes. */
-export const CPMS_FOUNDER_EMAIL = "forexanarchy@gmail.com";
+export const CPMS_FOUNDER_EMAIL = 'forexanarchy@gmail.com';
+
+/** Build offline channel rows from the static seed list. */
+export function offlineChannelItems(): CpmsChannelItem[] {
+  return STATIC_DEFAULT_CHANNELS.map((ch, idx) => ({
+    id: `offline-ch-${idx}`,
+    ...ch,
+    createdAt: new Date().toISOString(),
+    createdBy: CPMS_CURATOR,
+  }));
+}
+
+/**
+ * Normalize cinema rows from Firestore/local cache:
+ * - force known-good Bloomberg HLS URLs
+ * - drop YouTube-only / empty-URL rows that freeze the player
+ */
+export function normalizeCinemaVideos(items: CpmsVideoItem[]): CpmsVideoItem[] {
+  const bloombergFix: Record<string, string> = {
+    'bloomberg-television': BLOOMBERG_HLS.us,
+    'bloomberg-europe': BLOOMBERG_HLS.eu,
+    'bloomberg-originals': BLOOMBERG_HLS.originals,
+  };
+
+  const cleaned: CpmsVideoItem[] = [];
+  for (const raw of items) {
+    const { youtubeVideoId: _yt, youtubeChannelId: _ch, ...rest } = raw as CpmsVideoItem & {
+      youtubeVideoId?: string;
+      youtubeChannelId?: string;
+    };
+    const id = rest.id || '';
+    let videoUrl = (rest.videoUrl || '').trim();
+    if (bloombergFix[id]) videoUrl = bloombergFix[id];
+    // Repair legacy CloudFront / non-www Bloomberg manifests
+    if (/bloomberg/i.test(id) || /bloomberg/i.test(videoUrl)) {
+      if (!videoUrl.includes('www.bloomberg.com/media-manifest')) {
+        if (/europe|\/eu\.m3u8/i.test(`${id} ${videoUrl}`)) videoUrl = BLOOMBERG_HLS.eu;
+        else if (/original|quicktake|\/qt\.m3u8/i.test(`${id} ${videoUrl}`)) videoUrl = BLOOMBERG_HLS.originals;
+        else if (/bloomberg/i.test(id)) videoUrl = BLOOMBERG_HLS.us;
+      }
+    }
+    if (!videoUrl) continue; // drop YouTube-only leftovers
+    cleaned.push({ ...rest, videoUrl });
+  }
+  return cleaned.length > 0 ? cleaned : SAMPLE_LIBRARY_VIDEOS;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { BOARD_ACCESS_CODE } from '../config/accessCodes';
 import ReidsGamesWidget from './ReidsGamesWidget';
 import { SkateboardVideoSandbox } from './SkateboardVideoSandbox';
 import { 
@@ -144,7 +145,7 @@ export default function FoundersPortal() {
 
   const handlePinSubmit = (val?: string) => {
     const codeToVerify = val !== undefined ? val : pinInput;
-    if (codeToVerify === '142879') {
+    if (codeToVerify === BOARD_ACCESS_CODE) {
       setIsUnlocked(true);
       localStorage.setItem('founders_unlocked', 'true');
       setPinError(false);

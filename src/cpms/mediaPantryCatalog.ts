@@ -1,5 +1,7 @@
 /** CPMS Media Pantry — curated channels (SiriusXM-style drawers). */
 
+import { BLOOMBERG_HLS } from './cpmsCatalog';
+
 export type MediaDrawerId = 'radio' | 'live' | 'pantry';
 
 export interface PantryShow {
@@ -21,15 +23,14 @@ export interface LiveStreamSource {
   id: string;
   label: string;
   network: string;
-  /** Official YouTube embed — legal, counts toward creator. */
-  youtubeVideoId?: string;
-  youtubeChannelId?: string;
+  /** Direct HLS (.m3u8) — no YouTube embeds */
+  hlsUrl: string;
   description: string;
 }
 
 export const MEDIA_DRAWERS: { id: MediaDrawerId; label: string; hint: string }[] = [
   { id: 'radio', label: 'RADIO', hint: 'Podcasts & daily audio' },
-  { id: 'live', label: 'LIVE TV', hint: 'Bloomberg, tastylive & more' },
+  { id: 'live', label: 'LIVE TV', hint: 'Bloomberg direct HLS' },
   { id: 'pantry', label: 'PANTRY', hint: 'Search the open directory' },
 ];
 
@@ -141,45 +142,21 @@ export const LIVE_STREAM_SOURCES: LiveStreamSource[] = [
     id: 'bloomberg',
     label: 'Bloomberg TV',
     network: 'Bloomberg',
-    youtubeVideoId: 'dp8PhLsUcFE',
-    description: 'Markets, Surveillance, and global business news (official YouTube embed).',
+    hlsUrl: BLOOMBERG_HLS.us,
+    description: 'Markets, Surveillance, and global business news — direct Bloomberg HLS (no YouTube).',
   },
   {
-    id: 'tastylive',
-    label: 'tastylive',
-    network: 'tastytrade',
-    youtubeChannelId: 'UCyUPBsrRkCyIkY4vFj84gXw',
-    description: '10+ hours of live market talk on trading days (official YouTube embed).',
+    id: 'bloomberg-eu',
+    label: 'Bloomberg Europe',
+    network: 'Bloomberg',
+    hlsUrl: BLOOMBERG_HLS.eu,
+    description: 'European session coverage from Bloomberg TV Europe — direct HLS.',
   },
   {
-    id: 'cnbc',
-    label: 'CNBC Television',
-    network: 'CNBC',
-    youtubeChannelId: 'UCYDFySpfC_6fBqahl2Q8xHg',
-    description: 'Live business news stream via YouTube.',
-  },
-  {
-    id: 'yahoo',
-    label: 'Yahoo Finance',
-    network: 'Yahoo',
-    youtubeChannelId: 'UC62jmzP8mvX9T6o1P8yuSJA',
-    description: 'Market headlines and live coverage.',
-  },
-  {
-    id: 'schwab',
-    label: 'Schwab Network',
-    network: 'Charles Schwab',
-    youtubeChannelId: 'UCqoFUb9L9P4HnWg9Yd4Wx6g',
-    description: 'Retail-focused market education and live desk.',
+    id: 'bloomberg-originals',
+    label: 'Bloomberg Originals',
+    network: 'Bloomberg',
+    hlsUrl: BLOOMBERG_HLS.originals,
+    description: 'Macro explainers and market deep dives from Bloomberg Originals — direct HLS.',
   },
 ];
-
-export function youtubeEmbedUrl(source: LiveStreamSource): string {
-  if (source.youtubeVideoId) {
-    return `https://www.youtube.com/embed/${source.youtubeVideoId}?autoplay=0&rel=0`;
-  }
-  if (source.youtubeChannelId) {
-    return `https://www.youtube.com/embed/live_stream?channel=${source.youtubeChannelId}&autoplay=0`;
-  }
-  return '';
-}

@@ -1,0 +1,24 @@
+{
+  "engine": "river-pine-interpreter",
+  "version": "1.1.0",
+  "minClientVersion": "0.0.0",
+  "releasedAt": "2026-07-18T00:00:00.000Z",
+  "channel": "stable",
+  "features": [
+    "pine-v4-v6",
+    "ta-core",
+    "plot-shape-barcolor",
+    "switch-blocks",
+    "catalog-public-private",
+    "compatibility-report",
+    "local-assist"
+  ],
+  "unsupported": [
+    "request.*",
+    "security()",
+    "live strategy orders",
+    "drawing labels/lines/tables render"
+  ],
+  "selfTestCommand": "npm run test:river",
+  "releaseNotes": "River platform layers: interpreter catalog, public API, private vault, compatibility UI, manifest updates, local assist."
+}

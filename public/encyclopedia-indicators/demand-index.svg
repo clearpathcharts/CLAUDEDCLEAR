@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img">
+
+    
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071226"/>
+      <stop offset="55%" stop-color="#0A1C3A"/>
+      <stop offset="100%" stop-color="#06101f"/>
+    </linearGradient>
+    <linearGradient id="cyanFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00B6FF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00B6FF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="tealFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="magentaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D946EF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#D946EF" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="cloudUp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FFD1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#00FFD1" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="cloudDn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2D95" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FF2D95" stop-opacity="0.06"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#00B6FF" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <rect x="48" y="56" width="724" height="504" fill="url(#grid)" rx="8"/>
+  <rect x="48" y="56" width="724" height="504" fill="none" stroke="#00B6FF" stroke-opacity="0.25" rx="8"/>
+  <text x="48" y="28" fill="#00FFD1" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" font-weight="700" letter-spacing="2">DEMAND INDEX</text>
+  <text x="48" y="46" fill="#00B6FF" fill-opacity="0.7" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10" letter-spacing="1.5">MOVING AVERAGE OVERLAY</text>
+  <circle cx="764" cy="28" r="5" fill="#00FFD1"/>
+  <text x="752" y="32" text-anchor="end" fill="#00FFD1" fill-opacity="0.8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="9" letter-spacing="1">LIVE</text>
+    <path d="M48.0,371.9 L62.2,322.7 L76.4,237.8 L90.6,213.7 L104.8,240.0 L119.0,237.5 L133.2,287.6 L147.4,306.0 L161.6,242.8 L175.8,222.9 L190.0,219.2 L204.2,136.4 L218.4,135.6 L232.5,203.0 L246.7,238.4 L260.9,301.3 L275.1,280.3 L289.3,320.7 L303.5,328.6 L317.7,364.7 L331.9,407.1 L346.1,453.8 L360.3,480.4 L374.5,400.6 L388.7,316.2 L402.9,377.1 L417.1,390.9 L431.3,426.2 L445.5,444.2 L459.7,423.7 L473.9,392.2 L488.1,385.6 L502.3,305.9 L516.5,269.4 L530.7,293.3 L544.9,212.5 L559.1,168.6 L573.3,180.4 L587.5,206.4 L601.6,241.2 L615.8,206.7 L630.0,202.7 L644.2,221.2 L658.4,203.6 L672.6,266.1 L686.8,287.9 L701.0,264.9 L715.2,194.6 L729.4,153.7 L743.6,195.8 L757.8,221.9 L772.0,163.4" fill="none" stroke="#94a3b8" stroke-width="1.5" opacity="0.7"/>
+    <path d="M48.0,371.9 L62.2,364.4 L76.4,344.9 L90.6,324.7 L104.8,311.7 L119.0,300.3 L133.2,298.3 L147.4,299.5 L161.6,290.8 L175.8,280.3 L190.0,270.9 L204.2,250.2 L218.4,232.6 L232.5,228.1 L246.7,229.7 L260.9,240.7 L275.1,246.8 L289.3,258.1 L303.5,269.0 L317.7,283.7 L331.9,302.7 L346.1,325.9 L360.3,349.7 L374.5,357.5 L388.7,351.2 L402.9,355.2 L417.1,360.7 L431.3,370.7 L445.5,382.1 L459.7,388.5 L473.9,389.0 L488.1,388.5 L502.3,375.8 L516.5,359.4 L530.7,349.3 L544.9,328.2 L559.1,303.7 L573.3,284.7 L587.5,272.6 L601.6,267.8 L615.8,258.4 L630.0,249.8 L644.2,245.4 L658.4,239.0 L672.6,243.2 L686.8,250.0 L701.0,252.3 L715.2,243.5 L729.4,229.7 L743.6,224.5 L757.8,224.1 L772.0,214.7" fill="none" stroke="#00FFD1" stroke-width="2.5"/>
+    
+    
+  
+</svg>
