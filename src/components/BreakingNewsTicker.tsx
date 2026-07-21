@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 import { Newspaper, Radio, AlertCircle, RefreshCw, Layers } from 'lucide-react';
 
 interface NewsItem {
@@ -14,7 +15,7 @@ export default function BreakingNewsTicker() {
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
-  const fetchNews = async () => {
+  const fetchNews = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/newsdata/latest');
@@ -37,16 +38,9 @@ export default function BreakingNewsTicker() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchNews();
-    // Refresh news every 60 seconds
-    const interval = setInterval(() => {
-      fetchNews();
-    }, 60000);
-    return () => clearInterval(interval);
   }, []);
+
+  const { refresh: refreshNews } = usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
 
   return (
     <>
@@ -107,7 +101,7 @@ export default function BreakingNewsTicker() {
 
         {/* Sync Controls */}
         <button
-          onClick={fetchNews}
+          onClick={() => void refreshNews()}
           disabled={loading}
           className="px-3 bg-black h-full border-l border-[#ff4500]/30 hover:bg-[#ff4500]/10 text-zinc-400 hover:text-white transition-all flex items-center justify-center shrink-0 disabled:opacity-50 cursor-pointer select-none"
           title="Force refresh dynamic NewsData stream"

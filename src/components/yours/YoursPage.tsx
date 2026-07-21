@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 import { 
   Terminal, 
   Cpu, 
@@ -404,7 +405,7 @@ export default function YoursPageHub() {
   ]);
 
   // Handle simulated auto RSS update triggers (every 6 or 12 hours check)
-  const handleSimulateRSSFetch = () => {
+  const handleSimulateRSSFetch = useCallback(() => {
     setIsSimulatingFetch(true);
     setFetchProgress(10);
     setSimulatedLogs([`[0.0s] [CRON] Triggered automatic feed update sequence...`]);
@@ -443,7 +444,11 @@ export default function YoursPageHub() {
         }
       }, step.t);
     });
-  };
+  }, []);
+
+  const { refresh: refreshRssFeed } = usePageAutoUpdate(handleSimulateRSSFetch, {
+    intervalMs: xmlPollingInterval * 60 * 60 * 1000,
+  });
 
   // Social OAuth: route each platform to its login / OAuth handshake screen
   const handleTriggerSocialConnect = (id: string, name: string) => {
@@ -608,7 +613,7 @@ export default function YoursPageHub() {
             </div>
 
             <button
-              onClick={handleSimulateRSSFetch}
+              onClick={() => void refreshRssFeed()}
               disabled={isSimulatingFetch}
               className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 cursor-pointer ${
                 isSimulatingFetch 

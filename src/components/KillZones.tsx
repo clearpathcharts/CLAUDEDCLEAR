@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, 
@@ -103,12 +104,7 @@ export default function KillZones() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentUtcTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  usePageAutoUpdate(() => setCurrentUtcTime(new Date()), { intervalMs: 1000 });
 
   // Update audio Volume
   useEffect(() => {
