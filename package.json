@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
+    "keep-alive": "bash scripts/keep-alive.sh",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",
