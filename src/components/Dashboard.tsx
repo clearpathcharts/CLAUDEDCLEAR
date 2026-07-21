@@ -77,6 +77,8 @@ import { isFounderEmail } from '../lib/founder';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
+import { useAppShell } from '../contexts/AppShellContext';
+import { isAppShell as detectAppShell } from '../lib/appShell';
 
 // Lazy load heavy tabs / panels to keep the main Dashboard chunk smaller
 const InteractiveChart = lazy(() =>
@@ -500,6 +502,7 @@ const TabContent = ({
 };
 
 export default function Dashboard({ profile: initialProfile, onProfileChange }: DashboardProps) {
+  const { isAppShell } = useAppShell();
   const profile = initialProfile || advancedProfiles.calm_focus as any; // Cast as any temporarily to avoid type errors since initialProfile is still typed loosely in some places
   const { 
     user: authUser, 
@@ -582,7 +585,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     return getDefaultDashboardTab();
   });
-  const [showTicker, setShowTicker] = useState(() => localStorage.getItem('cp_show_ticker') !== 'false');
+  const [showTicker, setShowTicker] = useState(() => {
+    if (detectAppShell()) return false;
+    return localStorage.getItem('cp_show_ticker') !== 'false';
+  });
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');
   const [showTerminalMatrixNoise, setShowTerminalMatrixNoise] = useState(() => localStorage.getItem('cp_terminal_ambient_overlay') === 'true');
   const [showHomepageContacts, setShowHomepageContacts] = useState(() => localStorage.getItem('cp_show_homepage_contacts') === 'true');
@@ -1180,14 +1186,15 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
       <SEO title={seoData.title} description={seoData.description} />
       {/* Mobile Sidebar Backdrop */}
-      {leftSide && (
+      {leftSide && !isAppShell && (
         <div 
           className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden cursor-pointer"
           onClick={() => setLeftSide(false)}
         />
       )}
 
-      {/* Left Sidebar */}
+      {/* Left Sidebar — hidden in lean app shell (nav lives in command center) */}
+      {!isAppShell && (
       <motion.div 
         initial={false}
         animate={{ width: leftSide ? 280 : 84 }}
@@ -1404,6 +1411,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </div>
         </a>
       </motion.div>
+      )}
 
       {/* Main Content */}
       <div 
@@ -1411,14 +1419,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         style={{ background: profile.bgTop }}
       >
         {/* TOP PERSISTENT BREAKING NEWS HOIST */}
-        <BreakingNewsTicker />
+        {!isAppShell && <BreakingNewsTicker />}
 
         {/* PERSISTENT Clear NAV */}
-        <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} />
+        <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} lean={isAppShell} />
 
         
         {/* TOP MARKET TICKER */}
-        {showTicker && (
+        {showTicker && !isAppShell && (
           <div className="z-40">
             <Suspense fallback={<div className="h-10 bg-black/40  border-b border-white/5" />}>
               <MarketTicker profile={profile} />
@@ -1484,7 +1492,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         >
           {/* Hero/cover banner removed per ZERO HERO IMAGES rule --
               content starts immediately and flows top-to-bottom. */}
-          {activeTab !== 'Insights' && activeTab !== 'StrictlyCharts' && activeTab !== 'ThemeTerminal' && activeTab !== 'Encyclopedia' && activeTab !== 'EncyclopediaOfIndicators' && (
+          {activeTab !== 'Insights' && activeTab !== 'StrictlyCharts' && activeTab !== 'ThemeTerminal' && activeTab !== 'Encyclopedia' && activeTab !== 'EncyclopediaOfIndicators' && !isAppShell && (
             <SystemIntelligencePanel />
           )}
 
@@ -1534,13 +1542,13 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
           <div className="w-full mt-auto mb-0 bg-transparent flex flex-col">
             <LegalFooter profile={profile} onShowTerms={() => setShowAdditionalTerms(true)} />
-            <BreakingNewsTicker />
+            {!isAppShell && <BreakingNewsTicker />}
           </div>
         </div>
       </div>
 
       {/* Right Sidebar */}
-      {activeTab !== 'StrictlyCharts' && (
+      {activeTab !== 'StrictlyCharts' && !isAppShell && (
       <div className={`
         fixed inset-y-0 right-0 z-50 w-[280px] border-l flex flex-col transition-all duration-300 glass
         xl:sticky xl:top-0 xl:h-dvh
@@ -1678,7 +1686,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
       {/* Overlay */}
       <AnimatePresence>
-        {(leftSide || rightSide) && (
+        {(leftSide || rightSide) && !isAppShell && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
