@@ -155,7 +155,7 @@ export function searchCatalog(query: string): RiverCatalogEntry[] {
   );
 }
 
-export function entryFromActive(active: ActiveRiverIndicator, meta: {
+export function entryFromActive(active: Omit<ActiveRiverIndicator, "savedAt">, meta: {
   author?: string;
   description?: string;
   tags?: string[];

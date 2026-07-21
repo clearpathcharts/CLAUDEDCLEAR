@@ -368,6 +368,12 @@ console.log("\n[7] Platform layers (compat, assist, catalog types)");
   const extracted = extractPineCode(sample);
   check("extract pine from fence", !!extracted && extracted.includes("indicator"));
   check("suggest file name", suggestIndicatorFileName(extracted || "").endsWith(".pine"));
+
+  const { detectSourceLanguage, translateMql4ToPine } = await import("../src/river/importers/index");
+  const mql = detectSourceLanguage(`extern int R=14;\ndouble x=iRSI(NULL,0,R,PRICE_CLOSE);\n`);
+  check("detect MQL4", mql.language === "mql4");
+  const conv = translateMql4ToPine(`extern int R=14;\ndouble rsi=iRSI(NULL,0,R,PRICE_CLOSE);\n`);
+  check("MQL4 converts to pine", conv.ok && !!conv.pineSource?.includes("ta.rsi"));
 }
 
 // -------------------------------------------------------------------- DONE
