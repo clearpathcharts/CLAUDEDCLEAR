@@ -6,6 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+data/
+secrets/
+*-firebase-adminsdk-*.json
+*.pem
 data/registrations/
 data/intelligence/
 data/private_accounts/
@@ -14,3 +18,7 @@ data/profiles/
 # Generated at server startup by the SEO asset node -- never commit
 public/logo.png
 public/og-image.png
+
+.env
+.env.local
+

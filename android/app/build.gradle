@@ -30,6 +30,16 @@ repositories {
     }
 }
 
+configurations {
+    configureEach {
+        resolutionStrategy.activateDependencyLocking()
+    }
+}
+
+dependencyLocking {
+    lockMode.set(LockMode.DEFAULT)
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"

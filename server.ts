@@ -38,6 +38,18 @@ import {
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage } from './src/server/contentPages';
 import {
+  resolveIndexNowKey,
+  submitIndexNow,
+  indexNowKeyLocation,
+} from './src/server/indexNow';
+import { REGIONAL_MARKETS, regionalHubEntries } from './src/server/regionalSeo';
+import {
+  grantContractorBadgeByEmail,
+  seedIndependentContractorBadges,
+  applyPendingContractorBadges,
+  IC_BADGE_SEED_EMAILS,
+} from './src/server/contractorBadges';
+import {
   stockEntries,
   cryptoEntries,
   forexEntries,
@@ -50,6 +62,7 @@ import {
   catalogCounts,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
+import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import { readProfile, writeProfile } from './src/server/profileStore';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
@@ -119,6 +132,28 @@ function getCleanTwelveDataApiKey(): string {
     console.warn('[Gateway] No Twelve Data API key found in environment. Live data will be unavailable until one is configured.');
   }
   return key;
+}
+
+/** Read a UTF-8 file only when it resolves inside an allowlisted root (blocks path traversal / file inclusion). */
+function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cwd()]): string {
+  const resolved = path.resolve(filePath);
+  const ok = allowedRoots.some((root) => {
+    const base = path.resolve(root);
+    return resolved === base || resolved.startsWith(base + path.sep);
+  });
+  if (!ok) {
+    throw new Error(`Blocked path outside allowlist: ${filePath}`);
+  }
+  // Reject symlink escapes that land outside the allowlist
+  const real = fs.realpathSync(resolved);
+  const realOk = allowedRoots.some((root) => {
+    const base = fs.realpathSync(path.resolve(root));
+    return real === base || real.startsWith(base + path.sep);
+  });
+  if (!realOk) {
+    throw new Error(`Blocked symlink path outside allowlist: ${filePath}`);
+  }
+  return fs.readFileSync(real, 'utf8');
 }
 
 // SSRF PROTECTION
@@ -208,9 +243,24 @@ async function startServer() {
     referrerPolicy: { policy: 'no-referrer' },
     hidePoweredBy: true,
   }));
-  app.use(cors());
+  // Same-origin by default in production. Set CORS_ALLOWED_ORIGINS=https://a.com,https://b.com for multi-origin.
+  const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  app.use(cors({
+    origin: isProd
+      ? (corsAllowedOrigins.length
+          ? (origin, callback) => {
+              if (!origin || corsAllowedOrigins.includes(origin)) callback(null, true);
+              else callback(new Error('Not allowed by CORS'));
+            }
+          : false)
+      : true,
+    credentials: true,
+  }));
   app.use(compression());
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -227,8 +277,17 @@ async function startServer() {
       pathLower === '/manifest.webmanifest' ||
       pathLower === '/logo.png' ||
       pathLower === '/og-image.png' ||
-      pathLower === '/api/seo/catalog-counts'
+      pathLower === '/api/seo/catalog-counts' ||
+      pathLower === '/api/seo/indexnow' ||
+      pathLower === '/api/seo/indexnow/status' ||
+      pathLower === '/api/seo/regional-markets'
     ) {
+      return next();
+    }
+
+    // IndexNow ownership key file at site root: /{key}.txt
+    const indexNowKey = resolveIndexNowKey();
+    if (indexNowKey && pathLower === `/${indexNowKey.toLowerCase()}.txt`) {
       return next();
     }
 
@@ -347,58 +406,82 @@ async function startServer() {
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
-  // Custom OAuth Routes for non-Firebase Native Providers
+  // Custom OAuth stubs — relative returnTo only (no open redirects). Prefer Firebase / private auth in production.
   const customProviders = [
     'discord', 'twitch', 'tiktok', 'linkedin', 'vk', 'reddit', 'telegram', 'tumblr', 'youtube',
     'google', 'facebook', 'instagram', 'twitter', 'snapchat', 'pinterest', 'threads', 'github',
   ];
-  
-  customProviders.forEach(provider => {
-    app.get(`/auth/${provider}`, (req, res, next) => {
-      // In production with real OAuth keys, this would call passport.authenticate(provider).
-      // Until keys are configured, show an explicit login / authorize screen that returns to the app.
-      const rawReturn = typeof req.query.returnTo === 'string' ? req.query.returnTo : '/?tab=Yours#Yours';
-      const returnTo = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '/?tab=Yours#Yours';
+  const OAUTH_RETURN_ALLOW = new Set([
+    '/',
+    '/#Biography',
+    '/#private-login',
+    '/?tab=Yours#Yours',
+    '/?tab=Biography#Biography',
+  ]);
+  function safeOAuthReturnTo(raw: unknown): string {
+    if (typeof raw !== 'string') return '/?tab=Yours#Yours';
+    const candidate = raw.trim();
+    if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('://')) {
+      return '/?tab=Yours#Yours';
+    }
+    if (OAUTH_RETURN_ALLOW.has(candidate)) return candidate;
+    // Allow only simple hash/tab deep links under the SPA root
+    if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
+    return '/?tab=Yours#Yours';
+  }
+
+  customProviders.forEach((provider) => {
+    app.get(`/auth/${provider}`, (req, res) => {
+      const returnTo = safeOAuthReturnTo(req.query.returnTo);
       const safeReturn = returnTo.replace(/[<>"']/g, '');
-      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase();
-      res.send(`
-        <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>${label} Login — ClearPath</title>
-          </head>
-          <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
-            <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
-              <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
-              <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
-              <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
-                Sign in with ${label} to link your ClearPath social node.
-                Production deploys with provider API keys redirect to the real ${label} authorize page.
-              </p>
-              <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
-                Continue to ClearPath
-              </a>
-              <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
-                Or use Private Login instead →
-              </a>
-            </div>
-          </body>
-        </html>
-      `);
+      const label = provider.replace(/[^a-z0-9_-]/gi, '').toUpperCase() || 'PROVIDER';
+      res.type('html').send(`<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${label} Login — ClearPath</title>
+  </head>
+  <body style="margin:0;background:#030307;color:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;padding:24px;text-align:center;">
+    <div style="max-width:420px;width:100%;border:1px solid rgba(0,182,255,0.35);border-radius:20px;padding:28px;background:linear-gradient(160deg,#071226,#0A1C3A);box-shadow:0 0 40px rgba(0,182,255,0.15);">
+      <p style="color:#00FFD1;letter-spacing:0.2em;font-size:11px;margin:0 0 12px;">OAUTH LOGIN</p>
+      <h1 style="color:#fff;font-size:22px;margin:0 0 8px;">Connect ${label}</h1>
+      <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0 0 24px;">
+        Sign in with ${label} to link your ClearPath social node.
+        Production deploys with provider API keys redirect to the real ${label} authorize page.
+      </p>
+      <a href="${safeReturn}" style="display:inline-block;width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;background:#00B6FF;color:#071226;font-weight:800;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;font-size:12px;">
+        Continue to ClearPath
+      </a>
+      <a href="/#private-login" style="display:inline-block;margin-top:12px;color:#00FFD1;font-size:12px;text-decoration:none;letter-spacing:0.06em;">
+        Or use Private Login instead →
+      </a>
+    </div>
+  </body>
+</html>`);
     });
-    
-    app.get(`/auth/${provider}/callback`, (req, res) => {
+
+    app.get(`/auth/${provider}/callback`, (_req, res) => {
       res.redirect('/?tab=Yours#Yours');
     });
   });
 
+
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
+    const adminDb = getAdminFirestore();
     res.json({ 
       status: 'healthy', 
       version: '5.0.0-institutional',
       uptime: process.uptime(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      waitlist: {
+        firestoreAdmin: Boolean(adminDb),
+        appwriteConfigured: Boolean(
+          process.env.VITE_APPWRITE_PROJECT_ID &&
+          process.env.VITE_APPWRITE_PROJECT_ID !== 'YOUR_PROJECT_ID'
+        ),
+      },
     });
   });
 
@@ -461,7 +544,10 @@ async function startServer() {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
-      const profile = readProfile(uid) || { uid, displayName: sessionUser?.displayName || '' };
+      const profile =
+        applyPendingContractorBadges(uid, sessionUser?.email) ||
+        readProfile(uid) ||
+        { uid, displayName: sessionUser?.displayName || '' };
       res.json({ ok: true, profile });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Failed to load profile' });
@@ -505,7 +591,7 @@ async function startServer() {
   app.get('/api/river/compiler/manifest', (_req, res) => {
     try {
       const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
-      const raw = fs.readFileSync(manifestPath, 'utf8');
+      const raw = safeReadTextFile(manifestPath);
       res.setHeader('Cache-Control', 'public, max-age=300');
       res.json(JSON.parse(raw));
     } catch (error: any) {
@@ -1398,11 +1484,21 @@ ${CPT_SITE_GUIDE}`;
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
       }
 
+<<<<<<< HEAD
       res.json({
         ...data,
         price: data.price ?? data.close,
         percent_change: data.percent_change ?? data.change_percent,
       });
+=======
+      // Normalize so all clients (ticker strip, charts, adapters) share one price field.
+      // Twelve Data's /quote payload uses `close`; some UI only read `price`.
+      const normalized = {
+        ...data,
+        price: data.price ?? data.close,
+      };
+      res.json(normalized);
+>>>>>>> origin/main
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: error.message || 'Twelve Data API Failure' });
@@ -1515,7 +1611,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
-        const data = fs.readFileSync(newsPath, 'utf8');
+        const data = safeReadTextFile(newsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -1575,7 +1671,7 @@ ${CPT_SITE_GUIDE}`;
       const newsPath = path.join(process.cwd(), 'news_data.json');
       if (fs.existsSync(newsPath)) {
         try {
-          const local = JSON.parse(fs.readFileSync(newsPath, 'utf8'));
+          const local = JSON.parse(safeReadTextFile(newsPath));
           local.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1592,7 +1688,7 @@ ${CPT_SITE_GUIDE}`;
       const masterPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterPath)) {
         try {
-          const master = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+          const master = JSON.parse(safeReadTextFile(masterPath));
           master.forEach((item: any) => {
             newsList.push({
               title: item.title,
@@ -1616,7 +1712,7 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  // RSS Proxy API with timeout handling
+  // Stream proxy — SSRF-guarded, timed, size-capped
   app.get('/api/stream-proxy', async (req, res) => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
@@ -1628,10 +1724,19 @@ ${CPT_SITE_GUIDE}`;
       console.warn('[Stream Proxy] Rejected unsafe URL:', url, '-', guardErr.message);
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
+    const STREAM_PROXY_TIMEOUT_MS = 15_000;
+    const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { redirect: 'error' });
+      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
       if (!response.ok) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
+      }
+
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      if (contentLength > STREAM_PROXY_MAX_BYTES) {
+        return res.status(413).json({ error: 'Upstream payload too large' });
       }
 
       res.setHeader('Access-Control-Allow-Origin', '*');
@@ -1642,6 +1747,9 @@ ${CPT_SITE_GUIDE}`;
 
       if (isM3u8) {
         const text = await response.text();
+        if (text.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream playlist too large' });
+        }
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -1678,12 +1786,18 @@ ${CPT_SITE_GUIDE}`;
       } else {
         // Transparent binary segment forwarding for TS chunks loaded through the proxy
         res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = await response.arrayBuffer();
-        return res.send(Buffer.from(buffer));
+        const buffer = Buffer.from(await response.arrayBuffer());
+        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
+          return res.status(413).json({ error: 'Upstream segment too large' });
+        }
+        return res.send(buffer);
       }
     } catch (error: any) {
       console.error('[Stream Proxy Error]', error);
-      res.status(502).json({ error: 'Failed to proxy stream details', message: error.message });
+      const status = error?.name === 'AbortError' ? 504 : 502;
+      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
+    } finally {
+      clearTimeout(timeout);
     }
   });
 
@@ -1932,7 +2046,7 @@ ${CPT_SITE_GUIDE}`;
     try {
       const masterNewsPath = path.join(process.cwd(), 'master_news.json');
       if (fs.existsSync(masterNewsPath)) {
-        const data = fs.readFileSync(masterNewsPath, 'utf8');
+        const data = safeReadTextFile(masterNewsPath);
         res.json(JSON.parse(data));
       } else {
         res.json([]);
@@ -2130,7 +2244,10 @@ Disallow: /auth/
 Disallow: /login
 Disallow: /dashboard
 
-Sitemap: https://clearpathtrader.com/sitemap.xml`);
+# Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu
+Sitemap: https://clearpathtrader.com/sitemap.xml
+Host: clearpathtrader.com
+`);
   });
 
   // 4. DYNAMIC XML SITEMAP SYSTEM
@@ -2192,6 +2309,59 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(catalogCounts());
   });
 
+  // IndexNow key file (Bing / Yandex / Naver ecosystem ownership proof)
+  app.get(/^\/([a-zA-Z0-9_-]{8,128})\.txt$/i, (req, res, next) => {
+    const key = resolveIndexNowKey();
+    const requested = req.params[0];
+    if (!key || !requested || requested.toLowerCase() !== key.toLowerCase()) return next();
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(key);
+  });
+
+  app.get('/api/seo/indexnow/status', (_req, res) => {
+    const key = resolveIndexNowKey();
+    res.json({
+      configured: Boolean(key),
+      keyLocation: key ? indexNowKeyLocation(key) : null,
+      markets: REGIONAL_MARKETS.map((m) => ({ id: m.id, label: m.label, engines: m.engines })),
+      note: 'Google does not consume IndexNow — use Search Console + sitemaps.',
+    });
+  });
+
+  app.get('/api/seo/regional-markets', (_req, res) => {
+    res.json({ markets: REGIONAL_MARKETS });
+  });
+
+  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+    const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
+    try {
+      const result = await submitIndexNow(urls);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'IndexNow submit failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email : '';
+      const result = grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ ok: false, error: err?.message || 'Grant failed' });
+    }
+  });
+
+  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, (_req, res) => {
+    try {
+      const result = seedIndependentContractorBadges();
+      res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
+    } catch (err: any) {
+      res.status(500).json({ ok: false, error: err?.message || 'Seed failed' });
+    }
+  });
+
   app.get('/sitemap-pages.xml', (req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(buildUrlset([
@@ -2211,6 +2381,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/tools/position-size', lastmod: '2026-07-19', changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod: '2026-07-19', changefreq: 'yearly', priority: '0.55' },
       ...encyclopediaHubEntries(),
+      ...regionalHubEntries(),
     ]));
   });
 
@@ -2365,7 +2536,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
       if (isDev) {
         const indexHtmlPath = path.resolve(process.cwd(), 'index.html');
-        let html = fs.readFileSync(indexHtmlPath, 'utf-8');
+        let html = safeReadTextFile(indexHtmlPath);
         
         if (vite) {
           html = await vite.transformIndexHtml(req.url, html);
@@ -2381,7 +2552,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
-          const html = fs.readFileSync(destIndexPath, 'utf-8');
+          const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
           res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -2413,6 +2584,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/glossary',
     '/faq',
     '/accessibility',
+    '/regions',
+    '/regions/:id',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
@@ -2494,6 +2667,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
+    // Applied immediately if the private account exists; otherwise pending until login.
+    try {
+      const seeded = seedIndependentContractorBadges();
+      const summary = seeded.results
+        .map((r) => `${r.email}:${r.status}`)
+        .join(', ');
+      console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
+    } catch (e: any) {
+      console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
+    }
     
     // Postpone heavy startup integrity audits and self-checks by 10s.
     // This allows the container to start instantly, keeps CPU usage at a minimum during boot,
@@ -2507,6 +2692,20 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } catch (e: any) {
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
+
+      // Notify Bing/Yandex ecosystem about regional hubs (no-op without IndexNow key).
+      void submitIndexNow([
+        'https://clearpathtrader.com/regions',
+        ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
+      ]).then((r) => {
+        if (r.skipped) {
+          console.log(`[STARTUP] IndexNow regional hubs skipped: ${r.skipped}`);
+        } else {
+          console.log(`[STARTUP] IndexNow regional hubs submitted=${r.submitted} ok=${r.ok}`);
+        }
+      }).catch((e) => {
+        console.warn('[STARTUP] IndexNow regional hub ping failed:', e?.message || e);
+      });
 
       // 1. ComplianceAuditEngine executes automatically on startup
       try {
