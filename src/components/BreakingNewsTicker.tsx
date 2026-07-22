@@ -40,6 +40,7 @@ export default function BreakingNewsTicker() {
     }
   };
 
+  // Breaking ticker needs frequent refresh vs editorial 6h/12h feeds.
   usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
 
   return (

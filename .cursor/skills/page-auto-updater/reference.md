@@ -4,6 +4,7 @@
 
 - `src/hooks/usePageAutoUpdate.ts` — poll + visibility pause + in-flight guard + `refresh` / `lastUpdatedAt`
 - Reuses `src/hooks/useVisibilityPause.ts`
+- `src/services/dataStreamService.ts` — WebSocket + health polling + subscriber API (service-level; pages subscribe)
 
 ## Existing refresh surfaces
 
@@ -11,12 +12,12 @@
 |---------|------|----------|--------|
 | Market ticker quotes | `src/components/MarketTicker.tsx` | 30s | **wired** `usePageAutoUpdate` |
 | Market diagnostics | `src/components/MarketDiagnostics.tsx` | 15s | **wired** (build-errors fetch once on mount) |
-| Breaking news ticker | `src/components/BreakingNewsTicker.tsx` | 60s | **wired** |
+| Breaking news ticker | `src/components/BreakingNewsTicker.tsx` | 60s | **wired** (ticker cadence; not editorial 6h) |
 | Kill zones clock | `src/components/KillZones.tsx` | 1s | **wired** |
 | Trading sessions | `src/components/TradingSessionsCollapse.tsx` | 1s | **wired** |
 | Terminal session clock | `src/components/widgets/TerminalConfigWidget.tsx` | 2s | **wired** (session/UTC only) |
 | Twelve Data health | `src/services/dataStreamService.ts` | 4s | Service-level — leave; pages subscribe |
-| Lightweight candles | `src/components/charts/LightweightCandles.tsx` | chart-specific | Already uses `useVisibilityPause`; chart tick stays local |
+| Lightweight candles | `src/components/charts/LightweightCandles.tsx` | chart-specific | Uses `useVisibilityPause`; tick loop also skips when tab hidden |
 | Capital flow map | `src/components/CapitalFlowMap.tsx` | 200ms sim | Demo simulator — keep local |
 | Market scanner | `src/components/MarketScanner.tsx` | 8s sim | Demo simulator — keep local |
 | News panel | `src/components/NewsPanel.tsx` | asset + pipeline | Simulated pipeline — keep local |
@@ -25,12 +26,19 @@
 | App location poll | `src/App.tsx` | 2s | Routing helper — do not conflate |
 | EurUsd sparkline widget | `TerminalConfigWidget` inner | 400ms sim | Demo sparkline — keep local |
 | Yours RSS simulator | `src/components/yours/YoursPage.tsx` | 6h / 12h UI | Wire when real fetch exists |
+| Affiliate / Auth / Membership timers | various | UI timers | Not page data refresh — leave |
 
-## Shared primitives already in repo
+## Hook API
 
-- `src/hooks/useVisibilityPause.ts` — returns `visible` from `document.visibilityState`
-- `src/services/dataStreamService.ts` — WebSocket + health polling + subscriber API
-- `src/hooks/usePageAutoUpdate.ts` — canonical page poll hook
+```ts
+import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate"
+
+const { refresh, lastUpdatedAt } = usePageAutoUpdate(fetchQuotes, {
+  intervalMs: 30_000,
+  immediate: true, // default
+  enabled: true,   // default
+})
+```
 
 ## Migration pattern
 
@@ -51,6 +59,8 @@ const { refresh, lastUpdatedAt } = usePageAutoUpdate(fetchQuotes, {
   intervalMs: 30_000,
 })
 ```
+
+Behavior: immediate run when enabled+visible; interval ticks skip when tab hidden; no overlapping in-flight runs; clears interval on unmount.
 
 ## PR auto-updater (do not mix)
 

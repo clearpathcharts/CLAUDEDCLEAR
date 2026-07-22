@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Clock, 
@@ -24,7 +25,6 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
-import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
 interface Session {
   id: string;
