@@ -19,15 +19,17 @@ ClearPath already ships ~30k indexable URLs. Ranking across **all** major engine
 
 ## Live regional hubs (shipped)
 
-| Market | URL | Language |
-|---|---|---|
-| Index | https://clearpathtrader.com/regions | EN |
-| Russia / CIS | https://clearpathtrader.com/regions/ru | `ru-RU` |
-| China | https://clearpathtrader.com/regions/cn | `zh-CN` |
-| Japan (Tokyo) | https://clearpathtrader.com/regions/jp | `ja-JP` |
-| Philippines | https://clearpathtrader.com/regions/ph | `fil-PH` |
+| Market | URL | Language | Local FX deep link |
+|---|---|---|---|
+| Index | https://clearpathtrader.com/regions | EN | — |
+| Russia / CIS | https://clearpathtrader.com/regions/ru | `ru-RU` | `/forex/usdrub` |
+| China | https://clearpathtrader.com/regions/cn | `zh-CN` | `/forex/usdcny` |
+| Japan (Tokyo) | https://clearpathtrader.com/regions/jp | `ja-JP` | `/forex/usdjpy` |
+| Philippines | https://clearpathtrader.com/regions/ph | `fil-PH` (+ `tl`) | `/forex/usdphp` |
 
-On boot the server IndexNow-pings these hubs when `INDEXNOW_KEY` / `SESSION_SECRET` / `CATALOG_ADMIN_SECRET` is available.
+Each hub ships native-language body copy, localized waitlist CTA, and FAQPage JSON-LD. Hreflang language alternates are scoped to `/regions*` (generic EN pages no longer fake-alternate to hubs).
+
+On boot the server IndexNow-pings hubs + market pairs via `regionalIndexNowUrls()` when an IndexNow key is available.
 
 ## IndexNow (wired in app)
 

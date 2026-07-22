@@ -44,7 +44,7 @@ import {
   submitIndexNow,
   indexNowKeyLocation,
 } from './src/server/indexNow';
-import { REGIONAL_MARKETS, regionalHubEntries } from './src/server/regionalSeo';
+import { REGIONAL_MARKETS, regionalHubEntries, regionalIndexNowUrls } from './src/server/regionalSeo';
 import {
   grantContractorBadgeByEmail,
   seedIndependentContractorBadges,
@@ -2931,13 +2931,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
 
-      // Notify Bing/Yandex ecosystem (homepage + regional hubs).
+      // Notify Bing/Yandex ecosystem (homepage + regional hubs + market pairs).
       void submitIndexNow([
         'https://clearpathtrader.com/',
         'https://clearpathtrader.com/about',
-        'https://clearpathtrader.com/encyclopedia',
-        'https://clearpathtrader.com/regions',
-        ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
+        ...regionalIndexNowUrls(),
       ]).then((r) => {
         if (r.skipped) {
           console.log(`[STARTUP] IndexNow skipped: ${r.skipped}`);
