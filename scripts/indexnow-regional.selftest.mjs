@@ -35,9 +35,10 @@ function normalizeIndexNowUrls(urls) {
 
 function resolveIndexNowKey(env) {
   const fromEnv = (env.INDEXNOW_KEY || '').trim();
-  if (fromEnv && /^[a-zA-Z0-9_-]{8,128}$/.test(fromEnv)) return fromEnv;
+  // Match server: Bing/Yandex-safe charset (no underscore)
+  if (fromEnv && /^[a-zA-Z0-9-]{8,128}$/.test(fromEnv)) return fromEnv;
   const seed = env.SESSION_SECRET?.trim() || env.CATALOG_ADMIN_SECRET?.trim() || '';
-  if (!seed) return null;
+  if (!seed) return 'clearpath-trader-indexnow-01';
   return crypto.createHash('sha256').update(`indexnow:${seed}`).digest('hex').slice(0, 32);
 }
 
@@ -48,8 +49,9 @@ const REGIONAL_MARKETS = [
   { id: 'ph', ogLocale: 'fil_PH', lang: 'fil-PH' },
 ];
 
-assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'clearpath_indexnow_testkey_01' }), 'clearpath_indexnow_testkey_01');
-assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'bad' }), null);
+assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'clearpath-indexnow-testkey-01' }), 'clearpath-indexnow-testkey-01');
+assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'bad' }), 'clearpath-trader-indexnow-01');
+assert.equal(resolveIndexNowKey({ INDEXNOW_KEY: 'has_underscore_bad' }), 'clearpath-trader-indexnow-01');
 // Deterministic fixture — not a live credential (Aikido secret scanners)
 assert.match(resolveIndexNowKey({ SESSION_SECRET: 'test-fixture-not-a-real-secret' }), /^[a-f0-9]{32}$/);
 
