@@ -748,10 +748,10 @@ export default function Auth() {
           PRIVATE MEMBER LOGIN ACTIVE
         </motion.div>
 
-        {/* Glitch Headline Title */}
-        <h1 className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl select-none text-neon-glow font-sans mt-2">
+        {/* Brand hero — visual title only. Document <h1> lives in index.html for Bing (one H1 rule). */}
+        <p className="hero-title text-[40px] sm:text-[64px] md:text-[84px] font-black tracking-tighter text-white leading-none uppercase max-w-5xl select-none text-neon-glow font-sans mt-2">
           CLEARPATH TRADER
-        </h1>
+        </p>
 
         {/* Glassmorphic Subheadline Header */}
         <h2 className="hero-subtitle text-lg sm:text-2xl text-[#00FFFF] font-mono tracking-widest uppercase mt-6 mb-4 max-w-3xl text-neon-glow leading-normal font-bold">

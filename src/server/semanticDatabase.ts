@@ -1069,26 +1069,35 @@ ${hreflangTags}
   html = html.replace('</head>', `${ogTags}\n${schemaScripts}\n</head>`);
 
   if (pathClean === '/') {
-    // Homepage is SPA-rendered. Bing SEO audits reject clipped/hidden H1s — keep a
-    // normal in-flow H1 in the boot shell (index.html) and reinforce via enrich.
-    const safeHomeDesc = description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    if (!html.includes('id="seo-document-h1"')) {
+    // Exactly ONE <h1> on the homepage — Bing flags both "missing" and "more than one".
+    // Prefer existing H1 (index.html #seo-document-h1 or bot static page). Never add a second.
+    if (!/<h1[\s>]/i.test(html)) {
       const homeHeader =
         '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
         '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
         '</header>';
       html = html.replace('<div id="root">', `${homeHeader}\n    <div id="root">`);
+      if (!html.includes('id="seo-document-h1"')) {
+        // Static bot shell has <main> not #root — inject before <main> as fallback.
+        html = html.replace('<main>', `${homeHeader}\n    <main>`);
+      }
     }
+    const safeHomeDesc = description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // noscript must NOT introduce a second <h1> (Bing SEO counts it).
     const noscriptHome = `
     <noscript>
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
-        <h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
+        <p><strong>ClearPath Trader — Market Intelligence &amp; Education Terminal</strong></p>
         <p>${safeHomeDesc}</p>
         <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
     if (!html.includes('<noscript>')) {
-      html = html.replace('<div id="root">', `${noscriptHome}\n    <div id="root">`);
+      if (html.includes('<div id="root">')) {
+        html = html.replace('<div id="root">', `${noscriptHome}\n    <div id="root">`);
+      } else if (html.includes('<main>')) {
+        html = html.replace('<main>', `${noscriptHome}\n    <main>`);
+      }
     }
   } else if (pathClean === TRADING_REIMAGINED_PATH) {
     const noscriptArticle = `

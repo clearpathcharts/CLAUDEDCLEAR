@@ -1,5 +1,5 @@
 /**
- * Ensures homepage SSR HTML includes a crawlable visible <h1> (Bing URL Inspection).
+ * Homepage must expose exactly one crawlable <h1> (Bing: missing OR more-than-one).
  *
  * Run: npx tsx scripts/homepage-h1.selftest.ts
  */
@@ -16,16 +16,21 @@ import {
   resolveIndexNowKey,
 } from '../src/server/indexNow.ts';
 
+function countH1(html: string): number {
+  return (html.match(/<h1[\s>]/gi) || []).length;
+}
+
 const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf8');
+assert.equal(countH1(indexHtml), 1, 'index.html must contain exactly one <h1>');
 assert.match(
   indexHtml,
   /<h1 id="seo-document-h1"[^>]*>ClearPath Trader — Market Intelligence &amp; Education Terminal<\/h1>/,
-  'index.html must ship a visible body <h1> for Bing',
+  'index.html must ship the canonical homepage H1',
 );
 assert.doesNotMatch(
   indexHtml,
   /seo-document-h1"[^>]*clip:rect/,
-  'homepage H1 must not use clip/hidden cloaking Bing ignores',
+  'homepage H1 must not use clip/hidden cloaking',
 );
 
 const keyFile = path.resolve('public', `${DEFAULT_PUBLIC_INDEXNOW_KEY}.txt`);
@@ -44,29 +49,20 @@ assert.equal(isSearchEngineBot('Mozilla/5.0 (compatible; bingbot/2.0; +http://ww
 assert.equal(isSearchEngineBot('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120'), false);
 
 const botHome = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+assert.equal(countH1(botHome), 1, 'bot homepage must have exactly one <h1>');
 assert.match(
   botHome,
   /<h1>ClearPath Trader — Market Intelligence &amp; Education Terminal<\/h1>/,
-  'bot homepage must expose a normal in-flow H1',
 );
 
-const shell = `<!doctype html>
-<html lang="en">
-  <head><title>t</title></head>
-  <body>
-    <div id="root">
-      <div role="status">
-        <div id="loader-text">Loading New Architecture...</div>
-      </div>
-    </div>
-  </body>
-</html>`;
-
+const shell = fs.readFileSync(path.resolve('index.html'), 'utf8');
 const home = enrichHtmlWithMetadata(shell, '/');
-assert.match(
+assert.equal(countH1(home), 1, 'enriched homepage SPA shell must keep exactly one <h1>');
+assert.match(home, /<noscript>[\s\S]*<\/noscript>/, 'noscript fallback should exist');
+assert.doesNotMatch(
   home,
-  /<h1[^>]*>ClearPath Trader — Market Intelligence &amp; Education Terminal<\/h1>/,
-  'homepage enrichHtmlWithMetadata must expose an H1 when shell lacks one',
+  /<noscript>[\s\S]*<h1/i,
+  'noscript must not add a second <h1>',
 );
 
 console.log('homepage-h1.selftest: ok');
