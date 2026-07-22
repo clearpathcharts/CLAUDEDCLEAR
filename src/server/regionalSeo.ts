@@ -481,13 +481,228 @@ export function regionalIndexNowUrls(): string[] {
   return [
     `${base}/regions`,
     ...REGIONAL_MARKETS.map((m) => `${base}${m.hubPath}`),
-    `${base}/forex/usdrub`,
-    `${base}/forex/usdcny`,
-    `${base}/forex/usdjpy`,
-    `${base}/forex/usdphp`,
+    ...REGIONAL_FX_ENRICHMENTS.map((fx) => `${base}/forex/${fx.pairKey}`),
     `${base}/commodities/xauusd`,
     `${base}/education`,
     `${base}/learn`,
     `${base}/encyclopedia`,
   ];
+}
+
+/**
+ * Thicker educational overlays for priority regional FX pairs.
+ * Procedural forex copy is thin by design; these hubs get real study context.
+ */
+export type RegionalFxEnrichment = {
+  pairKey: string;
+  pairLabel: string;
+  seoTitle: string;
+  seoDescription: string;
+  lead: string;
+  type: string;
+  countries: string[];
+  drivers: string[];
+  watchList: string[];
+  relatedAssets: string[];
+  /** Trusted static HTML paragraphs/sections (no user input). */
+  contextHtml: string;
+  hubId: string;
+  faqs: RegionalFaq[];
+};
+
+export const REGIONAL_FX_ENRICHMENTS: RegionalFxEnrichment[] = [
+  {
+    pairKey: 'usdrub',
+    pairLabel: 'USD/RUB',
+    seoTitle: 'USD/RUB — Dollar vs Ruble Context | ClearPath',
+    seoDescription:
+      'Study USD/RUB: rate differentials, energy exports, risk sentiment, and how ClearPath links the pair to Russia/CIS education hubs. Analytics only — not a brokerage.',
+    lead:
+      'USD/RUB prices the U.S. dollar against the Russian ruble — a follower-market pair where energy exports, capital controls narratives, and global risk appetite often matter as much as classic G10 rate differentials.',
+    type: 'Exotic',
+    countries: ['United States', 'Russia'],
+    drivers: [
+      'Federal Reserve policy path vs Russian domestic rates',
+      'Energy export revenues and commodity USD terms of trade',
+      'Risk sentiment / sanctions headlines (educational context only)',
+      'Local liquidity and weekend gap behavior vs majors',
+    ],
+    watchList: [
+      'USD strength (DXY) during risk-off episodes',
+      'Oil/gold moves that reshape EM FX narratives',
+      'Inflation and rate primers before reading any single candle',
+    ],
+    relatedAssets: ['XAU/USD (gold)', 'EUR/USD', 'Crude oil themes', 'Inflation / Fed primers'],
+    hubId: 'ru',
+    faqs: [
+      {
+        question: 'Is USD/RUB a major FX pair?',
+        answer:
+          'It is typically treated as an exotic / EM pair versus G10 majors. Spreads, session liquidity, and headline sensitivity can differ from EUR/USD or USD/JPY — study structure before treating patterns as signals.',
+      },
+      {
+        question: 'Does ClearPath execute USD/RUB trades?',
+        answer:
+          'No. ClearPath Trader is analytics and education only. Pair pages explain drivers and link to learning paths; they are not order tickets or brokerage quotes.',
+      },
+    ],
+    contextHtml: `
+<h2>Why USD/RUB matters for ClearPath’s Russia / CIS hub</h2>
+<p>Follower audiences often arrive from social feeds asking for ruble and dollar context. This page is the crawlable study surface: connect macro literacy to a live chart habit without a deposit pitch.</p>
+<p>Read the <a href="/regions/ru">Russia / CIS regional hub</a> for native-language entry, then return here for pair structure. Pair study with <a href="/economy/inflation">inflation</a>, <a href="/economy/federal-reserve">Federal Reserve</a>, and <a href="/commodities/xauusd">gold (XAU/USD)</a>.</p>
+<h2>How to study the pair on ClearPath</h2>
+<ol>
+<li>Skim drivers above — FX is relative, not a single “stock story.”</li>
+<li>Open <a href="/learn/correlations">intermarket correlations</a> and <a href="/guides/macro-spreads">macro spreads</a>.</li>
+<li>Walk <a href="/education/forex">Forex school</a>, then size concepts in the <a href="/tools/position-size">position size calculator</a>.</li>
+<li>Launch the <a href="/">terminal</a> to put USD/RUB on a chart with your preferred <a href="/ui">UI mode</a>.</li>
+</ol>`,
+  },
+  {
+    pairKey: 'usdcny',
+    pairLabel: 'USD/CNY',
+    seoTitle: 'USD/CNY — Dollar vs Renminbi Context | ClearPath',
+    seoDescription:
+      'Study USD/CNY: policy differentials, trade flows, and China-hub education links on ClearPath. Crawlable FX literacy — not brokerage execution.',
+    lead:
+      'USD/CNY (and closely watched onshore/offshore renminbi narratives) sits at the intersection of U.S. rates, China growth/policy signals, and global trade flows. ClearPath documents the pair for literacy — not for order routing.',
+    type: 'Exotic',
+    countries: ['United States', 'China'],
+    drivers: [
+      'Fed vs PBOC policy stance and yield differentials',
+      'China growth, credit, and trade-balance headlines',
+      'USD funding conditions and EM risk appetite',
+      'Commodity import costs priced in dollars',
+    ],
+    watchList: [
+      'U.S. rate path vs China policy easing/tightening stories',
+      'Export/import and PMI-style growth narratives',
+      'Gold and USD strength during risk rotation',
+    ],
+    relatedAssets: ['USD/JPY', 'EUR/USD', 'Copper/oil themes', 'Gold (XAU/USD)'],
+    hubId: 'cn',
+    faqs: [
+      {
+        question: 'Is this page about CNH or CNY?',
+        answer:
+          'Educational labels often say USD/CNY for the dollar–renminbi relationship. Onshore (CNY) and offshore (CNH) can diverge in live markets — treat this profile as a study frame, then verify the exact symbol on your data vendor.',
+      },
+      {
+        question: 'Where is the Chinese-language ClearPath entry?',
+        answer:
+          'Start at the China regional hub (/regions/cn), then use this pair page and the education/encyclopedia links for structured study.',
+      },
+    ],
+    contextHtml: `
+<h2>Why USD/CNY matters for ClearPath’s China hub</h2>
+<p>Baidu and bilingual discovery reward real language hubs plus concrete entity URLs. This pair page anchors dollar–renminbi study next to the <a href="/regions/cn">China regional hub</a>.</p>
+<p>Continue with <a href="/learn/inflation">inflation</a>, <a href="/economy/interest-rates">interest rates</a>, and <a href="/encyclopedia">the financial encyclopedia</a>.</p>
+<h2>How to study the pair on ClearPath</h2>
+<ol>
+<li>Map policy differentials before chasing short-term candles.</li>
+<li>Use <a href="/education/forex">Forex school</a> and <a href="/learn/correlations">correlations</a>.</li>
+<li>Practice risk framing in the <a href="/tools/position-size">position size calculator</a>.</li>
+<li>Open the <a href="/">live terminal</a> when you are ready to chart.</li>
+</ol>`,
+  },
+  {
+    pairKey: 'usdjpy',
+    pairLabel: 'USD/JPY',
+    seoTitle: 'USD/JPY — Dollar Yen Drivers & Education | ClearPath',
+    seoDescription:
+      'USD/JPY major pair: Fed–BoJ differentials, yields, carry narratives, and ClearPath Japan-hub learning links. Education terminal — not a broker.',
+    lead:
+      'USD/JPY is a G10 major: U.S. dollar versus Japanese yen. Traders widely watch Fed–Bank of Japan rate differentials, U.S.–Japan yield spreads, and risk-on/risk-off flows that historically interact with yen funding narratives.',
+    type: 'Major',
+    countries: ['United States', 'Japan'],
+    drivers: [
+      'Federal Reserve vs Bank of Japan policy path',
+      'U.S.–Japan government bond yield differentials',
+      'Risk sentiment and yen funding / carry narratives',
+      'Tokyo / London / New York session liquidity handoffs',
+    ],
+    watchList: [
+      'U.S. yields and Fed communication',
+      'BoJ policy adjustments and intervention headlines (educational awareness)',
+      'Equity risk appetite during Asia hours',
+    ],
+    relatedAssets: ['U.S. Treasuries / yields', 'Nikkei-linked risk themes', 'Gold', 'EUR/USD'],
+    hubId: 'jp',
+    faqs: [
+      {
+        question: 'Why is USD/JPY central for Tokyo-session study?',
+        answer:
+          'Asia hours often show active yen price discovery. ClearPath’s Japan hub and this pair page give a crawlable path from language landing → drivers → education → chart.',
+      },
+      {
+        question: 'Is ClearPath giving USD/JPY trade signals?',
+        answer:
+          'No. Pages explain structure and link to literacy tools. Patterns on a chart are context for learning, not instructions to buy or sell.',
+      },
+    ],
+    contextHtml: `
+<h2>Why USD/JPY matters for ClearPath’s Japan hub</h2>
+<p>The <a href="/regions/jp">Japan (Tokyo) regional hub</a> points here as the primary FX deep link. Pair this page with <a href="/guides/macro-spreads">macro spreads</a> and <a href="/learn/liquidity">liquidity</a>.</p>
+<h2>How to study the pair on ClearPath</h2>
+<ol>
+<li>Review rate and yield differentials before pattern claims.</li>
+<li>Study <a href="/education/forex">Forex school</a> and <a href="/indicators">indicators</a> as labeling tools, not oracles.</li>
+<li>Use the <a href="/tools/position-size">position size calculator</a> for risk framing.</li>
+<li>Launch the <a href="/">terminal</a> to chart USD/JPY with a calm <a href="/ui">UI profile</a> if needed.</li>
+</ol>`,
+  },
+  {
+    pairKey: 'usdphp',
+    pairLabel: 'USD/PHP',
+    seoTitle: 'USD/PHP — Dollar vs Peso Context | ClearPath',
+    seoDescription:
+      'Study USD/PHP: remittances, BSP/Fed context, and Philippines-hub education links on ClearPath. Literacy pages — not brokerage execution.',
+    lead:
+      'USD/PHP prices the U.S. dollar against the Philippine peso. For many learners in the Philippines, remittances, local policy context, and USD funding conditions shape how the pair is discussed — ClearPath frames that as education, not trade advice.',
+    type: 'Exotic',
+    countries: ['United States', 'Philippines'],
+    drivers: [
+      'Fed policy vs Bangko Sentral ng Pilipinas (BSP) stance',
+      'OFW remittance and USD demand narratives',
+      'Risk sentiment toward EM Asia FX',
+      'Local inflation and growth headlines',
+    ],
+    watchList: [
+      'USD strength during global risk-off',
+      'Domestic inflation / rate communication',
+      'Regional Asia FX co-moves (educational comparison only)',
+    ],
+    relatedAssets: ['USD/JPY', 'Gold (XAU/USD)', 'EUR/USD', 'Inflation primers'],
+    hubId: 'ph',
+    faqs: [
+      {
+        question: 'Where is the Filipino-language ClearPath hub?',
+        answer:
+          'Open /regions/ph for the Philippines landing (fil-PH / tl hreflang), then use this USD/PHP page for pair structure and English study links.',
+      },
+      {
+        question: 'Can I deposit pesos and trade here?',
+        answer:
+          'No. ClearPath does not accept deposits or execute FX orders. It is a market intelligence and education terminal.',
+      },
+    ],
+    contextHtml: `
+<h2>Why USD/PHP matters for ClearPath’s Philippines hub</h2>
+<p>Social followers need a real URL after a post. The <a href="/regions/ph">Philippines hub</a> and this pair page are that path — crawlable, honest about “not a broker,” and linked into education.</p>
+<h2>How to study the pair on ClearPath</h2>
+<ol>
+<li>Read drivers and FAQs, then <a href="/learn/inflation">inflation</a> / <a href="/economy/federal-reserve">Fed</a> primers.</li>
+<li>Continue in <a href="/education/forex">Forex school</a>.</li>
+<li>Practice sizing concepts via <a href="/tools/position-size">position size</a>.</li>
+<li>Open the <a href="/">terminal</a> when you want a live chart desk.</li>
+</ol>`,
+  },
+];
+
+export function getRegionalFxEnrichment(pairKey: string): RegionalFxEnrichment | null {
+  const key = String(pairKey || '')
+    .trim()
+    .toLowerCase()
+    .replace('/', '');
+  return REGIONAL_FX_ENRICHMENTS.find((fx) => fx.pairKey === key) || null;
 }

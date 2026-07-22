@@ -2,7 +2,12 @@ import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
-import { REGIONAL_MARKETS, getRegionalMarket, type RegionalCtaCopy } from './regionalSeo';
+import {
+  REGIONAL_MARKETS,
+  getRegionalMarket,
+  getRegionalFxEnrichment,
+  type RegionalCtaCopy,
+} from './regionalSeo';
 import {
   PROFILE_SEO,
   ECONOMY_TOPICS,
@@ -214,6 +219,7 @@ function renderShell(
   bodyHtml: string,
   htmlLang = 'en',
   cta?: RegionalCtaCopy | null,
+  robots = 'index, follow, max-image-preview:large',
 ): string {
   const nav = NAV_LINKS.map(
     (l) =>
@@ -280,7 +286,7 @@ function renderShell(
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ClearPathTrader</title>
-    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="robots" content="${escapeHtml(robots)}" />
     <style>${PAGE_CSS}</style>
   </head>
   <body>
@@ -1018,10 +1024,28 @@ ${relatedLinksSection(
 function renderForexProfile(pairKey: string): string | null {
   const fx = lookupForex(pairKey);
   if (!fx) return null;
-  const pair = String(fx.pair);
-  const affected = Array.isArray(fx.affectedBy) ? fx.affectedBy : [];
-  const educationMoves = fx.education?.whatMoves || [];
-  const relatedAssets = fx.education?.relatedAssets || [];
+  const enrich = getRegionalFxEnrichment(pairKey);
+  const pair = enrich?.pairLabel || String(fx.pair);
+  const affected = enrich?.drivers?.length
+    ? enrich.drivers
+    : Array.isArray(fx.affectedBy)
+      ? fx.affectedBy
+      : [];
+  const educationMoves = enrich?.watchList?.length
+    ? enrich.watchList
+    : fx.education?.whatMoves || fx.education?.whatMovesThis || [];
+  const relatedAssets = enrich?.relatedAssets?.length
+    ? enrich.relatedAssets
+    : fx.education?.relatedAssets || [];
+  const lead =
+    enrich?.lead || fx.description || `${pair} currency pair profile.`;
+  const typeLabel = enrich?.type || String(fx.type || '');
+  const countries = enrich?.countries?.length
+    ? enrich.countries
+    : Array.isArray(fx.countries)
+      ? fx.countries
+      : [];
+  const hub = enrich ? getRegionalMarket(enrich.hubId) : null;
 
   return `${breadcrumbHtml([
     { name: 'Home', url: '/' },
@@ -1030,21 +1054,28 @@ function renderForexProfile(pairKey: string): string | null {
     { name: pair },
   ])}
 <h1>${escapeHtml(pair)} Forex Pair</h1>
-<p class="lead">${escapeHtml(fx.description || `${pair} currency pair profile.`)}</p>
+<p class="lead">${escapeHtml(lead)}</p>
 ${metaGrid([
   { k: 'Pair', v: pair },
-  { k: 'Type', v: String(fx.type || '') },
+  { k: 'Type', v: typeLabel },
   {
     k: 'Countries',
-    v: Array.isArray(fx.countries) ? fx.countries.join(', ') : '',
+    v: countries.join(', '),
   },
 ])}
 <article>
 <h2>How to read ${escapeHtml(pair)}</h2>
-<p>${escapeHtml(fx.description || '')} FX prices reflect relative interest rates, growth differentials, and risk sentiment between the two currencies — not a single “stock story.”</p>
+<p>${escapeHtml(lead)} FX prices reflect relative interest rates, growth differentials, and risk sentiment between the two currencies — not a single “stock story.”</p>
 ${affected.length ? `<h2>Primary drivers</h2>${listHtml(affected)}` : ''}
 ${educationMoves.length ? `<h2>What students should watch</h2>${listHtml(educationMoves)}` : ''}
 ${relatedAssets.length ? `<h2>Related assets</h2>${listHtml(relatedAssets)}` : ''}
+${enrich?.contextHtml || ''}
+${enrich?.faqs?.length ? faqSectionHtml(enrich.faqs) : ''}
+${
+  hub
+    ? `<p><a href="${hub.hubPath}">← ${escapeHtml(hub.label)} regional hub</a> · <a href="/regions">All regions</a> · <a href="/forex">All forex pairs</a></p>`
+    : ''
+}
 <h2>Continue learning</h2>
 <ul>
 <li><a href="/learn/correlations">Intermarket correlations</a> — how FX, yields, and commodities connect</li>
@@ -1052,8 +1083,37 @@ ${relatedAssets.length ? `<h2>Related assets</h2>${listHtml(relatedAssets)}` : '
 <li><a href="/education/forex">Forex school</a> — structured lessons</li>
 <li><a href="/guides/macro-spreads">Macro spreads guide</a> — yield curves and credit</li>
 </ul>
-<p><a href="/forex">← All forex pairs</a></p>
+${hub ? '' : '<p><a href="/forex">← All forex pairs</a></p>'}
 </article>`;
+}
+
+/** True when path is /regions/:id and :id is not a known hub (should 404, not SPA). */
+export function isUnknownRegionPath(reqPath: string): boolean {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const parts = pathClean.split('/').filter(Boolean);
+  return parts[0] === 'regions' && parts.length === 2 && !getRegionalMarket(parts[1]);
+}
+
+/** Crawlable 404 for unknown /regions/:id (noindex). */
+export function renderUnknownRegionNotFound(reqPath: string): string {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const slug = pathClean.split('/').filter(Boolean)[1] || '';
+  const cards = REGIONAL_MARKETS.map(
+    (m) =>
+      `<li><a href="${m.hubPath}"><strong>${escapeHtml(m.label)}</strong></a> — ${escapeHtml(m.lead.slice(0, 120))}…</li>`
+  ).join('\n');
+  const body = `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Regions', url: '/regions' },
+    { name: 'Not found' },
+  ])}
+<h1>Regional hub not found</h1>
+<p class="lead">No ClearPath language hub matches <code>${escapeHtml(slug)}</code>. Live hubs today: Russia / CIS, China, Japan, and the Philippines.</p>
+<ul class="card-list">
+${cards}
+</ul>
+<p><a href="/regions">← All regions</a> · <a href="/encyclopedia">Encyclopedia</a> · <a href="/">Launch terminal</a></p>`;
+  return renderShell(pathClean, body, 'en', null, 'noindex, follow');
 }
 
 function renderCommodityProfile(symbol: string): string | null {

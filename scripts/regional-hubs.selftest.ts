@@ -5,11 +5,17 @@
 import assert from 'node:assert/strict';
 import {
   REGIONAL_MARKETS,
+  REGIONAL_FX_ENRICHMENTS,
   getRegionalMarket,
+  getRegionalFxEnrichment,
   regionalHreflangHints,
   regionalIndexNowUrls,
 } from '../src/server/regionalSeo.ts';
-import { renderStaticContentPage } from '../src/server/contentPages.ts';
+import {
+  renderStaticContentPage,
+  isUnknownRegionPath,
+  renderUnknownRegionNotFound,
+} from '../src/server/contentPages.ts';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
 
 assert.deepEqual(
@@ -54,5 +60,29 @@ assert.ok(ruAlt.some((h) => h.hreflang === 'tl' && h.href.endsWith('/regions/ph'
 const urls = regionalIndexNowUrls();
 assert.ok(urls.includes('https://clearpathtrader.com/forex/usdphp'));
 assert.ok(urls.includes('https://clearpathtrader.com/regions/cn'));
+
+// Unknown region paths must not render as thin SPA HTML
+assert.equal(isUnknownRegionPath('/regions/kr'), true);
+assert.equal(isUnknownRegionPath('/regions/ru'), false);
+assert.equal(renderStaticContentPage('/regions/kr'), null);
+const notFound = enrichHtmlWithMetadata(renderUnknownRegionNotFound('/regions/kr'), '/regions/kr');
+assert.match(notFound, /noindex/);
+assert.match(notFound, /Regional hub not found/);
+assert.match(notFound, /\/regions\/ru/);
+
+// Regional FX pair pages should be thickened (not procedural one-liners only)
+for (const fx of REGIONAL_FX_ENRICHMENTS) {
+  const html = renderStaticContentPage(`/forex/${fx.pairKey}`);
+  assert.ok(html, `${fx.pairKey} must render`);
+  const enriched = enrichHtmlWithMetadata(html!, `/forex/${fx.pairKey}`);
+  assert.match(enriched, new RegExp(fx.pairLabel.replace('/', '\\/')));
+  assert.match(enriched, /"@type": "FAQPage"/, `${fx.pairKey} FAQPage`);
+  assert.ok(
+    (enriched.match(/<h2>/gi) || []).length >= 4,
+    `${fx.pairKey} should have multiple study sections`,
+  );
+  const overlay = getRegionalFxEnrichment(fx.pairKey);
+  assert.ok(overlay?.contextHtml.includes(`/regions/${fx.hubId}`), `${fx.pairKey} links hub`);
+}
 
 console.log('regional-hubs.selftest: ok');

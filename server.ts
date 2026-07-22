@@ -37,7 +37,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, isSearchEngineBot } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import {
   resolveIndexNowKey,
@@ -2739,6 +2739,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.send(enriched);
+      }
+      // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
+      if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
+        const enriched = enrichHtmlWithMetadata(renderUnknownRegionNotFound(req.path), req.path);
+        res.status(404);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.send(enriched);
