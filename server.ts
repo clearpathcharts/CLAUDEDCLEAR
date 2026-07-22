@@ -37,7 +37,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, isSearchEngineBot } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import {
   resolveIndexNowKey,
@@ -2735,6 +2735,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Pass ?live=1 to load the interactive SPA shell instead (used by hub CTAs
       // for encyclopedia / indicators / education live desks).
       const wantLiveSpa = String(req.query.live || '') === '1';
+      const pathClean = (req.path || '/').toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+      // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
+      if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
+        const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.send(enriched);
+      }
       const staticContentHtml = wantLiveSpa ? null : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
@@ -2923,18 +2931,21 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.error("[CRITICAL] Reality Enforcement Spec Validation Failure on postponed startup:", e);
       }
 
-      // Notify Bing/Yandex ecosystem about regional hubs (no-op without IndexNow key).
+      // Notify Bing/Yandex ecosystem (homepage + regional hubs).
       void submitIndexNow([
+        'https://clearpathtrader.com/',
+        'https://clearpathtrader.com/about',
+        'https://clearpathtrader.com/encyclopedia',
         'https://clearpathtrader.com/regions',
         ...REGIONAL_MARKETS.map((m) => `https://clearpathtrader.com${m.hubPath}`),
       ]).then((r) => {
         if (r.skipped) {
-          console.log(`[STARTUP] IndexNow regional hubs skipped: ${r.skipped}`);
+          console.log(`[STARTUP] IndexNow skipped: ${r.skipped}`);
         } else {
-          console.log(`[STARTUP] IndexNow regional hubs submitted=${r.submitted} ok=${r.ok}`);
+          console.log(`[STARTUP] IndexNow submitted=${r.submitted} ok=${r.ok}`);
         }
       }).catch((e) => {
-        console.warn('[STARTUP] IndexNow regional hub ping failed:', e?.message || e);
+        console.warn('[STARTUP] IndexNow ping failed:', e?.message || e);
       });
 
       // 1. ComplianceAuditEngine executes automatically on startup
