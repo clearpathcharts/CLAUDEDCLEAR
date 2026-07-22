@@ -1168,6 +1168,27 @@ function renderRegionalHub(idOrAlias: string): string | null {
 ${market.bodyHtml}`;
 }
 
+/** True when the request is from a major search / SEO crawler (not human browsers). */
+export function isSearchEngineBot(userAgent: string | undefined | null): boolean {
+  if (!userAgent) return false;
+  return /googlebot|bingbot|bingpreview|adidxbot|yandex(?:bot|images|accessibility)?|baiduspider|duckduckbot|slurp|applebot|semrushbot|ahrefsbot|dotbot|petalbot|bytespider|facebookexternalhit|twitterbot|linkedinbot/i.test(
+    userAgent,
+  );
+}
+
+function renderHomeForBots(): string {
+  return `${breadcrumbHtml([{ name: 'Home' }])}
+<h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
+<p class="lead">Free market intelligence terminal with live charts, unlimited indicators, automatic pattern context, and plain-language trading education. Analytics and learning only — not a brokerage.</p>
+<p>Explore the <a href="/encyclopedia">Financial Encyclopedia</a>, <a href="/indicators">Indicator Encyclopedia</a>, <a href="/education">ClearPath Education</a>, <a href="/learn">Learn</a>, <a href="/guides">Guides</a>, and <a href="/regions">regional hubs</a> for Russia, China, Japan, and the Philippines.</p>
+<p><a href="/?live=1">Open the interactive ClearPath Trader terminal</a> · <a href="/about">About</a> · <a href="/faq">FAQ</a></p>`;
+}
+
+/** Crawlable homepage HTML for search bots (humans still get the SPA shell). */
+export function renderStaticHomeForBots(): string {
+  return renderShell('/', renderHomeForBots(), 'en');
+}
+
 export function renderStaticContentPage(reqPath: string): string | null {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   const parts = pathClean.split('/').filter(Boolean);
