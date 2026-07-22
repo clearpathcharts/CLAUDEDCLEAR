@@ -355,7 +355,7 @@ export function featuredCrypto(limit = 12) {
 
 export function featuredForex(limit = 10) {
   ensureLookups();
-  const prefer = ['eurusd', 'usdjpy', 'gbpusd', 'audusd', 'usdcad', 'usdchf'];
+  const prefer = ['eurusd', 'usdjpy', 'gbpusd', 'audusd', 'usdcad', 'usdchf', 'usdrub', 'usdcny', 'usdphp'];
   const out: any[] = [];
   for (const t of prefer) {
     const f = forexByPair!.get(t);

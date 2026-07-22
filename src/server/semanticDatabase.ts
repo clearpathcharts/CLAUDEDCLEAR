@@ -21,7 +21,7 @@ import {
   PROFILE_SEO,
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
-import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket } from './regionalSeo';
+import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -313,6 +313,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   let title = "ClearPath Trader | Market Intelligence & Education Terminal";
   let description = "Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage.";
   let keywords = "ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks";
+  let robotsMeta =
+    'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   const baseUrl = "https://clearpathtrader.com";
   const canonicalPath = CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
@@ -757,6 +759,18 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
           })),
         });
       }
+    } else {
+      title = 'Regional hub not found | ClearPathTrader';
+      description =
+        'That regional hub is not available. Browse Russia/CIS, China, Japan, or the Philippines — ClearPath language landings for multi-engine SEO.';
+      robotsMeta = 'noindex, follow';
+      schemas.push(
+        makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Regions', url: '/regions' },
+          { name: 'Not found', url: canonicalPath },
+        ])
+      );
     }
   } else if (pathClean === '/market-universe') {
     title = "Market Universe: Global Asset Catalog | ClearPathTrader";
@@ -839,17 +853,55 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     ]));
   } else if (pathClean.startsWith('/forex/')) {
     const pairKey = pathClean.slice('/forex/'.length);
+    const enrich = getRegionalFxEnrichment(pairKey);
     const fx = lookupForex(pairKey);
-    const pair = fx?.pair || pairKey.toUpperCase();
-    title = `${pair} Forex Pair — Drivers & Education | ClearPathTrader`;
-    description = fx?.description
-      || `${pair} currency pair profile — type, macro drivers, and educational context in the ClearPath forex encyclopedia.`;
-    keywords = [pair, 'forex', 'currency pair', ...(fx?.affectedBy || [])].join(', ');
-    schemas.push(makeBreadcrumb([
-      { name: 'Home', url: '' },
-      { name: 'Forex', url: '/forex' },
-      { name: pair, url: pathClean },
-    ]));
+    const pair = enrich?.pairLabel || fx?.pair || pairKey.toUpperCase();
+    if (enrich) {
+      title = enrich.seoTitle;
+      description = enrich.seoDescription;
+      keywords = [enrich.pairLabel, 'forex', 'currency pair', enrich.hubId, ...enrich.drivers.slice(0, 3)].join(
+        ', '
+      );
+      schemas.push(
+        makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Forex', url: '/forex' },
+          { name: pair, url: pathClean },
+        ])
+      );
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: `${enrich.pairLabel} Forex Pair`,
+        description: enrich.seoDescription,
+        url: canonicalUrl,
+        publisher: { '@type': 'Organization', name: 'ClearPathTrader', url: baseUrl },
+      });
+      if (enrich.faqs?.length) {
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: enrich.faqs.map((faq) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        });
+      }
+    } else {
+      title = `${pair} Forex Pair — Drivers & Education | ClearPathTrader`;
+      description =
+        fx?.description ||
+        `${pair} currency pair profile — type, macro drivers, and educational context in the ClearPath forex encyclopedia.`;
+      keywords = [pair, 'forex', 'currency pair', ...(fx?.affectedBy || [])].join(', ');
+      schemas.push(
+        makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Forex', url: '/forex' },
+          { name: pair, url: pathClean },
+        ])
+      );
+    }
   } else if (pathClean.startsWith('/commodities/')) {
     const symbol = pathClean.slice('/commodities/'.length);
     const c = lookupCommodity(symbol);
@@ -1047,20 +1099,24 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     canonicalPath.startsWith('/regions/')
       ? getRegionalMarket(canonicalPath.slice('/regions/'.length))
       : null;
-  const hreflangTags = regionalHreflangHints(canonicalUrl, {
-    marketId: regionalMarket?.id,
-    regionalIndex: canonicalPath === '/regions',
-  })
-    .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
-    .join('\n');
+  const noindexPage = robotsMeta.startsWith('noindex');
+  const hreflangTags = noindexPage
+    ? ''
+    : regionalHreflangHints(canonicalUrl, {
+        marketId: regionalMarket?.id,
+        regionalIndex: canonicalPath === '/regions',
+      })
+        .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+        .join('\n');
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
+  const shareUrl = noindexPage ? `${baseUrl}/regions` : canonicalUrl;
   const ogTags = `
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${primaryLocale}" />
-${localeAlternates}
+${noindexPage ? '' : localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
-    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:url" content="${shareUrl}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
     <meta property="og:image:alt" content="ClearPath Trader — market intelligence terminal" />
     <meta property="og:image:width" content="1200" />
@@ -1071,9 +1127,9 @@ ${localeAlternates}
     <meta name="twitter:description" content="${escAttr(description)}" />
     <meta name="twitter:image" content="${baseUrl}/og-image.png" />
     <meta name="twitter:image:alt" content="ClearPath Trader — market intelligence terminal" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
-    <link rel="canonical" href="${canonicalUrl}" />
+    <link rel="canonical" href="${shareUrl}" />
 ${hreflangTags}
   `;
 

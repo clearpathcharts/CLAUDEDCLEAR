@@ -29,6 +29,10 @@ ClearPath already ships ~30k indexable URLs. Ranking across **all** major engine
 
 Each hub ships native-language body copy, localized waitlist CTA, and FAQPage JSON-LD. Hreflang language alternates are scoped to `/regions*` (generic EN pages no longer fake-alternate to hubs).
 
+Unknown `/regions/:id` paths (e.g. `/regions/kr`) return **404** with `noindex` — they must not fall through to the SPA shell as HTTP 200.
+
+Priority FX deep links (`/forex/usdrub`, `/forex/usdcny`, `/forex/usdjpy`, `/forex/usdphp`) ship thickened SSR copy + FAQPage JSON-LD (not thin procedural one-liners).
+
 On boot the server IndexNow-pings hubs + market pairs via `regionalIndexNowUrls()` when an IndexNow key is available.
 
 ## IndexNow (wired in app)
