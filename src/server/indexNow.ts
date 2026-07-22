@@ -28,17 +28,19 @@ export type IndexNowResult = {
  * key from SESSION_SECRET / CATALOG_ADMIN_SECRET so deploys stay consistent.
  * Final fallback: public site key (IndexNow keys are meant to be public files).
  */
-export const DEFAULT_PUBLIC_INDEXNOW_KEY = 'clearpath_trader_indexnow_key_01';
+export const DEFAULT_PUBLIC_INDEXNOW_KEY = 'clearpath-trader-indexnow-01';
 
 export function resolveIndexNowKey(): string | null {
   const fromEnv = (process.env.INDEXNOW_KEY || '').trim();
-  if (fromEnv && /^[a-zA-Z0-9_-]{8,128}$/.test(fromEnv)) return fromEnv;
+  // Bing/Yandex reject underscore in practice — allow only a-z A-Z 0-9 and hyphen.
+  if (fromEnv && /^[a-zA-Z0-9-]{8,128}$/.test(fromEnv)) return fromEnv;
 
   const seed =
     process.env.SESSION_SECRET?.trim() ||
     process.env.CATALOG_ADMIN_SECRET?.trim() ||
     '';
   if (seed) {
+    // hex digest is always IndexNow-safe (no underscore)
     const digest = crypto.createHash('sha256').update(`indexnow:${seed}`).digest('hex');
     return digest.slice(0, 32);
   }

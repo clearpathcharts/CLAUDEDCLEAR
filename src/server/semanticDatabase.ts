@@ -1076,9 +1076,9 @@ ${hreflangTags}
         '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
         '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
         '</header>';
-      html = html.replace('<div id="root">', `${homeHeader}\n    <div id="root">`);
-      if (!html.includes('id="seo-document-h1"')) {
-        // Static bot shell has <main> not #root — inject before <main> as fallback.
+      if (html.includes('<div id="root">')) {
+        html = html.replace('<div id="root">', `${homeHeader}\n    <div id="root">`);
+      } else if (html.includes('<main>')) {
         html = html.replace('<main>', `${homeHeader}\n    <main>`);
       }
     }
@@ -1092,13 +1092,24 @@ ${hreflangTags}
         <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
-    if (!html.includes('<noscript>')) {
-      if (html.includes('<div id="root">')) {
-        html = html.replace('<div id="root">', `${noscriptHome}\n    <div id="root">`);
-      } else if (html.includes('<main>')) {
-        html = html.replace('<main>', `${noscriptHome}\n    <main>`);
-      }
+    // Always replace any existing noscript so an older deploy's <h1> inside noscript cannot linger.
+    if (/<noscript>[\s\S]*?<\/noscript>/i.test(html)) {
+      html = html.replace(/<noscript>[\s\S]*?<\/noscript>/i, noscriptHome.trim());
+    } else if (html.includes('<div id="root">')) {
+      html = html.replace('<div id="root">', `${noscriptHome}\n    <div id="root">`);
+    } else if (html.includes('<main>')) {
+      html = html.replace('<main>', `${noscriptHome}\n    <main>`);
     }
+
+    // Final guard: demote every H1 after the first (Bing "more than one h1").
+    let sawH1 = false;
+    html = html.replace(/<h1(\s[^>]*)?>[\s\S]*?<\/h1>/gi, (block) => {
+      if (!sawH1) {
+        sawH1 = true;
+        return block;
+      }
+      return block.replace(/^<h1(\s[^>]*)?>/i, '<p$1>').replace(/<\/h1>$/i, '</p>');
+    });
   } else if (pathClean === TRADING_REIMAGINED_PATH) {
     const noscriptArticle = `
     <noscript>
