@@ -30,5 +30,8 @@ jobs:
       - name: Firebase mock safety (no black-screen regressions)
         run: npm run test:firebase-mock
 
+      - name: Affiliate rewards self-test
+        run: npm run test:affiliate
+
       - name: Build
         run: npm run build

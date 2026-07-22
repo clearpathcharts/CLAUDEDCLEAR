@@ -63,6 +63,31 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isSavingLinks, setIsSavingLinks] = useState(false);
   const [linksSaveStatus, setLinksSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [affiliateReward, setAffiliateReward] = useState<{
+    discountPercent: number;
+    creditDisplay: string;
+    monthSignups: number;
+    shareUrl: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/affiliate/me', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.ok) return;
+        setAffiliateReward({
+          discountPercent: Number(data.discountPercent) || 0,
+          creditDisplay: String(data.creditDisplay || '$0.00'),
+          monthSignups: Number(data.monthSignups) || 0,
+          shareUrl: String(data.shareUrl || ''),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
   
   // Custom Payment Link configurations (Invoice dispatcher)
   const [linkClientName, setLinkClientName] = useState('');
@@ -286,6 +311,32 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
 
   return (
     <div className="flex-1 flex flex-col p-6 lg:p-12 text-white font-sans max-w-7xl mx-auto w-full select-none" id="membership_tab_container">
+
+      {affiliateReward && (affiliateReward.discountPercent > 0 || affiliateReward.creditDisplay !== '$0.00') && (
+        <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-mono font-black uppercase tracking-widest text-emerald-400">Affiliate rewards applied</p>
+            <p className="text-sm text-emerald-100 mt-1">
+              {affiliateReward.discountPercent > 0
+                ? `${affiliateReward.discountPercent}% off your next paid month`
+                : 'Membership discount ready'}
+              {affiliateReward.creditDisplay !== '$0.00'
+                ? ` · ${affiliateReward.creditDisplay} account credit`
+                : ''}
+              {` · ${affiliateReward.monthSignups} referral${affiliateReward.monthSignups === 1 ? '' : 's'} this month`}
+            </p>
+          </div>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('AffiliateNetwork')}
+              className="rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-100 hover:bg-emerald-500/30"
+            >
+              Open affiliate desk
+            </button>
+          )}
+        </div>
+      )}
       
       {/* Header card banner */}
       <div className="mb-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 p-8 rounded-3xl border border-white/10 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black relative overflow-hidden" id="membership_header_banner">

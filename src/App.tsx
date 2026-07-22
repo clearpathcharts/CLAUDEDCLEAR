@@ -4,7 +4,6 @@ import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
-import PolsiaPaidAdPage from './components/PolsiaPaidAdPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
@@ -63,11 +62,6 @@ function isEducationPath(path: string): boolean {
 function isLiteracyPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return p === '/literacy' || p === '/literacy-os';
-}
-
-function isPolsiaAdPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  return p === '/ads/polsia' || p === '/polsia' || p === '/advertise/polsia';
 }
 
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
@@ -152,6 +146,24 @@ export default function App() {
       }
     }
   };
+  // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (!ref || !/^[A-Za-z0-9]{4,16}$/.test(ref)) return;
+      void fetch('/api/affiliate/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: ref }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
@@ -191,8 +203,6 @@ export default function App() {
     content = <PressKitPage />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
-  } else if (isPolsiaAdPath(currentPath)) {
-    content = <PolsiaPaidAdPage />;
   } else if (!user) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {

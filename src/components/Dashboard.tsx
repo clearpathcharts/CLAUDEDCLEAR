@@ -119,7 +119,6 @@ const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators')
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
 const ClearPathEducationPage = lazy(() => import('../education/ClearPathEducation'));
-const ReferralPage = lazy(() => import('./ReferralPage'));
 const LiteracyOSPage = lazy(() => import('../literacy/LiteracyOSPage'));
 
 function TabLoading() {
@@ -143,6 +142,7 @@ const RETIRED_TABS: Record<string, string> = {
   Scanner: 'News',
   Intelligence: 'News',
   Leaderboard: 'News',
+  ReferralDesk: 'Yours',
 };
 
 function normalizeTabId(tabId: string): string {
@@ -434,11 +434,6 @@ const TabContent = ({
       case 'ClearPathEducation': return (
         <Suspense fallback={<TabLoading />}>
           <ClearPathEducationPage onNavigate={setActiveTab} />
-        </Suspense>
-      );
-      case 'ReferralDesk': return (
-        <Suspense fallback={<TabLoading />}>
-          <ReferralPage onNavigate={setActiveTab} />
         </Suspense>
       );
       case 'LiteracyOS': return (
@@ -1087,7 +1082,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard']);
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk']);
         if (retiredTabs.has(hash)) {
           setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
         } else {
@@ -1110,7 +1105,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
-          hash === 'ReferralDesk' ||
           hash === 'LiteracyOS' ||
           hash === 'ApiMonitor' || 
           hash === 'Diagnostics';
