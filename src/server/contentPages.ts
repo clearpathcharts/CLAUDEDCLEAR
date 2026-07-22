@@ -2,7 +2,7 @@ import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
-import { REGIONAL_MARKETS, getRegionalMarket } from './regionalSeo';
+import { REGIONAL_MARKETS, getRegionalMarket, type RegionalCtaCopy } from './regionalSeo';
 import {
   PROFILE_SEO,
   ECONOMY_TOPICS,
@@ -209,11 +209,70 @@ const PAGE_CSS = `
   footer.site a:hover { color: #00E5FF; }
 `;
 
-function renderShell(currentPath: string, bodyHtml: string, htmlLang = 'en'): string {
+function renderShell(
+  currentPath: string,
+  bodyHtml: string,
+  htmlLang = 'en',
+  cta?: RegionalCtaCopy | null,
+): string {
   const nav = NAV_LINKS.map(
     (l) =>
       `<a href="${l.href}"${l.href === currentPath ? ' aria-current="page"' : ''}>${l.label}</a>`
   ).join('\n        ');
+
+  const c =
+    cta === null
+      ? null
+      : cta || {
+          chartTitle: 'Put this knowledge on a live chart',
+          chartBody:
+            'ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
+          launchLabel: 'Launch the terminal',
+          educationLabel: 'Start education',
+          waitlistTitle: 'Join the soft-launch waitlist',
+          waitlistBody:
+            'Get activation updates when new desks and features open. No spam — education and launch notes only.',
+          firstNameLabel: 'First name',
+          emailLabel: 'Email',
+          countryLabel: 'Country',
+          countryPlaceholder: 'United States',
+          experienceLabel: 'Experience',
+          submitLabel: 'Join waitlist',
+          submittingMsg: 'Submitting…',
+          successMsg: 'You are on the waitlist. Check your email for confirmation.',
+        };
+
+  const ctaHtml = c
+    ? `
+      <aside class="cta">
+        <h2>${escapeHtml(c.chartTitle)}</h2>
+        <p>${escapeHtml(c.chartBody)}</p>
+        <div class="cta-actions">
+          <a class="btn" href="/">${escapeHtml(c.launchLabel)}</a>
+          <a class="btn" href="/education" style="background:transparent;color:#00E5FF;border:1px solid rgba(0,229,255,0.5)">${escapeHtml(c.educationLabel)}</a>
+        </div>
+        <h2 style="margin-top:0.5rem">${escapeHtml(c.waitlistTitle)}</h2>
+        <p>${escapeHtml(c.waitlistBody)}</p>
+        <form class="waitlist" id="cpt-waitlist" novalidate>
+          <label>${escapeHtml(c.firstNameLabel)}<input name="firstName" required maxlength="200" autocomplete="given-name" /></label>
+          <label>${escapeHtml(c.emailLabel)}<input name="emailAddress" type="email" required maxlength="320" autocomplete="email" /></label>
+          <label>${escapeHtml(c.countryLabel)}<input name="country" required maxlength="120" autocomplete="country-name" placeholder="${escapeHtml(c.countryPlaceholder)}" /></label>
+          <label>${escapeHtml(c.experienceLabel)}
+            <select name="experienceLevel">
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+              <option>Professional</option>
+            </select>
+          </label>
+          <button type="submit">${escapeHtml(c.submitLabel)}</button>
+          <div class="status" id="cpt-waitlist-status" aria-live="polite"></div>
+        </form>
+      </aside>`
+    : '';
+
+  const submitMsg = c?.submittingMsg || 'Submitting…';
+  const successMsg = c?.successMsg || 'You are on the waitlist. Check your email for confirmation.';
 
   return `<!doctype html>
 <html lang="${htmlLang}">
@@ -235,31 +294,7 @@ function renderShell(currentPath: string, bodyHtml: string, htmlLang = 'en'): st
     </header>
     <main>
 ${bodyHtml}
-      <aside class="cta">
-        <h2>Put this knowledge on a live chart</h2>
-        <p>ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.</p>
-        <div class="cta-actions">
-          <a class="btn" href="/">Launch the terminal</a>
-          <a class="btn" href="/education" style="background:transparent;color:#00E5FF;border:1px solid rgba(0,229,255,0.5)">Start education</a>
-        </div>
-        <h2 style="margin-top:0.5rem">Join the soft-launch waitlist</h2>
-        <p>Get activation updates when new desks and features open. No spam — education and launch notes only.</p>
-        <form class="waitlist" id="cpt-waitlist" novalidate>
-          <label>First name<input name="firstName" required maxlength="200" autocomplete="given-name" /></label>
-          <label>Email<input name="emailAddress" type="email" required maxlength="320" autocomplete="email" /></label>
-          <label>Country<input name="country" required maxlength="120" autocomplete="country-name" placeholder="United States" /></label>
-          <label>Experience
-            <select name="experienceLevel">
-              <option>Beginner</option>
-              <option>Intermediate</option>
-              <option>Advanced</option>
-              <option>Professional</option>
-            </select>
-          </label>
-          <button type="submit">Join waitlist</button>
-          <div class="status" id="cpt-waitlist-status" aria-live="polite"></div>
-        </form>
-      </aside>
+${ctaHtml}
     </main>
     <footer class="site">
       <div class="inner">
@@ -285,10 +320,12 @@ ${bodyHtml}
         var form = document.getElementById('cpt-waitlist');
         if (!form) return;
         var status = document.getElementById('cpt-waitlist-status');
+        var submittingMsg = ${JSON.stringify(submitMsg)};
+        var successMsg = ${JSON.stringify(successMsg)};
         form.addEventListener('submit', function (e) {
           e.preventDefault();
           status.className = 'status';
-          status.textContent = 'Submitting…';
+          status.textContent = submittingMsg;
           var data = new FormData(form);
           var body = {
             firstName: String(data.get('firstName') || ''),
@@ -305,7 +342,7 @@ ${bodyHtml}
           }).then(function (r) {
             if (r.ok) {
               status.className = 'status';
-              status.textContent = 'You are on the waitlist. Check your email for confirmation.';
+              status.textContent = successMsg;
               form.reset();
             } else {
               status.className = 'status err';
@@ -1231,5 +1268,5 @@ export function renderStaticContentPage(reqPath: string): string | null {
   const market =
     parts[0] === 'regions' && parts.length === 2 ? getRegionalMarket(parts[1]) : null;
   const htmlLang = market?.lang?.split('-')[0] || 'en';
-  return renderShell(pathClean, body, htmlLang);
+  return renderShell(pathClean, body, htmlLang, market?.cta);
 }

@@ -746,6 +746,17 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         inLanguage: market.lang,
         isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
       });
+      if (market.faqs?.length) {
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: market.faqs.map((faq) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        });
+      }
     }
   } else if (pathClean === '/market-universe') {
     title = "Market Universe: Global Asset Catalog | ClearPathTrader";
@@ -1038,6 +1049,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       : null;
   const hreflangTags = regionalHreflangHints(canonicalUrl, {
     marketId: regionalMarket?.id,
+    regionalIndex: canonicalPath === '/regions',
   })
     .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
     .join('\n');
