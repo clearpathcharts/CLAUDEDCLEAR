@@ -1068,7 +1068,36 @@ ${hreflangTags}
   // Inject OG Tags & Schema Script blocks right before closing head
   html = html.replace('</head>', `${ogTags}\n${schemaScripts}\n</head>`);
 
-  if (pathClean === TRADING_REIMAGINED_PATH) {
+  if (pathClean === '/') {
+    // Homepage is SPA-rendered. Bing URL Inspection parses the initial HTML shell
+    // (before React mounts) and flags missing <h1>. Put a keyword-bearing H1 in the
+    // boot loader inside #root so it is in the body source; React replaces #root on mount.
+    const safeHomeDesc = description.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const homeH1 =
+      '<h1 style="margin:0 0 12px;font-size:11px;letter-spacing:0.2em;text-align:center;max-width:36rem;line-height:1.5;color:#fff">' +
+      'ClearPath Trader — Market Intelligence &amp; Education Terminal' +
+      '</h1>';
+    if (html.includes('<div id="loader-text">Loading New Architecture...</div>')) {
+      html = html.replace(
+        '<div id="loader-text">Loading New Architecture...</div>',
+        `${homeH1}\n        <div id="loader-text">Loading New Architecture...</div>`,
+      );
+    } else if (html.includes('<div id="root">')) {
+      html = html.replace(
+        '<div id="root">',
+        `<div id="root">\n      ${homeH1}`,
+      );
+    }
+    const noscriptHome = `
+    <noscript>
+      <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
+        <h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
+        <p>${safeHomeDesc}</p>
+        <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
+      </article>
+    </noscript>`;
+    html = html.replace('<div id="root">', `${noscriptHome}\n    <div id="root">`);
+  } else if (pathClean === TRADING_REIMAGINED_PATH) {
     const noscriptArticle = `
     <noscript>
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">

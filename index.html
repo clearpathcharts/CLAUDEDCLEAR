@@ -99,11 +99,16 @@
   </head>
   <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Crawlable H1 in body source for Bing/Google (SPA shell has no React H1 until JS mounts). -->
+    <h1 id="seo-document-h1" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
     <div id="root">
-      <div role="status" aria-live="polite" style="height: 100vh; width: 100vw; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; font-size: 10px;">
-        <span aria-hidden="true" style="opacity: 0.5; margin-right: 10px;">[</span>
-        <div id="loader-text">Loading New Architecture...</div>
-        <span aria-hidden="true" style="opacity: 0.5; margin-left: 10px;">]</span>
+      <div role="status" aria-live="polite" style="height: 100vh; width: 100vw; background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; font-size: 10px; gap: 12px;">
+        <span style="max-width:36rem;text-align:center;line-height:1.5;letter-spacing:0.2em;font-size:11px">ClearPath Trader — Market Intelligence &amp; Education Terminal</span>
+        <div style="display:flex;align-items:center">
+          <span aria-hidden="true" style="opacity: 0.5; margin-right: 10px;">[</span>
+          <div id="loader-text">Loading New Architecture...</div>
+          <span aria-hidden="true" style="opacity: 0.5; margin-left: 10px;">]</span>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
