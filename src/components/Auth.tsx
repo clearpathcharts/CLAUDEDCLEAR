@@ -664,9 +664,6 @@ export default function Auth() {
           <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
             <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
           </a>
-          <a href="/ads/polsia" onClick={(e) => { e.preventDefault(); window.location.assign('/ads/polsia'); }} className="text-[#FFD700] hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#FFD700]/30 bg-[#FFD700]/10 px-2.5 py-1 rounded-lg">
-            Polsia Ad
-          </a>
           <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
             UI Modes
           </a>
