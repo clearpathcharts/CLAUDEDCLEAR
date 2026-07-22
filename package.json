@@ -15,6 +15,7 @@
     "pr:auto-update:dry": "bash scripts/pr-auto-updater.sh --dry-run",
     "test:app-update": "tsx scripts/app-update.selftest.ts",
     "test:firebase-mock": "tsx scripts/firebase-mock.selftest.ts",
+    "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",
