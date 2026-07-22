@@ -146,6 +146,24 @@ export default function App() {
       }
     }
   };
+  // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (!ref || !/^[A-Za-z0-9]{4,16}$/.test(ref)) return;
+      void fetch('/api/affiliate/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: ref }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
