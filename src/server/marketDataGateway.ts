@@ -302,7 +302,8 @@ export async function getMarketData(symbol: string) {
       latencyMs: 90
     });
     if (!validation.valid) {
-      throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
+      console.warn(`[Gateway] Price integrity warning for ${symbol}: ${validation.message}`);
+      logHealthEvent('WARNING', `Price integrity soft-fail ${symbol}: ${validation.message}`);
     }
 
     marketCache[cacheKey] = {
@@ -431,7 +432,10 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       latencyMs: 100
     });
     if (!validation.valid) {
-      throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
+      // Never blank live Twelve Data quotes for "quiet market" false positives —
+      // log and continue. Hard-blocking here took down StrictlyCharts for hours.
+      console.warn(`[Gateway] Quote integrity warning for ${symbol}: ${validation.message}`);
+      logHealthEvent('WARNING', `Quote integrity soft-fail ${symbol}: ${validation.message}`);
     }
 
     // Always expose `price` alongside Twelve Data's `close` so ticker UI and
@@ -587,20 +591,9 @@ export async function getMarketCandles(symbol: string, interval: string, request
   try {
     const data = await pendingRequests[cacheKey]
 
-    // Live Data Enforcement Engine Validation BEFORE caching
-    if (data && data.values && data.values.length > 0) {
-      const latestCandle = data.values[0];
-      const validation = LiveDataEnforcementEngine.validateTick({
-        symbol,
-        price: parseFloat(latestCandle.close || latestCandle.open || '0'),
-        timestamp: new Date(latestCandle.datetime).getTime() || Date.now(),
-        source: 'TWELVEDATA_CANDLES_LIVE',
-        latencyMs: 120
-      });
-      if (!validation.valid) {
-        throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
-      }
-    }
+    // Historical candles are not live ticks — do not run the stagnant-quote
+    // detector here. Identical closes across refreshes are normal OHLC and were
+    // falsely 403'ing /api/market/history after quote spam.
 
     marketCache[cacheKey] = {
       data,
