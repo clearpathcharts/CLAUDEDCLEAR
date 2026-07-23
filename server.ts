@@ -375,9 +375,25 @@ async function startServer() {
     message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
   });
 
+  // Charts poll /api/quote on a live tick (server quote cache is ~5s). A single
+  // open chart + ticker strip easily exceeds a few hundred req/15min, which used
+  // to blank StrictlyCharts with "Market data rate limit reached" while Twelve
+  // Data itself was healthy. Budget for multi-tab / multi-symbol use without
+  // removing abuse protection.
   const marketLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 2400,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+  });
+
+  // Live quote ticks are cheaper (5s gateway cache) and much hotter than candle
+  // history fetches — give them a dedicated higher ceiling so a chart left open
+  // cannot starve /api/market/history reloads.
+  const quoteLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 3600,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
@@ -1586,7 +1602,7 @@ ${CPT_SITE_GUIDE}`;
     String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', marketLimiter, async (req, res) => {
+  app.get('/api/quote', quoteLimiter, async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });

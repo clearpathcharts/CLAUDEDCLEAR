@@ -630,11 +630,12 @@ export function LightweightCandles({
           }
         }
 
-        // Live tick update — pulls a real quote through ChartFeedAdapter. On any
-        // failure, the candle is left alone rather than filled in with noise.
-        let tickDelay = 1500;
-        if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 1000;
-        else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 3000;
+        // Live tick — align with server quote cache (CACHE_TTL_QUOTE ≈ 5s).
+        // Sub-second polling burned the Express marketLimiter (was 300/15min) and
+        // blanked charts with a false "rate limit" while Twelve Data was fine.
+        let tickDelay = 5000;
+        if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 5000;
+        else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;
 
         interval = setInterval(async () => {
           if (!active || !lastCandle) return;
@@ -769,9 +770,23 @@ export function LightweightCandles({
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-2 bg-black/85 text-red-400 font-mono text-sm p-6 text-center">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 text-red-400 font-mono text-sm p-6 text-center">
           <span className="text-red-500 font-bold uppercase tracking-wider text-xs">Chart data unavailable</span>
           <span>{error}</span>
+          <button
+            type="button"
+            className="mt-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
+            onClick={() => {
+              setError(null);
+              setIsLoading(true);
+              // Force effect remount by nudging a harmless URL hash — chart deps
+              // already include timeframe/sym; full reload is the reliable recovery
+              // after an Express rate-limit window.
+              window.location.reload();
+            }}
+          >
+            Retry chart
+          </button>
         </div>
       )}
       <ChartFormingWatch
