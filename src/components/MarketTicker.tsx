@@ -51,6 +51,7 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
 
   const assetsRef = useRef<MarketAsset[]>(assets);
   assetsRef.current = assets;
+  const noteRateLimitedRef = useRef<(ms?: number) => void>(() => {});
 
   // 1. Core API Quote Fetch Function
   const fetchQuotes = async () => {
@@ -60,6 +61,10 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
           try {
             const url = `/api/quote?symbol=${encodeURIComponent(asset.symbol)}`;
             const response = await fetch(url);
+            if (response.status === 429) {
+              noteRateLimitedRef.current(90_000);
+              throw new Error(`HTTP Error ${response.status}`);
+            }
             if (!response.ok) {
               throw new Error(`HTTP Error ${response.status}`);
             }
@@ -97,7 +102,8 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
   };
 
   // Poll server-side proxy every 30s for real updates (no fake micro-ticks).
-  usePageAutoUpdate(fetchQuotes, { intervalMs: 30_000 });
+  const { noteRateLimited } = usePageAutoUpdate(fetchQuotes, { intervalMs: 30_000 });
+  noteRateLimitedRef.current = noteRateLimited;
 
   // Format helper based on price values — hide until a real quote has arrived
   const formatPrice = (symbol: string, val: number, hasQuote: boolean) => {

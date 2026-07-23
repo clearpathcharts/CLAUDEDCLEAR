@@ -350,7 +350,7 @@ async function startServer() {
   // Protects the institutional data streams from being overwhelmed
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 900, // General API ceiling per IP
+    max: 3000, // Was 900 — ticker+news retry storms burned this and 429'd all /api/*
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' }

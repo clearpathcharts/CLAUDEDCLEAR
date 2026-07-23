@@ -14,11 +14,15 @@ export default function BreakingNewsTicker() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const noteRateLimitedRef = React.useRef<(ms?: number) => void>(() => {});
 
   const fetchNews = async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/newsdata/latest');
+      if (res.status === 429) {
+        noteRateLimitedRef.current(90_000);
+      }
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -40,7 +44,8 @@ export default function BreakingNewsTicker() {
     }
   };
 
-  usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
+  const { noteRateLimited } = usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
+  noteRateLimitedRef.current = noteRateLimited;
 
   return (
     <>
