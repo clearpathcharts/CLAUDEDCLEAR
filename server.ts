@@ -28,7 +28,6 @@ import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
 import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
 import { ComplianceAuditEngine } from "./src/truth/ComplianceAuditEngine";
-import { LiveDataEnforcementEngine } from "./src/truth/LiveDataEnforcementEngine";
 import { 
   SEMANTIC_RECORDS, 
   GENERAL_FAQS, 
@@ -1618,19 +1617,8 @@ ${CPT_SITE_GUIDE}`;
         throw new Error(data.message || 'Twelve Data Quote failed or returned error');
       }
 
-      // Live Data Enforcement Engine Validation
-      const priceVal = parseFloat(data.price || data.close || '0');
-      const validation = LiveDataEnforcementEngine.validateTick({
-        symbol,
-        price: priceVal,
-        timestamp: Date.now(),
-        source: 'TWELVEDATA_LIVE',
-        latencyMs: 100
-      });
-
-      if (!validation.valid) {
-        return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
-      }
+      // Gateway already runs LiveDataEnforcementEngine — do not double-count ticks
+      // here (that falsely tripped "duplicate constant quotes" on quiet markets).
 
       // Normalize so all clients (ticker strip, charts, adapters) share one price field.
       // Twelve Data's /quote payload uses `close`; some UI only read `price`.
@@ -1642,7 +1630,11 @@ ${CPT_SITE_GUIDE}`;
       res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
+      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
+      if (String(error.message || '').includes('COMPLIANCE_VIOLATION')) {
+        return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: msg });
+      }
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
     }
   });
 
@@ -1667,25 +1659,16 @@ ${CPT_SITE_GUIDE}`;
         throw new Error(data.message || 'Twelve Data Candles failed or returned error');
       }
 
-      // Live Data Enforcement Engine Validation
-      if (data.values && data.values.length > 0) {
-        const latestCandle = data.values[0];
-        const validation = LiveDataEnforcementEngine.validateTick({
-          symbol,
-          price: parseFloat(latestCandle.close || '0'),
-          timestamp: new Date(latestCandle.datetime).getTime() || Date.now(),
-          source: 'TWELVEDATA_CANDLES_LIVE',
-          latencyMs: 120
-        });
-        if (!validation.valid) {
-          return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
-        }
-      }
+      // Gateway already validates candles — skip a second validateTick here.
 
       res.json(data);
     } catch (error: any) {
       console.error('[TwelveData Candles Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
+      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
+      if (String(error.message || '').includes('COMPLIANCE_VIOLATION')) {
+        return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: msg });
+      }
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
     }
   });
 
@@ -1717,20 +1700,7 @@ ${CPT_SITE_GUIDE}`;
         throw new Error(`Twelve Data Error: ${data.message || 'API quota limit / rate exceeded'}`);
       }
 
-      // Live Data Enforcement Engine Validation
-      if (data.values.length > 0) {
-        const latestCandle = data.values[0];
-        const validation = LiveDataEnforcementEngine.validateTick({
-          symbol,
-          price: parseFloat(latestCandle.close || '0'),
-          timestamp: new Date(latestCandle.datetime).getTime() || Date.now(),
-          source: 'TWELVEDATA_HISTORY_LIVE',
-          latencyMs: 150
-        });
-        if (!validation.valid) {
-          return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: validation.message });
-        }
-      }
+      // Gateway already validates — skip a second validateTick on history.
 
       const formatted = data.values.map((v: any) => [
         new Date(v.datetime).getTime(),
@@ -2806,6 +2776,21 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       }
     } catch (e: any) {
       console.error('[SEO Page Interceptor failure]', e);
+      // Never blank the whole terminal for an SSR metadata fault — serve the SPA
+      // shell raw so charts/login still load while we inspect logs.
+      try {
+        const fallbackPath = isDev
+          ? path.resolve(process.cwd(), 'index.html')
+          : path.resolve(process.cwd(), 'dist', 'index.html');
+        if (fs.existsSync(fallbackPath)) {
+          res.status(200);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          return res.send(safeReadTextFile(fallbackPath));
+        }
+      } catch (fallbackErr) {
+        console.error('[SEO Page Interceptor fallback failed]', fallbackErr);
+      }
       return res.status(500).send('Educational index resolution fault occurred.');
     }
   };

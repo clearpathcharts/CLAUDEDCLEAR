@@ -86,18 +86,27 @@ export class LiveDataEnforcementEngine {
       priceDrift = Math.abs(tick.price - prevTick.price);
       tickInterval = tick.timestamp - prevTick.timestamp;
 
-      // Anti-stagnant flag (detect simple synthetic tickers that just repeat exactly)
+      // Anti-stagnant: only flag RAPID identical ticks (fake local simulators).
+      // Quiet FX/metals + a ~5s quote cache routinely return the same price for
+      // many minutes — that is live market silence, not simulation. Blocking it
+      // 403'd StrictlyCharts while Twelve Data was healthy.
       if (priceDrift === 0) {
-        const repeatedCount = (this.repeatedValueCounter.get(tick.symbol) || 0) + 1;
-        this.repeatedValueCounter.set(tick.symbol, repeatedCount);
-        if (repeatedCount >= 15) {
-          // Flag stagnant/frozen mock streams
-          return {
-            valid: false,
-            message: `CRITICAL INTEGRITY VIOLATION: Channel ${tick.symbol} has duplicate constant quotes, signaling stagnant simulation fallback.`
-          };
+        const rapidRepeat = tickInterval > 0 && tickInterval < 2000;
+        if (rapidRepeat) {
+          const repeatedCount = (this.repeatedValueCounter.get(tick.symbol) || 0) + 1;
+          this.repeatedValueCounter.set(tick.symbol, repeatedCount);
+          if (repeatedCount >= 40) {
+            return {
+              valid: false,
+              message: `CRITICAL INTEGRITY VIOLATION: Channel ${tick.symbol} has duplicate constant quotes, signaling stagnant simulation fallback.`
+            };
+          }
+          isRepeatedValue = true;
+        } else {
+          // Spaced repeats (cache / quiet tape) are normal — do not accumulate.
+          this.repeatedValueCounter.set(tick.symbol, 0);
+          isRepeatedValue = true;
         }
-        isRepeatedValue = true;
       } else {
         this.repeatedValueCounter.set(tick.symbol, 0);
       }
