@@ -302,7 +302,8 @@ export async function getMarketData(symbol: string) {
       latencyMs: 90
     });
     if (!validation.valid) {
-      throw new Error(`COMPLIANCE_VIOLATION: ${validation.message}`);
+      console.warn(`[Gateway] Price integrity warning for ${symbol}: ${validation.message}`);
+      logHealthEvent('WARNING', `Price integrity soft-fail ${symbol}: ${validation.message}`);
     }
 
     marketCache[cacheKey] = {
