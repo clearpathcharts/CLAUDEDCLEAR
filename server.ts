@@ -347,13 +347,21 @@ async function startServer() {
   });
 
   // 2. RATE LIMITING (Crucial for 25k users)
-  // Protects the institutional data streams from being overwhelmed
+  // Protects the institutional data streams from being overwhelmed.
+  // Market/news paths have dedicated limiters below — do NOT also count them
+  // against this global bucket. A ticker retry storm was burning the global
+  // 900/15min ceiling and returning "Too many requests from this institutional
+  // terminal" on /api/market/history, blanking StrictlyCharts.
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3000, // Was 900 — ticker+news retry storms burned this and 429'd all /api/*
+    max: 3000,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' }
+    message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' },
+    skip: (req) => {
+      const url = String(req.originalUrl || req.url || '').split('?')[0];
+      return /^\/api\/(quote|candles|market\/|newsdata|twelvedata|fred|fmp)\b/.test(url);
+    },
   });
   app.set('trust proxy', 1);
   app.use('/api/', limiter);
