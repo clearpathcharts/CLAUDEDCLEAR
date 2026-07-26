@@ -170,9 +170,21 @@ export default function App() {
         setCurrentPath(window.location.pathname);
       };
       window.addEventListener('popstate', handleLocationChange);
-      
-      // Periodically check path in case hash routing / pushState is triggered from inside code
-      const interval = setInterval(handleLocationChange, 2000);
+      window.addEventListener('clearpath-location', handleLocationChange);
+
+      // Patch history so in-app pushState/replaceState refreshes views immediately
+      const hist = window.history;
+      const originalPush = hist.pushState.bind(hist);
+      const originalReplace = hist.replaceState.bind(hist);
+      hist.pushState = (...args: Parameters<History['pushState']>) => {
+        originalPush(...args);
+        window.dispatchEvent(new Event('clearpath-location'));
+      };
+      hist.replaceState = (...args: Parameters<History['replaceState']>) => {
+        originalReplace(...args);
+        window.dispatchEvent(new Event('clearpath-location'));
+      };
+
       try {
         const params = new URLSearchParams(window.location.search);
         if (params.get('profile') !== currentProfileId) {
@@ -185,7 +197,9 @@ export default function App() {
       }
       return () => {
         window.removeEventListener('popstate', handleLocationChange);
-        clearInterval(interval);
+        window.removeEventListener('clearpath-location', handleLocationChange);
+        hist.pushState = originalPush;
+        hist.replaceState = originalReplace;
       };
     }
   }, [currentProfileId]);

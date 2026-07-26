@@ -7,29 +7,39 @@ export interface BollingerBandsOutput {
   lower: number;
 }
 
+/**
+ * Bollinger Bands: SMA basis + population standard deviation (TradingView default).
+ * Emits only after a full `period` window.
+ */
 export function calculateBollingerBands(
-  data: Candle[], 
-  period: number = 20, 
+  data: Candle[],
+  period: number = 20,
   stdDevMultiplier: number = 2
 ): BollingerBandsOutput[] {
-  if (data.length === 0) return [];
+  if (data.length === 0 || period < 1 || data.length < period) return [];
 
-  return data.map((d, idx) => {
-    const start = Math.max(0, idx - period + 1);
-    const slice = data.slice(start, idx + 1);
-    
-    // SMA Basis
-    const basis = slice.reduce((acc, curr) => acc + curr.close, 0) / slice.length;
-    
-    // Standard Deviation
-    const variance = slice.reduce((acc, curr) => acc + Math.pow(curr.close - basis, 2), 0) / slice.length;
-    const stdDev = Math.sqrt(variance);
+  const results: BollingerBandsOutput[] = [];
 
-    return {
-      time: d.time,
+  for (let idx = period - 1; idx < data.length; idx++) {
+    const start = idx - period + 1;
+    let sum = 0;
+    for (let i = start; i <= idx; i++) sum += data[i].close;
+    const basis = sum / period;
+
+    let variance = 0;
+    for (let i = start; i <= idx; i++) {
+      const diff = data[i].close - basis;
+      variance += diff * diff;
+    }
+    const stdDev = Math.sqrt(variance / period);
+
+    results.push({
+      time: data[idx].time,
       basis,
       upper: basis + stdDevMultiplier * stdDev,
-      lower: basis - stdDevMultiplier * stdDev
-    };
-  });
+      lower: basis - stdDevMultiplier * stdDev,
+    });
+  }
+
+  return results;
 }

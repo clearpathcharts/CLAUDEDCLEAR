@@ -465,6 +465,8 @@ const TabContent = ({
     onProfileChange, 
     isAdmin,
     isFounder,
+    selectedLightweightSymbol,
+    setSelectedLightweightSymbol,
     leftSide, 
     setLeftSide, 
     rightSide, 
@@ -476,7 +478,9 @@ const TabContent = ({
     showTerminalMatrixNoise, 
     setShowTerminalMatrixNoise,
     showHomepageContacts,
-    handleSetShowHomepageContacts
+    handleSetShowHomepageContacts,
+    activeChat,
+    setActiveChat,
   ]);
 
   if (!content) return null;
@@ -1492,7 +1496,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           {/* Content Views */}
           <div className="flex-1 flex flex-col w-full relative min-h-full">
             <AnimatePresence mode="wait">
-                <div className="flex flex-col flex-1 h-full w-full min-h-[400px]">
+                <div
+                  key={`${activeTab}:${selectedLightweightSymbol}`}
+                  className="flex flex-col flex-1 h-full w-full min-h-[400px]"
+                >
                   <div className="px-6 lg:px-12 pb-16 pt-8 flex-1 flex flex-col min-h-[50vh]">
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">

@@ -1,6 +1,7 @@
 // /src/pages/stocks/[symbol].tsx
 import React, { useMemo } from "react";
 import { getProceduralStocks } from "../../utils/searchEngine";
+import { useLocationPathname } from "../../hooks/useLocationPathname";
 
 interface StockPageProps {
   stock?: {
@@ -20,10 +21,10 @@ interface StockPageProps {
 }
 
 export default function StockPage({ stock }: StockPageProps) {
-  // Graceful client-side routing fallback
+  const pathname = useLocationPathname();
   const symbol = useMemo(() => {
-    return window.location.pathname.split("/").pop()?.toUpperCase() || "AAPL";
-  }, []);
+    return pathname.split("/").pop()?.toUpperCase() || "AAPL";
+  }, [pathname]);
 
   const resolvedStock = useMemo(() => {
     if (stock) return stock;

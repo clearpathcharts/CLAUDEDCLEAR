@@ -1,6 +1,7 @@
 // /src/pages/forex/[pair].tsx
 import React, { useMemo } from "react";
 import { getProceduralForex } from "../../utils/searchEngine";
+import { useLocationPathname } from "../../hooks/useLocationPathname";
 
 interface ForexPageProps {
   pairData?: {
@@ -13,10 +14,10 @@ interface ForexPageProps {
 }
 
 export default function ForexPage({ pairData }: ForexPageProps) {
-  // Graceful client-side routing fallback
+  const pathname = useLocationPathname();
   const pairParam = useMemo(() => {
-    return window.location.pathname.split("/").pop()?.toUpperCase() || "EURUSD";
-  }, []);
+    return pathname.split("/").pop()?.toUpperCase() || "EURUSD";
+  }, [pathname]);
 
   const resolvedPair = useMemo(() => {
     if (pairData) return pairData;

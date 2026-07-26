@@ -1133,18 +1133,22 @@ export default function EncyclopediaLayout() {
     }));
   };
 
-  const selectFileNode = (fileName: string) => {
-    setActiveFile(fileName);
-    setViewMode('preview');
-    setEncyclopediaHistory(prev => {
-      if (prev[prev.length - 1] === fileName) return prev;
-      return [...prev, fileName];
-    });
+  const syncEncyclopediaUrl = (fileName: string) => {
+    // pushState alone does not fire popstate — notify SPA listeners so pages refresh
+    const go = (path: string) => {
+      try {
+        window.history.pushState({}, '', path);
+        window.dispatchEvent(new Event('clearpath-location'));
+        window.dispatchEvent(new Event('popstate'));
+      } catch (e) {
+        console.error('Failed to navigate encyclopedia path:', e);
+      }
+    };
 
     if (fileName === 'index.html') {
-      window.history.pushState({}, '', '/financial-encyclopedia');
+      go('/financial-encyclopedia');
     } else if (fileName === 'encyclopedia/companies/directory.html') {
-      window.history.pushState({}, '', '/companies');
+      go('/companies');
     } else if (fileName.startsWith('encyclopedia/stocks/')) {
       const sym = fileName.replace('encyclopedia/stocks/', '').replace('.html', '');
       let mappedSym = sym;
@@ -1153,41 +1157,53 @@ export default function EncyclopediaLayout() {
       else if (sym === 'nvidia') mappedSym = 'nvda';
       else if (sym === 'microsoft') mappedSym = 'msft';
       else if (sym === 'amazon') mappedSym = 'amzn';
-      window.history.pushState({}, '', `/stocks/${mappedSym}`);
+      go(`/stocks/${mappedSym}`);
     } else if (fileName.startsWith('encyclopedia/crypto/')) {
       const coin = fileName.replace('encyclopedia/crypto/', '').replace('.html', '');
-      window.history.pushState({}, '', `/crypto/${coin}`);
+      go(`/crypto/${coin}`);
     } else if (fileName.startsWith('encyclopedia/forex/')) {
       const pair = fileName.replace('encyclopedia/forex/', '').replace('.html', '');
-      window.history.pushState({}, '', `/forex/${pair}`);
+      go(`/forex/${pair}`);
     } else if (fileName.startsWith('encyclopedia/commodities/')) {
       const commodity = fileName.replace('encyclopedia/commodities/', '').replace('.html', '');
-      window.history.pushState({}, '', `/commodities/${commodity}`);
+      go(`/commodities/${commodity}`);
     } else if (fileName.startsWith('encyclopedia/economy/')) {
       const topic = fileName.replace('encyclopedia/economy/', '').replace('.html', '');
-      window.history.pushState({}, '', `/economy/${topic}`);
+      go(`/economy/${topic}`);
     } else if (fileName === 'encyclopedia/markets/stocks.html') {
-      window.history.pushState({}, '', '/stocks');
+      go('/stocks');
     } else if (fileName === 'encyclopedia/markets/crypto.html') {
-      window.history.pushState({}, '', '/crypto');
+      go('/crypto');
     } else if (fileName === 'encyclopedia/markets/forex.html') {
-      window.history.pushState({}, '', '/forex');
+      go('/forex');
     } else if (fileName === 'encyclopedia/markets/commodities.html') {
-      window.history.pushState({}, '', '/commodities');
+      go('/commodities');
     }
+  };
+
+  const selectFileNode = (fileName: string, options?: { replaceHistory?: boolean }) => {
+    setActiveFile(fileName);
+    setViewMode('preview');
+    setEncyclopediaHistory(prev => {
+      if (options?.replaceHistory) {
+        if (prev.length <= 1) return [fileName];
+        return [...prev.slice(0, -1), fileName];
+      }
+      if (prev[prev.length - 1] === fileName) return prev;
+      return [...prev, fileName];
+    });
+    syncEncyclopediaUrl(fileName);
   };
 
   const handleGoBack = () => {
     if (encyclopediaHistory.length > 1) {
-      setEncyclopediaHistory(prev => {
-        const nextHist = [...prev];
-        nextHist.pop(); // remove current
-        const prevPage = nextHist[nextHist.length - 1] || 'index.html';
-        setActiveFile(prevPage);
-        return nextHist;
-      });
+      const prevPage = encyclopediaHistory[encyclopediaHistory.length - 2] || 'index.html';
+      setEncyclopediaHistory(prev => prev.slice(0, -1));
+      setActiveFile(prevPage);
+      setViewMode('preview');
+      syncEncyclopediaUrl(prevPage);
     } else {
-      setActiveFile('index.html');
+      selectFileNode('index.html');
     }
   };
 
@@ -4304,35 +4320,39 @@ of this software and associated documentation files (the "The Software")...`;
                     if (mainKeys.includes(companyKey)) {
                       return (
                         <StockDetailsView 
+                          key={`stock-detail-${companyKey}`}
                           companyKey={companyKey === 'aapl' ? 'apple' : companyKey === 'tsla' ? 'tesla' : companyKey === 'nvda' ? 'nvidia' : companyKey === 'msft' ? 'microsoft' : companyKey === 'amzn' ? 'amazon' : companyKey} 
                           selectFileNode={selectFileNode} 
                         />
                       );
                     } else {
                       return (
-                        <DynamicStockPage />
+                        <DynamicStockPage key={`dyn-stock-${companyKey}`} />
                       );
                     }
                   })()}
 
                   {/* 8.1 Rich Dynamic Crypto Profiles */}
                   {activeFile.startsWith('encyclopedia/crypto/') && !activeFile.endsWith('crypto.html') && (() => {
+                    const coinKey = activeFile.split('/').pop()?.replace('.html', '').toLowerCase() || '';
                     return (
-                      <DynamicCryptoPage />
+                      <DynamicCryptoPage key={`dyn-crypto-${coinKey}`} />
                     );
                   })()}
 
                   {/* 8.2 Rich Dynamic Forex Profiles */}
                   {activeFile.startsWith('encyclopedia/forex/') && !activeFile.endsWith('forex.html') && (() => {
+                    const pairKey = activeFile.split('/').pop()?.replace('.html', '').toLowerCase() || '';
                     return (
-                      <DynamicForexPage />
+                      <DynamicForexPage key={`dyn-forex-${pairKey}`} />
                     );
                   })()}
 
                   {/* 8.3 Rich Dynamic Commodities Profiles */}
                   {activeFile.startsWith('encyclopedia/commodities/') && !activeFile.endsWith('commodities.html') && (() => {
+                    const commodityKey = activeFile.split('/').pop()?.replace('.html', '').toLowerCase() || '';
                     return (
-                      <DynamicCommodityPage />
+                      <DynamicCommodityPage key={`dyn-commodity-${commodityKey}`} />
                     );
                   })()}
 

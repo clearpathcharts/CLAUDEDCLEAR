@@ -1,6 +1,7 @@
 // /src/pages/crypto/[coin].tsx
 import React, { useMemo } from "react";
 import { getProceduralCrypto } from "../../utils/searchEngine";
+import { useLocationPathname } from "../../hooks/useLocationPathname";
 
 interface CryptoPageProps {
   coinData?: {
@@ -15,10 +16,10 @@ interface CryptoPageProps {
 }
 
 export default function CryptoPage({ coinData }: CryptoPageProps) {
-  // Graceful client-side routing fallback
+  const pathname = useLocationPathname();
   const coinParam = useMemo(() => {
-    return window.location.pathname.split("/").pop()?.toUpperCase() || "BTC";
-  }, []);
+    return pathname.split("/").pop()?.toUpperCase() || "BTC";
+  }, [pathname]);
 
   const resolvedCoin = useMemo(() => {
     if (coinData) return coinData;

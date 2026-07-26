@@ -443,34 +443,34 @@ export function LightweightCandles({
               }
               else if (indAbbr === "ICHIMOKU") {
                 const ichiData = IndicatorEngine.calculate("ICHIMOKU", tierOptimizedData, ichimokuSettings);
-
-                const tenkanData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.tenkan }));
-                const kijunData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.kijun }));
-                const spanAData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.spanA }));
-                const spanBData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.spanB }));
-                const chikouData = ichiData.map((d: any) => ({ time: d.time as Time, value: d.chikou }));
+                const linePts = (key: "tenkan" | "kijun" | "spanA" | "spanB" | "chikou") =>
+                  ichiData
+                    .filter((d: any) => d[key] != null && Number.isFinite(d[key]))
+                    .map((d: any) => ({ time: d.time as Time, value: d[key] as number }));
 
                 const convLine = chart.addSeries(LineSeries, { color: "#2962FF", lineWidth: 2, title: "Conversion (Tenkan)" });
-                convLine.setData(tenkanData);
+                convLine.setData(linePts("tenkan"));
 
                 const bsLine = chart.addSeries(LineSeries, { color: "#B71C1C", lineWidth: 2, title: "Base (Kijun)" });
-                bsLine.setData(kijunData);
+                bsLine.setData(linePts("kijun"));
 
                 const lagLine = chart.addSeries(LineSeries, { color: "#43A047", lineWidth: 1, title: "Lagging (Chikou)" });
-                lagLine.setData(chikouData);
+                lagLine.setData(linePts("chikou"));
 
                 const spanALine = chart.addSeries(LineSeries, { color: "#A5D6A7", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span A" });
-                spanALine.setData(spanAData);
+                spanALine.setData(linePts("spanA"));
 
                 const spanBLine = chart.addSeries(LineSeries, { color: "#EF9A9A", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span B" });
-                spanBLine.setData(spanBData);
+                spanBLine.setData(linePts("spanB"));
 
                 const bullCloudData = ichiData.map((d: any) => {
+                  if (d.spanA == null || d.spanB == null) return { time: d.time as Time, value: null };
                   const val = d.spanA >= d.spanB ? d.spanA : null;
                   return { time: d.time as Time, value: val };
                 }).filter((d: any) => d.value !== null);
 
                 const bearCloudData = ichiData.map((d: any) => {
+                  if (d.spanA == null || d.spanB == null) return { time: d.time as Time, value: null };
                   const val = d.spanA < d.spanB ? d.spanB : null;
                   return { time: d.time as Time, value: val };
                 }).filter((d: any) => d.value !== null);

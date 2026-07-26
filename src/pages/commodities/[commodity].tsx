@@ -1,6 +1,7 @@
 // /src/pages/commodities/[commodity].tsx
 import React, { useMemo } from "react";
 import { getProceduralCommodities } from "../../utils/searchEngine";
+import { useLocationPathname } from "../../hooks/useLocationPathname";
 
 interface CommodityPageProps {
   commodityData?: {
@@ -18,10 +19,10 @@ interface CommodityPageProps {
 }
 
 export default function CommodityPage({ commodityData }: CommodityPageProps) {
-  // Graceful client-side routing fallback
+  const pathname = useLocationPathname();
   const commodityParam = useMemo(() => {
-    return window.location.pathname.split("/").pop()?.toUpperCase() || "XAUUSD";
-  }, []);
+    return pathname.split("/").pop()?.toUpperCase() || "XAUUSD";
+  }, [pathname]);
 
   const resolvedCommodity = useMemo(() => {
     if (commodityData) return commodityData;
