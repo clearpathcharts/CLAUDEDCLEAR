@@ -109,10 +109,7 @@ export interface UserProfile {
     twitch?: string;
     pinterest?: string;
   };
-  stripePublishable?: string;
-  stripeSecret?: string;
-  novoAccount?: string;
-  stripeNovoActive?: boolean;
+  /** Live Stripe Payment Link URLs only (https://buy.stripe.com/…). Never store API secrets here. */
   essentialLink?: string;
   plusLink?: string;
   premiumLink?: string;

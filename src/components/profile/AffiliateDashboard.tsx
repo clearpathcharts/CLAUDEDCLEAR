@@ -105,6 +105,37 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   const [cockpitTheme, setCockpitTheme] = useState<'lava' | 'slate'>('lava');
   const [messagesChannelFilter, setMessagesChannelFilter] = useState<string>('all');
 
+  /** Real private-member referral desk from /api/affiliate/me (not a random mock code). */
+  const [referralDesk, setReferralDesk] = useState<{
+    code: string;
+    shareUrl: string;
+    monthSignups: number;
+    discountPercent: number;
+    creditDisplay: string;
+    successfulReferrals: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/affiliate/me', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.shareUrl || !data?.code) return;
+        setReferralDesk({
+          code: String(data.code),
+          shareUrl: String(data.shareUrl),
+          monthSignups: Number(data.monthSignups) || 0,
+          discountPercent: Number(data.discountPercent) || 0,
+          creditDisplay: String(data.creditDisplay || '$0.00'),
+          successfulReferrals: Number(data.successfulReferrals) || 0,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // 2. Watchlist & Live Ticker Rates
   const [watchlist, setWatchlist] = useState<{ [symbol: string]: { price: number; change: number; isUp: boolean; lastUpdate: string } }>({
     'EURUSD': { price: 1.08425, change: 0.34, isUp: true, lastUpdate: 'Just now' },
@@ -780,10 +811,13 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   };
 
   const handleCreateInvitationPacket = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const packet = `CFT-PARTNER-${code}`;
+    const packet = referralDesk?.shareUrl;
+    if (!packet) {
+      addTelemetryLog('Sign in with a private ClearPath account to unlock your real /r/CODE share link.', 'warn');
+      return;
+    }
     void navigator.clipboard.writeText(packet).catch(() => {});
-    addTelemetryLog(`Commission Ledger Sync Code created: ${packet}`, 'success');
+    addTelemetryLog(`Referral share link copied: ${packet} (code ${referralDesk?.code})`, 'success');
   };
 
   const getFilterCss = () => {
@@ -898,30 +932,40 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
               })}
             </nav>
 
-            {/* Quick Summary Metrics block */}
+            {/* Quick Summary Metrics block — live referral API when signed in */}
             {!sidebarCollapsed && (
               <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-900 space-y-2.5 text-left font-mono text-[10px]">
                 <div className="text-zinc-550 uppercase font-bold text-[9px] border-b border-zinc-900 pb-1.5 flex justify-between items-center">
-                  <span>LEDGER BALANCE</span>
-                  <span className="text-[#00ffe1]">UPDATED</span>
+                  <span>REFERRAL LEDGER</span>
+                  <span className="text-[#00ffe1]">{referralDesk ? 'LIVE' : 'SIGN IN'}</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span className="text-zinc-500">CLEARED SWEEP:</span>
-                  <span className="text-[#ff007f] font-extrabold">$32,720.00</span>
+                  <span className="text-zinc-500">YOUR CODE:</span>
+                  <span className="text-[#ff007f] font-extrabold">{referralDesk?.code || '—'}</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span className="text-zinc-500">PENDING AUDIT:</span>
-                  <span className="text-[#ff5a1f] font-extrabold">$1,120.00</span>
+                  <span className="text-zinc-500">MONTH SIGNUPS:</span>
+                  <span className="text-[#ff5a1f] font-extrabold">{referralDesk ? referralDesk.monthSignups : '—'}</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span className="text-zinc-500">BONUS SCORE:</span>
-                  <span className="text-[#00ffe1] font-extrabold">12.4K XP</span>
+                  <span className="text-zinc-500">DISCOUNT / CREDIT:</span>
+                  <span className="text-[#00ffe1] font-extrabold">
+                    {referralDesk
+                      ? `${referralDesk.discountPercent}% · ${referralDesk.creditDisplay}`
+                      : '—'}
+                  </span>
                 </div>
-                <button 
+                {referralDesk?.shareUrl && (
+                  <p className="text-[8px] text-zinc-500 break-all leading-relaxed pt-1 border-t border-zinc-900">
+                    {referralDesk.shareUrl}
+                  </p>
+                )}
+                <button
+                  type="button"
                   onClick={handleCreateInvitationPacket}
                   className="w-full mt-2 bg-[#ff5a1f]/10 hover:bg-[#ff5a1f] border border-[#ff5a1f]/30 hover:border-transparent text-[#ff5a1f] hover:text-[#00ffe1] text-[9px] font-black uppercase py-2 rounded-lg text-center transition-all cursor-pointer"
                 >
-                  ⚓ CREATE DESK INVITATION
+                  Copy real share link
                 </button>
               </div>
             )}
