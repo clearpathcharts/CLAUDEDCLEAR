@@ -58,7 +58,7 @@ export function fitUpperTrendline(
   const fittedFrom = { ...from, price: from.price + shift };
   const fittedTo = { ...to, price: to.price + shift };
 
-  // Return best shifted line even if a few wicks still nick it (gold/FX).
+  // Return best shifted line even if a few wicks still nick it.
   return { from: fittedFrom, to: fittedTo };
 }
 
@@ -146,7 +146,7 @@ export function horizontalSegment(
   price: number,
   role: PatternLineSegment['role'],
 ): PatternLineSegment | null {
-  // Always emit the horizontal — strict wick avoidance used to delete gold/FX triangles.
+  // Always emit the horizontal — strict wick avoidance used to delete real triangles.
   return {
     role,
     from: { index: startIndex, time: candles[startIndex].time, price },

@@ -37,7 +37,7 @@ function finalizeGeometry(
   if (valid.length === 0) {
     return { ...pattern, geometry: undefined };
   }
-  // Prefer candle-safe lines, but still draw when wick-heavy gold/FX fails the strict test.
+  // Prefer candle-safe lines, but still draw when wick-heavy markets fail the strict test.
   const safe = allSegmentsCandleSafe(candles, valid);
   return {
     ...pattern,

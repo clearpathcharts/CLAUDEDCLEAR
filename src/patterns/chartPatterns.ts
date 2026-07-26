@@ -7,7 +7,7 @@ import { clamp01, fitLineThroughPivots, lineValueAt, roundConfidence } from './l
 
 type ChartPatternDraft = Omit<DetectedPattern, 'patternGroup' | 'geometry'> & { id: ChartPatternId };
 
-/** Normalized slope vs avg price across the structure span — loosened for gold/FX noise. */
+/** Normalized slope vs avg price across the structure span — works for any asset class. */
 const FLAT_SLOPE_N = 0.018;
 const NEAR_FLAT_SLOPE_N = 0.035;
 
@@ -17,7 +17,7 @@ function withGeometry(
   candles: Candle[],
 ): DetectedPattern {
   // Always keep the measured pattern for the sidebar — geometry may fail on
-  // wick-heavy instruments (XAU) when candle-safe fitting is strict.
+  // wick-heavy markets when candle-safe fitting is strict.
   return attachChartGeometry(
     { ...pattern, patternGroup: getChartPatternGroup(pattern.id) },
     swings,
@@ -51,7 +51,7 @@ function detectWedgesAndTriangles(
   avgPrice: number,
 ): DetectedPattern[] {
   const found: DetectedPattern[] = [];
-  // Use more pivots so gold/FX consolidations still resolve into triangles.
+  // Use more pivots so consolidations on any symbol still resolve into triangles.
   const highs = swings.filter((s) => s.kind === 'high').slice(-6);
   const lows = swings.filter((s) => s.kind === 'low').slice(-6);
 

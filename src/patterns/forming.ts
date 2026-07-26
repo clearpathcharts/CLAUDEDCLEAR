@@ -271,7 +271,7 @@ export function analyzeFormingStructure(
 
   const measured = possibilitiesFromMeasured(measuredPatterns);
   const impulse = possibilitiesFromImpulse(legs, clock, trendBias);
-  // Measured geometry first, then methodology watches fill gaps (esp. on XAU).
+  // Measured geometry first, then methodology watches fill gaps on any symbol.
   const merged = new Map<string, FormingPossibility>();
   for (const p of [...measured, ...impulse]) {
     const key = `${p.id}:${p.label}`;
