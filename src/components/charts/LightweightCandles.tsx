@@ -40,7 +40,12 @@ type Candle = {
  * separate price scale. Price-based overlays (SMA, EMA, BB, VWAP, Ichimoku,
  * River) belong ON the candle scale and are deliberately excluded here.
  */
-const OSCILLATOR_INDICATORS = new Set(["RSI", "MACD", "ATR", "ADX", "OBV", "AO"]);
+const OSCILLATOR_INDICATORS = new Set([
+  "RSI", "MACD", "ATR", "ADX", "DMI", "OBV", "AO", "STOCH", "STOCHRSI",
+  "CCI", "WPR", "ROC", "PPO", "CMO", "DPO", "RVI", "TRIX", "TSI", "UO",
+  "KST", "FT", "CC", "BBW", "HV", "CHV", "AD", "A/D", "CMF", "MFI",
+  "EFI", "EOM", "VOL", "NETVOL", "VO",
+]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
 export function LightweightCandles({
@@ -530,21 +535,85 @@ export function LightweightCandles({
                 const obvLine = addOscillatorSeries({ color: "#118AB2", lineWidth: 2, title: "OBV" });
                 obvLine.setData(obvData as any[]);
               }
-              else if (indAbbr === "ADX") {
-                const adxData = IndicatorEngine.calculate("ADX", tierOptimizedData, { period: 14 });
+              else if (indAbbr === "ADX" || indAbbr === "DMI") {
+                const adxData = IndicatorEngine.calculate(indAbbr, tierOptimizedData, { period: 14 });
                 const adxValueData = adxData.map((d: any) => ({ time: d.time as Time, value: d.adx }));
-                const adxLine = addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" });
-                adxLine.setData(adxValueData);
+                const plusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.plusDI }));
+                const minusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.minusDI }));
+                addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" }).setData(adxValueData);
+                if (indAbbr === "DMI") {
+                  addOscillatorSeries({ color: "#22C55E", lineWidth: 1, title: "+DI" }).setData(plusData);
+                  addOscillatorSeries({ color: "#EF4444", lineWidth: 1, title: "-DI" }).setData(minusData);
+                }
+              }
+              else if (indAbbr === "STOCH" || indAbbr === "STOCHRSI") {
+                const st = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                addOscillatorSeries({ color: "#B5179E", lineWidth: 2, title: `${indAbbr} %K` }).setData(
+                  st.map((d: any) => ({ time: d.time as Time, value: d.k }))
+                );
+                addOscillatorSeries({ color: "#FFD166", lineWidth: 1, title: `${indAbbr} %D` }).setData(
+                  st.map((d: any) => ({ time: d.time as Time, value: d.d }))
+                );
+              }
+              else if (indAbbr === "DC" || indAbbr === "KC") {
+                const ch = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const midKey = indAbbr === "DC" ? "middle" : "middle";
+                chart.addSeries(LineSeries, { color: "#F72585", lineWidth: 1, title: `${indAbbr} mid` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d[midKey] }))
+                );
+                chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 1, title: `${indAbbr} upper` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d.upper }))
+                );
+                chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 1, title: `${indAbbr} lower` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d.lower }))
+                );
+              }
+              else if (indAbbr === "SUPERTREND" || indAbbr === "PSAR") {
+                const series = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                chart.addSeries(LineSeries, {
+                  color: indAbbr === "PSAR" ? "#FFD166" : "#00FFCC",
+                  lineWidth: 2,
+                  title: indAbbr,
+                }).setData(series.map((d: any) => ({ time: d.time as Time, value: d.value })));
+              }
+              else if (indAbbr === "PIVOT") {
+                const piv = IndicatorEngine.calculate("PIVOT", tierOptimizedData);
+                for (const key of ["pp", "r1", "s1"] as const) {
+                  chart.addSeries(LineSeries, {
+                    color: key === "pp" ? "#F72585" : key === "r1" ? "#22C55E" : "#EF4444",
+                    lineWidth: 1,
+                    lineStyle: LineStyle.Dashed,
+                    title: key.toUpperCase(),
+                  }).setData(piv.map((d: any) => ({ time: d.time as Time, value: d[key] })));
+                }
+              }
+              else if (indAbbr === "PPO" || indAbbr === "RVI" || indAbbr === "KST" || indAbbr === "TSI" || indAbbr === "FT") {
+                const multi = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const primaryKey = indAbbr === "PPO" ? "ppo" : indAbbr === "RVI" ? "rvi" : indAbbr === "KST" ? "kst" : indAbbr === "TSI" ? "tsi" : "fisher";
+                const secondaryKey = indAbbr === "FT" ? "trigger" : "signal";
+                addOscillatorSeries({ color, lineWidth: 2, title: indAbbr }).setData(
+                  multi.map((d: any) => ({ time: d.time as Time, value: d[primaryKey] }))
+                );
+                addOscillatorSeries({ color: "#F59E0B", lineWidth: 1, title: `${indAbbr} signal` }).setData(
+                  multi.map((d: any) => ({ time: d.time as Time, value: d[secondaryKey] }))
+                );
               }
               else {
-                // Unknown indicator: route via the IndicatorEngine. If it's a known
-                // oscillator name, keep it off the price scale; otherwise overlay.
+                // Generic single-line series from IndicatorBank
                 const lineData = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const points = Array.isArray(lineData)
+                  ? lineData
+                      .map((d: any) => ({
+                        time: d.time as Time,
+                        value: typeof d.value === "number" ? d.value : d.adx ?? d.k ?? d.ppo ?? null,
+                      }))
+                      .filter((d: any) => d.value != null)
+                  : [];
                 const isOscillator = OSCILLATOR_INDICATORS.has(indAbbr);
                 const otherLine = isOscillator
                   ? addOscillatorSeries({ color, lineWidth: 2, title: `${indAbbr} (Live)` })
                   : chart.addSeries(LineSeries, { color, lineWidth: 2, title: `${indAbbr} (Live)` });
-                otherLine.setData(lineData as any[]);
+                otherLine.setData(points as any[]);
               }
             } catch (err) {
               console.error(`Error loading indicator line for ${indAbbr}`, err);

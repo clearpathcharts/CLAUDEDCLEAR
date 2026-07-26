@@ -2,13 +2,23 @@ import React, { useEffect, useState } from "react";
 import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight } from "lucide-react";
 import {
   getActivePatternScan,
+  getPatternScan,
   subscribePatternScan,
   PATTERN_GROUP_LABELS,
   getFormingBrief,
   subscribeFormingBrief,
   type PatternGroup,
+  type PatternScanResult,
 } from "../../patterns";
 import type { FormingPossibility } from "../../patterns/forming";
+
+function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
+  if (symbol && symbol !== "—") {
+    const keyed = getPatternScan(symbol, timeframe);
+    if (keyed?.scan) return keyed.scan;
+  }
+  return getActivePatternScan();
+}
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
@@ -40,11 +50,15 @@ interface PatternScannerPanelProps {
  * Replaces floating HUD overlays on the chart canvas.
  */
 export function PatternScannerPanel({ symbol, timeframe, compact = false }: PatternScannerPanelProps) {
-  const [scan, setScan] = useState(getActivePatternScan());
+  const [scan, setScan] = useState<PatternScanResult | null>(() => resolvePanelScan(symbol, timeframe));
   const [forming, setForming] = useState(() => getFormingBrief(symbol, timeframe));
   const hasSymbol = Boolean(symbol && symbol !== '—');
 
-  useEffect(() => subscribePatternScan(() => setScan(getActivePatternScan())), []);
+  useEffect(() => {
+    const refresh = () => setScan(resolvePanelScan(symbol, timeframe));
+    refresh();
+    return subscribePatternScan(refresh);
+  }, [symbol, timeframe]);
 
   useEffect(() => {
     const refresh = () => setForming(getFormingBrief(symbol, timeframe));
@@ -77,11 +91,13 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           <span>{timeframe.toUpperCase()}</span>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-white/50">
-          {total > 0
-            ? `${total} hits · neon lines trace outside candles only`
-            : scan
-              ? `Scanned ${scan.scannedBars.toLocaleString()} bars · geometry draws on chart load`
-              : "Loading chart… pattern scan runs on every load."}
+          {!hasSymbol
+            ? "Load a symbol in any chart slot — the scanner needs candles to read structure."
+            : total > 0
+              ? `${total} hits · neon lines trace outside candles only`
+              : scan
+                ? `Scanned ${scan.scannedBars.toLocaleString()} bars · geometry draws on chart load`
+                : "Chart loading… pattern scan runs as soon as candles arrive."}
         </p>
       </div>
 

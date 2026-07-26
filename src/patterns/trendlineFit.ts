@@ -58,10 +58,7 @@ export function fitUpperTrendline(
   const fittedFrom = { ...from, price: from.price + shift };
   const fittedTo = { ...to, price: to.price + shift };
 
-  if (countLineViolations(candles, fittedFrom, fittedTo, startIndex, endIndex) > 0) {
-    return null;
-  }
-
+  // Return best shifted line even if a few wicks still nick it (gold/FX).
   return { from: fittedFrom, to: fittedTo };
 }
 
@@ -85,10 +82,6 @@ export function fitLowerTrendline(
 
   const fittedFrom = { ...from, price: from.price - shift };
   const fittedTo = { ...to, price: to.price - shift };
-
-  if (countLineViolations(candles, fittedFrom, fittedTo, startIndex, endIndex) > 0) {
-    return null;
-  }
 
   return { from: fittedFrom, to: fittedTo };
 }
@@ -153,9 +146,7 @@ export function horizontalSegment(
   price: number,
   role: PatternLineSegment['role'],
 ): PatternLineSegment | null {
-  for (let i = startIndex; i <= endIndex; i++) {
-    if (lineCutsCandle(candles[i], price)) return null;
-  }
+  // Always emit the horizontal — strict wick avoidance used to delete gold/FX triangles.
   return {
     role,
     from: { index: startIndex, time: candles[startIndex].time, price },
@@ -164,14 +155,21 @@ export function horizontalSegment(
 }
 
 /** Verify every drawn segment in a pattern respects candle bounds. */
-export function allSegmentsCandleSafe(candles: Candle[], lines: PatternLineSegment[]): boolean {
+export function allSegmentsCandleSafe(
+  candles: Candle[],
+  lines: PatternLineSegment[],
+  maxViolationRatio = 0.12,
+): boolean {
   for (const line of lines) {
     const lo = Math.min(line.from.index, line.to.index);
     const hi = Math.max(line.from.index, line.to.index);
+    const span = Math.max(1, hi - lo + 1);
+    let violations = 0;
     for (let i = lo; i <= hi; i++) {
       const p = priceAtLine(line.from, line.to, i);
-      if (lineCutsCandle(candles[i], p)) return false;
+      if (lineCutsCandle(candles[i], p)) violations++;
     }
+    if (violations / span > maxViolationRatio) return false;
   }
   return true;
 }

@@ -34,12 +34,14 @@ function finalizeGeometry(
   markerPrice?: number,
 ): DetectedPattern {
   const valid = lines.filter((l) => l.from.index !== l.to.index || l.from.price !== l.to.price);
-  if (valid.length === 0 || !allSegmentsCandleSafe(candles, valid)) {
+  if (valid.length === 0) {
     return { ...pattern, geometry: undefined };
   }
+  // Prefer candle-safe lines, but still draw when wick-heavy gold/FX fails the strict test.
+  const safe = allSegmentsCandleSafe(candles, valid);
   return {
     ...pattern,
-    geometry: { lines: valid, markerIndex, markerPrice },
+    geometry: { lines: valid, markerIndex, markerPrice, candleSafe: safe },
   };
 }
 

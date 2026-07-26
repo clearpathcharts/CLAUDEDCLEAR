@@ -9,9 +9,9 @@ const STRUCTURE_PATTERN_IDS = new Set<ChartPatternId>([
   'broadening_formation',
 ]);
 
-const MAX_CHART_PATTERNS = 2;
+const MAX_CHART_PATTERNS = 3;
 const MAX_CANDLESTICK_PATTERNS = 3;
-const MIN_DISPLAY_CONFIDENCE = 0.48;
+const MIN_DISPLAY_CONFIDENCE = 0.42;
 
 function overlapRatio(a: DetectedPattern, b: DetectedPattern): number {
   const start = Math.max(a.startIndex, b.startIndex);
@@ -41,15 +41,23 @@ export function resolvePatternConflicts(patterns: DetectedPattern[]): DetectedPa
     .filter((p) => p.category === 'candlestick' && p.confidence >= MIN_DISPLAY_CONFIDENCE)
     .sort((a, b) => b.endIndex - a.endIndex || b.confidence - a.confidence);
 
+  // Prefer continuation structures (triangles/wedges) over doubles when both fire.
+  const ranked = [...chart].sort((a, b) => {
+    const aStruct = isStructurePattern(a) ? 1 : 0;
+    const bStruct = isStructurePattern(b) ? 1 : 0;
+    if (aStruct !== bStruct) return bStruct - aStruct;
+    return b.confidence - a.confidence || b.endIndex - a.endIndex;
+  });
+
   const keptChart: DetectedPattern[] = [];
   let structureKept = 0;
 
-  for (const p of chart) {
+  for (const p of ranked) {
     if (keptChart.length >= MAX_CHART_PATTERNS) break;
 
     const structure = isStructurePattern(p);
     if (structure) {
-      if (structureKept >= 1) continue;
+      if (structureKept >= 2) continue;
       if (keptChart.some((k) => isStructurePattern(k) && overlapRatio(k, p) > 0.45)) continue;
       structureKept += 1;
     } else if (keptChart.some((k) => overlapRatio(k, p) > 0.75)) {

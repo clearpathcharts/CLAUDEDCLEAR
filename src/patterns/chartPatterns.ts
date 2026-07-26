@@ -7,20 +7,22 @@ import { clamp01, fitLineThroughPivots, lineValueAt, roundConfidence } from './l
 
 type ChartPatternDraft = Omit<DetectedPattern, 'patternGroup' | 'geometry'> & { id: ChartPatternId };
 
-const FLAT_SLOPE_N = 0.01;
+/** Normalized slope vs avg price across the structure span — loosened for gold/FX noise. */
+const FLAT_SLOPE_N = 0.018;
+const NEAR_FLAT_SLOPE_N = 0.035;
 
 function withGeometry(
   pattern: ChartPatternDraft,
   swings: ReturnType<typeof findSwingPoints>,
   candles: Candle[],
-): DetectedPattern | null {
-  const result = attachChartGeometry(
+): DetectedPattern {
+  // Always keep the measured pattern for the sidebar — geometry may fail on
+  // wick-heavy instruments (XAU) when candle-safe fitting is strict.
+  return attachChartGeometry(
     { ...pattern, patternGroup: getChartPatternGroup(pattern.id) },
     swings,
     candles,
   );
-  if (!result.geometry?.lines?.length) return null;
-  return result;
 }
 
 function tryPush(
@@ -29,8 +31,7 @@ function tryPush(
   swings: ReturnType<typeof findSwingPoints>,
   candles: Candle[],
 ): void {
-  const p = withGeometry(draft, swings, candles);
-  if (p) found.push(p);
+  found.push(withGeometry(draft, swings, candles));
 }
 
 function wedgeTriangleConfidence(
@@ -50,8 +51,9 @@ function detectWedgesAndTriangles(
   avgPrice: number,
 ): DetectedPattern[] {
   const found: DetectedPattern[] = [];
-  const highs = swings.filter((s) => s.kind === 'high').slice(-4);
-  const lows = swings.filter((s) => s.kind === 'low').slice(-4);
+  // Use more pivots so gold/FX consolidations still resolve into triangles.
+  const highs = swings.filter((s) => s.kind === 'high').slice(-6);
+  const lows = swings.filter((s) => s.kind === 'low').slice(-6);
 
   if (highs.length < 2 || lows.length < 2) return found;
 
@@ -74,8 +76,8 @@ function detectWedgesAndTriangles(
 
   const upSlopeN = (upper.slope * span) / avgPrice;
   const lowSlopeN = (lower.slope * span) / avgPrice;
-  const converging = gapEnd < gapStart * 0.75;
-  const diverging = gapEnd > gapStart * 1.25;
+  const converging = gapEnd < gapStart * 0.88;
+  const diverging = gapEnd > gapStart * 1.2;
   const confidence = wedgeTriangleConfidence(upper.r2, lower.r2, highs.length, lows.length);
   const endTime = candles[endIdx].time;
 
@@ -91,6 +93,12 @@ function detectWedgesAndTriangles(
   const h2 = highs[highs.length - 1];
   const l1 = lows[lows.length - 2];
   const l2 = lows[lows.length - 1];
+  const risingLows = l2.price > l1.price || lowSlopeN > FLAT_SLOPE_N * 0.45;
+  const fallingHighs = h2.price < h1.price || upSlopeN < -FLAT_SLOPE_N * 0.45;
+  const flatCeiling =
+    Math.abs(upSlopeN) <= NEAR_FLAT_SLOPE_N && pricesNear(h1.price, h2.price, 0.04);
+  const flatFloor =
+    Math.abs(lowSlopeN) <= NEAR_FLAT_SLOPE_N && pricesNear(l1.price, l2.price, 0.04);
 
   if (upSlopeN > FLAT_SLOPE_N && lowSlopeN > FLAT_SLOPE_N && converging) {
     tryPush(found, {
@@ -108,11 +116,7 @@ function detectWedgesAndTriangles(
       direction: 'bullish',
       detail: 'Both highs and lows are sliding down while the lines pinch together — often ends with a push back up.',
     }, swings, candles);
-  } else if (
-    Math.abs(upSlopeN) <= FLAT_SLOPE_N
-    && lowSlopeN > FLAT_SLOPE_N
-    && pricesNear(h1.price, h2.price, 0.025)
-  ) {
+  } else if (flatCeiling && risingLows) {
     tryPush(found, {
       ...base,
       id: 'ascending_triangle',
@@ -120,11 +124,7 @@ function detectWedgesAndTriangles(
       direction: 'bullish',
       detail: 'Flat ceiling with rising lows — buyers pressing upward into resistance.',
     }, swings, candles);
-  } else if (
-    upSlopeN < -FLAT_SLOPE_N
-    && Math.abs(lowSlopeN) <= FLAT_SLOPE_N
-    && pricesNear(l1.price, l2.price, 0.025)
-  ) {
+  } else if (flatFloor && fallingHighs) {
     tryPush(found, {
       ...base,
       id: 'descending_triangle',
@@ -167,7 +167,8 @@ function detectDoubleTopsAndBottoms(
     const [a, b] = highs.slice(-2);
     const diff = Math.abs(a.price - b.price) / avgPrice;
     const betweenLows = lows.filter((s) => s.index > a.index && s.index < b.index);
-    if (diff <= 0.01 && b.index - a.index >= lookback * 2 && betweenLows.length > 0) {
+    // Keep endIndex at the live edge so active doubles stay visible (not only the 2nd peak bar).
+    if (diff <= 0.012 && b.index - a.index >= lookback * 2 && betweenLows.length > 0) {
       const neckline = Math.min(...betweenLows.map((s) => s.price));
       tryPush(found, {
         id: 'double_top',
@@ -175,9 +176,9 @@ function detectDoubleTopsAndBottoms(
         label: 'Double Top',
         direction: 'bearish',
         startIndex: a.index,
-        endIndex: b.index,
-        time: b.time,
-        confidence: roundConfidence(clamp01(0.5 + (0.01 - diff) * 20)),
+        endIndex: candles.length - 1,
+        time: candles[candles.length - 1].time,
+        confidence: roundConfidence(clamp01(0.5 + (0.012 - diff) * 18)),
         detail: `Two peaks stalled near ${roundConfidence(a.price).toFixed(2)} with a trough between them — bearish if neckline near ${roundConfidence(neckline).toFixed(2)} breaks.`,
       }, swings, candles);
     }
@@ -187,7 +188,7 @@ function detectDoubleTopsAndBottoms(
     const [a, b] = lows.slice(-2);
     const diff = Math.abs(a.price - b.price) / avgPrice;
     const betweenHighs = highs.filter((s) => s.index > a.index && s.index < b.index);
-    if (diff <= 0.01 && b.index - a.index >= lookback * 2 && betweenHighs.length > 0) {
+    if (diff <= 0.012 && b.index - a.index >= lookback * 2 && betweenHighs.length > 0) {
       const neckline = Math.max(...betweenHighs.map((s) => s.price));
       tryPush(found, {
         id: 'double_bottom',
@@ -195,9 +196,9 @@ function detectDoubleTopsAndBottoms(
         label: 'Double Bottom',
         direction: 'bullish',
         startIndex: a.index,
-        endIndex: b.index,
-        time: b.time,
-        confidence: roundConfidence(clamp01(0.5 + (0.01 - diff) * 20)),
+        endIndex: candles.length - 1,
+        time: candles[candles.length - 1].time,
+        confidence: roundConfidence(clamp01(0.5 + (0.012 - diff) * 18)),
         detail: `Two troughs held near ${roundConfidence(a.price).toFixed(2)} with a peak between them — bullish if neckline near ${roundConfidence(neckline).toFixed(2)} breaks.`,
       }, swings, candles);
     }
