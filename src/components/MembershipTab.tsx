@@ -280,24 +280,6 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     }, 850);
   };
 
-  const handleSelfUpgrade = async () => {
-    try {
-      await updateProfile({
-        vipStatus: 'vip_pro',
-        subscriptionActive: true,
-        interfaceType: 'terminal_tactical'
-      } as any);
-
-      setWebhookLogs(prev => [
-        ...prev,
-        `[UPGRADE] Account updated. Current session now operates under ClearPath PRO VIP interface matrix.`,
-      ]);
-      alert('Membership active! Your account state has been updated to ClearPath PRO VIP.');
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const copyText = (text: string, type: 'link' | 'html') => {
     navigator.clipboard.writeText(text);
     if (type === 'link') {
@@ -380,16 +362,10 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
 
           <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
             <span className="text-zinc-500 text-[10px] font-mono">REALTIME CLOUD SYNC</span>
-            {userProfile?.vipStatus !== 'vip_pro' ? (
-              <button
-                type="button"
-                onClick={handleSelfUpgrade}
-                className="text-[10px] bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 text-white py-1 px-3.5 rounded font-black font-mono uppercase tracking-widest transition-all cursor-pointer"
-              >
-                PRO STATUS
-              </button>
+            {userProfile?.vipStatus === 'vip_pro' || userProfile?.subscriptionActive ? (
+              <span className="text-emerald-400 text-[11px] font-bold font-mono uppercase">PAID MEMBER</span>
             ) : (
-              <span className="text-emerald-400 text-[11px] font-bold font-mono uppercase">VERIFIED MERCHANT</span>
+              <span className="text-zinc-500 text-[11px] font-bold font-mono uppercase">UNPAID · USE CATALOG</span>
             )}
           </div>
         </div>
