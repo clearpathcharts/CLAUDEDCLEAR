@@ -239,20 +239,35 @@ export function isSyntheticOrIndex(symbol: string): boolean {
   );
 }
 
+const FX_CCY = new Set([
+  'USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF',
+  'SEK', 'NOK', 'DKK', 'SGD', 'HKD', 'MXN', 'ZAR', 'TRY',
+  'CNH', 'CNY', 'PLN', 'HUF', 'CZK', 'ILS', 'THB', 'KRW',
+]);
+
 export function formatSymbolForTwelveData(symbol: string): string {
-  const clean = symbol.trim().toUpperCase();
-  if (clean === 'DXY') return 'DX-Y.F';
-  if (clean === 'XAUUSD' || clean === 'XAU/USD') return 'XAU/USD';
-  if (clean === 'XAGUSD' || clean === 'XAG/USD') return 'XAG/USD';
-  // Forex checks (e.g. GBPUSD or GBP/USD)
-  if (clean.length === 6 && (clean.startsWith('USD') || clean.endsWith('USD') || clean.endsWith('JPY') || clean.endsWith('GBP') || clean.endsWith('EUR'))) {
-    return `${clean.slice(0, 3)}/${clean.slice(3)}`;
+  const clean = symbol.trim().toUpperCase().replace(/\s+/g, '');
+  if (clean.includes('/')) return clean;
+  if (clean === 'DXY' || clean === 'USDX') return 'DX-Y.F';
+  if (clean === 'XAUUSD') return 'XAU/USD';
+  if (clean === 'XAGUSD') return 'XAG/USD';
+  // Crypto with USDT quote (7 chars)
+  if (clean.endsWith('USDT') && clean.length >= 6) {
+    return `${clean.slice(0, -4)}/USDT`;
   }
-  // Crypto checks (e.g. BTCUSD or BTC/USD)
+  // Crypto vs USD (e.g. BTCUSD, ETHUSD, SOLUSD)
   if (clean.length === 6 && (clean.startsWith('BTC') || clean.startsWith('ETH') || clean.startsWith('SOL'))) {
     return `${clean.slice(0, 3)}/USD`;
   }
-  return symbol;
+  // Any 6-letter FX pair (majors + crosses: AUDCAD, EURCHF, GBPAUD, NZDJPY, …)
+  if (clean.length === 6) {
+    const base = clean.slice(0, 3);
+    const quote = clean.slice(3);
+    if (FX_CCY.has(base) && FX_CCY.has(quote)) {
+      return `${base}/${quote}`;
+    }
+  }
+  return clean;
 }
 
 // ============================================
