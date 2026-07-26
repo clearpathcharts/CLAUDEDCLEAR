@@ -11,7 +11,10 @@ import {
   type PatternScanResult,
 } from "../../patterns";
 import type { FormingPossibility } from "../../patterns/forming";
+<<<<<<< HEAD
 import { describeBarWindow } from "../../patterns/forming";
+=======
+>>>>>>> origin/main
 import { getLatencyClass, LATENCY_LABEL, type LatencyClass } from "../../constants/assetRegistry";
 
 function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
