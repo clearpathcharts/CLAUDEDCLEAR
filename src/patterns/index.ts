@@ -17,7 +17,7 @@ export {
 export type { PatternGroup } from './patternMeta';
 export { setActivePatternScan, getActivePatternScan, getRecentPatterns, subscribePatternScan, getAllPatternScans, clearPatternScan, getPatternScan } from './activeScan';
 export type { ChartPatternScan } from './activeScan';
-export { analyzeFormingStructure, formatFormingBriefForChat, formatAllFormingBriefsForChat, normalizeTimeframe } from './forming';
+export { analyzeFormingStructure, formatFormingBriefForChat, formatAllFormingBriefsForChat, normalizeTimeframe, describeBarWindow } from './forming';
 export { formatChartVisionForMentor } from './mentorVision';
 export { LIVE_EDGE_BARS, CANDLESTICK_SCAN_BARS, filterLivePatterns } from './liveEdge';
 export {

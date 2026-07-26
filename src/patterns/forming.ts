@@ -59,6 +59,31 @@ export function normalizeTimeframe(tf: string): string {
   return lower;
 }
 
+/**
+ * Plain-language duration for N bars on the active chart timeframe.
+ * "12 bars" on H1 ≈ 12 hours — users often confuse this with a 12H chart.
+ */
+export function describeBarWindow(barCount: number, timeframe: string): string {
+  const tf = normalizeTimeframe(timeframe);
+  const key = tf === "1M" ? "1M" : tf.toLowerCase();
+  const n = Math.max(0, barCount);
+  if (key === "1m" || key === "1min") return `${n} one-minute candles (~${n} min)`;
+  if (key === "2m") return `${n} candles on 2m (~${n * 2} min)`;
+  if (key === "3m") return `${n} candles on 3m (~${n * 3} min)`;
+  if (key === "5m" || key === "5min") return `${n} five-minute candles (~${n * 5} min)`;
+  if (key === "10m") return `${n} candles on 10m (~${n * 10} min)`;
+  if (key === "15m" || key === "15min") return `${n} fifteen-minute candles (~${Math.round((n * 15) / 60)} hr)`;
+  if (key === "30m" || key === "30min") return `${n} thirty-minute candles (~${n / 2} hr)`;
+  if (key === "1h" || key === "60min") return `${n} hourly candles (~${n} hr)`;
+  if (key === "2h") return `${n} two-hour candles (~${n * 2} hr)`;
+  if (key === "3h") return `${n} candles on 3H (~${n * 3} hr)`;
+  if (key === "4h") return `${n} four-hour candles (~${n * 4} hr)`;
+  if (key === "1d" || key === "1day") return `${n} daily candles (~${n} trading days)`;
+  if (key === "1w" || key === "1week") return `${n} weekly candles`;
+  if (key === "1M" || key === "1month") return `${n} monthly candles`;
+  return `${n} candles on this chart's timeframe (${tf})`;
+}
+
 function detectClock(
   candles: Candle[],
   upLegs: ReturnType<typeof findImpulseLegs>,
@@ -76,7 +101,7 @@ function detectClock(
         active: elapsed <= 16,
         bar: Math.min(elapsed, 12),
         total: 12,
-        reason: '4th push ended at 3 bars (incomplete) — 12-bar retrace clock',
+        reason: 'After an incomplete 3-candle push, ClearPath watches the next 12 candles for a retrace / continuation setup',
       };
     }
   }
@@ -90,7 +115,7 @@ function detectClock(
         active: elapsed <= 20,
         bar: Math.min(elapsed, 16),
         total: 16,
-        reason: '4th drop ended at 3 bars (incomplete) — 16-bar clock',
+        reason: 'After an incomplete 3-candle drop, ClearPath watches the next 16 candles for continuation structure',
       };
     }
   }
@@ -106,7 +131,7 @@ function detectClock(
           active: true,
           bar: Math.min(elapsed, 12),
           total: 12,
-          reason: 'Latest impulse leg is 3 bars — retrace watch',
+          reason: 'Latest impulse was only 3 candles (incomplete vs a full 4) — retrace watch on this timeframe',
         };
       }
     }
@@ -205,7 +230,7 @@ function buildNarrative(
 
   if (brief.clock.active) {
     lines.push(
-      `${brief.clock.type === '16-bar-retrace' ? '16' : '12'}-bar clock: bar ${brief.clock.bar}/${brief.clock.total} — ${brief.clock.reason}`,
+      `${brief.clock.type === '16-bar-retrace' ? '16' : '12'}-candle clock: ${brief.clock.bar}/${brief.clock.total} on ${brief.timeframe} (${describeBarWindow(brief.clock.total, brief.timeframe)}) — ${brief.clock.reason}`,
     );
   }
 
