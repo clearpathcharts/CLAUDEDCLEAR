@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
@@ -20,6 +20,7 @@ import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
+import { ChartDrawingToolbar, useChartDrawings } from "./drawings";
 import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
@@ -155,6 +156,8 @@ export function LightweightCandles({
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +182,15 @@ export function LightweightCandles({
   });
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
+
+  const drawings = useChartDrawings({
+    chartRef,
+    seriesRef: candleSeriesRef,
+    symbol: sym,
+    timeframe,
+    enabled: !embedMode,
+    chartReadyKey,
+  });
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -272,6 +284,7 @@ export function LightweightCandles({
     });
 
     chartRef.current = chart;
+    candleSeriesRef.current = null;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -306,6 +319,8 @@ export function LightweightCandles({
       : rawCandleColors;
 
     const series = chart.addSeries(CandlestickSeries, vividCandles);
+    candleSeriesRef.current = series;
+    setChartReadyKey((k) => k + 1);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
@@ -876,6 +891,7 @@ export function LightweightCandles({
     return () => {
       active = false;
       chartRef.current = null;
+      candleSeriesRef.current = null;
       barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
@@ -1005,7 +1021,17 @@ export function LightweightCandles({
         </button>
       )}
       {!embedMode && (
-        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1">
+        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1.5">
+          <ChartDrawingToolbar
+            activeTool={drawings.activeTool}
+            onToolChange={drawings.setActiveTool}
+            drawColor={drawings.drawColor}
+            onColorChange={drawings.setDrawColor}
+            hint={drawings.hint}
+            canUndo={drawings.canUndo}
+            onUndo={drawings.undo}
+            onClear={drawings.clearAll}
+          />
           <button
             type="button"
             onClick={handleFocusRecent}

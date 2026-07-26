@@ -625,7 +625,7 @@ export default function Auth() {
           </button>
         </div>
 
-        {/* Secondary link row — wraps; Board Members lives here so it never competes with the CTA */}
+        {/* Secondary link row — wraps under Private Login */}
         <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pb-0.5">
           <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
             Trading × AI
@@ -652,26 +652,6 @@ export default function Auth() {
           <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Learn</a>
           <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Guides</a>
           <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">FAQ</a>
-          <button
-            type="button"
-            onClick={() => setBoardModalOpen(true)}
-            className="ml-auto px-3 py-1 border border-[#B026FF]/30 rounded-lg text-[11px] font-black uppercase tracking-widest text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
-          >
-            <Lock size={11} className="text-[#B026FF]" aria-hidden="true" />
-            Board Members
-          </button>
-        </div>
-
-        {/* Mobile: Board Members still reachable without crowding Private Login */}
-        <div className="flex lg:hidden">
-          <button
-            type="button"
-            onClick={() => setBoardModalOpen(true)}
-            className="px-3 py-1.5 border border-[#B026FF]/30 rounded-xl text-xs font-black uppercase tracking-wider text-zinc-300 hover:text-[#FFFFFF] hover:border-[#B026FF] hover:bg-[#B026FF]/10 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
-          >
-            <Lock size={12} className="text-[#B026FF]" aria-hidden="true" />
-            Board
-          </button>
         </div>
       </nav>
       </header>
@@ -1228,11 +1208,13 @@ Not the other way around.`}
                 </div>
               </div>
 
-              {/* Launch community button */}
+              {/* Launch community button — public lobby only (no board login on the public site) */}
               <div className="mt-6">
                 <button
                   type="button"
-                  onClick={() => setBoardModalOpen(true)}
+                  onClick={() => {
+                    document.getElementById('clearpath-live-lobby')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   className="cpt-cta-orange w-full py-4 font-black text-xs uppercase tracking-widest rounded-2xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: 'var(--cpt-orange)',

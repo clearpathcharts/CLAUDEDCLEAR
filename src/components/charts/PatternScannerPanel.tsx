@@ -11,6 +11,7 @@ import {
   type PatternScanResult,
 } from "../../patterns";
 import type { FormingPossibility } from "../../patterns/forming";
+import { describeBarWindow } from "../../patterns/forming";
 import { getLatencyClass, LATENCY_LABEL, type LatencyClass } from "../../constants/assetRegistry";
 
 function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
@@ -201,13 +202,23 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           </div>
 
           {forming.clock.active && (
-            <p className="mb-2 text-xs leading-relaxed text-[#FF00CC]/90">
-              {forming.clock.type === "16-bar-retrace" ? "16" : "12"}-bar clock:{" "}
-              <strong>
-                {forming.clock.bar}/{forming.clock.total}
-              </strong>{" "}
-              — {forming.clock.reason}
-            </p>
+            <div className="mb-3 rounded-lg border border-[#FF00CC]/35 bg-[#FF00CC]/5 px-3 py-2 space-y-1.5">
+              <p className="text-xs leading-relaxed text-[#FF00CC]">
+                <span className="font-black uppercase tracking-wide">
+                  {forming.clock.type === "16-bar-retrace" ? "16" : "12"}-candle clock
+                </span>
+                {" · "}
+                <strong>
+                  {forming.clock.bar}/{forming.clock.total}
+                </strong>
+              </p>
+              <p className="text-[11px] leading-snug text-white/75">
+                This is a countdown of <strong>candles on your current timeframe</strong>
+                {" "}({timeframe.toUpperCase()}) — not a 12-hour chart and not “12 data.”
+                {" "}Window = {describeBarWindow(forming.clock.total, timeframe)}.
+              </p>
+              <p className="text-[11px] leading-snug text-white/50">{forming.clock.reason}</p>
+            </div>
           )}
 
           {forming.possibilities.length === 0 ? (
