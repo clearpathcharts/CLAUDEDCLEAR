@@ -11,6 +11,7 @@ import {
   type PatternScanResult,
 } from "../../patterns";
 import type { FormingPossibility } from "../../patterns/forming";
+import { getLatencyClass, LATENCY_LABEL, type LatencyClass } from "../../constants/assetRegistry";
 
 function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
   if (symbol && symbol !== "—") {
@@ -37,6 +38,13 @@ const FORMING_STATUS: Record<FormingPossibility["status"], string> = {
   forming: "text-[#FF1493] border-[#FF1493]/50 bg-[#FF1493]/10",
   possible: "text-[#BF00FF] border-[#BF00FF]/40 bg-[#BF00FF]/10",
   watch: "text-[#9D00FF] border-[#9D00FF]/30 bg-[#9D00FF]/5",
+};
+
+const LATENCY_BADGE: Record<LatencyClass, string> = {
+  realtime: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
+  delayed: "text-amber-300 border-amber-500/40 bg-amber-500/10",
+  eod: "text-sky-300 border-sky-500/40 bg-sky-500/10",
+  derived: "text-violet-300 border-violet-500/40 bg-violet-500/10",
 };
 
 interface PatternScannerPanelProps {
@@ -69,6 +77,7 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
   const chartPatterns = scan?.patterns.filter((p) => p.category === "chart").slice(-20) ?? [];
   const candlePatterns = scan?.patterns.filter((p) => p.category === "candlestick").slice(-12) ?? [];
   const total = scan?.patterns.length ?? 0;
+  const latency = hasSymbol ? getLatencyClass(symbol) : null;
 
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
@@ -86,9 +95,27 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           <Scan size={18} className="text-[#FF1493]" />
           <span className="text-sm font-black uppercase tracking-wider text-white">Pattern Scanner</span>
         </div>
-        <div className="flex items-center justify-between text-xs text-zinc-400">
+        <div className="flex items-center justify-between text-xs text-zinc-400 gap-2 flex-wrap">
           <span className="text-[#BF00FF] font-bold">{symbol}</span>
-          <span>{timeframe.toUpperCase()}</span>
+          <span className="flex items-center gap-2">
+            {latency && (
+              <span
+                className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${LATENCY_BADGE[latency]}`}
+                title={
+                  latency === "derived"
+                    ? "Computed from live FX components — not a single exchange print"
+                    : latency === "delayed"
+                      ? "Venture feed for this asset is delayed — not realtime"
+                      : latency === "eod"
+                        ? "End-of-day / session close style updates"
+                        : "Realtime Venture feed"
+                }
+              >
+                {LATENCY_LABEL[latency]}
+              </span>
+            )}
+            <span>{timeframe.toUpperCase()}</span>
+          </span>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-white/50">
           {!hasSymbol

@@ -298,14 +298,26 @@ export function LightweightCandles({
           } catch (err: any) {
             lastFetchError = err?.message || String(err);
             console.warn("Primary fetch failed for", sym, err);
+            // On rate limit, do NOT burn a second credit path via ChartFeedAdapter.
+            const msg = String(lastFetchError).toLowerCase();
+            if (msg.includes("429") || msg.includes("rate limit") || msg.includes("rate limited")) {
+              setError(`Rate limited — charts paused briefly. (${lastFetchError})`);
+              setIsLoading(false);
+              return;
+            }
           }
 
           if ((!fetched || fetched.length === 0) && active) {
-            try {
-              fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
-            } catch (adapterErr: any) {
-              console.error(adapterErr);
-              lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
+            const primaryWasRateLimited = String(lastFetchError || "")
+              .toLowerCase()
+              .match(/429|rate limit/);
+            if (!primaryWasRateLimited) {
+              try {
+                fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
+              } catch (adapterErr: any) {
+                console.error(adapterErr);
+                lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
+              }
             }
           }
 

@@ -16,6 +16,7 @@
 // old one has been rotated.
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
+import { resolveProviderSymbol } from "../constants/assetRegistry";
 import { getTwelveDataApiKey } from "./secrets";
 
 export interface TwelveDataHealth {
@@ -81,10 +82,65 @@ type CacheEntry = {
 
 const CACHE_TTL_PRICE = 5000 // 5 seconds for raw live price
 const CACHE_TTL_QUOTE = 5000 // 5 seconds for full quotes
-const CACHE_TTL_CANDLES = 15000 // 15 seconds for historical candles data
+const CACHE_TTL_CANDLES_INTRADAY = 15000 // 15s for intraday candles
+const CACHE_TTL_CANDLES_DAILY = 60000 // 60s for 1day+
+const CACHE_TTL_CANDLES_WEEKLY = 120000 // 120s for week/month
+const MARKET_CACHE_MAX_ENTRIES = 400
+const MAX_UPSTREAM_IN_FLIGHT = 20
+const RATE_LIMIT_COOLDOWN_MS = 15_000
 
 const marketCache: Record<string, CacheEntry> = {}
 const pendingRequests: Record<string, Promise<any>> = {}
+
+let upstreamInFlight = 0
+const upstreamWaitQueue: Array<() => void> = []
+let rateLimitedUntil = 0
+
+function candleTtlMs(interval: string): number {
+  const v = (interval || '').toLowerCase()
+  if (v.includes('week') || v.includes('month') || v === '1w' || v === '1m') return CACHE_TTL_CANDLES_WEEKLY
+  if (v.includes('day') || v === '1d' || v === '1day') return CACHE_TTL_CANDLES_DAILY
+  return CACHE_TTL_CANDLES_INTRADAY
+}
+
+function evictMarketCacheIfNeeded() {
+  const keys = Object.keys(marketCache)
+  if (keys.length <= MARKET_CACHE_MAX_ENTRIES) return
+  const sorted = keys
+    .map((k) => ({ k, t: marketCache[k]?.timestamp ?? 0 }))
+    .sort((a, b) => a.t - b.t)
+  const drop = sorted.slice(0, keys.length - MARKET_CACHE_MAX_ENTRIES)
+  for (const { k } of drop) delete marketCache[k]
+}
+
+function canonicalCacheSymbol(symbol: string): string {
+  return formatSymbolForTwelveData(symbol)
+}
+
+async function acquireUpstreamSlot(): Promise<void> {
+  if (Date.now() >= rateLimitedUntil && twelvedataHealth.status === 'RATE_LIMITED') {
+    // Cooldown elapsed — allow traffic again; next success will mark HEALTHY.
+    twelvedataHealth.status = 'HEALTHY';
+  }
+  if (Date.now() < rateLimitedUntil) {
+    const waitMs = rateLimitedUntil - Date.now();
+    throw new Error(
+      `Twelve Data rate limited — cooling down ${Math.ceil(waitMs / 1000)}s. Retry shortly.`
+    );
+  }
+  if (upstreamInFlight < MAX_UPSTREAM_IN_FLIGHT) {
+    upstreamInFlight++
+    return
+  }
+  await new Promise<void>((resolve) => upstreamWaitQueue.push(resolve))
+  upstreamInFlight++
+}
+
+function releaseUpstreamSlot() {
+  upstreamInFlight = Math.max(0, upstreamInFlight - 1)
+  const next = upstreamWaitQueue.shift()
+  if (next) next()
+}
 
 // Helper to execute fetch with custom timeout signal
 async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Response> {
@@ -99,6 +155,7 @@ async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Respons
 
 // Global generic tracker for checking status codes, JSON flags, and headers
 async function fetchAndTrack(url: string, type: string, symbol: string, timeoutMs = 5000): Promise<any> {
+  await acquireUpstreamSlot()
   twelvedataHealth.totalRequests++;
   twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
   twelvedataHealth.lastChecked = new Date().toISOString();
@@ -143,6 +200,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
 
       if (response.status === 429) {
         twelvedataHealth.status = 'RATE_LIMITED';
+        rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
         twelvedataHealth.lastError = `HTTP 429 Rate Limited: speed quota limit exceeded for ${symbol}`;
         logHealthEvent('WARNING', `429 Rate Limit Exceeded: ${symbol} ${type}`, 429);
       } else {
@@ -176,6 +234,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
       twelvedataHealth.lastError = data.message || `Twelve Data JSON error for ${symbol}`;
       if (data.code === 429 || (data.message && data.message.toLowerCase().includes('speed limit')) || (data.message && data.message.toLowerCase().includes('plan limit'))) {
         twelvedataHealth.status = 'RATE_LIMITED';
+        rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
         twelvedataHealth.rateLimitRemaining = '0';
         logHealthEvent('WARNING', `API Speed Plan Limit Tipped (JSON 429) for ${symbol}`, 429);
       } else {
@@ -193,6 +252,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
       logHealthEvent('SUCCESS', `Endpoint verification check successful for ${symbol} ${type}`, 200);
     }
     twelvedataHealth.status = 'HEALTHY';
+    rateLimitedUntil = 0;
     twelvedataHealth.lastError = null;
     return data;
 
@@ -216,6 +276,8 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
       logHealthEvent('ERROR', `Exception during fetch of ${symbol}: ${err.message || err}`, 'EXCEPTION');
     }
     throw err;
+  } finally {
+    releaseUpstreamSlot();
   }
 }
 
@@ -247,19 +309,26 @@ const FX_CCY = new Set([
 
 export function formatSymbolForTwelveData(symbol: string): string {
   const clean = symbol.trim().toUpperCase().replace(/\s+/g, '');
+  if (!clean) return clean;
+
+  // Registry is source of truth for Venture 70 provider symbols.
+  const fromRegistry = resolveProviderSymbol(clean) || resolveProviderSymbol(clean.replace(/\//g, ''));
+  if (fromRegistry) return fromRegistry;
+
   if (clean.includes('/')) return clean;
   if (clean === 'DXY' || clean === 'USDX') return 'DX-Y.F';
   if (clean === 'XAUUSD') return 'XAU/USD';
   if (clean === 'XAGUSD') return 'XAG/USD';
-  // Crypto with USDT quote (7 chars)
+  // Crypto with USDT quote (7+ chars)
   if (clean.endsWith('USDT') && clean.length >= 6) {
     return `${clean.slice(0, -4)}/USDT`;
   }
-  // Crypto vs USD (e.g. BTCUSD, ETHUSD, SOLUSD)
-  if (clean.length === 6 && (clean.startsWith('BTC') || clean.startsWith('ETH') || clean.startsWith('SOL'))) {
-    return `${clean.slice(0, 3)}/USD`;
+  // Crypto vs USD (common 6–7 letter forms)
+  const cryptoUsd = clean.match(/^(BTC|ETH|SOL|ADA|XRP|DOGE|LINK|AVAX|DOT|MATIC)USD$/);
+  if (cryptoUsd) {
+    return `${cryptoUsd[1]}/USD`;
   }
-  // Any 6-letter FX pair (majors + crosses: AUDCAD, EURCHF, GBPAUD, NZDJPY, …)
+  // Any 6-letter FX pair (majors + crosses)
   if (clean.length === 6) {
     const base = clean.slice(0, 3);
     const quote = clean.slice(3);
@@ -274,17 +343,18 @@ export function formatSymbolForTwelveData(symbol: string): string {
 // GET CURRENT PRICE (Simple)
 // ============================================
 export async function getMarketData(symbol: string) {
-  const cacheKey = `price:${symbol}`
+  const canon = canonicalCacheSymbol(symbol)
+  const cacheKey = `price:${canon}`
   const now = Date.now()
 
   const cached = marketCache[cacheKey]
   if (cached && now - cached.timestamp < CACHE_TTL_PRICE) {
-    console.log(`[Gateway] PRICE CACHE HIT: ${symbol}`)
+    console.log(`[Gateway] PRICE CACHE HIT: ${canon}`)
     return cached.data
   }
 
   if (pendingRequests[cacheKey]) {
-    console.log(`[Gateway] PRICE WAITING SIGNALS: ${symbol}`)
+    console.log(`[Gateway] PRICE WAITING SIGNALS: ${canon}`)
     return pendingRequests[cacheKey]
   }
 
@@ -325,6 +395,7 @@ export async function getMarketData(symbol: string) {
       data,
       timestamp: now,
     }
+    evictMarketCacheIfNeeded()
     return data
   } finally {
     delete pendingRequests[cacheKey]
@@ -335,17 +406,18 @@ export async function getMarketData(symbol: string) {
 // GET FULL QUOTE (Deduplicated & Cached)
 // ============================================
 export async function getMarketQuote(symbol: string, apiKey: string) {
-  const cacheKey = `quote:${symbol}`
+  const canon = canonicalCacheSymbol(symbol)
+  const cacheKey = `quote:${canon}`
   const now = Date.now()
 
   const cached = marketCache[cacheKey]
   if (cached && now - cached.timestamp < CACHE_TTL_QUOTE) {
-    console.log(`[Gateway] QUOTE CACHE HIT: ${symbol}`)
+    console.log(`[Gateway] QUOTE CACHE HIT: ${canon}`)
     return cached.data
   }
 
   if (pendingRequests[cacheKey]) {
-    console.log(`[Gateway] QUOTE WAITING SIGNALS: ${symbol}`)
+    console.log(`[Gateway] QUOTE WAITING SIGNALS: ${canon}`)
     return pendingRequests[cacheKey]
   }
 
@@ -463,10 +535,85 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       data: normalized,
       timestamp: now,
     }
+    evictMarketCacheIfNeeded()
     return normalized
   } finally {
     delete pendingRequests[cacheKey]
   }
+}
+
+/**
+ * Batch quotes for ticker / multi-symbol UI.
+ * DXY stays on the single-quote path (derived basket). Other symbols use one
+ * Twelve Data comma-batch request. Cap at 12 symbols to protect credit budget.
+ */
+export async function getMarketQuotes(symbols: string[], apiKey: string): Promise<Record<string, any>> {
+  const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))].slice(0, 12);
+  const out: Record<string, any> = {};
+  if (unique.length === 0) return out;
+
+  const dxySyms: string[] = [];
+  const plain: { original: string; provider: string }[] = [];
+
+  for (const sym of unique) {
+    const upper = sym.toUpperCase().replace(/\s+/g, '');
+    const isDxy = upper === 'DXY' || upper === 'DX-Y.F' || upper === 'USDX' || upper === 'DXYINDEX' || upper === 'DXY INDEX';
+    if (isDxy) dxySyms.push(sym);
+    else plain.push({ original: sym, provider: formatSymbolForTwelveData(sym) });
+  }
+
+  for (const d of dxySyms) {
+    try {
+      out[d] = await getMarketQuote(d, apiKey);
+    } catch (err: any) {
+      out[d] = { error: true, message: err?.message || 'DXY quote failed', symbol: d };
+    }
+  }
+
+  if (plain.length === 0) return out;
+
+  // Serve any that are still warm in cache without burning credits.
+  const needFetch: { original: string; provider: string }[] = [];
+  const now = Date.now();
+  for (const row of plain) {
+    const cacheKey = `quote:${row.provider}`;
+    const cached = marketCache[cacheKey];
+    if (cached && now - cached.timestamp < CACHE_TTL_QUOTE) {
+      out[row.original] = cached.data;
+    } else {
+      needFetch.push(row);
+    }
+  }
+
+  if (needFetch.length === 0) return out;
+
+  const activeKey = apiKey || getCleanApiKey();
+  const providers = [...new Set(needFetch.map((r) => r.provider))];
+  const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}&apikey=${activeKey}`;
+  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','));
+
+  const pick = (provider: string): any => {
+    if (!batchData) return null;
+    if (providers.length === 1 && (batchData.close || batchData.price)) return batchData;
+    return batchData[provider] || null;
+  };
+
+  for (const row of needFetch) {
+    const item = pick(row.provider);
+    if (!item || item.status === 'error' || !(item.close || item.price)) {
+      out[row.original] = {
+        error: true,
+        message: item?.message || `No quote for ${row.provider}`,
+        symbol: row.original,
+      };
+      continue;
+    }
+    const normalized = { ...item, price: item.price ?? item.close, symbol: row.original };
+    marketCache[`quote:${row.provider}`] = { data: normalized, timestamp: Date.now() };
+    out[row.original] = normalized;
+  }
+  evictMarketCacheIfNeeded();
+  return out;
 }
 
 // ============================================
@@ -476,17 +623,19 @@ export async function getMarketCandles(symbol: string, interval: string, request
   // Twelve Data only accepts outputsize in [1, 5000]; anything larger is
   // rejected with HTTP 400, which would blank the chart entirely.
   const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1), 5000);
-  const cacheKey = `candles:${symbol}:${interval}:${limit}`
+  const canon = canonicalCacheSymbol(symbol)
+  const cacheKey = `candles:${canon}:${interval}:${limit}`
   const now = Date.now()
+  const ttl = candleTtlMs(interval)
 
   const cached = marketCache[cacheKey]
-  if (cached && now - cached.timestamp < CACHE_TTL_CANDLES) {
-    console.log(`[Gateway] CANDLES CACHE HIT: ${symbol} (${interval})`)
+  if (cached && now - cached.timestamp < ttl) {
+    console.log(`[Gateway] CANDLES CACHE HIT: ${canon} (${interval})`)
     return cached.data
   }
 
   if (pendingRequests[cacheKey]) {
-    console.log(`[Gateway] CANDLES WAITING SIGNALS: ${symbol} (${interval})`)
+    console.log(`[Gateway] CANDLES WAITING SIGNALS: ${canon} (${interval})`)
     return pendingRequests[cacheKey]
   }
 
@@ -614,6 +763,7 @@ export async function getMarketCandles(symbol: string, interval: string, request
       data,
       timestamp: now,
     }
+    evictMarketCacheIfNeeded()
     return data
   } finally {
     delete pendingRequests[cacheKey]

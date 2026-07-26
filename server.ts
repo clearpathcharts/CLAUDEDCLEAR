@@ -18,7 +18,7 @@ import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
-import { getMarketQuote, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
@@ -1718,8 +1718,39 @@ ${CPT_SITE_GUIDE}`;
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
       const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
+      if (String(error.message || '').includes('rate limited') || String(error.message || '').includes('429')) {
+        return res.status(429).json({ error: 'RATE_LIMITED', message: msg });
+      }
       if (String(error.message || '').includes('COMPLIANCE_VIOLATION')) {
         return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: msg });
+      }
+      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
+    }
+  });
+
+  // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
+  app.get('/api/quotes', quoteLimiter, async (req, res) => {
+    const raw = req.query.symbols;
+    if (!raw || typeof raw !== 'string') {
+      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
+    }
+    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    if (symbols.length === 0) {
+      return res.status(400).json({ error: 'symbols required' });
+    }
+    const apiKey = getCleanTwelveDataApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
+    }
+
+    try {
+      const quotes = await getMarketQuotes(symbols, apiKey);
+      res.json({ quotes, count: Object.keys(quotes).length });
+    } catch (error: any) {
+      console.error('[TwelveData Quotes Batch Error]', error);
+      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
+      if (String(error.message || '').includes('rate limited') || String(error.message || '').includes('429')) {
+        return res.status(429).json({ error: 'RATE_LIMITED', message: msg });
       }
       res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
     }

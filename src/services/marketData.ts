@@ -149,6 +149,9 @@ export const fetchTieredHistoricalData = async (
       /* response had no JSON body */
     }
     console.error(`[marketData] Proxy responded ${response.status}: ${detail}`);
+    if (response.status === 429) {
+      throw new Error(`Real-time market fetch failed: 429 rate limited — ${detail}.`);
+    }
     throw new Error(`Real-time market fetch failed: ${detail}.`);
   }
 
