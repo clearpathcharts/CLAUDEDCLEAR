@@ -32,6 +32,64 @@ type Candle = {
   close: number;
 };
 
+/** Seconds per bar for live updates. Keep `1M` (month) distinct from `1m` (minute). */
+function timeframeStepSeconds(timeframe: string): number {
+  const raw = (timeframe || "1h").trim();
+  if (raw === "1M") return 30 * 86400;
+  const tf = raw.toLowerCase();
+  const stepMap: Record<string, number> = {
+    "1m": 60,
+    "2m": 120,
+    "3m": 180,
+    "5m": 300,
+    "10m": 600,
+    "15m": 900,
+    "30m": 1800,
+    "1h": 3600,
+    "2h": 7200,
+    "3h": 10800,
+    "4h": 14400,
+    "1d": 86400,
+    "1w": 604800,
+    ytd: 86400,
+  };
+  return stepMap[tf] || 3600;
+}
+
+/** Minimum price change that counts as a real new bar (blocks weekend flat-bar spam). */
+function minMeaningfulPriceMove(price: number): number {
+  const p = Math.abs(price) || 1;
+  if (p >= 200) return Math.max(0.08, p * 0.00003); // gold / indices
+  if (p >= 20) return Math.max(0.01, p * 0.00005);
+  if (p >= 2) return Math.max(0.0005, p * 0.00008); // many FX pairs
+  return Math.max(0.00005, p * 0.0001);
+}
+
+function candleRange(c: Candle): number {
+  return Math.max(0, c.high - c.low);
+}
+
+/**
+ * Drop trailing near-flat clones painted while the market was closed.
+ * Keeps weekend analysis on real session history instead of a barcode of last-price ticks.
+ */
+function trimTrailingStagnantBars(candles: Candle[]): Candle[] {
+  if (candles.length < 8) return candles;
+  const out = candles.slice();
+  while (out.length > 4) {
+    const last = out[out.length - 1];
+    const prev = out[out.length - 2];
+    const floor = minMeaningfulPriceMove(last.close);
+    const flat =
+      candleRange(last) < floor &&
+      Math.abs(last.close - prev.close) < floor &&
+      Math.abs(last.open - last.close) < floor;
+    if (!flat) break;
+    out.pop();
+  }
+  return out;
+}
+
 /**
  * Oscillator indicators output values on a scale completely unrelated to price
  * (e.g. RSI is 0-100, MACD oscillates around zero). If they share the candle
@@ -269,8 +327,7 @@ export function LightweightCandles({
       return s;
     };
 
-    const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
-    const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
+    const stepSeconds = timeframeStepSeconds(timeframe);
 
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
@@ -342,7 +399,7 @@ export function LightweightCandles({
         if (!active) return;
 
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
-        const tierOptimizedData = displayData.slice(-allowedLimit);
+        const tierOptimizedData = trimTrailingStagnantBars(displayData.slice(-allowedLimit));
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
@@ -736,36 +793,53 @@ export function LightweightCandles({
 
           const nowRaw = Math.floor(Date.now() / 1000);
           const currentTime = nowRaw - (nowRaw % stepSeconds);
-
           const newClose = livePrice;
-          let newHigh = lastCandle.high;
-          let newLow = lastCandle.low;
+          const moveFloor = minMeaningfulPriceMove(lastCandle.close);
 
-          let updateTime = lastCandle.time;
-          let updateOpen = lastCandle.open;
-
+          // Weekend / closed market: wall-clock keeps ticking, but the quote is
+          // stuck at last print. Never invent new flat bars — that barcodes M1–M15
+          // and ruins weekend analysis of real session history.
           if (currentTime > lastCandle.time) {
-            updateTime = currentTime;
-            updateOpen = lastCandle.close;
-            newHigh = Math.max(updateOpen, newClose);
-            newLow = Math.min(updateOpen, newClose);
-          } else {
-            newHigh = Math.max(lastCandle.high, newClose);
-            newLow = Math.min(lastCandle.low, newClose);
+            if (Math.abs(newClose - lastCandle.close) < moveFloor) {
+              return;
+            }
+            // Meaningful gap/move (e.g. Monday open) → open a real new bar.
+            const updateObj = {
+              time: currentTime as Time,
+              open: lastCandle.close,
+              high: Math.max(lastCandle.close, newClose),
+              low: Math.min(lastCandle.close, newClose),
+              close: newClose,
+            };
+            if (!active) return;
+            series.update(updateObj);
+            lastCandle = { ...updateObj, time: currentTime };
+            return;
+          }
+
+          // Same bucket as the last real bar — update in place only.
+          const newHigh = Math.max(lastCandle.high, newClose);
+          const newLow = Math.min(lastCandle.low, newClose);
+          if (
+            newClose === lastCandle.close &&
+            newHigh === lastCandle.high &&
+            newLow === lastCandle.low
+          ) {
+            return;
           }
 
           if (!active) return;
 
           const updateObj = {
-            time: updateTime as Time,
-            open: updateOpen,
+            time: lastCandle.time as Time,
+            open: lastCandle.open,
             high: newHigh,
             low: newLow,
             close: newClose,
           };
 
           series.update(updateObj);
-          lastCandle = { ...updateObj, time: updateTime as number };
+          lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
 
         if (active) setIsLoading(false);
