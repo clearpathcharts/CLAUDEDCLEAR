@@ -85,15 +85,18 @@ if (rateLimited.length) {
 
 if (formatFails > 0) {
   process.exitCode = 1;
+} else if (fails.length === 0) {
+  console.log("\nShip gate: all deck-critical checks passed.");
+  process.exitCode = 0;
 } else if (fails.some((f) => f.status !== "RATE_LIMIT" && f.status !== "NO_KEY" && !String(f.status).startsWith("NET:"))) {
   process.exitCode = 1;
 } else if (fails.every((f) => f.status === "NO_KEY" || String(f.status).startsWith("NET:"))) {
   console.log("\nNote: server unreachable or TWELVEDATA_API_KEY missing — format gate still ran.");
   // Don't fail CI solely for unreachable server when format is clean.
   process.exitCode = 0;
-} else if (fails.length && fails.every((f) => f.status === "RATE_LIMIT")) {
+} else if (fails.every((f) => f.status === "RATE_LIMIT")) {
   console.log("\nAll live failures were rate limits — format OK; retry later.");
   process.exitCode = 0;
-} else if (fails.length) {
+} else {
   process.exitCode = 1;
 }
