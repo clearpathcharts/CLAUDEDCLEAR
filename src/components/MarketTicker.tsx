@@ -1,6 +1,7 @@
 // /src/components/MarketTicker.tsx
 import React, { useState, useRef } from "react";
 import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
+import { getTickerAssets } from "../constants/assetRegistry";
 
 interface MarketAsset {
   symbol: string;
@@ -16,15 +17,11 @@ interface MarketTickerProps {
   profile?: any;
 }
 
-/** Display names only — never use hardcoded bases as live prices (Twelve Data returns `close`). */
-const TICKER_SYMBOLS: { symbol: string; name: string }[] = [
-  { symbol: "XAU/USD", name: "XAU/USD (Gold)" },
-  { symbol: "EUR/USD", name: "EUR/USD" },
-  { symbol: "BTC/USD", name: "BTC/USD" },
-  { symbol: "GBP/USD", name: "GBP/USD" },
-  { symbol: "USD/JPY", name: "USD/JPY" },
-  { symbol: "DXY", name: "DXY Index" },
-];
+/** Fixed small ticker set from registry (never all 70). Max 8. */
+const TICKER_SYMBOLS: { symbol: string; name: string }[] = getTickerAssets(8).map((a) => ({
+  symbol: a.symbol,
+  name: a.display,
+}));
 
 /** Same resolution as ChartFeedAdapter / DataRouter — Twelve Data quotes expose `close`, not always `price`. */
 export function resolveQuotePrice(data: { price?: string | number; close?: string | number; error?: unknown } | null | undefined): number | null {
@@ -53,48 +50,45 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
   assetsRef.current = assets;
   const noteRateLimitedRef = useRef<(ms?: number) => void>(() => {});
 
-  // 1. Core API Quote Fetch Function
+  // One batch request — never Promise.all fan-out across symbols.
   const fetchQuotes = async () => {
     try {
-      const updated = await Promise.all(
-        assetsRef.current.map(async (asset) => {
-          try {
-            const url = `/api/quote?symbol=${encodeURIComponent(asset.symbol)}`;
-            const response = await fetch(url);
-            if (response.status === 429) {
-              noteRateLimitedRef.current(90_000);
-              throw new Error(`HTTP Error ${response.status}`);
-            }
-            if (!response.ok) {
-              throw new Error(`HTTP Error ${response.status}`);
-            }
-            const data = await response.json();
-            const livePrice = resolveQuotePrice(data);
-            if (livePrice !== null) {
-              const changePct = parseFloat(
-                data.percent_change ?? data.change_percent ?? data.percentChange ?? "0"
-              );
-              return {
-                ...asset,
-                price: livePrice,
-                percentChange: isNaN(changePct) ? 0 : changePct,
-                prevPrice: asset.lastUpdated > 0 ? asset.price : livePrice,
-                isLive: true,
-                lastUpdated: Date.now(),
-              };
-            }
-            // Real response came back but had no usable price — surface it, don't hide it
-            console.error(`[MarketTicker] ${asset.symbol}: response had no close/price`, data);
-          } catch (e) {
-            // Real fetch failed — log it loudly. The asset will be marked stale below,
-            // NOT silently animated with fake numbers.
-            console.error(`[MarketTicker] ${asset.symbol}: live fetch failed`, e);
-          }
-          // On any failure, keep the last known real price but mark it stale.
-          // No more synthetic price movement on failure.
-          return { ...asset, isLive: false };
-        })
-      );
+      const symbols = assetsRef.current.map((a) => a.symbol).join(",");
+      const url = `/api/quotes?symbols=${encodeURIComponent(symbols)}`;
+      const response = await fetch(url);
+      if (response.status === 429) {
+        noteRateLimitedRef.current(90_000);
+        console.error("[MarketTicker] rate limited on batch quotes");
+        setAssets((prev) => prev.map((a) => ({ ...a, isLive: false })));
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}`);
+      }
+      const body = await response.json();
+      const quotes = (body?.quotes || {}) as Record<string, any>;
+
+      const updated = assetsRef.current.map((asset) => {
+        const data = quotes[asset.symbol];
+        const livePrice = resolveQuotePrice(data);
+        if (livePrice !== null) {
+          const changePct = parseFloat(
+            data.percent_change ?? data.change_percent ?? data.percentChange ?? "0"
+          );
+          return {
+            ...asset,
+            price: livePrice,
+            percentChange: isNaN(changePct) ? 0 : changePct,
+            prevPrice: asset.lastUpdated > 0 ? asset.price : livePrice,
+            isLive: true,
+            lastUpdated: Date.now(),
+          };
+        }
+        if (data?.error) {
+          console.error(`[MarketTicker] ${asset.symbol}:`, data.message || data);
+        }
+        return { ...asset, isLive: false };
+      });
       setAssets(updated);
     } catch (globalError) {
       console.error("[MarketTicker] Failed quotes polling entirely:", globalError);
@@ -111,7 +105,12 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
     if (symbol.includes("BTC")) {
       return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-    if (symbol === "EUR/USD" || symbol === "GBP/USD") {
+    if (
+      symbol === "EUR/USD" ||
+      symbol === "GBP/USD" ||
+      symbol === "EURUSD" ||
+      symbol === "GBPUSD"
+    ) {
       return val.toFixed(4);
     }
     return val.toFixed(2);

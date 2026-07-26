@@ -29,16 +29,25 @@ export const MARKET_CHART_HEIGHT = 500;
 export const YWC_CHART_WIDTH = 280;
 export const YWC_CHART_HEIGHT = 200;
 
+/** Default symbols so pattern scanner + charts load on first open (neurodivergent-friendly). */
+export const DEFAULT_MARKET_SYMBOLS = ["XAUUSD", "EURUSD", "DXY"] as const;
+
 export const YWC_CHART_ANCHORS: { id: YwcChartAnchor; label: string }[] = [
   { id: "sidebar", label: "Sidebar" },
 ];
 
 export function createEmptyMarketSlots(): ChartLayoutSlot[] {
   return Array.from({ length: MARKET_CHART_SLOT_COUNT }, (_, i) => ({
-    symbol: null,
+    symbol: DEFAULT_MARKET_SYMBOLS[i] ?? null,
     x: 0,
     y: i * MARKET_CHART_HEIGHT,
   }));
+}
+
+/** If a saved layout wiped every symbol, restore defaults so the scanner can run. */
+export function ensureMarketSlotsHaveSymbols(slots: ChartLayoutSlot[]): ChartLayoutSlot[] {
+  if (slots.some((s) => s.symbol)) return slots;
+  return createEmptyMarketSlots();
 }
 
 export function createEmptyYwcSlots(): YwcChartSlot[] {

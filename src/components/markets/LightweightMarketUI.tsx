@@ -15,6 +15,7 @@ import { TradingHaltController } from '../../truth/TradingHaltController';
 import { resolveMarketAsset } from '../../constants/marketAssets';
 import {
   createEmptyMarketSlots,
+  ensureMarketSlotsHaveSymbols,
   MARKET_CHART_HEIGHT,
   MARKET_CHART_SLOT_COUNT,
   type ChartLayoutSlot,
@@ -35,11 +36,12 @@ function loadMarketSlots(): ChartLayoutSlot[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length === MARKET_CHART_SLOT_COUNT) {
-        return parsed.map((slot: ChartLayoutSlot, i: number) => ({
+        const slots = parsed.map((slot: ChartLayoutSlot, i: number) => ({
           symbol: slot.symbol ?? null,
           x: typeof slot.x === 'number' ? slot.x : 0,
           y: typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
         }));
+        return ensureMarketSlotsHaveSymbols(slots);
       }
     }
     const legacy = localStorage.getItem('cpt-market-terminal-chart-slots');
@@ -47,10 +49,11 @@ function loadMarketSlots(): ChartLayoutSlot[] {
       const parsed = JSON.parse(legacy);
       const defaults = createEmptyMarketSlots();
       if (Array.isArray(parsed)) {
-        return defaults.map((slot, i) => ({
+        const slots = defaults.map((slot, i) => ({
           ...slot,
-          symbol: parsed[i]?.value ?? null,
+          symbol: parsed[i]?.value ?? slot.symbol,
         }));
+        return ensureMarketSlotsHaveSymbols(slots);
       }
     }
   } catch {
@@ -229,7 +232,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           </h1>
         </div>
         <p className="text-[10px] font-mono text-zinc-500 max-w-xs text-right hidden md:block">
-          No symbols are pre-loaded. Search each chart — drag to arrange your workspace.
+          Charts open with Gold, EUR/USD, and DXY so the pattern scanner can run immediately. Search to swap any slot — drag to arrange.
         </p>
       </div>
 

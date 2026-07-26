@@ -1,95 +1,73 @@
 import { IndicatorDefinition } from "../../types/indicators";
 import { IndicatorCategory } from "./CategoryRegistry";
+import { SUPPORTED_CHART_INDICATORS } from "../../config/tradingViewIndicators";
 
-export const IndicatorRegistry: IndicatorDefinition[] = [
-  {
-    id: "sma",
-    name: "Simple Moving Average",
-    abbr: "SMA",
-    category: IndicatorCategory.Trend,
-    activeColor: "#00FFFF",
-    sourceFile: "indicators/trend/SMA.ts",
-    parameters: { period: 20 }
-  },
-  {
-    id: "ema",
-    name: "Exponential Moving Average",
-    abbr: "EMA",
-    category: IndicatorCategory.Trend,
-    activeColor: "#FFAA00",
-    sourceFile: "indicators/trend/EMA.ts",
-    parameters: { period: 50 }
-  },
-  {
-    id: "ichimoku",
-    name: "Ichimoku Cloud",
-    abbr: "ICHIMOKU",
-    category: IndicatorCategory.Trend,
-    activeColor: "#2EC4B6",
-    sourceFile: "indicators/trend/IchimokuCloud.ts",
-    parameters: { conversionPeriods: 9, basePeriods: 26, laggingSpan2Periods: 52, displacement: 26 }
-  },
-  {
-    id: "rsi",
-    name: "Relative Strength Index",
-    abbr: "RSI",
-    category: IndicatorCategory.Momentum,
-    activeColor: "#00FF66",
-    sourceFile: "indicators/momentum/RSI.ts",
-    parameters: { period: 14 }
-  },
-  {
-    id: "macd",
-    name: "Moving Average Convergence Divergence",
-    abbr: "MACD",
-    category: IndicatorCategory.Momentum,
-    activeColor: "#FF4D4D", // removed magenta default (#FF00C8)
-    sourceFile: "indicators/momentum/MACD.ts",
-    parameters: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 }
-  },
-  {
-    id: "atr",
-    name: "Average True Range",
-    abbr: "ATR",
-    category: IndicatorCategory.Volatility,
-    activeColor: "#FF4500",
-    sourceFile: "indicators/volatility/ATR.ts",
-    parameters: { period: 14 }
-  },
-  {
-    id: "bb",
-    name: "Bollinger Bands",
-    abbr: "BB",
-    category: IndicatorCategory.Volatility,
-    activeColor: "#7A3BFF",
-    sourceFile: "indicators/volatility/BollingerBands.ts",
-    parameters: { period: 20, multiplier: 2 }
-  },
-  {
-    id: "vwap",
-    name: "Volume Weighted Average Price",
-    abbr: "VWAP",
-    category: IndicatorCategory.Volume,
-    activeColor: "#F72585",
-    sourceFile: "indicators/volume/VWAP.ts",
-    parameters: {}
-  },
-  {
-    id: "obv",
-    name: "On-Balance Volume",
-    abbr: "OBV",
-    category: IndicatorCategory.Volume,
-    activeColor: "#118AB2",
-    sourceFile: "indicators/volume/OBV.ts",
-    parameters: {}
-  },
-  {
-    id: "adx",
-    name: "Average Directional Index",
-    abbr: "ADX",
-    category: IndicatorCategory.Trend,
-    activeColor: "#00D9FF",
-    sourceFile: "indicators/trend/ADX.ts",
-    parameters: { period: 14 }
-  }
-];
+const FILE_BY_ABBR: Record<string, string> = {
+  SMA: "indicators/trend/SMA.ts",
+  EMA: "indicators/trend/EMA.ts",
+  WMA: "indicators/trend/WMA.ts",
+  VWMA: "indicators/trend/VWMA.ts",
+  DEMA: "indicators/trend/DEMA.ts",
+  TEMA: "indicators/trend/TEMA.ts",
+  HMA: "indicators/trend/HMA.ts",
+  LRC: "indicators/trend/LRC.ts",
+  PSAR: "indicators/trend/PSAR.ts",
+  SUPERTREND: "indicators/trend/Supertrend.ts",
+  ZZ: "indicators/trend/ZigZag.ts",
+  PIVOT: "indicators/trend/PivotPoints.ts",
+  DMI: "indicators/trend/DMI.ts",
+  ICHIMOKU: "indicators/trend/IchimokuCloud.ts",
+  ADX: "indicators/trend/ADX.ts",
+  RSI: "indicators/momentum/RSI.ts",
+  MACD: "indicators/momentum/MACD.ts",
+  ROC: "indicators/momentum/ROC.ts",
+  CCI: "indicators/momentum/CCI.ts",
+  WPR: "indicators/momentum/WilliamsR.ts",
+  CMO: "indicators/momentum/CMO.ts",
+  DPO: "indicators/momentum/DPO.ts",
+  STOCH: "indicators/momentum/Stochastic.ts",
+  STOCHRSI: "indicators/momentum/StochRSI.ts",
+  PPO: "indicators/momentum/PPO.ts",
+  AO: "indicators/momentum/AO.ts",
+  RVI: "indicators/momentum/RVI.ts",
+  TRIX: "indicators/momentum/TRIX.ts",
+  TSI: "indicators/momentum/TSI.ts",
+  UO: "indicators/momentum/UltimateOscillator.ts",
+  KST: "indicators/momentum/KST.ts",
+  FT: "indicators/momentum/FisherTransform.ts",
+  CC: "indicators/momentum/Coppock.ts",
+  ATR: "indicators/volatility/ATR.ts",
+  BB: "indicators/volatility/BollingerBands.ts",
+  BBW: "indicators/volatility/BBWidth.ts",
+  DC: "indicators/volatility/Donchian.ts",
+  KC: "indicators/volatility/Keltner.ts",
+  HV: "indicators/volatility/HistoricalVolatility.ts",
+  CHV: "indicators/volatility/ChaikinVolatility.ts",
+  VWAP: "indicators/volume/VWAP.ts",
+  OBV: "indicators/volume/OBV.ts",
+  AD: "indicators/volume/ADL.ts",
+  CMF: "indicators/volume/CMF.ts",
+  MFI: "indicators/volume/MFI.ts",
+  EFI: "indicators/volume/EFI.ts",
+  EOM: "indicators/volume/EOM.ts",
+  VOL: "indicators/volume/Volume.ts",
+  NETVOL: "indicators/volume/Volume.ts",
+  VO: "indicators/volume/Volume.ts",
+};
+
+const CATEGORY_MAP: Record<string, string> = {
+  Trend: IndicatorCategory.Trend,
+  Momentum: IndicatorCategory.Momentum,
+  Volatility: IndicatorCategory.Volatility,
+  Volume: IndicatorCategory.Volume,
+};
+
+export const IndicatorRegistry: IndicatorDefinition[] = SUPPORTED_CHART_INDICATORS.map((ind) => ({
+  id: ind.abbr.toLowerCase(),
+  name: ind.name,
+  abbr: ind.abbr,
+  category: CATEGORY_MAP[ind.category] || ind.category,
+  activeColor: ind.activeColor,
+  sourceFile: FILE_BY_ABBR[ind.abbr] || `indicators/${ind.abbr}.ts`,
+  parameters: { period: 14 },
+}));

@@ -1,8 +1,10 @@
 export const TIER_LIMITS = {
+  // Twelve Data time_series outputsize max is 5000. Higher values only
+  // produce HTTP 400 and blank charts — keep all tiers within the provider cap.
   BRONZE: 5000,
-  SILVER: 10000,
-  GOLD: 20000,
-  VIP: 40000,
+  SILVER: 5000,
+  GOLD: 5000,
+  VIP: 5000,
 };
 
 export const getCandleLimit = (userTier?: string): number => {

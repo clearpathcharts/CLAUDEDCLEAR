@@ -31,13 +31,22 @@ export function resolveTwelveDataInterval(interval: string): string {
   // Monthly UI tokens ("1M", "3M", "6M") must be handled before lowercasing,
   // otherwise "1M" becomes "1m" and is misread as one-minute candles.
   if (raw === "1M") return "1month";
-  if (raw === "3M" || raw === "6M") return "1month";
+  // Multi-month views: daily bars (not monthly candles).
+  if (raw === "3M" || raw === "6M") return "1day";
 
   const v = raw.toLowerCase();
 
   switch (v) {
     case "1m":
     case "1min":
+      return "1min";
+    case "2m":
+    case "2min":
+      // Twelve Data has no native 2min — use 1min (was incorrectly falling to 1day).
+      return "1min";
+    case "3m":
+    case "3min":
+      // Twelve Data has no native 3min — use 1min (was incorrectly falling to 1day).
       return "1min";
     case "5m":
     case "5min":
@@ -59,6 +68,9 @@ export function resolveTwelveDataInterval(interval: string): string {
     case "60min":
       return "1h";
     case "2h":
+      return "2h";
+    case "3h":
+      // Twelve Data has no native 3h — use 2h (was incorrectly falling to 1day).
       return "2h";
     case "4h":
       return "4h";
@@ -137,6 +149,9 @@ export const fetchTieredHistoricalData = async (
       /* response had no JSON body */
     }
     console.error(`[marketData] Proxy responded ${response.status}: ${detail}`);
+    if (response.status === 429) {
+      throw new Error(`Real-time market fetch failed: 429 rate limited — ${detail}.`);
+    }
     throw new Error(`Real-time market fetch failed: ${detail}.`);
   }
 

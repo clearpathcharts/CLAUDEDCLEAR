@@ -298,7 +298,10 @@ const DATA_ONLY_MARKETS = [
   { label: 'BTC/USD', value: 'BTCUSD' },
   { label: 'ETH/USD', value: 'ETHUSD' },
   { label: 'SOL/USD', value: 'SOLUSD' },
-  { label: 'SPX', value: 'SPX' }
+  { label: 'SPX', value: 'SPX' },
+  { label: 'DXY', value: 'DXY' },
+  { label: 'AAPL', value: 'AAPL' },
+  { label: 'NVDA', value: 'NVDA' },
 ];
 
 // Helper Component for Tab Switching Optimization

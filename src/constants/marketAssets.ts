@@ -1,21 +1,24 @@
+import {
+  getEnabledAssets,
+  getRegistryAsset,
+  type RegistryAsset,
+} from "./assetRegistry";
+
 export type MarketAsset = { label: string; value: string };
 
-export const MARKET_ASSETS: MarketAsset[] = [
-  { label: 'EUR/USD', value: 'EURUSD' },
-  { label: 'GBP/USD', value: 'GBPUSD' },
-  { label: 'USD/JPY', value: 'USDJPY' },
-  { label: 'AUD/USD', value: 'AUDUSD' },
-  { label: 'USD/CAD', value: 'USDCAD' },
-  { label: 'NZD/USD', value: 'NZDUSD' },
-  { label: 'XAU/USD', value: 'XAUUSD' },
-  { label: 'XAG/USD', value: 'XAGUSD' },
-  { label: 'SOL/USD', value: 'SOLUSD' },
-  { label: 'SPX', value: 'SPX' },
-  { label: 'DXY', value: 'DXY' },
-];
+/** Chart/search picker — driven by ClearPath 70 registry. */
+export const MARKET_ASSETS: MarketAsset[] = getEnabledAssets().map((a) => ({
+  label: a.display,
+  value: a.symbol,
+}));
 
 export function resolveMarketAsset(symbol: string): MarketAsset {
-  const sym = symbol.toUpperCase().trim();
-  const match = MARKET_ASSETS.find((a) => a.value === sym);
-  return match ?? { label: sym, value: sym };
+  const asset = getRegistryAsset(symbol);
+  if (asset) return { label: asset.display, value: asset.symbol };
+  const sym = symbol.toUpperCase().trim().replace(/\//g, "");
+  return { label: sym, value: sym };
+}
+
+export function resolveRegistryForPicker(symbol: string): RegistryAsset | undefined {
+  return getRegistryAsset(symbol);
 }

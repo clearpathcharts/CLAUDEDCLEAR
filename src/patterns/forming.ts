@@ -129,6 +129,73 @@ function possibilitiesFromMeasured(patterns: DetectedPattern[]): FormingPossibil
     .slice(0, 4);
 }
 
+/** Restore 4-up / 3-down methodology watches even when geometry scan is quiet. */
+function possibilitiesFromImpulse(
+  legs: FormingStructureBrief['legs'],
+  clock: FormingClock,
+  trendBias: FormingStructureBrief['trendBias'],
+): FormingPossibility[] {
+  const out: FormingPossibility[] = [];
+
+  if (clock.active && clock.type === '12-bar-retrace') {
+    out.push({
+      id: 'ascending_triangle',
+      label: '4-Up / 3-Bar Retrace',
+      probability: 0.68,
+      status: 'forming',
+      detail: `${clock.reason}. Watch for continuation structure (often ascending triangle / rising base) into bar ${clock.total}.`,
+    });
+  }
+
+  if (clock.active && clock.type === '16-bar-retrace') {
+    out.push({
+      id: 'descending_triangle',
+      label: '4-Down / 3-Bar Retrace',
+      probability: 0.68,
+      status: 'forming',
+      detail: `${clock.reason}. Watch for continuation structure (often descending triangle) into bar ${clock.total}.`,
+    });
+  }
+
+  if (legs.upPushCount >= 4 && legs.lastUpLegIncomplete && trendBias !== 'down') {
+    out.push({
+      id: 'ascending_triangle',
+      label: 'Incomplete 4th Push',
+      probability: 0.6,
+      status: 'possible',
+      detail: `Four up impulses with latest leg at ${legs.lastUpLegBars} bars (incomplete vs full 4) — classic ClearPath 4-up / 3-down watch.`,
+    });
+  }
+
+  if (legs.retraceOpenedWithFourBearish) {
+    out.push({
+      id: 'falling_wedge',
+      label: '4-Bar Bear Retrace Open',
+      probability: 0.58,
+      status: 'watch',
+      detail: 'Retrace opened with a full 4-bar bearish leg — map support and watch for 3-bar stall at the low.',
+    });
+  }
+
+  if (legs.retraceEndingWithThreeBearish) {
+    out.push({
+      id: 'double_bottom',
+      label: '3-Bar Stall at Retrace Low',
+      probability: 0.62,
+      status: 'forming',
+      detail: '3-bar bearish leg at the retrace low (incomplete) — breakout / double-bottom style resolution watch.',
+    });
+  }
+
+  // Deduplicate by label, keep highest probability
+  const best = new Map<string, FormingPossibility>();
+  for (const p of out) {
+    const prev = best.get(p.label);
+    if (!prev || p.probability > prev.probability) best.set(p.label, p);
+  }
+  return [...best.values()].sort((a, b) => b.probability - a.probability).slice(0, 4);
+}
+
 function buildNarrative(
   brief: Omit<FormingStructureBrief, 'narrativeLines' | 'updatedAt'>,
 ): string[] {
@@ -202,7 +269,18 @@ export function analyzeFormingStructure(
     retraceEndingWithThreeBearish,
   };
 
-  const possibilities = possibilitiesFromMeasured(measuredPatterns);
+  const measured = possibilitiesFromMeasured(measuredPatterns);
+  const impulse = possibilitiesFromImpulse(legs, clock, trendBias);
+  // Measured geometry first, then methodology watches fill gaps on any symbol.
+  const merged = new Map<string, FormingPossibility>();
+  for (const p of [...measured, ...impulse]) {
+    const key = `${p.id}:${p.label}`;
+    const prev = merged.get(key);
+    if (!prev || p.probability > prev.probability) merged.set(key, p);
+  }
+  const possibilities = [...merged.values()]
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, 5);
 
   const normalizedTf = normalizeTimeframe(timeframe);
   const base = {

@@ -54,6 +54,8 @@ export interface PatternGeometry {
   lines: PatternLineSegment[];
   markerIndex?: number;
   markerPrice?: number;
+  /** False when wick-safe fit failed but lines are still drawn for clarity. */
+  candleSafe?: boolean;
 }
 
 export interface PatternScanResult {

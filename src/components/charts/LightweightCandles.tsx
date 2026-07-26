@@ -32,6 +32,64 @@ type Candle = {
   close: number;
 };
 
+/** Seconds per bar for live updates. Keep `1M` (month) distinct from `1m` (minute). */
+function timeframeStepSeconds(timeframe: string): number {
+  const raw = (timeframe || "1h").trim();
+  if (raw === "1M") return 30 * 86400;
+  const tf = raw.toLowerCase();
+  const stepMap: Record<string, number> = {
+    "1m": 60,
+    "2m": 120,
+    "3m": 180,
+    "5m": 300,
+    "10m": 600,
+    "15m": 900,
+    "30m": 1800,
+    "1h": 3600,
+    "2h": 7200,
+    "3h": 10800,
+    "4h": 14400,
+    "1d": 86400,
+    "1w": 604800,
+    ytd: 86400,
+  };
+  return stepMap[tf] || 3600;
+}
+
+/** Minimum price change that counts as a real new bar (blocks weekend flat-bar spam). */
+function minMeaningfulPriceMove(price: number): number {
+  const p = Math.abs(price) || 1;
+  if (p >= 200) return Math.max(0.08, p * 0.00003); // gold / indices
+  if (p >= 20) return Math.max(0.01, p * 0.00005);
+  if (p >= 2) return Math.max(0.0005, p * 0.00008); // many FX pairs
+  return Math.max(0.00005, p * 0.0001);
+}
+
+function candleRange(c: Candle): number {
+  return Math.max(0, c.high - c.low);
+}
+
+/**
+ * Drop trailing near-flat clones painted while the market was closed.
+ * Keeps weekend analysis on real session history instead of a barcode of last-price ticks.
+ */
+function trimTrailingStagnantBars(candles: Candle[]): Candle[] {
+  if (candles.length < 8) return candles;
+  const out = candles.slice();
+  while (out.length > 4) {
+    const last = out[out.length - 1];
+    const prev = out[out.length - 2];
+    const floor = minMeaningfulPriceMove(last.close);
+    const flat =
+      candleRange(last) < floor &&
+      Math.abs(last.close - prev.close) < floor &&
+      Math.abs(last.open - last.close) < floor;
+    if (!flat) break;
+    out.pop();
+  }
+  return out;
+}
+
 /**
  * Oscillator indicators output values on a scale completely unrelated to price
  * (e.g. RSI is 0-100, MACD oscillates around zero). If they share the candle
@@ -40,7 +98,12 @@ type Candle = {
  * separate price scale. Price-based overlays (SMA, EMA, BB, VWAP, Ichimoku,
  * River) belong ON the candle scale and are deliberately excluded here.
  */
-const OSCILLATOR_INDICATORS = new Set(["RSI", "MACD", "ATR", "ADX", "OBV", "AO"]);
+const OSCILLATOR_INDICATORS = new Set([
+  "RSI", "MACD", "ATR", "ADX", "DMI", "OBV", "AO", "STOCH", "STOCHRSI",
+  "CCI", "WPR", "ROC", "PPO", "CMO", "DPO", "RVI", "TRIX", "TSI", "UO",
+  "KST", "FT", "CC", "BBW", "HV", "CHV", "AD", "A/D", "CMF", "MFI",
+  "EFI", "EOM", "VOL", "NETVOL", "VO",
+]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
 export function LightweightCandles({
@@ -264,8 +327,7 @@ export function LightweightCandles({
       return s;
     };
 
-    const stepMap: Record<string, number> = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
-    const stepSeconds = stepMap[timeframe.toLowerCase()] || 3600;
+    const stepSeconds = timeframeStepSeconds(timeframe);
 
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
@@ -293,14 +355,26 @@ export function LightweightCandles({
           } catch (err: any) {
             lastFetchError = err?.message || String(err);
             console.warn("Primary fetch failed for", sym, err);
+            // On rate limit, do NOT burn a second credit path via ChartFeedAdapter.
+            const msg = String(lastFetchError).toLowerCase();
+            if (msg.includes("429") || msg.includes("rate limit") || msg.includes("rate limited")) {
+              setError(`Rate limited — charts paused briefly. (${lastFetchError})`);
+              setIsLoading(false);
+              return;
+            }
           }
 
           if ((!fetched || fetched.length === 0) && active) {
-            try {
-              fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
-            } catch (adapterErr: any) {
-              console.error(adapterErr);
-              lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
+            const primaryWasRateLimited = String(lastFetchError || "")
+              .toLowerCase()
+              .match(/429|rate limit/);
+            if (!primaryWasRateLimited) {
+              try {
+                fetched = await ChartFeedAdapter.getCandles(sym, timeframe);
+              } catch (adapterErr: any) {
+                console.error(adapterErr);
+                lastFetchError = lastFetchError || adapterErr?.message || String(adapterErr);
+              }
             }
           }
 
@@ -325,7 +399,7 @@ export function LightweightCandles({
         if (!active) return;
 
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
-        const tierOptimizedData = displayData.slice(-allowedLimit);
+        const tierOptimizedData = trimTrailingStagnantBars(displayData.slice(-allowedLimit));
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {
@@ -530,21 +604,85 @@ export function LightweightCandles({
                 const obvLine = addOscillatorSeries({ color: "#118AB2", lineWidth: 2, title: "OBV" });
                 obvLine.setData(obvData as any[]);
               }
-              else if (indAbbr === "ADX") {
-                const adxData = IndicatorEngine.calculate("ADX", tierOptimizedData, { period: 14 });
+              else if (indAbbr === "ADX" || indAbbr === "DMI") {
+                const adxData = IndicatorEngine.calculate(indAbbr, tierOptimizedData, { period: 14 });
                 const adxValueData = adxData.map((d: any) => ({ time: d.time as Time, value: d.adx }));
-                const adxLine = addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" });
-                adxLine.setData(adxValueData);
+                const plusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.plusDI }));
+                const minusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.minusDI }));
+                addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" }).setData(adxValueData);
+                if (indAbbr === "DMI") {
+                  addOscillatorSeries({ color: "#22C55E", lineWidth: 1, title: "+DI" }).setData(plusData);
+                  addOscillatorSeries({ color: "#EF4444", lineWidth: 1, title: "-DI" }).setData(minusData);
+                }
+              }
+              else if (indAbbr === "STOCH" || indAbbr === "STOCHRSI") {
+                const st = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                addOscillatorSeries({ color: "#B5179E", lineWidth: 2, title: `${indAbbr} %K` }).setData(
+                  st.map((d: any) => ({ time: d.time as Time, value: d.k }))
+                );
+                addOscillatorSeries({ color: "#FFD166", lineWidth: 1, title: `${indAbbr} %D` }).setData(
+                  st.map((d: any) => ({ time: d.time as Time, value: d.d }))
+                );
+              }
+              else if (indAbbr === "DC" || indAbbr === "KC") {
+                const ch = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const midKey = indAbbr === "DC" ? "middle" : "middle";
+                chart.addSeries(LineSeries, { color: "#F72585", lineWidth: 1, title: `${indAbbr} mid` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d[midKey] }))
+                );
+                chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 1, title: `${indAbbr} upper` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d.upper }))
+                );
+                chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 1, title: `${indAbbr} lower` }).setData(
+                  ch.map((d: any) => ({ time: d.time as Time, value: d.lower }))
+                );
+              }
+              else if (indAbbr === "SUPERTREND" || indAbbr === "PSAR") {
+                const series = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                chart.addSeries(LineSeries, {
+                  color: indAbbr === "PSAR" ? "#FFD166" : "#00FFCC",
+                  lineWidth: 2,
+                  title: indAbbr,
+                }).setData(series.map((d: any) => ({ time: d.time as Time, value: d.value })));
+              }
+              else if (indAbbr === "PIVOT") {
+                const piv = IndicatorEngine.calculate("PIVOT", tierOptimizedData);
+                for (const key of ["pp", "r1", "s1"] as const) {
+                  chart.addSeries(LineSeries, {
+                    color: key === "pp" ? "#F72585" : key === "r1" ? "#22C55E" : "#EF4444",
+                    lineWidth: 1,
+                    lineStyle: LineStyle.Dashed,
+                    title: key.toUpperCase(),
+                  }).setData(piv.map((d: any) => ({ time: d.time as Time, value: d[key] })));
+                }
+              }
+              else if (indAbbr === "PPO" || indAbbr === "RVI" || indAbbr === "KST" || indAbbr === "TSI" || indAbbr === "FT") {
+                const multi = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const primaryKey = indAbbr === "PPO" ? "ppo" : indAbbr === "RVI" ? "rvi" : indAbbr === "KST" ? "kst" : indAbbr === "TSI" ? "tsi" : "fisher";
+                const secondaryKey = indAbbr === "FT" ? "trigger" : "signal";
+                addOscillatorSeries({ color, lineWidth: 2, title: indAbbr }).setData(
+                  multi.map((d: any) => ({ time: d.time as Time, value: d[primaryKey] }))
+                );
+                addOscillatorSeries({ color: "#F59E0B", lineWidth: 1, title: `${indAbbr} signal` }).setData(
+                  multi.map((d: any) => ({ time: d.time as Time, value: d[secondaryKey] }))
+                );
               }
               else {
-                // Unknown indicator: route via the IndicatorEngine. If it's a known
-                // oscillator name, keep it off the price scale; otherwise overlay.
+                // Generic single-line series from IndicatorBank
                 const lineData = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
+                const points = Array.isArray(lineData)
+                  ? lineData
+                      .map((d: any) => ({
+                        time: d.time as Time,
+                        value: typeof d.value === "number" ? d.value : d.adx ?? d.k ?? d.ppo ?? null,
+                      }))
+                      .filter((d: any) => d.value != null)
+                  : [];
                 const isOscillator = OSCILLATOR_INDICATORS.has(indAbbr);
                 const otherLine = isOscillator
                   ? addOscillatorSeries({ color, lineWidth: 2, title: `${indAbbr} (Live)` })
                   : chart.addSeries(LineSeries, { color, lineWidth: 2, title: `${indAbbr} (Live)` });
-                otherLine.setData(lineData as any[]);
+                otherLine.setData(points as any[]);
               }
             } catch (err) {
               console.error(`Error loading indicator line for ${indAbbr}`, err);
@@ -655,36 +793,53 @@ export function LightweightCandles({
 
           const nowRaw = Math.floor(Date.now() / 1000);
           const currentTime = nowRaw - (nowRaw % stepSeconds);
-
           const newClose = livePrice;
-          let newHigh = lastCandle.high;
-          let newLow = lastCandle.low;
+          const moveFloor = minMeaningfulPriceMove(lastCandle.close);
 
-          let updateTime = lastCandle.time;
-          let updateOpen = lastCandle.open;
-
+          // Weekend / closed market: wall-clock keeps ticking, but the quote is
+          // stuck at last print. Never invent new flat bars — that barcodes M1–M15
+          // and ruins weekend analysis of real session history.
           if (currentTime > lastCandle.time) {
-            updateTime = currentTime;
-            updateOpen = lastCandle.close;
-            newHigh = Math.max(updateOpen, newClose);
-            newLow = Math.min(updateOpen, newClose);
-          } else {
-            newHigh = Math.max(lastCandle.high, newClose);
-            newLow = Math.min(lastCandle.low, newClose);
+            if (Math.abs(newClose - lastCandle.close) < moveFloor) {
+              return;
+            }
+            // Meaningful gap/move (e.g. Monday open) → open a real new bar.
+            const updateObj = {
+              time: currentTime as Time,
+              open: lastCandle.close,
+              high: Math.max(lastCandle.close, newClose),
+              low: Math.min(lastCandle.close, newClose),
+              close: newClose,
+            };
+            if (!active) return;
+            series.update(updateObj);
+            lastCandle = { ...updateObj, time: currentTime };
+            return;
+          }
+
+          // Same bucket as the last real bar — update in place only.
+          const newHigh = Math.max(lastCandle.high, newClose);
+          const newLow = Math.min(lastCandle.low, newClose);
+          if (
+            newClose === lastCandle.close &&
+            newHigh === lastCandle.high &&
+            newLow === lastCandle.low
+          ) {
+            return;
           }
 
           if (!active) return;
 
           const updateObj = {
-            time: updateTime as Time,
-            open: updateOpen,
+            time: lastCandle.time as Time,
+            open: lastCandle.open,
             high: newHigh,
             low: newLow,
             close: newClose,
           };
 
           series.update(updateObj);
-          lastCandle = { ...updateObj, time: updateTime as number };
+          lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
 
         if (active) setIsLoading(false);
