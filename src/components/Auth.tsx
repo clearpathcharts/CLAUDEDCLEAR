@@ -614,15 +614,24 @@ export default function Auth() {
             </span>
           </div>
 
-          {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
-          <button
-            type="button"
-            onClick={() => openPrivateLogin('login')}
-            className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
-          >
-            <Lock size={12} aria-hidden="true" />
-            Private Login
-          </button>
+          {/* Sole primary CTAs — pinned top-right so the link parade can never clip them */}
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/ops/social"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-[#00FFFF]/40 bg-[#00FFFF]/10 text-[#00FFFF] text-xs font-black uppercase tracking-wider hover:bg-[#00FFFF]/20 hover:border-[#00FFFF] hover:shadow-[0_0_15px_rgba(0,255,255,0.25)] transition-all whitespace-nowrap"
+              title="ClearPath Social Auto — daily posting at 5am, 9am, 3pm, 6pm"
+            >
+              Auto
+            </a>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('login')}
+              className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <Lock size={12} aria-hidden="true" />
+              Private Login
+            </button>
+          </div>
         </div>
 
         {/* Secondary link row — wraps under Private Login */}
