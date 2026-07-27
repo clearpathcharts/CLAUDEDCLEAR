@@ -21,6 +21,7 @@ import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { ChartDrawingToolbar, useChartDrawings } from "./drawings";
+import { DraggableChartToolDock } from "./DraggableChartToolDock";
 import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
@@ -920,163 +921,150 @@ export function LightweightCandles({
   const frameHeight = isExpanded ? "100%" : `${height}px`;
 
   return (
-    <div
-      className="flex w-full flex-col overflow-hidden rounded-[20px]"
-      style={{
-        height: frameHeight,
-        minHeight: isExpanded ? 320 : undefined,
-        boxShadow:
-          defaultTheme.physics.glowBlur > 0
-            ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
-            : "none",
-      }}
-    >
-      <div className="flex min-h-0 flex-1">
-        {/* Drawing tools: LEFT of canvas — never overlaid on candles */}
-        {!embedMode && (
-          <aside
-            className="z-[60] flex max-h-full w-11 shrink-0 flex-col items-center overflow-y-auto overscroll-contain border-r border-white/10 bg-black/95 px-0.5 py-2"
-            aria-label="Chart drawing tools rail"
-          >
-            <ChartDrawingToolbar
-              activeTool={drawings.activeTool}
-              onToolChange={drawings.setActiveTool}
-              drawColor={drawings.drawColor}
-              onColorChange={drawings.setDrawColor}
-              hint={drawings.hint}
-              canUndo={drawings.canUndo}
-              onUndo={drawings.undo}
-              onClear={drawings.clearAll}
-            />
-          </aside>
-        )}
-
-        {/* Candle canvas only — no tool overlays on the right/middle */}
-        <div
-          ref={containerRef}
-          className="relative min-w-0 flex-1 overflow-hidden"
-          style={{
-            background: activeCustomTheme
-              ? activeCustomTheme.background
-              : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
-          }}
-        >
-          {isLoading && !error && (
-            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
-              <span className="animate-pulse">Loading {sym} chart…</span>
-            </div>
-          )}
-          {error && (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center font-mono text-sm text-red-400">
-              <span className="text-xs font-bold uppercase tracking-wider text-red-500">Chart data unavailable</span>
-              <span>{error}</span>
-              <button
-                type="button"
-                className="mt-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
-                onClick={() => {
-                  setError(null);
-                  setIsLoading(true);
-                  window.location.reload();
-                }}
-              >
-                Retry chart
-              </button>
-            </div>
-          )}
-          <ChartFormingWatch
-            symbol={sym}
-            brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
-            onClose={() => {
-              setShowFormingWatch(false);
-              try {
-                localStorage.setItem("cp_chart_forming_watch_open", "0");
-              } catch {
-                /* ignore */
-              }
-            }}
-          />
-          {!hidePatternChrome && !showFormingWatch && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowFormingWatch(true);
-                try {
-                  localStorage.setItem("cp_chart_forming_watch_open", "1");
-                } catch {
-                  /* ignore */
-                }
-              }}
-              aria-label="Open forming watch"
-              className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
-            >
-              <Radio size={10} className="animate-pulse" />
-              Forming
-            </button>
-          )}
-          <ChartPatternHud
-            symbol={sym}
-            scan={!hidePatternChrome && showPatternHud ? patternScan : null}
-            onClose={() => {
-              setShowPatternHud(false);
-              try {
-                localStorage.setItem("cp_chart_pattern_hud_open", "0");
-              } catch {
-                /* ignore */
-              }
-            }}
-          />
-          {!hidePatternChrome && !showPatternHud && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowPatternHud(true);
-                try {
-                  localStorage.setItem("cp_chart_pattern_hud_open", "1");
-                } catch {
-                  /* ignore */
-                }
-              }}
-              aria-label="Open pattern scanner"
-              className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
-            >
-              <Scan size={10} />
-              Patterns
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Zoom / focus / crosshair: BOTTOM bar outside the chart */}
+    <>
+      {/* Floating tools — drag anywhere / park off-screen so candles stay clear */}
       {!embedMode && (
-        <div
-          className="flex shrink-0 items-center justify-between gap-2 border-t border-white/10 bg-black/95 px-2 py-1.5"
-          aria-label="Chart view controls"
+        <DraggableChartToolDock
+          storageKey={`cp_chart_tool_dock:${sym}`}
+          label={`${sym} chart tools`}
+          defaultPosition={{
+            x: 12,
+            y: 120 + (sym.charCodeAt(0) % 5) * 36,
+          }}
         >
           <button
             type="button"
             onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-            className="flex items-center gap-1.5 rounded-md border border-white/15 bg-black/75 px-2 py-1.5 font-mono text-[9px] tracking-wider text-zinc-300 transition-all hover:border-[#00D9FF]/40 hover:bg-black active:scale-95"
-            title="Toggle Crosshair Coordinates tracking"
+            className="flex w-full items-center justify-center gap-1 rounded-md border border-white/15 bg-black/75 px-1.5 py-1.5 font-mono text-[8px] tracking-wider text-zinc-300 transition-all hover:border-[#00D9FF]/40"
+            title="Toggle Crosshair"
             id={`crosshair_toggle_${symbol}`}
           >
             <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-            <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
+            <span>{crosshairEnabled ? "ON" : "OFF"}</span>
           </button>
-          <div className="flex items-center gap-1">
+          <ChartDrawingToolbar
+            activeTool={drawings.activeTool}
+            onToolChange={drawings.setActiveTool}
+            drawColor={drawings.drawColor}
+            onColorChange={drawings.setDrawColor}
+            hint={drawings.hint}
+            canUndo={drawings.canUndo}
+            onUndo={drawings.undo}
+            onClear={drawings.clearAll}
+          />
+          <div className="my-0.5 h-px w-full bg-white/10" aria-hidden />
+          <button
+            type="button"
+            onClick={handleFocusRecent}
+            aria-label="Focus recent bars"
+            title="Snap to recent price action"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#00D9FF]/25 text-[#00D9FF] transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+          >
+            <Focus size={13} strokeWidth={2.5} />
+          </button>
+          <ChartZoomControls chartRef={chartRef} />
+        </DraggableChartToolDock>
+      )}
+
+      <div
+        ref={containerRef}
+        className="relative w-full overflow-hidden rounded-[20px]"
+        style={{
+          height: frameHeight,
+          minHeight: isExpanded ? 320 : undefined,
+          background: activeCustomTheme
+            ? activeCustomTheme.background
+            : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
+          boxShadow:
+            defaultTheme.physics.glowBlur > 0
+              ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
+              : "none",
+        }}
+      >
+        {isLoading && !error && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
+            <span className="animate-pulse">Loading {sym} chart…</span>
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center font-mono text-sm text-red-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-red-500">Chart data unavailable</span>
+            <span>{error}</span>
             <button
               type="button"
-              onClick={handleFocusRecent}
-              aria-label="Focus recent bars"
-              title="Snap to recent price action"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#00D9FF]/25 bg-black/85 text-[#00D9FF] transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+              className="mt-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                window.location.reload();
+              }}
             >
-              <Focus size={13} strokeWidth={2.5} />
+              Retry chart
             </button>
-            <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
-        </div>
-      )}
-    </div>
+        )}
+        <ChartFormingWatch
+          symbol={sym}
+          brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
+          onClose={() => {
+            setShowFormingWatch(false);
+            try {
+              localStorage.setItem("cp_chart_forming_watch_open", "0");
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+        {!hidePatternChrome && !showFormingWatch && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowFormingWatch(true);
+              try {
+                localStorage.setItem("cp_chart_forming_watch_open", "1");
+              } catch {
+                /* ignore */
+              }
+            }}
+            aria-label="Open forming watch"
+            className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+          >
+            <Radio size={10} className="animate-pulse" />
+            Forming
+          </button>
+        )}
+        <ChartPatternHud
+          symbol={sym}
+          scan={!hidePatternChrome && showPatternHud ? patternScan : null}
+          onClose={() => {
+            setShowPatternHud(false);
+            try {
+              localStorage.setItem("cp_chart_pattern_hud_open", "0");
+            } catch {
+              /* ignore */
+            }
+          }}
+        />
+        {!hidePatternChrome && !showPatternHud && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowPatternHud(true);
+              try {
+                localStorage.setItem("cp_chart_pattern_hud_open", "1");
+              } catch {
+                /* ignore */
+              }
+            }}
+            aria-label="Open pattern scanner"
+            className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+          >
+            <Scan size={10} />
+            Patterns
+          </button>
+        )}
+      </div>
+    </>
   );
 }
 
