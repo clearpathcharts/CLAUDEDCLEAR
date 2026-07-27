@@ -77,31 +77,33 @@ export default function MarketDiagnostics() {
   }, []);
 
   const getStatusBadge = (status: ApiStatusItem["status"]) => {
+    const base =
+      "inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold font-mono tracking-wider px-2.5 py-1 rounded";
     switch (status) {
       case "ONLINE":
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider px-2 py-0.5 rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className={`${base} bg-emerald-950/50 border border-emerald-500/30 text-emerald-400`}>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             ONLINE
           </span>
         );
       case "DEGRADED":
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider px-2 py-0.5 rounded bg-amber-950/50 border border-amber-500/30 text-amber-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping" />
+          <span className={`${base} bg-amber-950/50 border border-amber-500/30 text-amber-400`}>
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
             DEGRADED
           </span>
         );
       case "MOCK_FALLBACK":
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider px-2 py-0.5 rounded bg-blue-950/50 border border-blue-500/30 text-blue-400">
+          <span className={`${base} bg-blue-950/50 border border-blue-500/30 text-blue-400`}>
             FAILOVER ACTIVE
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider px-2 py-0.5 rounded bg-rose-950/50 border border-rose-500/30 text-rose-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+          <span className={`${base} bg-rose-950/50 border border-rose-500/30 text-rose-400`}>
+            <span className="h-2 w-2 rounded-full bg-rose-500" />
             OFFLINE
           </span>
         );
@@ -160,7 +162,36 @@ export default function MarketDiagnostics() {
                 <p className="text-xs text-white/50 font-mono">Retrieving active gateway outputs...</p>
               </div>
             ) : (
-              apiStatuses.map((api) => (
+              <>
+                {/* At-a-glance strip: wrap into two rows, readable on phones */}
+                <div className="grid grid-cols-2 gap-2 mb-1">
+                  {apiStatuses.map((api) => {
+                    const tone =
+                      api.status === "ONLINE"
+                        ? "border-emerald-500/40 text-emerald-400 bg-emerald-950/30"
+                        : api.status === "DEGRADED"
+                          ? "border-amber-500/40 text-amber-400 bg-amber-950/30"
+                          : api.status === "MOCK_FALLBACK"
+                            ? "border-blue-500/40 text-blue-400 bg-blue-950/30"
+                            : "border-rose-500/40 text-rose-400 bg-rose-950/30";
+                    return (
+                      <div
+                        key={`chip-${api.name}`}
+                        className={`rounded-lg border px-2.5 py-2 font-mono ${tone}`}
+                      >
+                        <div className="text-xs sm:text-sm font-black truncate uppercase tracking-wide text-white">
+                          {api.name}
+                        </div>
+                        <div className="text-[11px] sm:text-xs font-bold mt-0.5 uppercase tracking-wider">
+                          {api.status === "MOCK_FALLBACK" ? "FAILOVER" : api.status}
+                          {api.responseTime > 0 ? ` · ${api.responseTime}ms` : ""}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {apiStatuses.map((api) => (
                 <div 
                   key={api.name}
                   className="bg-black/60 rounded-lg p-4 border border-white/5 hover:border-white/10 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
@@ -174,27 +205,28 @@ export default function MarketDiagnostics() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-white font-sans">{api.name}</span>
-                        <span className="text-[10px] opacity-40 font-mono">[{api.tier}]</span>
+                        <span className="font-bold text-base sm:text-sm text-white font-sans">{api.name}</span>
+                        <span className="text-xs opacity-40 font-mono">[{api.tier}]</span>
                       </div>
-                      <p className="text-[11px] text-white/60 mt-1 leading-relaxed font-mono">{api.message}</p>
+                      <p className="text-xs sm:text-[11px] text-white/60 mt-1 leading-relaxed font-mono">{api.message}</p>
                     </div>
                   </div>
 
                   <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 border-white/5 pt-3 md:pt-0 gap-2">
                     {getStatusBadge(api.status)}
                     {api.responseTime > 0 ? (
-                      <span className="text-xs font-mono font-medium text-cyan-400">
+                      <span className="text-sm sm:text-xs font-mono font-medium text-cyan-400">
                         {api.responseTime}ms ping
                       </span>
                     ) : (
-                      <span className="text-xs font-mono font-medium text-zinc-500">
+                      <span className="text-sm sm:text-xs font-mono font-medium text-zinc-500">
                         No latency
                       </span>
                     )}
                   </div>
                 </div>
-              ))
+              ))}
+              </>
             )}
           </div>
         </div>
