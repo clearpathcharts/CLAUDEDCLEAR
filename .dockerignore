@@ -3,21 +3,19 @@ dist
 .git
 .github
 .cursor
-*.md
 .env
 .env.*
 !.env.example
 coverage
 tsc-out.txt
 build-local.txt
-data
+# Root runtime data only — do NOT use bare "data" (excludes src/**/data and breaks Vite)
+/data
 *.log
 .vscode
 .idea
-android
-ios
-agent-transcripts
-terminals
+/android
+/ios
 npm-debug.log*
 .DS_Store
 *.tsbuildinfo
