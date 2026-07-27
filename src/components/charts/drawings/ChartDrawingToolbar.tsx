@@ -162,7 +162,7 @@ export function ChartDrawingToolbar({
 
   return (
     <div
-      className={`pointer-events-auto flex max-h-[min(42vh,360px)] flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 shadow-lg backdrop-blur-md sm:max-h-[min(65vh,480px)] ${className}`}
+      className={`pointer-events-auto flex max-h-full flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 ${className}`}
       aria-label="Chart drawing tools"
     >
       <ToolButton title="Collapse drawing tools" onClick={() => setExpanded(false)}>

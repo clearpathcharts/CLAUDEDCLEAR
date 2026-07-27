@@ -9,14 +9,14 @@ interface ChartZoomControlsProps {
 }
 
 /** Zoom in / out / reset — shared by every lightweight-charts instance. */
-export function ChartZoomControls({ chartRef, className = '' }: ChartZoomControlsProps) {
+export function ChartZoomControls({ chartRef, className = 'flex-col' }: ChartZoomControlsProps) {
   const invoke = (action: (chart: IChartApi | null | undefined) => void) => {
     action(chartRef.current);
   };
 
   return (
     <div
-      className={`pointer-events-auto flex flex-col gap-1 rounded-lg border border-white/15 bg-black/85 p-1 shadow-lg backdrop-blur-md ${className}`}
+      className={`pointer-events-auto flex gap-1 rounded-lg border border-white/15 bg-black/85 p-1 shadow-lg backdrop-blur-md ${className}`}
       aria-label="Chart zoom controls"
     >
       <button

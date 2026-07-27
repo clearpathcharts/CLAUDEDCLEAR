@@ -394,9 +394,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           useDedicatedPatternPanel
                           activeIndicators={activeIndicators}
                         />
-                        <div className="brand-mask-forced !bottom-4 !right-6 hidden md:block">
-                          <img src="/logo.png" alt="Clear Path Markets Science" className="h-7 w-auto max-w-[140px] object-contain opacity-90 drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
-                        </div>
                       </div>
                     ) : (
                       <div
