@@ -40,6 +40,8 @@ function buildDrawing(
       return { id, kind: "fib", p1: points[0], p2: points[1], color };
     case "rectangle":
       return { id, kind: "rectangle", p1: points[0], p2: points[1], color };
+    case "ellipse":
+      return { id, kind: "ellipse", p1: points[0], p2: points[1], color };
     case "triangle":
       return { id, kind: "triangle", p1: points[0], p2: points[1], p3: points[2], color };
     case "channel":
@@ -54,6 +56,8 @@ function buildDrawing(
       };
     case "arrow":
       return { id, kind: "arrow", p1: points[0], p2: points[1], color };
+    case "measure":
+      return { id, kind: "measure", p1: points[0], p2: points[1], color };
     case "pitchfork":
       return { id, kind: "pitchfork", p1: points[0], p2: points[1], p3: points[2], color };
     case "gann":

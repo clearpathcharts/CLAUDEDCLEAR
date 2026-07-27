@@ -1,0 +1,33 @@
+# Cloud Run --source upload filter (takes precedence over .gitignore).
+# Keep tracked catalog JSON under data/*. Only drop runtime/private folders.
+.git
+.github
+.cursor
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.vscode/
+.idea/
+android/
+ios/
+secrets/
+*-firebase-adminsdk-*.json
+*.pem
+build-local.txt
+tsc-out.txt
+*.tsbuildinfo
+
+# Runtime-only root data (never ship secrets / local waitlists)
+/data/registrations/
+/data/intelligence/
+/data/private_accounts/
+/data/profiles/
+/data/affiliate/
+/data/badges/
+/data/keep-alive.log

@@ -6,15 +6,18 @@ coverage/
 *.log
 .env*
 !.env.example
-data/
+# Runtime/private root data only — catalog JSON under data/*.json IS tracked.
+# Do not use bare "data/" (breaks Cloud Run --source + src/**/data).
 secrets/
 *-firebase-adminsdk-*.json
 *.pem
-data/registrations/
-data/intelligence/
-data/private_accounts/
-data/profiles/
-data/affiliate/
+/data/registrations/
+/data/intelligence/
+/data/private_accounts/
+/data/profiles/
+/data/affiliate/
+/data/badges/
+/data/*.log
 
 # Generated at server startup by the SEO asset node -- never commit
 public/logo.png

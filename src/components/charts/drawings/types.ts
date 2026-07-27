@@ -12,10 +12,12 @@ export type DrawingToolId =
   | "vertical"
   | "fib"
   | "rectangle"
+  | "ellipse"
   | "triangle"
   | "channel"
   | "text"
   | "arrow"
+  | "measure"
   | "pitchfork"
   | "gann";
 
@@ -37,10 +39,12 @@ export type ChartDrawing =
   | (DrawingBase & { kind: "vertical"; time: number })
   | (DrawingBase & { kind: "fib"; p1: ChartPoint; p2: ChartPoint })
   | (DrawingBase & { kind: "rectangle"; p1: ChartPoint; p2: ChartPoint })
+  | (DrawingBase & { kind: "ellipse"; p1: ChartPoint; p2: ChartPoint })
   | (DrawingBase & { kind: "triangle"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
   | (DrawingBase & { kind: "channel"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
   | (DrawingBase & { kind: "text"; point: ChartPoint; text: string })
   | (DrawingBase & { kind: "arrow"; p1: ChartPoint; p2: ChartPoint })
+  | (DrawingBase & { kind: "measure"; p1: ChartPoint; p2: ChartPoint })
   | (DrawingBase & { kind: "pitchfork"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
   | (DrawingBase & { kind: "gann"; p1: ChartPoint; p2: ChartPoint });
 
@@ -51,10 +55,12 @@ export const TOOL_CLICKS: Record<Exclude<DrawingToolId, "select">, number> = {
   vertical: 1,
   fib: 2,
   rectangle: 2,
+  ellipse: 2,
   triangle: 3,
   channel: 3,
   text: 1,
   arrow: 2,
+  measure: 2,
   pitchfork: 3,
   gann: 2,
 };

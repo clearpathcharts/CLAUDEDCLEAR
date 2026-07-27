@@ -180,6 +180,40 @@ function drawOne(
       );
       break;
     }
+    case "ellipse": {
+      const a = toCoord(refs, d.p1);
+      const b = toCoord(refs, d.p2);
+      if (!a || !b) break;
+      const cx = (a.x + b.x) / 2;
+      const cy = (a.y + b.y) / 2;
+      const rx = Math.abs(b.x - a.x) / 2;
+      const ry = Math.abs(b.y - a.y) / 2;
+      if (rx < 1 || ry < 1) break;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case "measure": {
+      const a = toCoord(refs, d.p1);
+      const b = toCoord(refs, d.p2);
+      if (!a || !b) break;
+      strokeLine(ctx, a, b, color, 1.25, [5, 4]);
+      const dPrice = d.p2.price - d.p1.price;
+      const dBars = Math.round(Math.abs(d.p2.time - d.p1.time));
+      const pct = d.p1.price !== 0 ? (dPrice / d.p1.price) * 100 : 0;
+      const label = `${dPrice >= 0 ? "+" : ""}${dPrice.toFixed(Math.abs(dPrice) >= 10 ? 2 : 5)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%) · Δt ${dBars}s`;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = "bold 10px monospace";
+      ctx.fillText(label, (a.x + b.x) / 2 + 6, (a.y + b.y) / 2 - 6);
+      ctx.restore();
+      break;
+    }
     case "triangle": {
       const a = toCoord(refs, d.p1);
       const b = toCoord(refs, d.p2);
