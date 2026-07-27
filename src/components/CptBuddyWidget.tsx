@@ -78,6 +78,8 @@ export const CptBuddyWidget: React.FC = () => {
   const [setupStep, setSetupStep] = useState<"name" | "skill" | "done">("done");
   const [nameError, setNameError] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [shortViewport, setShortViewport] = useState(false);
+  const [narrowViewport, setNarrowViewport] = useState(false);
   const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -227,6 +229,22 @@ export const CptBuddyWidget: React.FC = () => {
     return () => window.removeEventListener("open-cpt-buddy", listener);
   }, [userName, setupStep, messages, memoryLoaded, facts]);
 
+  useEffect(() => {
+    const shortMq = window.matchMedia("(max-height: 520px)");
+    const narrowMq = window.matchMedia("(max-width: 767px)");
+    const apply = () => {
+      setShortViewport(shortMq.matches);
+      setNarrowViewport(narrowMq.matches);
+    };
+    apply();
+    shortMq.addEventListener("change", apply);
+    narrowMq.addEventListener("change", apply);
+    return () => {
+      shortMq.removeEventListener("change", apply);
+      narrowMq.removeEventListener("change", apply);
+    };
+  }, []);
+
   const handleNameSubmit = () => {
     const cleaned = sanitizeBuddyName(input);
     if (!cleaned) {
@@ -372,7 +390,18 @@ export const CptBuddyWidget: React.FC = () => {
   // (zIndex 200 vs the overlays' z-150) instead of being trapped inside the
   // app root's stacking context.
   return createPortal(
-    <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 200 }}>
+    <div
+      style={{
+        position: "fixed",
+        bottom: "max(12px, env(safe-area-inset-bottom))",
+        right: "max(12px, env(safe-area-inset-right))",
+        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left))" : "auto",
+        zIndex: 200,
+        display: "flex",
+        justifyContent: "flex-end",
+        pointerEvents: "none",
+      }}
+    >
       {/* Floating avatar button */}
       {!isOpen && (
         <button
@@ -380,8 +409,8 @@ export const CptBuddyWidget: React.FC = () => {
           onClick={handleOpen}
           aria-label="Open C.P.T. Personal Buddy"
           style={{
-            width: 64,
-            height: 64,
+            width: narrowViewport ? 52 : 64,
+            height: narrowViewport ? 52 : 64,
             borderRadius: "50%",
             border: "2px solid #FF1493",
             boxShadow: "0 0 20px rgba(255,20,147,0.6)",
@@ -389,6 +418,7 @@ export const CptBuddyWidget: React.FC = () => {
             cursor: "pointer",
             background: "#030307",
             padding: 0,
+            pointerEvents: "auto",
           }}
         >
           <img
@@ -399,12 +429,17 @@ export const CptBuddyWidget: React.FC = () => {
         </button>
       )}
 
-      {/* Chat panel */}
+      {/* Chat panel — shorter on phone landscape so charts stay usable */}
       {isOpen && (
         <div
           style={{
-            width: "min(320px, calc(100vw - 24px))",
-            maxHeight: "min(480px, calc(100dvh - 40px))",
+            width: narrowViewport ? "100%" : "min(320px, calc(100vw - 24px))",
+            maxWidth: "100%",
+            maxHeight: shortViewport
+              ? "min(260px, calc(100dvh - 24px))"
+              : narrowViewport
+                ? "min(55dvh, 420px)"
+                : "min(480px, calc(100dvh - 40px))",
             display: "flex",
             flexDirection: "column",
             background: "rgba(3,3,7,0.97)",
@@ -412,6 +447,7 @@ export const CptBuddyWidget: React.FC = () => {
             borderRadius: 16,
             boxShadow: "0 0 30px rgba(255,20,147,0.3)",
             overflow: "hidden",
+            pointerEvents: "auto",
           }}
         >
           {/* Header */}
@@ -466,7 +502,15 @@ export const CptBuddyWidget: React.FC = () => {
           </div>
 
           {/* Body */}
-          <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 12, minHeight: 200 }}>
+          <div
+            ref={scrollRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: 12,
+              minHeight: shortViewport ? 72 : narrowViewport ? 120 : 200,
+            }}
+          >
             {!memoryLoaded && (
               <div style={{ color: "#AAAAAA", fontSize: 12, fontStyle: "italic" }}>Waking up...</div>
             )}

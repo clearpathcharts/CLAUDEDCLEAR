@@ -26,7 +26,7 @@ export default function A11yPreferencesToggle() {
   }, [open]);
 
   return (
-    <div className="a11y-prefs-root fixed bottom-4 left-4 z-[9999] font-sans">
+    <div className="a11y-prefs-root fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-[90] font-sans md:bottom-4 md:left-4">
       {open && (
         <div
           id="a11y-prefs-dialog"
@@ -98,7 +98,7 @@ export default function A11yPreferencesToggle() {
         aria-expanded={open}
         aria-controls="a11y-prefs-dialog"
         aria-label="Open accessibility display settings"
-        className="flex h-12 items-center gap-2 rounded-full border-2 px-4 text-[10px] font-black uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02]"
+        className="flex h-10 items-center gap-1.5 rounded-full border-2 px-3 text-[9px] font-black uppercase tracking-widest shadow-lg transition-transform hover:scale-[1.02] md:h-12 md:gap-2 md:px-4 md:text-[10px]"
         style={{
           background: 'linear-gradient(135deg, var(--cpt-pink) 0%, var(--cpt-orange) 100%)',
           color: 'var(--cpt-cta-on-pink)',
@@ -106,8 +106,9 @@ export default function A11yPreferencesToggle() {
           boxShadow: '0 0 18px color-mix(in srgb, var(--cpt-orange) 45%, transparent)',
         }}
       >
-        <Settings2 size={16} aria-hidden="true" />
-        A11y
+        <Settings2 size={14} className="md:hidden" aria-hidden="true" />
+        <Settings2 size={16} className="hidden md:block" aria-hidden="true" />
+        <span className="md:inline">A11y</span>
         {(highContrast || reducedSensory) && (
           <span className="rounded-full bg-black/25 px-1.5 py-0.5 text-[8px] text-white">ON</span>
         )}
