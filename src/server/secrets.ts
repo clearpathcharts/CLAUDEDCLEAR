@@ -76,6 +76,10 @@ export function getMakeWebhookUrl(): string {
   return first(process.env.MAKE_WEBHOOK_URL);
 }
 
+export function getBufferAccessToken(): string {
+  return first(process.env.BUFFER_ACCESS_TOKEN);
+}
+
 export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
@@ -102,6 +106,7 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     SESSION_SECRET: Boolean(getSessionSecret()),
     BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
     MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
+    BUFFER_ACCESS_TOKEN: Boolean(getBufferAccessToken()),
     SQL_HOST: Boolean(clean(process.env.SQL_HOST)),
     FIREBASE_SERVICE_ACCOUNT: Boolean(clean(process.env.FIREBASE_SERVICE_ACCOUNT)),
     VITE_FIREBASE_API_KEY: Boolean(clean(process.env.VITE_FIREBASE_API_KEY) || clean(process.env.FIREBASE_WEB_API_KEY)),

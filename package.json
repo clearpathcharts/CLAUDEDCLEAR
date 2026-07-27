@@ -18,6 +18,7 @@
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "test:regional-hubs": "tsx scripts/regional-hubs.selftest.ts",
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
+    "test:social-os": "tsx scripts/social-os.selftest.ts",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",

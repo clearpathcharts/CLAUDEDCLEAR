@@ -84,6 +84,10 @@ import {
   verifyIntelligenceWebhookSecret,
 } from './src/server/intelligenceWebhookService';
 import {
+  createSocialOsRouter,
+  startSocialOsScheduler,
+} from './src/server/socialOs';
+import {
   moderateBodyFields,
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
@@ -1166,6 +1170,9 @@ async function startServer() {
     // Boolean presence only — never returns key material
     res.json({ secrets: getSecretPresenceReport() });
   });
+
+  // ClearPath Social OS — Buffer-style queue + Zapier/Make webhooks
+  app.use('/api/social-os', createSocialOsRouter());
 
   app.get('/api/status', async (req, res) => {
     try {
@@ -3022,6 +3029,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
+
+    try {
+      startSocialOsScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Social OS scheduler failed to start:', e?.message || e);
+    }
 
     try {
       if (firebaseWebClientConfigured()) {
