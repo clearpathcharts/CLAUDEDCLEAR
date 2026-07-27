@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
@@ -20,11 +20,12 @@ import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
-import { ChartDrawingToolbar, useChartDrawings } from "./drawings";
-import { DraggableChartToolDock } from "./DraggableChartToolDock";
-import { Crosshair, Scan, Radio, Focus, Pencil } from "lucide-react";
+import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
+
+/** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-07-27A";
 
 type Candle = {
   time: number;
@@ -157,11 +158,7 @@ export function LightweightCandles({
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
-  const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
-  /** Draw dock OFF by default — must never block chart cursor / crosshair. */
-  const [drawToolsOpen, setDrawToolsOpen] = useState(false);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -185,20 +182,6 @@ export function LightweightCandles({
   });
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
-
-  const drawings = useChartDrawings({
-    chartRef,
-    seriesRef: candleSeriesRef,
-    symbol: sym,
-    timeframe,
-    enabled: !embedMode && drawToolsOpen,
-    chartReadyKey,
-  });
-
-  useEffect(() => {
-    if (!drawToolsOpen) drawings.setActiveTool("select");
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when dock closes
-  }, [drawToolsOpen]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -292,7 +275,6 @@ export function LightweightCandles({
     });
 
     chartRef.current = chart;
-    candleSeriesRef.current = null;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -327,8 +309,6 @@ export function LightweightCandles({
       : rawCandleColors;
 
     const series = chart.addSeries(CandlestickSeries, vividCandles);
-    candleSeriesRef.current = series;
-    setChartReadyKey((k) => k + 1);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
@@ -899,7 +879,6 @@ export function LightweightCandles({
     return () => {
       active = false;
       chartRef.current = null;
-      candleSeriesRef.current = null;
       barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
@@ -939,27 +918,12 @@ export function LightweightCandles({
             : "none",
       }}
     >
-      {/* Chrome ABOVE the canvas — never covers candles or steals the crosshair */}
+      {/* Chrome ABOVE the canvas only — drawing toolbar removed from chart overlays */}
       {!embedMode && (
         <div
           className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"
           aria-label="Chart controls"
         >
-          <button
-            type="button"
-            onClick={() => setDrawToolsOpen((v) => !v)}
-            aria-pressed={drawToolsOpen}
-            aria-label={drawToolsOpen ? "Hide drawing tools" : "Show drawing tools"}
-            title="Drawing tools (opens a movable dock — keep it off the chart)"
-            className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 ${
-              drawToolsOpen
-                ? "border-[#00D9FF] bg-[#00D9FF]/15 text-[#00D9FF]"
-                : "border-white/15 text-zinc-300 hover:border-[#00D9FF]/50 hover:text-[#00D9FF]"
-            }`}
-          >
-            <Pencil size={12} />
-            Draw
-          </button>
           <button
             type="button"
             onClick={() => setCrosshairEnabled(!crosshairEnabled)}
@@ -970,6 +934,12 @@ export function LightweightCandles({
             <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
             <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
+          <span
+            className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            title="If you do not see this stamp on live, Cloud Run is still serving an old image"
+          >
+            {CHART_UI_BUILD_STAMP}
+          </span>
           <div className="ml-auto flex items-center gap-1">
             <button
               type="button"
@@ -983,27 +953,6 @@ export function LightweightCandles({
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
-      )}
-
-      {/* Draw dock only when asked — left side, never auto-over the price scale */}
-      {!embedMode && drawToolsOpen && (
-        <DraggableChartToolDock
-          storageKey={`cp_chart_tool_dock_v3:${sym}`}
-          label={`${sym} drawing tools`}
-          defaultPosition={{ x: 8, y: 160 }}
-          onClose={() => setDrawToolsOpen(false)}
-        >
-          <ChartDrawingToolbar
-            activeTool={drawings.activeTool}
-            onToolChange={drawings.setActiveTool}
-            drawColor={drawings.drawColor}
-            onColorChange={drawings.setDrawColor}
-            hint={drawings.hint}
-            canUndo={drawings.canUndo}
-            onUndo={drawings.undo}
-            onClear={drawings.clearAll}
-          />
-        </DraggableChartToolDock>
       )}
 
       <div
