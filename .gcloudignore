@@ -1,5 +1,5 @@
 # Cloud Run --source upload filter (takes precedence over .gitignore).
-# Must keep src/**/data (e.g. src/literacy/data/sentinelSources.ts).
+# Keep tracked catalog JSON under data/*. Only drop runtime/private folders.
 .git
 .github
 .cursor
@@ -16,8 +16,6 @@ coverage/
 .idea/
 android/
 ios/
-/data/
-/data/**
 secrets/
 *-firebase-adminsdk-*.json
 *.pem
@@ -25,11 +23,11 @@ build-local.txt
 tsc-out.txt
 *.tsbuildinfo
 
-# Explicit keep — never drop literacy / app data modules
-!src/
-!src/**/
-!src/**/data/
-!src/**/data/**
-!src/literacy/
-!src/literacy/data/
-!src/literacy/data/**
+# Runtime-only root data (never ship secrets / local waitlists)
+/data/registrations/
+/data/intelligence/
+/data/private_accounts/
+/data/profiles/
+/data/affiliate/
+/data/badges/
+/data/keep-alive.log

@@ -6,9 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
-# Root runtime JSON only — NEVER use bare "data/" (Cloud Run --source used to
-# treat .gitignore as upload filter and dropped src/literacy/data, breaking Vite).
-/data/
+# Runtime/private root data only — catalog JSON under data/*.json IS tracked.
+# Do not use bare "data/" (breaks Cloud Run --source + src/**/data).
 secrets/
 *-firebase-adminsdk-*.json
 *.pem
@@ -17,6 +16,8 @@ secrets/
 /data/private_accounts/
 /data/profiles/
 /data/affiliate/
+/data/badges/
+/data/*.log
 
 # Generated at server startup by the SEO asset node -- never commit
 public/logo.png

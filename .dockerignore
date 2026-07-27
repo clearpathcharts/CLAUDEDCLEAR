@@ -1,4 +1,4 @@
-# Docker build context — keep src/**/data; only drop root /data runtime folder.
+# Docker build context — keep catalog JSON under data/ for Vite imports.
 node_modules
 dist
 .git
@@ -10,8 +10,6 @@ dist
 coverage
 tsc-out.txt
 build-local.txt
-/data
-/data/**
 *.log
 .vscode
 .idea
@@ -21,8 +19,11 @@ npm-debug.log*
 .DS_Store
 *.tsbuildinfo
 
-# Explicit keep for Vite resolution of src/literacy/data/*
-!src
-!src/**
-!src/**/data
-!src/**/data/**
+# Runtime-only (not needed for image build)
+/data/registrations
+/data/intelligence
+/data/private_accounts
+/data/profiles
+/data/affiliate
+/data/badges
+/data/keep-alive.log
