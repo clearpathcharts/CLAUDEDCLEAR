@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
@@ -20,12 +20,13 @@ import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
+import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
 import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-07-27A";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-07-27C";
 
 type Candle = {
   time: number;
@@ -130,6 +131,8 @@ export function LightweightCandles({
   },
   embedMode = false,
   useDedicatedPatternPanel = false,
+  /** Publish drawing controls to the Pattern Scanner column toolbox (Charts tab). */
+  publishDrawingSession = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -154,10 +157,14 @@ export function LightweightCandles({
   embedMode?: boolean;
   /** When true, pattern readout lives in the left sidebar — no floating HUD on the chart. */
   useDedicatedPatternPanel?: boolean;
+  /** When true, this chart owns the left-column Drawing Tools panel. */
+  publishDrawingSession?: boolean;
 }) {
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
+  const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +189,47 @@ export function LightweightCandles({
   });
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
+  const registerDrawingSession = useRegisterChartDrawingSession();
+
+  // Drawings attach on the candle series (engine only — toolbar lives under Pattern Scanner).
+  const drawings = useChartDrawings({
+    chartRef,
+    seriesRef: candleSeriesRef,
+    symbol: sym,
+    timeframe,
+    enabled: !embedMode,
+    chartReadyKey,
+  });
+
+  useEffect(() => {
+    if (!publishDrawingSession || embedMode || !registerDrawingSession) return;
+    return registerDrawingSession({
+      symbol: sym,
+      timeframe,
+      activeTool: drawings.activeTool,
+      setActiveTool: drawings.setActiveTool,
+      drawColor: drawings.drawColor,
+      setDrawColor: drawings.setDrawColor,
+      hint: drawings.hint,
+      canUndo: drawings.canUndo,
+      undo: drawings.undo,
+      clearAll: drawings.clearAll,
+    });
+  }, [
+    publishDrawingSession,
+    embedMode,
+    registerDrawingSession,
+    sym,
+    timeframe,
+    drawings.activeTool,
+    drawings.drawColor,
+    drawings.hint,
+    drawings.canUndo,
+    drawings.setActiveTool,
+    drawings.setDrawColor,
+    drawings.undo,
+    drawings.clearAll,
+  ]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -275,6 +323,7 @@ export function LightweightCandles({
     });
 
     chartRef.current = chart;
+    candleSeriesRef.current = null;
 
     // Keep the candle series in the top ~70% of the chart ONLY when an oscillator
     // sub-pane is actually shown. With no oscillator active, candles use the full
@@ -309,6 +358,8 @@ export function LightweightCandles({
       : rawCandleColors;
 
     const series = chart.addSeries(CandlestickSeries, vividCandles);
+    candleSeriesRef.current = series;
+    setChartReadyKey((k) => k + 1);
 
     /**
      * Adds a line series to its own dedicated oscillator price scale, pinned to
@@ -879,6 +930,7 @@ export function LightweightCandles({
     return () => {
       active = false;
       chartRef.current = null;
+      candleSeriesRef.current = null;
       barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
@@ -918,7 +970,7 @@ export function LightweightCandles({
             : "none",
       }}
     >
-      {/* Chrome ABOVE the canvas only — drawing toolbar removed from chart overlays */}
+      {/* Chrome ABOVE the canvas only — drawing toolbox lives under Pattern Scanner */}
       {!embedMode && (
         <div
           className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"

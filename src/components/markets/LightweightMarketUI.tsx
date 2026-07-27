@@ -9,6 +9,7 @@ import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { PatternScannerPanel } from '../charts/PatternScannerPanel';
+import { ChartDrawingSessionProvider, ChartDrawingToolsPanel } from '../charts/drawings';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
@@ -185,66 +186,83 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   if (isBlackoutMode) {
     return createPortal(
-      <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
-        <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
-            <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Blackout Mode</span>
-            <span className="hidden md:inline text-zinc-600 font-mono text-[10px] uppercase truncate">
-              {primarySymbol ?? '—'} vs {compareSymbol ?? '—'} · {activeTimeframe}
-            </span>
+      <ChartDrawingSessionProvider>
+        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
+          <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
+              <span className="text-zinc-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Blackout Mode</span>
+              <span className="hidden md:inline text-zinc-600 font-mono text-[10px] uppercase truncate">
+                {primarySymbol ?? '—'} vs {compareSymbol ?? '—'} · {activeTimeframe}
+              </span>
+            </div>
+            <button
+              onClick={() => setIsBlackoutMode(false)}
+              className="shrink-0 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+            >
+              <span>Exit Blackout</span>
+              <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
+            </button>
           </div>
-          <button
-            onClick={() => setIsBlackoutMode(false)}
-            className="shrink-0 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-          >
-            <span>Exit Blackout</span>
-            <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
-          </button>
-        </div>
-        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
-          <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0">
-            <PatternScannerPanel
-              symbol={patternPanelSymbol || '—'}
-              timeframe={patternTimeframe}
-              compact
-            />
-          </div>
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2">
-          {[0, 1].map((slotIndex) => {
-            const sym = chartSlots[slotIndex]?.symbol ?? null;
-            const label = slotIndex === 0 ? 'Primary' : 'Compare';
-            return (
-              <div key={slotIndex} className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
-                <div className="shrink-0 px-3 py-2 border-b border-zinc-900 space-y-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{label} · {activeTimeframe}</span>
-                  <ChartSymbolSearch
-                    compact
-                    placeholder="Search your chart…"
-                    activeSymbol={sym}
-                    onSubmit={(s) => updateSlot(slotIndex, { symbol: resolveMarketAsset(s).value })}
-                  />
-                </div>
-                <div className="flex-1 min-h-0 relative">
-                  {sym ? (
-                    <LightweightCandles profileId={profile.id} isExpanded height={800} timeframe={patternTimeframe} symbol={sym} theme={chartTheme} blackoutMode useDedicatedPatternPanel activeIndicators={activeIndicators} />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs text-center px-6">
-                      Search your chart above — your symbol, your choice
-                    </div>
-                  )}
-                </div>
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+            <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0 flex-col gap-2">
+              <div className="min-h-0 flex-1">
+                <PatternScannerPanel
+                  symbol={patternPanelSymbol || '—'}
+                  timeframe={patternTimeframe}
+                  compact
+                />
               </div>
-            );
-          })}
+              <ChartDrawingToolsPanel compact />
+            </div>
+            <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2">
+            {[0, 1].map((slotIndex) => {
+              const sym = chartSlots[slotIndex]?.symbol ?? null;
+              const label = slotIndex === 0 ? 'Primary' : 'Compare';
+              return (
+                <div key={slotIndex} className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
+                  <div className="shrink-0 px-3 py-2 border-b border-zinc-900 space-y-2">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{label} · {activeTimeframe}</span>
+                    <ChartSymbolSearch
+                      compact
+                      placeholder="Search your chart…"
+                      activeSymbol={sym}
+                      onSubmit={(s) => updateSlot(slotIndex, { symbol: resolveMarketAsset(s).value })}
+                    />
+                  </div>
+                  <div className="flex-1 min-h-0 relative">
+                    {sym ? (
+                      <LightweightCandles
+                        profileId={profile.id}
+                        isExpanded
+                        height={800}
+                        timeframe={patternTimeframe}
+                        symbol={sym}
+                        theme={chartTheme}
+                        blackoutMode
+                        useDedicatedPatternPanel
+                        publishDrawingSession={Boolean(sym && sym === patternPanelSymbol)}
+                        activeIndicators={activeIndicators}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs text-center px-6">
+                        Search your chart above — your symbol, your choice
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            </div>
           </div>
         </div>
-      </div>,
+      </ChartDrawingSessionProvider>,
       document.body
     );
   }
 
   return (
+    <ChartDrawingSessionProvider>
     <div
       className="market-terminal-ui flex flex-col min-h-full w-full transition-all duration-1000"
       style={{ background: profile.bgTop }}
@@ -296,20 +314,24 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-1 flex flex-col lg:sticky lg:top-8 min-h-[520px]">
+            {/* Desktop: scanner + tools in left rail (tools always UNDER scanner) */}
+            <div className="hidden lg:flex lg:col-span-1 flex-col gap-4 lg:sticky lg:top-8 lg:self-start">
               <PatternScannerPanel
                 symbol={patternPanelSymbol || '—'}
                 timeframe={patternTimeframe}
               />
+              <ChartDrawingToolsPanel />
             </div>
 
             <div className="lg:col-span-3 space-y-6">
-              <div className="lg:hidden">
+              {/* Mobile: same stack — scanner then tools — never over candles */}
+              <div className="lg:hidden space-y-3">
                 <PatternScannerPanel
                   symbol={patternPanelSymbol || '—'}
                   timeframe={patternTimeframe}
                   compact
                 />
+                <ChartDrawingToolsPanel compact />
               </div>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
@@ -392,6 +414,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           symbol={slot.symbol}
                           theme={chartTheme}
                           useDedicatedPatternPanel
+                          publishDrawingSession={slot.symbol === patternPanelSymbol}
                           activeIndicators={activeIndicators}
                         />
                       </div>
@@ -428,5 +451,6 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
         ⚖ Legal Positioning — “Provides financial data visualization with optional user-controlled presentation adjustments for accessibility and visual clarity. The system does not evaluate, alter, or advise on financial decisions.”
       </div>
     </div>
+    </ChartDrawingSessionProvider>
   );
 };

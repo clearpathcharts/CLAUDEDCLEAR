@@ -33,7 +33,9 @@ function sanitizeDrawing(raw: unknown): ChartDrawing | null {
     case "ray":
     case "fib":
     case "rectangle":
+    case "ellipse":
     case "arrow":
+    case "measure":
     case "gann":
       if (!isPoint(d.p1) || !isPoint(d.p2)) return null;
       return { id: d.id, kind: d.kind, p1: d.p1, p2: d.p2, color };
