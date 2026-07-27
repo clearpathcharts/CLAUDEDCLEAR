@@ -1,24 +1,35 @@
-# Cloud Run --source upload rules (NOT .gitignore — bare "data/" would drop src/**/data)
+# Cloud Run --source upload filter (takes precedence over .gitignore).
+# Must keep src/**/data (e.g. src/literacy/data/sentinelSources.ts).
 .git
 .github
 .cursor
-node_modules
-dist
-build
-coverage
+node_modules/
+dist/
+build/
+coverage/
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
-.vscode
-.idea
-/android
-/ios
-/data
-secrets
+.vscode/
+.idea/
+android/
+ios/
+/data/
+/data/**
+secrets/
 *-firebase-adminsdk-*.json
 *.pem
 build-local.txt
 tsc-out.txt
 *.tsbuildinfo
+
+# Explicit keep — never drop literacy / app data modules
+!src/
+!src/**/
+!src/**/data/
+!src/**/data/**
+!src/literacy/
+!src/literacy/data/
+!src/literacy/data/**
