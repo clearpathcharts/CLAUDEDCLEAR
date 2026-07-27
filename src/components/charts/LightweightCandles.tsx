@@ -22,7 +22,7 @@ import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { ChartDrawingToolbar, useChartDrawings } from "./drawings";
 import { DraggableChartToolDock } from "./DraggableChartToolDock";
-import { Crosshair, Scan, Radio, Focus } from "lucide-react";
+import { Crosshair, Scan, Radio, Focus, Pencil } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
@@ -160,6 +160,8 @@ export function LightweightCandles({
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
+  /** Draw dock OFF by default — must never block chart cursor / crosshair. */
+  const [drawToolsOpen, setDrawToolsOpen] = useState(false);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,9 +191,14 @@ export function LightweightCandles({
     seriesRef: candleSeriesRef,
     symbol: sym,
     timeframe,
-    enabled: !embedMode,
+    enabled: !embedMode && drawToolsOpen,
     chartReadyKey,
   });
+
+  useEffect(() => {
+    if (!drawToolsOpen) drawings.setActiveTool("select");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when dock closes
+  }, [drawToolsOpen]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -921,27 +928,71 @@ export function LightweightCandles({
   const frameHeight = isExpanded ? "100%" : `${height}px`;
 
   return (
-    <>
-      {/* Floating tools — drag anywhere / park off-screen so candles stay clear */}
+    <div
+      className="flex w-full flex-col overflow-hidden rounded-[20px]"
+      style={{
+        height: frameHeight,
+        minHeight: isExpanded ? 320 : undefined,
+        boxShadow:
+          defaultTheme.physics.glowBlur > 0
+            ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
+            : "none",
+      }}
+    >
+      {/* Chrome ABOVE the canvas — never covers candles or steals the crosshair */}
       {!embedMode && (
-        <DraggableChartToolDock
-          storageKey={`cp_chart_tool_dock:${sym}`}
-          label={`${sym} chart tools`}
-          defaultPosition={{
-            x: 12,
-            y: 120 + (sym.charCodeAt(0) % 5) * 36,
-          }}
+        <div
+          className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"
+          aria-label="Chart controls"
         >
           <button
             type="button"
+            onClick={() => setDrawToolsOpen((v) => !v)}
+            aria-pressed={drawToolsOpen}
+            aria-label={drawToolsOpen ? "Hide drawing tools" : "Show drawing tools"}
+            title="Drawing tools (opens a movable dock — keep it off the chart)"
+            className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[9px] font-black uppercase tracking-wider transition-all active:scale-95 ${
+              drawToolsOpen
+                ? "border-[#00D9FF] bg-[#00D9FF]/15 text-[#00D9FF]"
+                : "border-white/15 text-zinc-300 hover:border-[#00D9FF]/50 hover:text-[#00D9FF]"
+            }`}
+          >
+            <Pencil size={12} />
+            Draw
+          </button>
+          <button
+            type="button"
             onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-            className="flex w-full items-center justify-center gap-1 rounded-md border border-white/15 bg-black/75 px-1.5 py-1.5 font-mono text-[8px] tracking-wider text-zinc-300 transition-all hover:border-[#00D9FF]/40"
+            className="flex h-8 items-center gap-1.5 rounded-md border border-white/15 px-2 font-mono text-[9px] tracking-wider text-zinc-300 transition-all hover:border-[#00D9FF]/40"
             title="Toggle Crosshair"
             id={`crosshair_toggle_${symbol}`}
           >
             <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-            <span>{crosshairEnabled ? "ON" : "OFF"}</span>
+            <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleFocusRecent}
+              aria-label="Focus recent bars"
+              title="Snap to recent price action"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00D9FF]/25 text-[#00D9FF] transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+            >
+              <Focus size={13} strokeWidth={2.5} />
+            </button>
+            <ChartZoomControls chartRef={chartRef} className="flex-row" />
+          </div>
+        </div>
+      )}
+
+      {/* Draw dock only when asked — left side, never auto-over the price scale */}
+      {!embedMode && drawToolsOpen && (
+        <DraggableChartToolDock
+          storageKey={`cp_chart_tool_dock_v3:${sym}`}
+          label={`${sym} drawing tools`}
+          defaultPosition={{ x: 8, y: 160 }}
+          onClose={() => setDrawToolsOpen(false)}
+        >
           <ChartDrawingToolbar
             activeTool={drawings.activeTool}
             onToolChange={drawings.setActiveTool}
@@ -952,33 +1003,16 @@ export function LightweightCandles({
             onUndo={drawings.undo}
             onClear={drawings.clearAll}
           />
-          <div className="my-0.5 h-px w-full bg-white/10" aria-hidden />
-          <button
-            type="button"
-            onClick={handleFocusRecent}
-            aria-label="Focus recent bars"
-            title="Snap to recent price action"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#00D9FF]/25 text-[#00D9FF] transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
-          >
-            <Focus size={13} strokeWidth={2.5} />
-          </button>
-          <ChartZoomControls chartRef={chartRef} />
         </DraggableChartToolDock>
       )}
 
       <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-[20px]"
+        className="relative min-h-0 w-full flex-1 overflow-hidden"
         style={{
-          height: frameHeight,
-          minHeight: isExpanded ? 320 : undefined,
           background: activeCustomTheme
             ? activeCustomTheme.background
             : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
-          boxShadow:
-            defaultTheme.physics.glowBlur > 0
-              ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
-              : "none",
         }}
       >
         {isLoading && !error && (
@@ -1064,7 +1098,7 @@ export function LightweightCandles({
           </button>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
