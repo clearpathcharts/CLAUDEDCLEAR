@@ -1,0 +1,24 @@
+# Cloud Run --source upload rules (NOT .gitignore — bare "data/" would drop src/**/data)
+.git
+.github
+.cursor
+node_modules
+dist
+build
+coverage
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.vscode
+.idea
+/android
+/ios
+/data
+secrets
+*-firebase-adminsdk-*.json
+*.pem
+build-local.txt
+tsc-out.txt
+*.tsbuildinfo
