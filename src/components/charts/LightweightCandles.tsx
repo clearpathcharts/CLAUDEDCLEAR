@@ -1020,8 +1020,9 @@ export function LightweightCandles({
           Patterns
         </button>
       )}
+      {/* Drawing tools: left rail — keeps candles clear in the center */}
       {!embedMode && (
-        <div className="absolute bottom-3 right-3 z-[60] flex max-w-[calc(100%-1.5rem)] items-end gap-1 sm:gap-1.5">
+        <div className="absolute left-2 top-12 z-[60] flex max-h-[calc(100%-5.5rem)] flex-col items-center">
           <ChartDrawingToolbar
             activeTool={drawings.activeTool}
             onToolChange={drawings.setActiveTool}
@@ -1032,6 +1033,11 @@ export function LightweightCandles({
             onUndo={drawings.undo}
             onClear={drawings.clearAll}
           />
+        </div>
+      )}
+      {/* Zoom / focus: bottom-right corner only */}
+      {!embedMode && (
+        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1 sm:gap-1.5">
           <button
             type="button"
             onClick={handleFocusRecent}
@@ -1047,9 +1053,7 @@ export function LightweightCandles({
       {!embedMode && (
         <button
           onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-          className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2 py-1.5 sm:px-2.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
-            !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
-          }`}
+          className="absolute left-14 top-3 z-40 flex items-center gap-1.5 rounded-lg border border-white/15 bg-black/75 px-2 py-1.5 font-mono text-[9px] tracking-wider text-zinc-300 shadow-lg backdrop-blur-sm transition-all hover:border-[#00D9FF]/40 hover:bg-black active:scale-95 sm:px-2.5"
           title="Toggle Crosshair Coordinates tracking"
           id={`crosshair_toggle_${symbol}`}
         >

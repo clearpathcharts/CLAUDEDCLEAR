@@ -38,7 +38,9 @@ function loadMarketSlots(): ChartLayoutSlot[] {
       if (Array.isArray(parsed) && parsed.length === MARKET_CHART_SLOT_COUNT) {
         const slots = parsed.map((slot: ChartLayoutSlot, i: number) => ({
           symbol: slot.symbol ?? null,
-          x: typeof slot.x === 'number' ? slot.x : 0,
+          // Horizontal drag offsets shoved charts into the right third of the page —
+          // always dock full-width; only vertical stacking uses y.
+          x: 0,
           y: typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
         }));
         return ensureMarketSlotsHaveSymbols(slots);
@@ -101,6 +103,22 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
+  // usePersistedLayout reads raw localStorage and skipped loadMarketSlots —
+  // zero any saved horizontal drift so charts stay full-width (not mid-page).
+  useEffect(() => {
+    saveChartSlots((prev) => {
+      if (!Array.isArray(prev) || prev.length !== MARKET_CHART_SLOT_COUNT) {
+        return loadMarketSlots();
+      }
+      if (prev.every((s) => (s?.x ?? 0) === 0)) return prev;
+      return prev.map((s, i) => ({
+        symbol: s?.symbol ?? null,
+        x: 0,
+        y: typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+      }));
+    });
+  }, [saveChartSlots]);
+
   const toggleIndicator = useCallback((abbr: string) => {
     setActiveIndicators((prev) =>
       prev.includes(abbr) ? prev.filter((i) => i !== abbr) : [...prev, abbr]
@@ -136,7 +154,9 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const updateSlot = useCallback(
     (index: number, patch: Partial<ChartLayoutSlot>) => {
       saveChartSlots((prev) =>
-        prev.map((slot, i) => (i === index ? { ...slot, ...patch } : slot))
+        prev.map((slot, i) =>
+          i === index ? { ...slot, ...patch, x: 0 } : { ...slot, x: 0 },
+        ),
       );
       if (index === 0 && patch.symbol) {
         onSelectMarketSymbol?.(patch.symbol);
@@ -336,8 +356,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     draggable={!isNarrowViewport}
                     width="100%"
                     zIndex={10 + idx}
-                    position={{ x: isNarrowViewport ? 0 : slot.x, y: isNarrowViewport ? 0 : slot.y }}
-                    onPositionChange={(pos) => updateSlot(idx, pos)}
+                    position={{ x: 0, y: isNarrowViewport ? 0 : slot.y }}
+                    onPositionChange={(pos) => updateSlot(idx, { x: 0, y: Math.max(0, pos.y) })}
                     className={`glass shadow-2xl ${isNarrowViewport ? '' : '!h-[500px]'}`}
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">

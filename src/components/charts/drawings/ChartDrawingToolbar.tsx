@@ -16,7 +16,7 @@ import {
   Undo2,
   Trash2,
   Pencil,
-  ChevronDown,
+  ChevronLeft,
 } from "lucide-react";
 import type { DrawingColor, DrawingToolId } from "./types";
 import { DRAWING_COLORS } from "./types";
@@ -113,10 +113,8 @@ export function ChartDrawingToolbar({
   className = "",
 }: ChartDrawingToolbarProps) {
   const isNarrow = useIsNarrow();
-  /** Phones start collapsed so the chart stays usable; desktop stays open. */
-  const [expanded, setExpanded] = useState(() =>
-    typeof window !== "undefined" ? !window.matchMedia("(max-width: 767px)").matches : true,
-  );
+  /** Always start collapsed — a left-rail pencil keeps the candle area clear. */
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (isNarrow) setExpanded(false);
@@ -164,11 +162,11 @@ export function ChartDrawingToolbar({
 
   return (
     <div
-      className={`pointer-events-auto flex max-h-[min(45vh,380px)] flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 shadow-lg backdrop-blur-md sm:max-h-[min(70vh,520px)] ${className}`}
+      className={`pointer-events-auto flex max-h-[min(42vh,360px)] flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 shadow-lg backdrop-blur-md sm:max-h-[min(65vh,480px)] ${className}`}
       aria-label="Chart drawing tools"
     >
       <ToolButton title="Collapse drawing tools" onClick={() => setExpanded(false)}>
-        <ChevronDown size={13} />
+        <ChevronLeft size={13} />
       </ToolButton>
 
       {hint ? (
