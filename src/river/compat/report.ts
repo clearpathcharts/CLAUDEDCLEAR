@@ -40,14 +40,14 @@ const STATIC_PATTERNS: Array<{
     code: "request.financial",
     severity: "error",
     regex: /\brequest\.financial\s*\(/,
-    message: "request.financial() is not supported in The River.",
+    message: "request.financial() is not supported in INDACREATOR.",
     hint: "Remove fundamental data calls or replace with static inputs.",
   },
   {
     code: "request.seed",
     severity: "error",
     regex: /\brequest\.seed\s*\(/,
-    message: "request.seed() is not supported in The River.",
+    message: "request.seed() is not supported in INDACREATOR.",
     hint: "Remove seeded randomness helpers.",
   },
   {
@@ -62,7 +62,7 @@ const STATIC_PATTERNS: Array<{
     severity: "warning",
     regex: /\bstrategy\.(entry|order|close|close_all|cancel)\s*\(/,
     message: "Strategy order functions are accepted but do not place live trades here.",
-    hint: "Safe for indicator overlays; order plumbing is a no-op in The River.",
+    hint: "Safe for indicator overlays; order plumbing is a no-op in INDACREATOR.",
   },
   {
     code: "label.new",
@@ -83,13 +83,13 @@ const STATIC_PATTERNS: Array<{
     severity: "info",
     regex: /\btable\.new\s*\(/,
     message: "table.new() is tolerated but tables are not rendered yet.",
-    hint: "Table output is ignored visually in The River.",
+    hint: "Table output is ignored visually in INDACREATOR.",
   },
   {
     code: "v4-study",
     severity: "warning",
     regex: /\bstudy\s*\(/,
-    message: "v4 study() detected — The River maps this to indicator().",
+    message: "v4 study() detected — INDACREATOR maps this to indicator().",
     hint: "Consider //@version=5 with indicator() for clearer intent.",
   },
   {
@@ -97,7 +97,7 @@ const STATIC_PATTERNS: Array<{
     severity: "info",
     regex: /(?<![\w.])tr(?![\w.])/,
     message: "Bare v4 tr may need ta.tr in strict Pine v5+ scripts.",
-    hint: "The River accepts bare tr as ta.tr, but TradingView v5 prefers ta.tr().",
+    hint: "INDACREATOR accepts bare tr as ta.tr, but TradingView v5 prefers ta.tr().",
   },
   {
     code: "input-v4",

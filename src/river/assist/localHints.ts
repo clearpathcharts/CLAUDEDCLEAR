@@ -5,7 +5,7 @@ import type { CompatIssue } from "../compat/report";
 const ERROR_HINTS: Array<{ match: RegExp; hint: string }> = [
   {
     match: /doesn't support the function '([^']+)'/,
-    hint: "Check The River docs for supported ta.* and math.* functions. Popular gaps: ta.vwap, ta.alma, ta.hma.",
+    hint: "Check INDACREATOR docs for supported ta.* and math.* functions. Popular gaps: ta.vwap, ta.alma, ta.hma.",
   },
   {
     match: /request\.|security/,
@@ -24,7 +24,7 @@ const ERROR_HINTS: Array<{ match: RegExp; hint: string }> = [
 const QUICK_FIXES: Array<{ match: RegExp; fix: string }> = [
   { match: /\bstudy\s*\(/, fix: "Rename study() → indicator() for Pine v5 clarity." },
   { match: /\bsecurity\s*\(/, fix: "Remove security() and use close (or open/high/low) from the chart." },
-  { match: /(?<![\w.])tr(?![\w.])/, fix: "Bare tr works in The River, but ta.tr() is clearer on v5+." },
+  { match: /(?<![\w.])tr(?![\w.])/, fix: "Bare tr works in INDACREATOR, but ta.tr() is clearer on v5+." },
   { match: /\/\/@version\s*=\s*4/, fix: "Consider migrating to //@version=5 — see Auto-migrate below." },
 ];
 
@@ -45,7 +45,7 @@ export function getLocalHints(source: string, errorMessage = "", issues: CompatI
   }
 
   if (!source.includes("//@version")) {
-    hints.add("Add //@version=5 at the top so The River picks the right parser mode.");
+    hints.add("Add //@version=5 at the top so INDACREATOR picks the right parser mode.");
   }
 
   if (source.includes("overlay=true") === false && source.includes("indicator(")) {

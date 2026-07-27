@@ -1472,7 +1472,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
         return res.json({ answer: siteHelp, newFacts: [] });
       }
       return res.json({
-        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, The River, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
+        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, INDACREATOR, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
       });
     }
 

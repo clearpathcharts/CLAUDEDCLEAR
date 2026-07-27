@@ -124,7 +124,7 @@ export default function RiverCatalogPanel({
     <div className="bg-white/5 border border-white/10 rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <FolderOpen size={18} className="text-[#00D9FF]" />
-        <h3 className="text-sm font-black uppercase tracking-wider text-white">The River Catalog</h3>
+        <h3 className="text-sm font-black uppercase tracking-wider text-white">INDACREATOR Catalog</h3>
         <span className="text-xs text-white/30 ml-auto">{count} filed</span>
         <button onClick={refresh} className="p-1.5 text-white/30 hover:text-[#00D9FF] transition-colors" title="Refresh">
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />

@@ -295,7 +295,7 @@ export class PineInterpreter {
           }
           // 'var' inside a function/block: Pine keeps per-instantiation state.
           // The River approximates it as a plain declaration and says so.
-          this.warnOnce("'var' inside a function body re-initializes on each call in The River (persistent local state isn't supported yet).");
+          this.warnOnce("'var' inside a function body re-initializes on each call in INDACREATOR (persistent local state isn't supported yet).");
         }
         const v = this.evalExpr(stmt.init);
         this.setVar(stmt.name, v, true);
@@ -763,18 +763,18 @@ export class PineInterpreter {
     // ---------------- explicit unsupported (honest failure)
     if (name.startsWith("request.") || name === "security") {
       throw new PineError(
-        `'${name}' pulls data from another symbol/timeframe, which The River can't do yet. Remove it or replace it with the chart's own series.`,
+        `'${name}' pulls data from another symbol/timeframe, which INDACREATOR can't do yet. Remove it or replace it with the chart's own series.`,
         call.line
       );
     }
 
     // ---------------- tolerated no-ops
     if (NOOP_FUNCTIONS.has(name)) {
-      this.warnOnce(`'${name}' is accepted but has no visual effect in The River yet.`);
+      this.warnOnce(`'${name}' is accepted but has no visual effect in INDACREATOR yet.`);
       return null;
     }
 
-    throw new PineError(`The River doesn't support the function '${name}' yet. It reports this honestly instead of guessing.`, call.line);
+    throw new PineError(`INDACREATOR doesn't support the function '${name}' yet. It reports this honestly instead of guessing.`, call.line);
   }
 
   // ---------------------------------------------------------------- inputs
@@ -868,7 +868,7 @@ export class PineInterpreter {
       }
       case "math.sum": return this.builtinTa("ta.sum", call, `math.sum:${call.siteId}`);
     }
-    throw new PineError(`The River doesn't support '${name}' yet.`, call.line);
+    throw new PineError(`INDACREATOR doesn't support '${name}' yet.`, call.line);
   }
 
   // -------------------------------------------------------------------- ta.*
@@ -1323,7 +1323,7 @@ export class PineInterpreter {
       }
     }
 
-    throw new PineError(`The River doesn't support '${name}' yet. It reports this honestly instead of guessing.`, call.line);
+    throw new PineError(`INDACREATOR doesn't support '${name}' yet. It reports this honestly instead of guessing.`, call.line);
   }
 
   /** ta.ema / ta.rma with Pine's SMA warm-up seed. */

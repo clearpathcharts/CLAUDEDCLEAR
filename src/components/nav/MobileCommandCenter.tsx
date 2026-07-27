@@ -28,7 +28,7 @@ interface MobileCommandCenterProps {
   onNavigate: (tab: string) => void;
   isAdmin: boolean;
   onLogout?: () => void;
-  /** Lean APK / installed PWA — CHARTS | RIVER | MENU */
+  /** Lean APK / installed PWA — CHARTS | INDACREATOR | MENU */
   lean?: boolean;
 }
 
@@ -87,7 +87,7 @@ const TOOLS_ITEMS: NavItem[] = [
   {
     id: "TheRiver",
     icon: Cpu,
-    label: "THE RIVER",
+    label: "INDACREATOR",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
@@ -227,7 +227,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             style={{ fontFamily: "'Cinzel', serif" }}
           >
             <Cpu className="w-4 h-4" />
-            <span>RIVER</span>
+            <span>INDACREATOR</span>
           </button>
         ) : (
           <>

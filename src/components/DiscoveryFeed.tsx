@@ -89,7 +89,7 @@ const CARDS: HomeCard[] = [
   },
   {
     id: 'river',
-    title: 'The River + River Genie',
+    title: 'INDACREATOR + River Genie',
     blurb:
       'Upload or paste Pine Script — or ask River Genie to draft it. Compile honestly, then apply your indicator on every chart.',
     tabId: 'TheRiver',
@@ -190,7 +190,7 @@ const CARDS: HomeCard[] = [
     id: 'cpt',
     title: 'C.P.T. Personal Buddy',
     blurb:
-      'Ask how to navigate the site, what a neuro chart profile does, how The River works, or get calm trading explanations.',
+      'Ask how to navigate the site, what a neuro chart profile does, how INDACREATOR works, or get calm trading explanations.',
     onClick: openCptBuddy,
     icon: MessageSquare,
     accent: '#FF1493',

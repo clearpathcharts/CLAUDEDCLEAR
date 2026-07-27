@@ -243,7 +243,7 @@ export default function RiverWorkstation() {
       await publishToPublicCatalog({
         name: state.compiled.title,
         author: 'Community',
-        description: `Imported via The River — Pine v${state.compiled.version}`,
+        description: `Imported via INDACREATOR — Pine v${state.compiled.version}`,
         pineSource: state.rawSource,
         pineVersion: state.compiled.version,
         tags: ['community'],
@@ -343,7 +343,7 @@ export default function RiverWorkstation() {
                   <span className="text-white/40 font-normal normal-case ml-2">({detectedLang.confidence} confidence)</span>
                 </p>
                 <p className="text-white/50 text-xs">
-                  Your code is not trapped here — The River can convert supported scripts to Pine and run them on your private charts.
+                  Your code is not trapped here — INDACREATOR can convert supported scripts to Pine and run them on your private charts.
                 </p>
                 {(detectedLang.language === 'mql4' || detectedLang.language === 'mql5') ? (
                   <button
