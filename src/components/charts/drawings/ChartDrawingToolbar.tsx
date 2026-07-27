@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   MousePointer2,
   TrendingUp,
@@ -15,6 +15,8 @@ import {
   Fan,
   Undo2,
   Trash2,
+  Pencil,
+  ChevronDown,
 } from "lucide-react";
 import type { DrawingColor, DrawingToolId } from "./types";
 import { DRAWING_COLORS } from "./types";
@@ -68,7 +70,7 @@ function ToolButton({
   danger?: boolean;
 }) {
   const base =
-    "flex h-8 w-8 items-center justify-center rounded-md border transition-all active:scale-95";
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-all active:scale-95";
   const tone = danger
     ? "border-red-500/30 text-red-400 hover:border-red-400/60 hover:bg-red-500/10"
     : active
@@ -85,6 +87,20 @@ function GroupDivider() {
   return <div className="my-0.5 h-px w-full bg-white/10" aria-hidden />;
 }
 
+function useIsNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return narrow;
+}
+
 export function ChartDrawingToolbar({
   activeTool,
   onToolChange,
@@ -96,6 +112,16 @@ export function ChartDrawingToolbar({
   onClear,
   className = "",
 }: ChartDrawingToolbarProps) {
+  const isNarrow = useIsNarrow();
+  /** Phones start collapsed so the chart stays usable; desktop stays open. */
+  const [expanded, setExpanded] = useState(() =>
+    typeof window !== "undefined" ? !window.matchMedia("(max-width: 767px)").matches : true,
+  );
+
+  useEffect(() => {
+    if (isNarrow) setExpanded(false);
+  }, [isNarrow]);
+
   const renderGroup = (group: ToolBtn["group"]) =>
     TOOLS.filter((t) => t.group === group).map((t) => (
       <ToolButton
@@ -108,11 +134,43 @@ export function ChartDrawingToolbar({
       </ToolButton>
     ));
 
+  const drawingActive = activeTool !== "select";
+
+  if (!expanded) {
+    return (
+      <div className={`pointer-events-auto flex flex-col items-center gap-1 ${className}`}>
+        {hint ? (
+          <div className="max-w-[72px] rounded bg-black/80 px-1 py-0.5 text-center text-[8px] font-mono uppercase leading-tight tracking-wide text-[#00D9FF]">
+            {hint}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          title="Drawing tools"
+          aria-label="Open drawing tools"
+          aria-expanded={false}
+          onClick={() => setExpanded(true)}
+          className={`flex h-9 w-9 items-center justify-center rounded-lg border bg-black/85 shadow-lg backdrop-blur-md transition-all active:scale-95 ${
+            drawingActive
+              ? "border-[#00D9FF] text-[#00D9FF] shadow-[0_0_12px_rgba(0,217,255,0.35)]"
+              : "border-white/15 text-[#00D9FF] hover:border-[#00D9FF]/60"
+          }`}
+        >
+          <Pencil size={14} strokeWidth={2.5} />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`pointer-events-auto flex max-h-[min(70vh,520px)] flex-col items-center gap-1 overflow-y-auto rounded-lg border border-white/15 bg-black/85 p-1 shadow-lg backdrop-blur-md ${className}`}
+      className={`pointer-events-auto flex max-h-[min(45vh,380px)] flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 shadow-lg backdrop-blur-md sm:max-h-[min(70vh,520px)] ${className}`}
       aria-label="Chart drawing tools"
     >
+      <ToolButton title="Collapse drawing tools" onClick={() => setExpanded(false)}>
+        <ChevronDown size={13} />
+      </ToolButton>
+
       {hint ? (
         <div className="mb-0.5 max-w-[72px] px-0.5 text-center text-[8px] font-mono uppercase leading-tight tracking-wide text-[#00D9FF]/90">
           {hint}

@@ -1021,7 +1021,7 @@ export function LightweightCandles({
         </button>
       )}
       {!embedMode && (
-        <div className="absolute bottom-3 right-3 z-[60] flex items-end gap-1.5">
+        <div className="absolute bottom-3 right-3 z-[60] flex max-w-[calc(100%-1.5rem)] items-end gap-1 sm:gap-1.5">
           <ChartDrawingToolbar
             activeTool={drawings.activeTool}
             onToolChange={drawings.setActiveTool}
@@ -1037,7 +1037,7 @@ export function LightweightCandles({
             onClick={handleFocusRecent}
             aria-label="Focus recent bars"
             title="Snap to recent price action"
-            className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00D9FF]/25 bg-black/85 text-[#00D9FF] shadow-lg backdrop-blur-md transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#00D9FF]/25 bg-black/85 text-[#00D9FF] shadow-lg backdrop-blur-md transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
           >
             <Focus size={13} strokeWidth={2.5} />
           </button>
@@ -1047,14 +1047,15 @@ export function LightweightCandles({
       {!embedMode && (
         <button
           onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-          className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2.5 py-1.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
+          className={`absolute z-40 bg-black/75 backdrop-blur-sm hover:bg-black text-[9px] px-2 py-1.5 sm:px-2.5 rounded-lg border border-white/15 hover:border-[#00D9FF]/40 transition-all flex items-center gap-1.5 cursor-pointer text-zinc-300 font-mono tracking-wider select-none shadow-lg active:scale-95 ${
             !hidePatternChrome && showFormingWatch ? 'top-3 left-3' : 'top-3 right-3'
           }`}
           title="Toggle Crosshair Coordinates tracking"
           id={`crosshair_toggle_${symbol}`}
         >
           <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
-          <span>{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
+          <span className="sm:hidden">{crosshairEnabled ? "ON" : "OFF"}</span>
+          <span className="hidden sm:inline">{crosshairEnabled ? "CROSSHAIR: ON" : "CROSSHAIR: OFF"}</span>
         </button>
       )}
     </div>

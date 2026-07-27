@@ -88,6 +88,18 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   );
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
+  /** Phones: stack charts in document flow — absolute drag panels crush Chrome mobile. */
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const apply = () => setIsNarrowViewport(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   const toggleIndicator = useCallback((abbr: string) => {
     setActiveIndicators((prev) =>
@@ -218,16 +230,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       style={{ background: profile.bgTop }}
     >
       <div
-        className="flex items-center justify-between px-8 py-4 border-b glass"
+        className="flex items-center justify-between px-3 py-3 border-b glass sm:px-8 sm:py-4"
         style={{
           backgroundColor: 'rgba(0,0,0,0.5)',
           borderColor: `${profile.borderB}22`,
         }}
       >
-        <div className="flex items-center space-x-6">
+        <div className="flex min-w-0 items-center space-x-3 sm:space-x-6">
           <BackToDashboard onBack={onBack} color={profile.text} />
-          <div className="h-6 w-[1px]" style={{ backgroundColor: `${profile.borderA}22` }} />
-          <h1 className="text-2xl font-black tracking-tighter uppercase italic" style={{ color: profile.text }}>
+          <div className="h-6 w-[1px] shrink-0" style={{ backgroundColor: `${profile.borderA}22` }} />
+          <h1 className="truncate text-lg font-black tracking-tighter uppercase italic sm:text-2xl" style={{ color: profile.text }}>
             MARKET <span style={{ color: profile.borderA }}>TERMINAL</span>
           </h1>
         </div>
@@ -236,13 +248,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
         </p>
       </div>
 
-      <div className="flex-1 p-8" style={{ background: '#000000' }}>
-        <div className="max-w-7xl mx-auto w-full space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-indigo-500/20 pb-6">
-            <h1 className="text-3xl font-black tracking-tighter uppercase italic border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] px-4 py-2 rounded-lg" style={{ color: profile.text }}>
+      <div className="flex-1 p-3 sm:p-8" style={{ background: '#000000' }}>
+        <div className="max-w-7xl mx-auto w-full space-y-4 sm:space-y-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-indigo-500/20 pb-4 sm:gap-4 sm:pb-6">
+            <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase italic border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] px-3 py-2 rounded-lg sm:px-4" style={{ color: profile.text }}>
               CLEAR PATH <span style={{ color: profile.borderA }}>COMMAND TERMINAL</span>
             </h1>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2 sm:space-x-4 sm:gap-0">
               <button
                 onClick={() => setIsBlackoutMode(true)}
                 className="px-4 py-1 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-white hover:text-black transition-colors text-[10px] font-black uppercase tracking-widest text-zinc-400 group flex items-center gap-2"
@@ -250,7 +262,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
                 BLACKOUT MODE
               </button>
-              <div className="px-4 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
+              <div className="hidden sm:block px-4 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
                 Your charts · drag to move
               </div>
             </div>
@@ -300,23 +312,33 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               />
 
               <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
-                Three chart slots — all empty until you search. Grab the handle on any chart and drag it anywhere in this workspace.
+                {isNarrowViewport
+                  ? 'Three chart slots — search a symbol to load. Charts stack for phone screens.'
+                  : 'Three chart slots — all empty until you search. Grab the handle on any chart and drag it anywhere in this workspace.'}
               </p>
 
               <div
                 id="master-chart-stack"
-                className="multi-chart-container relative w-full"
-                style={{ minHeight: canvasMinHeight }}
+                className={
+                  isNarrowViewport
+                    ? 'flex w-full flex-col gap-4'
+                    : 'multi-chart-container relative w-full'
+                }
+                style={isNarrowViewport ? undefined : { minHeight: canvasMinHeight }}
               >
-                {chartSlots.map((slot, idx) => (
+                {chartSlots.map((slot, idx) => {
+                  const chartBodyH = isNarrowViewport ? 300 : 452;
+                  const candleH = isNarrowViewport ? 288 : 440;
+                  return (
                   <DraggableChartPanel
                     key={`market-chart-${idx}`}
-                    mode="absolute"
+                    mode={isNarrowViewport ? 'static' : 'absolute'}
+                    draggable={!isNarrowViewport}
                     width="100%"
                     zIndex={10 + idx}
-                    position={{ x: slot.x, y: slot.y }}
+                    position={{ x: isNarrowViewport ? 0 : slot.x, y: isNarrowViewport ? 0 : slot.y }}
                     onPositionChange={(pos) => updateSlot(idx, pos)}
-                    className="!h-[500px] glass shadow-2xl"
+                    className={`glass shadow-2xl ${isNarrowViewport ? '' : '!h-[500px]'}`}
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">
                         <ChartSymbolSearch
@@ -342,22 +364,25 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     }
                   >
                     {slot.symbol ? (
-                      <div className="flex-1 h-[452px] relative">
+                      <div className="relative flex-1" style={{ height: chartBodyH }}>
                         <LightweightCandles
                           profileId={profile.id}
-                          height={440}
+                          height={candleH}
                           timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}
                           useDedicatedPatternPanel
                           activeIndicators={activeIndicators}
                         />
-                        <div className="brand-mask-forced !bottom-4 !right-6">
+                        <div className="brand-mask-forced !bottom-4 !right-6 hidden md:block">
                           <img src="/logo.png" alt="Clear Path Markets Science" className="h-7 w-auto max-w-[140px] object-contain opacity-90 drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
                         </div>
                       </div>
                     ) : (
-                      <div className="h-[452px] flex flex-col items-center justify-center gap-3 px-8 text-center border-t border-dashed border-white/10 bg-black/40">
+                      <div
+                        className="flex flex-col items-center justify-center gap-3 px-6 text-center border-t border-dashed border-white/10 bg-black/40 sm:px-8"
+                        style={{ height: chartBodyH }}
+                      >
                         <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">
                           Chart slot {idx + 1} — empty
                         </span>
@@ -367,7 +392,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                       </div>
                     )}
                   </DraggableChartPanel>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
