@@ -16,6 +16,9 @@ import {
   Compass
 } from "lucide-react";
 import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
+import { useAuth } from "../contexts/FirebaseContext";
+import { FOUNDER_EMAIL, isFounderEmail } from "../lib/founder";
+import { auth } from "../firebase";
 
 interface ApiStatusItem {
   name: string;
@@ -36,6 +39,10 @@ interface BuildErrorItem {
 }
 
 export default function MarketDiagnostics() {
+  const { user } = useAuth();
+  const founderOk =
+    isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
+
   const [apiStatuses, setApiStatuses] = useState<ApiStatusItem[]>([]);
   const [buildErrors, setBuildErrors] = useState<BuildErrorItem[]>([]);
   const [loadingApis, setLoadingApis] = useState(false);
@@ -43,6 +50,7 @@ export default function MarketDiagnostics() {
   const [lastCheck, setLastCheck] = useState<string>("");
 
   const fetchLiveDiagnostics = async () => {
+    if (!founderOk) return;
     setLoadingApis(true);
     try {
       const res = await fetch("/api/status");
@@ -59,6 +67,7 @@ export default function MarketDiagnostics() {
   };
 
   const fetchBuildErrors = async () => {
+    if (!founderOk) return;
     try {
       const res = await fetch("/api/build-errors");
       if (res.ok) {
@@ -70,11 +79,27 @@ export default function MarketDiagnostics() {
     }
   };
 
-  usePageAutoUpdate(fetchLiveDiagnostics, { intervalMs: 15_000 });
+  usePageAutoUpdate(fetchLiveDiagnostics, { intervalMs: 15_000, enabled: founderOk });
 
   useEffect(() => {
+    if (!founderOk) return;
     void fetchBuildErrors();
-  }, []);
+  }, [founderOk]);
+
+  if (!founderOk) {
+    return (
+      <div className="min-h-full flex items-center justify-center p-8 font-sans" style={{ backgroundColor: '#09090b' }}>
+        <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-zinc-950 p-8 text-center space-y-4">
+          <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
+          <h1 className="text-xl font-black uppercase tracking-widest text-white">Diagnostics Locked</h1>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            This console is restricted to the ClearPath founder account
+            (<span className="font-mono text-[#00FFFF]"> {FOUNDER_EMAIL}</span>).
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBadge = (status: ApiStatusItem["status"]) => {
     const base =

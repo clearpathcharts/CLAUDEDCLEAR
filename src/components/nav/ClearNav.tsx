@@ -9,9 +9,8 @@ import {
   Home,
   LogOut,
   Network,
-
   Newspaper,
-
+  Shield,
   Terminal,
   Users,
 } from "lucide-react";
@@ -20,7 +19,10 @@ import { MobileCommandCenter } from "./MobileCommandCenter";
 interface ClearNavProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
-  isAdmin: boolean;
+  /** @deprecated Prefer isFounder for Diagnostics / CEO — kept for call-site compat */
+  isAdmin?: boolean;
+  /** Founder-only tools: CEO Dashboard + Diagnostics */
+  isFounder?: boolean;
   onLogout?: () => void;
   /** Lean APK / installed PWA — trading-focused nav only */
   lean?: boolean;
@@ -35,10 +37,12 @@ interface NavItem {
 export const ClearNav: React.FC<ClearNavProps> = ({
   activeTab,
   onNavigate,
-  isAdmin,
+  isAdmin = false,
+  isFounder = false,
   onLogout,
   lean = false,
 }) => {
+  void isAdmin; // legacy — Diagnostics/CEO use isFounder only
   const primaryNavItems: NavItem[] = [
     {
       id: "Discovery",
@@ -90,8 +94,13 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "AFFILIATE",
     },
 
-    ...(isAdmin
+    ...(isFounder
       ? [
+          {
+            id: "CeoDashboard",
+            icon: Shield,
+            label: "CEO DASHBOARD",
+          },
           {
             id: "Diagnostics",
             icon: Activity,
@@ -149,6 +158,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     const isPink =
       item.id === "Biography" ||
       item.id === "Diagnostics" ||
+      item.id === "CeoDashboard" ||
       item.id === "AffiliateNetwork";
 
     const isCyan =
@@ -258,7 +268,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
         <MobileCommandCenter
           activeTab={activeTab}
           onNavigate={onNavigate}
-          isAdmin={isAdmin}
+          isFounder={isFounder}
           onLogout={onLogout}
           lean={lean}
         />

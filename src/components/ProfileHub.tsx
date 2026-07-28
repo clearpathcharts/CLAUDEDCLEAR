@@ -4,6 +4,7 @@ import TermsAndConditions from "./TermsAndConditions";
 import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
 import { saveProfileToServer, loadProfileFromServer } from "../api/profileApi";
+import { isFounderEmail } from "../lib/founder";
 
 const MarketDiagnostics = lazy(() => import("./MarketDiagnostics"));
 
@@ -797,8 +798,8 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </button>
         </div>
 
-        {/* CEO PRIVATE BACK-END DIAGNOSTICS */}
-        {(user?.email === "forexanarchy@gmail.com" || user?.email === "creator@clearpatcharge.com") && (
+        {/* CEO PRIVATE BACK-END DIAGNOSTICS — founder only (same gate as CEO Dashboard) */}
+        {isFounderEmail(user?.email) && (
           <div className="bg-gradient-to-br from-neutral-950 to-neutral-900 border border-pink-500/30 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden text-left shadow-[0_0_25px_rgba(255,0,127,0.15)] animate-none">
             <div className="absolute top-0 right-0 bg-pink-500/10 text-[#FF007F] font-mono text-[9px] font-bold py-1 px-3 rounded-bl-xl border-l border-b border-pink-500/20 tracking-widest uppercase">
               🔒 CONFIDENTIAL // EXECUTIVE VIEW
