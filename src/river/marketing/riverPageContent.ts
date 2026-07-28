@@ -8,9 +8,9 @@ export const RIVER_PAGE_CONTENT = {
 
   hero: {
     eyebrow: "ClearPath AI Coding System",
-    title: "The River",
+    title: "INDACREATOR",
     subtitle:
-      "Import Pine Script from TradingView — or describe what you want. River Genie writes the code, The River compiles it honestly, and one click applies it to every chart.",
+      "Import Pine Script from TradingView — or describe what you want. River Genie writes the code, INDACREATOR compiles it honestly, and one click applies it to every chart.",
     badge: "Pine Script v4 / v5 / v6 · River Genie AI",
 
     videos: {
@@ -49,12 +49,12 @@ export const RIVER_PAGE_CONTENT = {
   ],
 
   discovery: {
-    title: "The River + River Genie",
+    title: "INDACREATOR + River Genie",
     subtitle: "Build custom Pine indicators with AI — compile and apply to every chart.",
-    cta: "Open The River",
+    cta: "Open INDACREATOR",
   },
 
-  /** Public trust warning — always visible on The River workstation. */
+  /** Public trust warning — always visible on the INDACREATOR workstation. */
   honestLimits: {
     title: "Honest limits",
     tagline: "Trust is the moat",
@@ -71,7 +71,7 @@ export const RIVER_PAGE_CONTENT = {
       "This is a strategy bot — we import the signal math, not live orders.",
     ],
     closing:
-      "That beats platforms that pretend full compatibility and break on bar 2. The River reports honestly — never fake success.",
+      "That beats platforms that pretend full compatibility and break on bar 2. INDACREATOR reports honestly — never fake success.",
   },
 } as const;
 

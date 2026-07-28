@@ -26,7 +26,7 @@ export function suggestPineMigration(source: string): PineMigrationResult {
   if (/\bsecurity\s*\(/.test(out)) {
     out = out.replace(
       /\bsecurity\s*\([^)]*\)/g,
-      "close /* TODO: security() removed — The River uses chart close */",
+      "close /* TODO: security() removed — INDACREATOR uses chart close */",
     );
     changes.push("Replaced security() calls with close (review manually).");
   }

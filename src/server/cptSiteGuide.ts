@@ -7,7 +7,7 @@
 export const CPT_SITE_GUIDE = `
 === CLEARPATH SITE GUIDE (USE THIS WHEN THE USER ASKS HOW TO USE THE SITE) ===
 
-You are also the in-app site guide for ClearPath Trader. When someone asks how to navigate, where something is, what a page does, how to use Charts / neuro profiles / The River / Education / Literacy OS / Encyclopedias / Memberships / C.P.T. itself, answer from this guide first. Give clear step-by-step directions. Prefer short numbered steps. Name the exact top-nav or menu labels the user will see.
+You are also the in-app site guide for ClearPath Trader. When someone asks how to navigate, where something is, what a page does, how to use Charts / neuro profiles / INDACREATOR / Education / Literacy OS / Encyclopedias / Memberships / C.P.T. itself, answer from this guide first. Give clear step-by-step directions. Prefer short numbered steps. Name the exact top-nav or menu labels the user will see.
 
 If they ask "where am I supposed to go?" or "I'm lost," start with the top navigation overview, then ask what they want to do (charts, learn, code an indicator, memberships, etc.).
 
@@ -15,7 +15,7 @@ If they ask "where am I supposed to go?" or "I'm lost," start with the top navig
 Main bar items (left to right style):
 1. HOME — Discovery feed / terminal desktop. Hub tiles for Board, encyclopedias, education, and opening C.P.T.
 2. Y.W.C. — "Yours / World / Community" hub (community and yours content).
-3. THE RIVER — Pine Script workstation: upload or paste indicator code, compile it, apply it to charts.
+3. INDACREATOR — Pine Script workstation: upload or paste indicator code, compile it, apply it to charts. (Formerly called The River; if someone says "The River," guide them to INDACREATOR.)
 4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
 5. NEWS — Market / platform news feed.
 6. MEMBERSHIPS — Plans and membership options.
@@ -33,7 +33,7 @@ Also available (more / secondary / mobile command center):
 Direct URLs the user can open:
 - Home / terminal: /
 - Charts: open CHARTS from the nav (Strictly Charts tab)
-- The River: open THE RIVER from the nav
+- INDACREATOR: open INDACREATOR from the nav
 - Encyclopedia of Finance: /encyclopedia
 - Encyclopedia of Indicators: /indicators
 - ClearPath Education: /education
@@ -75,8 +75,8 @@ When asked "which neuro chart should I use?":
 
 Also mention: chart themes are presentation only. They do not change market data or give trading advice.
 
---- THE RIVER (how to use it) ---
-The River is ClearPath's Pine Script workstation. Path: top nav → THE RIVER.
+--- INDACREATOR (how to use it) ---
+INDACREATOR is ClearPath's Pine Script workstation. Path: top nav → INDACREATOR.
 
 What it does:
 - Lets the user upload a .pine / text file or paste Pine Script v5 indicator code.
@@ -87,15 +87,15 @@ What it does:
 - **River Genie** (AI co-pilot panel on the right): ask it to build a custom indicator, fix compile errors, or recommend scripts. It writes Pine in \`\`\`pine blocks; user clicks "Use in Workstation" or "Compile & Apply" to load it on charts.
 
 Typical steps to teach:
-1. Open THE RIVER from the top nav.
+1. Open INDACREATOR from the top nav.
 2. Drag-and-drop a Pine file, choose a file, or paste code into the workstation.
 3. Wait for compile. If it fails, read the error line — fix the script and try again.
 4. When compiled successfully, review / adjust inputs if shown.
-5. Apply / activate the indicator so it becomes the active River indicator for charts.
+5. Apply / activate the indicator so it becomes the active INDACREATOR indicator for charts.
 6. Go to CHARTS to see it in the chart workspace.
-7. To remove it, use the clear / remove active indicator control in The River.
+7. To remove it, use the clear / remove active indicator control in INDACREATOR.
 
-If compile fails: stay calm, show the error message idea, suggest checking //@version=5, indicator() vs strategy() expectations, and syntax. Do not invent fake Pine APIs. If unsure whether a Pine feature is supported yet, say The River's compiler is growing and some advanced Pine features may not compile yet.
+If compile fails: stay calm, show the error message idea, suggest checking //@version=5, indicator() vs strategy() expectations, and syntax. Do not invent fake Pine APIs. If unsure whether a Pine feature is supported yet, say INDACREATOR's compiler is growing and some advanced Pine features may not compile yet.
 
 --- CLEARPATH EDUCATION ---
 Open CLEARPATH EDUCATION from the menu (or /education).
@@ -125,7 +125,7 @@ Open ENCYCLOPEDIA OF INDICATORS (or /indicators).
 --- HOW TO ANSWER SITE QUESTIONS ---
 - Lead with where to click (exact label).
 - Then 3–6 short steps.
-- Offer one follow-up: "Want me to walk you through Charts, The River, or Education next?"
+- Offer one follow-up: "Want me to walk you through Charts, INDACREATOR, or Education next?"
 - Never invent menu names that are not in this guide.
 - Never claim you can click buttons for the user — you guide; they navigate.
 - If a feature is behind sign-in and you are unsure, say they may need to be signed in and check PROFILE / Memberships.
@@ -137,19 +137,19 @@ Open ENCYCLOPEDIA OF INDICATORS (or /indicators).
 export function offlineSiteGuideAnswer(question: string): string | null {
   const q = question.toLowerCase();
   const wantsNav =
-    /how (do i|to) (get|go|find|open|use|navigate)|where (is|do|can)|lost|menu|navigation|site guide|what (is|are) (the )?(river|charts|encyclopedia|education|membership)/i.test(
+    /how (do i|to) (get|go|find|open|use|navigate)|where (is|do|can)|lost|menu|navigation|site guide|what (is|are) (the )?(river|indacreator|charts|encyclopedia|education|membership)/i.test(
       question
     ) ||
-    /\b(the river|neuro|adhd|dyslexia|autism|chart profile|encyclopedia|education|membership|sentinel|y\.?w\.?c)\b/i.test(
+    /\b(the river|indacreator|neuro|adhd|dyslexia|autism|chart profile|encyclopedia|education|membership|sentinel|y\.?w\.?c)\b/i.test(
       q
     );
 
   if (!wantsNav) return null;
 
-  if (/river|pine/.test(q)) {
+  if (/river|indacreator|pine/.test(q)) {
     return [
-      "Here's how to use The River:",
-      "1. Tap THE RIVER in the top navigation.",
+      "Here's how to use INDACREATOR:",
+      "1. Tap INDACREATOR in the top navigation.",
       "2. Upload a Pine Script file, or paste your //@version=5 indicator code.",
       "3. Wait for it to compile. If there's an error, fix that line and try again.",
       "4. Adjust inputs if shown, then apply/activate the indicator.",
@@ -219,7 +219,7 @@ export function offlineSiteGuideAnswer(question: string): string | null {
   return [
     "Here's how to get around ClearPath:",
     "• HOME — main hub / discovery",
-    "• THE RIVER — upload or paste Pine Script indicators",
+    "• INDACREATOR — upload or paste Pine Script indicators",
     "• CHARTS — live charts + Neuro-Adaptive Chart Profiles",
     "• NEWS — updates feed",
     "• MEMBERSHIPS — plans",
@@ -229,6 +229,6 @@ export function offlineSiteGuideAnswer(question: string): string | null {
     "• ENCYCLOPEDIA OF INDICATORS — /indicators",
     "• C.P.T. Buddy — that's me; tap the buddy icon anytime",
     "",
-    "What do you want to do first: Charts, The River, Education, Literacy OS, or an Encyclopedia?",
+    "What do you want to do first: Charts, INDACREATOR, Education, Literacy OS, or an Encyclopedia?",
   ].join("\n");
 }

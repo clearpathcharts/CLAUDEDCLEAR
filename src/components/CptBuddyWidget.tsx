@@ -42,7 +42,7 @@ const MAX_NAME_WORDS = 4;
 const SUGGESTED_PROMPTS = [
   "How do I get around the site?",
   "Explain neuro chart profiles",
-  "How do I use The River?",
+  "How do I use INDACREATOR?",
   "Where is ClearPath Education?",
 ] as const;
 
@@ -215,8 +215,8 @@ export const CptBuddyWidget: React.FC = () => {
         role: "assistant",
         content:
           facts.length > 0
-            ? `Welcome back, ${userName}! Good to see you again. Ask me about Four Up Three Down, navigating the site, neuro chart profiles, The River, Education, or the Encyclopedias — I remember our past conversations.`
-            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. I can teach Four Up Three Down, help you navigate ClearPath (Charts, The River, Education, Encyclopedias), and explain the neurodivergent chart profiles. Ask me anything.`,
+            ? `Welcome back, ${userName}! Good to see you again. Ask me about Four Up Three Down, navigating the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I remember our past conversations.`
+            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. I can teach Four Up Three Down, help you navigate ClearPath (Charts, INDACREATOR, Education, Encyclopedias), and explain the neurodivergent chart profiles. Ask me anything.`,
       };
       setMessages([greeting]);
     }
@@ -260,7 +260,7 @@ export const CptBuddyWidget: React.FC = () => {
       setSetupStep("done");
       const intro: ChatMessage = {
         role: "assistant",
-        content: `Great to meet you, ${cleaned}! I'll explain things at a ${skillLevel} level. Ask me about trading, how to get around the site, neuro chart profiles, The River, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
+        content: `Great to meet you, ${cleaned}! I'll explain things at a ${skillLevel} level. Ask me about trading, how to get around the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
       };
       setMessages([intro]);
       void saveMemory({ userName: cleaned, skillLevel, facts, messages: [intro] });
@@ -275,7 +275,7 @@ export const CptBuddyWidget: React.FC = () => {
     setSetupStep("done");
     const intro: ChatMessage = {
       role: "assistant",
-      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me about trading, how to get around the site, neuro chart profiles, The River, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
+      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me about trading, how to get around the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
     };
     setMessages([intro]);
     saveMemory({ userName, skillLevel: level, facts, messages: [intro] });
@@ -663,7 +663,7 @@ export const CptBuddyWidget: React.FC = () => {
                   if (nameError) setNameError(null);
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder={setupStep === "name" ? "Type your name..." : "Ask about charts, The River, neuro profiles..."}
+                placeholder={setupStep === "name" ? "Type your name..." : "Ask about charts, INDACREATOR, neuro profiles..."}
                 aria-label={setupStep === "name" ? "Your name" : "Message C.P.T. about trading or site help"}
                 maxLength={setupStep === "name" ? MAX_NAME_LENGTH : undefined}
                 style={{

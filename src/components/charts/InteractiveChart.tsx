@@ -277,7 +277,7 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
                   style={{ borderLeftColor: "#FF007F", borderLeftWidth: 3 }}
                 >
                   <span className="opacity-65 text-[#FF007F]">MINE ({mineIndicatorName.split('.')[0]})</span>
-                  <span className="text-amber-400 animate-pulse text-[9px]">RUNNING ON THE RIVER</span>
+                  <span className="text-amber-400 animate-pulse text-[9px]">RUNNING ON INDACREATOR</span>
                 </div>
               )}
               {activeIndicatorsDetails.map(ind => (
@@ -305,7 +305,7 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-black tracking-widest text-[#FF007F] uppercase flex items-center gap-1.5">
                     <Activity size={12} className="text-[#00D9FF]" />
-                    THE RIVER INTEGRAL COMPILER (MINE CORE ATTACHED)
+                    INDACREATOR INTEGRAL COMPILER (MINE CORE ATTACHED)
                   </span>
                   <button 
                     onClick={() => setShowMineIndicator(false)} 
@@ -346,7 +346,7 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
                             if (riverTab instanceof HTMLButtonElement) {
                               riverTab.click();
                             } else {
-                              alert("Scroll to the 'The River' workstation tab to compile custom code!");
+                              alert("Scroll to the 'INDACREATOR' workstation tab to compile custom code!");
                             }
                           }
                         }}
