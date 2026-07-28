@@ -35,6 +35,8 @@ type AdminMembersPayload = {
   meta?: {
     privateStorage?: string;
     privatePath?: string;
+    privateCollection?: string;
+    privateSource?: string;
     waitlistSource?: string;
     persistenceWarning?: string;
   };
@@ -66,20 +68,34 @@ export default function CeoDashboard() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
+  const [convertBusy, setConvertBusy] = useState(false);
+  const [convertMsg, setConvertMsg] = useState<string | null>(null);
+  const [invitesPreview, setInvitesPreview] = useState<
+    Array<{ email: string; displayName: string; activationKey: string; tempPassword?: string }>
+  >([]);
+  const [invitesVisible, setInvitesVisible] = useState(false);
   
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
+
+  const founderApiHeaders = async (): Promise<Record<string, string>> => {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+    const current = auth.currentUser;
+    if (current) {
+      const token = await current.getIdToken(false);
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+  };
 
   const loadAdminMembers = async () => {
     setMembersLoading(true);
     setMembersError(null);
     try {
-      const headers: Record<string, string> = { Accept: 'application/json' };
-      const current = auth.currentUser;
-      if (current) {
-        const token = await current.getIdToken(/* forceRefresh */ false);
-        headers.Authorization = `Bearer ${token}`;
-      }
+      const headers = await founderApiHeaders();
       const res = await fetch('/api/admin/members', { headers, credentials: 'include' });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -94,6 +110,65 @@ export default function CeoDashboard() {
       setMembersPayload(null);
     } finally {
       setMembersLoading(false);
+    }
+  };
+
+  const runWaitlistConvert = async (dryRun: boolean) => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/convert-waitlist', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ dryRun }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.error || `Convert failed (${res.status})`);
+      }
+      setConvertMsg(
+        dryRun
+          ? `Dry run: ${body.created} would be created, ${body.already} already have accounts (${body.candidates} real candidates).`
+          : `Converted: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} invites stored. Open “Show invite passwords” to copy credentials (founder-only).`
+      );
+      await loadAdminMembers();
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Conversion failed.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
+  const loadFounderInvites = async () => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/invites?includeSecrets=1', {
+        headers,
+        credentials: 'include',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Invites failed (${res.status})`);
+      setInvitesPreview(
+        (body.invites || []).map((inv: any) => ({
+          email: inv.email,
+          displayName: inv.displayName,
+          activationKey: inv.activationKey,
+          tempPassword: inv.tempPassword,
+        }))
+      );
+      setInvitesVisible(true);
+      setConvertMsg(
+        body.howToSend ||
+          'Invites loaded. Send email + temp password privately — do not paste into chat logs.'
+      );
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Could not load invites.');
+    } finally {
+      setConvertBusy(false);
     }
   };
 
@@ -277,21 +352,106 @@ export default function CeoDashboard() {
                 activation keys are never returned.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void loadAdminMembers()}
-              disabled={membersLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-cyan-500/20 disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={membersLoading ? 'animate-spin' : ''} />
-              Refresh
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void loadAdminMembers()}
+                disabled={membersLoading || convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-cyan-500/20 disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={membersLoading ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={() => void runWaitlistConvert(true)}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-zinc-500/20 disabled:opacity-50"
+              >
+                Dry-run convert
+              </button>
+              <button
+                type="button"
+                onClick={() => void runWaitlistConvert(false)}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-emerald-500/20 disabled:opacity-50"
+              >
+                Convert waitlist → Private Login
+              </button>
+              <button
+                type="button"
+                onClick={() => void loadFounderInvites()}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-amber-500/20 disabled:opacity-50"
+              >
+                Show invite passwords
+              </button>
+            </div>
           </div>
 
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-100/90 text-sm leading-relaxed">
-            {membersPayload?.meta?.persistenceWarning ||
-              'Private accounts are file-based on this server. On Cloud Run without durable storage, the private member list can be empty after a new revision deploys — that is ephemeral disk, not “no signups ever.”'}
-          </div>
+          {convertMsg ? (
+            <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 px-4 py-3 text-cyan-50/90 text-sm leading-relaxed">
+              {convertMsg}
+            </div>
+          ) : null}
+
+          {invitesVisible && invitesPreview.length > 0 ? (
+            <div className="rounded-lg border border-amber-500/40 bg-[#1a1a2e] p-4 overflow-x-auto">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h3 className="text-amber-200 font-bold uppercase tracking-wider text-sm m-0">
+                  Founder invite export (temp passwords — send privately)
+                </h3>
+                <button
+                  type="button"
+                  className="text-xs text-zinc-400 hover:text-white"
+                  onClick={() => {
+                    setInvitesVisible(false);
+                    setInvitesPreview([]);
+                  }}
+                >
+                  Hide
+                </button>
+              </div>
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-zinc-500 uppercase text-[10px] tracking-widest">
+                    <th className="py-2 pr-3">Email</th>
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Temp password</th>
+                    <th className="py-2">Activation key</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invitesPreview.map((inv) => (
+                    <tr key={inv.email} className="border-t border-white/5 text-zinc-200 font-mono">
+                      <td className="py-2 pr-3">{inv.email}</td>
+                      <td className="py-2 pr-3 font-sans">{inv.displayName}</td>
+                      <td className="py-2 pr-3 text-amber-200">{inv.tempPassword || '—'}</td>
+                      <td className="py-2 text-pink-300">{inv.activationKey || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-zinc-500 text-xs mt-3 m-0">
+                Members use Private Login → email + temp password. Do not paste this table into chat or tickets.
+              </p>
+            </div>
+          ) : null}
+
+          {membersPayload?.meta?.persistenceWarning ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-100/90 text-sm leading-relaxed">
+              {membersPayload.meta.persistenceWarning}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-emerald-100/90 text-sm leading-relaxed">
+              Private members are durable in Firestore (
+              <span className="font-mono">
+                {membersPayload?.meta?.privateCollection || 'private_accounts'}
+              </span>
+              ). Waitlist source of truth remains Firestore{' '}
+              <span className="font-mono">site_registrations</span>.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.25)]">
@@ -301,7 +461,14 @@ export default function CeoDashboard() {
               <p className="text-white text-5xl font-black m-0">
                 {membersLoading && !membersPayload ? '—' : membersPayload?.counts.privateMembers ?? 0}
               </p>
-              <p className="text-gray-400 text-sm mt-3">From private login desk (`users.json` on server).</p>
+              <p className="text-gray-400 text-sm mt-3">
+                Source:{' '}
+                <span className="font-mono text-zinc-300">
+                  {membersPayload?.meta?.privateSource ||
+                    membersPayload?.meta?.privateStorage ||
+                    '—'}
+                </span>
+              </p>
             </div>
             <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#FF00FF] shadow-[0_0_15px_rgba(255,0,255,0.2)]">
               <h3 className="text-[#FF00FF] text-lg font-bold uppercase mb-3 flex items-center gap-2">

@@ -99,15 +99,21 @@ import {
 import {
   PrivateAuthError,
   buildClientSessionUser,
+  getPrivateStorageMeta,
   listPrivateMembersSafe,
   lookupPrivateUser,
   loginPrivateUser,
+  migratePrivateAccountsToDurableStore,
   registerPrivateUser,
 } from './src/server/privateAuthService';
 import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
 import {
+  convertWaitlistToPrivateAccounts,
+  listFounderInvites,
+  listWaitlistConversionCandidates,
+} from './src/server/waitlistConvertService';import {
   bumpPrivateApply,
   bumpPublicApply,
   getPublicEntry,
@@ -816,27 +822,100 @@ async function startServer() {
    */
   app.get('/api/admin/members', requireFounderOrCatalogAdmin, async (_req, res) => {
     try {
-      const privateMembers = listPrivateMembersSafe();
+      const privateList = await listPrivateMembersSafe();
       const waitlist = await listWaitlistRegistrationsSafe();
+      const privateMeta = getPrivateStorageMeta();
       res.json({
         ok: true,
         counts: {
-          privateMembers: privateMembers.length,
+          privateMembers: privateList.members.length,
           waitlist: waitlist.members.length,
         },
-        privateMembers,
+        privateMembers: privateList.members,
         waitlist: waitlist.members,
         meta: {
-          privateStorage: 'local_file',
-          privatePath: 'data/private_accounts/users.json',
+          privateStorage: privateMeta.privateStorage,
+          privatePath: privateMeta.privatePath,
+          privateCollection: privateMeta.privateCollection,
+          privateSource: privateList.source,
           waitlistSource: waitlist.source,
-          persistenceWarning:
-            'Private accounts are stored on the container filesystem (data/private_accounts/users.json). On Cloud Run without a durable volume, this list resets when the revision is replaced.',
+          ...(privateMeta.persistenceWarning
+            ? { persistenceWarning: privateMeta.persistenceWarning }
+            : {}),
         },
       });
     } catch (error) {
       console.error('[admin/members] Failed to list members:', error);
       res.status(500).json({ error: 'Failed to list members' });
+    }
+  });
+
+  /**
+   * Founder-only: convert real waitlist emails → durable Private Login accounts.
+   * Body: { dryRun?: boolean }. Never returns temp passwords (use /invites).
+   */
+  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const dryRun = Boolean(req.body?.dryRun);
+      const result = await convertWaitlistToPrivateAccounts({ dryRun });
+      res.json(result);
+    } catch (error) {
+      console.error('[admin/members/convert-waitlist] Failed:', error);
+      res.status(500).json({ error: 'Waitlist conversion failed' });
+    }
+  });
+
+  app.get('/api/admin/members/convert-waitlist/candidates', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const candidates = await listWaitlistConversionCandidates();
+      res.json({
+        ok: true,
+        count: candidates.length,
+        candidates: candidates.map((c) => ({
+          email: c.email,
+          firstName: c.firstName,
+          sourceDb: c.sourceDb,
+          status: c.status,
+        })),
+      });
+    } catch (error) {
+      console.error('[admin/members/candidates] Failed:', error);
+      res.status(500).json({ error: 'Failed to list conversion candidates' });
+    }
+  });
+
+  /**
+   * Founder-only invite export (email + temp password + activation key).
+   * Query ?includeSecrets=1 required to include tempPassword.
+   */
+  app.get('/api/admin/members/invites', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const includeSecrets = String(req.query.includeSecrets || '') === '1';
+      const listed = await listFounderInvites();
+      const invites = listed.invites.map((inv) => {
+        const row: Record<string, string> = {
+          email: inv.email,
+          displayName: inv.displayName,
+          uid: inv.uid,
+          activationKey: inv.activationKey,
+          createdAt: inv.createdAt,
+        };
+        if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
+        if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
+        return row;
+      });
+      res.json({
+        ok: true,
+        source: listed.source,
+        count: invites.length,
+        includeSecrets,
+        invites,
+        howToSend:
+          'Copy email + tempPassword from this founder-only export and send privately (do not post in chat/logs). Members log in via Private Login desk with email + temp password, then should change password after first login.',
+      });
+    } catch (error) {
+      console.error('[admin/members/invites] Failed:', error);
+      res.status(500).json({ error: 'Failed to list invites' });
     }
   });
 
@@ -2697,19 +2776,19 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, (req, res) => {
+  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
-      const result = grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
+      const result = await grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
       res.json(result);
     } catch (err: any) {
       res.status(400).json({ ok: false, error: err?.message || 'Grant failed' });
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, (_req, res) => {
+  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, async (_req, res) => {
     try {
-      const result = seedIndependentContractorBadges();
+      const result = await seedIndependentContractorBadges();
       res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
     } catch (err: any) {
       res.status(500).json({ ok: false, error: err?.message || 'Seed failed' });
@@ -3082,17 +3161,26 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       console.warn('[STARTUP] Firebase web config check skipped:', e?.message || e);
     }
 
-    // Queue Independent Contractor seals for seeded emails (Dawn / Barry, etc.).
-    // Applied immediately if the private account exists; otherwise pending until login.
-    try {
-      const seeded = seedIndependentContractorBadges();
-      const summary = seeded.results
-        .map((r) => `${r.email}:${r.status}`)
-        .join(', ');
-      console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
-    } catch (e: any) {
-      console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
-    }
+    // Migrate local private accounts → Firestore once, then seed IC badges.
+    void (async () => {
+      try {
+        const migrated = await migratePrivateAccountsToDurableStore();
+        console.log(
+          `[STARTUP] Private accounts durable store → source=${migrated.source} total=${migrated.total} migrated=${migrated.migrated}`
+        );
+      } catch (e: any) {
+        console.warn('[STARTUP] Private accounts migrate skipped:', e?.message || e);
+      }
+      try {
+        const seeded = await seedIndependentContractorBadges();
+        const summary = seeded.results
+          .map((r) => `${r.email}:${r.status}`)
+          .join(', ');
+        console.log(`[STARTUP] IC badge seed → ${summary || 'none'}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] IC badge seed skipped:', e?.message || e);
+      }
+    })();
     
     // Postpone heavy startup integrity audits and self-checks by 10s.
     // This allows the container to start instantly, keeps CPU usage at a minimum during boot,

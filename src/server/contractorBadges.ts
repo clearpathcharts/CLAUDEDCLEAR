@@ -75,16 +75,16 @@ function upsertBadge(profile: StoredProfile, badge: ContractorBadge): StoredProf
 }
 
 /** Queue or apply IC badge for an email. */
-export function grantContractorBadgeByEmail(
+export async function grantContractorBadgeByEmail(
   emailRaw: string,
   options?: { grantedBy?: string }
-): {
+): Promise<{
   ok: boolean;
   status: 'applied' | 'pending' | 'already';
   email: string;
   uid?: string;
   profile?: StoredProfile;
-} {
+}> {
   const email = normalizeEmail(emailRaw);
   if (!email.includes('@')) {
     throw new Error('Valid email required');
@@ -98,7 +98,7 @@ export function grantContractorBadgeByEmail(
     grantedBy: options?.grantedBy || 'admin',
   };
 
-  const user = findPrivateUserByEmail(email);
+  const user = await findPrivateUserByEmail(email);
   if (user?.uid) {
     const prev = readProfile(user.uid) || { uid: user.uid, displayName: user.displayName };
     if (hasBadge(prev, IC_BADGE_ID)) {
@@ -156,11 +156,13 @@ export function applyPendingContractorBadges(
 }
 
 /** Seed Dawn + Barry (and any listed emails) — applied or pending. */
-export function seedIndependentContractorBadges(): {
-  results: ReturnType<typeof grantContractorBadgeByEmail>[];
-} {
-  const results = IC_BADGE_SEED_EMAILS.map((email) =>
-    grantContractorBadgeByEmail(email, { grantedBy: 'seed' })
+export async function seedIndependentContractorBadges(): Promise<{
+  results: Awaited<ReturnType<typeof grantContractorBadgeByEmail>>[];
+}> {
+  const results = await Promise.all(
+    IC_BADGE_SEED_EMAILS.map((email) =>
+      grantContractorBadgeByEmail(email, { grantedBy: 'seed' })
+    )
   );
   return { results };
 }

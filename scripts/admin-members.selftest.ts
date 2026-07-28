@@ -59,13 +59,13 @@ async function main() {
   const auth = await import('../src/server/privateAuthService.ts');
   const reg = await import('../src/server/registrationStore.ts');
 
-  const members = auth.listPrivateMembersSafe();
-  assert.equal(members.length, 1);
-  assert.equal(members[0].email, 'alpha@example.com');
-  assert.equal(members[0].displayName, 'Alpha');
-  assert.ok(!('passwordHash' in members[0]));
-  assert.ok(!('passwordSalt' in members[0]));
-  const leaked = JSON.stringify(members);
+  const listed = await auth.listPrivateMembersSafe();
+  assert.equal(listed.members.length, 1);
+  assert.equal(listed.members[0].email, 'alpha@example.com');
+  assert.equal(listed.members[0].displayName, 'Alpha');
+  assert.ok(!('passwordHash' in listed.members[0]));
+  assert.ok(!('passwordSalt' in listed.members[0]));
+  const leaked = JSON.stringify(listed.members);
   assert.equal(leaked.includes('SECRET_HASH'), false);
   assert.equal(leaked.includes('SECRET_SALT'), false);
 
@@ -76,6 +76,9 @@ async function main() {
   assert.equal(waitlist[0].source, 'local');
   assert.ok(!('activationKey' in waitlist[0]));
   assert.equal(JSON.stringify(waitlist).includes('SHOULD_NEVER_LEAK'), false);
+
+  const meta = auth.getPrivateStorageMeta();
+  assert.ok(meta.privateCollection === 'private_accounts');
 
   console.log('admin-members.selftest: ok');
 }
