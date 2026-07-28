@@ -10,6 +10,7 @@ import {
   LogOut,
   Network,
   Newspaper,
+  Shield,
   Terminal,
   Users,
   X,
@@ -26,7 +27,10 @@ import {
 interface MobileCommandCenterProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
-  isAdmin: boolean;
+  /** @deprecated Prefer isFounder for Diagnostics / CEO */
+  isAdmin?: boolean;
+  /** Founder-only: CEO Dashboard + Diagnostics */
+  isFounder?: boolean;
   onLogout?: () => void;
   /** Lean APK / installed PWA — CHARTS | INDACREATOR | MENU */
   lean?: boolean;
@@ -100,7 +104,15 @@ const TOOLS_ITEMS: NavItem[] = [
   },
 ];
 
-// Diagnostics only shows if isAdmin — handled at render time, not in this static array
+// Founder-only tools — gated at render time via isFounder
+const CEO_DASHBOARD_ITEM: NavItem = {
+  id: "CeoDashboard",
+  icon: Shield,
+  label: "CEO DASHBOARD",
+  colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
+  glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+};
+
 const DIAGNOSTICS_ITEM: NavItem = {
   id: "Diagnostics",
   icon: Activity,
@@ -151,18 +163,22 @@ const SECTION_HEADER_COLORS: Record<string, string> = {
 export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
   activeTab,
   onNavigate,
-  isAdmin,
+  isAdmin = false,
+  isFounder = false,
   onLogout,
   lean = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  void isAdmin; // legacy prop — founder tools use isFounder only
 
   const handleItemTap = (id: string) => {
     setIsOpen(false);
     onNavigate(id);
   };
 
-  const toolsItems = isAdmin ? [...TOOLS_ITEMS, DIAGNOSTICS_ITEM] : TOOLS_ITEMS;
+  const toolsItems = isFounder
+    ? [...TOOLS_ITEMS, CEO_DASHBOARD_ITEM, DIAGNOSTICS_ITEM]
+    : TOOLS_ITEMS;
 
   const sections: { title: string; items: NavItem[] }[] = lean
     ? [

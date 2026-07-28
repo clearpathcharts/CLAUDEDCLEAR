@@ -405,7 +405,7 @@ const TabContent = ({
       case 'CpmsApk': return <CpmsApk />;
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
-      case 'Diagnostics': return isAdmin ? <MarketDiagnostics /> : <YoursPage />;
+      case 'Diagnostics': return isFounder ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
@@ -971,6 +971,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const handleTabChange = (tabId: string) => {
     const nextTab = normalizeTabId(tabId);
+    // Diagnostics + CEO Dashboard are founder-only
+    if (
+      (nextTab === 'Diagnostics' || nextTab === 'CeoDashboard') &&
+      !isFounder()
+    ) {
+      setActiveTab('StrictlyCharts');
+      return;
+    }
     setActiveTab(nextTab);
     if (typeof localStorage !== 'undefined') {
       try {
@@ -1117,8 +1125,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Diagnostics';
         if (validHash) {
           const next = normalizeTabId(hash);
-          // CEO Dashboard hash is founder-only
-          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
+          // CEO Dashboard + Diagnostics hashes are founder-only
+          if (
+            (next === 'CeoDashboard' || next === 'Diagnostics') &&
+            !isFounderEmail(authUser?.email)
+          ) {
             setActiveTab('StrictlyCharts');
           } else {
             setActiveTab(next);
@@ -1422,7 +1433,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {!isAppShell && <BreakingNewsTicker />}
 
         {/* PERSISTENT Clear NAV */}
-        <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} onLogout={handleLogout} lean={isAppShell} />
+        <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} isFounder={isFounder()} onLogout={handleLogout} lean={isAppShell} />
 
         
         {/* TOP MARKET TICKER */}

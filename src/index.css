@@ -16,7 +16,7 @@
   border-radius: 0.75rem;
   background: #00ffff;
   color: #050505;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -142,10 +142,10 @@ html[data-reduced-sensory="true"] .a11y-prefs-root button {
   box-shadow: none !important;
 }
 
-/* Semantic heading tags keep sequential levels; visuals stay tiny (11px) */
+/* Semantic heading tags keep sequential levels; readable micro-heads */
 h3.text-tiny-heading,
 h4.text-tiny-heading {
-  font-size: 11px !important;
+  font-size: 13px !important;
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: 0.05em;
@@ -219,9 +219,28 @@ html, body {
    overscroll-behavior-y here only disables pull-to-refresh at the very
    top edge; it does not affect normal scrolling. */
 html {
+  /* TBI/ADHD readability — raise rem root so Tailwind rem utilities scale site-wide (+2px from 16) */
+  font-size: 18px;
   overflow-x: hidden;  /* no sideways wiggle on phones */
   overflow-y: auto;
   overscroll-behavior-y: contain;
+}
+
+/* Absolute px utilities do not scale with rem — lift the worst micro-type globally */
+[class*="text-[8px]"] {
+  font-size: 11px !important;
+}
+[class*="text-[9px]"] {
+  font-size: 12px !important;
+}
+[class*="text-[10px]"] {
+  font-size: 13px !important;
+}
+[class*="text-[11px]"] {
+  font-size: 14px !important;
+}
+.text-xs {
+  font-size: 0.8125rem !important; /* ~14.6px at 18px root (was ~12px at 16) */
 }
 
 /* SCROLL FIX: body must NOT be its own scroll container. When body had
