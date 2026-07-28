@@ -111,3 +111,74 @@ export async function saveIdentityPreregistration(record: IdentityPreregistratio
   writeLocalCollection('identity.json', records);
   return id;
 }
+
+/** Founder/admin-only safe waitlist row — never includes activationKey or secrets. */
+export type SafeWaitlistMember = {
+  id: string;
+  email: string;
+  firstName?: string;
+  country?: string;
+  experienceLevel?: string;
+  status?: string;
+  createdAt?: string;
+  source: 'firestore' | 'local';
+};
+
+function toSafeWaitlistRow(
+  id: string,
+  raw: Record<string, unknown>,
+  source: 'firestore' | 'local'
+): SafeWaitlistMember {
+  const email =
+    String(raw.emailAddress || raw.email || '')
+      .trim()
+      .toLowerCase() || '';
+  const row: SafeWaitlistMember = { id, email, source };
+  if (typeof raw.firstName === 'string' && raw.firstName.trim()) row.firstName = raw.firstName.trim();
+  if (typeof raw.country === 'string' && raw.country.trim()) row.country = raw.country.trim();
+  if (typeof raw.experienceLevel === 'string' && raw.experienceLevel.trim()) {
+    row.experienceLevel = raw.experienceLevel.trim();
+  }
+  if (typeof raw.status === 'string' && raw.status.trim()) row.status = raw.status.trim();
+  if (typeof raw.createdAt === 'string' && raw.createdAt.trim()) row.createdAt = raw.createdAt.trim();
+  return row;
+}
+
+/**
+ * Read-only waitlist for CEO Dashboard.
+ * Prefers Firestore `site_registrations`, falls back to local `waitlist.json`.
+ * Never returns activationKey or other secrets.
+ */
+export function listLocalWaitlistSafe(limit = 500): SafeWaitlistMember[] {
+  const capped = Math.min(Math.max(1, limit), 2000);
+  const local = readLocalCollection<Record<string, unknown> & { id?: string }>('waitlist.json');
+  return local
+    .map((raw, i) => toSafeWaitlistRow(String(raw.id || `local_${i}`), raw, 'local'))
+    .filter((m) => Boolean(m.email))
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+    .slice(0, capped);
+}
+
+export async function listWaitlistRegistrationsSafe(limit = 500): Promise<{
+  members: SafeWaitlistMember[];
+  source: 'firestore' | 'local' | 'none';
+}> {
+  const capped = Math.min(Math.max(1, limit), 2000);
+  const db = getAdminFirestore();
+
+  if (db) {
+    try {
+      const snapshot = await db.collection('site_registrations').limit(capped).get();
+      const members = snapshot.docs
+        .map((doc) => toSafeWaitlistRow(doc.id, doc.data() as Record<string, unknown>, 'firestore'))
+        .filter((m) => Boolean(m.email))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      return { members, source: 'firestore' };
+    } catch (err) {
+      console.warn('[registrations] Firestore waitlist list failed; trying local file.', err);
+    }
+  }
+
+  const members = listLocalWaitlistSafe(capped);
+  return { members, source: members.length ? 'local' : 'none' };
+}

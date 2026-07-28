@@ -1,16 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
 import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
 
+type SafePrivateMemberRow = {
+  uid: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+  lastLoginAt?: string;
+};
+
+type SafeWaitlistRow = {
+  id: string;
+  email: string;
+  firstName?: string;
+  country?: string;
+  experienceLevel?: string;
+  status?: string;
+  createdAt?: string;
+  source: 'firestore' | 'local';
+};
+
+type AdminMembersPayload = {
+  ok: boolean;
+  counts: { privateMembers: number; waitlist: number };
+  privateMembers: SafePrivateMemberRow[];
+  waitlist: SafeWaitlistRow[];
+  meta?: {
+    privateStorage?: string;
+    privatePath?: string;
+    waitlistSource?: string;
+    persistenceWarning?: string;
+  };
+};
+
+function formatJoined(value?: string | null): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString();
+}
+
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system'>('system');
+  const [ceoTab, setCeoTab] = useState<'system' | 'members'>('system');
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -21,9 +60,42 @@ export default function CeoDashboard() {
   const [logsLoading, setLogsLoading] = useState(true);
   const [logSearchQuery, setLogSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
+
+  // Private login + waitlist (server API — founder Bearer / catalog secret)
+  const [membersPayload, setMembersPayload] = useState<AdminMembersPayload | null>(null);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState('');
   
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
+
+  const loadAdminMembers = async () => {
+    setMembersLoading(true);
+    setMembersError(null);
+    try {
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      const current = auth.currentUser;
+      if (current) {
+        const token = await current.getIdToken(/* forceRefresh */ false);
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await fetch('/api/admin/members', { headers, credentials: 'include' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          (body && (body.message || body.error)) || `Members API failed (${res.status})`
+        );
+      }
+      setMembersPayload(body as AdminMembersPayload);
+    } catch (err: any) {
+      console.error('[CeoDashboard] /api/admin/members failed:', err);
+      setMembersError(err?.message || 'Could not load members.');
+      setMembersPayload(null);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!founderOk) {
@@ -115,11 +187,35 @@ export default function CeoDashboard() {
     fetchUsers();
   }, [founderOk]);
 
+  useEffect(() => {
+    if (!founderOk || ceoTab !== 'members') return;
+    void loadAdminMembers();
+  }, [founderOk, ceoTab]);
+
   const filteredUsers = users.filter(u => 
     (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (u.displayName && u.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (u.username && u.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const memberQ = memberSearch.trim().toLowerCase();
+  const filteredPrivate = (membersPayload?.privateMembers || []).filter((m) => {
+    if (!memberQ) return true;
+    return (
+      m.email.toLowerCase().includes(memberQ) ||
+      (m.displayName && m.displayName.toLowerCase().includes(memberQ)) ||
+      m.uid.toLowerCase().includes(memberQ)
+    );
+  });
+  const filteredWaitlist = (membersPayload?.waitlist || []).filter((m) => {
+    if (!memberQ) return true;
+    return (
+      m.email.toLowerCase().includes(memberQ) ||
+      (m.firstName && m.firstName.toLowerCase().includes(memberQ)) ||
+      (m.country && m.country.toLowerCase().includes(memberQ)) ||
+      (m.status && m.status.toLowerCase().includes(memberQ))
+    );
+  });
 
   // CEO Dashboard is Rick Floyd founder-only — never render data for anyone else.
   if (!founderOk) {
@@ -156,8 +252,185 @@ export default function CeoDashboard() {
         >
           🚨 ALERTS & USER DATABASE
         </button>
+        <button
+          onClick={() => setCeoTab('members')}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'members'
+              ? 'text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/5 shadow-[0_12px_24px_-12px_rgba(0,255,255,0.4)]'
+              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+          }`}
+        >
+          MEMBERS / ALL USERS
+        </button>
       </div>
 
+      {ceoTab === 'members' ? (
+        <div className="space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl text-white font-black uppercase tracking-widest flex items-center gap-3">
+                <UserPlus className="text-[#00FFFF]" size={26} />
+                Private Login + Waitlist
+              </h2>
+              <p className="text-zinc-400 text-sm mt-2 max-w-2xl leading-relaxed">
+                Server-backed member list so you do not have to hunt Firebase Auth. Password hashes and
+                activation keys are never returned.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadAdminMembers()}
+              disabled={membersLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-cyan-500/20 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={membersLoading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
+
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-100/90 text-sm leading-relaxed">
+            {membersPayload?.meta?.persistenceWarning ||
+              'Private accounts are file-based on this server. On Cloud Run without durable storage, the private member list can be empty after a new revision deploys — that is ephemeral disk, not “no signups ever.”'}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.25)]">
+              <h3 className="text-[#00FFFF] text-lg font-bold uppercase mb-3 flex items-center gap-2">
+                <Users size={18} /> Private members
+              </h3>
+              <p className="text-white text-5xl font-black m-0">
+                {membersLoading && !membersPayload ? '—' : membersPayload?.counts.privateMembers ?? 0}
+              </p>
+              <p className="text-gray-400 text-sm mt-3">From private login desk (`users.json` on server).</p>
+            </div>
+            <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#FF00FF] shadow-[0_0_15px_rgba(255,0,255,0.2)]">
+              <h3 className="text-[#FF00FF] text-lg font-bold uppercase mb-3 flex items-center gap-2">
+                <Globe size={18} /> Waitlist
+              </h3>
+              <p className="text-white text-5xl font-black m-0">
+                {membersLoading && !membersPayload ? '—' : membersPayload?.counts.waitlist ?? 0}
+              </p>
+              <p className="text-gray-400 text-sm mt-3">
+                Source:{' '}
+                <span className="font-mono text-zinc-300">
+                  {membersPayload?.meta?.waitlistSource || '—'}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Filter by email, name, country, status…"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              className="w-full bg-black/50 border border-white/20 rounded-lg py-3 px-11 text-white placeholder-white/40 focus:outline-none focus:border-[#00FFFF] transition-all font-mono text-sm"
+            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={16} />
+          </div>
+
+          {membersError && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-300 text-sm font-mono">
+              {membersError}
+            </div>
+          )}
+
+          <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
+            <h3 className="text-xl text-white font-bold mb-4 uppercase tracking-wider">Private login accounts</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-white/80 text-sm">
+                <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Display name</th>
+                    <th className="px-4 py-3">Joined</th>
+                    <th className="px-4 py-3">Last login</th>
+                    <th className="px-4 py-3">UID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {membersLoading && !membersPayload ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
+                        Loading private members…
+                      </td>
+                    </tr>
+                  ) : filteredPrivate.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
+                        {memberQ
+                          ? `No private members match “${memberSearch}”.`
+                          : 'No private members on this server yet. If you expect signups here, Cloud Run may be using ephemeral disk — members persist only when storage is durable.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPrivate.map((m) => (
+                      <tr key={m.uid} className="hover:bg-white/5">
+                        <td className="px-4 py-3 font-mono text-[#00FFFF]">{m.email}</td>
+                        <td className="px-4 py-3 font-bold text-white">{m.displayName || '—'}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-400">{formatJoined(m.lastLoginAt)}</td>
+                        <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.uid}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
+            <h3 className="text-xl text-white font-bold mb-4 uppercase tracking-wider">Waitlist / registrations</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-white/80 text-sm">
+                <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Country</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Joined</th>
+                    <th className="px-4 py-3">Source</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {membersLoading && !membersPayload ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
+                        Loading waitlist…
+                      </td>
+                    </tr>
+                  ) : filteredWaitlist.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
+                        {memberQ
+                          ? `No waitlist rows match “${memberSearch}”.`
+                          : 'No waitlist registrations on this server yet (Firestore `site_registrations` or local waitlist.json).'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredWaitlist.map((m) => (
+                      <tr key={m.id} className="hover:bg-white/5">
+                        <td className="px-4 py-3 font-mono text-[#FF00FF]">{m.email}</td>
+                        <td className="px-4 py-3">{m.firstName || '—'}</td>
+                        <td className="px-4 py-3">{m.country || '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase border border-white/15 bg-white/5">
+                            {m.status || m.experienceLevel || '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
+                        <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.source}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
       <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
         {/* Panel 1: Live Users */}
@@ -533,6 +806,7 @@ export default function CeoDashboard() {
         </div>
       </div>
         </>
+      )}
 
       <AnimatePresence>
         {investigatingUser && (
