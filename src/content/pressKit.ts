@@ -15,6 +15,19 @@ export const PRESS_KIT = {
   /** ~150 words — for journalists, bios, and press releases */
   shortBio: `Richard Floyd is the founder of ClearPathTrader.com, a market intelligence and trading education platform built for clarity over noise. After more than twenty-five years studying and trading markets, he grew frustrated with software designed to keep retail traders clicking, scrolling, and chasing alerts instead of reading charts. Living with autism, ADHD, and the lasting effects of a traumatic brain injury (TBI), Richard set out to build the platform his own brain needed: less cognitive clutter, more room for disciplined analysis. He is entirely self-taught in software — no computer science degree, no venture capital, no engineering team — learning through determination, experimentation, and modern AI development tools. ClearPathTrader reflects his belief that technology should adapt to how different minds process information, especially neurodivergent traders who are often left behind by overstimulating interfaces.`,
 
+  /** Centered founder statement — investor-facing personal-brand explanation */
+  founderStatement: {
+    headline: 'WHY YOU WON’T FIND A BIG PERSONAL BRAND BEHIND CLEARPATH',
+    paragraphs: [
+      'Most of my early trading-education work happened during the IML / MLM boom. I built courses and software in that world. Teams repeatedly pirated and resold my material as their own.',
+      'So I stopped pouring energy into a public personal brand — and put it into building a real product instead.',
+    ],
+    durableLine: 'ClearPath Trader is the durable asset.',
+    trackRecordLine: 'My track record is what ships, not a decade of social posts.',
+    complianceLine: 'This platform is education and market intelligence. Not a brokerage. Not financial advice.',
+    signature: '— Richard A. Floyd, Founder & CEO',
+  },
+
   /** Condensed long-form founder story */
   fullBioSections: [
     {
