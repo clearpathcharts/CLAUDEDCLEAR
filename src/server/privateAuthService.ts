@@ -98,6 +98,31 @@ export function findPrivateUserByEmail(email: string): PublicPrivateUser | null 
   return found ? toPublic(found) : null;
 }
 
+/** Founder/admin-only safe projection — never includes passwordHash / passwordSalt. */
+export type SafePrivateMember = {
+  uid: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+  lastLoginAt?: string;
+};
+
+/** Read-only member list for CEO Dashboard. Strips all secret fields. */
+export function listPrivateMembersSafe(): SafePrivateMember[] {
+  return readUsers()
+    .map((u) => {
+      const row: SafePrivateMember = {
+        uid: u.uid,
+        email: u.email,
+        displayName: u.displayName,
+        createdAt: u.createdAt,
+      };
+      if (u.lastLoginAt) row.lastLoginAt = u.lastLoginAt;
+      return row;
+    })
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+}
+
 export async function registerPrivateUser(input: {
   email: string;
   password: string;

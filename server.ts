@@ -99,10 +99,14 @@ import {
 import {
   PrivateAuthError,
   buildClientSessionUser,
+  listPrivateMembersSafe,
   lookupPrivateUser,
   loginPrivateUser,
   registerPrivateUser,
 } from './src/server/privateAuthService';
+import {
+  listWaitlistRegistrationsSafe,
+} from './src/server/registrationStore';
 import {
   bumpPrivateApply,
   bumpPublicApply,
@@ -130,6 +134,7 @@ import {
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
+  requireFounderOrCatalogAdmin,
   requireIntelligenceAdmin,
   getPrivateSessionUser,
 } from './src/server/authGuards';
@@ -802,6 +807,37 @@ async function startServer() {
 
   app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
     res.json({ ok: true, members: adminListAffiliates() });
+  });
+
+  /**
+   * Founder / catalog-admin only — private login members + waitlist (safe fields).
+   * Auth: Bearer Firebase ID token for forexanarchy@gmail.com, private founder session,
+   * or x-catalog-admin-secret. Never public.
+   */
+  app.get('/api/admin/members', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const privateMembers = listPrivateMembersSafe();
+      const waitlist = await listWaitlistRegistrationsSafe();
+      res.json({
+        ok: true,
+        counts: {
+          privateMembers: privateMembers.length,
+          waitlist: waitlist.members.length,
+        },
+        privateMembers,
+        waitlist: waitlist.members,
+        meta: {
+          privateStorage: 'local_file',
+          privatePath: 'data/private_accounts/users.json',
+          waitlistSource: waitlist.source,
+          persistenceWarning:
+            'Private accounts are stored on the container filesystem (data/private_accounts/users.json). On Cloud Run without a durable volume, this list resets when the revision is replaced.',
+        },
+      });
+    } catch (error) {
+      console.error('[admin/members] Failed to list members:', error);
+      res.status(500).json({ error: 'Failed to list members' });
+    }
   });
 
   app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {

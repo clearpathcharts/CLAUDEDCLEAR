@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
 import { getAuth } from 'firebase-admin/auth';
+import { isFounderEmail } from '../lib/founder';
 import { ensureAdminApp } from './firebaseAdmin';
 import { getCatalogAdminSecret, getIntelligenceWebhookSecret } from './secrets';
 
@@ -97,3 +98,74 @@ export const requireIntelligenceAdmin = requireAdminSecret(
   getIntelligenceWebhookSecret,
   'INTELLIGENCE_WEBHOOK_SECRET is not configured.'
 );
+
+/**
+ * Founder console gate for read-only member lists.
+ * Accepts either:
+ * 1) Valid `x-catalog-admin-secret` / `x-river-admin-secret`, or
+ * 2) Private Express session whose email is the founder, or
+ * 3) Firebase ID token (Authorization: Bearer) whose email is the founder.
+ *
+ * Never opens without one of the above — even in non-production.
+ */
+export async function requireFounderOrCatalogAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const secret = getCatalogAdminSecret();
+    const provided =
+      ['x-catalog-admin-secret', 'x-river-admin-secret']
+        .map((n) => req.get(n) || '')
+        .find(Boolean) || '';
+    if (secret && provided && timingSafeEqualString(provided, secret)) {
+      next();
+      return;
+    }
+
+    const sessionUser = getPrivateSessionUser(req);
+    if (sessionUser && isFounderEmail(sessionUser.email)) {
+      next();
+      return;
+    }
+
+    const header = req.get('authorization') || '';
+    const match = header.match(/^Bearer\s+(.+)$/i);
+    if (match?.[1]) {
+      if (!ensureAdminApp()) {
+        res.status(503).json({
+          error: 'Misconfigured',
+          message: 'Firebase Admin is not configured to verify founder tokens.',
+        });
+        return;
+      }
+      try {
+        const decoded = await getAuth().verifyIdToken(match[1].trim());
+        if (isFounderEmail(decoded.email)) {
+          next();
+          return;
+        }
+        res.status(403).json({
+          error: 'Forbidden',
+          message: 'Founder account required.',
+        });
+        return;
+      } catch {
+        res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Invalid or expired auth token.',
+        });
+        return;
+      }
+    }
+
+    res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Founder auth (Bearer ID token / private session) or catalog admin secret required.',
+    });
+  } catch (err) {
+    console.error('[authGuards] requireFounderOrCatalogAdmin failed:', err);
+    res.status(500).json({ error: 'Auth check failed' });
+  }
+}
