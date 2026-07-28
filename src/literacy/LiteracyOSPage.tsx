@@ -113,18 +113,24 @@ export default function LiteracyOSPage({
         </div>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-4 snap-x">
+      <div
+        className="flex flex-wrap content-start gap-2 pb-3 mb-4 max-w-6xl"
+        role="tablist"
+        aria-label="Literacy OS rooms"
+      >
         {PANEL_META.map((p) => {
           const active = panel === p.id;
           return (
             <button
               key={p.id}
               type="button"
+              role="tab"
+              aria-selected={active}
               onClick={() => setPanel(p.id)}
-              className={`snap-start shrink-0 rounded-full border px-3 py-2 text-[10px] md:text-xs font-black tracking-wider uppercase transition ${
+              className={`rounded-full border px-3.5 py-2.5 text-xs sm:text-sm font-black tracking-wide uppercase transition leading-tight ${
                 active
                   ? "bg-[#00E5FF]/20 border-[#00E5FF] text-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.35)]"
-                  : "border-white/15 text-white/55 hover:border-[#00E5FF]/40 hover:text-[#00E5FF]"
+                  : "border-white/15 text-white/70 hover:border-[#00E5FF]/40 hover:text-[#00E5FF]"
               }`}
               style={{ fontFamily: "'Cinzel', serif" }}
               title={p.blurb}

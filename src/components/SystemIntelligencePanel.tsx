@@ -78,45 +78,45 @@ export default function SystemIntelligencePanel() {
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 text-left md:gap-8 text-[11px] font-mono">
+          {/* Quick Metrics — always two rows of two (never one endless strip) */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 w-full md:w-auto text-left text-sm font-mono">
             
             {/* status */}
-            <div>
-              <span className="text-zinc-500 text-[9px] uppercase font-bold block">CONNECTION STATE</span>
-              <span className={`font-black uppercase tracking-wider ${health.status === 'HEALTHY' ? 'text-emerald-400' : 'text-[#7F00FF]'}`}>
+            <div className="min-w-0">
+              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">CONNECTION STATE</span>
+              <span className={`font-black uppercase tracking-wider text-sm sm:text-base ${health.status === 'HEALTHY' ? 'text-emerald-400' : 'text-[#7F00FF]'}`}>
                 {health.status === 'HEALTHY' ? 'LIVE SYNCED' : 'FAILOVER CACHE'}
               </span>
             </div>
 
             {/* key loaded */}
-            <div>
-              <span className="text-zinc-500 text-[9px] uppercase font-bold block">CREDENTIALS REGISTRATION</span>
-              <span className={`font-black flex items-center gap-1 ${health.apiKeyPresent ? 'text-emerald-400' : 'text-zinc-400'}`}>
+            <div className="min-w-0">
+              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">CREDENTIALS</span>
+              <span className={`font-black flex items-center gap-1 text-sm sm:text-base ${health.apiKeyPresent ? 'text-emerald-400' : 'text-zinc-400'}`}>
                 {health.apiKeyPresent ? (
                   <>
-                    <ShieldCheck className="w-3 h-3 text-emerald-400 inline" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
                     <span>REGISTERED</span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="w-3 h-3 text-amber-500 inline mr-0.5" />
-                    <span className="text-amber-500">PENDING IN SETTINGS</span>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline mr-0.5 shrink-0" />
+                    <span className="text-amber-500">PENDING</span>
                   </>
                 )}
               </span>
             </div>
 
             {/* latency */}
-            <div>
-              <span className="text-zinc-500 text-[9px] uppercase font-bold block">PIPELINE LATENCY</span>
-              <span className="text-cyan-400 font-extrabold">{health.latencyMs || 24}ms</span>
+            <div className="min-w-0">
+              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">PIPELINE LATENCY</span>
+              <span className="text-cyan-400 font-extrabold text-sm sm:text-base">{health.latencyMs || 24}ms</span>
             </div>
 
             {/* quota */}
-            <div>
-              <span className="text-zinc-500 text-[9px] uppercase font-bold block">API ALLOWANCE REMAINING</span>
-              <span className="text-white font-bold">{health.rateLimitRemaining || '8'} / {health.rateLimitLimit || '8'} REQS</span>
+            <div className="min-w-0">
+              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">API ALLOWANCE</span>
+              <span className="text-white font-bold text-sm sm:text-base">{health.rateLimitRemaining || '8'} / {health.rateLimitLimit || '8'} REQS</span>
             </div>
 
           </div>
