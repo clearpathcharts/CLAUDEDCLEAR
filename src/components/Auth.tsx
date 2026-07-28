@@ -596,8 +596,80 @@ export default function Auth() {
       {/* ==========================================
           3. NAVIGATION HEADER
           Brand + Private Login stay on row 1 (never clipped by link parade).
-          Site links wrap on a second row at desktop widths.
+          Site links: large lava orange↔magenta gradient text; scroll on mobile, wrap on desktop.
           ========================================== */}
+      <style>{`
+        @keyframes authNavLavaFlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .auth-nav-lava-text {
+          background: linear-gradient(
+            105deg,
+            #FF2A00 0%,
+            #FF6A00 22%,
+            #FF8C1A 38%,
+            #FF1493 58%,
+            #FF00A8 78%,
+            #FF4D00 100%
+          );
+          background-size: 220% 100%;
+          animation: authNavLavaFlow 4.5s ease-in-out infinite;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          font-size: 15px;
+          line-height: 1.25;
+          white-space: nowrap;
+        }
+        @media (min-width: 640px) {
+          .auth-nav-lava-text { font-size: 16px; letter-spacing: 0.08em; }
+        }
+        @media (min-width: 1024px) {
+          .auth-nav-lava-text { font-size: 17px; }
+        }
+        a:hover > .auth-nav-lava-text,
+        a.auth-nav-lava-text:hover {
+          filter: brightness(1.18) saturate(1.1);
+        }
+        .auth-nav-tab-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          flex-shrink: 0;
+          padding: 0.35rem 0.65rem;
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255, 90, 0, 0.35);
+          background: rgba(255, 60, 0, 0.06);
+        }
+        .auth-nav-tab-pill:hover {
+          border-color: rgba(255, 20, 147, 0.55);
+          background: rgba(255, 20, 147, 0.1);
+        }
+        .auth-nav-tabs-row {
+          display: flex;
+          flex-wrap: nowrap;
+          align-items: center;
+          gap: 0.85rem 1.1rem;
+          padding-bottom: 0.2rem;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 90, 0, 0.45) transparent;
+          max-width: 100%;
+        }
+        @media (min-width: 1024px) {
+          .auth-nav-tabs-row {
+            flex-wrap: wrap;
+            overflow-x: visible;
+          }
+        }
+      `}</style>
       <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
       <nav
         aria-label="Primary"
@@ -634,33 +706,39 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Secondary link row — wraps under Private Login */}
-        <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-2 pb-0.5">
-          <a href={TRADING_REIMAGINED_SHORT_PATH} className="text-[#FF1493] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg">
-            Trading × AI
+        {/* Secondary link row — large lava gradient labels; horizontal scroll on small screens */}
+        <div className="auth-nav-tabs-row" role="navigation" aria-label="Site sections">
+          <a href={TRADING_REIMAGINED_SHORT_PATH} className="auth-nav-tab-pill">
+            <span className="auth-nav-lava-text">Trading × AI</span>
           </a>
-          <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">
-            About
+          <a href="/about" className="auth-nav-lava-text shrink-0">About</a>
+          <a href="/press" className="auth-nav-lava-text shrink-0">Press</a>
+          <a href="#home" className="auth-nav-lava-text shrink-0">Home</a>
+          <a href="#why-clearpath" className="auth-nav-lava-text shrink-0">Why ClearPath</a>
+          <a href="#ecosystem" className="auth-nav-lava-text shrink-0">The Ecosystem</a>
+          <a href="#soft-launch" className="auth-nav-lava-text shrink-0">Soft Launch</a>
+          <a
+            href="/encyclopedia"
+            onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
+            className="auth-nav-tab-pill font-sans"
+          >
+            <BookOpen size={15} className="text-[#FF5A00] shrink-0" aria-hidden="true" />
+            <span className="auth-nav-lava-text">Encyclopedia of Finance</span>
           </a>
-          <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">
-            Press
+          <a
+            href="/education"
+            onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }}
+            className="auth-nav-tab-pill font-sans"
+          >
+            <GraduationCap size={15} className="text-[#FF1493] shrink-0" aria-hidden="true" />
+            <span className="auth-nav-lava-text">ClearPath Education</span>
           </a>
-          <a href="#home" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Home</a>
-          <a href="#why-clearpath" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">Why ClearPath</a>
-          <a href="#ecosystem" className="text-zinc-400 hover:text-[#B026FF] transition-colors text-[11px] font-black uppercase tracking-widest">The Ecosystem</a>
-          <a href="#soft-launch" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Soft Launch</a>
-          <a href="/encyclopedia" onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }} className="text-[#00FFFF] hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg">
-            <BookOpen size={11} className="text-[#00FFFF]" aria-hidden="true" /> Encyclopedia of Finance
+          <a href="/ui" className="auth-nav-tab-pill">
+            <span className="auth-nav-lava-text">UI Modes</span>
           </a>
-          <a href="/education" onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }} className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            <GraduationCap size={11} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
-          </a>
-          <a href="/ui" className="text-[#B026FF] hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg">
-            UI Modes
-          </a>
-          <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Learn</a>
-          <a href="/guides" className="text-zinc-400 hover:text-[#00FFFF] transition-colors text-[11px] font-black uppercase tracking-widest">Guides</a>
-          <a href="/faq" className="text-zinc-400 hover:text-[#FF1493] transition-colors text-[11px] font-black uppercase tracking-widest">FAQ</a>
+          <a href="/learn" className="auth-nav-lava-text shrink-0">Learn</a>
+          <a href="/guides" className="auth-nav-lava-text shrink-0">Guides</a>
+          <a href="/faq" className="auth-nav-lava-text shrink-0">FAQ</a>
         </div>
       </nav>
       </header>
