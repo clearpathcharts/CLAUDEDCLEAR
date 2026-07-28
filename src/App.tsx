@@ -9,7 +9,6 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
-import A11yPreferencesToggle from './components/A11yPreferencesToggle';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
 
@@ -272,8 +271,6 @@ export default function App() {
       {content}
       {/* Consent-first web/APK update prompt — never silent install */}
       <AppUpdateBanner />
-      {/* Mandatory WCAG: High Contrast / Reduced Sensory on every page request */}
-      <A11yPreferencesToggle />
     </>
   );
 }
