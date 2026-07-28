@@ -53,7 +53,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "TheRiver",
       icon: Cpu,
-      label: "THE RIVER",
+      label: "INDACREATOR",
     },
     {
       id: "StrictlyCharts",

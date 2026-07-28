@@ -98,7 +98,7 @@ export function translateMql4ToPine(source: string): ImportTranslationResult {
 
   const pineSource = `//@version=5
 indicator("${title.replace(/"/g, "'")} (from MQL4)", overlay=true)
-// Auto-converted by The River — review before trading.
+// Auto-converted by INDACREATOR — review before trading.
 ${inputs.join("\n")}
 ${assignments.join("\n")}
 ${assignments[0] ? `plot(${assignments[0].split("=")[0].trim()}, title="Converted", color=color.orange)` : "// Add plot() for your main series"}

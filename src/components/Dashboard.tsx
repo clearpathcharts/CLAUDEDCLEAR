@@ -931,7 +931,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const menuItems = useMemo(() => {
     const allMenuItems = [
       { id: 'Yours', icon: User, label: 'YOURS' },
-      { id: 'TheRiver', icon: Cpu, label: 'THE RIVER' },
+      { id: 'TheRiver', icon: Cpu, label: 'INDACREATOR' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
