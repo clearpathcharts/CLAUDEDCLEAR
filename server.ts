@@ -48,6 +48,7 @@ import {
   grantContractorBadgeByEmail,
   seedIndependentContractorBadges,
   applyPendingContractorBadges,
+  hydratePendingGrantsFromDurableStore,
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
@@ -69,7 +70,12 @@ import {
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
-import { readProfile, writeProfile } from './src/server/profileStore';
+import {
+  hydrateProfilesFromDurableStore,
+  readProfile,
+  refreshProfileFromDurable,
+  writeProfile,
+} from './src/server/profileStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -169,6 +175,7 @@ import {
   ensureAffiliateMember,
   getAffiliateDashboard,
   getLeaderboard,
+  hydrateAffiliateFromDurableStore,
   markReferredPaid,
   recordClick,
   resolveCode,
@@ -732,13 +739,15 @@ async function startServer() {
 
   // Profile save/load for private sessions (bypasses Firebase client permission errors)
   // UID must come from the signed session — never from query/body (IDOR).
-  app.get('/api/profile/me', (req, res) => {
+  app.get('/api/profile/me', async (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
     const uid = sessionUser?.uid;
     if (!uid) {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
+      // Pull the durable copy first — another instance may have newer data.
+      await refreshProfileFromDurable(uid);
       const profile =
         applyPendingContractorBadges(uid, sessionUser?.email) ||
         readProfile(uid) ||
@@ -789,11 +798,14 @@ async function startServer() {
   });
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
-  app.get('/api/membership/me', (req, res) => {
+  app.get('/api/membership/me', async (req, res) => {
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
     }
+    // Sync from Firestore first so Stripe webhooks processed on other
+    // instances (or before a redeploy) are always reflected here.
+    await refreshProfileFromDurable(sessionUser.uid);
     const status = getMembershipStatus(sessionUser.uid);
     const effectiveTier = status.active ? status.tier : 'basic';
     res.json({
@@ -3290,6 +3302,30 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         );
       } catch (e: any) {
         console.warn('[STARTUP] Private accounts migrate skipped:', e?.message || e);
+      }
+      // Hydrate redeploy-sensitive stores (profiles/memberships, affiliate, pending badges)
+      // from Firestore BEFORE seeding, so a fresh container never starts blank.
+      try {
+        const profiles = await hydrateProfilesFromDurableStore();
+        console.log(
+          `[STARTUP] Profiles durable store → source=${profiles.source} pulled=${profiles.pulled} pushed=${profiles.pushed}`
+        );
+      } catch (e: any) {
+        console.warn('[STARTUP] Profiles hydrate skipped:', e?.message || e);
+      }
+      try {
+        const aff = await hydrateAffiliateFromDurableStore();
+        console.log(`[STARTUP] Affiliate durable store → source=${aff.source} members=${aff.members}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Affiliate hydrate skipped:', e?.message || e);
+      }
+      try {
+        const pending = await hydratePendingGrantsFromDurableStore();
+        console.log(
+          `[STARTUP] Pending badge grants durable store → source=${pending.source} pending=${pending.pending}`
+        );
+      } catch (e: any) {
+        console.warn('[STARTUP] Pending grants hydrate skipped:', e?.message || e);
       }
       try {
         const seeded = await seedIndependentContractorBadges();

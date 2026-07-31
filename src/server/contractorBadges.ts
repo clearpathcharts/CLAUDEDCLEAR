@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readProfile, writeProfile, type StoredProfile } from './profileStore';
 import { findPrivateUserByEmail } from './privateAuthService';
+import { getAdminFirestore } from './firebaseAdmin';
 
 export const IC_BADGE_ID = 'independent-contractor';
 export const IC_BADGE_LABEL = 'ClearPath Worldwide Independent Contractor';
@@ -30,6 +31,8 @@ type PendingGrant = {
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'badges');
 const PENDING_FILE = path.join(DATA_DIR, 'pending_contractor_grants.json');
+const DURABLE_COLLECTION = 'app_state';
+const DURABLE_DOC = 'pending_contractor_grants';
 
 /** Seed emails that should receive the IC badge (applied on grant-all or profile load). */
 export const IC_BADGE_SEED_EMAILS = [
@@ -55,6 +58,50 @@ function readPending(): PendingGrant[] {
 function writePending(rows: PendingGrant[]) {
   ensureDir();
   fs.writeFileSync(PENDING_FILE, JSON.stringify(rows, null, 2), 'utf8');
+  // Write-through so pending grants survive redeploys.
+  void pushPendingToFirestore(rows);
+}
+
+async function pushPendingToFirestore(rows: PendingGrant[]): Promise<boolean> {
+  const db = getAdminFirestore();
+  if (!db) return false;
+  try {
+    await db
+      .collection(DURABLE_COLLECTION)
+      .doc(DURABLE_DOC)
+      .set({ json: JSON.stringify(rows), updatedAt: new Date().toISOString() });
+    return true;
+  } catch (err) {
+    console.warn('[contractorBadges] Firestore write-through failed (local copy saved):', err);
+    return false;
+  }
+}
+
+/** Boot hydration: restore pending grants from Firestore on a fresh container. */
+export async function hydratePendingGrantsFromDurableStore(): Promise<{
+  source: 'firestore' | 'local';
+  pending: number;
+}> {
+  const db = getAdminFirestore();
+  const local = readPending();
+  if (!db) return { source: 'local', pending: local.length };
+  try {
+    const doc = await db.collection(DURABLE_COLLECTION).doc(DURABLE_DOC).get();
+    if (doc.exists) {
+      const parsed = JSON.parse(String(doc.data()?.json || '[]'));
+      const remote: PendingGrant[] = Array.isArray(parsed) ? parsed : [];
+      if (remote.length >= local.length) {
+        ensureDir();
+        fs.writeFileSync(PENDING_FILE, JSON.stringify(remote, null, 2), 'utf8');
+        return { source: 'firestore', pending: remote.length };
+      }
+    }
+  } catch (err) {
+    console.warn('[contractorBadges] Firestore hydrate failed; keeping local pending list.', err);
+    return { source: 'local', pending: local.length };
+  }
+  await pushPendingToFirestore(local);
+  return { source: 'local', pending: local.length };
 }
 
 function normalizeEmail(email: string): string {
