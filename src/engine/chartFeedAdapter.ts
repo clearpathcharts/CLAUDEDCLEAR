@@ -1,5 +1,9 @@
 import { MarketEngine } from "./MarketEngine";
-import { resolveTwelveDataInterval } from "../services/marketData";
+import {
+  aggregateCandles,
+  resolveTimeframePlan,
+  type NormalizedCandle,
+} from "../services/marketData";
 
 export type Candle = {
   time: number;
@@ -22,26 +26,36 @@ function normalizeTwelveData(values: any[]): Candle[] {
     }));
 }
 
+function applyPlan(candles: Candle[], uiInterval: string): Candle[] {
+  const plan = resolveTimeframePlan(uiInterval);
+  let next = aggregateCandles(
+    candles as NormalizedCandle[],
+    plan.aggregateBars
+  ) as Candle[];
+  if (plan.visibleBars && next.length > plan.visibleBars) {
+    next = next.slice(next.length - plan.visibleBars);
+  }
+  return next;
+}
+
 export const ChartFeedAdapter = {
   /**
    * SINGLE RESPONSIBILITY:
    * Convert MarketEngine → Lightweight Charts format
    */
   async getCandles(symbol: string, interval = "5min") {
-    const resolvedInterval = resolveTwelveDataInterval(interval);
-    const raw = await MarketEngine.getCandles(symbol, resolvedInterval);
+    const plan = resolveTimeframePlan(interval);
+    const raw = await MarketEngine.getCandles(symbol, plan.fetchInterval);
 
-    // If backend already normalized
+    let candles: Candle[] = [];
+
     if (Array.isArray(raw?.candles)) {
-      return raw.candles;
+      candles = raw.candles;
+    } else if (raw?.values) {
+      candles = normalizeTwelveData(raw.values);
     }
 
-    // If TwelveData raw response
-    if (raw?.values) {
-      return normalizeTwelveData(raw.values);
-    }
-
-    return [];
+    return applyPlan(candles, interval);
   },
 
   async getLiveQuote(symbol: string) {

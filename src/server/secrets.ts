@@ -84,6 +84,14 @@ export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
 
+export function getStripeSecretKey(): string {
+  return first(process.env.STRIPE_SECRET_KEY);
+}
+
+export function getStripeWebhookSecret(): string {
+  return first(process.env.STRIPE_WEBHOOK_SECRET);
+}
+
 /** Board / Founders portal code — server-only; never expose via client APIs. */
 export function getBoardAccessCode(): string {
   return first(process.env.BOARD_ACCESS_CODE, process.env.VITE_BOARD_ACCESS_CODE);
@@ -104,6 +112,8 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     INTELLIGENCE_WEBHOOK_SECRET: Boolean(getIntelligenceWebhookSecret()),
     CATALOG_ADMIN_SECRET: Boolean(getCatalogAdminSecret()),
     SESSION_SECRET: Boolean(getSessionSecret()),
+    STRIPE_SECRET_KEY: Boolean(getStripeSecretKey()),
+    STRIPE_WEBHOOK_SECRET: Boolean(getStripeWebhookSecret()),
     BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
     MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
     BUFFER_ACCESS_TOKEN: Boolean(getBufferAccessToken()),

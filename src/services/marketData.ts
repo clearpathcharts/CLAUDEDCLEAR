@@ -6,9 +6,7 @@ import { getCandleLimit } from "../config/tierLimits";
  * SECURITY: This file runs in the browser. It must NEVER contain an API key
  * and must NEVER call api.twelvedata.com directly. All requests go through the
  * server proxy at /api/market/history, where the Twelve Data key stays secret
- * and where caching / rate-limit handling lives. Calling Twelve Data straight
- * from the browser both exposes the key and multiplies requests per chart,
- * which is what was tripping the Grow-plan rate limit and blanking the charts.
+ * and where caching / rate-limit handling lives.
  */
 
 export interface NormalizedCandle {
@@ -20,95 +18,287 @@ export interface NormalizedCandle {
 }
 
 /**
- * Maps every UI timeframe string the app can emit to the exact interval string
- * Twelve Data expects. Anything unrecognized falls back to '1day' rather than
- * being passed through raw (a raw/unknown string is what made non-1H buttons
- * return "no data").
+ * Twelve Data native time_series intervals:
+ * 1min, 5min, 15min, 30min, 45min, 1h, 2h, 4h, 8h, 1day, 1week, 1month
+ *
+ * UI buttons that are NOT native must be built by aggregating a finer interval
+ * (or by capping daily history for range views). Otherwise multiple buttons
+ * silently fetch the same candles and look identical.
  */
-export function resolveTwelveDataInterval(interval: string): string {
+export type TimeframePlan = {
+  /** Interval string sent to Twelve Data */
+  fetchInterval: string;
+  /** Merge every N fetched bars into one UI candle (1 = native) */
+  aggregateBars: number;
+  /** Optional final bar count (3M / 6M / YTD range windows) */
+  visibleBars?: number;
+  mode: "native" | "aggregate" | "range";
+  /** Short human note for tooltips / diagnostics */
+  note: string;
+};
+
+const TWELVE_NATIVE = new Set([
+  "1min",
+  "5min",
+  "15min",
+  "30min",
+  "45min",
+  "1h",
+  "2h",
+  "4h",
+  "8h",
+  "1day",
+  "1week",
+  "1month",
+]);
+
+function estimateYtdTradingDays(): number {
+  const now = new Date();
+  const start = Date.UTC(now.getUTCFullYear(), 0, 1);
+  const calendarDays = Math.max(
+    1,
+    Math.ceil((now.getTime() - start) / 86_400_000)
+  );
+  return Math.min(260, Math.max(10, Math.round(calendarDays * (252 / 365))));
+}
+
+/**
+ * Resolve a UI timeframe into a fetch plan so each button produces distinct bars.
+ *
+ * Collision matrix that this replaces:
+ *   1m/2m/3m → all were 1min (identical)
+ *   10m/15m → all were 15min (identical)
+ *   2h/3h → all were 2h (identical)
+ *   1D/3M/6M/YTD → all were 1day with the same limit (identical)
+ */
+export function resolveTimeframePlan(interval: string): TimeframePlan {
   const raw = (interval || "").trim();
 
-  // Monthly UI tokens ("1M", "3M", "6M") must be handled before lowercasing,
-  // otherwise "1M" becomes "1m" and is misread as one-minute candles.
-  if (raw === "1M") return "1month";
-  // Multi-month views: daily bars (not monthly candles).
-  if (raw === "3M" || raw === "6M") return "1day";
+  if (raw === "1M") {
+    return {
+      fetchInterval: "1month",
+      aggregateBars: 1,
+      mode: "native",
+      note: "Twelve Data 1month",
+    };
+  }
+  if (raw === "3M") {
+    return {
+      fetchInterval: "1day",
+      aggregateBars: 1,
+      visibleBars: 66,
+      mode: "range",
+      note: "Daily bars · last ~3 months",
+    };
+  }
+  if (raw === "6M") {
+    return {
+      fetchInterval: "1day",
+      aggregateBars: 1,
+      visibleBars: 132,
+      mode: "range",
+      note: "Daily bars · last ~6 months",
+    };
+  }
 
   const v = raw.toLowerCase();
 
   switch (v) {
     case "1m":
     case "1min":
-      return "1min";
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 1min",
+      };
     case "2m":
     case "2min":
-      // Twelve Data has no native 2min — use 1min (was incorrectly falling to 1day).
-      return "1min";
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 2,
+        mode: "aggregate",
+        note: "Built from 1min × 2 (Twelve Data has no 2min)",
+      };
     case "3m":
     case "3min":
-      // Twelve Data has no native 3min — use 1min (was incorrectly falling to 1day).
-      return "1min";
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 3,
+        mode: "aggregate",
+        note: "Built from 1min × 3 (Twelve Data has no 3min)",
+      };
     case "5m":
     case "5min":
-      return "5min";
+      return {
+        fetchInterval: "5min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 5min",
+      };
     case "10m":
     case "10min":
-      // Twelve Data has no native 10min; 15min is the closest supported step.
-      return "15min";
+      return {
+        fetchInterval: "5min",
+        aggregateBars: 2,
+        mode: "aggregate",
+        note: "Built from 5min × 2 (Twelve Data has no 10min)",
+      };
     case "15m":
     case "15min":
-      return "15min";
+      return {
+        fetchInterval: "15min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 15min",
+      };
     case "30m":
     case "30min":
-      return "30min";
+      return {
+        fetchInterval: "30min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 30min",
+      };
     case "45m":
     case "45min":
-      return "45min";
+      return {
+        fetchInterval: "45min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 45min",
+      };
     case "1h":
     case "60min":
-      return "1h";
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 1h",
+      };
     case "2h":
-      return "2h";
+      return {
+        fetchInterval: "2h",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 2h",
+      };
     case "3h":
-      // Twelve Data has no native 3h — use 2h (was incorrectly falling to 1day).
-      return "2h";
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 3,
+        mode: "aggregate",
+        note: "Built from 1h × 3 (Twelve Data has no 3h)",
+      };
     case "4h":
-      return "4h";
+      return {
+        fetchInterval: "4h",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 4h",
+      };
+    case "8h":
+      return {
+        fetchInterval: "8h",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 8h",
+      };
     case "1d":
     case "day":
     case "1day":
-      return "1day";
+      return {
+        fetchInterval: "1day",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 1day",
+      };
     case "1w":
     case "week":
     case "1week":
-      return "1week";
+      return {
+        fetchInterval: "1week",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 1week",
+      };
     case "1mo":
     case "month":
     case "1month":
-      return "1month";
+      return {
+        fetchInterval: "1month",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Twelve Data 1month",
+      };
     case "ytd":
-      // Year-to-date is best represented as daily candles; the caller/limit
-      // controls how many days come back.
-      return "1day";
+      return {
+        fetchInterval: "1day",
+        aggregateBars: 1,
+        visibleBars: estimateYtdTradingDays(),
+        mode: "range",
+        note: "Daily bars · year-to-date window",
+      };
     default:
       console.warn(
         `[marketData] Unknown interval "${interval}", defaulting to 1day.`
       );
-      return "1day";
+      return {
+        fetchInterval: "1day",
+        aggregateBars: 1,
+        mode: "native",
+        note: "Fallback 1day",
+      };
   }
 }
 
+/** Native Twelve Data interval used for the HTTP call (smoke / gateway). */
+export function resolveTwelveDataInterval(interval: string): string {
+  const plan = resolveTimeframePlan(interval);
+  if (!TWELVE_NATIVE.has(plan.fetchInterval)) {
+    console.warn(
+      `[marketData] Non-native fetch interval "${plan.fetchInterval}" — check plan.`
+    );
+  }
+  return plan.fetchInterval;
+}
+
+/** Tooltip / diagnostic label for a UI timeframe button. */
+export function describeTimeframe(interval: string): string {
+  return resolveTimeframePlan(interval).note;
+}
+
 /**
- * Fetch historical candles for a symbol/timeframe via the secure server proxy.
- * Returns candles sorted oldest -> newest (required by lightweight-charts).
- * Throws on failure. Never returns mock/simulated data.
+ * Collapse every `factor` sequential candles into one OHLC bar.
+ * Groups align to the newest bar so the live candle stays correct.
  */
-/**
- * Twelve Data's time_series endpoint accepts outputsize in [1, 5000] and
- * returns HTTP 400 for anything larger. Tier limits above 5000 (GOLD/VIP)
- * must therefore be clamped before hitting the API, otherwise EVERY request
- * for those tiers fails and every chart shows "no data".
- */
+export function aggregateCandles(
+  candles: NormalizedCandle[],
+  factor: number
+): NormalizedCandle[] {
+  if (factor <= 1 || candles.length === 0) return candles;
+  const out: NormalizedCandle[] = [];
+  const remainder = candles.length % factor;
+  for (let i = remainder; i < candles.length; i += factor) {
+    const chunk = candles.slice(i, i + factor);
+    if (chunk.length < factor) continue;
+    let high = chunk[0].high;
+    let low = chunk[0].low;
+    for (let j = 1; j < chunk.length; j++) {
+      if (chunk[j].high > high) high = chunk[j].high;
+      if (chunk[j].low < low) low = chunk[j].low;
+    }
+    out.push({
+      time: chunk[0].time,
+      open: chunk[0].open,
+      high,
+      low,
+      close: chunk[chunk.length - 1].close,
+    });
+  }
+  return out;
+}
+
 const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
 
 export const fetchTieredHistoricalData = async (
@@ -116,14 +306,21 @@ export const fetchTieredHistoricalData = async (
   interval: string,
   userTier: string
 ): Promise<NormalizedCandle[]> => {
-  const limit = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
-  const resolvedInterval = resolveTwelveDataInterval(interval);
+  const plan = resolveTimeframePlan(interval);
+  const tierCap = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
+  const desiredFinal = plan.visibleBars
+    ? Math.min(plan.visibleBars, tierCap)
+    : tierCap;
+  const fetchLimit = Math.min(
+    TWELVEDATA_MAX_OUTPUTSIZE,
+    Math.max(plan.aggregateBars, desiredFinal * plan.aggregateBars)
+  );
 
   const proxyUrl =
     `/api/market/history` +
     `?symbol=${encodeURIComponent(symbol)}` +
-    `&interval=${encodeURIComponent(resolvedInterval)}` +
-    `&limit=${encodeURIComponent(String(limit))}`;
+    `&interval=${encodeURIComponent(plan.fetchInterval)}` +
+    `&limit=${encodeURIComponent(String(fetchLimit))}`;
 
   let response: Response;
   try {
@@ -138,8 +335,6 @@ export const fetchTieredHistoricalData = async (
   }
 
   if (!response.ok) {
-    // Surface the real upstream status so the chart can show an honest error
-    // (e.g. 429 = rate limited, 503 = key not configured) instead of fake data.
     let detail = `status ${response.status}`;
     try {
       const body = await response.json();
@@ -163,8 +358,7 @@ export const fetchTieredHistoricalData = async (
     );
   }
 
-  // Server returns rows shaped [timestampMs, open, high, low, close].
-  const candles: NormalizedCandle[] = rawData
+  let candles: NormalizedCandle[] = rawData
     .map((v: any[]) => ({
       time: Math.floor(Number(v[0]) / 1000),
       open: Number(v[1]),
@@ -172,7 +366,6 @@ export const fetchTieredHistoricalData = async (
       low: Number(v[3]),
       close: Number(v[4]),
     }))
-    // Drop any malformed rows rather than rendering NaN candles.
     .filter(
       (c) =>
         Number.isFinite(c.time) &&
@@ -182,6 +375,12 @@ export const fetchTieredHistoricalData = async (
         Number.isFinite(c.close)
     )
     .sort((a, b) => a.time - b.time);
+
+  candles = aggregateCandles(candles, plan.aggregateBars);
+
+  if (plan.visibleBars && candles.length > plan.visibleBars) {
+    candles = candles.slice(candles.length - plan.visibleBars);
+  }
 
   return candles;
 };

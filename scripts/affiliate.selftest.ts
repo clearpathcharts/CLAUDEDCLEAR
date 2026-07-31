@@ -34,15 +34,15 @@ async function main() {
   const self = aff.attributeSignup({ newUid: 'user_a', referralCode: a.code });
   assert.equal(self.attributed, false);
 
-  const paid = aff.markReferredPaid({ referredUid: 'user_b', tier: 'plus' });
+  const paid = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro' });
   assert.equal(paid.ok, true);
-  assert.equal(paid.creditCents, Math.round(999 * 0.2));
+  assert.equal(paid.creditCents, Math.round(aff.TIER_PRICE_CENTS.pro * 0.2));
 
   const desk2 = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
   assert.equal(desk2.creditCents, paid.creditCents);
 
   // Idempotent
-  const paid2 = aff.markReferredPaid({ referredUid: 'user_b', tier: 'plus' });
+  const paid2 = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro' });
   assert.equal(paid2.ok, true);
   assert.equal(paid2.creditCents, 0);
 

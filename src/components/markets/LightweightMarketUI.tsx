@@ -22,6 +22,7 @@ import {
   type ChartLayoutSlot,
 } from '../../constants/chartLayout';
 import { usePersistedLayout } from '../../hooks/useDraggablePosition';
+import { describeTimeframe } from '../../services/marketData';
 
 const timeframesMapping: Record<string, string> = {
   '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
@@ -338,6 +339,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
                     <button
                       key={`${tf}-${idx}`}
+                      type="button"
+                      title={describeTimeframe(timeframesMapping[tf] || tf)}
                       onClick={() => setActiveTimeframe(tf)}
                       className={`time-unit !py-1 !px-2 text-[10px] md:text-xs outline-none ${tf === activeTimeframe ? 'active' : ''}`}
                     >

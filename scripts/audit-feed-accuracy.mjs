@@ -1,4 +1,3 @@
-import { createRequire } from "module";
 import { pathToFileURL } from "url";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -6,8 +5,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 
-// Dynamic import of TS via tsx when run as: npx tsx scripts/audit-feed-accuracy.mjs
-const { resolveTwelveDataInterval } = await import(
+const { resolveTimeframePlan, resolveTwelveDataInterval } = await import(
   pathToFileURL(path.join(root, "src/services/marketData.ts")).href
 );
 
@@ -20,25 +18,36 @@ const toInternal = {
   "1D": "1d", "1W": "1w", "1M": "1M", "3M": "3M", "6M": "6M", "YTD": "ytd",
 };
 
-const exact = new Set(["1min", "5min", "15min", "30min", "1h", "2h", "4h", "1day", "1week", "1month"]);
 const rows = ui.map((tf) => {
   const internal = toInternal[tf] || tf;
+  const plan = resolveTimeframePlan(internal);
   const resolved = resolveTwelveDataInterval(internal);
-  let status = "OK";
-  if (tf === "2m" || tf === "3m") status = resolved === "1min" ? "APPROX (→1min)" : "BROKEN";
-  else if (tf === "10m") status = resolved === "15min" ? "APPROX (→15min)" : "BROKEN";
-  else if (tf === "3H") status = resolved === "2h" ? "APPROX (→2h)" : "BROKEN";
-  else if (tf === "3M" || tf === "6M" || tf === "YTD") status = resolved === "1day" ? "APPROX (→1day)" : "BROKEN";
-  else if (!exact.has(resolved) && resolved !== "1day") status = "CHECK";
-  return { tf, internal, resolved, status };
+  return {
+    tf,
+    internal,
+    resolved,
+    agg: plan.aggregateBars,
+    vis: plan.visibleBars ?? "-",
+    mode: plan.mode,
+    note: plan.note,
+  };
 });
 
-console.log("=== TIMEFRAME AUDIT ===");
+console.log("=== TIMEFRAME AUDIT (plans) ===");
 for (const r of rows) {
-  console.log(`${r.tf.padEnd(4)} → ${r.resolved.padEnd(8)} ${r.status}`);
+  console.log(
+    `${r.tf.padEnd(4)} → fetch=${r.resolved.padEnd(7)} agg=${String(r.agg).padEnd(2)} vis=${String(r.vis).padEnd(5)} ${r.mode.padEnd(10)} ${r.note}`
+  );
 }
 
-const broken = rows.filter((r) => r.status === "BROKEN");
-console.log(`\nBroken count: ${broken.length}`);
-console.log("Exact native TF count:", rows.filter((r) => r.status === "OK").length);
-console.log("Approx count:", rows.filter((r) => r.status.startsWith("APPROX")).length);
+const sig = new Map();
+for (const r of rows) {
+  const key = `${r.resolved}|x${r.agg}|v${r.vis}`;
+  if (!sig.has(key)) sig.set(key, []);
+  sig.get(key).push(r.tf);
+}
+const collisions = [...sig.entries()].filter(([, arr]) => arr.length > 1);
+console.log(`\nUnique plan signatures: ${sig.size}/${rows.length}`);
+console.log(`Collisions: ${collisions.length}`);
+for (const [k, arr] of collisions) console.log(`  ${k} → ${arr.join(",")}`);
+process.exitCode = collisions.length ? 1 : 0;

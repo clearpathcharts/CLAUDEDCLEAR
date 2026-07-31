@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Check,
   ArrowRight,
-  ExternalLink,
   Info,
   Sliders,
 } from 'lucide-react';
@@ -52,10 +51,16 @@ function loadStoredLinks(profile: any): PaymentLinks {
   };
 }
 
+type CheckoutTierId = 'pro' | 'proplus' | 'premium' | 'ultimate';
+type BillingInterval = 'month' | 'year';
+
 type TierCard = {
-  id: keyof PaymentLinks;
+  id: 'basic' | CheckoutTierId;
+  /** Legacy Payment Link fallback slot (used only when server Stripe is not configured). */
+  linkKey?: keyof PaymentLinks;
   name: string;
-  price: string;
+  monthly: string;
+  yearlyPerMonth: string;
   badge: string;
   badgeClass: string;
   blurb: string;
@@ -64,47 +69,75 @@ type TierCard = {
   accentClass?: string;
 };
 
+type MembershipStatus = {
+  active: boolean;
+  tier: string | null;
+  status: string | null;
+  currentPeriodEnd?: string;
+  launchTrialEndsAt?: string;
+  launchTrialDaysLeft?: number;
+};
+
 const TIERS: TierCard[] = [
   {
-    id: 'essentialLink',
-    name: 'Tier One',
-    price: '$0.00',
-    badge: 'FREE ENTRY',
+    id: 'basic',
+    linkKey: 'essentialLink',
+    name: 'Basic',
+    monthly: '$0',
+    yearlyPerMonth: '$0',
+    badge: 'FREE FOREVER',
     badgeClass: 'bg-zinc-800 text-zinc-400',
     blurb: 'Free access to core charting tools, market dashboards, educational content, and introductory trading analytics.',
     features: ['Basic Charts', 'Community Access', 'Market News', 'Educational Tools'],
-    cta: 'Get Started',
+    cta: 'Included Free',
   },
   {
-    id: 'plusLink',
-    name: 'Plus',
-    price: '$9.99',
+    id: 'pro',
+    linkKey: 'plusLink',
+    name: 'Pro',
+    monthly: '$9.95',
+    yearlyPerMonth: '$7.95',
     badge: 'POPULAR',
     badgeClass: 'bg-[#06b6d4]/20 text-[#06b6d4]',
     blurb: 'Enhanced charting features, AI-assisted market tools, advanced watchlists, and premium trading resources.',
     features: ['Advanced Watchlists', 'AI Analysis', 'Premium Dashboards', 'Faster Updates'],
-    cta: 'Subscribe',
+    cta: 'Start 15-Day Free Trial',
   },
   {
-    id: 'premiumLink',
+    id: 'proplus',
+    name: 'Pro+',
+    monthly: '$19.95',
+    yearlyPerMonth: '$15.95',
+    badge: 'POWER TRADER',
+    badgeClass: 'bg-[#8b5cf6]/20 text-[#a78bfa]',
+    blurb: 'Everything in Pro plus deeper analytics, expanded AI tooling, multi-chart layouts, and priority data refresh.',
+    features: ['Everything in Pro', 'Multi-Chart Layouts', 'Expanded AI Tooling', 'Priority Refresh'],
+    cta: 'Start 15-Day Free Trial',
+  },
+  {
+    id: 'premium',
+    linkKey: 'premiumLink',
     name: 'Premium',
-    price: '$25.99',
+    monthly: '$30.95',
+    yearlyPerMonth: '$25.95',
     badge: 'PRO-LEVEL',
     badgeClass: 'bg-gradient-to-r from-teal-500 to-cyan-500 text-zinc-950',
     blurb: 'Professional-grade analytics, premium indicators, advanced market intelligence, and expanded research environments.',
     features: ['Institutional Dashboard', 'Advanced Indicators', 'AI Scanner', 'Premium Research'],
-    cta: 'Subscribe',
+    cta: 'Start 15-Day Free Trial',
     accentClass: 'border-[#00FFFF]',
   },
   {
-    id: 'ultimateLink',
+    id: 'ultimate',
+    linkKey: 'ultimateLink',
     name: 'Ultimate',
-    price: '$100',
+    monthly: '$69.95',
+    yearlyPerMonth: '$64.95',
     badge: 'TIER TWO SUITE',
     badgeClass: 'bg-[#ec4899]/20 text-[#ec4899]',
     blurb: 'Tier Two access to advanced AI systems, institutional-style dashboards, premium analytics, and future ecosystem features.',
     features: ['All Features', 'Tier Two AI Systems', 'Advanced Analytics', 'Future Access'],
-    cta: 'Subscribe',
+    cta: 'Start 15-Day Free Trial',
     accentClass: 'border-[#ec4899]',
   },
 ];
@@ -124,6 +157,13 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     monthSignups: number;
     shareUrl: string;
   } | null>(null);
+
+  const [stripeReady, setStripeReady] = useState(false);
+  const [billing, setBilling] = useState<BillingInterval>('month');
+  const [membership, setMembership] = useState<MembershipStatus | null>(null);
+  const [checkoutTier, setCheckoutTier] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState('');
+  const [checkoutBanner, setCheckoutBanner] = useState<'success' | 'cancelled' | null>(null);
 
   const [wlFirstName, setWlFirstName] = useState(userProfile?.displayName?.split(' ')[0] || '');
   const [wlCountry, setWlCountry] = useState('');
@@ -156,6 +196,91 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
       cancelled = true;
     };
   }, [user?.uid]);
+
+  const fetchMembership = async (): Promise<MembershipStatus | null> => {
+    try {
+      const res = await fetch('/api/membership/me', { credentials: 'include' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const status = (data?.membership as MembershipStatus) || null;
+      if (status) setMembership(status);
+      return status;
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch('/api/stripe/config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) setStripeReady(Boolean(data?.configured));
+      })
+      .catch(() => {});
+    void fetchMembership();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
+
+  // Returning from Stripe Checkout (?membership=success|cancelled)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get('membership');
+    if (outcome !== 'success' && outcome !== 'cancelled') return;
+    setCheckoutBanner(outcome);
+    params.delete('membership');
+    params.delete('tier');
+    params.delete('session_id');
+    const query = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+
+    if (outcome !== 'success') return;
+    // The webhook can land a few seconds after the redirect — poll briefly.
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      void fetchMembership().then((status) => {
+        if (status?.active || attempts >= 10) window.clearInterval(timer);
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubscribe = async (tier: TierCard) => {
+    if (tier.id === 'basic') return;
+    setCheckoutError('');
+    setCheckoutTier(tier.id);
+    try {
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: tier.id, interval: billing }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+      const fallbackLink = tier.linkKey ? links[tier.linkKey] : '';
+      if (res.status === 401) {
+        setCheckoutError('Sign in with your private ClearPath account to start your free trial.');
+      } else if (res.status === 503 && isRealStripePaymentLink(fallbackLink)) {
+        // Server key not configured — fall back to the pasted Payment Link.
+        window.open(fallbackLink, '_blank', 'noopener,noreferrer');
+      } else {
+        setCheckoutError(String(data?.error || 'Could not start Stripe checkout. Try again.'));
+      }
+    } catch {
+      setCheckoutError('Network error starting checkout. Try again.');
+    } finally {
+      setCheckoutTier(null);
+    }
+  };
 
   const waitlistCountries = [
     'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
@@ -226,10 +351,51 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     }
   };
 
-  const isPaid = userProfile?.vipStatus === 'vip_pro' || Boolean(userProfile?.subscriptionActive);
+  const isPaid =
+    Boolean(membership?.active) ||
+    userProfile?.vipStatus === 'vip_pro' ||
+    Boolean(userProfile?.subscriptionActive);
+  const onLaunchTrial = membership?.status === 'launch_trial';
+  const tierDisplayName = (id: string | null | undefined) => {
+    const t = TIERS.find((x) => x.id === id);
+    return t ? t.name.toUpperCase() : (id || 'MEMBER').toUpperCase();
+  };
+  const memberTierLabel = onLaunchTrial
+    ? 'ULTIMATE · LAUNCH GIFT'
+    : membership?.active && membership.tier
+      ? `CLEARPATH ${tierDisplayName(membership.tier)}`
+      : isPaid
+        ? 'CLEARPATH MEMBER'
+        : 'BASIC TIER';
 
   return (
     <div className="flex-1 flex flex-col p-6 lg:p-12 text-white font-sans max-w-7xl mx-auto w-full select-none" id="membership_tab_container">
+
+      {checkoutBanner === 'success' && (
+        <div className="mb-6 rounded-2xl border border-emerald-500/40 bg-emerald-950/40 px-5 py-4 flex items-center gap-3">
+          <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div>
+            <p className="text-[10px] font-mono font-black uppercase tracking-widest text-emerald-400">Free trial started</p>
+            <p className="text-sm text-emerald-100 mt-1">
+              {membership?.active && membership.status !== 'launch_trial'
+                ? `Your ${tierDisplayName(membership.tier)} plan is live — free for 15 days, first bill after the trial.`
+                : 'Stripe confirmed your plan — it activates within a few seconds. Your first 15 days are free.'}
+            </p>
+          </div>
+        </div>
+      )}
+      {checkoutBanner === 'cancelled' && (
+        <div className="mb-6 rounded-2xl border border-zinc-700 bg-zinc-900/60 px-5 py-4">
+          <p className="text-[10px] font-mono font-black uppercase tracking-widest text-zinc-400">Checkout cancelled</p>
+          <p className="text-sm text-zinc-300 mt-1">No charge was made. Pick a plan whenever you are ready.</p>
+        </div>
+      )}
+      {checkoutError && (
+        <div className="mb-6 rounded-2xl border border-rose-500/40 bg-rose-950/40 px-5 py-4">
+          <p className="text-[10px] font-mono font-black uppercase tracking-widest text-rose-400">Checkout error</p>
+          <p className="text-sm text-rose-100 mt-1">{checkoutError}</p>
+        </div>
+      )}
 
       {affiliateReward && (affiliateReward.discountPercent > 0 || affiliateReward.creditDisplay !== '$0.00') && (
         <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -266,14 +432,16 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
               <span>MEMBERSHIP CATALOG</span>
             </span>
             <span className="px-3 py-1 text-[10px] font-mono font-black tracking-widest text-[#FF007F] bg-pink-400/10 border border-pink-400/30 rounded-full uppercase">
-              STRIPE PAYMENT LINKS
+              SECURE STRIPE CHECKOUT
             </span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-black font-mono tracking-tight text-white">
             CLEAR PATH MEMBERSHIPS
           </h1>
           <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed">
-            Choose a plan below. Paid tiers check out on Stripe Payment Links — paste your live buy.stripe.com URLs in the link editor when you are ready.
+            Every new member gets <span className="text-cyan-300 font-bold">Ultimate free for 15 days</span> — no card needed.
+            Then pick any plan and it's <span className="text-cyan-300 font-bold">free for another 15 days</span>. Your first
+            bill only lands after ~30 days, and you can cancel anytime on Stripe.
           </p>
         </div>
 
@@ -288,15 +456,21 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
             </div>
             <span className="text-lg font-black font-mono tracking-wide text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#FFD700]" />
-              <span>{isPaid ? 'CLEARPATH ULTIMATE' : 'STUDENT TIER'}</span>
+              <span>{memberTierLabel}</span>
             </span>
           </div>
           <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
             <span className="text-zinc-500 text-[10px] font-mono">PAYMENT VIA STRIPE</span>
-            {isPaid ? (
-              <span className="text-emerald-400 text-[11px] font-bold font-mono uppercase">PAID MEMBER</span>
+            {onLaunchTrial ? (
+              <span className="text-cyan-300 text-[11px] font-bold font-mono uppercase">
+                {membership?.launchTrialDaysLeft || 0} DAY{(membership?.launchTrialDaysLeft || 0) === 1 ? '' : 'S'} LEFT FREE
+              </span>
+            ) : isPaid ? (
+              <span className="text-emerald-400 text-[11px] font-bold font-mono uppercase">
+                {membership?.status === 'trialing' ? 'FREE TRIAL ACTIVE' : 'PAID MEMBER'}
+              </span>
             ) : (
-              <span className="text-zinc-500 text-[11px] font-bold font-mono uppercase">UNPAID · USE CATALOG</span>
+              <span className="text-zinc-500 text-[11px] font-bold font-mono uppercase">FREE · BASIC TIER</span>
             )}
           </div>
         </div>
@@ -401,10 +575,10 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
             <form onSubmit={handleSaveLinks} className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               {(
                 [
-                  ['essentialLink', '1. Tier One (free) link'],
-                  ['plusLink', '2. Plus ($9.99/mo) link'],
-                  ['premiumLink', '3. Premium ($25.99/mo) link'],
-                  ['ultimateLink', '4. Ultimate ($100/mo) link'],
+                  ['essentialLink', '1. Basic (free) link'],
+                  ['plusLink', '2. Pro ($9.95/mo) link'],
+                  ['premiumLink', '3. Premium ($30.95/mo) link'],
+                  ['ultimateLink', '4. Ultimate ($69.95/mo) link'],
                 ] as const
               ).map(([key, label]) => (
                 <div key={key} className="space-y-1">
@@ -443,44 +617,70 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
               <h4 className="text-xs font-black font-mono uppercase tracking-widest text-[#00D9FF]">
-                Checkout on Stripe
+                30 Days Free — For Everyone
               </h4>
             </div>
             <p className="text-zinc-400 text-[11.5px] leading-relaxed max-w-2xl">
-              ClearPath does not collect card numbers. Paid memberships clear on Stripe Payment Links once you paste live URLs above.
+              Days 1–15: full <strong className="text-white">Ultimate</strong> access free, no card required.
+              Days 16–30: the plan you choose stays free on a Stripe trial. First charge only after ~30 days —
+              cancel anytime before that and pay nothing. ClearPath never collects card numbers; checkout is 100% Stripe.
             </p>
           </div>
-          <a
-            href="https://dashboard.stripe.com/payment-links"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-wider font-mono transition-all"
-          >
-            <span>Open Stripe Payment Links</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+
+          <div className="flex items-center gap-1 p-1 rounded-xl border border-white/10 bg-zinc-950 shrink-0">
+            <button
+              type="button"
+              onClick={() => setBilling('month')}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider font-mono transition-all cursor-pointer ${
+                billing === 'month' ? 'bg-cyan-500 text-zinc-950' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling('year')}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider font-mono transition-all cursor-pointer ${
+                billing === 'year' ? 'bg-cyan-500 text-zinc-950' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Yearly · Save
+            </button>
+          </div>
         </div>
 
-        <div className="pricing-section rounded-3xl" id="custom-pricing-section-container">
+        <div className="pricing-section rounded-3xl grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5" id="custom-pricing-section-container">
           {TIERS.map((tier) => {
-            const href = links[tier.id];
-            const live = isRealStripePaymentLink(href);
+            const fallbackHref = tier.linkKey ? links[tier.linkKey] : '';
+            const fallbackLive = isRealStripePaymentLink(fallbackHref);
+            const canCheckout = tier.id !== 'basic' && (stripeReady || fallbackLive);
+            const isBusy = checkoutTier === tier.id;
+            const isCurrent =
+              membership?.active && membership.status !== 'launch_trial' && membership.tier === tier.id;
+            const price = billing === 'year' ? tier.yearlyPerMonth : tier.monthly;
             return (
               <div
                 key={tier.id}
-                className={`pricing-card text-left flex flex-col justify-between relative ${tier.accentClass || ''}`}
+                className={`pricing-card text-left flex flex-col justify-between relative p-6 rounded-3xl border border-white/10 bg-gradient-to-b from-zinc-950 to-black ${tier.accentClass || ''}`}
               >
                 <div>
-                  <div className="flex justify-between items-start">
-                    <h2 className="font-mono tracking-tight font-black">{tier.name}</h2>
-                    <span className={`${tier.badgeClass} text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono tracking-wider`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <h2 className="font-mono tracking-tight font-black text-lg">{tier.name}</h2>
+                    <span className={`${tier.badgeClass} text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono tracking-wider whitespace-nowrap`}>
                       {tier.badge}
                     </span>
                   </div>
-                  <h3 className="font-mono font-black">
-                    {tier.price}
+                  <h3 className="font-mono font-black text-2xl mt-2">
+                    {price}
                     <span className="text-xs text-zinc-500 font-normal">/mo</span>
                   </h3>
+                  <p className="text-[10px] font-mono text-zinc-500 mt-0.5 min-h-[14px]">
+                    {tier.id === 'basic'
+                      ? 'free forever'
+                      : billing === 'year'
+                        ? 'billed yearly'
+                        : 'billed monthly'}
+                  </p>
                   <p className="text-zinc-500 text-xs mt-2 line-clamp-3">{tier.blurb}</p>
                   <ul className="list-none space-y-3.5 mt-6 mb-8 text-sm">
                     {tier.features.map((f) => (
@@ -495,24 +695,45 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
                 </div>
 
                 <div className="space-y-3">
-                  {live ? (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full text-center transition-all duration-300 hover:scale-[1.03] block"
+                  {tier.id === 'basic' ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full text-center py-3 rounded-xl border border-cyan-500/20 bg-cyan-950/20 text-xs font-black uppercase tracking-widest text-cyan-300"
                     >
                       {tier.cta}
-                    </a>
+                    </button>
+                  ) : isCurrent ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full text-center py-3 rounded-xl border border-emerald-500/40 bg-emerald-950/40 text-xs font-black uppercase tracking-widest text-emerald-300"
+                    >
+                      Your Current Plan
+                    </button>
+                  ) : canCheckout ? (
+                    <button
+                      type="button"
+                      disabled={Boolean(checkoutTier)}
+                      onClick={() => void handleSubscribe(tier)}
+                      className="w-full text-center py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-zinc-950 text-xs font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                    >
+                      {isBusy ? 'Opening Stripe…' : tier.cta}
+                    </button>
                   ) : (
                     <button
                       type="button"
                       disabled
                       className="w-full text-center opacity-50 cursor-not-allowed py-3 rounded-xl border border-white/10 bg-zinc-900 text-xs font-black uppercase tracking-widest text-zinc-400"
-                      title="Paste a live Stripe Payment Link in the editor above"
+                      title="Stripe checkout is not configured yet (set STRIPE_SECRET_KEY on the server)"
                     >
-                      Coming soon — add Stripe link
+                      Coming soon
                     </button>
+                  )}
+                  {tier.id !== 'basic' && (
+                    <p className="text-[10px] font-mono text-zinc-600 text-center">
+                      15 days free · cancel anytime
+                    </p>
                   )}
                 </div>
               </div>

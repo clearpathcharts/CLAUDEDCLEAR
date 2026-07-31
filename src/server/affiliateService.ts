@@ -23,9 +23,12 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 /** First-month prices in cents (matches MembershipTab marketing tiers). */
 export const TIER_PRICE_CENTS: Record<string, number> = {
-  plus: 999,
-  premium: 2599,
-  ultimate: 10000,
+  pro: 995,
+  proplus: 1995,
+  premium: 3095,
+  ultimate: 6995,
+  /** Legacy alias for the retired "Plus" tier — keeps old ledger entries/tools valid. */
+  plus: 995,
 };
 
 export type AffiliateClick = {

@@ -70,6 +70,16 @@ import { registerWaitlist, registerIdentity, RegistrationError } from './src/ser
 import { getAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import { readProfile, writeProfile } from './src/server/profileStore';
+import {
+  createMembershipCheckoutSession,
+  getMembershipStatus,
+  getStripeConfigReport,
+  handleStripeEvent,
+  isBillingInterval,
+  isMembershipTier,
+  StripeServiceError,
+  verifyStripeWebhook,
+} from './src/server/stripeService';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
@@ -87,6 +97,11 @@ import {
   createSocialOsRouter,
   startSocialOsScheduler,
 } from './src/server/socialOs';
+import {
+  getLatestTimeframeVerifyReport,
+  runTimeframeAccuracyVerify,
+  startTimeframeAccuracyScheduler,
+} from './src/server/timeframeAccuracyVerifier';
 import {
   moderateBodyFields,
   runContentModerationSelfTest,
@@ -335,6 +350,25 @@ async function startServer() {
   }));
   app.use(compression());
   app.use(cookieParser());
+
+  // Stripe webhook — MUST be mounted before express.json() because signature
+  // verification needs the raw, unparsed request body. Auth = Stripe signature.
+  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const signature = req.get('stripe-signature') || '';
+    if (!signature) {
+      return res.status(400).json({ error: 'Missing stripe-signature header.' });
+    }
+    try {
+      const event = verifyStripeWebhook(req.body as Buffer, signature);
+      const result = await handleStripeEvent(event);
+      res.json({ received: true, handled: result.handled });
+    } catch (err: any) {
+      const status = err instanceof StripeServiceError ? err.status : 500;
+      if (status >= 500) console.error('[Stripe] webhook processing failed:', err);
+      res.status(status).json({ error: err?.message || 'Webhook processing failed.' });
+    }
+  });
+
   app.use(express.json({ limit: '1mb' }));
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
@@ -745,6 +779,50 @@ async function startServer() {
       /* ignore */
     }
     res.json({ user });
+  });
+
+  // ——— Stripe membership billing ———
+  /** Boolean presence only — never key material. */
+  app.get('/api/stripe/config', (_req, res) => {
+    res.json(getStripeConfigReport());
+  });
+
+  /** Server-trusted membership status for the signed-in member. */
+  app.get('/api/membership/me', (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    if (!sessionUser?.uid) {
+      return res.status(401).json({ error: 'Sign in to view membership status.' });
+    }
+    res.json({ ok: true, membership: getMembershipStatus(sessionUser.uid) });
+  });
+
+  /** Create a subscription Checkout Session and return the hosted checkout URL. */
+  app.post('/api/stripe/create-checkout-session', registrationLimiter, async (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    if (!sessionUser?.uid) {
+      return res.status(401).json({ error: 'Sign in to subscribe.' });
+    }
+    const tier = req.body?.tier;
+    if (!isMembershipTier(tier)) {
+      return res.status(400).json({ error: 'Invalid membership tier. Use pro, proplus, premium, or ultimate.' });
+    }
+    const interval = isBillingInterval(req.body?.interval) ? req.body.interval : 'month';
+    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
+    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    try {
+      const { url } = await createMembershipCheckoutSession({
+        uid: sessionUser.uid,
+        email: sessionUser.email,
+        tier,
+        interval,
+        origin,
+      });
+      res.json({ ok: true, url });
+    } catch (err: any) {
+      const status = err instanceof StripeServiceError ? err.status : 500;
+      if (status >= 500) console.error('[Stripe] checkout session failed:', err);
+      res.status(status).json({ error: err?.message || 'Could not start Stripe checkout.' });
+    }
   });
 
   // ——— Affiliate / referral rewards ———
@@ -1801,6 +1879,32 @@ ${CPT_SITE_GUIDE}`;
       fallbackMode: !hasKeys,
       events: twelvedataEvents,
     });
+  });
+
+  // Latest daily swap-hour timeframe accuracy report (read-only)
+  app.get('/api/diagnostics/timeframe-verify', (_req, res) => {
+    const report = getLatestTimeframeVerifyReport();
+    if (!report) {
+      return res.status(404).json({
+        error: 'NO_REPORT',
+        message:
+          'No timeframe verify report yet. Wait for the daily 02:00–02:59 window or POST /api/diagnostics/timeframe-verify/run.',
+      });
+    }
+    res.json(report);
+  });
+
+  // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
+  app.post('/api/diagnostics/timeframe-verify/run', registrationLimiter, async (_req, res) => {
+    try {
+      const report = await runTimeframeAccuracyVerify({ force: true });
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'VERIFY_FAILED',
+        message: e?.message || 'Timeframe verify failed',
+      });
+    }
   });
 
   // Defense in depth: upstream error messages can embed request URLs, which
@@ -3149,6 +3253,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startSocialOsScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Social OS scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startTimeframeAccuracyScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
     }
 
     try {

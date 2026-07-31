@@ -24,6 +24,20 @@ export type StoredProfile = {
     grantedAt: string;
     grantedBy?: string;
   }[];
+  /** Stripe-managed membership. Set ONLY by the Stripe webhook — never writable via /api/profile/me. */
+  membership?: {
+    tier: string;
+    status: 'active' | 'trialing' | 'past_due' | 'canceled';
+    stripeCustomerId?: string;
+    stripeSubscriptionId?: string;
+    currentPeriodEnd?: string;
+    activatedAt?: string;
+    updatedAt?: string;
+    /** Referrer credited on first real (post-trial) payment. */
+    affiliateCredited?: boolean;
+  };
+  /** Launch gift: every account gets Ultimate free for its first 15 days. Server-set only. */
+  launchTrial?: { startedAt: string };
   updatedAt?: string;
 };
 
