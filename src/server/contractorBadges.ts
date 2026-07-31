@@ -13,6 +13,17 @@ export const IC_BADGE_LABEL = 'ClearPath Worldwide Independent Contractor';
 export const IC_BADGE_IMAGE = '/badges/independent-contractor-128.png';
 export const IC_BADGE_IMAGE_FULL = '/badges/independent-contractor.png';
 
+/**
+ * Certified Affiliate badge — earned automatically, never admin-granted.
+ * Every member is an affiliate from day one; the badge unlocks at
+ * AFFILIATE_BADGE_THRESHOLD successful referred signups (lifetime).
+ */
+export const AFFILIATE_BADGE_ID = 'certified-affiliate';
+export const AFFILIATE_BADGE_LABEL = 'ClearPath Certified Affiliate';
+export const AFFILIATE_BADGE_IMAGE = '/badges/certified-affiliate-128.png';
+export const AFFILIATE_BADGE_IMAGE_FULL = '/badges/certified-affiliate.png';
+export const AFFILIATE_BADGE_THRESHOLD = 15;
+
 export type ContractorBadge = {
   id: string;
   label: string;
@@ -200,6 +211,30 @@ export function applyPendingContractorBadges(
     writePending(pending.filter((p) => p.email !== email));
   }
   return profile;
+}
+
+/**
+ * Auto-grant the Certified Affiliate badge (15 successful referrals).
+ * Idempotent — safe to call on every referral event or dashboard load.
+ */
+export function grantAffiliateBadgeByUid(uid: string): {
+  granted: boolean;
+  already: boolean;
+} {
+  const id = String(uid || '').trim();
+  if (!id) return { granted: false, already: false };
+  const profile = readProfile(id) || { uid: id };
+  if (hasBadge(profile, AFFILIATE_BADGE_ID)) {
+    return { granted: false, already: true };
+  }
+  upsertBadge(profile as StoredProfile, {
+    id: AFFILIATE_BADGE_ID,
+    label: AFFILIATE_BADGE_LABEL,
+    imageUrl: AFFILIATE_BADGE_IMAGE,
+    grantedAt: new Date().toISOString(),
+    grantedBy: `auto:${AFFILIATE_BADGE_THRESHOLD}-referrals`,
+  });
+  return { granted: true, already: false };
 }
 
 /** Seed Dawn + Barry (and any listed emails) — applied or pending. */

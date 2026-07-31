@@ -8,6 +8,10 @@ import {
   ChevronRight, ChevronDown, Award, Globe, Play, Sparkles, RefreshCw,
   Search, ShieldX, HelpCircle, Check, Coins, AlertOctagon, CornerDownRight, Camera
 } from 'lucide-react';
+import {
+  AFFILIATE_TERMS_SECTIONS,
+  AFFILIATE_TERMS_VERSION,
+} from '../../content/affiliateTerms';
 
 // Shared interfaces
 interface Post {
@@ -109,11 +113,52 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   const [referralDesk, setReferralDesk] = useState<{
     code: string;
     shareUrl: string;
+    activated: boolean;
     monthSignups: number;
     discountPercent: number;
     creditDisplay: string;
     successfulReferrals: number;
+    affiliateBadge: {
+      label: string;
+      imageUrl: string;
+      threshold: number;
+      progress: number;
+      remaining: number;
+      earned: boolean;
+    } | null;
+    payout: {
+      availableCents: number;
+      minimumCents: number;
+      pendingCount: number;
+    } | null;
   } | null>(null);
+  const [payoutMessage, setPayoutMessage] = useState('');
+  const [affiliateTermsOpen, setAffiliateTermsOpen] = useState(false);
+  const [affiliateTermsAgreed, setAffiliateTermsAgreed] = useState(false);
+  const [activationBusy, setActivationBusy] = useState(false);
+  const [activationError, setActivationError] = useState('');
+
+  const handleActivateAffiliate = () => {
+    if (!affiliateTermsAgreed || activationBusy) return;
+    setActivationBusy(true);
+    setActivationError('');
+    void fetch('/api/affiliate/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ok) {
+          setReferralDesk((prev) => (prev ? { ...prev, activated: true } : prev));
+          setAffiliateTermsOpen(false);
+        } else {
+          setActivationError(String(data?.error || 'Activation failed — try again.'));
+        }
+      })
+      .catch(() => setActivationError('Activation failed — check your connection and try again.'))
+      .finally(() => setActivationBusy(false));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -124,10 +169,28 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
         setReferralDesk({
           code: String(data.code),
           shareUrl: String(data.shareUrl),
+          activated: Boolean(data.activated),
           monthSignups: Number(data.monthSignups) || 0,
           discountPercent: Number(data.discountPercent) || 0,
           creditDisplay: String(data.creditDisplay || '$0.00'),
           successfulReferrals: Number(data.successfulReferrals) || 0,
+          affiliateBadge: data.affiliateBadge
+            ? {
+                label: String(data.affiliateBadge.label || 'ClearPath Certified Affiliate'),
+                imageUrl: String(data.affiliateBadge.imageUrl || '/badges/certified-affiliate-128.png'),
+                threshold: Number(data.affiliateBadge.threshold) || 15,
+                progress: Number(data.affiliateBadge.progress) || 0,
+                remaining: Number(data.affiliateBadge.remaining) || 0,
+                earned: Boolean(data.affiliateBadge.earned),
+              }
+            : null,
+          payout: data.payout
+            ? {
+                availableCents: Number(data.payout.availableCents) || 0,
+                minimumCents: Number(data.payout.minimumCents) || 2500,
+                pendingCount: Array.isArray(data.payout.pending) ? data.payout.pending.length : 0,
+              }
+            : null,
         });
       })
       .catch(() => {});
@@ -816,6 +879,13 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
       addTelemetryLog('Sign in with a private ClearPath account to unlock your real /r/CODE share link.', 'warn');
       return;
     }
+    if (!referralDesk?.activated) {
+      setAffiliateTermsAgreed(false);
+      setActivationError('');
+      setAffiliateTermsOpen(true);
+      addTelemetryLog('Your link is dormant — accept the Affiliate Agreement to activate it first.', 'warn');
+      return;
+    }
     void navigator.clipboard.writeText(packet).catch(() => {});
     addTelemetryLog(`Referral share link copied: ${packet} (code ${referralDesk?.code})`, 'success');
   };
@@ -937,7 +1007,9 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
               <div className="p-4 bg-zinc-950/80 rounded-2xl border border-zinc-900 space-y-2.5 text-left font-mono text-[10px]">
                 <div className="text-zinc-550 uppercase font-bold text-[9px] border-b border-zinc-900 pb-1.5 flex justify-between items-center">
                   <span>REFERRAL LEDGER</span>
-                  <span className="text-[#00ffe1]">{referralDesk ? 'LIVE' : 'SIGN IN'}</span>
+                  <span className={referralDesk && !referralDesk.activated ? 'text-[#ff5a1f]' : 'text-[#00ffe1]'}>
+                    {referralDesk ? (referralDesk.activated ? 'LIVE' : 'DORMANT') : 'SIGN IN'}
+                  </span>
                 </div>
                 <div className="flex justify-between font-semibold">
                   <span className="text-zinc-500">YOUR CODE:</span>
@@ -955,7 +1027,89 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                       : '—'}
                   </span>
                 </div>
-                {referralDesk?.shareUrl && (
+                {referralDesk && !referralDesk.activated && (
+                  <div className="pt-1.5 border-t border-zinc-900 space-y-1.5">
+                    <p className="text-[8px] text-zinc-500 leading-relaxed">
+                      Your referral link is reserved but not live yet. Accept the Affiliate
+                      Agreement to activate it and start earning 25% lifetime residuals.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setAffiliateTermsAgreed(false); setActivationError(''); setAffiliateTermsOpen(true); }}
+                      className="w-full bg-[#ff007f]/10 hover:bg-[#ff007f] border border-[#ff007f]/40 hover:border-transparent text-[#ff007f] hover:text-white text-[9px] font-black uppercase py-2 rounded-lg transition-all cursor-pointer"
+                    >
+                      Activate your affiliate link
+                    </button>
+                  </div>
+                )}
+                {referralDesk?.activated && referralDesk?.affiliateBadge && (
+                  <div className="pt-1.5 border-t border-zinc-900 space-y-1.5">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-zinc-500 uppercase text-[8px]">AFFILIATE BADGE:</span>
+                      <span className={referralDesk.affiliateBadge.earned ? 'text-[#00ffe1] font-extrabold' : 'text-zinc-400 font-extrabold'}>
+                        {referralDesk.affiliateBadge.earned
+                          ? 'EARNED ✓'
+                          : `${referralDesk.affiliateBadge.progress}/${referralDesk.affiliateBadge.threshold}`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#ff007f] to-[#00ffe1] rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, Math.round((referralDesk.affiliateBadge.progress / referralDesk.affiliateBadge.threshold) * 100))}%`,
+                        }}
+                      />
+                    </div>
+                    {!referralDesk.affiliateBadge.earned && (
+                      <p className="text-[8px] text-zinc-500 leading-relaxed">
+                        {referralDesk.affiliateBadge.remaining} more signups unlock the Certified Affiliate profile badge.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {referralDesk?.activated && referralDesk?.payout && (
+                  <div className="pt-1.5 border-t border-zinc-900 space-y-1.5">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-zinc-500 uppercase text-[8px]">PAYOUT READY:</span>
+                      <span className="text-[#00ffe1] font-extrabold">
+                        ${(referralDesk.payout.availableCents / 100).toFixed(2)}
+                        {referralDesk.payout.pendingCount > 0 ? ' · 1 PENDING' : ''}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={referralDesk.payout.availableCents < referralDesk.payout.minimumCents}
+                      onClick={() => {
+                        const dest = window.prompt(
+                          'Where should we send your payout? Enter your PayPal email:'
+                        );
+                        if (!dest || !dest.includes('@')) return;
+                        void fetch('/api/affiliate/payout-request', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({ method: 'paypal', destination: dest.trim() }),
+                        })
+                          .then((r) => r.json())
+                          .then((data) => {
+                            setPayoutMessage(
+                              data?.ok
+                                ? 'Payout requested — sent within 5 business days.'
+                                : String(data?.error || 'Payout request failed.')
+                            );
+                          })
+                          .catch(() => setPayoutMessage('Payout request failed — try again.'));
+                      }}
+                      className="w-full bg-[#00ffe1]/10 hover:bg-[#00ffe1] border border-[#00ffe1]/30 hover:border-transparent text-[#00ffe1] hover:text-black text-[9px] font-black uppercase py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Request payout (${(referralDesk.payout.minimumCents / 100).toFixed(0)} min)
+                    </button>
+                    {payoutMessage && (
+                      <p className="text-[8px] text-[#00ffe1] leading-relaxed">{payoutMessage}</p>
+                    )}
+                  </div>
+                )}
+                {referralDesk?.activated && referralDesk?.shareUrl && (
                   <p className="text-[8px] text-zinc-500 break-all leading-relaxed pt-1 border-t border-zinc-900">
                     {referralDesk.shareUrl}
                   </p>
@@ -972,6 +1126,76 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           </div>
         </div>
+
+        {/* AFFILIATE AGREEMENT ACTIVATION MODAL */}
+        {affiliateTermsOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="w-full max-w-2xl max-h-[85vh] flex flex-col bg-[#0a0a12] border-2 border-[#ff007f]/40 rounded-2xl shadow-[0_0_40px_rgba(255,0,127,0.25)] overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-900">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">
+                    Affiliate Program Agreement
+                  </h3>
+                  <p className="text-[9px] font-mono text-zinc-500 mt-0.5">
+                    Version {AFFILIATE_TERMS_VERSION} · 25% lifetime residual · single-level · not an MLM ·{' '}
+                    <a href="/affiliate-terms" target="_blank" rel="noopener noreferrer" className="text-[#00ffe1] hover:underline">
+                      open full page
+                    </a>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAffiliateTermsOpen(false)}
+                  className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-left">
+                {AFFILIATE_TERMS_SECTIONS.map((section) => (
+                  <div key={section.heading}>
+                    <h4 className="text-[11px] font-black uppercase tracking-wider text-[#00ffe1] mb-1.5">
+                      {section.heading}
+                    </h4>
+                    {section.body.map((p, i) => (
+                      <p key={i} className="text-[11px] text-zinc-400 leading-relaxed mb-1.5">
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="px-5 py-4 border-t border-zinc-900 space-y-3">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={affiliateTermsAgreed}
+                    onChange={(e) => setAffiliateTermsAgreed(e.target.checked)}
+                    className="mt-0.5 accent-[#ff007f]"
+                  />
+                  <span className="text-[10px] text-zinc-300 leading-relaxed">
+                    I have read and agree to the ClearPath Trader Affiliate Program Agreement
+                    (v{AFFILIATE_TERMS_VERSION}). I understand commissions are 25% lifetime
+                    residuals on members I personally refer, and that misleading income claims
+                    and spam will end my participation.
+                  </span>
+                </label>
+                {activationError && (
+                  <p className="text-[10px] text-red-400 font-mono">{activationError}</p>
+                )}
+                <button
+                  type="button"
+                  disabled={!affiliateTermsAgreed || activationBusy}
+                  onClick={handleActivateAffiliate}
+                  className="w-full bg-gradient-to-r from-[#ff007f] to-[#00ffe1] text-black text-[11px] font-black uppercase tracking-widest py-3 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_25px_rgba(255,0,127,0.4)]"
+                >
+                  {activationBusy ? 'Activating…' : 'Activate my affiliate link'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ==================================================== */}
         {/* CENTER PANEL / MAIN INTERACTIVE COCKPIT (Col-span 6)  */}

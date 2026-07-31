@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import ExternalAboutPage from './components/ExternalAboutPage';
+import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
 import SocialOsPage from './components/SocialOsPage';
@@ -213,6 +214,8 @@ export default function App() {
     );
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
+  } else if (currentPath === '/affiliate-terms') {
+    content = <AffiliateTermsPage />;
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {

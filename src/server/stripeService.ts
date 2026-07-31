@@ -234,15 +234,27 @@ function saveMembership(
   return next;
 }
 
-/** Credit the referrer once, on the first real (post-trial) payment. */
-function creditAffiliateOnce(uid: string, record: MembershipRecord) {
-  if (record.status !== 'active' || record.affiliateCredited) return;
+/**
+ * Lifetime residual: credit the referrer 25% of every paid billing period.
+ * Idempotent per period (keyed on currentPeriodEnd), so webhook retries and
+ * repeated subscription.updated events never double-credit.
+ */
+function creditAffiliateResidual(uid: string, record: MembershipRecord, interval?: string) {
+  if (record.status !== 'active') return;
+  const def = TIER_DEFS[record.tier as MembershipTierId];
+  const amountCents = def
+    ? (interval === 'year' ? def.yearlyCents : def.monthlyCents)
+    : undefined;
   try {
-    markReferredPaid({ referredUid: uid, tier: record.tier });
+    markReferredPaid({
+      referredUid: uid,
+      tier: record.tier,
+      amountCents,
+      periodKey: record.currentPeriodEnd || 'first',
+    });
   } catch (err: any) {
-    console.warn('[Stripe] affiliate paid-conversion credit skipped:', err?.message || err);
+    console.warn('[Stripe] affiliate residual credit skipped:', err?.message || err);
   }
-  writeProfile(uid, { membership: { ...record, affiliateCredited: true } });
 }
 
 function mapSubscriptionStatus(status: Stripe.Subscription.Status): MembershipRecord['status'] {
@@ -297,7 +309,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
         stripeSubscriptionId: sub.id,
         currentPeriodEnd: subscriptionPeriodEnd(sub),
       });
-      creditAffiliateOnce(uid, record);
+      creditAffiliateResidual(uid, record, String(sub.metadata?.interval || 'month'));
       return { handled: true };
     }
     default:

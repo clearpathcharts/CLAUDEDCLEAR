@@ -14,6 +14,8 @@ interface PrivateLoginDeskProps {
   open: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
+  /** Prefill from activation links (/activate?email=...). */
+  initialEmail?: string;
 }
 
 /**
@@ -24,9 +26,10 @@ export default function PrivateLoginDesk({
   open,
   onClose,
   initialMode = 'login',
+  initialEmail = '',
 }: PrivateLoginDeskProps) {
   const [step, setStep] = useState<Step>('identify');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,6 +38,12 @@ export default function PrivateLoginDesk({
   const [busy, setBusy] = useState(false);
   const [knownName, setKnownName] = useState('');
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Pick up activation-link prefill when the desk opens (prop arrives after mount).
+  React.useEffect(() => {
+    if (open && initialEmail && !email) setEmail(initialEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialEmail]);
 
   const reset = () => {
     setStep('identify');

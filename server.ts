@@ -174,10 +174,14 @@ import {
   attributeSignup,
   ensureAffiliateMember,
   getAffiliateDashboard,
+  activateAffiliate,
+  adminListPayouts,
+  adminResolvePayout,
   getLeaderboard,
   hydrateAffiliateFromDurableStore,
   markReferredPaid,
   recordClick,
+  requestAffiliatePayout,
   resolveCode,
 } from './src/server/affiliateService';
 
@@ -909,6 +913,54 @@ async function startServer() {
       path: '/',
     });
     res.json({ ok: true, code: member.code });
+  });
+
+  /** Accept the Affiliate Agreement → referral link goes live. */
+  app.post('/api/affiliate/activate', (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    if (!sessionUser?.uid) {
+      return res.status(401).json({ error: 'Sign in to activate your affiliate link.' });
+    }
+    try {
+      const member = activateAffiliate(sessionUser.uid);
+      res.json({
+        ok: true,
+        activated: true,
+        activatedAt: member.activatedAt,
+        termsVersion: member.termsVersion,
+        code: member.code,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Activation failed' });
+    }
+  });
+
+  /** Member requests a cash payout of accumulated affiliate credit. */
+  app.post('/api/affiliate/payout-request', (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    if (!sessionUser?.uid) {
+      return res.status(401).json({ error: 'Sign in to request a payout.' });
+    }
+    const result = requestAffiliatePayout({
+      uid: sessionUser.uid,
+      method: typeof req.body?.method === 'string' ? req.body.method : 'paypal',
+      destination: typeof req.body?.destination === 'string' ? req.body.destination : '',
+    });
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
+  });
+
+  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
+    res.json({ ok: true, payouts: adminListPayouts() });
+  });
+
+  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
+    const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
+    const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
+    if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
+    const result = adminResolvePayout({ payoutId, action });
+    if (!result.ok) return res.status(400).json(result);
+    res.json(result);
   });
 
   app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {

@@ -171,11 +171,32 @@ export default function Auth() {
   const passcodeRef = useRef<HTMLInputElement>(null);
   const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
   const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
+  const [activationEmail, setActivationEmail] = useState('');
 
   const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
     setPrivateLoginMode(mode);
     setPrivateLoginOpen(true);
   };
+
+  // Activation links: /activate (or ?login=1) auto-opens the member login,
+  // optionally prefilling the email (?email=member@example.com). /join opens register.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const path = window.location.pathname.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = String(params.get('email') || '').trim();
+      if (emailParam && emailParam.includes('@')) setActivationEmail(emailParam);
+      if (path === '/activate' || path === '/login' || params.get('login') === '1') {
+        openPrivateLogin('login');
+      } else if (path === '/join' || params.get('register') === '1') {
+        openPrivateLogin('register');
+      }
+    } catch {
+      /* ignore malformed URLs */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Demo presentation state
   const [demoOpen, setDemoOpen] = useState(false);
@@ -2468,6 +2489,7 @@ Not the other way around.`}
       <PrivateLoginDesk
         open={privateLoginOpen}
         initialMode={privateLoginMode}
+        initialEmail={activationEmail}
         onClose={() => setPrivateLoginOpen(false)}
       />
 
