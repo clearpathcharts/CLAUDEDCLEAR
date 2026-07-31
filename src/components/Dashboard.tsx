@@ -77,6 +77,8 @@ import { isFounderEmail } from '../lib/founder';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
+import FeatureGate from './FeatureGate';
+import { useMembership } from '../hooks/useMembership';
 import { useAppShell } from '../contexts/AppShellContext';
 import { isAppShell as detectAppShell } from '../lib/appShell';
 
@@ -358,6 +360,27 @@ const TabContent = ({
   showHomepageContacts: boolean,
   handleSetShowHomepageContacts: (v: boolean) => void
 }) => {
+  // Membership tier gating (founders bypass all gates)
+  const { tierRank, loading: membershipLoading, hasFeature } = useMembership(profile);
+  const gate = (
+    feature: Parameters<typeof hasFeature>[0],
+    requiredTier: 'pro' | 'proplus' | 'premium' | 'ultimate',
+    featureTitle: string,
+    perks: string[],
+    node: React.ReactNode
+  ) => (
+    <FeatureGate
+      allowed={isFounder || hasFeature(feature)}
+      loading={membershipLoading}
+      requiredTier={requiredTier}
+      featureTitle={featureTitle}
+      perks={perks}
+      onUpgrade={() => setActiveTab('Membership')}
+    >
+      {node}
+    </FeatureGate>
+  );
+
   const content = useMemo(() => {
     switch (activeTab) {
       case 'Discovery': return (
@@ -383,21 +406,37 @@ const TabContent = ({
           onProfileChange={onProfileChange}
         />
       );
-      case 'ThemeTerminal': return <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />;
-      case 'Macro': return <MacroDashboard />;
-      case 'Fundamentals': return <FundamentalsPanel />;
+      case 'ThemeTerminal': return gate(
+        'multiChart', 'proplus', 'Multi-Chart Theme Terminal',
+        ['4-chart synced layouts', 'Theme-matched terminals', 'Deeper candle history'],
+        <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />
+      );
+      case 'Macro': return gate(
+        'premiumDashboards', 'pro', 'Macro Dashboard',
+        ['Global macro indicators', 'Rates, inflation & growth', 'Premium dashboards'],
+        <MacroDashboard />
+      );
+      case 'Fundamentals': return gate(
+        'premiumDashboards', 'pro', 'Fundamentals Panel',
+        ['Company fundamentals', 'Financial statements', 'Valuation metrics'],
+        <FundamentalsPanel />
+      );
       case 'News': return <NewsPanel />;
       case 'Founders': return <FoundersPortal />;
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
       case 'Yours': return <YoursPage />;
       case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
-      case 'Workspace': return (
+      case 'Workspace': return gate(
+        'workspace', 'ultimate', 'Workspace Desk',
+        ['Integrated workspace tools', 'Tier Two ecosystem access', 'Future features first'],
         <Suspense fallback={<TabLoading />}>
           <GoogleDesk />
         </Suspense>
       );
-      case 'TheRiver': return (
+      case 'TheRiver': return gate(
+        'expandedAi', 'proplus', 'INDACREATOR Studio',
+        ['Build custom indicators', 'AI-assisted scripting', 'Expanded AI tooling'],
         <Suspense fallback={<TabLoading />}>
           <RiverWorkstation />
         </Suspense>
@@ -406,7 +445,9 @@ const TabContent = ({
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
       case 'Diagnostics': return isFounder ? <MarketDiagnostics /> : <YoursPage />;
-      case 'EncyclopediaOfIndicators': return (
+      case 'EncyclopediaOfIndicators': return gate(
+        'advancedIndicators', 'premium', 'Advanced Indicator Library',
+        ['Institutional indicator suite', 'Advanced chart overlays', 'Premium research'],
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
         </Suspense>
@@ -416,17 +457,35 @@ const TabContent = ({
           <EncyclopediaLayout />
         </Suspense>
       );
-      case 'Portfolio': return <PortfolioTracker />;
+      case 'Portfolio': return gate(
+        'premiumDashboards', 'pro', 'Portfolio Tracker',
+        ['Track positions & P/L', 'Performance analytics', 'Premium dashboards'],
+        <PortfolioTracker />
+      );
       case 'Calendar': return <EconomicCalendar />;
-      case 'Geomap': return <GeographicMap />;
-      case 'StrategyMarket': return <StrategyMarket />;
-      case 'Alerts': return <AlertsCenter />;
+      case 'Geomap': return gate(
+        'institutional', 'premium', 'Geographic Intelligence Map',
+        ['Global market heat map', 'Institutional-style views', 'Regional session intel'],
+        <GeographicMap />
+      );
+      case 'StrategyMarket': return gate(
+        'expandedAi', 'proplus', 'Strategy Market',
+        ['Community strategies', 'Expanded AI tooling', 'Advanced setups'],
+        <StrategyMarket />
+      );
+      case 'Alerts': return gate(
+        'alerts', 'pro', 'Alerts Center',
+        ['Price & event alerts', 'Faster updates', 'Never miss a move'],
+        <AlertsCenter />
+      );
       case 'Tasks': return <TodoList profile={profile} />;
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
       case 'CeoDashboard': return isFounder ? <CeoDashboard /> : <YoursPage />;
       case 'MeetTheBoard': return <MeetTheBoard />;
-      case 'GlobalSessions': return (
+      case 'GlobalSessions': return gate(
+        'institutional', 'premium', 'Global Trading Sessions',
+        ['Session kill zones', 'Institutional timing windows', 'Liquidity maps'],
         <div className="max-w-4xl mx-auto" id="view_global_trading_sessions">
           <h1 className="text-white text-2xl font-black uppercase tracking-wide mb-6">
             Global Trading Sessions
@@ -484,6 +543,8 @@ const TabContent = ({
     handleSetShowHomepageContacts,
     activeChat,
     setActiveChat,
+    tierRank,
+    membershipLoading,
   ]);
 
   if (!content) return null;

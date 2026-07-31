@@ -80,6 +80,7 @@ import {
   StripeServiceError,
   verifyStripeWebhook,
 } from './src/server/stripeService';
+import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import {
   fetchEpisodesFromFeed,
@@ -787,13 +788,22 @@ async function startServer() {
     res.json(getStripeConfigReport());
   });
 
-  /** Server-trusted membership status for the signed-in member. */
+  /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', (req, res) => {
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
     }
-    res.json({ ok: true, membership: getMembershipStatus(sessionUser.uid) });
+    const status = getMembershipStatus(sessionUser.uid);
+    const effectiveTier = status.active ? status.tier : 'basic';
+    res.json({
+      ok: true,
+      membership: {
+        ...status,
+        tierRank: tierRankOf(effectiveTier),
+        features: unlockedFeatures(effectiveTier),
+      },
+    });
   });
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
