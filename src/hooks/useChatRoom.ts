@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '../contexts/FirebaseContext';
 
 export interface ChatRoomMessage {
   id: string;
@@ -11,6 +12,13 @@ export interface ChatRoomMessage {
 }
 
 export type ChatConnectionStatus = 'ONLINE' | 'CONNECTING' | 'OFFLINE';
+
+export type CommunityLockNotice = {
+  message: string;
+  reason?: string;
+  expiresAt?: string;
+  featuresAllowed?: boolean;
+};
 
 const HANDLE_KEY = 'cp_chat_handle';
 const AVATAR_KEY = 'cp_chat_avatar';
@@ -37,13 +45,20 @@ function getChatAvatarSeed(handle: string): string {
 }
 
 export function useChatRoom(roomId: string) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatRoomMessage[]>([]);
   const [status, setStatus] = useState<ChatConnectionStatus>('CONNECTING');
   const [onlineCount, setOnlineCount] = useState(0);
   const [handle, setHandle] = useState(getChatHandle);
+  const [communityLock, setCommunityLock] = useState<CommunityLockNotice | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const roomRef = useRef(roomId);
   const joinedRef = useRef(false);
+  const userIdRef = useRef<string | undefined>(user?.uid);
+
+  useEffect(() => {
+    userIdRef.current = user?.uid;
+  }, [user?.uid]);
 
   const joinRoom = useCallback((socket: WebSocket, nextRoomId: string) => {
     if (joinedRef.current && roomRef.current !== nextRoomId) {
@@ -88,6 +103,15 @@ export function useChatRoom(roomId: string) {
               if (typeof parsed.onlineCount === 'number') setOnlineCount(parsed.onlineCount);
             } else if (parsed.type === 'CHAT_ROOM_PRESENCE' && parsed.roomId === roomRef.current) {
               if (typeof parsed.onlineCount === 'number') setOnlineCount(parsed.onlineCount);
+            } else if (parsed.type === 'COMMUNITY_LOCKED') {
+              setCommunityLock({
+                message:
+                  String(parsed.message || '') ||
+                  'Community communication is locked. Other features remain available.',
+                reason: parsed.reason ? String(parsed.reason) : undefined,
+                expiresAt: parsed.expiresAt ? String(parsed.expiresAt) : undefined,
+                featuresAllowed: parsed.featuresAllowed !== false,
+              });
             }
           } catch {
             // ignore malformed packets
@@ -129,6 +153,7 @@ export function useChatRoom(roomId: string) {
   const sendMessage = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return false;
+    if (communityLock) return false;
 
     wsRef.current.send(JSON.stringify({
       type: 'CHAT_ROOM_MESSAGE',
@@ -136,9 +161,10 @@ export function useChatRoom(roomId: string) {
       author: handle,
       avatar: getChatAvatarSeed(handle),
       text: trimmed,
+      userId: userIdRef.current,
     }));
     return true;
-  }, [handle]);
+  }, [handle, communityLock]);
 
   const updateHandle = useCallback((next: string) => {
     const clean = next.trim().slice(0, 32);
@@ -147,6 +173,8 @@ export function useChatRoom(roomId: string) {
     setHandle(clean);
   }, []);
 
+  const clearCommunityLock = useCallback(() => setCommunityLock(null), []);
+
   return {
     messages,
     status,
@@ -154,6 +182,8 @@ export function useChatRoom(roomId: string) {
     handle,
     sendMessage,
     updateHandle,
+    communityLock,
+    clearCommunityLock,
     isOwnMessage: (author: string) => author === handle,
   };
 }

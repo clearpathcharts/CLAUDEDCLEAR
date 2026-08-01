@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
+import BotQuarantinePanel from './ceo/BotQuarantinePanel';
 import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
 
 type SafePrivateMemberRow = {
@@ -51,7 +52,7 @@ function formatJoined(value?: string | null): string {
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'members'>('system');
+  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'bot-quarantine'>('system');
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -337,9 +338,21 @@ export default function CeoDashboard() {
         >
           MEMBERS / ALL USERS
         </button>
+        <button
+          onClick={() => setCeoTab('bot-quarantine')}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'bot-quarantine'
+              ? 'text-amber-300 border-amber-400 bg-amber-500/5 shadow-[0_12px_24px_-12px_rgba(251,191,36,0.4)]'
+              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+          }`}
+        >
+          BOT QUARANTINE
+        </button>
       </div>
 
-      {ceoTab === 'members' ? (
+      {ceoTab === 'bot-quarantine' ? (
+        <BotQuarantinePanel />
+      ) : ceoTab === 'members' ? (
         <div className="space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Send, Radio, Globe, MessageSquare } from 'lucide-react';
+import { useAuth } from '../../contexts/FirebaseContext';
 
 interface SocialPost {
   id: string;
@@ -11,13 +12,20 @@ interface SocialPost {
 }
 
 export default function CompactSocialTerminal() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [wsStatus, setWsStatus] = useState<'ONLINE' | 'CONNECTING' | 'OFFLINE'>('OFFLINE');
   const [msgInput, setMsgInput] = useState('');
   const [activeAccount, setActiveAccount] = useState<{ platform: 'x' | 'discord' | 'stocktwits' | 'linkedin', handle: string } | null>(null);
+  const [lockNotice, setLockNotice] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const userIdRef = useRef<string | undefined>(user?.uid);
+
+  useEffect(() => {
+    userIdRef.current = user?.uid;
+  }, [user?.uid]);
 
   // Read connected accounts from localStorage if saved or fallback
   useEffect(() => {
@@ -58,6 +66,11 @@ export default function CompactSocialTerminal() {
                 isSystemNotification: true
               };
               setPosts(prev => [systemNotif, ...prev]);
+            } else if (parsed.type === 'COMMUNITY_LOCKED') {
+              setLockNotice(
+                String(parsed.message || '') ||
+                  'Community communication locked. Other features remain available.'
+              );
             }
           } catch (err) {
             console.error('Error in compact ws packet parse:', err);
@@ -93,14 +106,15 @@ export default function CompactSocialTerminal() {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!msgInput.trim() || !activeAccount) return;
+    if (!msgInput.trim() || !activeAccount || lockNotice) return;
 
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'SOCIAL_POST',
         platform: activeAccount.platform,
         handle: activeAccount.handle,
-        text: msgInput.trim()
+        text: msgInput.trim(),
+        userId: userIdRef.current,
       }));
       setMsgInput('');
     } else {
@@ -180,18 +194,29 @@ export default function CompactSocialTerminal() {
       </div>
 
       {/* Instant Broadcast Command form */}
+      {lockNotice && (
+        <div className="shrink-0 mb-2 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[8px] leading-relaxed text-amber-200">
+          {lockNotice}
+        </div>
+      )}
       <form onSubmit={handleSend} className="shrink-0 flex gap-1 pt-2 border-t border-white/5">
         <input 
           type="text"
           value={msgInput}
           onChange={(e) => setMsgInput(e.target.value)}
-          placeholder={activeAccount ? `Broadcast as ${activeAccount.handle}...` : "Connecting..."}
-          disabled={!activeAccount}
+          placeholder={
+            lockNotice
+              ? 'Community locked — other features still work'
+              : activeAccount
+                ? `Broadcast as ${activeAccount.handle}...`
+                : 'Connecting...'
+          }
+          disabled={!activeAccount || Boolean(lockNotice)}
           className="flex-1 bg-black/60 border border-white/10 rounded px-2.5 py-1.5 text-[9px] text-zinc-100 placeholder-zinc-500 font-mono focus:outline-none focus:border-[#FF00C8]/50 disabled:opacity-50"
         />
         <button 
           type="submit"
-          disabled={!msgInput.trim() || !activeAccount}
+          disabled={!msgInput.trim() || !activeAccount || Boolean(lockNotice)}
           className="bg-indigo-600 hover:bg-indigo-500 px-2.5 rounded flex items-center justify-center border border-indigo-500 transition-colors disabled:opacity-50"
         >
           <Send size={10} className="text-white" />

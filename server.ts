@@ -135,7 +135,15 @@ import {
   convertWaitlistToPrivateAccounts,
   listFounderInvites,
   listWaitlistConversionCandidates,
-} from './src/server/waitlistConvertService';import {
+} from './src/server/waitlistConvertService';
+import {
+  getPublicLockStatus,
+  listQuarantines,
+  liftQuarantine,
+  quarantineBotAttempt,
+  resolveActorUid,
+} from './src/server/botQuarantineService';
+import {
   bumpPrivateApply,
   bumpPublicApply,
   getPublicEntry,
@@ -1040,6 +1048,94 @@ async function startServer() {
    * Founder-only invite export (email + temp password + activation key).
    * Query ?includeSecrets=1 required to include tempPassword.
    */
+  /**
+   * CEO Dashboard — bot quarantine queue (auto + manual).
+   * Locked users keep all product features; only group/community comms are blocked.
+   */
+  app.get('/api/admin/bot-quarantine', requireFounderOrCatalogAdmin, (req, res) => {
+    try {
+      const statusParam = String(req.query.status || 'all');
+      const status =
+        statusParam === 'active' || statusParam === 'expired' || statusParam === 'lifted'
+          ? statusParam
+          : 'all';
+      const limit = Number(req.query.limit) || 100;
+      const listed = listQuarantines({ status, limit });
+      res.json({ ok: true, ...listed });
+    } catch (error) {
+      console.error('[admin/bot-quarantine] list failed:', error);
+      res.status(500).json({ error: 'Failed to list bot quarantines' });
+    }
+  });
+
+  app.post('/api/admin/bot-quarantine', requireFounderOrCatalogAdmin, (req, res) => {
+    try {
+      const body = req.body || {};
+      const uid = resolveActorUid({
+        uid: String(body.uid || '').trim(),
+        handle: String(body.handle || '').trim(),
+        ipAddress: String(body.ipAddress || '').trim(),
+      });
+      if (!uid || uid === 'guest:unknown') {
+        return res.status(400).json({ error: 'uid, handle, or ipAddress is required' });
+      }
+      const reason = String(body.reason || 'Manual CEO quarantine — bot / automation abuse').trim();
+      const quarantinedCode = String(body.quarantinedCode || body.code || '').trim();
+      if (!quarantinedCode) {
+        return res.status(400).json({ error: 'quarantinedCode is required (the payload to isolate)' });
+      }
+      const record = quarantineBotAttempt({
+        uid,
+        email: body.email ? String(body.email).trim() : undefined,
+        displayName: body.displayName ? String(body.displayName).trim() : undefined,
+        handle: body.handle ? String(body.handle).trim() : undefined,
+        ipAddress: body.ipAddress ? String(body.ipAddress).trim() : undefined,
+        reason,
+        quarantinedCode,
+        detectionSignals: Array.isArray(body.detectionSignals)
+          ? body.detectionSignals.map(String)
+          : ['manual'],
+        source: 'manual',
+        channel: body.channel ? String(body.channel).trim() : 'ceo-dashboard',
+      });
+      res.json({ ok: true, record });
+    } catch (error) {
+      console.error('[admin/bot-quarantine] create failed:', error);
+      res.status(500).json({ error: 'Failed to quarantine account' });
+    }
+  });
+
+  app.post('/api/admin/bot-quarantine/:id/lift', requireFounderOrCatalogAdmin, (req, res) => {
+    try {
+      const id = String(req.params.id || '').trim();
+      const liftedBy =
+        getPrivateSessionUser(req)?.email ||
+        String(req.body?.liftedBy || 'founder');
+      const record = liftQuarantine(id, liftedBy);
+      if (!record) {
+        return res.status(404).json({ error: 'Quarantine record not found' });
+      }
+      res.json({ ok: true, record });
+    } catch (error) {
+      console.error('[admin/bot-quarantine] lift failed:', error);
+      res.status(500).json({ error: 'Failed to lift quarantine' });
+    }
+  });
+
+  /** Authenticated member — am I locked out of community comms? */
+  app.get('/api/bot-quarantine/me', async (req, res) => {
+    try {
+      const uid = await resolveAuthenticatedUid(req);
+      if (!uid) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      res.json({ ok: true, uid, ...getPublicLockStatus(uid) });
+    } catch (error) {
+      console.error('[bot-quarantine/me] failed:', error);
+      res.status(500).json({ error: 'Failed to read quarantine status' });
+    }
+  });
+
   app.get('/api/admin/members/invites', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const includeSecrets = String(req.query.includeSecrets || '') === '1';
