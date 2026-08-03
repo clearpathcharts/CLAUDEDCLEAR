@@ -665,6 +665,34 @@ export async function loginPrivateUser(input: {
   return toPublic(found);
 }
 
+/**
+ * Admin-only: reset an existing member's password (founder console / support).
+ * Rehashes and writes through to both local file and Firestore. Throws 404 when
+ * the account does not exist. Never used by unauthenticated routes.
+ */
+export async function resetPrivateUserPassword(input: {
+  email: string;
+  newPassword: string;
+}): Promise<PublicPrivateUser> {
+  const email = normalizeEmail(input.email);
+  const newPassword = input.newPassword || '';
+  if (!email.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
+  if (newPassword.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
+
+  const found =
+    (await findFirestoreUserByEmail(email)) ||
+    readLocalUsers().find((u) => u.email === email) ||
+    null;
+  if (!found) throw new PrivateAuthError('No account found for that email.', 404);
+
+  const { hash, salt } = await hashPassword(newPassword);
+  found.passwordHash = hash;
+  found.passwordSalt = salt;
+  upsertLocalUser(found);
+  await upsertFirestoreUser(found);
+  return toPublic(found);
+}
+
 /** Client-facing session payload stored in localStorage + mirrored in Express session */
 export function buildClientSessionUser(user: PublicPrivateUser) {
   return {

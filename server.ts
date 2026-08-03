@@ -125,6 +125,7 @@ import {
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
+  resetPrivateUserPassword,
 } from './src/server/privateAuthService';
 import {
   bootRecoverPrivateAccountsFromStripe,
@@ -1202,6 +1203,28 @@ async function startServer() {
     } catch (error) {
       console.error('[admin/members/invites] Failed:', error);
       res.status(500).json({ error: 'Failed to list invites' });
+    }
+  });
+
+  /**
+   * Founder / catalog-admin only — reset an existing member's private password.
+   * Body: { email, newPassword (min 8) }. Use to recover a member who is locked
+   * out. Send the new password to the member privately (never in chat/logs).
+   */
+  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const user = await resetPrivateUserPassword({
+        email: String(req.body?.email || ''),
+        newPassword: String(req.body?.newPassword || ''),
+      });
+      res.json({ ok: true, user });
+    } catch (error) {
+      if (error instanceof PrivateAuthError) {
+        res.status(error.status).json({ error: error.message });
+        return;
+      }
+      console.error('[admin/members/reset-password] Failed:', error);
+      res.status(500).json({ error: 'Password reset failed' });
     }
   });
 
