@@ -25,6 +25,12 @@
 - Firebase web client key: set `VITE_FIREBASE_API_KEY` (and related `VITE_FIREBASE_*`) in `.env` / **Cloud Run service env** — do not commit live keys into `firebase-applet-config.json`. Restrict the key by HTTP referrer in Google Cloud Console. The server injects `window.__CLEARPATH_FIREBASE_CONFIG__` at HTML serve time (`src/server/firebaseClientConfig.ts`), so production does **not** require rebuilding the Vite bundle just to add the key — set the vars on the running Cloud Run service and redeploy/restart. Missing keys must degrade to offline mocks that still render the SPA (`npm run test:firebase-mock` guards this).
 - OAuth `/auth/:provider` stubs only allow relative SPA returnTo paths (open-redirect hardened).
 
+### Backups (non-negotiable)
+- **Never tell the founder backups are unnecessary.** Cloud Run disk is ephemeral; durable Firestore/Stripe still needs founder-owned JSON exports.
+- CEO Dashboard → **Download disaster backup** (`GET /api/admin/backup/download`) saves private accounts (with hashes), waitlist, invites, and Stripe customer emails. Also snapshots to Firestore `founder_backups` on boot / `POST /api/admin/backup/snapshot`.
+- Restore: `POST /api/admin/backup/restore` with a backup's `privateAccounts.accounts` (or `{ accounts: [...] }`).
+- Self-test: `npm run test:founder-backup`.
+
 ### Startup log gotcha
 - Startup runs "compliance"/"truth" audits ~10s after boot that print messages like `[TRUTH ENGINE COMPLIANCE ALERT] ... breach(es) found! Score: 67%`. These are **internal application scoring logic**, not server errors — the server is healthy.
 

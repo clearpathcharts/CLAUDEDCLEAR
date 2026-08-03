@@ -268,6 +268,50 @@ export default function CeoDashboard() {
     }
   };
 
+  const downloadDisasterBackup = async () => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/backup/download', {
+        headers,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Backup download failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clearpath-founder-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      // Also persist a Firestore copy when possible.
+      try {
+        await fetch('/api/admin/backup/snapshot', {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: '{}',
+        });
+      } catch {
+        /* download already succeeded */
+      }
+      setConvertMsg(
+        'Disaster backup downloaded. Keep that JSON on a drive you control. Never post it in chat. You always need backups — agents must never say otherwise.'
+      );
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Backup download failed.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
   const runFounderImport = async (dryRun: boolean) => {
     setConvertBusy(true);
     setConvertMsg(null);
@@ -564,6 +608,14 @@ export default function CeoDashboard() {
               </button>
               <button
                 type="button"
+                onClick={() => void downloadDisasterBackup()}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-teal-500/40 bg-teal-500/10 text-teal-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-teal-500/20 disabled:opacity-50"
+              >
+                Download disaster backup
+              </button>
+              <button
+                type="button"
                 onClick={() => setImportOpen((v) => !v)}
                 disabled={convertBusy}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-sky-500/20 disabled:opacity-50"
@@ -571,6 +623,15 @@ export default function CeoDashboard() {
                 Import members
               </button>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-teal-500/25 bg-teal-500/5 px-4 py-3 text-teal-50/90 text-sm leading-relaxed">
+            <strong className="uppercase tracking-wider text-teal-200/90">Always keep a backup</strong>
+            <p className="mt-2 mb-0">
+              Cloud Run disk is temporary. Download disaster backup stores private members, waitlist,
+              invites, and Stripe customer emails as a JSON file on your machine. Do this after every
+              member change. No agent is allowed to tell you backups are unnecessary.
+            </p>
           </div>
 
           {membersPayload?.meta?.productionHardFail ? (

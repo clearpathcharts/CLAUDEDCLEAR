@@ -138,6 +138,12 @@ import {
   seedEmergencyKnownMembers,
 } from './src/server/emergencyMemberSeed';
 import {
+  bootPersistFounderBackupSnapshot,
+  buildFounderBackupPackage,
+  persistFounderBackupSnapshot,
+  restorePrivateAccountsFromBackupPackage,
+} from './src/server/founderBackupService';
+import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
 import {
@@ -1169,6 +1175,70 @@ async function startServer() {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       console.error('[admin/members/reset-password] Failed:', error);
       res.status(status).json({ error: error?.message || 'Password reset failed' });
+    }
+  });
+
+  /**
+   * Founder-only disaster backup download (JSON).
+   * Includes private-account password hashes + invite temp passwords.
+   * Keep offline. Agents must never claim backups are unnecessary.
+   */
+  app.get('/api/admin/backup/download', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const backup = await buildFounderBackupPackage();
+      const stamp = backup.exportedAt.replace(/[:.]/g, '-');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="clearpath-founder-backup-${stamp}.json"`
+      );
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).send(JSON.stringify(backup, null, 2));
+    } catch (error: any) {
+      console.error('[admin/backup/download] Failed:', error);
+      res.status(500).json({ error: error?.message || 'Backup download failed' });
+    }
+  });
+
+  /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
+  app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const result = await persistFounderBackupSnapshot();
+      if (result.ok === false) {
+        return res.status(503).json({ error: 'Could not persist backup', reason: result.reason });
+      }
+      res.json({
+        ok: true,
+        id: result.id,
+        counts: result.counts,
+        howToKeep:
+          'Also use Download disaster backup and save the JSON on a drive you control. Firestore snapshots help, but your own file is the real safety net.',
+      });
+    } catch (error: any) {
+      console.error('[admin/backup/snapshot] Failed:', error);
+      res.status(500).json({ error: error?.message || 'Backup snapshot failed' });
+    }
+  });
+
+  /**
+   * Founder-only: restore private accounts from a disaster backup JSON.
+   * Body: { accounts: [...], dryRun?: boolean } or full backup package { privateAccounts: { accounts } }.
+   */
+  app.post('/api/admin/backup/restore', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const fromPackage = Array.isArray(req.body?.privateAccounts?.accounts)
+        ? req.body.privateAccounts.accounts
+        : null;
+      const accounts = Array.isArray(req.body?.accounts) ? req.body.accounts : fromPackage || [];
+      const result = await restorePrivateAccountsFromBackupPackage({
+        accounts,
+        dryRun: Boolean(req.body?.dryRun),
+      });
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/backup/restore] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Backup restore failed' });
     }
   });
 
@@ -3561,6 +3631,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             );
           } catch (seedErr: any) {
             console.warn('[STARTUP] Emergency known-member seed skipped:', seedErr?.message || seedErr);
+          }
+          try {
+            await bootPersistFounderBackupSnapshot();
+          } catch (backupErr: any) {
+            console.warn('[STARTUP] Founder backup snapshot skipped:', backupErr?.message || backupErr);
           }
         }
       } catch (e: any) {
