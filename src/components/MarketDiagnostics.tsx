@@ -23,7 +23,7 @@ import { auth } from "../firebase";
 interface ApiStatusItem {
   name: string;
   tier: string;
-  status: "ONLINE" | "DEGRADED" | "MOCK_FALLBACK" | "OFFLINE";
+  status: "ONLINE" | "DEGRADED" | "MOCK_FALLBACK" | "OFFLINE" | "NOT_CONFIGURED";
   responseTime: number;
   message: string;
 }
@@ -125,6 +125,12 @@ export default function MarketDiagnostics() {
             FAILOVER ACTIVE
           </span>
         );
+      case "NOT_CONFIGURED":
+        return (
+          <span className={`${base} bg-zinc-900 border border-zinc-500/40 text-zinc-300`}>
+            NOT CONFIGURED
+          </span>
+        );
       default:
         return (
           <span className={`${base} bg-rose-950/50 border border-rose-500/30 text-rose-400`}>
@@ -198,7 +204,9 @@ export default function MarketDiagnostics() {
                           ? "border-amber-500/40 text-amber-400 bg-amber-950/30"
                           : api.status === "MOCK_FALLBACK"
                             ? "border-blue-500/40 text-blue-400 bg-blue-950/30"
-                            : "border-rose-500/40 text-rose-400 bg-rose-950/30";
+                            : api.status === "NOT_CONFIGURED"
+                              ? "border-zinc-500/40 text-zinc-300 bg-zinc-900/50"
+                              : "border-rose-500/40 text-rose-400 bg-rose-950/30";
                     return (
                       <div
                         key={`chip-${api.name}`}
@@ -208,7 +216,11 @@ export default function MarketDiagnostics() {
                           {api.name}
                         </div>
                         <div className="text-[11px] sm:text-xs font-bold mt-0.5 uppercase tracking-wider">
-                          {api.status === "MOCK_FALLBACK" ? "FAILOVER" : api.status}
+                          {api.status === "MOCK_FALLBACK"
+                            ? "FAILOVER"
+                            : api.status === "NOT_CONFIGURED"
+                              ? "N/A"
+                              : api.status}
                           {api.responseTime > 0 ? ` · ${api.responseTime}ms` : ""}
                         </div>
                       </div>
@@ -225,7 +237,9 @@ export default function MarketDiagnostics() {
                     <div className="p-2 rounded bg-white/5 mt-0.5 border border-white/5">
                       <Database className={`h-4 w-4 ${
                         api.status === "ONLINE" ? "text-emerald-400" :
-                        api.status === "DEGRADED" ? "text-amber-400" : "text-cyan-400"
+                        api.status === "DEGRADED" ? "text-amber-400" :
+                        api.status === "NOT_CONFIGURED" ? "text-zinc-400" :
+                        api.status === "OFFLINE" ? "text-rose-400" : "text-cyan-400"
                       }`} />
                     </div>
                     <div>

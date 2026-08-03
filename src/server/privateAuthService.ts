@@ -470,6 +470,78 @@ function toSafeMember(
   return row;
 }
 
+/**
+ * Founder disaster-recovery export — includes password hashes/salts from durable
+ * store only. Never use for public APIs. Required so a wipe can be restored
+ * without inventing emails.
+ */
+export async function exportPrivateAccountsForBackup(): Promise<{
+  accounts: PrivateUserRecord[];
+  source: 'firestore' | 'stripe' | 'local' | 'none';
+}> {
+  const remote = await listDurableUsers();
+  if (remote && remote.length > 0) {
+    const source: 'firestore' | 'stripe' = hasFirestoreDurableStore() ? 'firestore' : 'stripe';
+    return {
+      accounts: remote
+        .slice()
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))),
+      source,
+    };
+  }
+  if (isProdEnv()) {
+    return {
+      accounts: [],
+      source: hasFirestoreDurableStore() ? 'firestore' : stripePrivateStoreConfigured() ? 'stripe' : 'none',
+    };
+  }
+  return { accounts: readLocalUsers(), source: 'local' };
+}
+
+/**
+ * Founder restore of a single private account from disaster backup (hash/salt).
+ * Upserts durable store — does not require knowing the plaintext password.
+ */
+export async function restorePrivateAccountFromBackup(input: {
+  email: string;
+  displayName?: string;
+  uid?: string;
+  passwordHash: string;
+  passwordSalt: string;
+  createdAt?: string;
+  lastLoginAt?: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+  const email = normalizeEmail(input.email);
+  const passwordHash = String(input.passwordHash || '').trim();
+  const passwordSalt = String(input.passwordSalt || '').trim();
+  if (!email.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
+  if (passwordHash.length < 16 || passwordSalt.length < 8) {
+    throw new PrivateAuthError('Backup passwordHash/passwordSalt missing or invalid.');
+  }
+
+  const existing = await findDurableUserByEmail(email);
+  const record: PrivateUserRecord = {
+    uid: (input.uid || existing?.uid || `cpt_${crypto.randomBytes(12).toString('hex')}`).trim(),
+    email,
+    displayName:
+      (input.displayName || existing?.displayName || email.split('@')[0] || 'Member').trim().slice(0, 80),
+    passwordHash,
+    passwordSalt,
+    createdAt: (input.createdAt || existing?.createdAt || new Date().toISOString()).trim(),
+  };
+  if (input.lastLoginAt || existing?.lastLoginAt) {
+    record.lastLoginAt = (input.lastLoginAt || existing?.lastLoginAt || '').trim();
+  }
+
+  const ok = await upsertDurableUser(record);
+  if (!ok) {
+    throw new PrivateAuthError('Failed to restore private account to durable store.', 503);
+  }
+  upsertLocalUser(record);
+  return toPublic(record);
+}
+
 /** Read-only member list for CEO Dashboard. Strips all secret fields. */
 export async function listPrivateMembersSafe(): Promise<{
   members: SafePrivateMember[];

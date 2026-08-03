@@ -41,5 +41,10 @@ jobs:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:private-durable
 
+      - name: Founder disaster-backup self-test
+        env:
+          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
+        run: npm run test:founder-backup
+
       - name: Build
         run: npm run build

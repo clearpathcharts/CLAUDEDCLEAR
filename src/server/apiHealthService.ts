@@ -1,12 +1,16 @@
 import axios from 'axios';
-import { getDb } from '../firebase';
-import { collection, addDoc, serverTimestamp, getDocs, limit, query } from '../firebase';
 import {
   getTwelveDataApiKey,
   getFredApiKey,
   getNewsDataApiKey,
   getFinnhubApiKey,
 } from './secrets';
+import {
+  getAdminFirestore,
+  getFirebaseAdminStatus,
+  probeAdminFirestore,
+} from './firebaseAdmin';
+import { getPrivateStorageMeta } from './privateAuthService';
 
 // ============================================
 // TYPES
@@ -243,41 +247,97 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
     })
   );
 
-  // ---------- Firebase ----------
-  // Real probe: attempt a trivial, cheap Firestore read. If Firestore is
-  // unreachable, misconfigured, or rules reject it, this throws and the
-  // service correctly reports OFFLINE/DEGRADED instead of a fixed "ONLINE".
+  // ---------- Firebase / private accounts ----------
+  // IMPORTANT: probe with Admin SDK (server credentials), NOT the browser
+  // client SDK. Client rules reject unauthenticated reads of api_health_logs
+  // and were falsely painting Firestore / Auth / Storage as OFFLINE while
+  // Private Login (Admin + Stripe durable store) was healthy.
 
   checks.push(
     timedProbe('Firestore', 'Database', async () => {
-      const db = getDb();
-      const q = query(collection(db, 'api_health_logs'), limit(1));
-      await getDocs(q);
-      return { detail: 'Firestore read succeeded.' };
+      const ok = await probeAdminFirestore();
+      const status = getFirebaseAdminStatus();
+      if (!ok) {
+        throw new Error(
+          status.reason ||
+            'Firestore Admin probe failed (missing ADC / FIREBASE_SERVICE_ACCOUNT or IAM).'
+        );
+      }
+      return {
+        detail: `Admin Firestore OK (mode=${status.mode}${status.projectId ? `, project=${status.projectId}` : ''}).`,
+      };
     })
   );
 
-  // Firebase Auth and Storage don't have a cheap unauthenticated REST probe
-  // worth calling on a 15s cooldown, so rather than fake their status we
-  // report them as tied to the Firestore check above (same project, same
-  // credentials, same most-likely failure mode: project misconfiguration).
   checks.push(
-    Promise.resolve<HealthResult>({
-      name: 'Firebase Auth',
-      tier: 'Authentication',
-      status: 'NOT_CONFIGURED',
-      responseTime: 0,
-      message: 'No standalone probe implemented yet. See Firestore status as a proxy for project health.'
-    })
+    (async (): Promise<HealthResult> => {
+      const start = Date.now();
+      const admin = getFirebaseAdminStatus();
+      const durable = admin.firestore === true;
+      return {
+        name: 'Firebase Auth',
+        tier: 'Authentication',
+        status: durable ? 'ONLINE' : admin.configured ? 'DEGRADED' : 'NOT_CONFIGURED',
+        responseTime: Date.now() - start,
+        message: durable
+          ? 'Admin credentials present — Auth Admin SDK available (same project as Firestore).'
+          : admin.reason ||
+            'Firebase Admin offline. Private Login may still work via Stripe durable store.',
+      };
+    })()
   );
+
   checks.push(
-    Promise.resolve<HealthResult>({
-      name: 'Firebase Storage',
-      tier: 'Storage',
-      status: 'NOT_CONFIGURED',
-      responseTime: 0,
-      message: 'No standalone probe implemented yet. See Firestore status as a proxy for project health.'
-    })
+    (async (): Promise<HealthResult> => {
+      const start = Date.now();
+      const admin = getFirebaseAdminStatus();
+      const durable = admin.firestore === true;
+      return {
+        name: 'Firebase Storage',
+        tier: 'Storage',
+        status: durable ? 'ONLINE' : admin.configured ? 'DEGRADED' : 'NOT_CONFIGURED',
+        responseTime: Date.now() - start,
+        message: durable
+          ? 'Admin credentials present — Storage Admin available when used (same project as Firestore).'
+          : admin.reason ||
+            'Firebase Admin offline. Storage client features may be limited; private accounts use Admin/Stripe.',
+      };
+    })()
+  );
+
+  checks.push(
+    (async (): Promise<HealthResult> => {
+      const start = Date.now();
+      const meta = getPrivateStorageMeta();
+      const responseTime = Date.now() - start;
+      if (meta.productionHardFail) {
+        return {
+          name: 'Private Login Accounts',
+          tier: 'Authentication',
+          status: 'OFFLINE',
+          responseTime,
+          message:
+            meta.persistenceWarning ||
+            'PRODUCTION BLOCKED: no durable store (Firestore Admin + Stripe unavailable).',
+        };
+      }
+      if (meta.durable && meta.writesAllowed) {
+        return {
+          name: 'Private Login Accounts',
+          tier: 'Authentication',
+          status: 'ONLINE',
+          responseTime,
+          message: `Durable store online (${meta.privateStorage}${meta.stripeDurable ? '+stripe' : ''}). Member logins survive Cloud Run redeploys.`,
+        };
+      }
+      return {
+        name: 'Private Login Accounts',
+        tier: 'Authentication',
+        status: 'DEGRADED',
+        responseTime,
+        message: meta.persistenceWarning || `storage=${meta.privateStorage}`,
+      };
+    })()
   );
 
   // ---------- Calendar Integrations ----------
@@ -352,22 +412,24 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
   latestStatusCache = orderedResults;
   lastCheckedTimestamp = Date.now();
 
-  // Commit metrics telemetry to Firestore. This is now live, not commented
-  // out, so the api_health_logs collection actually accumulates history
-  // you can graph or alert on later.
+  // Commit metrics telemetry via Admin SDK (bypasses client security rules).
   try {
-    const logsRef = collection(getDb(), 'api_health_logs');
-    await Promise.all(
-      orderedResults.map((result) =>
-        addDoc(logsRef, {
+    const db = getAdminFirestore();
+    if (db) {
+      const batch = db.batch();
+      const checkedAt = new Date().toISOString();
+      for (const result of orderedResults) {
+        const ref = db.collection('api_health_logs').doc();
+        batch.set(ref, {
           api_name: result.name,
           status: result.status,
           response_time: result.responseTime,
           message: result.message || '',
-          checked_at: serverTimestamp()
-        })
-      )
-    );
+          checked_at: checkedAt,
+        });
+      }
+      await batch.commit();
+    }
   } catch (firestoreLogErr) {
     console.warn('[apiHealthService] Failed logging telemetry to Firestore:', firestoreLogErr);
   }
