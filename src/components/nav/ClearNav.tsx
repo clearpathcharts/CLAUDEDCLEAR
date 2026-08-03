@@ -74,11 +74,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Crown,
       label: "MEMBERSHIPS",
     },
-    {
-      id: "Founders",
-      icon: Crown,
-      label: "FOUNDERS",
-    },
   ];
 
   const secondaryNavItems: NavItem[] = [
@@ -151,9 +146,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isActive = activeTab === item.id;
 
-    const isGold =
-      item.id === "Membership" ||
-      item.id === "Founders";
+    const isGold = item.id === "Membership";
 
     const isPink =
       item.id === "Biography" ||

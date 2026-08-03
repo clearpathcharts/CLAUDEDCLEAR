@@ -96,7 +96,6 @@ const MembershipTab = lazy(() => import('./MembershipTab'));
 const NewsPanel = lazy(() => import('./NewsPanel'));
 const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
 const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
-const FoundersPortal = lazy(() => import('./FoundersPortal'));
 const KillZones = lazy(() => import('./KillZones'));
 const GoogleDesk = lazy(() => import('./GoogleDesk'));
 const LegalFooter = lazy(() => import('./LegalFooter'));
@@ -145,6 +144,8 @@ const RETIRED_TABS: Record<string, string> = {
   Intelligence: 'News',
   Leaderboard: 'News',
   ReferralDesk: 'Yours',
+  // Broken PIN gate removed from the site — old links land on Memberships.
+  Founders: 'Membership',
 };
 
 function normalizeTabId(tabId: string): string {
@@ -422,7 +423,6 @@ const TabContent = ({
         <FundamentalsPanel />
       );
       case 'News': return <NewsPanel />;
-      case 'Founders': return <FoundersPortal />;
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
       case 'Yours': return <YoursPage />;
@@ -674,7 +674,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     localStorage.setItem('cp_show_homepage_contacts', val ? 'true' : 'false');
   };
 
-  // Removed showFoundersModal Escape hook listener
 
   const [showAdditionalTerms, setShowAdditionalTerms] = useState(false);
   const [isEditingIntro, setIsEditingIntro] = useState(false);
@@ -1158,13 +1157,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk']);
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders']);
         if (retiredTabs.has(hash)) {
           setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
         } else {
         const validHash = menuItems.find(m => m.id === hash) || 
           hash === 'TheRiver' || 
-          hash === 'Founders' || 
           hash === 'CeoDashboard' || 
           hash === 'ThemeTerminal' || 
           hash === 'Market' || 
@@ -1897,7 +1895,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         )}
       </AnimatePresence>
 
-      {/* Removed static Founders Portal Modal, since it now renders in the main full screen view natively */}
       
       {/* Ambient Monitor Scanlines & CRT Noise Filter */}
       {showTerminalMatrixNoise && (

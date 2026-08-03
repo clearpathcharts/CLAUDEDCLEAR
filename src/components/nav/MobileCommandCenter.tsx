@@ -143,13 +143,6 @@ const ACCOUNT_ITEMS: NavItem[] = [
     colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
     glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
   },
-  {
-    id: "Founders",
-    icon: Crown,
-    label: "FOUNDERS",
-    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
-    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
-  },
 ];
 
 const SECTION_HEADER_COLORS: Record<string, string> = {
