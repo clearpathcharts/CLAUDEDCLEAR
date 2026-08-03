@@ -79,6 +79,8 @@ async function provisionWithInvite(input: {
     email,
     password,
     displayName: displayName.slice(0, 80),
+    // Persist one-time password on Stripe metadata so invites survive redeploys.
+    tempPassword: generated ? password : undefined,
   });
 
   if (generated) {

@@ -8,7 +8,7 @@ let initAttempted = false;
 let adminApp: App | null = null;
 let adminMode: 'service_account' | 'adc' | 'none' = 'none';
 let adminFailReason: string | undefined;
-/** null = not probed yet; only `true` means durable writes are allowed. */
+/** null = not probed yet; only `true` means durable Firestore writes are allowed. */
 let firestoreProbeOk: boolean | null = null;
 
 export type FirebaseAdminStatus = {
@@ -35,7 +35,6 @@ export function hasFirebaseAdminCredentials(): boolean {
   const adcPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim();
   if (adcPath && fs.existsSync(adcPath)) return true;
 
-  // Cloud Run / Functions / App Engine — metadata server ADC is available.
   return Boolean(
     process.env.K_SERVICE ||
       process.env.FUNCTION_TARGET ||
@@ -52,8 +51,11 @@ export function ensureAdminApp(): App | null {
 
   try {
     if (!hasFirebaseAdminCredentials()) {
+      adminMode = 'none';
+      adminFailReason =
+        'No credentials (set FIREBASE_SERVICE_ACCOUNT JSON, or attach a Cloud Run SA with Firestore + ADC).';
       console.warn(
-        '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / ADC). Using local file fallback.'
+        '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / ADC). Using Stripe/local fallbacks.'
       );
       return null;
     }
@@ -76,11 +78,6 @@ export function ensureAdminApp(): App | null {
           return null;
         }
       } else {
-<<<<<<< HEAD
-        // Explicit ADC file or GCP runtime — safe to use application-default.
-=======
-        // Prefer GOOGLE_APPLICATION_CREDENTIALS, else gcloud / Cloud Run ADC.
->>>>>>> 56a30cf (Stop private accounts and waitlist from using ephemeral Cloud Run disk)
         try {
           adminApp = initializeApp({
             credential: applicationDefault(),
@@ -92,15 +89,10 @@ export function ensureAdminApp(): App | null {
           adminApp = null;
           adminMode = 'none';
           adminFailReason =
-            'No credentials (set FIREBASE_SERVICE_ACCOUNT JSON, or attach a Cloud Run SA with Firestore + ADC). Registration will refuse durable writes in production.';
+            'No credentials (set FIREBASE_SERVICE_ACCOUNT JSON, or attach a Cloud Run SA with Firestore + ADC).';
           console.warn(
-<<<<<<< HEAD
-            '[Firebase Admin] ADC init failed. Registration data will use local file fallback.',
-            adcError
-=======
-            '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / ADC). Registration data will use local file fallback in non-production only.',
+            '[Firebase Admin] ADC init failed. Registration data will use Stripe/local fallback.',
             adcError?.message || adcError
->>>>>>> 56a30cf (Stop private accounts and waitlist from using ephemeral Cloud Run disk)
           );
           return null;
         }
@@ -175,7 +167,7 @@ export async function probeAdminFirestore(): Promise<boolean> {
     firestoreClient = null;
     adminFailReason =
       error?.message ||
-      'Firestore probe failed (credentials/IAM/project). Private accounts will not use durable store.';
+      'Firestore probe failed (credentials/IAM/project). Private accounts will not use Firestore durable store.';
     console.warn('[Firebase Admin] Firestore probe FAILED — treating Admin as offline:', adminFailReason);
     return false;
   }
@@ -200,7 +192,10 @@ export function getFirebaseAdminStatus(): FirebaseAdminStatus {
 
 /** Test-only: allow re-init after env changes. */
 export function __resetFirebaseAdminForTests() {
-  firestore = null;
+  firestoreClient = null;
   initAttempted = false;
   adminApp = null;
+  adminMode = 'none';
+  adminFailReason = undefined;
+  firestoreProbeOk = null;
 }

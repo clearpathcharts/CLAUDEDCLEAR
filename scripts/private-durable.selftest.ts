@@ -10,8 +10,10 @@ import os from 'node:os';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-durable-'));
 process.chdir(tmp);
 process.env.NODE_ENV = 'production';
+process.env.CLEARPATH_DISABLE_FIRESTORE_ADMIN = '1';
 delete process.env.FIREBASE_SERVICE_ACCOUNT;
 delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+delete process.env.STRIPE_SECRET_KEY;
 
 async function main() {
   const auth = await import('../src/server/privateAuthService.ts');

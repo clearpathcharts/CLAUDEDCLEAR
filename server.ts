@@ -160,6 +160,7 @@ import {
   getNewsDataApiKey,
   getSecretPresenceReport,
   getSessionSecret,
+  getStripeSecretKey,
   getBoardAccessCode,
   FMP_ALLOWED_ENDPOINTS,
 } from './src/server/secrets';
@@ -524,15 +525,30 @@ async function startServer() {
 
   // Passport & Auth Middleware
   // Never use a guessable/hardcoded signing key — forged cookies = account takeover.
-  // Prefer SESSION_SECRET (min 32 chars). Missing → per-boot random (warn).
+  // Prefer SESSION_SECRET (min 32 chars). If missing in production but Stripe is
+  // configured, derive a stable secret from STRIPE_SECRET_KEY so sessions survive
+  // Cloud Run restarts/redeploys without wiping logins. Last resort: random (warn).
   let sessionSecret = getSessionSecret();
   if (!sessionSecret || sessionSecret.length < 32) {
-    if (sessionSecret && sessionSecret.length < 32) {
-      console.warn('[Security] SESSION_SECRET is shorter than 32 characters; generating a stronger ephemeral secret.');
-    } else if (isProd) {
-      console.warn('[Security] SESSION_SECRET is not set in production. Generating an ephemeral random secret; set SESSION_SECRET to keep sessions valid across restarts.');
+    const stripeKey = getStripeSecretKey();
+    if (stripeKey && stripeKey.length >= 16) {
+      sessionSecret = crypto
+        .createHmac('sha256', 'clearpath-session-v1')
+        .update(stripeKey)
+        .digest('hex');
+      if (isProd) {
+        console.warn(
+          '[Security] SESSION_SECRET unset — using stable secret derived from STRIPE_SECRET_KEY so logins survive redeploys. Set SESSION_SECRET explicitly when you can.'
+        );
+      }
+    } else {
+      if (sessionSecret && sessionSecret.length < 32) {
+        console.warn('[Security] SESSION_SECRET is shorter than 32 characters; generating a stronger ephemeral secret.');
+      } else if (isProd) {
+        console.warn('[Security] SESSION_SECRET is not set in production. Generating an ephemeral random secret; set SESSION_SECRET to keep sessions valid across restarts.');
+      }
+      sessionSecret = crypto.randomBytes(48).toString('hex');
     }
-    sessionSecret = crypto.randomBytes(48).toString('hex');
   }
   app.use(session({
     secret: sessionSecret,
@@ -638,12 +654,14 @@ async function startServer() {
         writesAllowed: privateMeta.writesAllowed,
         productionHardFail: privateMeta.productionHardFail,
         storage: privateMeta.privateStorage,
+        stripeDurable: privateMeta.stripeDurable,
         firebaseAdmin: getFirebaseAdminStatus(),
       },
       session: {
-        secretConfigured: sessionSecretConfigured,
-        // Ephemeral secret = logins die on every Cloud Run revision replace.
-        ephemeral: !sessionSecretConfigured && isProd,
+        // True when explicit SESSION_SECRET is set OR we can derive a stable one from Stripe.
+        secretConfigured: sessionSecretConfigured || Boolean(getStripeSecretKey()),
+        // Ephemeral only when neither SESSION_SECRET nor Stripe-derived secret is available.
+        ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
       },
     });
   });
