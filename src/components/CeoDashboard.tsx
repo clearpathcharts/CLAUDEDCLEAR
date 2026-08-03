@@ -243,6 +243,33 @@ export default function CeoDashboard() {
     }
   };
 
+  const clearReleasedWaitlist = async () => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/waitlist/clear-released', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: '{}',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || `Clear waitlist failed (${res.status})`);
+      }
+      setConvertMsg(
+        body.message ||
+          `Waitlist cleared: ${body.markedConverted || 0} released. Refresh Members if the table still shows old rows.`
+      );
+      await loadAdminMembers();
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Could not clear waitlist.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
   const runWaitlistConvert = async (dryRun: boolean) => {
     setConvertBusy(true);
     setConvertMsg(null);
@@ -815,6 +842,14 @@ export default function CeoDashboard() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-emerald-500/20 disabled:opacity-50"
               >
                 RELEASE waitlist → Private Login + passwords
+              </button>
+              <button
+                type="button"
+                onClick={() => void clearReleasedWaitlist()}
+                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-50"
+              >
+                EMPTY WAITLIST (already Private Login)
               </button>
               <button
                 type="button"
