@@ -139,7 +139,10 @@ function writeState(state: AffiliateState) {
   ensureDir();
   fs.writeFileSync(path.join(DATA_DIR, STATE_FILE), JSON.stringify(state, null, 2));
   // Write-through to Firestore so referral codes/credits survive redeploys.
-  void pushStateToFirestore(state);
+  // Extra .catch: Firestore ADC failures can surface as secondary rejections in CI.
+  void pushStateToFirestore(state).catch((err) => {
+    console.warn('[affiliate] Firestore write-through rejected (local copy saved):', err);
+  });
 }
 
 async function pushStateToFirestore(state: AffiliateState): Promise<boolean> {

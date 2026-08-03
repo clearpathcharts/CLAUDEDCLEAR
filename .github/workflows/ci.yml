@@ -31,6 +31,9 @@ jobs:
         run: npm run test:firebase-mock
 
       - name: Affiliate rewards self-test
+        env:
+          # Self-test is local-file only; never probe GCP ADC in Actions.
+          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:affiliate
 
       - name: Build
