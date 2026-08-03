@@ -235,7 +235,7 @@ export default function CeoDashboard() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(body.error || `Convert failed (${res.status})`);
+        throw new Error(body.message || body.error || `Convert failed (${res.status})`);
       }
       setConvertMsg(
         dryRun
@@ -260,7 +260,7 @@ export default function CeoDashboard() {
         credentials: 'include',
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Invites failed (${res.status})`);
+      if (!res.ok) throw new Error(body.message || body.error || `Invites failed (${res.status})`);
       setInvitesPreview(
         (body.invites || []).map((inv: any) => ({
           email: inv.email,
@@ -293,7 +293,7 @@ export default function CeoDashboard() {
         body: JSON.stringify({ dryRun }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Stripe recover failed (${res.status})`);
+      if (!res.ok) throw new Error(body.message || body.error || `Stripe recover failed (${res.status})`);
       if (!body.stripeConfigured) {
         setConvertMsg('Stripe is not configured on this server — cannot recover from customers.');
         return;
@@ -323,7 +323,7 @@ export default function CeoDashboard() {
         body: JSON.stringify({ dryRun, resetExisting: true }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Emergency seed failed (${res.status})`);
+      if (!res.ok) throw new Error(body.message || body.error || `Emergency seed failed (${res.status})`);
       setConvertMsg(
         dryRun
           ? `Emergency dry run: ${body.created} would be created, ${body.reset} would get new passwords (${body.members?.length || 0} known survivors).`
@@ -357,7 +357,7 @@ export default function CeoDashboard() {
         body: JSON.stringify({ email }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Password reset failed (${res.status})`);
+      if (!res.ok) throw new Error(body.message || body.error || `Password reset failed (${res.status})`);
       setConvertMsg(
         `Reset OK for ${body.email} (${body.created ? 'account created' : 'password updated'}). Temp password: ${body.tempPassword}. Send privately — they use Private Login.`
       );
@@ -385,7 +385,7 @@ export default function CeoDashboard() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Backup download failed (${res.status})`);
+        throw new Error(body.message || body.error || `Backup download failed (${res.status})`);
       }
       const blob = await res.blob();
       const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -440,7 +440,7 @@ export default function CeoDashboard() {
         body: JSON.stringify({ members, dryRun }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || `Import failed (${res.status})`);
+      if (!res.ok) throw new Error(body.message || body.error || `Import failed (${res.status})`);
       setConvertMsg(
         dryRun
           ? `Import dry run: ${body.created} would be created, ${body.already} already exist (${body.candidates} rows).`
