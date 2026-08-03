@@ -80,7 +80,8 @@ export async function buildFounderBackupPackage(opts?: {
   const includeStripe = opts?.includeStripeCustomerEmails !== false;
   const [priv, waitlist, invites] = await Promise.all([
     exportPrivateAccountsForBackup(),
-    listWaitlistRegistrationsSafe(2000),
+    // Full history for disaster recovery — include released/converted + test rows.
+    listWaitlistRegistrationsSafe(2000, { activeOnly: false }),
     listFounderInvites(),
   ]);
 

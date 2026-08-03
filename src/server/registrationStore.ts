@@ -136,6 +136,27 @@ export type SafeWaitlistMember = {
   source: 'firestore' | 'local';
 };
 
+export type ListWaitlistOptions = {
+  /**
+   * When true (default), hide released/converted rows and smoke-test emails so the
+   * CEO Waitlist empties after “Release waitlist → Private Login”.
+   * Pass false for disaster backups that need full history.
+   */
+  activeOnly?: boolean;
+};
+
+/** Statuses that mean the person was released into Private Login. */
+const RELEASED_WAITLIST_STATUSES = new Set(['converted', 'released', 'private', 'active']);
+
+function isReleasedWaitlistStatus(status?: string): boolean {
+  return RELEASED_WAITLIST_STATUSES.has(String(status || '').toLowerCase().trim());
+}
+
+function isTestWaitlistEmail(email: string): boolean {
+  const e = normalizeEmail(email);
+  return e.endsWith('@clearpath.test') || e.endsWith('.test') || e.includes('+smoke');
+}
+
 function toSafeWaitlistRow(
   id: string,
   raw: Record<string, unknown>,
@@ -147,6 +168,7 @@ function toSafeWaitlistRow(
       .toLowerCase() || '';
   const row: SafeWaitlistMember = { id, email, source };
   if (typeof raw.firstName === 'string' && raw.firstName.trim()) row.firstName = raw.firstName.trim();
+  else if (typeof raw.name === 'string' && raw.name.trim()) row.firstName = raw.name.trim();
   if (typeof raw.country === 'string' && raw.country.trim()) row.country = raw.country.trim();
   if (typeof raw.experienceLevel === 'string' && raw.experienceLevel.trim()) {
     row.experienceLevel = raw.experienceLevel.trim();
@@ -156,35 +178,63 @@ function toSafeWaitlistRow(
   return row;
 }
 
+function filterActiveWaitlistRows(
+  members: SafeWaitlistMember[],
+  activeOnly: boolean
+): SafeWaitlistMember[] {
+  if (!activeOnly) return members.filter((m) => Boolean(m.email));
+  return members.filter((m) => {
+    if (!m.email) return false;
+    if (isReleasedWaitlistStatus(m.status)) return false;
+    if (isTestWaitlistEmail(m.email)) return false;
+    return true;
+  });
+}
+
 /**
  * Read-only waitlist for CEO Dashboard.
  * Prefers Firestore `site_registrations`, falls back to local `waitlist.json`.
  * Never returns activationKey or other secrets.
  */
-export function listLocalWaitlistSafe(limit = 500): SafeWaitlistMember[] {
+export function listLocalWaitlistSafe(
+  limit = 500,
+  options?: ListWaitlistOptions
+): SafeWaitlistMember[] {
   const capped = Math.min(Math.max(1, limit), 2000);
+  const activeOnly = options?.activeOnly !== false;
   const local = readLocalCollection<Record<string, unknown> & { id?: string }>('waitlist.json');
-  return local
-    .map((raw, i) => toSafeWaitlistRow(String(raw.id || `local_${i}`), raw, 'local'))
-    .filter((m) => Boolean(m.email))
+  return filterActiveWaitlistRows(
+    local.map((raw, i) => toSafeWaitlistRow(String(raw.id || `local_${i}`), raw, 'local')),
+    activeOnly
+  )
     .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
     .slice(0, capped);
 }
 
-export async function listWaitlistRegistrationsSafe(limit = 500): Promise<{
+export async function listWaitlistRegistrationsSafe(
+  limit = 500,
+  options?: ListWaitlistOptions
+): Promise<{
   members: SafeWaitlistMember[];
   source: 'firestore' | 'local' | 'none';
 }> {
   const capped = Math.min(Math.max(1, limit), 2000);
+  const activeOnly = options?.activeOnly !== false;
   const db = getAdminFirestore();
 
   if (db) {
     try {
-      const snapshot = await db.collection('site_registrations').limit(capped).get();
-      const members = snapshot.docs
-        .map((doc) => toSafeWaitlistRow(doc.id, doc.data() as Record<string, unknown>, 'firestore'))
-        .filter((m) => Boolean(m.email))
-        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      // Fetch extra when activeOnly so released/test rows do not starve the active list.
+      const fetchLimit = activeOnly ? Math.min(2000, Math.max(capped * 3, capped)) : capped;
+      const snapshot = await db.collection('site_registrations').limit(fetchLimit).get();
+      const members = filterActiveWaitlistRows(
+        snapshot.docs.map((doc) =>
+          toSafeWaitlistRow(doc.id, doc.data() as Record<string, unknown>, 'firestore')
+        ),
+        activeOnly
+      )
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+        .slice(0, capped);
       return { members, source: 'firestore' };
     } catch (err) {
       console.warn('[registrations] Firestore waitlist list failed; trying local file.', err);
@@ -196,6 +246,6 @@ export async function listWaitlistRegistrationsSafe(limit = 500): Promise<{
     return { members: [], source: 'none' };
   }
 
-  const members = listLocalWaitlistSafe(capped);
+  const members = listLocalWaitlistSafe(capped, { activeOnly });
   return { members, source: members.length ? 'local' : 'none' };
 }
