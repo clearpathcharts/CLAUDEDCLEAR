@@ -11,6 +11,7 @@ import {
   assertDurablePrivateWritesAllowed,
   findPrivateUserByEmail,
   provisionPrivateUser,
+  resetPrivateUserPassword,
   type PublicPrivateUser,
 } from './privateAuthService';
 
@@ -31,7 +32,7 @@ export type WaitlistCandidate = {
 
 export type ConvertResultRow = {
   email: string;
-  status: 'created' | 'already' | 'skipped_test' | 'error';
+  status: 'created' | 'reset' | 'already' | 'skipped_test' | 'error';
   uid?: string;
   displayName?: string;
   message?: string;
@@ -51,6 +52,12 @@ export type FounderInviteSafe = {
 function isTestEmail(email: string): boolean {
   const e = normalizeEmail(email);
   return e.endsWith('@clearpath.test') || e.endsWith('.test') || e.includes('+smoke');
+}
+
+/** Already released out of the active waitlist — do not re-convert / re-reset. */
+function isReleasedWaitlistStatus(status?: string): boolean {
+  const s = String(status || '').toLowerCase().trim();
+  return s === 'converted' || s === 'released' || s === 'private' || s === 'active';
 }
 
 function randomTempPassword(): string {
@@ -125,7 +132,8 @@ async function markWaitlistConverted(params: {
     if (params.docId && params.sourceDb === 'default') {
       await db.collection(WAITLIST_COLLECTION).doc(params.docId).set(
         {
-          status: 'confirmed',
+          // 'converted' = released from active waitlist (no longer shown in CEO Waitlist).
+          status: 'converted',
           convertedAt: new Date().toISOString(),
           convertedUid: params.uid,
         },
@@ -133,32 +141,32 @@ async function markWaitlistConverted(params: {
       );
       return;
     }
-    const snap = await db
-      .collection(WAITLIST_COLLECTION)
-      .where('emailAddress', '==', params.email)
-      .limit(5)
-      .get();
-    if (!snap.empty) {
-      for (const doc of snap.docs) {
-        await doc.ref.set(
-          {
-            status: 'confirmed',
-            convertedAt: new Date().toISOString(),
-            convertedUid: params.uid,
-          },
-          { merge: true }
-        );
+    const markPayload = {
+      status: 'converted',
+      convertedAt: new Date().toISOString(),
+      convertedUid: params.uid,
+    };
+    for (const field of ['emailAddress', 'email'] as const) {
+      const snap = await db
+        .collection(WAITLIST_COLLECTION)
+        .where(field, '==', params.email)
+        .limit(5)
+        .get();
+      if (!snap.empty) {
+        for (const doc of snap.docs) {
+          await doc.ref.set(markPayload, { merge: true });
+        }
+        return;
       }
-      return;
     }
-    // Alt-only email: create a confirmed stub on default so CEO waitlist stays complete.
+    // Alt-only email: record conversion on default DB so CEO waitlist can hide them.
     if (params.sourceDb === 'alt') {
       await db.collection(WAITLIST_COLLECTION).add({
         emailAddress: params.email,
         firstName: params.email.split('@')[0] || 'Member',
         country: 'Unknown',
         experienceLevel: 'Beginner',
-        status: 'confirmed',
+        status: 'converted',
         registrationSource: 'Converted from legacy AI Studio waitlist',
         activationKey: generateActivationKey(),
         convertedAt: new Date().toISOString(),
@@ -167,7 +175,7 @@ async function markWaitlistConverted(params: {
       });
     }
   } catch (err) {
-    console.warn('[waitlistConvert] Failed to mark waitlist confirmed:', err);
+    console.warn('[waitlistConvert] Failed to mark waitlist converted:', err);
   }
 }
 
@@ -212,6 +220,7 @@ export async function listWaitlistConversionCandidates(): Promise<WaitlistCandid
   // Prefer default DB docs when duplicate.
   for (const row of [...altRows, ...defaultRows]) {
     if (isTestEmail(row.email)) continue;
+    if (isReleasedWaitlistStatus(row.status)) continue;
     const prev = byEmail.get(row.email);
     if (!prev || row.sourceDb === 'default') byEmail.set(row.email, row);
   }
@@ -226,6 +235,7 @@ export async function convertWaitlistToPrivateAccounts(options?: {
   candidates: number;
   created: number;
   already: number;
+  reset: number;
   skippedTest: number;
   errors: number;
   results: ConvertResultRow[];
@@ -241,6 +251,7 @@ export async function convertWaitlistToPrivateAccounts(options?: {
   const results: ConvertResultRow[] = [];
   let created = 0;
   let already = 0;
+  let reset = 0;
   let skippedTest = 0;
   let errors = 0;
   let invitesCreated = 0;
@@ -255,26 +266,57 @@ export async function convertWaitlistToPrivateAccounts(options?: {
     try {
       const existing = await findPrivateUserByEmail(row.email);
       if (existing) {
-        already += 1;
-        results.push({
+        // Already has Private Login but may be stuck on waitlist without a usable
+        // password after the wipe — mint a fresh temp invite and release waitlist row.
+        if (dryRun) {
+          reset += 1;
+          invitesCreated += 1;
+          results.push({
+            email: row.email,
+            status: 'reset',
+            uid: existing.uid,
+            displayName: existing.displayName,
+            message: 'dry-run',
+          });
+          continue;
+        }
+
+        const tempPassword = randomTempPassword();
+        const activationKey = generateActivationKey();
+        await resetPrivateUserPassword({
           email: row.email,
-          status: 'already',
+          password: tempPassword,
+          tempPassword,
+        });
+        await upsertInvite({
+          email: existing.email,
+          displayName: existing.displayName,
+          uid: existing.uid,
+          activationKey,
+          tempPassword,
+          createdAt: new Date().toISOString(),
+          waitlistSource: `waitlist_release_${row.sourceDb}`,
+        });
+        await markWaitlistConverted({
+          email: row.email,
+          uid: existing.uid,
+          docId: row.docId,
+          sourceDb: row.sourceDb,
+        });
+        reset += 1;
+        invitesCreated += 1;
+        results.push({
+          email: existing.email,
+          status: 'reset',
           uid: existing.uid,
           displayName: existing.displayName,
         });
-        if (!dryRun) {
-          await markWaitlistConverted({
-            email: row.email,
-            uid: existing.uid,
-            docId: row.docId,
-            sourceDb: row.sourceDb,
-          });
-        }
         continue;
       }
 
       if (dryRun) {
         created += 1;
+        invitesCreated += 1;
         results.push({
           email: row.email,
           status: 'created',
@@ -290,6 +332,7 @@ export async function convertWaitlistToPrivateAccounts(options?: {
         email: row.email,
         password: tempPassword,
         displayName: row.firstName.slice(0, 80),
+        tempPassword,
       });
 
       await upsertInvite({
@@ -332,6 +375,7 @@ export async function convertWaitlistToPrivateAccounts(options?: {
     candidates: candidates.length,
     created,
     already,
+    reset,
     skippedTest,
     errors,
     results,

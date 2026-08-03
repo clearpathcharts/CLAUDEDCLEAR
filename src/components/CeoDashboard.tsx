@@ -237,12 +237,19 @@ export default function CeoDashboard() {
       if (!res.ok) {
         throw new Error(body.message || body.error || `Convert failed (${res.status})`);
       }
-      setConvertMsg(
-        dryRun
-          ? `Dry run: ${body.created} would be created, ${body.already} already have accounts (${body.candidates} real candidates).`
-          : `Converted: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} invites stored. Open “Show invite passwords” to copy credentials (founder-only).`
-      );
+      const resetN = Number(body.reset || 0);
+      const createdN = Number(body.created || 0);
+      const invitesN = Number(body.invitesCreated || 0);
+      const candidatesN = Number(body.candidates || 0);
+      const summary = dryRun
+        ? `Dry run: ${createdN} new Private Logins + ${resetN} password resets for people already in Members (${candidatesN} real waitlist emails).`
+        : `Released: ${createdN} created, ${resetN} passwords reset, ${invitesN} invites ready. Waitlist rows marked converted (hidden). Copy passwords below — send Ahmad’s privately.`;
+      setConvertMsg(summary);
       await loadAdminMembers();
+      if (!dryRun && invitesN > 0) {
+        // Auto-open invite vault so founder does not have to hunt a second button.
+        await fetchFounderInvites({ keepBusy: true, appendMsg: summary });
+      }
     } catch (err: any) {
       setConvertMsg(err?.message || 'Conversion failed.');
     } finally {
@@ -250,9 +257,11 @@ export default function CeoDashboard() {
     }
   };
 
-  const loadFounderInvites = async () => {
-    setConvertBusy(true);
-    setConvertMsg(null);
+  const fetchFounderInvites = async (opts?: { keepBusy?: boolean; appendMsg?: string }) => {
+    if (!opts?.keepBusy) {
+      setConvertBusy(true);
+      setConvertMsg(null);
+    }
     try {
       const headers = await founderApiHeaders();
       const res = await fetch('/api/admin/members/invites?includeSecrets=1', {
@@ -270,15 +279,22 @@ export default function CeoDashboard() {
         }))
       );
       setInvitesVisible(true);
-      setConvertMsg(
+      const inviteHint =
         body.howToSend ||
-          'Invites loaded. Send email + temp password privately — do not paste into chat logs.'
-      );
+        'Invites loaded. Send email + temp password privately — do not paste into chat logs.';
+      setConvertMsg(opts?.appendMsg ? `${opts.appendMsg}\n\n${inviteHint}` : inviteHint);
+      return true;
     } catch (err: any) {
-      setConvertMsg(err?.message || 'Could not load invites.');
+      const fail = err?.message || 'Could not load invites.';
+      setConvertMsg(opts?.appendMsg ? `${opts.appendMsg}\n\n${fail}` : fail);
+      return false;
     } finally {
-      setConvertBusy(false);
+      if (!opts?.keepBusy) setConvertBusy(false);
     }
+  };
+
+  const loadFounderInvites = async () => {
+    await fetchFounderInvites();
   };
 
   const runStripeRecover = async (dryRun: boolean) => {
@@ -638,9 +654,9 @@ export default function CeoDashboard() {
                   API. This creates the missing server login cookie.
                 </li>
                 <li>
-                  <strong className="text-white">STEP 3:</strong> After it says Unlocked, click{' '}
-                  <span className="text-pink-200">Restore known 16 + reset passwords</span>, then{' '}
-                  <span className="text-amber-200">Show invite passwords</span>, then copy Ahmad’s password.
+                  <strong className="text-white">STEP 3:</strong> After Unlocked, click{' '}
+                  <span className="text-emerald-200">RELEASE waitlist → Private Login + passwords</span>, then
+                  copy Ahmad’s temp password from the invite list.
                 </li>
               </ol>
               <button
@@ -709,15 +725,15 @@ export default function CeoDashboard() {
                 disabled={convertBusy}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-zinc-500/20 disabled:opacity-50"
               >
-                Dry-run convert
+                Dry-run release
               </button>
               <button
                 type="button"
                 onClick={() => void runWaitlistConvert(false)}
-                disabled={convertBusy}
+                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-emerald-500/20 disabled:opacity-50"
               >
-                Convert waitlist → Private Login
+                RELEASE waitlist → Private Login + passwords
               </button>
               <button
                 type="button"
@@ -1058,7 +1074,7 @@ export default function CeoDashboard() {
                       <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
                         {memberQ
                           ? `No waitlist rows match “${memberSearch}”.`
-                          : 'No waitlist registrations on this server yet (Firestore `site_registrations` or local waitlist.json).'}
+                          : 'Waitlist empty — released people are in Private Members (not stuck here). Use RELEASE waitlist if anyone reappears as pending/confirmed.'}
                       </td>
                     </tr>
                   ) : (
