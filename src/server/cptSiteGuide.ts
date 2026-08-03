@@ -19,7 +19,6 @@ Main bar items (left to right style):
 4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
 5. NEWS — Market / platform news feed.
 6. MEMBERSHIPS — Plans and membership options.
-7. FOUNDERS — Founders area.
 Also available (more / secondary / mobile command center):
 - PROFILE — Account / biography profile.
 - CLEARPATH EDUCATION — Structured lessons and quizzes.
@@ -114,13 +113,13 @@ Open ENCYCLOPEDIA OF INDICATORS (or /indicators).
 - Click a card for the detail panel (description, tags, optional video).
 - "Back to Terminal Desktop" returns toward Home.
 
---- MEMBERSHIPS / PROFILE / NEWS / FOUNDERS / SENTINEL ---
+--- MEMBERSHIPS / PROFILE / NEWS / SENTINEL ---
 - MEMBERSHIPS: compare plans and join options.
 - PROFILE: account / biography settings.
 - NEWS: reading feed for updates.
-- FOUNDERS: founders-related content.
 - SENTINEL: platform checks / integrity status — not a trading signal tool.
 - Y.W.C.: community / yours hub content.
+- There is no FOUNDERS tab anymore (removed — do not send users there).
 
 --- HOW TO ANSWER SITE QUESTIONS ---
 - Lead with where to click (exact label).
