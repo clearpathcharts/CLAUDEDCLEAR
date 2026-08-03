@@ -105,34 +105,83 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
 
-  // Hydrate auth from httpOnly cookie session (not localStorage).
+  // Hydrate auth from httpOnly cookie session + Firebase Google.
+  // IMPORTANT: never early-return on private session alone — a stale board/private
+  // cookie (e.g. operator@) was hiding founder Google login and removing CEO tabs.
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
     clearPrivateSession(); // drop legacy localStorage auth mirrors
+
+    const applyPrivateProfile = (privateSession: {
+      uid: string;
+      email: string;
+      displayName: string;
+    }) => {
+      setUserProfile((prev) => ({
+        ...(prev || defaultUserProfile),
+        uid: privateSession.uid,
+        email: privateSession.email,
+        displayName: privateSession.displayName,
+      }));
+    };
+
+    const pickAuthUser = (
+      privateSession: Awaited<ReturnType<typeof fetchPrivateSession>>,
+      firebaseUser: any
+    ) => {
+      const privateEmail = (privateSession?.email || '').trim().toLowerCase();
+      const firebaseEmail = (firebaseUser?.email || '').trim().toLowerCase();
+      const founder = 'forexanarchy@gmail.com';
+
+      // Founder Google must win over a stale non-founder private/board cookie.
+      if (firebaseEmail === founder) return firebaseUser;
+      if (privateEmail === founder && privateSession) {
+        return privateSession as unknown as User;
+      }
+      if (privateSession) return privateSession as unknown as User;
+      return firebaseUser || null;
+    };
+
     (async () => {
       const privateSession = await fetchPrivateSession();
       if (cancelled) return;
-      if (privateSession) {
-        setUser(privateSession as unknown as User);
-        setUserProfile((prev) => ({
-          ...(prev || defaultUserProfile),
-          uid: privateSession.uid,
-          email: privateSession.email,
-          displayName: privateSession.displayName,
-        }));
-        setLoading(false);
-        return;
-      }
+
       const authInstance = getAuth();
       if (!authInstance) {
+        if (privateSession) {
+          setUser(privateSession as unknown as User);
+          applyPrivateProfile(privateSession);
+        }
         setLoading(false);
         return;
       }
+
+      // Apply private session immediately so Private Login users are not stuck loading,
+      // then keep listening for Google so founder tabs can appear.
+      if (privateSession) {
+        setUser(pickAuthUser(privateSession, authInstance.currentUser));
+        applyPrivateProfile(privateSession);
+        setLoading(false);
+      }
+
       unsubscribe = authInstance.onAuthStateChanged((firebaseUser: any) => {
         if (cancelled) return;
-        setUser(firebaseUser || null);
-        setLoading(false);
+        void fetchPrivateSession().then((latestPrivate) => {
+          if (cancelled) return;
+          const next = pickAuthUser(latestPrivate, firebaseUser);
+          setUser(next);
+          if (latestPrivate) applyPrivateProfile(latestPrivate);
+          else if (firebaseUser?.email) {
+            setUserProfile((prev) => ({
+              ...(prev || defaultUserProfile),
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || prev?.displayName || '',
+            }));
+          }
+          setLoading(false);
+        });
       });
     })();
     return () => {
