@@ -374,7 +374,7 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     ],
     newsImpacts: [
       { id: 'aws_deal', headline: 'Azure Wins Multi-Year $8B Sovereign Defense Cloud Security Contract Over Peers', source: 'ClearPath Defense Tracker', sentiment: 'Bullish', impactPct: 5.4, explanation: 'Validates Azure security protocols, guaranteeing multi-decade cloud resource billing backlogs.', relatedMarket: 'US Bond Yields flat' },
-      { id: 'grid_short', headline: 'Power Utility Caps Force Delays on Three Microsoft Server Sites in Virginia', source: 'Reuters Business Desk', sentiment: 'Bearish', impactPct: -3.8, explanation: 'Local electric grids cannot support high server loads, dragging near-term AI scale speed bounds.', relatedMarket: 'Natural Gas prices uptick' }
+      { id: 'grid_short', headline: 'Power Utility Caps Force Delays on Three Microsoft Server Sites in Virginia', source: 'ClearPath Markets Desk', sentiment: 'Bearish', impactPct: -3.8, explanation: 'Local electric grids cannot support high server loads, dragging near-term AI scale speed bounds.', relatedMarket: 'Natural Gas prices uptick' }
     ],
     education: {
       title: 'What Is SaaS & Dynamic Expansion Multipliers?',

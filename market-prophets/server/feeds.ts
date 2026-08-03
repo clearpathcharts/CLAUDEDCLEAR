@@ -26,12 +26,6 @@ export const MARKET_FEEDS: FeedSource[] = [
     category: "crypto",
   },
   {
-    id: "marketwatch",
-    name: "MarketWatch",
-    url: "https://feeds.marketwatch.com/marketwatch/topstories/",
-    category: "markets",
-  },
-  {
     id: "investing",
     name: "Investing.com News",
     url: "https://www.investing.com/rss/news.rss",

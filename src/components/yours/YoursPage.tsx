@@ -48,7 +48,6 @@ const CORE_COURSES = [
   { id: 'nascar', source: 'NASCAR', url: 'https://www.nascar.com/feed/' }
 ];
 
-const REUTERS_FEED = 'https://feeds.reuters.com/reuters/topNews';
 const COINDESK_FEED = 'https://www.coindesk.com/arc/outboundfeeds/rss/';
 
 export default function YoursPageHub() {
@@ -347,7 +346,7 @@ export default function YoursPageHub() {
       subcategory: 'Macro Market',
       title: 'Global Markets Rally on Cooling Consumer Inflation and Easing Bond Yield Gauges',
       premium: false,
-      source: 'Reuters Financial',
+      source: 'ClearPath Markets Desk',
       image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=600',
       time: '5m of UTC',
       desc: 'Treasury yields stabilize under 4.3% as retail benchmarks soften, triggering an immediate rotation into high-beta tech blocks.',
@@ -413,7 +412,7 @@ export default function YoursPageHub() {
       { t: 400, p: 25, log: `[0.4s] Connecting to ESPN RSS feed: https://www.espn.com/espn/rss/news...` },
       { t: 900, p: 45, log: `[0.9s] Connected. Found 12 XML feed nodes. Translating nodes to generic JSON objects...` },
       { t: 1400, p: 60, log: `[1.4s] Connecting to Formula 1 XML nodes & NASCAR RSS stream...` },
-      { t: 1900, p: 75, log: `[1.9s] Connecting to Reuters Financial (${REUTERS_FEED}) & CoinDesk (${COINDESK_FEED})...` },
+      { t: 1900, p: 75, log: `[1.9s] Connecting to CoinDesk (${COINDESK_FEED})...` },
       { t: 2400, p: 90, log: `[2.4s] Completed OAuth streaming parsing. XML parse validation index: 100% green.` },
       { t: 2800, p: 100, log: `[2.8s] Database cache updated. React state updated. 8 high-fidelity cards smoothly compiled with glassmorphism glow!` }
     ];
@@ -602,7 +601,7 @@ export default function YoursPageHub() {
                   RSS Fetch & Node Parser Simulator
                 </YwcSectionTitle>
                 <p className="text-[11px] text-zinc-500 font-mono">
-                  Convert live streams (ESPN, Formula 1, AP, Reuters, CoinDesk) into reactive grid matrices
+                  Convert live streams (ESPN, Formula 1, AP, CoinDesk) into reactive grid matrices
                 </p>
               </div>
             </div>
@@ -777,7 +776,7 @@ export default function YoursPageHub() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[11px] font-bold text-zinc-300 block">Reuters Intelligence Node</span>
+                      <span className="text-[11px] font-bold text-zinc-300 block">ClearPath Markets Node</span>
                       <span className="text-[9px] font-mono text-zinc-500">Live global transmission</span>
                     </div>
                   </div>

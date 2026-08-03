@@ -232,20 +232,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
       : Promise.resolve(notConfigured('Benzinga', 'News', 'BENZINGA_API_KEY'))
   );
 
-  // Public news homepages: a real reachability check (HEAD request), not a
-  // claim about their API since we don't have one for either of these.
-  checks.push(
-    timedProbe('MarketWatch', 'News', async () => {
-      await axios.head('https://www.marketwatch.com', { timeout: 2500 });
-      return { detail: 'Homepage reachable.' };
-    })
-  );
-  checks.push(
-    timedProbe('Reuters', 'News', async () => {
-      await axios.head('https://www.reuters.com', { timeout: 2500 });
-      return { detail: 'Homepage reachable.' };
-    })
-  );
+  // MarketWatch + Reuters homepage probes removed permanently (always 401 / not used).
 
   // ---------- Firebase / private accounts ----------
   // IMPORTANT: probe with Admin SDK (server credentials), NOT the browser
