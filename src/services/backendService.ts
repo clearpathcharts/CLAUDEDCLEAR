@@ -18,8 +18,42 @@ import { TimelinePost, Alert, UserRole, PortfolioPosition, LeaderboardEntry, Tra
 /**
  * SOCIAL FEED ENGINE (File 3, 91)
  */
+class CommunityCommsLockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CommunityCommsLockedError';
+  }
+}
+
+async function assertCommunityCommsAllowed(userId: string) {
+  void userId;
+  try {
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const current = auth.currentUser;
+    if (current) {
+      const token = await current.getIdToken(false);
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await fetch('/api/bot-quarantine/me', {
+      credentials: 'include',
+      headers,
+    });
+    if (!res.ok) return;
+    const body = await res.json().catch(() => ({}));
+    if (body?.locked || body?.communityCommsLocked) {
+      throw new CommunityCommsLockedError(
+        'Community communication is locked for 90 days after a bot injection attempt. Other features remain available.'
+      );
+    }
+  } catch (err) {
+    if (err instanceof CommunityCommsLockedError) throw err;
+    // Fail open on network blips for Firestore client path — WS chat is the hard gate.
+  }
+}
+
 export async function createPost(userId: string, text: string) {
   if (!text) return;
+  await assertCommunityCommsAllowed(userId);
   return await addDoc(collection(getDb(), 'posts'), {
     uid: userId,
     text,

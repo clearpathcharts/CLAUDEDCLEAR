@@ -23,6 +23,7 @@
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
+    "test:bot-quarantine": "tsx scripts/bot-quarantine.selftest.ts",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",

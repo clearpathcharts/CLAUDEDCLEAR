@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { getFinnhubApiKey } from './src/server/secrets';
+import { screenCommunityMessage } from './src/server/botQuarantineService';
 
 let wssInstance: WebSocketServer | null = null;
 
@@ -102,7 +103,12 @@ export function setupWebSockets(server: Server) {
   const wss = new WebSocketServer({ server });
   wssInstance = wss;
 
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on('connection', (ws: WebSocket, req) => {
+    const forwarded = String(req.headers['x-forwarded-for'] || '')
+      .split(',')[0]
+      .trim();
+    (ws as any).__cpRemoteIp = forwarded || req.socket.remoteAddress || '';
+
     // Send initial welcome message
     ws.send(JSON.stringify({
       type: 'SYSTEM',
@@ -153,10 +159,29 @@ export function setupWebSockets(server: Server) {
         } else if (parsed.type === 'SOCIAL_POST') {
           const text = String(parsed.text || '').trim().slice(0, 2000);
           if (!text) return;
+          const handle = String(parsed.handle || 'Guest').slice(0, 64);
+          const screen = screenCommunityMessage({
+            uid: parsed.userId ? String(parsed.userId).slice(0, 128) : undefined,
+            handle,
+            text,
+            channel: `social:${String(parsed.platform || 'x')}`,
+            ipAddress: (ws as any).__cpRemoteIp,
+          });
+          if (screen.allowed === false) {
+            ws.send(JSON.stringify({
+              type: 'COMMUNITY_LOCKED',
+              reason: screen.reason,
+              message: screen.message,
+              expiresAt: screen.record.expiresAt,
+              featuresAllowed: true,
+              timestamp: Date.now(),
+            }));
+            return;
+          }
           const newPost: SocialPost = {
             id: 'post_' + Math.random().toString(36).slice(2, 11),
             platform: parsed.platform,
-            handle: String(parsed.handle || 'Guest').slice(0, 64),
+            handle,
             text,
             timestamp: Date.now()
           };
@@ -201,6 +226,26 @@ export function setupWebSockets(server: Server) {
           const text = String(parsed.text || '').trim().slice(0, 2000);
           const author = String(parsed.author || 'Guest').trim().slice(0, 64);
           if (!text) return;
+
+          const screen = screenCommunityMessage({
+            uid: parsed.userId ? String(parsed.userId).slice(0, 128) : undefined,
+            handle: author,
+            text,
+            channel: `chat:${roomId}`,
+            ipAddress: (ws as any).__cpRemoteIp,
+          });
+          if (screen.allowed === false) {
+            ws.send(JSON.stringify({
+              type: 'COMMUNITY_LOCKED',
+              reason: screen.reason,
+              message: screen.message,
+              expiresAt: screen.record.expiresAt,
+              roomId,
+              featuresAllowed: true,
+              timestamp: Date.now(),
+            }));
+            return;
+          }
 
           joinChatRoom(ws, roomId);
           const newMessage: ChatRoomMessage = {

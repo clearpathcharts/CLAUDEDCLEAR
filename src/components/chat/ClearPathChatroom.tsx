@@ -91,8 +91,16 @@ export default function ClearPathChatroom({
   const isLava = className.includes('cp-chatroom-lava') || accentColor.toUpperCase() === '#FF4500';
   const roomAccent = isLava ? '#FF4500' : (activeRoom?.accent || accentColor);
 
-  const { messages, status, onlineCount, handle, sendMessage, updateHandle, isOwnMessage } =
-    useChatRoom(activeRoomId);
+  const {
+    messages,
+    status,
+    onlineCount,
+    handle,
+    sendMessage,
+    updateHandle,
+    isOwnMessage,
+    communityLock,
+  } = useChatRoom(activeRoomId);
 
   useEffect(() => {
     setActiveRoomId(initialRoomId);
@@ -367,6 +375,22 @@ export default function ClearPathChatroom({
             onSubmit={handleSubmit}
             className="relative border-t border-white/10 bg-black/40 p-3 md:p-4"
           >
+            {communityLock && (
+              <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-[11px] leading-relaxed text-amber-100">
+                <p className="font-black uppercase tracking-wider text-amber-300">
+                  Community communication locked
+                </p>
+                <p className="mt-1 text-amber-100/80">{communityLock.message}</p>
+                {communityLock.expiresAt && (
+                  <p className="mt-1 font-mono text-[10px] text-amber-200/70">
+                    Until {new Date(communityLock.expiresAt).toLocaleString()}
+                    {communityLock.featuresAllowed !== false
+                      ? ' · Charts & tools still available'
+                      : ''}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-[#0a0a14]/90 p-2 shadow-inner">
               <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-zinc-500">
                 <Hash size={14} />
@@ -381,13 +405,17 @@ export default function ClearPathChatroom({
                   }
                 }}
                 rows={1}
-                placeholder={`Message ${activeRoom?.label || 'room'} as @${handle}...`}
-                disabled={status !== 'ONLINE'}
+                placeholder={
+                  communityLock
+                    ? 'Community chat locked — other features still work'
+                    : `Message ${activeRoom?.label || 'room'} as @${handle}...`
+                }
+                disabled={status !== 'ONLINE' || Boolean(communityLock)}
                 className="max-h-28 min-h-[40px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-white placeholder:text-zinc-600 outline-none disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={!draft.trim() || status !== 'ONLINE'}
+                disabled={!draft.trim() || status !== 'ONLINE' || Boolean(communityLock)}
                 className="cp-chat-send flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-black transition-all disabled:opacity-40"
                 style={{
                   background: isLava
