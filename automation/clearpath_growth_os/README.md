@@ -86,7 +86,7 @@ Output lands in `output/growth_batch_<date>.json` (approved) or
 
 The flow **never posts directly**. It writes an approved JSON batch; wire that
 file (or the `publish_batch` return value) into Zapier MCP to fan out to X,
-LinkedIn, Buffer, email, or your CRM after a human approves. This keeps the
+LinkedIn, ClearPath Social OS, email, or your CRM after a human approves. This keeps the
 board-governed brand in control during the initial trust window.
 
 ## 30-Day "Plant the Flag" phase

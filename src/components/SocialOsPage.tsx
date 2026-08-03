@@ -15,16 +15,28 @@ type SocialPost = {
   source?: string;
 };
 
+type PlatformReady = {
+  platform: string;
+  label: string;
+  group: 'social' | 'networking';
+  delivery: string;
+  configured: boolean;
+  credentialHint: string;
+};
+
 type StatusPayload = {
   ok: boolean;
   note?: string;
+  middlemen?: string;
   config?: {
     dryRun: boolean;
-    bufferConfigured: boolean;
+    platformsConfigured: number;
+    platformsTotal: number;
     timezone: string;
     slots: string[];
     platforms: string[];
   };
+  platforms?: PlatformReady[];
   cadence?: {
     nextSlotsToday: string[];
     state?: { lastSlotKey?: string; lastResult?: string };
@@ -34,6 +46,38 @@ type StatusPayload = {
 
 const SECRET_KEY = 'clearpath_social_os_admin_secret';
 
+const FALLBACK_PLATFORMS = [
+  'facebook',
+  'instagram',
+  'x',
+  'tiktok',
+  'youtube',
+  'linkedin',
+  'reddit',
+  'snapchat',
+  'pinterest',
+  'discord',
+  'threads',
+  'telegram',
+  'whatsapp',
+  'twitch',
+  'bluesky',
+  'xing',
+  'viadeo',
+  'shapr',
+  'lunchclub',
+  'polywork',
+  'wellfound',
+  'fishbowl',
+  'blind',
+  'opportunity',
+  'meetup',
+  'alignable',
+  'bark',
+  'gust',
+  'researchgate',
+];
+
 function authHeaders(): HeadersInit {
   const secret = sessionStorage.getItem(SECRET_KEY) || '';
   return {
@@ -42,11 +86,22 @@ function authHeaders(): HeadersInit {
   };
 }
 
+type SocialOsPageProps = {
+  /** True when running on the dedicated Social OS domain (not clearpathtrader.com). */
+  standalone?: boolean;
+};
+
 /**
- * Ops console for ClearPath Social OS — daily posts at 5am / 9am / 3pm / 6pm.
- * Path: /ops/social
+ * Ops console for ClearPath Social OS — direct multi-network publisher.
+ * Standalone host only (own domain). Not embedded in clearpathtrader.com.
  */
-export default function SocialOsPage() {
+export default function SocialOsPage({ standalone = false }: SocialOsPageProps) {
+  const publicHost =
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as { env?: { VITE_SOCIAL_OS_PUBLIC_URL?: string } }).env?.VITE_SOCIAL_OS_PUBLIC_URL) ||
+    '';
+
   const [secret, setSecret] = useState(() =>
     typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SECRET_KEY) || '' : ''
   );
@@ -58,6 +113,9 @@ export default function SocialOsPage() {
   const [platform, setPlatform] = useState('x');
   const [body, setBody] = useState('');
   const [kind, setKind] = useState('clarity_cta');
+  const [selected, setSelected] = useState<string[]>(['facebook', 'instagram', 'x', 'linkedin', 'youtube']);
+
+  const platformOptions = status?.platforms?.map((p) => p.platform) || FALLBACK_PLATFORMS;
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -88,17 +146,25 @@ export default function SocialOsPage() {
     }
   }, [secret, refresh]);
 
+  function toggleChannel(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setPlatform(id);
+  }
+
   async function createDraft() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/social-os/posts', {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ platform, body, status: 'draft', publishMode: 'buffer' }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Create failed');
+      const targets = selected.length ? selected : [platform];
+      for (const target of targets) {
+        const res = await fetch('/api/social-os/posts', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ platform: target, body, status: 'draft', publishMode: 'direct' }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Create failed');
+      }
       setBody('');
       await refresh();
     } catch (e) {
@@ -115,11 +181,11 @@ export default function SocialOsPage() {
       const res = await fetch('/api/social-os/templates/generate', {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ kind, platform, enqueue, status: 'draft' }),
+        body: JSON.stringify({ kind, platform, enqueue }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Template failed');
-      if (!enqueue && json.draft?.body) setBody(json.draft.body);
+      if (json.draft?.body) setBody(json.draft.body);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -154,6 +220,7 @@ export default function SocialOsPage() {
       const res = await fetch(`/api/social-os/posts/${id}/publish`, {
         method: 'POST',
         headers: authHeaders(),
+        body: JSON.stringify({}),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Publish failed');
@@ -183,31 +250,43 @@ export default function SocialOsPage() {
     }
   }
 
-  return (
-    <div className="min-h-[100dvh] w-full bg-[#07090c] text-zinc-200 font-sans">
-      <SEO
-        title="Social OS — ClearPath Trader"
-        description="ClearPath site-owned social scheduler. Posts at 5am, 9am, 3pm, and 6pm."
-        canonical="https://clearpathtrader.com/ops/social"
-      />
+  const socialChannels = (status?.platforms || []).filter((p) => p.group === 'social');
+  const networkingChannels = (status?.platforms || []).filter((p) => p.group === 'networking');
+  const channelsOn = (status?.platforms || []).filter((p) => p.configured).length;
 
-      <nav className="border-b border-white/10 px-4 py-4 md:px-8 flex items-center justify-between bg-black/70 backdrop-blur">
-        <a href="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-cyan-300 hover:text-white">
-          <ArrowLeft size={14} /> ClearPath Home
+  return (
+    <div className="min-h-screen bg-[#07080f] text-zinc-100">
+      <SEO
+        title="ClearPath Social OS — Direct multi-network publisher"
+        description="ClearPath Social OS — dedicated-domain direct publisher. Posts to Facebook, Instagram, X, LinkedIn, TikTok, YouTube, and more — no Buffer or Zapier."
+        canonical={publicHost || undefined}
+      />
+      <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#07080f]/80 backdrop-blur-xl px-4 py-3 flex items-center justify-between">
+        <a
+          href="https://clearpathtrader.com"
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400 hover:text-white"
+        >
+          <ArrowLeft size={14} /> ClearPath Trader
         </a>
-        <span className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-zinc-400">
-          <Megaphone size={12} className="text-fuchsia-400" /> Social OS
+        <span className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.2em] uppercase text-cyan-300">
+          <Megaphone size={14} /> Publish
+        </span>
+        <span className="text-[10px] font-mono text-zinc-500">
+          {standalone ? 'own domain' : 'middlemen: none'}
         </span>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 py-10 space-y-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <header className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-fuchsia-400">Site-owned · no Zapier</p>
+          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-400">
+            Own domain · ClearPath-owned · never Buffer · never Zapier
+          </p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif" }}>
             ClearPath Social OS
           </h1>
-          <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
-            Connected to clearpathtrader.com. Posts automatically at <strong className="text-zinc-200">5:00am, 9:00am, 3:00pm, and 6:00pm</strong> (America/New_York by default) through Buffer profiles for X, LinkedIn, Facebook, and Instagram.
+          <p className="text-sm text-zinc-400 max-w-3xl leading-relaxed">
+            Dedicated publisher host — disconnected from clearpathtrader.com. Direct posting to every connected network. Daily cadence at{' '}
+            <strong className="text-zinc-200">5:00am, 9:00am, 3:00pm, and 6:00pm</strong>. ClearPath adapters only — official APIs or your webhooks, not a third-party scheduler.
           </p>
         </header>
 
@@ -228,12 +307,12 @@ export default function SocialOsPage() {
 
         {unlocked && status && (
           <>
-            <section className="grid md:grid-cols-3 gap-4">
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <section className="grid md:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4">
                 <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Mode</div>
-                <div className="text-lg text-white">{status.config?.dryRun ? 'Dry run' : 'Live Buffer'}</div>
+                <div className="text-lg text-white">{status.config?.dryRun ? 'Dry run' : 'Direct live'}</div>
                 <div className="text-xs text-zinc-500 mt-1">
-                  Buffer {status.config?.bufferConfigured ? 'connected' : 'not configured'}
+                  {status.config?.platformsConfigured || 0}/{status.config?.platformsTotal || 0} channels credentialed
                 </div>
               </div>
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -251,6 +330,11 @@ export default function SocialOsPage() {
                     .map(([k, v]) => `${k}:${v}`)
                     .join(' · ') || 'empty'}
                 </div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Channels on</div>
+                <div className="text-lg text-white">{channelsOn}</div>
+                <div className="text-xs text-zinc-500 mt-1">Selected for compose: {selected.length}</div>
               </div>
             </section>
 
@@ -276,6 +360,73 @@ export default function SocialOsPage() {
             {error && <p className="text-sm text-rose-400">{error}</p>}
 
             <section className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
+              <h2 className="text-sm uppercase tracking-wider text-zinc-400">Channels</h2>
+              <p className="text-xs text-zinc-500">Top social / video — toggle targets for compose</p>
+              <div className="flex flex-wrap gap-2">
+                {(socialChannels.length ? socialChannels : FALLBACK_PLATFORMS.slice(0, 15).map((id) => ({
+                  platform: id,
+                  label: id,
+                  configured: false,
+                  delivery: 'package',
+                  group: 'social' as const,
+                  credentialHint: '',
+                }))).map((p) => {
+                  const on = selected.includes(p.platform);
+                  return (
+                    <button
+                      key={p.platform}
+                      type="button"
+                      onClick={() => toggleChannel(p.platform)}
+                      className={`rounded-full px-3 py-1.5 text-[11px] uppercase tracking-wider border transition ${
+                        on
+                          ? 'border-cyan-400/50 bg-cyan-500/15 text-cyan-100'
+                          : 'border-white/10 bg-black/40 text-zinc-400 hover:border-white/25'
+                      }`}
+                      title={p.credentialHint || p.platform}
+                    >
+                      {p.label || p.platform}
+                      {p.configured ? ' · live' : ''}
+                    </button>
+                  );
+                })}
+              </div>
+              <>
+                  <p className="text-xs text-zinc-500 pt-2">Professional / networking</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(networkingChannels.length
+                      ? networkingChannels
+                      : FALLBACK_PLATFORMS.slice(15).map((id) => ({
+                          platform: id,
+                          label: id,
+                          configured: false,
+                          delivery: 'package',
+                          group: 'networking' as const,
+                          credentialHint: '',
+                        }))
+                    ).map((p) => {
+                      const on = selected.includes(p.platform);
+                      return (
+                        <button
+                          key={p.platform}
+                          type="button"
+                          onClick={() => toggleChannel(p.platform)}
+                          className={`rounded-full px-3 py-1.5 text-[11px] uppercase tracking-wider border transition ${
+                            on
+                              ? 'border-amber-400/40 bg-amber-500/10 text-amber-100'
+                              : 'border-white/10 bg-black/40 text-zinc-400 hover:border-white/25'
+                          }`}
+                          title={p.credentialHint || p.platform}
+                        >
+                          {p.label || p.platform}
+                          {p.configured ? ' · live' : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+              </>
+            </section>
+
+            <section className="rounded-xl border border-white/10 bg-white/[0.03] p-5 space-y-4">
               <h2 className="text-sm uppercase tracking-wider text-zinc-400">Create / generate</h2>
               <div className="grid md:grid-cols-2 gap-3">
                 <select
@@ -283,7 +434,7 @@ export default function SocialOsPage() {
                   onChange={(e) => setPlatform(e.target.value)}
                   className="rounded-lg bg-black/50 border border-white/10 px-3 py-2 text-sm"
                 >
-                  {['x', 'linkedin', 'facebook', 'instagram', 'tiktok'].map((p) => (
+                  {platformOptions.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
@@ -315,7 +466,7 @@ export default function SocialOsPage() {
                   onClick={() => void createDraft()}
                   className="rounded-lg bg-white/10 px-3 py-2 text-xs uppercase tracking-wider hover:bg-white/15 disabled:opacity-40"
                 >
-                  Save draft
+                  Save draft{selected.length > 1 ? ` × ${selected.length}` : ''}
                 </button>
                 <button
                   type="button"
@@ -329,7 +480,7 @@ export default function SocialOsPage() {
                   type="button"
                   disabled={busy}
                   onClick={() => void generateTemplate(true)}
-                  className="rounded-lg border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-2 text-xs uppercase tracking-wider text-fuchsia-200"
+                  className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-xs uppercase tracking-wider text-cyan-200"
                 >
                   Generate + save draft
                 </button>
@@ -341,6 +492,7 @@ export default function SocialOsPage() {
               {posts.length === 0 && (
                 <p className="text-sm text-zinc-500">
                   No posts yet. At each daily slot the OS will auto-generate ClearPath templates if the queue is empty.
+                  Channels without credentials are packaged under ClearPath until you add their API keys.
                 </p>
               )}
               <ul className="space-y-3">
@@ -366,7 +518,7 @@ export default function SocialOsPage() {
                           Queue
                         </button>
                       )}
-                      {(p.status === 'draft' || p.status === 'queued' || p.status === 'failed') && (
+                      {(p.status === 'draft' || p.status === 'queued' || p.status === 'failed' || p.status === 'packaged') && (
                         <button
                           type="button"
                           disabled={busy}

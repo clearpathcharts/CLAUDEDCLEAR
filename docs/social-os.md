@@ -1,8 +1,58 @@
 # ClearPath Social OS
 
-Site-owned social posting for **clearpathtrader.com** — **no Zapier required**.
+**Own domain. Disconnected from clearpathtrader.com.**
 
-Posts automatically **4 times per day**:
+Site-owned **direct** social publishing. **No Buffer. No Zapier. No Make. No Hootsuite.**
+
+## Architecture
+
+| Host | Role |
+|------|------|
+| **Social OS domain** (this service) | UI + `/api/social-os/*` + scheduler |
+| clearpathtrader.com | Marketing / terminal only — `/ops/social` returns gone or redirects |
+
+```
+social-os/server.ts   → Express API + SPA
+src/server/socialOs/  → adapters, cadence, store
+Dockerfile.social-os  → deploy image for the Social OS domain
+```
+
+## Local
+
+```bash
+# Dedicated publisher (port 3010)
+npm run dev:social-os
+
+# Main ClearPath site (Social OS API/UI NOT mounted)
+npm run dev
+```
+
+## Deploy on its own domain
+
+1. Pick a domain / subdomain (example: `publish.yourdomain.com`).
+2. Build & run the Social OS image:
+
+```bash
+docker build -f Dockerfile.social-os -t clearpath-social-os .
+docker run -p 8080:8080 \
+  -e SOCIAL_OS_PUBLIC_URL=https://publish.yourdomain.com \
+  -e CATALOG_ADMIN_SECRET=... \
+  -e SOCIAL_X_BEARER_TOKEN=... \
+  clearpath-social-os
+```
+
+Or Cloud Run: deploy `Dockerfile.social-os`, map custom domain, set env.
+
+3. On the **main** clearpathtrader.com service, set:
+
+```bash
+SOCIAL_OS_PUBLIC_URL=https://publish.yourdomain.com
+VITE_SOCIAL_OS_PUBLIC_URL=https://publish.yourdomain.com   # optional “Open Social OS” link
+```
+
+Old paths `/ops/social` and `/api/social-os/*` on clearpathtrader.com then **redirect** to the Social OS host (or return 410 if unset).
+
+## Cadence
 
 | Slot | Local time (default) |
 |------|----------------------|
@@ -11,71 +61,43 @@ Posts automatically **4 times per day**:
 | Afternoon | **3:00 PM** |
 | Evening | **6:00 PM** |
 
-Timezone default: `America/New_York` (`SOCIAL_OS_TIMEZONE`).
+Timezone: `SOCIAL_OS_TIMEZONE` (default `America/New_York`).
 
-## How it works
+## Delivery
 
-```
-ClearPath server (server.ts)
-   └─ Social OS scheduler (every minute)
-         └─ At 5am / 9am / 3pm / 6pm:
-               1. Pull next queued draft per platform
-                  (or auto-generate a ClearPath template)
-               2. Publish via Buffer → X / LinkedIn / Facebook / Instagram
-```
+1. Official platform API when `SOCIAL_*` credentials are set  
+2. ClearPath-owned webhook (`SOCIAL_WEBHOOK_<PLATFORM>` / `SOCIAL_DIRECT_WEBHOOK_URL`)  
+3. Else package under `data/social-os/packages/`
 
-- **UI:** `/ops/social` (also the **Auto** button on the login screen)
-- **API:** `/api/social-os/*` (protected by `CATALOG_ADMIN_SECRET`)
+## Channels (29)
 
-## Setup (one-time)
+Facebook · Instagram · X · TikTok · YouTube · LinkedIn · Reddit · Snapchat · Pinterest · Discord · Threads · Telegram · WhatsApp · Twitch · Bluesky · Xing · Viadeo · Shapr · Lunchclub · Polywork · Wellfound · Fishbowl · Blind · Opportunity · Meetup · Alignable · Bark · Gust · ResearchGate
 
-1. Create a [Buffer](https://buffer.com) account.
-2. Connect your **X, LinkedIn, Facebook Page, Instagram** profiles in Buffer.
-3. Create a Buffer access token (Buffer Developer / API settings).
-4. Add to `.env`:
+## Env (Social OS host)
+
+See `.env.example` (`SOCIAL_*`, `SOCIAL_OS_*`, `CATALOG_ADMIN_SECRET`).
 
 ```bash
-BUFFER_ACCESS_TOKEN=your_token_here
-CATALOG_ADMIN_SECRET=your_admin_secret
-SOCIAL_OS_TIMEZONE=America/New_York
-SOCIAL_OS_POST_SLOTS=05:00,09:00,15:00,18:00
-SOCIAL_OS_PLATFORMS=x,linkedin,facebook,instagram
-SOCIAL_OS_AUTO_TEMPLATE=1
-# SOCIAL_OS_DRY_RUN=1   # force dry-run even with a token
+SOCIAL_OS_PUBLIC_URL=https://publish.yourdomain.com
+SOCIAL_OS_BRAND_SITE_URL=https://clearpathtrader.com
+SOCIAL_OS_PORT=3010
+CATALOG_ADMIN_SECRET=...
 ```
 
-5. Restart `npm run dev` (or production server).
-
-Without `BUFFER_ACCESS_TOKEN`, the OS still runs the cadence in **dry-run** mode (logs what it would post; nothing goes live).
-
-## Ops UI
-
-1. Open the login page → click **Auto** (top right), or go to `/ops/social`.
-2. Enter your `CATALOG_ADMIN_SECRET`.
-3. Generate drafts, queue posts, or click **Run next slot now** to test.
-
-## API quick reference
+## API (on Social OS domain only)
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/api/social-os/status` | Config + cadence + counts |
-| GET | `/api/social-os/posts` | List posts |
-| POST | `/api/social-os/posts` | Create draft |
-| POST | `/api/social-os/templates/generate` | Brand templates |
-| POST | `/api/social-os/cadence/run` | Force a slot now |
-| POST | `/api/social-os/scheduler/tick` | Manual scheduler tick |
-| GET | `/api/social-os/buffer/profiles` | List Buffer profiles |
+| GET | `/api/social-os/status` | Config + cadence + platform readiness |
+| GET | `/api/social-os/platforms` | Catalog + credential hints |
+| GET/POST | `/api/social-os/posts` | List / create |
+| POST | `/api/social-os/cadence/run` | Force a slot |
+| GET | `/healthz` | Liveness |
 
-Header on all calls: `x-catalog-admin-secret: <CATALOG_ADMIN_SECRET>`
+Header: `x-catalog-admin-secret: <CATALOG_ADMIN_SECRET>`
 
 ## Self-test
 
 ```bash
-npx tsx scripts/social-os.selftest.ts
+npm run test:social-os
 ```
-
-## Notes
-
-- This replaces Zapier for ClearPath social posting.
-- Buffer is only the **delivery pipe** to social networks (their APIs are otherwise painful).
-- Optional: import CrewAI Growth OS JSON batches via `POST /api/social-os/import/growth-batch`.

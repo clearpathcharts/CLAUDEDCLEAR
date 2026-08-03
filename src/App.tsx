@@ -5,7 +5,7 @@ import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
-import SocialOsPage from './components/SocialOsPage';
+import SocialOsMovedPage from './components/SocialOsMovedPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
@@ -219,7 +219,8 @@ export default function App() {
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {
-    content = <SocialOsPage />;
+    // Social OS runs on its own domain — not embedded in clearpathtrader.com
+    content = <SocialOsMovedPage />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
   } else if (!user) {

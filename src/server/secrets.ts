@@ -76,10 +76,6 @@ export function getMakeWebhookUrl(): string {
   return first(process.env.MAKE_WEBHOOK_URL);
 }
 
-export function getBufferAccessToken(): string {
-  return first(process.env.BUFFER_ACCESS_TOKEN);
-}
-
 export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
@@ -116,7 +112,13 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     STRIPE_WEBHOOK_SECRET: Boolean(getStripeWebhookSecret()),
     BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
     MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
-    BUFFER_ACCESS_TOKEN: Boolean(getBufferAccessToken()),
+    SOCIAL_DIRECT_WEBHOOK_URL: Boolean(clean(process.env.SOCIAL_DIRECT_WEBHOOK_URL)),
+    SOCIAL_X_BEARER_TOKEN: Boolean(clean(process.env.SOCIAL_X_BEARER_TOKEN) || clean(process.env.SOCIAL_X_ACCESS_TOKEN)),
+    SOCIAL_LINKEDIN_ACCESS_TOKEN: Boolean(clean(process.env.SOCIAL_LINKEDIN_ACCESS_TOKEN)),
+    SOCIAL_FACEBOOK_PAGE_ACCESS_TOKEN: Boolean(clean(process.env.SOCIAL_FACEBOOK_PAGE_ACCESS_TOKEN)),
+    SOCIAL_DISCORD_WEBHOOK_URL: Boolean(clean(process.env.SOCIAL_DISCORD_WEBHOOK_URL)),
+    SOCIAL_TELEGRAM_BOT_TOKEN: Boolean(clean(process.env.SOCIAL_TELEGRAM_BOT_TOKEN)),
+    SOCIAL_BLUESKY_HANDLE: Boolean(clean(process.env.SOCIAL_BLUESKY_HANDLE)),
     SQL_HOST: Boolean(clean(process.env.SQL_HOST)),
     FIREBASE_SERVICE_ACCOUNT: Boolean(clean(process.env.FIREBASE_SERVICE_ACCOUNT)),
     VITE_FIREBASE_API_KEY: Boolean(clean(process.env.VITE_FIREBASE_API_KEY) || clean(process.env.FIREBASE_WEB_API_KEY)),

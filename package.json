@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "dev:social-os": "tsx social-os/server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:social-os": "vite build --config social-os/vite.config.ts && esbuild social-os/server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=social-os/dist/server.cjs",
     "start": "NODE_ENV=production node dist/server.cjs",
+    "start:social-os": "NODE_ENV=production node social-os/dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "keep-alive": "bash scripts/keep-alive.sh",

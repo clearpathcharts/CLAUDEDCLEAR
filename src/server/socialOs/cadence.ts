@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { ALL_PLATFORMS, isSocialPlatform } from './platforms';
 import type { SocialPlatform } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'social-os');
@@ -40,14 +41,17 @@ export function getPostSlots(): string[] {
     });
 }
 
-/** Platforms to hit each slot (comma-separated). Default: x,linkedin,facebook,instagram */
+/**
+ * Platforms to hit each slot (comma-separated).
+ * Default: top social set. Use SOCIAL_OS_PLATFORMS=all for the full ClearPath catalog.
+ */
 export function getCadencePlatforms(): SocialPlatform[] {
-  const raw = (process.env.SOCIAL_OS_PLATFORMS || 'x,linkedin,facebook,instagram').trim();
-  const allowed = new Set(['x', 'linkedin', 'facebook', 'instagram', 'tiktok', 'youtube', 'reddit']);
+  const raw = (process.env.SOCIAL_OS_PLATFORMS || 'facebook,instagram,x,linkedin,youtube,tiktok,reddit,discord,telegram,bluesky,threads').trim();
+  if (raw.toLowerCase() === 'all') return [...ALL_PLATFORMS];
   return raw
     .split(',')
     .map((s) => s.trim().toLowerCase())
-    .filter((s): s is SocialPlatform => allowed.has(s));
+    .filter(isSocialPlatform);
 }
 
 export function readCadenceState(): CadenceState {
