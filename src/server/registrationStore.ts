@@ -88,6 +88,12 @@ export async function saveWaitlistRegistration(record: WaitlistRegistration): Pr
     return docRef.id;
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Waitlist registration unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).'
+    );
+  }
+
   const records = readLocalCollection<WaitlistRegistration & { id: string }>('waitlist.json');
   const id = `local_${Date.now()}`;
   records.push({ ...record, id });
@@ -103,6 +109,12 @@ export async function saveIdentityPreregistration(record: IdentityPreregistratio
     );
     const docRef = await db.collection('identity_preregistrations').add(payload);
     return docRef.id;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Identity pre-registration unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).'
+    );
   }
 
   const records = readLocalCollection<IdentityPreregistration & { id: string }>('identity.json');
@@ -177,6 +189,11 @@ export async function listWaitlistRegistrationsSafe(limit = 500): Promise<{
     } catch (err) {
       console.warn('[registrations] Firestore waitlist list failed; trying local file.', err);
     }
+  }
+
+  // Production: never present ephemeral disk waitlist as the member source of truth.
+  if (process.env.NODE_ENV === 'production') {
+    return { members: [], source: 'none' };
   }
 
   const members = listLocalWaitlistSafe(capped);

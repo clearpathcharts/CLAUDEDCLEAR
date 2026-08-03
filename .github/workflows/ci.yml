@@ -36,5 +36,10 @@ jobs:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:affiliate
 
+      - name: Private accounts durable-store self-test
+        env:
+          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
+        run: npm run test:private-durable
+
       - name: Build
         run: npm run build

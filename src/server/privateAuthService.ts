@@ -1,15 +1,60 @@
 /**
  * ClearPath Trader — Private account auth (email + password).
- * Durable store: Firestore `private_accounts` when Admin is available;
- * local file fallback for offline/local dev. Write-through keeps both in sync.
+ * Durable stores (either is enough in production):
+ *   1) Firestore `private_accounts` when Admin is available
+ *   2) Stripe Customer metadata (STRIPE_SECRET_KEY) — survives Cloud Run redeploys
+ * Local file is a cache / offline-dev fallback only — never source of truth in production.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
-import { getAdminFirestore } from './firebaseAdmin';
+import { getAdminFirestore, getFirebaseAdminStatus, isFirestoreDurableReady } from './firebaseAdmin';
+import {
+  findStripePrivateUserByEmail,
+  listStripePrivateUsers,
+  stripePrivateStoreConfigured,
+  upsertStripePrivateUser,
+} from './stripePrivateAccountStore';
 
 const scrypt = promisify(crypto.scrypt);
+
+function isProdEnv(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+/** Test-only: simulate Cloud Run with Firestore Admin offline. */
+let forceEphemeralForTests = false;
+export function _forceEphemeralPrivateStoreForTests(value: boolean) {
+  forceEphemeralForTests = value;
+}
+
+export function hasFirestoreDurableStore(): boolean {
+  if (forceEphemeralForTests) return false;
+  return isFirestoreDurableReady() && Boolean(getAdminFirestore());
+}
+
+/** True when Firestore Admin and/or Stripe can persist members across redeploys. */
+export function hasDurablePrivateStore(): boolean {
+  if (forceEphemeralForTests) return false;
+  return hasFirestoreDurableStore() || stripePrivateStoreConfigured();
+}
+
+/**
+ * Production hard-fail for mutating private-account paths when durable store is offline.
+ * Dev/test may continue with the local file.
+ */
+export function assertDurablePrivateWritesAllowed(): void {
+  if (!isProdEnv()) return;
+  if (hasDurablePrivateStore()) return;
+  const status = getFirebaseAdminStatus();
+  throw new PrivateAuthError(
+    `Private accounts require a durable store in production (Firestore Admin offline` +
+      `${status.reason ? `: ${status.reason}` : ''}; Stripe also unavailable). ` +
+      `Set STRIPE_SECRET_KEY and/or FIREBASE_SERVICE_ACCOUNT on Cloud Run.`,
+    503
+  );
+}
 
 export type PrivateUserRecord = {
   uid: string;
@@ -99,6 +144,7 @@ function docToRecord(data: Record<string, unknown>): PrivateUserRecord | null {
 }
 
 async function readFirestoreUsers(): Promise<PrivateUserRecord[] | null> {
+  if (!hasFirestoreDurableStore()) return null;
   const db = getAdminFirestore();
   if (!db) return null;
   try {
@@ -116,6 +162,7 @@ async function readFirestoreUsers(): Promise<PrivateUserRecord[] | null> {
 }
 
 async function findFirestoreUserByEmail(email: string): Promise<PrivateUserRecord | null> {
+  if (!hasFirestoreDurableStore()) return null;
   const db = getAdminFirestore();
   if (!db) return null;
   const normalized = normalizeEmail(email);
@@ -139,6 +186,7 @@ async function findFirestoreUserByEmail(email: string): Promise<PrivateUserRecor
 }
 
 async function upsertFirestoreUser(user: PrivateUserRecord): Promise<boolean> {
+  if (!hasFirestoreDurableStore()) return false;
   const db = getAdminFirestore();
   if (!db) return false;
   try {
@@ -154,9 +202,72 @@ async function upsertFirestoreUser(user: PrivateUserRecord): Promise<boolean> {
     await db.collection(COLLECTION).doc(user.email).set(payload, { merge: true });
     return true;
   } catch (err) {
-    console.warn('[privateAuth] Firestore upsert failed; local file still written.', err);
+    console.warn('[privateAuth] Firestore upsert failed.', err);
     return false;
   }
+}
+
+async function findDurableUserByEmail(email: string): Promise<PrivateUserRecord | null> {
+  const fromFs = await findFirestoreUserByEmail(email);
+  if (fromFs) return fromFs;
+  const fromStripe = await findStripePrivateUserByEmail(email);
+  if (!fromStripe) return null;
+  return {
+    uid: fromStripe.uid,
+    email: fromStripe.email,
+    displayName: fromStripe.displayName,
+    passwordHash: fromStripe.passwordHash,
+    passwordSalt: fromStripe.passwordSalt,
+    createdAt: fromStripe.createdAt,
+    ...(fromStripe.lastLoginAt ? { lastLoginAt: fromStripe.lastLoginAt } : {}),
+  };
+}
+
+async function upsertDurableUser(
+  user: PrivateUserRecord,
+  opts?: { tempPassword?: string }
+): Promise<boolean> {
+  let ok = false;
+  if (hasFirestoreDurableStore()) {
+    ok = (await upsertFirestoreUser(user)) || ok;
+  }
+  if (stripePrivateStoreConfigured()) {
+    const stripeOk = await upsertStripePrivateUser({
+      ...user,
+      ...(opts?.tempPassword ? { tempPassword: opts.tempPassword } : {}),
+    });
+    ok = stripeOk || ok;
+  }
+  return ok;
+}
+
+async function listDurableUsers(): Promise<PrivateUserRecord[] | null> {
+  const byEmail = new Map<string, PrivateUserRecord>();
+  let any = false;
+  const fsUsers = await readFirestoreUsers();
+  if (fsUsers) {
+    any = true;
+    for (const u of fsUsers) byEmail.set(u.email, u);
+  }
+  if (stripePrivateStoreConfigured()) {
+    const stripeUsers = await listStripePrivateUsers({ max: 2000 });
+    any = true;
+    for (const u of stripeUsers) {
+      if (!byEmail.has(u.email)) {
+        byEmail.set(u.email, {
+          uid: u.uid,
+          email: u.email,
+          displayName: u.displayName,
+          passwordHash: u.passwordHash,
+          passwordSalt: u.passwordSalt,
+          createdAt: u.createdAt,
+          ...(u.lastLoginAt ? { lastLoginAt: u.lastLoginAt } : {}),
+        });
+      }
+    }
+  }
+  if (!any) return null;
+  return [...byEmail.values()];
 }
 
 function upsertLocalUser(user: PrivateUserRecord) {
@@ -174,19 +285,25 @@ async function hashPassword(password: string, salt?: string): Promise<{ hash: st
 }
 
 /**
- * One-shot boot migration: push any local-file users into Firestore,
- * then refresh the local cache from Firestore when available.
+ * One-shot boot migration: push any local-file users into durable stores
+ * (Firestore and/or Stripe), then refresh the local cache from durable data.
  */
 export async function migratePrivateAccountsToDurableStore(): Promise<{
-  source: 'firestore' | 'local' | 'none';
+  source: 'firestore' | 'stripe' | 'local' | 'none';
   migrated: number;
   total: number;
 }> {
   if (migrateAttempted) {
     const local = readLocalUsers();
-    const remote = await readFirestoreUsers();
+    const remote = await listDurableUsers();
     return {
-      source: remote ? 'firestore' : local.length ? 'local' : 'none',
+      source: hasFirestoreDurableStore()
+        ? 'firestore'
+        : stripePrivateStoreConfigured()
+          ? 'stripe'
+          : local.length
+            ? 'local'
+            : 'none',
       migrated: 0,
       total: remote?.length ?? local.length,
     };
@@ -194,24 +311,27 @@ export async function migratePrivateAccountsToDurableStore(): Promise<{
   migrateAttempted = true;
 
   const local = readLocalUsers();
-  const db = getAdminFirestore();
   let migrated = 0;
 
-  if (db && local.length) {
-    const remote = (await readFirestoreUsers()) || [];
+  if (hasDurablePrivateStore() && local.length) {
+    const remote = (await listDurableUsers()) || [];
     const remoteEmails = new Set(remote.map((u) => u.email));
     for (const user of local) {
       if (!remoteEmails.has(user.email)) {
-        const ok = await upsertFirestoreUser(user);
+        const ok = await upsertDurableUser(user);
         if (ok) migrated += 1;
       }
     }
   }
 
-  const remoteAfter = await readFirestoreUsers();
+  const remoteAfter = await listDurableUsers();
   if (remoteAfter && remoteAfter.length) {
     writeLocalUsers(remoteAfter);
-    return { source: 'firestore', migrated, total: remoteAfter.length };
+    return {
+      source: hasFirestoreDurableStore() ? 'firestore' : 'stripe',
+      migrated,
+      total: remoteAfter.length,
+    };
   }
 
   return {
@@ -222,26 +342,65 @@ export async function migratePrivateAccountsToDurableStore(): Promise<{
 }
 
 export function getPrivateStorageMeta(): {
-  privateStorage: 'firestore' | 'local_file' | 'none';
+  privateStorage: 'firestore' | 'stripe' | 'local_file' | 'none';
   privatePath: string;
   privateCollection: string;
+  durable: boolean;
+  writesAllowed: boolean;
+  productionHardFail: boolean;
+  stripeDurable: boolean;
+  firebaseAdmin: ReturnType<typeof getFirebaseAdminStatus>;
   persistenceWarning?: string;
 } {
-  const db = getAdminFirestore();
-  if (db) {
+  const admin = getFirebaseAdminStatus();
+  const durable = hasDurablePrivateStore();
+  const productionHardFail = isProdEnv() && !durable;
+  const writesAllowed = durable || !isProdEnv();
+  const stripeDurable = stripePrivateStoreConfigured() && !forceEphemeralForTests;
+
+  if (hasFirestoreDurableStore()) {
     return {
       privateStorage: 'firestore',
       privatePath: 'data/private_accounts/users.json (local cache)',
       privateCollection: COLLECTION,
+      durable: true,
+      writesAllowed: true,
+      productionHardFail: false,
+      stripeDurable,
+      firebaseAdmin: admin,
     };
   }
+
+  if (stripeDurable) {
+    return {
+      privateStorage: 'stripe',
+      privatePath: 'Stripe Customer metadata (cp_priv_*) + local cache',
+      privateCollection: COLLECTION,
+      durable: true,
+      writesAllowed: true,
+      productionHardFail: false,
+      stripeDurable: true,
+      firebaseAdmin: admin,
+      persistenceWarning:
+        'Firestore Admin offline — using Stripe Customer metadata as durable private-account store so Cloud Run redeploys cannot wipe members.',
+    };
+  }
+
   const local = readLocalUsers();
+  const warning = productionHardFail
+    ? 'PRODUCTION BLOCKED: No durable store (Firestore Admin offline and Stripe unavailable). Private register/login refuse local-only writes (Cloud Run disk is wiped on redeploy).'
+    : 'Private accounts are on the local filesystem only. On Cloud Run without Firestore/Stripe, this list resets when the revision is replaced.';
+
   return {
     privateStorage: local.length ? 'local_file' : 'none',
     privatePath: 'data/private_accounts/users.json',
     privateCollection: COLLECTION,
-    persistenceWarning:
-      'Private accounts are on the local filesystem only (no Firebase Admin). On Cloud Run without Firestore, this list resets when the revision is replaced.',
+    durable: false,
+    writesAllowed,
+    productionHardFail,
+    stripeDurable: false,
+    firebaseAdmin: admin,
+    persistenceWarning: warning,
   };
 }
 
@@ -253,8 +412,15 @@ export async function lookupPrivateUser(email: string): Promise<{
   if (!normalized || !normalized.includes('@')) {
     throw new PrivateAuthError('Enter a valid email address.');
   }
-  const remote = await findFirestoreUserByEmail(normalized);
+  if (isProdEnv() && !hasDurablePrivateStore()) {
+    throw new PrivateAuthError(
+      'Private account lookup unavailable: durable store is offline in production.',
+      503
+    );
+  }
+  const remote = await findDurableUserByEmail(normalized);
   if (remote) return { exists: true };
+  if (isProdEnv()) return { exists: false };
   const local = readLocalUsers().find((u) => u.email === normalized);
   return { exists: Boolean(local) };
 }
@@ -263,8 +429,10 @@ export async function lookupPrivateUser(email: string): Promise<{
 export async function findPrivateUserByEmail(email: string): Promise<PublicPrivateUser | null> {
   const normalized = normalizeEmail(email);
   if (!normalized.includes('@')) return null;
-  const remote = await findFirestoreUserByEmail(normalized);
+  const remote = await findDurableUserByEmail(normalized);
   if (remote) return toPublic(remote);
+  // Production: never treat ephemeral disk as source of truth.
+  if (isProdEnv()) return null;
   const found = readLocalUsers().find((u) => u.email === normalized);
   return found ? toPublic(found) : null;
 }
@@ -284,10 +452,13 @@ export type SafePrivateMember = {
   displayName: string;
   createdAt: string;
   lastLoginAt?: string;
-  source?: 'firestore' | 'local';
+  source?: 'firestore' | 'stripe' | 'local';
 };
 
-function toSafeMember(u: PrivateUserRecord, source: 'firestore' | 'local'): SafePrivateMember {
+function toSafeMember(
+  u: PrivateUserRecord,
+  source: 'firestore' | 'stripe' | 'local'
+): SafePrivateMember {
   const row: SafePrivateMember = {
     uid: u.uid,
     email: u.email,
@@ -302,41 +473,56 @@ function toSafeMember(u: PrivateUserRecord, source: 'firestore' | 'local'): Safe
 /** Read-only member list for CEO Dashboard. Strips all secret fields. */
 export async function listPrivateMembersSafe(): Promise<{
   members: SafePrivateMember[];
-  source: 'firestore' | 'local' | 'none';
+  source: 'firestore' | 'stripe' | 'local' | 'none';
 }> {
-  const remote = await readFirestoreUsers();
+  const remote = await listDurableUsers();
   const local = readLocalUsers();
+  const source: 'firestore' | 'stripe' | 'none' = hasFirestoreDurableStore()
+    ? 'firestore'
+    : stripePrivateStoreConfigured()
+      ? 'stripe'
+      : 'none';
 
   if (remote && remote.length > 0) {
     const members = remote
-      .map((u) => toSafeMember(u, 'firestore'))
+      .map((u) => toSafeMember(u, source === 'none' ? 'stripe' : source))
       .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    return { members, source: 'firestore' };
-  }
-
-  // Firestore reachable but empty → still surface local (pre-migrate / offline writes).
-  if (local.length > 0) {
-    const members = local
-      .map((u) => toSafeMember(u, 'local'))
-      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    return { members, source: remote ? 'local' : 'local' };
+    return { members, source: source === 'none' ? 'stripe' : source };
   }
 
   if (remote) {
-    return { members: [], source: 'firestore' };
+    // Durable reachable but empty — do not mask with ephemeral local in production.
+    if (isProdEnv()) return { members: [], source: source === 'none' ? 'stripe' : source };
+  }
+
+  // Dev / pre-migrate: surface local cache when durable stores are empty or offline.
+  if (!isProdEnv() && local.length > 0) {
+    const members = local
+      .map((u) => toSafeMember(u, 'local'))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    return { members, source: 'local' };
+  }
+
+  if (remote) {
+    return { members: [], source: source === 'none' ? 'stripe' : source };
   }
   return { members: [], source: 'none' };
 }
 
 /**
- * Create a private account (local + Firestore write-through).
- * Used by public register and founder waitlist conversion.
+ * Create a private account (durable store + local cache).
+ * Used by public register, founder waitlist conversion, import, and Stripe recovery.
+ * Production: refuses when no durable backend; requires successful durable write.
  */
 export async function provisionPrivateUser(input: {
   email: string;
   password: string;
   displayName: string;
+  /** Optional one-time password stored on Stripe for founder invite export. */
+  tempPassword?: string;
 }): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+
   const email = normalizeEmail(input.email);
   const displayName = (input.displayName || '').trim();
   const password = input.password || '';
@@ -345,8 +531,8 @@ export async function provisionPrivateUser(input: {
   if (displayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
   if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
 
-  const existingRemote = await findFirestoreUserByEmail(email);
-  const existingLocal = readLocalUsers().find((u) => u.email === email);
+  const existingRemote = await findDurableUserByEmail(email);
+  const existingLocal = isProdEnv() ? null : readLocalUsers().find((u) => u.email === email);
   if (existingRemote || existingLocal) {
     throw new PrivateAuthError('An account with this email already exists. Use Private Login.', 409);
   }
@@ -360,8 +546,23 @@ export async function provisionPrivateUser(input: {
     passwordSalt: salt,
     createdAt: new Date().toISOString(),
   };
+
+  if (hasDurablePrivateStore()) {
+    const ok = await upsertDurableUser(record, {
+      tempPassword: input.tempPassword || undefined,
+    });
+    if (!ok) {
+      throw new PrivateAuthError(
+        'Failed to persist private account to durable store (Firestore/Stripe). Account was not created.',
+        503
+      );
+    }
+    upsertLocalUser(record);
+    return toPublic(record);
+  }
+
+  // Non-production offline fallback only.
   upsertLocalUser(record);
-  await upsertFirestoreUser(record);
   return toPublic(record);
 }
 
@@ -371,6 +572,56 @@ export async function registerPrivateUser(input: {
   displayName: string;
 }): Promise<PublicPrivateUser> {
   return provisionPrivateUser(input);
+}
+
+/**
+ * Founder/admin password reset — updates durable store (Firestore and/or Stripe) + local cache.
+ * Accepts `password` or `newPassword` (same meaning). Optional tempPassword is stored on
+ * Stripe metadata for invite export.
+ */
+export async function resetPrivateUserPassword(input: {
+  email: string;
+  password?: string;
+  newPassword?: string;
+  tempPassword?: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+
+  const email = normalizeEmail(input.email);
+  const password = (input.password || input.newPassword || '').trim();
+  if (!email.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
+  if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
+
+  const found =
+    (await findDurableUserByEmail(email)) ||
+    (!isProdEnv() ? readLocalUsers().find((u) => u.email === email) || null : null);
+  if (!found) {
+    throw new PrivateAuthError('No private account found for that email.', 404);
+  }
+
+  const { hash, salt } = await hashPassword(password);
+  const updated: PrivateUserRecord = {
+    ...found,
+    passwordHash: hash,
+    passwordSalt: salt,
+  };
+
+  if (hasDurablePrivateStore()) {
+    const ok = await upsertDurableUser(updated, {
+      tempPassword: input.tempPassword || undefined,
+    });
+    if (!ok) {
+      throw new PrivateAuthError(
+        'Failed to persist password reset to durable store (Firestore/Stripe).',
+        503
+      );
+    }
+    upsertLocalUser(updated);
+    return toPublic(updated);
+  }
+
+  upsertLocalUser(updated);
+  return toPublic(updated);
 }
 
 export async function loginPrivateUser(input: {
@@ -383,9 +634,16 @@ export async function loginPrivateUser(input: {
     throw new PrivateAuthError('Email and password are required.');
   }
 
+  if (isProdEnv() && !hasDurablePrivateStore()) {
+    throw new PrivateAuthError(
+      'Private login unavailable: durable store is offline in production. Accounts are not kept on ephemeral Cloud Run disk.',
+      503
+    );
+  }
+
   const found =
-    (await findFirestoreUserByEmail(email)) ||
-    readLocalUsers().find((u) => u.email === email) ||
+    (await findDurableUserByEmail(email)) ||
+    (isProdEnv() ? null : readLocalUsers().find((u) => u.email === email) || null) ||
     null;
   // Generic messages — avoid confirming whether the email is registered.
   if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
@@ -399,35 +657,13 @@ export async function loginPrivateUser(input: {
 
   found.lastLoginAt = new Date().toISOString();
   upsertLocalUser(found);
-  await upsertFirestoreUser(found);
-  return toPublic(found);
-}
-
-/**
- * Admin-only: reset an existing member's password (founder console / support).
- * Rehashes and writes through to both local file and Firestore. Throws 404 when
- * the account does not exist. Never used by unauthenticated routes.
- */
-export async function resetPrivateUserPassword(input: {
-  email: string;
-  newPassword: string;
-}): Promise<PublicPrivateUser> {
-  const email = normalizeEmail(input.email);
-  const newPassword = input.newPassword || '';
-  if (!email.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
-  if (newPassword.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
-
-  const found =
-    (await findFirestoreUserByEmail(email)) ||
-    readLocalUsers().find((u) => u.email === email) ||
-    null;
-  if (!found) throw new PrivateAuthError('No account found for that email.', 404);
-
-  const { hash, salt } = await hashPassword(newPassword);
-  found.passwordHash = hash;
-  found.passwordSalt = salt;
-  upsertLocalUser(found);
-  await upsertFirestoreUser(found);
+  const durableOk = await upsertDurableUser(found);
+  if (isProdEnv() && !durableOk) {
+    throw new PrivateAuthError(
+      'Private login could not update durable store. Try again shortly.',
+      503
+    );
+  }
   return toPublic(found);
 }
 
