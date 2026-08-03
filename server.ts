@@ -68,7 +68,14 @@ import {
   lookupStock,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
-import { getAdminFirestore, getFirebaseAdminStatus, probeAdminFirestore } from './src/server/firebaseAdmin';
+import { getAuth } from 'firebase-admin/auth';
+import {
+  ensureAdminApp,
+  getAdminFirestore,
+  getFirebaseAdminStatus,
+  probeAdminFirestore,
+} from './src/server/firebaseAdmin';
+import { FOUNDER_EMAIL, isFounderEmail } from './src/lib/founder';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
@@ -1013,6 +1020,59 @@ async function startServer() {
 
   app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
     res.json({ ok: true, members: adminListAffiliates() });
+  });
+
+  /**
+   * Founder Google unlock: verified founder Firebase token → Express private session.
+   * Fixes CEO "Unauthorized" when Private Login password was wiped but Google still works.
+   */
+  app.post('/api/admin/founder-unlock', async (req, res) => {
+    try {
+      const header = req.get('authorization') || '';
+      const match = header.match(/^Bearer\s+(.+)$/i);
+      if (!match?.[1]) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          code: 'NEED_GOOGLE_FOUNDER',
+          message: `Sign into Google on this site as ${FOUNDER_EMAIL}, then click Unlock again.`,
+        });
+      }
+      if (!ensureAdminApp()) {
+        return res.status(503).json({
+          error: 'Misconfigured',
+          message: 'Firebase Admin cannot verify Google login right now.',
+        });
+      }
+      const decoded = await getAuth().verifyIdToken(match[1].trim());
+      if (!isFounderEmail(decoded.email)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          code: 'WRONG_GOOGLE_ACCOUNT',
+          message: `Wrong Google account (${decoded.email || 'unknown'}). Switch Google to ${FOUNDER_EMAIL}.`,
+        });
+      }
+      const sessionUser = {
+        uid: String(decoded.uid || `founder_${Date.now()}`),
+        email: FOUNDER_EMAIL,
+        displayName: String(decoded.name || 'Founder'),
+        isAnonymous: false,
+        emailVerified: true,
+        privateAccount: true,
+      };
+      (req.session as any).privateUser = sessionUser;
+      res.json({
+        ok: true,
+        user: sessionUser,
+        next: 'Unlocked. Click Restore known 16 + reset passwords, then Show invite passwords.',
+      });
+    } catch (error: any) {
+      console.error('[admin/founder-unlock] Failed:', error);
+      res.status(401).json({
+        error: 'Unauthorized',
+        code: 'BAD_GOOGLE_TOKEN',
+        message: 'Google login expired. Sign in again as the founder Google account, then Unlock.',
+      });
+    }
   });
 
   /**

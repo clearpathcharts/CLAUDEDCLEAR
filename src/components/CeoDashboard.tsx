@@ -87,9 +87,22 @@ export default function CeoDashboard() {
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
+  const [apiUnlocked, setApiUnlocked] = useState(false);
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [catalogSecretInput, setCatalogSecretInput] = useState(() => {
+    try {
+      return sessionStorage.getItem('cp_catalog_admin_secret') || '';
+    } catch {
+      return '';
+    }
+  });
   
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
+  const showsUnauthorized =
+    /unauthorized|forbidden|founder auth|sign in|catalog admin/i.test(
+      `${membersError || ''} ${convertMsg || ''}`
+    ) && !apiUnlocked;
 
   const founderApiHeaders = async (): Promise<Record<string, string>> => {
     const headers: Record<string, string> = {
@@ -97,14 +110,92 @@ export default function CeoDashboard() {
       'Content-Type': 'application/json',
     };
     // Only attach Firebase Bearer when it is the founder email.
-    // A non-founder Google session was causing CEO actions to 401/403 ("Unauthorized")
-    // even when a private founder cookie could have worked.
     const current = auth.currentUser;
     if (current && isFounderEmail(current.email)) {
-      const token = await current.getIdToken(false);
+      const token = await current.getIdToken(true);
       headers.Authorization = `Bearer ${token}`;
     }
+    try {
+      const secret = (sessionStorage.getItem('cp_catalog_admin_secret') || catalogSecretInput || '').trim();
+      if (secret) headers['x-catalog-admin-secret'] = secret;
+    } catch {
+      /* ignore */
+    }
     return headers;
+  };
+
+  const runFounderUnlock = async () => {
+    setUnlockBusy(true);
+    setConvertMsg(null);
+    setMembersError(null);
+    try {
+      const current = auth.currentUser;
+      if (!current || !isFounderEmail(current.email)) {
+        throw new Error(
+          `STEP 1 failed: Google is not signed in as ${FOUNDER_EMAIL}. Sign in with that Google account on this site, then click Unlock again.`
+        );
+      }
+      const token = await current.getIdToken(true);
+      const res = await fetch('/api/admin/founder-unlock', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: '{}',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || `Unlock failed (${res.status})`);
+      }
+      setApiUnlocked(true);
+      setConvertMsg(
+        body.next ||
+          'Unlocked. Now click: 1) Restore known 16 + reset passwords  2) Show invite passwords  3) Copy Ahmad’s temp password.'
+      );
+      await loadAdminMembers();
+    } catch (err: any) {
+      setApiUnlocked(false);
+      setConvertMsg(err?.message || 'Unlock failed.');
+    } finally {
+      setUnlockBusy(false);
+    }
+  };
+
+  const saveCatalogSecretAndRetry = async () => {
+    const secret = catalogSecretInput.trim();
+    if (!secret) {
+      setConvertMsg('Paste your catalog admin secret first (from your server env CATALOG_ADMIN_SECRET).');
+      return;
+    }
+    try {
+      sessionStorage.setItem('cp_catalog_admin_secret', secret);
+    } catch {
+      /* ignore */
+    }
+    setUnlockBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members', { headers, credentials: 'include' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || `Still locked (${res.status})`);
+      }
+      setApiUnlocked(true);
+      setMembersPayload(body as AdminMembersPayload);
+      setMembersError(null);
+      setConvertMsg(
+        'Secret accepted. Now click: 1) Restore known 16 + reset passwords  2) Show invite passwords  3) Copy Ahmad’s temp password.'
+      );
+    } catch (err: any) {
+      setApiUnlocked(false);
+      setConvertMsg(err?.message || 'Secret did not unlock the API.');
+    } finally {
+      setUnlockBusy(false);
+    }
   };
 
   const loadAdminMembers = async () => {
@@ -120,10 +211,12 @@ export default function CeoDashboard() {
         );
       }
       setMembersPayload(body as AdminMembersPayload);
+      setApiUnlocked(true);
     } catch (err: any) {
       console.error('[CeoDashboard] /api/admin/members failed:', err);
       setMembersError(err?.message || 'Could not load members.');
       setMembersPayload(null);
+      setApiUnlocked(false);
     } finally {
       setMembersLoading(false);
     }
@@ -530,14 +623,65 @@ export default function CeoDashboard() {
 
       {ceoTab === 'members' ? (
         <div className="space-y-8">
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-50/90 text-sm leading-relaxed">
-            <strong className="uppercase tracking-wider text-amber-200/90">If buttons say Unauthorized</strong>
-            <p className="mt-2 mb-0">
-              Log out, then use <span className="font-mono">Private Login</span> as{' '}
-              <span className="font-mono">{FOUNDER_EMAIL}</span> (founder account). Stay on this site —
-              do not switch to a different Google account. Then click Reset / Restore again for Ahmad.
-            </p>
-          </div>
+          {showsUnauthorized && (
+            <div className="rounded-xl border-2 border-amber-400/50 bg-zinc-950 px-5 py-5 text-amber-50 space-y-4">
+              <h3 className="text-lg font-black uppercase tracking-wider text-amber-200 m-0">
+                Stop — fix Unauthorized first (3 steps)
+              </h3>
+              <ol className="m-0 pl-5 space-y-3 text-sm leading-relaxed text-zinc-100">
+                <li>
+                  <strong className="text-white">STEP 1:</strong> Make sure Google on this site is{' '}
+                  <span className="font-mono text-[#00FFFF]">{FOUNDER_EMAIL}</span> (not a different Gmail).
+                </li>
+                <li>
+                  <strong className="text-white">STEP 2:</strong> Click the big green button below — Unlock CEO
+                  API. This creates the missing server login cookie.
+                </li>
+                <li>
+                  <strong className="text-white">STEP 3:</strong> After it says Unlocked, click{' '}
+                  <span className="text-pink-200">Restore known 16 + reset passwords</span>, then{' '}
+                  <span className="text-amber-200">Show invite passwords</span>, then copy Ahmad’s password.
+                </li>
+              </ol>
+              <button
+                type="button"
+                onClick={() => void runFounderUnlock()}
+                disabled={unlockBusy || convertBusy}
+                className="w-full md:w-auto px-6 py-4 rounded-lg bg-emerald-500 text-black text-sm font-black uppercase tracking-widest hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {unlockBusy ? 'Unlocking…' : 'STEP 2 — Unlock CEO API (Google founder)'}
+              </button>
+              <div className="border-t border-zinc-700 pt-4 space-y-2">
+                <p className="text-xs text-zinc-400 m-0">
+                  Optional backup unlock: paste <span className="font-mono">CATALOG_ADMIN_SECRET</span> if you
+                  have it saved from server env.
+                </p>
+                <div className="flex flex-col md:flex-row gap-2">
+                  <input
+                    type="password"
+                    value={catalogSecretInput}
+                    onChange={(e) => setCatalogSecretInput(e.target.value)}
+                    placeholder="catalog admin secret"
+                    className="flex-1 px-3 py-2 rounded-lg border border-zinc-600 bg-black/60 text-zinc-100 text-xs font-mono"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void saveCatalogSecretAndRetry()}
+                    disabled={unlockBusy || convertBusy}
+                    className="px-4 py-2 rounded-lg border border-zinc-500 text-zinc-100 text-xs font-mono uppercase tracking-widest hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    Unlock with secret
+                  </button>
+                </div>
+              </div>
+              {convertMsg ? (
+                <p className="m-0 text-sm font-mono text-white bg-black/50 border border-zinc-700 rounded-lg px-3 py-3 whitespace-pre-wrap">
+                  {convertMsg}
+                </p>
+              ) : null}
+            </div>
+          )}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl text-white font-black uppercase tracking-widest flex items-center gap-3">
