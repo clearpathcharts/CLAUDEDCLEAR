@@ -101,10 +101,6 @@ import {
   verifyIntelligenceWebhookSecret,
 } from './src/server/intelligenceWebhookService';
 import {
-  createSocialOsRouter,
-  startSocialOsScheduler,
-} from './src/server/socialOs';
-import {
   getLatestTimeframeVerifyReport,
   runTimeframeAccuracyVerify,
   startTimeframeAccuracyScheduler,
@@ -1438,8 +1434,33 @@ async function startServer() {
     res.json({ secrets: getSecretPresenceReport() });
   });
 
-  // ClearPath Social OS — direct multi-network publisher (no Buffer / Zapier)
-  app.use('/api/social-os', createSocialOsRouter());
+  // Social OS is disconnected from this host — runs as social-os/ on its own domain.
+  const socialOsPublicUrl = () => (process.env.SOCIAL_OS_PUBLIC_URL || '').replace(/\/$/, '');
+  app.use('/api/social-os', (req, res) => {
+    const target = socialOsPublicUrl();
+    if (target) {
+      res.redirect(302, `${target}${req.originalUrl}`);
+      return;
+    }
+    res.status(410).json({
+      error: 'gone',
+      message:
+        'ClearPath Social OS was disconnected from clearpathtrader.com. Deploy social-os/ on its own domain and set SOCIAL_OS_PUBLIC_URL.',
+    });
+  });
+  app.get(['/ops/social', '/social-os'], (req, res) => {
+    const target = socialOsPublicUrl();
+    if (target) {
+      res.redirect(302, target);
+      return;
+    }
+    res.status(410).type('html').send(`<!doctype html><html><body style="background:#07080f;color:#e4e4e7;font-family:system-ui;padding:3rem;text-align:center">
+      <p style="letter-spacing:.2em;text-transform:uppercase;color:#22d3ee;font-size:12px">Disconnected</p>
+      <h1>Social OS has its own domain</h1>
+      <p>This publisher is no longer hosted on clearpathtrader.com. Deploy <code>social-os/</code> and set <code>SOCIAL_OS_PUBLIC_URL</code>.</p>
+      <p><a href="/" style="color:#67e8f9">Back to ClearPath Trader</a></p>
+    </body></html>`);
+  });
 
   app.get('/api/status', async (req, res) => {
     try {
@@ -3323,11 +3344,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     console.log(`\x1b[35m%s\x1b[0m`, `[Clear Path Markets Science PRO] Institutional Engine ONLINE`);
     console.log(`\x1b[36m%s\x1b[0m`, `[Clear Path Markets Science PRO] Serving at http://localhost:${PORT}`);
 
-    try {
-      startSocialOsScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Social OS scheduler failed to start:', e?.message || e);
-    }
+    console.log('[STARTUP] Social OS disconnected from this host (use npm run dev:social-os / Dockerfile.social-os)');
 
     try {
       startTimeframeAccuracyScheduler();

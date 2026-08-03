@@ -52,8 +52,9 @@ export function createSocialOsRouter(): Router {
       ok: true,
       product: 'ClearPath Social OS',
       site: config.siteUrl,
-      note: 'Site-owned direct publisher — ClearPath posts to each network. No Buffer, Zapier, or Make.',
+      note: 'Standalone Social OS host (own domain) — ClearPath posts to each network. No Buffer, Zapier, or Make. Disconnected from clearpathtrader.com.',
       middlemen: 'none',
+      host: 'standalone',
       config: {
         dryRun: config.dryRun,
         platformsConfigured: config.platformsConfigured,

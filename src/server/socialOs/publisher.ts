@@ -6,11 +6,13 @@ export function getSocialOsConfig(): SocialOsConfig {
   const dryRunEnv = (process.env.SOCIAL_OS_DRY_RUN || '').toLowerCase();
   const forcedDry = dryRunEnv === '1' || dryRunEnv === 'true' || dryRunEnv === 'yes';
   const counts = countConfiguredPlatforms();
+  const publicUrl = (process.env.SOCIAL_OS_PUBLIC_URL || '').replace(/\/$/, '');
+  const brandSite = (process.env.SOCIAL_OS_BRAND_SITE_URL || 'https://clearpathtrader.com').replace(/\/$/, '');
 
   return {
-    siteUrl: 'https://clearpathtrader.com',
+    siteUrl: publicUrl || brandSite,
     brandName: 'ClearPath Trader',
-    defaultLinkUrl: 'https://clearpathtrader.com',
+    defaultLinkUrl: brandSite,
     utmCampaign: 'clearpath_social_os',
     dryRun: forcedDry,
     platformsConfigured: counts.configured,

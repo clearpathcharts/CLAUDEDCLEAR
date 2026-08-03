@@ -86,11 +86,22 @@ function authHeaders(): HeadersInit {
   };
 }
 
+type SocialOsPageProps = {
+  /** True when running on the dedicated Social OS domain (not clearpathtrader.com). */
+  standalone?: boolean;
+};
+
 /**
  * Ops console for ClearPath Social OS — direct multi-network publisher.
- * Path: /ops/social
+ * Standalone host only (own domain). Not embedded in clearpathtrader.com.
  */
-export default function SocialOsPage() {
+export default function SocialOsPage({ standalone = false }: SocialOsPageProps) {
+  const publicHost =
+    (typeof window !== 'undefined' ? window.location.origin : '') ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as { env?: { VITE_SOCIAL_OS_PUBLIC_URL?: string } }).env?.VITE_SOCIAL_OS_PUBLIC_URL) ||
+    '';
+
   const [secret, setSecret] = useState(() =>
     typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SECRET_KEY) || '' : ''
   );
@@ -247,28 +258,35 @@ export default function SocialOsPage() {
     <div className="min-h-screen bg-[#07080f] text-zinc-100">
       <SEO
         title="ClearPath Social OS — Direct multi-network publisher"
-        description="Site-owned social publisher for clearpathtrader.com. Posts directly to Facebook, Instagram, X, LinkedIn, TikTok, YouTube, and more — no Buffer or Zapier."
-        canonical="https://clearpathtrader.com/ops/social"
+        description="ClearPath Social OS — dedicated-domain direct publisher. Posts to Facebook, Instagram, X, LinkedIn, TikTok, YouTube, and more — no Buffer or Zapier."
+        canonical={publicHost || undefined}
       />
       <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#07080f]/80 backdrop-blur-xl px-4 py-3 flex items-center justify-between">
-        <a href="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400 hover:text-white">
-          <ArrowLeft size={14} /> Back
+        <a
+          href="https://clearpathtrader.com"
+          className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400 hover:text-white"
+        >
+          <ArrowLeft size={14} /> ClearPath Trader
         </a>
         <span className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.2em] uppercase text-cyan-300">
           <Megaphone size={14} /> Publish
         </span>
-        <span className="text-[10px] font-mono text-zinc-500">middlemen: none</span>
+        <span className="text-[10px] font-mono text-zinc-500">
+          {standalone ? 'own domain' : 'middlemen: none'}
+        </span>
       </nav>
 
       <main className="max-w-6xl mx-auto px-4 py-10 space-y-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <header className="space-y-3">
-          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-400">ClearPath-owned · never Buffer · never Zapier</p>
+          <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-400">
+            Own domain · ClearPath-owned · never Buffer · never Zapier
+          </p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif" }}>
             ClearPath Social OS
           </h1>
           <p className="text-sm text-zinc-400 max-w-3xl leading-relaxed">
-            Direct publishing from clearpathtrader.com to every connected network. Daily cadence at{' '}
-            <strong className="text-zinc-200">5:00am, 9:00am, 3:00pm, and 6:00pm</strong>. Each platform uses ClearPath adapters — official APIs or your own webhooks — not a third-party scheduler.
+            Dedicated publisher host — disconnected from clearpathtrader.com. Direct posting to every connected network. Daily cadence at{' '}
+            <strong className="text-zinc-200">5:00am, 9:00am, 3:00pm, and 6:00pm</strong>. ClearPath adapters only — official APIs or your webhooks, not a third-party scheduler.
           </p>
         </header>
 
