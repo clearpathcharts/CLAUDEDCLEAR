@@ -54,7 +54,10 @@ export default function GoogleDesk() {
   const [errorMsg, setErrorMsg] = useState('');
 
   // Active sub-sections
-  const [activeSubTab, setActiveSubTab] = useState<'sheets' | 'classroom' | 'cloudsql' | 'forms'>('sheets');
+  const [activeSubTab, setActiveSubTab] = useState<'sheets' | 'docs' | 'classroom' | 'cloudsql' | 'forms'>('sheets');
+  const [docsFiles, setDocsFiles] = useState<any[]>([]);
+  const [docsSearch, setDocsSearch] = useState('');
+  const [docsLoading, setDocsLoading] = useState(false);
 
   // I. Drive states
   const [driveFiles, setDriveFiles] = useState<any[]>([]);
@@ -107,11 +110,14 @@ export default function GoogleDesk() {
         throw new Error('Firebase Authentication is not initialized.');
       }
       const provider = new GoogleAuthProvider();
-      // Add requested scopes
+      // Docs + Sheets + Drive list (required to browse Workspace files)
+      provider.addScope('https://www.googleapis.com/auth/documents');
       provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+      provider.addScope('https://www.googleapis.com/auth/drive.readonly');
       provider.addScope('https://www.googleapis.com/auth/classroom.courses.readonly');
       provider.addScope('https://www.googleapis.com/auth/forms.body');
       provider.addScope('https://www.googleapis.com/auth/forms.responses.readonly');
+      provider.setCustomParameters({ prompt: 'consent' });
 
       const result = await signInWithPopup(authInstance, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -161,9 +167,9 @@ export default function GoogleDesk() {
     setDriveLoading(true);
     setErrorMsg('');
     try {
-      let url = 'https://www.googleapis.com/drive/v3/files?pageSize=30&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)';
+      let url = 'https://www.googleapis.com/drive/v3/files?pageSize=30&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)&orderBy=modifiedTime%20desc';
       if (driveSearch.trim()) {
-        url = `https://www.googleapis.com/drive/v3/files?q=name+contains+'${encodeURIComponent(driveSearch)}'&pageSize=30&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)`;
+        url = `https://www.googleapis.com/drive/v3/files?q=name+contains+'${encodeURIComponent(driveSearch)}'&pageSize=30&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)&orderBy=modifiedTime%20desc`;
       }
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -182,6 +188,38 @@ export default function GoogleDesk() {
       setErrorMsg(err.message || 'Failed to fetch files from Google Drive.');
     } finally {
       setDriveLoading(false);
+    }
+  };
+
+  /** List Google Docs only (Docs MIME) from Drive. */
+  const fetchGoogleDocs = async () => {
+    if (!accessToken) return;
+    setDocsLoading(true);
+    setErrorMsg('');
+    try {
+      const mime = "mimeType='application/vnd.google-apps.document'";
+      const nameQ = docsSearch.trim()
+        ? ` and name contains '${docsSearch.trim().replace(/'/g, "\\'")}'`
+        : '';
+      const q = encodeURIComponent(`${mime}${nameQ}`);
+      const url = `https://www.googleapis.com/drive/v3/files?q=${q}&pageSize=40&fields=files(id,name,mimeType,webViewLink,iconLink,modifiedTime)&orderBy=modifiedTime%20desc`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          handleDisconnect();
+          throw new Error('Session expired. Please reconnect Google Workspace.');
+        }
+        throw new Error(`Docs list failed (${res.status}). Reconnect and allow Docs + Drive access.`);
+      }
+      const data = await res.json();
+      setDocsFiles(data.files || []);
+    } catch (err: any) {
+      console.error('Docs fetch error:', err);
+      setErrorMsg(err.message || 'Failed to list Google Docs.');
+    } finally {
+      setDocsLoading(false);
     }
   };
 
@@ -666,16 +704,17 @@ export default function GoogleDesk() {
             <Layers size={28} />
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight uppercase">
-            Authentication Required
+            Connect Google Docs & Sheets
           </h2>
           <p className="text-xs text-zinc-400 mt-2 max-w-sm font-mono leading-relaxed">
-            Authorized Google integration required. Connect your workspace to download and search files, edit sheets, and access educational Classroom curricula.
+            Sign in with Google to open Docs, browse Sheets, Drive files, Forms, and Classroom.
+            Use the same Google account you want linked to this workspace.
           </p>
           <button 
             onClick={handleConnect}
             className="mt-6 px-6 py-3.5 bg-[#FF1493] hover:bg-[#FF1493]/90 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer"
           >
-            AWAITING OAUTH HANDSHAKE
+            Connect Google Docs & Sheets
           </button>
         </div>
       ) : (
@@ -695,12 +734,26 @@ export default function GoogleDesk() {
             </button>
 
             <button
+              onClick={() => {
+                setActiveSubTab('docs');
+                void fetchGoogleDocs();
+              }}
+              className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 ${activeSubTab === 'docs' ? 'border-sky-400 bg-sky-500/5 text-sky-300 shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'border-zinc-800/40 hover:border-zinc-700 bg-zinc-950/20 hover:bg-zinc-950/60'}`}
+            >
+              <BookOpen className="w-5 h-5 shrink-0" />
+              <div className="text-left font-sans">
+                <div className="text-xs font-black uppercase tracking-wider">II. Google Docs</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">Documents from your Drive</div>
+              </div>
+            </button>
+
+            <button
               onClick={() => setActiveSubTab('classroom')}
               className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex items-center gap-3 ${activeSubTab === 'classroom' ? 'border-[#B026FF] bg-[#B026FF]/5 text-[#B026FF] shadow-[0_0_15px_rgba(176,38,255,0.1)]' : 'border-zinc-800/40 hover:border-zinc-700 bg-zinc-950/20 hover:bg-zinc-950/60'}`}
             >
               <GraduationCap className="w-5 h-5 shrink-0" />
               <div className="text-left font-sans">
-                <div className="text-xs font-black uppercase tracking-wider">II. Google Classroom</div>
+                <div className="text-xs font-black uppercase tracking-wider">III. Google Classroom</div>
                 <div className="text-[10px] text-zinc-500 font-mono mt-0.5">Academic Curricula & Courses</div>
               </div>
             </button>
@@ -711,7 +764,7 @@ export default function GoogleDesk() {
             >
               <Database className="w-5 h-5 shrink-0" />
               <div className="text-left font-sans">
-                <div className="text-xs font-black uppercase tracking-wider">III. Cloud SQL Repository</div>
+                <div className="text-xs font-black uppercase tracking-wider">IV. Cloud SQL Repository</div>
                 <div className="text-[10px] text-zinc-500 font-mono mt-0.5">Secured Postgres Server Safe</div>
               </div>
             </button>
@@ -722,7 +775,7 @@ export default function GoogleDesk() {
             >
               <FileText className="w-5 h-5 shrink-0" />
               <div className="text-left font-sans">
-                <div className="text-xs font-black uppercase tracking-wider">IV. Google Forms</div>
+                <div className="text-xs font-black uppercase tracking-wider">V. Google Forms</div>
                 <div className="text-[10px] text-zinc-500 font-mono mt-0.5">Forms & Firebase Synced Safe</div>
               </div>
             </button>
@@ -844,6 +897,73 @@ export default function GoogleDesk() {
                         </table>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* DOCS SUB TAB SCREEN */}
+            {activeSubTab === 'docs' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <h2 className="text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                    <BookOpen className="text-sky-400" /> Google Docs
+                  </h2>
+                  <div className="flex items-center gap-2 w-full md:w-auto">
+                    <input
+                      type="text"
+                      placeholder="Search docs by name..."
+                      value={docsSearch}
+                      onChange={(e) => setDocsSearch(e.target.value)}
+                      className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-sky-400 flex-grow md:w-64"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void fetchGoogleDocs()}
+                      disabled={docsLoading}
+                      className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-black text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+                    >
+                      {docsLoading ? 'Loading…' : 'Refresh Docs'}
+                    </button>
+                  </div>
+                </div>
+
+                {docsLoading ? (
+                  <div className="py-20 flex flex-col items-center justify-center font-mono text-xs text-sky-400 uppercase">
+                    <RefreshCw className="animate-spin mb-3 w-5 h-5" />
+                    Loading Google Docs…
+                  </div>
+                ) : docsFiles.length === 0 ? (
+                  <div className="py-16 text-center border border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-mono text-xs p-6 space-y-3">
+                    <p>No Docs found yet. Click Refresh Docs after connecting, or create a Doc in Google Drive.</p>
+                    <p className="text-zinc-600">
+                      If this stays empty, disconnect and reconnect — allow Docs and Drive when Google asks.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                    {docsFiles.map((file) => (
+                      <a
+                        key={file.id}
+                        href={file.webViewLink || `https://docs.google.com/document/d/${file.id}/edit`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl border border-zinc-800 bg-black/40 hover:border-sky-500/40 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileText className="w-4 h-4 text-sky-400 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-sm text-white font-semibold truncate">{file.name}</div>
+                            <div className="text-[10px] text-zinc-500 font-mono">
+                              {file.modifiedTime
+                                ? `Updated ${new Date(file.modifiedTime).toLocaleString()}`
+                                : file.id}
+                            </div>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-zinc-500 shrink-0" />
+                      </a>
+                    ))}
                   </div>
                 )}
               </div>

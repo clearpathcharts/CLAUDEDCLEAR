@@ -96,8 +96,11 @@ export default function CeoDashboard() {
       Accept: 'application/json',
       'Content-Type': 'application/json',
     };
+    // Only attach Firebase Bearer when it is the founder email.
+    // A non-founder Google session was causing CEO actions to 401/403 ("Unauthorized")
+    // even when a private founder cookie could have worked.
     const current = auth.currentUser;
-    if (current) {
+    if (current && isFounderEmail(current.email)) {
       const token = await current.getIdToken(false);
       headers.Authorization = `Bearer ${token}`;
     }
@@ -527,6 +530,14 @@ export default function CeoDashboard() {
 
       {ceoTab === 'members' ? (
         <div className="space-y-8">
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-50/90 text-sm leading-relaxed">
+            <strong className="uppercase tracking-wider text-amber-200/90">If buttons say Unauthorized</strong>
+            <p className="mt-2 mb-0">
+              Log out, then use <span className="font-mono">Private Login</span> as{' '}
+              <span className="font-mono">{FOUNDER_EMAIL}</span> (founder account). Stay on this site —
+              do not switch to a different Google account. Then click Reset / Restore again for Ahmad.
+            </p>
+          </div>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl text-white font-black uppercase tracking-widest flex items-center gap-3">
