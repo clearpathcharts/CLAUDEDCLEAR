@@ -300,23 +300,61 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         }
       },
       purgeAuthCache: () => {
+        // Hard reset of client caches ONLY — never logout.
+        // Keep httpOnly session cookie intact so the user stays signed in.
         clearClientAuthArtifacts();
         if (typeof localStorage !== 'undefined') {
           try {
-            localStorage.clear();
+            const keepProfile = localStorage.getItem('clearpath_current_profile_id') || 'calm_focus';
+            const keepImages = localStorage.getItem('clearpath_user_images');
+            const keysToWipe: string[] = [];
+            for (let i = 0; i < localStorage.length; i += 1) {
+              const key = localStorage.key(i);
+              if (!key) continue;
+              // Preserve profile chrome; wipe chart/layout/cache junk that causes desync.
+              if (
+                key === 'clearpath_current_profile_id' ||
+                key === 'clearpath_user_images' ||
+                key === 'clearpath_active_tab'
+              ) {
+                continue;
+              }
+              keysToWipe.push(key);
+            }
+            for (const key of keysToWipe) localStorage.removeItem(key);
             localStorage.setItem('clearpath_active_tab', 'Discovery');
-            localStorage.setItem('clearpath_current_profile_id', 'calm_focus');
+            localStorage.setItem('clearpath_current_profile_id', keepProfile);
+            if (keepImages) localStorage.setItem('clearpath_user_images', keepImages);
           } catch (e) {}
+        }
+        if (typeof indexedDB !== 'undefined') {
+          try {
+            // Clear Firestore offline persistence DBs that the button claims to fix.
+            const dbNames = ['firestore', 'firestore/[DEFAULT]', 'firebase-heartbeat-database', 'firebaseLocalStorageDb'];
+            for (const name of dbNames) {
+              try {
+                indexedDB.deleteDatabase(name);
+              } catch {
+                /* ignore */
+              }
+            }
+          } catch {
+            /* ignore */
+          }
         }
         if (typeof window !== 'undefined') {
           try {
             const url = new URL(window.location.href);
             url.searchParams.set('tab', 'Discovery');
             url.hash = 'Discovery';
-            window.history.pushState(null, '', url.toString());
-            window.location.href = url.origin + url.pathname + '?tab=Discovery#Discovery';
-          } catch (e) {
+            // Soft navigate to main/HOME (Discovery) while staying authenticated.
+            window.history.replaceState(null, '', `${url.pathname}?${url.searchParams.toString()}#Discovery`);
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+            window.dispatchEvent(new Event('clearpath-location'));
+            // Soft reload keeps the session cookie; do not hit logout or Auth.
             window.location.reload();
+          } catch (e) {
+            window.location.assign('/?tab=Discovery#Discovery');
           }
         }
       }

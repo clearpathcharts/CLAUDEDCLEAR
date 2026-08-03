@@ -70,10 +70,13 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   const [activeMenu, setActiveMenu] = useState<string>('Dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Fallback profile details
-  const displayName = profile?.displayName || 'Rick Floyd';
-  const username = profile?.username || 'rickfloyd';
-  const avatarUrl = profile?.avatarUrl || profile?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200';
+  // Real member identity — neutral silhouette fallback, never a stock photo.
+  const displayName = profile?.displayName || 'Member';
+  const username = profile?.username || (profile?.displayName ? String(profile.displayName).toLowerCase().replace(/[^a-z0-9]/g, '') : 'member');
+  const avatarUrl =
+    profile?.avatarUrl ||
+    profile?.avatar ||
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23111118"/><circle cx="50" cy="38" r="18" fill="%233f3f46"/><path d="M14 92c4-20 18-30 36-30s32 10 36 30" fill="%233f3f46"/></svg>';
 
   // 1. Live Stream Core States
   const [isLive, setIsLive] = useState(false);
@@ -284,28 +287,21 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
     setActiveCharts(prev => prev.filter(c => c.id !== id));
   };
 
-  // 4. Communities and Channels
-  const [communities] = useState([
-    { id: 'com-1', name: 'Sovereign Core Desks', members: 4200, active: 890, type: 'Exclusive Tier 3' },
-    { id: 'com-2', name: 'Liquidity Grabbers Guild', members: 1240, active: 310, type: 'Scalping / Intra' },
-    { id: 'com-3', name: 'Global Fundamental Macro', members: 890, active: 110, type: 'Macro Long' },
-    { id: 'com-4', name: 'Gold Arbitrage Protocol', members: 1540, active: 470, type: 'Commodity' }
-  ]);
-  const [selectedCommunity, setSelectedCommunity] = useState<string>('com-1');
+  // 4. Communities and Channels — real channels only, no mock guilds.
+  const [communities] = useState<
+    { id: string; name: string; members: number; active: number; type: string }[]
+  >([]);
+  const [selectedCommunity, setSelectedCommunity] = useState<string>('');
 
-  // Direct and Room Messages
-  const [messages, setMessages] = useState<{ id: string; author: string; avatar: string; content: string; time: string; channelId: string }[]>([
-    { id: 'msg-1', author: 'Kenji Yamada', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100', content: 'Frankfurt low swept cleanly, NY opening range looks locked.', time: '11:42 AM', channelId: 'com-1' },
-    { id: 'msg-2', author: 'Alistair Cole', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100', content: 'USD inflows shifting to Tokyo defensively.', time: '11:45 AM', channelId: 'com-1' },
-    { id: 'msg-3', author: 'Katarina Silva', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100', content: 'Watching AAPL 178 fill gap.', time: '11:47 AM', channelId: 'com-2' }
-  ]);
+  // Direct and Room Messages — starts empty; only real member messages appear.
+  const [messages, setMessages] = useState<{ id: string; author: string; avatar: string; content: string; time: string; channelId: string }[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
 
   const sendRoomMessage = (channelId: string) => {
-    if (!newMessageText.trim()) return;
+    if (!channelId || !newMessageText.trim()) return;
     const newMsg = {
       id: `msg-${Date.now()}`,
-      author: 'Rick Floyd (You)',
+      author: `${displayName} (You)`,
       avatar: avatarUrl,
       content: newMessageText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -583,34 +579,8 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
     }
   };
 
-  // 7. Post Composer State Management
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 'p-1',
-      author: { name: 'Rick Floyd', username: 'rickfloyd', avatar: avatarUrl, isVerified: true },
-      content: '🚨 ALERT: Nasdaq premium zones reached. Expect standard liquidity grabs in Frankfurt overlap. Stand by for न्यूयॉर्क opening bell sweeps.',
-      timestamp: '1 hour ago',
-      category: 'Macro',
-      reactions: { fires: 145, rockets: 88, hearts: 64, thumbs: 104 },
-      comments: [
-        { id: 'rep-1', author: 'MarkusFX (AOS Core)', content: 'Absolutely aligned. Standard Frankfurt pool points sweep.', timestamp: '45 mins ago' }
-      ],
-      repostsCount: 14,
-      chartAttached: 'EURUSD',
-      isPinned: true
-    },
-    {
-      id: 'p-2',
-      author: { name: 'Alistair Cole', username: 'alistair_desk', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100', isVerified: true },
-      content: 'BTCUSD consolidation structural breakdown imminent. Private broadcast desks have secured hedges. Ensure appropriate leverage configurations.',
-      timestamp: '3 hours ago',
-      category: 'Private Broadcast',
-      reactions: { fires: 98, rockets: 42, hearts: 22, thumbs: 60 },
-      comments: [],
-      repostsCount: 8,
-      mediaUrl: 'https://images.unsplash.com/photo-1640340434855-6084b1f4901c?auto=format&fit=crop&q=80&w=600'
-    }
-  ]);
+  // 7. Post Composer State Management — feed starts empty; real member posts only.
+  const [posts, setPosts] = useState<Post[]>([]);
 
   const [composerText, setComposerText] = useState('');
   const [selectedPostCategory, setSelectedPostCategory] = useState<'Macro' | 'Liquidity' | 'Strategy' | 'Private Broadcast' | 'Education'>('Strategy');
@@ -774,48 +744,18 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   // 9. Interactive Team Network Node Grid
   const [teamNodes, setTeamNodes] = useState<TeamMember>({
     id: 'n-root',
-    name: 'Rick Floyd (You)',
-    role: 'Sovereign Desk Master',
-    tier: 'Sovereign Rank',
-    volume: '$42.5M Volume',
+    name: `${displayName} (You)`,
+    role: 'Affiliate Desk',
+    tier: 'Certified Affiliate Track',
+    volume: 'Referrals build here',
     active: true,
     avatar: avatarUrl,
-    commission: 'Primary Desk',
-    subNodes: [
-      {
-        id: 'n-s1',
-        name: 'Alistair Cole',
-        role: 'Regional Sovereign Desk',
-        tier: 'Tier 2 Active Desk',
-        volume: '$18.2M',
-        active: true,
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100',
-        commission: '40% Comm',
-        subNodes: [
-          { id: 'n-s1-1', name: 'Katarina Silva', role: 'Premium Scalper', tier: 'Tier 1 Standard', volume: '$4.1M', active: true, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100', commission: '15% Comm' },
-          { id: 'n-s1-2', name: 'Kenji Yamada', role: 'Macro Carry Lead', tier: 'Tier 1 Standard', volume: '$6.5M', active: false, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100', commission: '15% Comm' }
-        ]
-      },
-      {
-        id: 'n-s2',
-        name: 'Maria Thorne',
-        role: 'Liquidating Director',
-        tier: 'Tier 2 Active Desk',
-        volume: '$12.4M',
-        active: true,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100',
-        commission: '40% Comm',
-        subNodes: [
-          { id: 'n-s2-1', name: 'Gavin Vance', role: 'Arbitrage Coordinator', tier: 'Tier 1 Standard', volume: '$1.8M', active: true, avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100', commission: '15% Comm' }
-        ]
-      }
-    ]
+    commission: '25% residual',
+    subNodes: []
   });
 
   const [expandedTeamNodes, setExpandedTeamNodes] = useState<{ [id: string]: boolean }>({
-    'n-root': true,
-    'n-s1': true,
-    'n-s2': false
+    'n-root': true
   });
 
   const toggleTeamNodeExpanded = (nodeId: string) => {
@@ -827,16 +767,16 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
   // Top 10 connected social media platforms array
   const [socialPlatforms, setSocialPlatforms] = useState([
-    { id: 'insta', authId: 'instagram', name: 'Instagram', handle: '@rick_floyd_fx', followers: '142K', activeSync: true, icon: Flame, color: 'text-[#E1306C]', url: 'https://instagram.com/rick_floyd_fx' },
-    { id: 'fb', authId: 'facebook', name: 'Facebook', handle: 'RickFloydFX', followers: '89K', activeSync: true, icon: Users, color: 'text-[#1877F2]', url: 'https://facebook.com/RickFloydFX' },
-    { id: 'tiktok', authId: 'tiktok', name: 'TikTok', handle: '@rickthetrader', followers: '210K', activeSync: true, icon: Video, color: 'text-[#a6e22e]', url: 'https://tiktok.com/@rickthetrader' },
-    { id: 'yt', authId: 'youtube', name: 'YouTube', handle: 'ClearPathFX_Sovereign', followers: '345K', activeSync: true, icon: Tv, color: 'text-[#FF0000]', url: 'https://youtube.com/@ClearPathFX_Sovereign' },
-    { id: 'twitter', authId: 'twitter', name: 'X / Twitter', handle: '@rickfloyd_fx', followers: '76K', activeSync: true, icon: RefreshCw, color: 'text-white', url: 'https://x.com/rickfloyd_fx' },
-    { id: 'tg', authId: 'telegram', name: 'Telegram', handle: 't.me/clearpath_signals', followers: '185K', activeSync: true, icon: Send, color: 'text-[#229ED9]', url: 'https://t.me/clearpath_signals' },
-    { id: 'discord', authId: 'discord', name: 'Discord', handle: 'discord.gg/clearpath', followers: '62K', activeSync: true, icon: MessageSquare, color: 'text-[#5865F2]', url: 'https://discord.gg/clearpath' },
-    { id: 'twitch', authId: 'twitch', name: 'Twitch', handle: 'rickfloyd_live', followers: '28K', activeSync: false, icon: Radio, color: 'text-[#9146FF]', url: 'https://twitch.tv/rickfloyd_live' },
-    { id: 'linkedin', authId: 'linkedin', name: 'LinkedIn', handle: 'rick-floyd-sovereign', followers: '14K', activeSync: false, icon: Award, color: 'text-[#0A66C2]', url: 'https://linkedin.com/in/rick-floyd-sovereign' },
-    { id: 'reddit', authId: 'reddit', name: 'Reddit', handle: 'r/ClearPathAnarchy', followers: '41K', activeSync: true, icon: Activity, color: 'text-[#FF4500]', url: 'https://reddit.com/r/ClearPathAnarchy' }
+    { id: 'insta', authId: 'instagram', name: 'Instagram', handle: 'Not connected', followers: '—', activeSync: false, icon: Flame, color: 'text-[#E1306C]', url: '' },
+    { id: 'fb', authId: 'facebook', name: 'Facebook', handle: 'Not connected', followers: '—', activeSync: false, icon: Users, color: 'text-[#1877F2]', url: '' },
+    { id: 'tiktok', authId: 'tiktok', name: 'TikTok', handle: 'Not connected', followers: '—', activeSync: false, icon: Video, color: 'text-[#a6e22e]', url: '' },
+    { id: 'yt', authId: 'youtube', name: 'YouTube', handle: 'Not connected', followers: '—', activeSync: false, icon: Tv, color: 'text-[#FF0000]', url: '' },
+    { id: 'twitter', authId: 'twitter', name: 'X / Twitter', handle: 'Not connected', followers: '—', activeSync: false, icon: RefreshCw, color: 'text-white', url: '' },
+    { id: 'tg', authId: 'telegram', name: 'Telegram', handle: 'Not connected', followers: '—', activeSync: false, icon: Send, color: 'text-[#229ED9]', url: '' },
+    { id: 'discord', authId: 'discord', name: 'Discord', handle: 'Not connected', followers: '—', activeSync: false, icon: MessageSquare, color: 'text-[#5865F2]', url: '' },
+    { id: 'twitch', authId: 'twitch', name: 'Twitch', handle: 'Not connected', followers: '—', activeSync: false, icon: Radio, color: 'text-[#9146FF]', url: '' },
+    { id: 'linkedin', authId: 'linkedin', name: 'LinkedIn', handle: 'Not connected', followers: '—', activeSync: false, icon: Award, color: 'text-[#0A66C2]', url: '' },
+    { id: 'reddit', authId: 'reddit', name: 'Reddit', handle: 'Not connected', followers: '—', activeSync: false, icon: Activity, color: 'text-[#FF4500]', url: '' }
   ]);
 
   const togglePlatformSyncState = (platId: string) => {
@@ -1936,6 +1876,18 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                 </p>
               </div>
 
+              {communities.length === 0 && (
+                <div className="bg-black/50 border border-zinc-900 rounded-2xl p-8 text-center">
+                  <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                    No community channels yet
+                  </p>
+                  <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+                    Channels open as your referral network grows. Share your affiliate link to
+                    start building your community.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {communities.map((c) => (
                   <button
@@ -1965,6 +1917,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
               </div>
 
               {/* Chat compartment matching community */}
+              {communities.length > 0 && (
               <div className="bg-black/60 border border-zinc-900 rounded-3xl p-5 space-y-4">
                 <span className="text-zinc-550 block font-mono text-[9px] font-black uppercase tracking-wider">
                   RADIO BROADCAST FEED COMM:
@@ -2002,6 +1955,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                   </button>
                 </div>
               </div>
+              )}
             </div>
           )}
 
@@ -2262,8 +2216,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
               <div className="space-y-3 font-mono text-xs">
                 <span className="text-zinc-550 font-black text-[9px] uppercase block tracking-wider">AVAILABLE VOLTAGE CHANNELS:</span>
                 {[
-                  { id: 'room-1', name: 'NYC Open Alignment Zone', host: 'Rick Floyd', participants: 48, active: true },
-                  { id: 'room-2', name: 'Asia Session Carry Desk', host: 'Kenji Yamada', participants: 12, active: false }
+                  { id: 'room-1', name: 'My Desk Room', host: `${displayName} (You)`, participants: 0, active: true }
                 ].map((room) => (
                   <div key={room.id} className="flex justify-between items-center p-4 bg-[#0a0a14] border border-zinc-900 rounded-xl">
                     <div>
@@ -2815,22 +2768,9 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
             </div>
 
             <div className="space-y-3.5 font-mono text-xs">
-              <div className="p-3 bg-zinc-950/90 border border-red-500/20 rounded-2xl relative">
-                <span className="absolute top-1.5 right-1.5 text-[8px] bg-red-650 text-white px-2 py-0.5 rounded uppercase font-black tracking-widest">
-                  LIVE NOW
-                </span>
-                <h5 className="font-bold text-white text-[11px] uppercase mr-12 leading-tight">Frankfurt Vacuum Liquidity Breakdowns</h5>
-                <p className="text-[9px] text-zinc-550 mt-1 uppercase">Host: Master Captain Floyd</p>
-                
-                {/* Avatars of participants */}
-                <div className="flex items-center gap-1.5 mt-3">
-                  <div className="flex -space-x-2.5 overflow-hidden">
-                    <img className="inline-block h-6 w-6 rounded-full ring-2 ring-black" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="" referrerPolicy="no-referrer" />
-                    <img className="inline-block h-6 w-6 rounded-full ring-2 ring-black" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100" alt="" referrerPolicy="no-referrer" />
-                    <img className="inline-block h-6 w-6 rounded-full ring-2 ring-black" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100" alt="" referrerPolicy="no-referrer" />
-                  </div>
-                  <span className="text-[9px] text-zinc-500 font-extrabold">+ 112 Active Copiers</span>
-                </div>
+              <div className="p-3 bg-zinc-950/90 border border-zinc-800 rounded-2xl relative">
+                <h5 className="font-bold text-white text-[11px] uppercase leading-tight">No live streams right now</h5>
+                <p className="text-[9px] text-zinc-550 mt-1 uppercase">Start your own room from the Live Meetings desk.</p>
 
                 <button 
                   onClick={() => {
@@ -2839,7 +2779,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                   }}
                   className="w-full mt-3 bg-red-650 hover:bg-red-550 text-white text-[9px] font-black uppercase py-2 rounded-lg text-center transition-all cursor-pointer block"
                 >
-                  Join Stream Room
+                  Open Live Meetings
                 </button>
               </div>
             </div>
