@@ -19,12 +19,6 @@ export const EDUCATIONAL_FEEDS: EducationalFeed[] = [
     url: "https://feeds.bbci.co.uk/news/business/rss.xml",
     topics: ["world", "economy"],
   },
-  {
-    id: "reuters_business",
-    label: "Reuters Business",
-    url: "https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best",
-    topics: ["news", "literacy"],
-  },
 ];
 
 export const LISTEN_CONCEPT_HINTS: Record<string, string[]> = {

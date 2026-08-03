@@ -52,7 +52,7 @@ export default function PoliticalHub() {
     {
       title: "State Election Boards Overhaul Cyber Protection Standards",
       desc: "A nonpartisan taskforce completes deployment of air-gapped cryptographic logging devices across 14 key battleground districts.",
-      source: "Reuters Agency Desk",
+      source: "ClearPath News Desk",
       date: "40m ago",
       image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c"
     }

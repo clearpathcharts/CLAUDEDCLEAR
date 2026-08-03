@@ -263,8 +263,8 @@ export default function MarketDiagnostics() {
             <div className="space-y-2 text-sm text-emerald-100 leading-relaxed">
               <p className="m-0">
                 <strong className="text-emerald-300">How to read the left side:</strong> Green ONLINE =
-                that service is up. Grey N/A = API key not configured. MarketWatch/Reuters red usually
-                means those sites block scrapers — not that Private Login or Firebase is down.
+                that service is up. Grey N/A = API key not configured. Red OFFLINE means that probe
+                failed — not that Private Login or Firebase is down.
               </p>
               <p className="m-0">
                 <strong className="text-emerald-300">Redeploy safety:</strong> Private members are stored

@@ -20,8 +20,6 @@ export class DataSourceVerificationPolicy extends BaseTruthPolicy {
     'SEC',
     'NEWSDATA',
     'BENZINGA',
-    'MARKETWATCH',
-    'REUTERS',
     'GOOGLE_CALENDAR',
     'APPLE_CALENDAR',
     'OUTLOOK',

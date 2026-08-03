@@ -2975,7 +2975,7 @@ The output MUST be a valid JSON object matching the following structure exactly:
       "sentiment": "Bullish" | "Bearish" | "Neutral",
       "sentimentScore": 85,
       "date": "e.g., 2 hours ago or Today",
-      "sourceName": "e.g., Bloomberg, Reuters, or Yahoo Finance"
+      "sourceName": "e.g., Bloomberg, AP, or Yahoo Finance"
     }
   ]
 }
