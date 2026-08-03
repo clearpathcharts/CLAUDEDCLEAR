@@ -214,6 +214,60 @@ export default function CeoDashboard() {
     }
   };
 
+  const runEmergencySeed = async (dryRun: boolean) => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/emergency-seed', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ dryRun, resetExisting: true }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Emergency seed failed (${res.status})`);
+      setConvertMsg(
+        dryRun
+          ? `Emergency dry run: ${body.created} would be created, ${body.reset} would get new passwords (${body.members?.length || 0} known survivors).`
+          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Open “Show invite passwords” — send Dawn’s credentials privately.`
+      );
+      if (!dryRun) {
+        await loadAdminMembers();
+        await loadFounderInvites();
+      }
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Emergency seed failed.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
+  const runResetDawnPassword = async () => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/reset-password', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ email: 'dawnhobson@aol.com' }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Password reset failed (${res.status})`);
+      setConvertMsg(
+        `Dawn reset OK (${body.created ? 'account created' : 'password updated'}). Email: ${body.email} — temp password: ${body.tempPassword}. Send privately; she logs in via Private Login.`
+      );
+      await loadAdminMembers();
+      await loadFounderInvites();
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Dawn password reset failed.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
   const runFounderImport = async (dryRun: boolean) => {
     setConvertBusy(true);
     setConvertMsg(null);
@@ -486,6 +540,30 @@ export default function CeoDashboard() {
               </button>
               <button
                 type="button"
+                onClick={() => void runEmergencySeed(true)}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-orange-500/40 bg-orange-500/10 text-orange-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-orange-500/20 disabled:opacity-50"
+              >
+                Dry-run emergency 16
+              </button>
+              <button
+                type="button"
+                onClick={() => void runEmergencySeed(false)}
+                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-rose-500/20 disabled:opacity-50"
+              >
+                Restore known 16 + reset passwords
+              </button>
+              <button
+                type="button"
+                onClick={() => void runResetDawnPassword()}
+                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-50"
+              >
+                Reset Dawn password now
+              </button>
+              <button
+                type="button"
                 onClick={() => setImportOpen((v) => !v)}
                 disabled={convertBusy}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-sky-500/20 disabled:opacity-50"
@@ -499,10 +577,12 @@ export default function CeoDashboard() {
             <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-50 text-sm leading-relaxed">
               <strong className="uppercase tracking-wider text-rose-200">Production hard-fail</strong>
               <p className="mt-2 mb-0">
-                Durable Firestore is offline. Private register/login and member writes are blocked so
-                Cloud Run cannot silently store accounts on ephemeral disk. Restore{' '}
-                <span className="font-mono">FIREBASE_SERVICE_ACCOUNT</span> or Cloud Run ADC, then use
-                Recover from Stripe or Import members.
+                No durable private-account store is available (Firestore Admin offline and Stripe
+                unavailable). Private register/login and member writes are blocked so Cloud Run cannot
+                silently store accounts on ephemeral disk. Ensure{' '}
+                <span className="font-mono">STRIPE_SECRET_KEY</span> is set (already present in prod)
+                and/or restore <span className="font-mono">FIREBASE_SERVICE_ACCOUNT</span>, then use
+                Restore known 16 / Reset Dawn / Recover from Stripe.
               </p>
               {membersPayload.meta.firebaseAdmin?.reason ? (
                 <p className="mt-2 mb-0 font-mono text-xs text-rose-100/80">

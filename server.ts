@@ -132,6 +132,11 @@ import {
   recoverPrivateAccountsFromStripe,
 } from './src/server/privateAccountRecoveryService';
 import {
+  DAWN_HOBSON_EMAIL,
+  emergencyResetMemberPassword,
+  seedEmergencyKnownMembers,
+} from './src/server/emergencyMemberSeed';
+import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
 import {
@@ -1096,6 +1101,53 @@ async function startServer() {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       console.error('[admin/members/recover-from-stripe] Failed:', error);
       res.status(status).json({ error: error?.message || 'Stripe recovery failed' });
+    }
+  });
+
+  /**
+   * Founder-only: re-seed the last known private-login cohort (~16) and issue
+   * fresh temp passwords into founder invites. Does not invent the wiped ~4000.
+   * Body: { dryRun?: boolean, resetExisting?: boolean } (resetExisting defaults true).
+   */
+  app.post('/api/admin/members/emergency-seed', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const result = await seedEmergencyKnownMembers({
+        dryRun: Boolean(req.body?.dryRun),
+        resetExisting: req.body?.resetExisting !== false,
+      });
+      res.json({
+        ...result,
+        howToSend:
+          'Open “Show invite passwords”, copy email + tempPassword for Dawn and the other known members, and send privately. They log in via Private Login.',
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/emergency-seed] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Emergency seed failed' });
+    }
+  });
+
+  /**
+   * Founder-only: reset one member password (defaults to Dawn Hobson).
+   * Body: { email?: string }. Returns tempPassword once + stores founder invite.
+   */
+  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const email = String(req.body?.email || DAWN_HOBSON_EMAIL).trim();
+      const result = await emergencyResetMemberPassword(email);
+      res.json({
+        ok: true,
+        email: result.email,
+        displayName: result.displayName,
+        created: result.created,
+        tempPassword: result.tempPassword,
+        howToSend:
+          'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/reset-password] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Password reset failed' });
     }
   });
 
@@ -3469,7 +3521,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         const meta = getPrivateStorageMeta();
         if (meta.productionHardFail) {
           console.error(
-            '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: durable Firestore offline in production. Register/login/import blocked until FIREBASE_SERVICE_ACCOUNT or Cloud Run ADC is available.'
+            '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: no durable store in production (Firestore Admin offline and Stripe unavailable). Register/login/import blocked until STRIPE_SECRET_KEY and/or FIREBASE_SERVICE_ACCOUNT is available.'
           );
         } else if (hasDurablePrivateStore()) {
           const recovered = await bootRecoverPrivateAccountsFromStripe();
@@ -3479,6 +3531,15 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             );
           } else if (recovered.skippedReason) {
             console.log(`[STARTUP] Stripe private-account recovery skipped (${recovered.skippedReason})`);
+          }
+          // Create any missing known survivors only — never auto-reset passwords on boot.
+          try {
+            const seeded = await seedEmergencyKnownMembers({ resetExisting: false });
+            console.log(
+              `[STARTUP] Emergency known-member seed → created=${seeded.created} already=${seeded.already} errors=${seeded.errors}`
+            );
+          } catch (seedErr: any) {
+            console.warn('[STARTUP] Emergency known-member seed skipped:', seedErr?.message || seedErr);
           }
         }
       } catch (e: any) {

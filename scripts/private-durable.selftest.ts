@@ -72,6 +72,22 @@ async function main() {
   assert.equal(dry.created, 1);
   assert.equal(dry.dryRun, true);
 
+  const emergency = await import('../src/server/emergencyMemberSeed.ts');
+  assert.ok(emergency.EMERGENCY_KNOWN_MEMBERS.some((m) => m.email === 'dawnhobson@aol.com'));
+  const emergencyDry = await emergency.seedEmergencyKnownMembers({ dryRun: true, resetExisting: true });
+  assert.equal(emergencyDry.dryRun, true);
+  assert.ok(emergencyDry.created + emergencyDry.reset >= emergency.EMERGENCY_KNOWN_MEMBERS.length);
+
+  // Live reset/seed still hard-fails in production without durable store.
+  await assert.rejects(
+    () => emergency.seedEmergencyKnownMembers({ dryRun: false }),
+    (err: any) => err instanceof auth.PrivateAuthError && err.status === 503
+  );
+  await assert.rejects(
+    () => emergency.emergencyResetMemberPassword('dawnhobson@aol.com'),
+    (err: any) => err instanceof auth.PrivateAuthError && err.status === 503
+  );
+
   auth._forceEphemeralPrivateStoreForTests(false);
   console.log('private-durable.selftest: ok');
 }

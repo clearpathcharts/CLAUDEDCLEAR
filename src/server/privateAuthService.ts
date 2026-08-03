@@ -574,6 +574,54 @@ export async function registerPrivateUser(input: {
   return provisionPrivateUser(input);
 }
 
+/**
+ * Founder/admin password reset — updates durable store + local cache.
+ * Optional tempPassword is stored on Stripe metadata for invite export.
+ */
+export async function resetPrivateUserPassword(input: {
+  email: string;
+  password: string;
+  tempPassword?: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+
+  const email = normalizeEmail(input.email);
+  const password = input.password || '';
+  if (!email.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
+  if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
+
+  const found =
+    (await findDurableUserByEmail(email)) ||
+    (!isProdEnv() ? readLocalUsers().find((u) => u.email === email) || null : null);
+  if (!found) {
+    throw new PrivateAuthError('No private account found for that email.', 404);
+  }
+
+  const { hash, salt } = await hashPassword(password);
+  const updated: PrivateUserRecord = {
+    ...found,
+    passwordHash: hash,
+    passwordSalt: salt,
+  };
+
+  if (hasDurablePrivateStore()) {
+    const ok = await upsertDurableUser(updated, {
+      tempPassword: input.tempPassword || undefined,
+    });
+    if (!ok) {
+      throw new PrivateAuthError(
+        'Failed to persist password reset to durable store (Firestore/Stripe).',
+        503
+      );
+    }
+    upsertLocalUser(updated);
+    return toPublic(updated);
+  }
+
+  upsertLocalUser(updated);
+  return toPublic(updated);
+}
+
 export async function loginPrivateUser(input: {
   email: string;
   password: string;
