@@ -182,7 +182,7 @@ export default function MarketDiagnostics() {
             CPM Core Diagnostic Handshake Dashboard
           </h1>
           <p className="text-white/40 text-sm mt-0.5">
-            Active verification engine polling external pricing gates, structural databases, and historical build traces.
+            Left = live service probes (what matters now). Right = old fixed build diary — not a live crash list.
           </p>
         </div>
 
