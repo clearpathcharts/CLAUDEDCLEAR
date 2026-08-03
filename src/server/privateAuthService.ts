@@ -20,7 +20,8 @@ import {
   upsertStripePrivateUser,
 } from './stripePrivateAccountStore';
 import {
-  assertRegistrationEmailAllowed,
+  assertRegistrationEmailAllowedAsync,
+  assertRegistrationNameAllowed,
   assessIdentityRisk,
   emailRiskReasons,
 } from './identityRisk';
@@ -802,11 +803,12 @@ export async function provisionPrivateUser(input: {
   if (displayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
   if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
 
-  // Hard no-entry: fake / test / disposable / reserved emails never create an account.
+  // Hard no-entry: fake / test / disposable / reserved emails + fake names never create an account.
   // Founder seed / recovery / waitlist-convert may skip via skipIdentityRisk.
   if (!input.skipIdentityRisk) {
     try {
-      assertRegistrationEmailAllowed(email);
+      await assertRegistrationEmailAllowedAsync(email);
+      assertRegistrationNameAllowed(displayName);
     } catch (err) {
       const e = err as Error & { status?: number; code?: string };
       throw new PrivateAuthError(e.message || 'This email is not allowed for registration.', e.status || 400, e.code);
@@ -1094,7 +1096,8 @@ export async function resubmitIdentity(input: {
   if (newDisplayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
 
   try {
-    assertRegistrationEmailAllowed(newEmail);
+    await assertRegistrationEmailAllowedAsync(newEmail);
+    assertRegistrationNameAllowed(newDisplayName);
   } catch (err) {
     const e = err as Error & { status?: number; code?: string };
     throw new PrivateAuthError(e.message || 'This email is not allowed for registration.', e.status || 400, e.code);
