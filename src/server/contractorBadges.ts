@@ -70,7 +70,9 @@ function writePending(rows: PendingGrant[]) {
   ensureDir();
   fs.writeFileSync(PENDING_FILE, JSON.stringify(rows, null, 2), 'utf8');
   // Write-through so pending grants survive redeploys.
-  void pushPendingToFirestore(rows);
+  void pushPendingToFirestore(rows).catch((err) => {
+    console.warn('[contractorBadges] Firestore write-through rejected (local copy saved):', err);
+  });
 }
 
 async function pushPendingToFirestore(rows: PendingGrant[]): Promise<boolean> {

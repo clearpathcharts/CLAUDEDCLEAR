@@ -1,16 +1,29 @@
 /**
  * Smoke test for affiliate attribution + rewards ladder.
  * Run: npx tsx scripts/affiliate.selftest.ts
+ *
+ * Forces local-only durable storage so CI (no Firebase credentials) never
+ * initializes a lazy ADC client that crashes the process mid-test.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
+process.env.CLEARPATH_DISABLE_FIRESTORE_ADMIN = '1';
+delete process.env.FIREBASE_SERVICE_ACCOUNT;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-aff-'));
 process.chdir(tmp);
 
 async function main() {
+  const { getAdminFirestore, hasFirebaseAdminCredentials } = await import(
+    '../src/server/firebaseAdmin.ts'
+  );
+  assert.equal(hasFirebaseAdminCredentials(), false);
+  assert.equal(getAdminFirestore(), null);
+
   const aff = await import('../src/server/affiliateService.ts');
 
   const a = aff.ensureAffiliateMember('user_a');
