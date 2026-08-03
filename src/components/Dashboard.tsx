@@ -1451,13 +1451,19 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
                 <button
                   onClick={() => {
-                    if (confirm('Verify and completely reset the application cache now? This clears Firestore offline sync database issues.')) {
+                    if (confirm('Hard reset client cache and return to the main Home screen? You will stay logged in.')) {
+                      try {
+                        localStorage.setItem('clearpath_active_tab', 'Discovery');
+                      } catch {
+                        /* ignore */
+                      }
+                      setActiveTab('Discovery');
                       purgeAuthCache();
                     }
                   }}
                   className="w-full text-[7px] font-black uppercase tracking-[0.2em] border border-white/5 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white px-2 py-1.5 rounded-lg transition-all"
                 >
-                  Force Purge Cache & Sync
+                  Hard Reset → Home (Stay Logged In)
                 </button>
               </div>
             </div>
