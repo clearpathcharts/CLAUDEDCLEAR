@@ -1129,21 +1129,41 @@ async function startServer() {
   });
 
   /**
-   * Founder-only: reset one member password (defaults to Dawn Hobson).
-   * Body: { email?: string }. Returns tempPassword once + stores founder invite.
+   * Founder-only password reset.
+   * Body: { email?, newPassword? | password? }
+   * - No password → emergency path (defaults email to Dawn); returns tempPassword + invite
+   * - With password → set that password on durable store (Stripe/Firestore)
    */
   app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const email = String(req.body?.email || DAWN_HOBSON_EMAIL).trim();
-      const result = await emergencyResetMemberPassword(email);
+      const explicitPassword = String(req.body?.newPassword || req.body?.password || '').trim();
+      if (!explicitPassword) {
+        const result = await emergencyResetMemberPassword(email);
+        return res.json({
+          ok: true,
+          email: result.email,
+          displayName: result.displayName,
+          created: result.created,
+          tempPassword: result.tempPassword,
+          user: { email: result.email, displayName: result.displayName },
+          howToSend:
+            'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+        });
+      }
+      const user = await resetPrivateUserPassword({
+        email,
+        newPassword: explicitPassword,
+        tempPassword: explicitPassword,
+      });
       res.json({
         ok: true,
-        email: result.email,
-        displayName: result.displayName,
-        created: result.created,
-        tempPassword: result.tempPassword,
+        email: user.email,
+        displayName: user.displayName,
+        created: false,
+        user,
         howToSend:
-          'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+          'Send the new password to the member privately (never in chat/logs). They log in via Private Login.',
       });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1203,28 +1223,6 @@ async function startServer() {
     } catch (error) {
       console.error('[admin/members/invites] Failed:', error);
       res.status(500).json({ error: 'Failed to list invites' });
-    }
-  });
-
-  /**
-   * Founder / catalog-admin only — reset an existing member's private password.
-   * Body: { email, newPassword (min 8) }. Use to recover a member who is locked
-   * out. Send the new password to the member privately (never in chat/logs).
-   */
-  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
-    try {
-      const user = await resetPrivateUserPassword({
-        email: String(req.body?.email || ''),
-        newPassword: String(req.body?.newPassword || ''),
-      });
-      res.json({ ok: true, user });
-    } catch (error) {
-      if (error instanceof PrivateAuthError) {
-        res.status(error.status).json({ error: error.message });
-        return;
-      }
-      console.error('[admin/members/reset-password] Failed:', error);
-      res.status(500).json({ error: 'Password reset failed' });
     }
   });
 
