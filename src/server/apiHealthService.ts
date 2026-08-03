@@ -327,7 +327,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
           tier: 'Authentication',
           status: 'ONLINE',
           responseTime,
-          message: `Durable store online (${meta.storage}${meta.stripeDurable ? '+stripe' : ''}). Member logins survive Cloud Run redeploys.`,
+          message: `Durable store online (${meta.privateStorage}${meta.stripeDurable ? '+stripe' : ''}). Member logins survive Cloud Run redeploys.`,
         };
       }
       return {
@@ -335,7 +335,7 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
         tier: 'Authentication',
         status: 'DEGRADED',
         responseTime,
-        message: meta.persistenceWarning || `storage=${meta.storage}`,
+        message: meta.persistenceWarning || `storage=${meta.privateStorage}`,
       };
     })()
   );
