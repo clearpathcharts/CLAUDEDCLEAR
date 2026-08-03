@@ -19,12 +19,14 @@ async function main() {
   const auth = await import('../src/server/privateAuthService.ts');
   auth._forceEphemeralPrivateStoreForTests(false);
 
-  const user = await auth.provisionPrivateUser({
-    email: 'backup-user@example.com',
+  const provisioned = await auth.provisionPrivateUser({
+    email: 'backup-user@gmail.com',
     password: 'password12345',
     displayName: 'Backup User',
+    skipIdentityRisk: true,
   });
-  assert.equal(user.email, 'backup-user@example.com');
+  assert.equal(provisioned.kind, 'ok');
+  assert.equal(provisioned.user.email, 'backup-user@gmail.com');
 
   const backupMod = await import('../src/server/founderBackupService.ts');
   const pkg = await backupMod.buildFounderBackupPackage({ includeStripeCustomerEmails: false });
@@ -32,7 +34,7 @@ async function main() {
   assert.equal(pkg.schemaVersion, 1);
   assert.ok(pkg.warning.toLowerCase().includes('backup'));
   assert.ok(pkg.privateAccounts.count >= 1);
-  const row = pkg.privateAccounts.accounts.find((a) => a.email === 'backup-user@example.com');
+  const row = pkg.privateAccounts.accounts.find((a) => a.email === 'backup-user@gmail.com');
   assert.ok(row);
   assert.ok(row!.passwordHash.length > 16);
   assert.ok(row!.passwordSalt.length >= 8);

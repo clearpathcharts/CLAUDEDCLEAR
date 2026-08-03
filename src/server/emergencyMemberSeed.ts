@@ -97,12 +97,14 @@ export async function seedEmergencyKnownMembers(opts?: {
           members.push({ email, displayName: row.displayName, action: 'created', message: 'dry-run' });
           continue;
         }
-        const user = await provisionPrivateUser({
+        const provisioned = await provisionPrivateUser({
           email,
           password: tempPassword,
           displayName: row.displayName,
           tempPassword,
+          skipIdentityRisk: true,
         });
+        const user = provisioned.user;
         await recordFounderInvite({
           email: user.email,
           displayName: user.displayName,
@@ -192,12 +194,14 @@ export async function emergencyResetMemberPassword(emailRaw: string): Promise<{
   const existing = await findPrivateUserByEmail(email);
 
   if (!existing) {
-    const user = await provisionPrivateUser({
+    const provisioned = await provisionPrivateUser({
       email,
       password: tempPassword,
       displayName,
       tempPassword,
+      skipIdentityRisk: true,
     });
+    const user = provisioned.user;
     await recordFounderInvite({
       email: user.email,
       displayName: user.displayName,

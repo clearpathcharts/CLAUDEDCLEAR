@@ -42,15 +42,17 @@ async function main() {
 
   // Dev path still allows local when not production.
   process.env.NODE_ENV = 'development';
-  const user = await auth.provisionPrivateUser({
-    email: 'devlocal@example.com',
+  const provisioned = await auth.provisionPrivateUser({
+    email: 'devlocal@gmail.com',
     password: 'password123',
     displayName: 'Dev Local',
+    skipIdentityRisk: true,
   });
-  assert.equal(user.email, 'devlocal@example.com');
+  assert.equal(provisioned.kind, 'ok');
+  assert.equal(provisioned.user.email, 'devlocal@gmail.com');
 
   const listed = await auth.listPrivateMembersSafe();
-  assert.ok(listed.members.some((m) => m.email === 'devlocal@example.com'));
+  assert.ok(listed.members.some((m) => m.email === 'devlocal@gmail.com'));
   assert.equal(JSON.stringify(listed.members).includes('passwordHash'), false);
 
   const recovery = await import('../src/server/privateAccountRecoveryService.ts');

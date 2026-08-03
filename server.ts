@@ -124,7 +124,11 @@ import {
 } from './src/server/literacyService';
 import {
   PrivateAuthError,
+  assertSessionIdentityAllowed,
   buildClientSessionUser,
+  buildIdentityConfirmUrl,
+  confirmIdentityByToken,
+  declineIdentity,
   getPrivateStorageMeta,
   hasDurablePrivateStore,
   listPrivateMembersSafe,
@@ -132,7 +136,9 @@ import {
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
+  remintIdentityChallenge,
   resetPrivateUserPassword,
+  resubmitIdentity,
 } from './src/server/privateAuthService';
 import {
   bootRecoverPrivateAccountsFromStripe,
@@ -159,6 +165,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
+import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -709,11 +716,43 @@ async function startServer() {
 
   app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
     try {
-      const user = await registerPrivateUser({
+      const result = await registerPrivateUser({
         email: req.body?.email || '',
         password: req.body?.password || '',
         displayName: req.body?.displayName || '',
+        meta: {
+          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          userAgent: String(req.headers['user-agent'] || ''),
+        },
       });
+
+      if (result.kind === 'pending_confirm') {
+        const origin =
+          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+          `${req.protocol}://${req.get('host')}`;
+        const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
+        const emailSent = await sendIdentityConfirmEmail({
+          to: result.user.email,
+          displayName: result.user.displayName,
+          confirmUrl,
+        });
+        // Do NOT grant dashboard session while quarantined.
+        return res.status(202).json({
+          ok: true,
+          quarantined: true,
+          identityStatus: 'pending_confirm',
+          emailSent,
+          reasons: result.reasons,
+          user: {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            identityStatus: 'pending_confirm',
+          },
+        });
+      }
+
+      const user = result.user;
       // Affiliate: ensure code for new member + attribute from cookie/body
       try {
         ensureAffiliateMember(user.uid);
@@ -730,22 +769,186 @@ async function startServer() {
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Registration failed.' });
+      res.status(status).json({
+        error: error.message || 'Registration failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
     }
   });
 
   app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
     try {
-      const user = await loginPrivateUser({
+      const result = await loginPrivateUser({
         email: req.body?.email || '',
         password: req.body?.password || '',
       });
-      const sessionUser = buildClientSessionUser(user);
+
+      if (result.kind === 'pending_confirm') {
+        return res.status(403).json({
+          ok: false,
+          code: 'IDENTITY_PENDING',
+          error: 'Please confirm your identity with real information.',
+          identityStatus: 'pending_confirm',
+          reasons: result.reasons,
+          user: {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            identityStatus: 'pending_confirm',
+          },
+        });
+      }
+
+      const sessionUser = buildClientSessionUser(result.user);
       (req.session as any).privateUser = sessionUser;
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Login failed.' });
+      res.status(status).json({
+        error: error.message || 'Login failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+        identityStatus: error instanceof PrivateAuthError ? error.details?.identityStatus : undefined,
+      });
+    }
+  });
+
+  app.post('/api/auth/private/identity/resubmit', registrationLimiter, async (req, res) => {
+    try {
+      const result = await resubmitIdentity({
+        currentEmail: req.body?.currentEmail || req.body?.email || '',
+        password: req.body?.password || '',
+        newEmail: req.body?.newEmail || req.body?.email || '',
+        newDisplayName: req.body?.newDisplayName || req.body?.displayName || '',
+        meta: {
+          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          userAgent: String(req.headers['user-agent'] || ''),
+        },
+      });
+
+      if (result.kind === 'unlocked') {
+        const sessionUser = buildClientSessionUser(result.user);
+        (req.session as any).privateUser = sessionUser;
+        try {
+          ensureAffiliateMember(result.user.uid);
+        } catch {
+          /* ignore */
+        }
+        return res.json({ ok: true, identityStatus: 'ok', user: sessionUser });
+      }
+
+      if (result.kind === 'pending_confirm') {
+        const origin =
+          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+          `${req.protocol}://${req.get('host')}`;
+        const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
+        const emailSent = await sendIdentityConfirmEmail({
+          to: result.user.email,
+          displayName: result.user.displayName,
+          confirmUrl,
+        });
+        return res.status(202).json({
+          ok: true,
+          quarantined: true,
+          identityStatus: 'pending_confirm',
+          emailSent,
+          emailSentRequired: true,
+          user: {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            identityStatus: 'pending_confirm',
+          },
+        });
+      }
+
+      // still_suspect
+      return res.status(202).json({
+        ok: true,
+        quarantined: true,
+        identityStatus: 'pending_confirm',
+        reasons: result.reasons,
+        user: {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          identityStatus: 'pending_confirm',
+        },
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({
+        error: error.message || 'Could not update identity.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+        identityStatus: error instanceof PrivateAuthError ? error.details?.identityStatus : undefined,
+      });
+    }
+  });
+
+  app.post('/api/auth/private/identity/decline', registrationLimiter, async (req, res) => {
+    try {
+      await declineIdentity({
+        email: req.body?.email || '',
+        password: typeof req.body?.password === 'string' ? req.body.password : undefined,
+      });
+      try {
+        delete (req.session as any).privateUser;
+      } catch {
+        /* ignore */
+      }
+      res.json({ ok: true, identityStatus: 'declined', message: 'Have a good one.' });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({
+        error: error.message || 'Decline failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
+    }
+  });
+
+  app.post('/api/auth/private/identity/resend', registrationLimiter, async (req, res) => {
+    try {
+      const reminted = await remintIdentityChallenge({
+        email: req.body?.email || '',
+        password: req.body?.password || '',
+      });
+      const origin =
+        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+        `${req.protocol}://${req.get('host')}`;
+      const confirmUrl = buildIdentityConfirmUrl(origin, reminted.rawChallengeToken);
+      const emailSent = await sendIdentityConfirmEmail({
+        to: reminted.user.email,
+        displayName: reminted.user.displayName,
+        confirmUrl,
+      });
+      res.json({ ok: true, emailSent, identityStatus: 'pending_confirm' });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({
+        error: error.message || 'Resend failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+        identityStatus: error instanceof PrivateAuthError ? error.details?.identityStatus : undefined,
+      });
+    }
+  });
+
+  app.get('/api/auth/private/identity/confirm', async (req, res) => {
+    try {
+      const token = typeof req.query.token === 'string' ? req.query.token : '';
+      await confirmIdentityByToken(token);
+      const dest =
+        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
+          /\/$/,
+          ''
+        ) + '/activate?identity=confirmed';
+      return res.redirect(302, dest);
+    } catch (error: any) {
+      const declined = error instanceof PrivateAuthError && error.code === 'IDENTITY_DECLINED';
+      const dest =
+        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
+          /\/$/,
+          ''
+        ) + (declined ? '/activate?identity=declined' : '/activate?identity=invalid');
+      return res.redirect(302, dest);
     }
   });
 
@@ -844,10 +1047,35 @@ async function startServer() {
     }
   });
 
-  app.get('/api/auth/private/me', (req, res) => {
+  app.get('/api/auth/private/me', async (req, res) => {
     const user = (req.session as any)?.privateUser;
     if (!user) return res.status(401).json({ error: 'Not signed in.' });
     try {
+      // Private accounts only — board operator sessions skip identity gate.
+      if (user.privateAccount) {
+        const gate = await assertSessionIdentityAllowed({ uid: user.uid, email: user.email });
+        if (!gate.allowed) {
+          delete (req.session as any).privateUser;
+          return res.status(403).json({
+            error:
+              gate.identityStatus === 'pending_confirm'
+                ? 'Please confirm your identity with real information.'
+                : 'Have a good one.',
+            code:
+              gate.identityStatus === 'pending_confirm' ? 'IDENTITY_PENDING' : 'IDENTITY_DECLINED',
+            identityStatus: gate.identityStatus,
+            reasons: gate.reasons,
+            user: gate.user
+              ? {
+                  uid: gate.user.uid,
+                  email: gate.user.email,
+                  displayName: gate.user.displayName,
+                  identityStatus: gate.identityStatus,
+                }
+              : undefined,
+          });
+        }
+      }
       if (user.uid) ensureAffiliateMember(user.uid);
     } catch {
       /* ignore */

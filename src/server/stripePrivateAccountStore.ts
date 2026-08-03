@@ -19,6 +19,13 @@ export type StripePrivateUserRecord = {
   lastLoginAt?: string;
   stripeCustomerId?: string;
   tempPassword?: string;
+  identityStatus?: string;
+  identityRiskReasons?: string[];
+  identityChallengeTokenHash?: string;
+  identityChallengeExpiresAt?: string;
+  identityDeclinedAt?: string;
+  identityConfirmedAt?: string;
+  identityEmailWasSuspect?: boolean;
 };
 
 const META = {
@@ -29,6 +36,8 @@ const META = {
   created: 'cp_priv_created',
   lastLogin: 'cp_priv_last_login',
   tempPassword: 'cp_temp_password',
+  /** Compact JSON blob for identity quarantine fields (Stripe metadata value ≤500 chars). */
+  identity: 'cp_priv_identity',
 } as const;
 
 function normalizeEmail(email: string): string {
@@ -68,6 +77,21 @@ function recordFromCustomer(customer: {
   if (lastLogin) record.lastLoginAt = lastLogin;
   const temp = metaGet(customer.metadata, META.tempPassword);
   if (temp) record.tempPassword = temp;
+  const identityRaw = metaGet(customer.metadata, META.identity);
+  if (identityRaw) {
+    try {
+      const parsed = JSON.parse(identityRaw) as Record<string, unknown>;
+      if (typeof parsed.status === 'string') record.identityStatus = parsed.status;
+      if (Array.isArray(parsed.reasons)) record.identityRiskReasons = parsed.reasons.map(String);
+      if (typeof parsed.chal === 'string') record.identityChallengeTokenHash = parsed.chal;
+      if (typeof parsed.exp === 'string') record.identityChallengeExpiresAt = parsed.exp;
+      if (typeof parsed.declined === 'string') record.identityDeclinedAt = parsed.declined;
+      if (typeof parsed.confirmed === 'string') record.identityConfirmedAt = parsed.confirmed;
+      if (typeof parsed.emailSuspect === 'boolean') record.identityEmailWasSuspect = parsed.emailSuspect;
+    } catch {
+      /* ignore corrupt identity blob */
+    }
+  }
   return record;
 }
 
@@ -123,6 +147,20 @@ export async function upsertStripePrivateUser(
     if (user.tempPassword) metadata[META.tempPassword] = user.tempPassword.slice(0, 64);
     else if (customer?.metadata?.[META.tempPassword]) {
       // Clear temp password once replaced by a real login path if explicitly empty string passed — keep otherwise.
+    }
+    if (user.identityStatus) {
+      const blob = JSON.stringify({
+        status: user.identityStatus,
+        reasons: (user.identityRiskReasons || []).slice(0, 8),
+        ...(user.identityChallengeTokenHash ? { chal: user.identityChallengeTokenHash } : {}),
+        ...(user.identityChallengeExpiresAt ? { exp: user.identityChallengeExpiresAt } : {}),
+        ...(user.identityDeclinedAt ? { declined: user.identityDeclinedAt } : {}),
+        ...(user.identityConfirmedAt ? { confirmed: user.identityConfirmedAt } : {}),
+        ...(typeof user.identityEmailWasSuspect === 'boolean'
+          ? { emailSuspect: user.identityEmailWasSuspect }
+          : {}),
+      }).slice(0, 500);
+      metadata[META.identity] = blob;
     }
 
     if (customer) {

@@ -24,6 +24,7 @@
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
+    "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",

@@ -328,12 +328,14 @@ export async function convertWaitlistToPrivateAccounts(options?: {
 
       const tempPassword = randomTempPassword();
       const activationKey = generateActivationKey();
-      const user: PublicPrivateUser = await provisionPrivateUser({
+      const provisioned = await provisionPrivateUser({
         email: row.email,
         password: tempPassword,
         displayName: row.firstName.slice(0, 80),
         tempPassword,
+        skipIdentityRisk: true,
       });
+      const user: PublicPrivateUser = provisioned.user;
 
       await upsertInvite({
         email: user.email,

@@ -14,7 +14,21 @@ type SafePrivateMemberRow = {
   displayName: string;
   createdAt: string;
   lastLoginAt?: string;
+  identityStatus?: 'ok' | 'pending_confirm' | 'declined' | 'expired';
 };
+
+function identityBadge(status?: SafePrivateMemberRow['identityStatus']): {
+  label: string;
+  className: string;
+} {
+  if (status === 'pending_confirm') {
+    return { label: 'pending', className: 'text-amber-300 bg-amber-500/15 border-amber-500/40' };
+  }
+  if (status === 'declined' || status === 'expired') {
+    return { label: status, className: 'text-red-300 bg-red-500/15 border-red-500/40' };
+  }
+  return { label: status === 'ok' ? 'ok' : 'ok', className: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40' };
+}
 
 type SafeWaitlistRow = {
   id: string;
@@ -685,7 +699,8 @@ export default function CeoDashboard() {
     return (
       m.email.toLowerCase().includes(memberQ) ||
       (m.displayName && m.displayName.toLowerCase().includes(memberQ)) ||
-      m.uid.toLowerCase().includes(memberQ)
+      m.uid.toLowerCase().includes(memberQ) ||
+      (m.identityStatus && m.identityStatus.toLowerCase().includes(memberQ))
     );
   });
   const filteredWaitlist = (membersPayload?.waitlist || []).filter((m) => {
@@ -1222,6 +1237,7 @@ export default function CeoDashboard() {
                   <tr>
                     <th className="px-4 py-3">Email</th>
                     <th className="px-4 py-3">Display name</th>
+                    <th className="px-4 py-3">Identity</th>
                     <th className="px-4 py-3">Joined</th>
                     <th className="px-4 py-3">Last login</th>
                     <th className="px-4 py-3">UID</th>
@@ -1230,28 +1246,36 @@ export default function CeoDashboard() {
                 <tbody className="divide-y divide-white/10">
                   {membersLoading && !membersPayload ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
                         Loading private members…
                       </td>
                     </tr>
                   ) : filteredPrivate.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
                         {memberQ
                           ? `No private members match “${memberSearch}”.`
                           : 'No private members on this server yet. If you expect signups here, Cloud Run may be using ephemeral disk — members persist only when storage is durable.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredPrivate.map((m) => (
+                    filteredPrivate.map((m) => {
+                      const badge = identityBadge(m.identityStatus);
+                      return (
                       <tr key={m.uid} className="hover:bg-white/5">
                         <td className="px-4 py-3 font-mono text-[#00FFFF]">{m.email}</td>
                         <td className="px-4 py-3 font-bold text-white">{m.displayName || '—'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-400">{formatJoined(m.lastLoginAt)}</td>
                         <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.uid}</td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>

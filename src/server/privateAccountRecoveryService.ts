@@ -75,13 +75,15 @@ async function provisionWithInvite(input: {
     };
   }
 
-  const user: PublicPrivateUser = await provisionPrivateUser({
+  const provisioned = await provisionPrivateUser({
     email,
     password,
     displayName: displayName.slice(0, 80),
     // Persist one-time password on Stripe metadata so invites survive redeploys.
     tempPassword: generated ? password : undefined,
+    skipIdentityRisk: true,
   });
+  const user: PublicPrivateUser = provisioned.user;
 
   if (generated) {
     await recordFounderInvite({

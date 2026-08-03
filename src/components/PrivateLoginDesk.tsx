@@ -5,10 +5,20 @@ import {
   lookupPrivateAccount,
   loginPrivateAccount,
   registerPrivateAccount,
+  resubmitIdentity,
+  declineIdentity,
+  resendIdentityConfirm,
+  PrivateAuthClientError,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
-type Step = 'identify' | 'login' | 'register';
+type Step =
+  | 'identify'
+  | 'login'
+  | 'register'
+  | 'real_info'
+  | 'pending_email'
+  | 'goodbye';
 
 interface PrivateLoginDeskProps {
   open: boolean;
@@ -21,6 +31,7 @@ interface PrivateLoginDeskProps {
 /**
  * Private per-member login desk.
  * Step 1: email → Step 2a: personalized login OR Step 2b: create account.
+ * Suspect signups quarantine into real_info / pending_email / goodbye.
  */
 export default function PrivateLoginDesk({
   open,
@@ -30,6 +41,7 @@ export default function PrivateLoginDesk({
 }: PrivateLoginDeskProps) {
   const [step, setStep] = useState<Step>('identify');
   const [email, setEmail] = useState(initialEmail);
+  const [accountEmail, setAccountEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,17 +49,36 @@ export default function PrivateLoginDesk({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [knownName, setKnownName] = useState('');
+  const [infoBanner, setInfoBanner] = useState('');
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Pick up activation-link prefill when the desk opens (prop arrives after mount).
   React.useEffect(() => {
     if (open && initialEmail && !email) setEmail(initialEmail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialEmail]);
 
+  React.useEffect(() => {
+    if (!open || typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const identity = params.get('identity');
+      if (identity === 'confirmed') {
+        setInfoBanner('Identity confirmed. Sign in with your email and password.');
+        setStep('identify');
+      } else if (identity === 'declined') {
+        setStep('goodbye');
+      } else if (identity === 'invalid') {
+        setError('That confirmation link is invalid or expired.');
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [open]);
+
   const reset = () => {
     setStep('identify');
     setEmail('');
+    setAccountEmail('');
     setDisplayName('');
     setPassword('');
     setConfirmPassword('');
@@ -55,6 +86,7 @@ export default function PrivateLoginDesk({
     setError('');
     setBusy(false);
     setKnownName('');
+    setInfoBanner('');
   };
 
   const handleClose = () => {
@@ -75,6 +107,11 @@ export default function PrivateLoginDesk({
       const result = await lookupPrivateAccount(email);
       const normalized = email.trim().toLowerCase();
       if (result.exists) {
+        if (result.identityStatus === 'declined' || result.identityStatus === 'expired') {
+          setEmail(normalized);
+          setStep('goodbye');
+          return;
+        }
         setKnownName('Member');
         setEmail(normalized);
         setStep('login');
@@ -94,7 +131,22 @@ export default function PrivateLoginDesk({
     setError('');
     setBusy(true);
     try {
-      await loginPrivateAccount({ email, password });
+      const result = await loginPrivateAccount({ email, password });
+      if (result.kind === 'declined') {
+        setStep('goodbye');
+        setBusy(false);
+        return;
+      }
+      if (result.kind === 'pending_confirm') {
+        setEmail(result.user.email);
+        setAccountEmail(result.user.email);
+        setDisplayName(result.user.displayName || '');
+        setKnownName(result.user.displayName || 'Member');
+        setStep('real_info');
+        setInfoBanner('Please enter real information to unlock your desk.');
+        setBusy(false);
+        return;
+      }
       window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
@@ -111,7 +163,20 @@ export default function PrivateLoginDesk({
     }
     setBusy(true);
     try {
-      await registerPrivateAccount({ email, password, displayName });
+      const result = await registerPrivateAccount({ email, password, displayName });
+      if (result.quarantined) {
+        setEmail(result.user.email);
+        setAccountEmail(result.user.email);
+        setDisplayName(result.user.displayName || displayName);
+        setInfoBanner(
+          result.emailSent
+            ? 'We sent a confirmation email. Please enter real information below, or confirm via the link.'
+            : 'Please enter real information. (Confirmation email could not be sent yet — SMTP may be offline.)'
+        );
+        setStep('real_info');
+        setBusy(false);
+        return;
+      }
       window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Could not create private account.');
@@ -119,7 +184,99 @@ export default function PrivateLoginDesk({
     }
   };
 
+  const handleResubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const result = await resubmitIdentity({
+        currentEmail: accountEmail || email,
+        password,
+        newEmail: email,
+        newDisplayName: displayName,
+      });
+      if (!result.quarantined) {
+        window.location.reload();
+        return;
+      }
+      if (result.emailSent) {
+        setAccountEmail(result.user.email);
+        setInfoBanner('Check your email and click the confirmation link to unlock your desk.');
+        setStep('pending_email');
+      } else {
+        setAccountEmail(result.user.email);
+        setInfoBanner('Still looks incomplete — please use a real name and a real email address.');
+        setStep('real_info');
+        if (result.reasons?.length) {
+          setError('Please enter real information to continue.');
+        }
+      }
+      setEmail(result.user.email);
+      setDisplayName(result.user.displayName || displayName);
+    } catch (err: any) {
+      if (err instanceof PrivateAuthClientError && err.code === 'IDENTITY_DECLINED') {
+        setStep('goodbye');
+      } else {
+        setError(err.message || 'Could not update information.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await declineIdentity({ email: accountEmail || email, password: password || undefined });
+      setStep('goodbye');
+    } catch (err: any) {
+      if (err instanceof PrivateAuthClientError && (err.code === 'IDENTITY_DECLINED' || err.message?.includes('Have a good one'))) {
+        setStep('goodbye');
+      } else {
+        // Even if account missing, show goodbye for soft close
+        setStep('goodbye');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      const result = await resendIdentityConfirm({ email: accountEmail || email, password });
+      setInfoBanner(
+        result.emailSent
+          ? 'Confirmation email resent. Check your inbox.'
+          : 'Could not send email (SMTP offline). Keep this window open and try again later.'
+      );
+    } catch (err: any) {
+      if (err instanceof PrivateAuthClientError && err.code === 'IDENTITY_DECLINED') {
+        setStep('goodbye');
+      } else {
+        setError(err.message || 'Resend failed.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!open) return null;
+
+  const title =
+    step === 'login'
+      ? `Welcome back, ${knownName}`
+      : step === 'register'
+        ? 'Create your private account'
+        : step === 'real_info'
+          ? 'Please enter real information'
+          : step === 'pending_email'
+            ? 'Confirm your identity'
+            : step === 'goodbye'
+              ? 'Have a good one.'
+              : 'Enter your private login';
 
   return (
     <AnimatePresence>
@@ -129,7 +286,7 @@ export default function PrivateLoginDesk({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-black/85 backdrop-blur-xl"
-          onClick={handleClose}
+          onClick={step === 'goodbye' ? handleClose : handleClose}
           aria-hidden="true"
         />
 
@@ -158,15 +315,13 @@ export default function PrivateLoginDesk({
                   className="text-lg font-black text-white tracking-tight mt-1"
                   style={{ fontFamily: "'Cinzel', serif" }}
                 >
-                  {step === 'login'
-                    ? `Welcome back, ${knownName}`
-                    : step === 'register'
-                      ? 'Create your private account'
-                      : 'Enter your private login'}
+                  {title}
                 </h2>
-                <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
-                  Each ClearPath member has a private login screen. Your workspace stays yours.
-                </p>
+                {step !== 'goodbye' && (
+                  <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
+                    Each ClearPath member has a private login screen. Your workspace stays yours.
+                  </p>
+                )}
               </div>
             </div>
             <button
@@ -180,6 +335,33 @@ export default function PrivateLoginDesk({
           </div>
 
           <div className="p-6 space-y-5">
+            {infoBanner && step !== 'goodbye' && (
+              <p className="text-[11px] text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/25 rounded-xl px-3 py-2 leading-relaxed">
+                {infoBanner}
+              </p>
+            )}
+
+            {step === 'goodbye' && (
+              <div className="space-y-4 text-center py-6">
+                <p
+                  className="text-2xl font-black text-white tracking-tight"
+                  style={{ fontFamily: "'Cinzel', serif" }}
+                >
+                  Have a good one.
+                </p>
+                <p className="text-[12px] text-zinc-500 leading-relaxed">
+                  ClearPath is built on honesty and real membership. You’re welcome back anytime with real details.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="w-full py-3 rounded-xl border border-white/15 text-zinc-300 text-xs font-black uppercase tracking-widest hover:border-[#00E5FF]/40 hover:text-white transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+
             {step === 'identify' && (
               <form onSubmit={handleIdentify} className="space-y-4">
                 <label className="block space-y-2">
@@ -292,7 +474,7 @@ export default function PrivateLoginDesk({
                       minLength={2}
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder="Your real name"
                       className="w-full bg-black border border-white/10 focus:border-[#B026FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
                     />
                   </div>
@@ -363,7 +545,116 @@ export default function PrivateLoginDesk({
               </form>
             )}
 
-            {error && (
+            {step === 'real_info' && (
+              <form onSubmit={handleResubmit} className="space-y-4">
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  ClearPath is built on honesty. Please use your real name and a real email — temporary or fake addresses will not unlock membership.
+                </p>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Real display name
+                  </span>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B026FF]" />
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      minLength={2}
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Your real name"
+                      className="w-full bg-black border border-white/10 focus:border-[#B026FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Real email
+                  </span>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Password (same as you just created)
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl px-4 py-3 text-sm text-white outline-none"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {busy ? 'Saving…' : 'Submit real info'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleDecline}
+                  className="w-full py-3 rounded-xl border border-white/10 text-zinc-400 text-xs font-black uppercase tracking-widest hover:border-[#FF5277]/40 hover:text-[#FF5277] transition-colors disabled:opacity-50"
+                >
+                  No thanks
+                </button>
+              </form>
+            )}
+
+            {step === 'pending_email' && (
+              <div className="space-y-4">
+                <p className="text-[12px] text-zinc-300 leading-relaxed">
+                  We sent a confirmation link to <span className="text-[#00E5FF] font-mono">{email}</span>.
+                  Click it to unlock your private desk. The link expires in 48 hours.
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleResend}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {busy ? 'Sending…' : 'Resend confirmation email'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setStep('real_info')}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                >
+                  Update my information
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleDecline}
+                  className="w-full text-[11px] text-zinc-600 hover:text-[#FF5277] transition-colors"
+                >
+                  No thanks
+                </button>
+              </div>
+            )}
+
+            {error && step !== 'goodbye' && (
               <p className="text-[11px] text-[#FF5277] bg-[#FF5277]/10 border border-[#FF5277]/25 rounded-xl px-3 py-2">
                 {error}
               </p>
