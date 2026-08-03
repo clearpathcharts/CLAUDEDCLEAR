@@ -86,6 +86,7 @@ export default function CeoDashboard() {
   const [invitesVisible, setInvitesVisible] = useState(false);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
   
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
@@ -243,7 +244,12 @@ export default function CeoDashboard() {
     }
   };
 
-  const runResetDawnPassword = async () => {
+  const runResetMemberPassword = async (emailRaw: string) => {
+    const email = (emailRaw || '').trim().toLowerCase();
+    if (!email.includes('@')) {
+      setConvertMsg('Enter a valid member email to reset.');
+      return;
+    }
     setConvertBusy(true);
     setConvertMsg(null);
     try {
@@ -252,20 +258,24 @@ export default function CeoDashboard() {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ email: 'dawnhobson@aol.com' }),
+        body: JSON.stringify({ email }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || `Password reset failed (${res.status})`);
       setConvertMsg(
-        `Dawn reset OK (${body.created ? 'account created' : 'password updated'}). Email: ${body.email} — temp password: ${body.tempPassword}. Send privately; she logs in via Private Login.`
+        `Reset OK for ${body.email} (${body.created ? 'account created' : 'password updated'}). Temp password: ${body.tempPassword}. Send privately — they use Private Login.`
       );
       await loadAdminMembers();
       await loadFounderInvites();
     } catch (err: any) {
-      setConvertMsg(err?.message || 'Dawn password reset failed.');
+      setConvertMsg(err?.message || 'Password reset failed.');
     } finally {
       setConvertBusy(false);
     }
+  };
+
+  const runResetDawnPassword = async () => {
+    await runResetMemberPassword('dawnhobson@aol.com');
   };
 
   const downloadDisasterBackup = async () => {
@@ -606,6 +616,24 @@ export default function CeoDashboard() {
               >
                 Reset Dawn password now
               </button>
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="member@email.com"
+                  className="min-w-[220px] flex-1 px-3 py-2 rounded-lg border border-zinc-600 bg-black/60 text-zinc-100 text-xs font-mono"
+                  aria-label="Email for password reset"
+                />
+                <button
+                  type="button"
+                  onClick={() => void runResetMemberPassword(resetEmail)}
+                  disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-50"
+                >
+                  Reset this email now
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => void downloadDisasterBackup()}
