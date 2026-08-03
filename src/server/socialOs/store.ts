@@ -76,8 +76,7 @@ export function createPost(input: CreatePostInput): SocialPost {
     hashtags: input.hashtags?.filter(Boolean),
     scheduledAt: input.scheduledAt || undefined,
     status: input.status || (input.scheduledAt ? 'queued' : 'draft'),
-    publishMode: input.publishMode || 'dry_run',
-    bufferProfileId: input.bufferProfileId,
+    publishMode: input.publishMode || 'direct',
     source: input.source || 'manual',
     meta: input.meta,
   };
@@ -105,7 +104,6 @@ export function updatePost(
       | 'scheduledAt'
       | 'status'
       | 'publishMode'
-      | 'bufferProfileId'
       | 'lastError'
       | 'publishedAt'
       | 'externalIds'

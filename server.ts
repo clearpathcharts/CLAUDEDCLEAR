@@ -1438,7 +1438,7 @@ async function startServer() {
     res.json({ secrets: getSecretPresenceReport() });
   });
 
-  // ClearPath Social OS — Buffer-style queue + Zapier/Make webhooks
+  // ClearPath Social OS — direct multi-network publisher (no Buffer / Zapier)
   app.use('/api/social-os', createSocialOsRouter());
 
   app.get('/api/status', async (req, res) => {

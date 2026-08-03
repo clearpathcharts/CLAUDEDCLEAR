@@ -11,6 +11,8 @@ export type TemplateResult = {
   kind: TemplateKind;
 };
 
+type BodyMap = Partial<Record<SocialPlatform, string>> & { x: string; linkedin: string };
+
 /** Brand-safe ClearPath templates — no price predictions, no broker claims. */
 export function buildTemplate(
   kind: TemplateKind,
@@ -39,6 +41,10 @@ export function buildTemplate(
           tiktok: `Trading apps keep stacking alerts.\nWe built ClearPath for chart-first clarity instead.\n\nclearpathtrader.com`,
           youtube: `ClearPath Trader — clarity-first market intelligence. Learn more: ${linkUrl}`,
           reddit: `Built ClearPathTrader.com as a chart-first market intelligence / education terminal (not a broker). Focus is reducing UI noise so you can actually read price. Feedback welcome: ${SITE}`,
+          discord: `**ClearPath Trader** — clarity over noise. Charts first, clutter last.\n${linkUrl}`,
+          telegram: `ClearPath Trader — chart-first market intelligence.\n${linkUrl}`,
+          bluesky: `Clarity over noise. ClearPath Trader is chart-first market intelligence.\n${linkUrl}`,
+          threads: `Clarity over noise. Charts first.\nClearPath Trader → ${SITE}`,
         }),
       };
 
@@ -119,9 +125,29 @@ export function buildTemplate(
   }
 }
 
-function platformBody(
-  platform: SocialPlatform,
-  map: Partial<Record<SocialPlatform, string>> & { x: string }
-): string {
-  return (map[platform] || map.x).trim();
+function platformBody(platform: SocialPlatform, map: BodyMap): string {
+  if (map[platform]) return map[platform]!.trim();
+  // Networking / secondary channels: LinkedIn-style professional tone, else X short form.
+  if (
+    [
+      'xing',
+      'viadeo',
+      'shapr',
+      'lunchclub',
+      'polywork',
+      'wellfound',
+      'fishbowl',
+      'blind',
+      'opportunity',
+      'meetup',
+      'alignable',
+      'bark',
+      'gust',
+      'researchgate',
+      'linkedin',
+    ].includes(platform)
+  ) {
+    return map.linkedin.trim();
+  }
+  return map.x.trim();
 }

@@ -9,21 +9,11 @@ import {
   updatePost,
 } from './store';
 import { buildTemplate } from './templates';
-import { getSocialOsConfig, publishPost } from './publisher';
+import { defaultPublishMode, getSocialOsConfig, listPlatformReadiness, publishPost } from './publisher';
 import { cadenceStatus, tickSocialOsScheduler, runCadenceSlot } from './scheduler';
 import { detectDueSlot, slotKey, zonedParts, getSocialTimezone, getPostSlots } from './cadence';
-import { isBufferConfigured, listBufferProfiles } from './bufferClient';
+import { ALL_PLATFORMS, isSocialPlatform, PLATFORM_CATALOG } from './platforms';
 import type { CreatePostInput, PublishMode, SocialPlatform, TemplateKind } from './types';
-
-const PLATFORMS = new Set<SocialPlatform>([
-  'x',
-  'linkedin',
-  'facebook',
-  'instagram',
-  'tiktok',
-  'youtube',
-  'reddit',
-]);
 
 const TEMPLATE_KINDS = new Set<TemplateKind>([
   'clarity_cta',
@@ -35,14 +25,14 @@ const TEMPLATE_KINDS = new Set<TemplateKind>([
 
 function asPlatform(value: unknown): SocialPlatform | null {
   if (typeof value !== 'string') return null;
-  const v = value.trim().toLowerCase() as SocialPlatform;
-  return PLATFORMS.has(v) ? v : null;
+  const v = value.trim().toLowerCase();
+  return isSocialPlatform(v) ? v : null;
 }
 
 function asPublishMode(value: unknown): PublishMode | undefined {
   if (typeof value !== 'string') return undefined;
   const v = value.trim().toLowerCase() as PublishMode;
-  if (v === 'dry_run' || v === 'buffer') return v;
+  if (v === 'dry_run' || v === 'direct' || v === 'package') return v;
   return undefined;
 }
 
@@ -53,6 +43,7 @@ export function createSocialOsRouter(): Router {
     const config = getSocialOsConfig();
     const cadence = cadenceStatus();
     const posts = listPosts();
+    const platforms = listPlatformReadiness();
     const byStatus = posts.reduce<Record<string, number>>((acc, p) => {
       acc[p.status] = (acc[p.status] || 0) + 1;
       return acc;
@@ -61,17 +52,35 @@ export function createSocialOsRouter(): Router {
       ok: true,
       product: 'ClearPath Social OS',
       site: config.siteUrl,
-      note: 'Site-owned scheduler — posts at 5am / 9am / 3pm / 6pm via Buffer. No Zapier required.',
+      note: 'Site-owned direct publisher — ClearPath posts to each network. No Buffer, Zapier, or Make.',
+      middlemen: 'none',
       config: {
         dryRun: config.dryRun,
-        bufferConfigured: config.bufferConfigured,
+        platformsConfigured: config.platformsConfigured,
+        platformsTotal: config.platformsTotal,
         schedulerIntervalMs: config.schedulerIntervalMs,
         timezone: cadence.timezone,
         slots: cadence.slots,
         platforms: cadence.platforms,
       },
+      platforms,
       cadence,
       counts: { total: posts.length, byStatus },
+    });
+  });
+
+  router.get('/platforms', requireCatalogAdmin, (_req, res) => {
+    res.json({
+      middlemen: 'none',
+      platforms: listPlatformReadiness(),
+      catalog: PLATFORM_CATALOG.map((p) => ({
+        id: p.id,
+        label: p.label,
+        group: p.group,
+        preferredDelivery: p.preferredDelivery,
+        credentialHint: p.credentialHint,
+      })),
+      all: ALL_PLATFORMS,
     });
   });
 
@@ -102,7 +111,7 @@ export function createSocialOsRouter(): Router {
     try {
       const platform = asPlatform(req.body?.platform);
       if (!platform) {
-        res.status(400).json({ error: 'Invalid platform' });
+        res.status(400).json({ error: 'Invalid platform', allowed: ALL_PLATFORMS });
         return;
       }
       const body = typeof req.body?.body === 'string' ? req.body.body : '';
@@ -126,9 +135,7 @@ export function createSocialOsRouter(): Router {
             ? req.body.scheduledAt
             : null,
         status: req.body?.status === 'queued' ? 'queued' : 'draft',
-        publishMode: asPublishMode(req.body?.publishMode) || (getSocialOsConfig().bufferConfigured ? 'buffer' : 'dry_run'),
-        bufferProfileId:
-          typeof req.body?.bufferProfileId === 'string' ? req.body.bufferProfileId : undefined,
+        publishMode: asPublishMode(req.body?.publishMode) || defaultPublishMode(),
         source: 'manual',
         meta: typeof req.body?.meta === 'object' && req.body.meta ? req.body.meta : undefined,
       };
@@ -141,15 +148,7 @@ export function createSocialOsRouter(): Router {
 
   router.patch('/posts/:id', requireCatalogAdmin, (req, res) => {
     const patch: Record<string, unknown> = {};
-    for (const key of [
-      'body',
-      'title',
-      'linkUrl',
-      'scheduledAt',
-      'status',
-      'publishMode',
-      'bufferProfileId',
-    ] as const) {
+    for (const key of ['body', 'title', 'linkUrl', 'scheduledAt', 'status', 'publishMode'] as const) {
       if (req.body?.[key] !== undefined) patch[key] = req.body[key];
     }
     if (Array.isArray(req.body?.hashtags)) patch.hashtags = req.body.hashtags;
@@ -194,12 +193,14 @@ export function createSocialOsRouter(): Router {
     updatePost(existing.id, { status: 'publishing', lastError: undefined });
     try {
       const result = await publishPost(getPost(existing.id)!);
+      const status = result.mode === 'package' ? 'packaged' : 'published';
       const post = updatePost(existing.id, {
-        status: 'published',
+        status,
         publishedAt: new Date().toISOString(),
         publishMode: result.mode,
         externalIds: {
-          bufferUpdateId: result.bufferUpdateIds?.[0],
+          platformPostId: result.platformPostId,
+          packagePath: result.packagePath,
         },
       });
       res.json({ result, post });
@@ -237,7 +238,7 @@ export function createSocialOsRouter(): Router {
       hashtags: draft.hashtags,
       status: req.body?.status === 'queued' ? 'queued' : 'draft',
       scheduledAt: typeof req.body?.scheduledAt === 'string' ? req.body.scheduledAt : null,
-      publishMode: asPublishMode(req.body?.publishMode) || (getSocialOsConfig().bufferConfigured ? 'buffer' : 'dry_run'),
+      publishMode: asPublishMode(req.body?.publishMode) || defaultPublishMode(),
       source: 'template',
       meta: { kind: draft.kind },
     });
@@ -273,7 +274,6 @@ export function createSocialOsRouter(): Router {
     res.json({ ok: true, ...result });
   });
 
-  /** Force-run a named slot (e.g. "09:00") for testing — still marks it fired for today. */
   router.post('/cadence/run', requireCatalogAdmin, async (req, res) => {
     const slot =
       typeof req.body?.slot === 'string' && /^\d{1,2}:\d{2}$/.test(req.body.slot)
@@ -284,22 +284,6 @@ export function createSocialOsRouter(): Router {
     const key = slotKey(dateKey, normalized);
     const result = await runCadenceSlot(normalized, key);
     res.json({ ok: true, ...result });
-  });
-
-  router.get('/buffer/profiles', requireCatalogAdmin, async (_req, res) => {
-    if (!isBufferConfigured()) {
-      res.status(503).json({
-        error: 'BUFFER_ACCESS_TOKEN not configured',
-        hint: 'Create a Buffer account, connect X/IG/FB/LinkedIn, then paste the access token into BUFFER_ACCESS_TOKEN.',
-      });
-      return;
-    }
-    try {
-      const profiles = await listBufferProfiles();
-      res.json({ profiles });
-    } catch (err) {
-      res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
-    }
   });
 
   return router;
@@ -325,19 +309,22 @@ function extractGrowthItems(batch: unknown): GrowthItem[] {
   }
   if (Array.isArray(batch)) candidates.push(...batch);
 
-  for (const key of ['x', 'twitter', 'linkedin', 'instagram', 'tiktok', 'facebook', 'reddit']) {
-    const v = root[key];
-    if (typeof v === 'string' && v.trim()) {
-      candidates.push({ platform: key === 'twitter' ? 'x' : key, body: v });
-    } else if (v && typeof v === 'object') {
-      const obj = v as Record<string, unknown>;
-      if (typeof obj.body === 'string' || typeof obj.text === 'string' || typeof obj.content === 'string') {
-        candidates.push({ platform: key === 'twitter' ? 'x' : key, ...obj });
-      }
-      if (Array.isArray(obj.posts)) {
-        for (const p of obj.posts) {
-          if (p && typeof p === 'object') {
-            candidates.push({ platform: key === 'twitter' ? 'x' : key, ...(p as object) });
+  for (const key of ALL_PLATFORMS) {
+    const aliases = key === 'x' ? ['x', 'twitter'] : [key];
+    for (const alias of aliases) {
+      const v = root[alias];
+      if (typeof v === 'string' && v.trim()) {
+        candidates.push({ platform: key, body: v });
+      } else if (v && typeof v === 'object') {
+        const obj = v as Record<string, unknown>;
+        if (typeof obj.body === 'string' || typeof obj.text === 'string' || typeof obj.content === 'string') {
+          candidates.push({ platform: key, ...obj });
+        }
+        if (Array.isArray(obj.posts)) {
+          for (const p of obj.posts) {
+            if (p && typeof p === 'object') {
+              candidates.push({ platform: key, ...(p as object) });
+            }
           }
         }
       }
