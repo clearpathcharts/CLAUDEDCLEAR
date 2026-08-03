@@ -159,6 +159,10 @@ import {
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
 import {
+  listInviteMailRows,
+  sendInviteMailToEmail,
+} from './src/server/inviteMailService';
+import {
   bumpPrivateApply,
   bumpPublicApply,
   getPublicEntry,
@@ -1348,11 +1352,45 @@ async function startServer() {
         includeSecrets,
         invites,
         howToSend:
-          'Copy email + tempPassword from this founder-only export and send privately (do not post in chat/logs). Members log in via Private Login desk with email + temp password, then should change password after first login.',
+          'Use CEO Dashboard → Invite emails → SEND EMAIL (one click). Or copy email + tempPassword and send privately.',
       });
     } catch (error) {
       console.error('[admin/members/invites] Failed:', error);
       res.status(500).json({ error: 'Failed to list invites' });
+    }
+  });
+
+  /** Founder mail-merge built from durable invites + private accounts (backend spreadsheet). */
+  app.get('/api/admin/members/invite-mail', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const result = await listInviteMailRows();
+      res.json(result);
+    } catch (error: any) {
+      console.error('[admin/members/invite-mail] Failed:', error);
+      res.status(500).json({ error: error?.message || 'Failed to build invite mail list' });
+    }
+  });
+
+  /**
+   * One-click: send Private Login invite email to one person.
+   * If no temp password exists, issues a fresh one, then SMTP-sends.
+   */
+  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const email = typeof req.body?.email === 'string' ? req.body.email : '';
+      if (!email.trim()) {
+        return res.status(400).json({ error: 'email required' });
+      }
+      const result = await sendInviteMailToEmail(email);
+      const status = result.ok ? 200 : result.sendStatus === 'skipped_junk' ? 400 : 503;
+      res.status(status).json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/invite-mail/send] Failed:', error);
+      res.status(status).json({
+        ok: false,
+        error: error?.message || 'Failed to send invite email',
+      });
     }
   });
 

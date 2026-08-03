@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -52,6 +52,21 @@ type AdminMembersPayload = {
   };
 };
 
+type InviteMailRow = {
+  email: string;
+  firstName: string;
+  displayName: string;
+  uid: string;
+  tempPassword?: string;
+  activationKey?: string;
+  hasPrivateAccount: boolean;
+  subject: string;
+  body: string;
+  sendStatus: 'ready' | 'sent' | 'needs_password' | 'skipped_junk' | 'error';
+  lastSentAt?: string;
+  nameFlag?: string;
+};
+
 function formatJoined(value?: string | null): string {
   if (!value) return '—';
   const d = new Date(value);
@@ -84,6 +99,10 @@ export default function CeoDashboard() {
     Array<{ email: string; displayName: string; activationKey: string; tempPassword?: string }>
   >([]);
   const [invitesVisible, setInvitesVisible] = useState(false);
+  const [inviteMailRows, setInviteMailRows] = useState<InviteMailRow[]>([]);
+  const [inviteMailSmtp, setInviteMailSmtp] = useState<boolean | null>(null);
+  const [inviteMailBusyEmail, setInviteMailBusyEmail] = useState<string | null>(null);
+  const [inviteMailMsg, setInviteMailMsg] = useState<string | null>(null);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
@@ -153,9 +172,10 @@ export default function CeoDashboard() {
       setApiUnlocked(true);
       setConvertMsg(
         body.next ||
-          'Unlocked. Now click: 1) Restore known 16 + reset passwords  2) Show invite passwords  3) Copy Ahmad’s temp password.'
+          'Unlocked. Open Invite emails below — tap SEND EMAIL next to each person (one click).'
       );
       await loadAdminMembers();
+      await loadInviteMail();
     } catch (err: any) {
       setApiUnlocked(false);
       setConvertMsg(err?.message || 'Unlock failed.');
@@ -188,8 +208,9 @@ export default function CeoDashboard() {
       setMembersPayload(body as AdminMembersPayload);
       setMembersError(null);
       setConvertMsg(
-        'Secret accepted. Now click: 1) Restore known 16 + reset passwords  2) Show invite passwords  3) Copy Ahmad’s temp password.'
+        'Secret accepted. Open Invite emails below — tap SEND EMAIL next to each person (one click).'
       );
+      await loadInviteMail();
     } catch (err: any) {
       setApiUnlocked(false);
       setConvertMsg(err?.message || 'Secret did not unlock the API.');
@@ -295,6 +316,66 @@ export default function CeoDashboard() {
 
   const loadFounderInvites = async () => {
     await fetchFounderInvites();
+  };
+
+  const loadInviteMail = async () => {
+    setConvertBusy(true);
+    setInviteMailMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/invite-mail', {
+        headers,
+        credentials: 'include',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || `Invite mail failed (${res.status})`);
+      setInviteMailRows(Array.isArray(body.rows) ? body.rows : []);
+      setInviteMailSmtp(Boolean(body.smtpConfigured));
+      setInviteMailMsg(
+        body.smtpConfigured
+          ? `Invite list ready (${body.readyCount || 0} to send). Tap SEND EMAIL — one person, one click.`
+          : 'Invite list loaded, but SMTP is not set on the server yet (SMTP_HOST / SMTP_USER / SMTP_PASS). SEND will fail until those Cloud Run env vars are added.'
+      );
+      setApiUnlocked(true);
+    } catch (err: any) {
+      setInviteMailMsg(err?.message || 'Could not load invite mail list.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
+  const sendInviteMailOne = async (email: string) => {
+    setInviteMailBusyEmail(email);
+    setInviteMailMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/invite-mail/send', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ email }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok) {
+        throw new Error(body.message || body.error || `Send failed (${res.status})`);
+      }
+      setInviteMailMsg(body.message || `Sent to ${email}.`);
+      // Refresh row statuses without hiding the panel
+      const headers2 = await founderApiHeaders();
+      const refresh = await fetch('/api/admin/members/invite-mail', {
+        headers: headers2,
+        credentials: 'include',
+      });
+      const refreshed = await refresh.json().catch(() => ({}));
+      if (refresh.ok && Array.isArray(refreshed.rows)) {
+        setInviteMailRows(refreshed.rows);
+        setInviteMailSmtp(Boolean(refreshed.smtpConfigured));
+      }
+    } catch (err: any) {
+      setInviteMailMsg(err?.message || `Could not send to ${email}.`);
+    } finally {
+      setInviteMailBusyEmail(null);
+    }
   };
 
   const runStripeRecover = async (dryRun: boolean) => {
@@ -654,9 +735,9 @@ export default function CeoDashboard() {
                   API. This creates the missing server login cookie.
                 </li>
                 <li>
-                  <strong className="text-white">STEP 3:</strong> After Unlocked, click{' '}
-                  <span className="text-emerald-200">RELEASE waitlist → Private Login + passwords</span>, then
-                  copy Ahmad’s temp password from the invite list.
+                  <strong className="text-white">STEP 3:</strong> After Unlocked, open{' '}
+                  <span className="text-emerald-200">Invite emails</span> and tap{' '}
+                  <span className="text-amber-200">SEND EMAIL</span> next to each person (one click each).
                 </li>
               </ol>
               <button
@@ -737,11 +818,20 @@ export default function CeoDashboard() {
               </button>
               <button
                 type="button"
+                onClick={() => void loadInviteMail()}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                <Mail size={14} />
+                Invite emails (1-click send)
+              </button>
+              <button
+                type="button"
                 onClick={() => void loadFounderInvites()}
                 disabled={convertBusy}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-amber-500/20 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-zinc-500/20 disabled:opacity-50"
               >
-                Show invite passwords
+                Show passwords only
               </button>
               <button
                 type="button"
@@ -896,11 +986,99 @@ export default function CeoDashboard() {
             </div>
           ) : null}
 
+          {inviteMailMsg ? (
+            <div
+              className={`rounded-lg border px-4 py-3 text-sm leading-relaxed ${
+                inviteMailSmtp === false
+                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-50'
+                  : 'border-emerald-500/30 bg-emerald-500/5 text-emerald-50'
+              }`}
+            >
+              {inviteMailMsg}
+            </div>
+          ) : null}
+
+          {inviteMailRows.length > 0 ? (
+            <div className="rounded-xl border-2 border-amber-500/40 bg-[#1a1a2e] p-5 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-amber-100 font-black uppercase tracking-wider text-base m-0 flex items-center gap-2">
+                    <Mail className="text-amber-300" size={20} />
+                    Invite emails — one button each
+                  </h3>
+                  <p className="text-zinc-400 text-sm mt-1 m-0 max-w-2xl leading-relaxed">
+                    Spreadsheet lives on the server. Tap <strong className="text-white">SEND EMAIL</strong> —
+                    that person gets their login email. No copy/paste. Handles flagged as not-real-name greet as
+                    “Hi there,”.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void loadInviteMail()}
+                  disabled={convertBusy || Boolean(inviteMailBusyEmail)}
+                  className="px-4 py-2 rounded-lg border border-amber-500/40 text-amber-100 text-xs font-mono uppercase tracking-widest hover:bg-amber-500/10 disabled:opacity-50"
+                >
+                  Refresh list
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                {inviteMailRows
+                  .filter((row) => row.sendStatus !== 'skipped_junk')
+                  .map((row) => {
+                    const busy = inviteMailBusyEmail === row.email;
+                    const sent = row.sendStatus === 'sent';
+                    const canSend =
+                      row.sendStatus === 'ready' ||
+                      row.sendStatus === 'needs_password' ||
+                      row.sendStatus === 'sent';
+                    return (
+                      <div
+                        key={row.email}
+                        className="rounded-lg border border-white/10 bg-black/40 px-4 py-3 flex flex-col md:flex-row md:items-center gap-3 justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-mono text-[#00FFFF] text-sm break-all">{row.email}</div>
+                          <div className="text-white text-sm font-bold">
+                            {row.displayName || '—'}
+                            {row.nameFlag === 'handle_not_real_name' ? (
+                              <span className="ml-2 text-[10px] font-mono uppercase text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded">
+                                name flagged → Hi there
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-[11px] font-mono text-zinc-500 mt-1">
+                            {sent
+                              ? `SENT${row.lastSentAt ? ` · ${formatJoined(row.lastSentAt)}` : ''}`
+                              : row.sendStatus === 'needs_password'
+                                ? 'No password yet — SEND will create one, then email them'
+                                : 'Ready to send'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void sendInviteMailOne(row.email)}
+                          disabled={!canSend || busy || convertBusy || inviteMailSmtp === false}
+                          className={`shrink-0 px-5 py-3 rounded-lg text-sm font-black uppercase tracking-widest disabled:opacity-40 ${
+                            sent
+                              ? 'border border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                              : 'bg-amber-400 text-black hover:bg-amber-300'
+                          }`}
+                        >
+                          {busy ? 'Sending…' : sent ? 'Send again' : 'SEND EMAIL'}
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          ) : null}
+
           {invitesVisible && invitesPreview.length > 0 ? (
-            <div className="rounded-lg border border-amber-500/40 bg-[#1a1a2e] p-4 overflow-x-auto">
+            <div className="rounded-lg border border-zinc-600/40 bg-[#1a1a2e] p-4 overflow-x-auto">
               <div className="flex items-center justify-between gap-3 mb-3">
-                <h3 className="text-amber-200 font-bold uppercase tracking-wider text-sm m-0">
-                  Founder invite export (temp passwords — send privately)
+                <h3 className="text-zinc-200 font-bold uppercase tracking-wider text-sm m-0">
+                  Password view only (prefer SEND EMAIL above)
                 </h3>
                 <button
                   type="button"
@@ -933,9 +1111,6 @@ export default function CeoDashboard() {
                   ))}
                 </tbody>
               </table>
-              <p className="text-zinc-500 text-xs mt-3 m-0">
-                Members use Private Login → email + temp password. Do not paste this table into chat or tickets.
-              </p>
             </div>
           ) : null}
 
