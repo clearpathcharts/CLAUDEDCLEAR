@@ -1,19 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { 
-  Activity, 
-  ShieldCheck, 
-  AlertTriangle, 
-  RefreshCw, 
-  Layers, 
-  Database, 
-  Terminal, 
-  Cpu, 
-  History, 
-  CheckCircle2, 
-  XOctagon, 
-  Maximize2,
+import {
+  RefreshCw,
+  Layers,
+  Terminal,
+  Cpu,
+  Database,
+  CheckCircle2,
   Lock,
-  Compass
+  Compass,
+  ShieldCheck,
 } from "lucide-react";
 import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 import { useAuth } from "../contexts/FirebaseContext";
@@ -28,29 +23,13 @@ interface ApiStatusItem {
   message: string;
 }
 
-interface BuildErrorItem {
-  id: number;
-  code: string;
-  error: string;
-  context: string;
-  phase: string;
-  timestamp: string;
-  remediation: string;
-  status?: "remediated" | "live";
-}
-
 export default function MarketDiagnostics() {
   const { user } = useAuth();
   const founderOk =
     isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
 
   const [apiStatuses, setApiStatuses] = useState<ApiStatusItem[]>([]);
-  const [buildErrors, setBuildErrors] = useState<BuildErrorItem[]>([]);
-  const [liveFailureCount, setLiveFailureCount] = useState(0);
-  const [siteBuildHealthy, setSiteBuildHealthy] = useState(true);
-  const [buildArchiveNote, setBuildArchiveNote] = useState("");
   const [loadingApis, setLoadingApis] = useState(false);
-  const [selectedError, setSelectedError] = useState<BuildErrorItem | null>(null);
   const [lastCheck, setLastCheck] = useState<string>("");
 
   const fetchLiveDiagnostics = async () => {
@@ -70,47 +49,11 @@ export default function MarketDiagnostics() {
     }
   };
 
-  const fetchBuildErrors = async () => {
-    if (!founderOk) return;
-    try {
-      const res = await fetch("/api/build-errors");
-      if (!res.ok) return;
-      const data = await res.json();
-      // New shape: { historical, liveFailureCount, siteBuildHealthy, note }
-      // Old shape: bare array (treat as remediated archive — never paint as live red).
-      if (Array.isArray(data)) {
-        setBuildErrors(data);
-        setLiveFailureCount(0);
-        setSiteBuildHealthy(true);
-        setBuildArchiveNote(
-          "Fixed archive from early builds — not live failures. Left probes are the live truth."
-        );
-      } else {
-        const rows = Array.isArray(data.historical)
-          ? data.historical
-          : Array.isArray(data.errors)
-            ? data.errors
-            : [];
-        setBuildErrors(rows);
-        setLiveFailureCount(Number(data.liveFailureCount || 0));
-        setSiteBuildHealthy(data.siteBuildHealthy !== false);
-        setBuildArchiveNote(
-          String(
-            data.note ||
-              "Fixed archive from early builds — not live failures. Left probes are the live truth."
-          )
-        );
-      }
-    } catch (e) {
-      console.error("Failed to load build errors list", e);
-    }
-  };
-
   usePageAutoUpdate(fetchLiveDiagnostics, { intervalMs: 15_000, enabled: founderOk });
 
   useEffect(() => {
     if (!founderOk) return;
-    void fetchBuildErrors();
+    void fetchLiveDiagnostics();
   }, [founderOk]);
 
   if (!founderOk) {
@@ -182,7 +125,7 @@ export default function MarketDiagnostics() {
             CPM Core Diagnostic Handshake Dashboard
           </h1>
           <p className="text-white/40 text-sm mt-0.5">
-            Left = live service probes (what matters now). Right = old fixed build diary — not a live crash list.
+            Live service probes only. The fake red “Build Halt Log” was removed — it was an old diary, not a live crash.
           </p>
         </div>
 
@@ -297,127 +240,39 @@ export default function MarketDiagnostics() {
           </div>
         </div>
 
-        {/* Right Hand: FIXED archive — never paint as live red failures */}
-        <div
-          className={`lg:col-span-6 bg-zinc-950/40 rounded-xl border p-6 flex flex-col justify-between ${
-            siteBuildHealthy && liveFailureCount === 0
-              ? "border-emerald-500/25"
-              : "border-rose-500/40"
-          }`}
-        >
-          <div>
-            <div className="flex justify-between items-start gap-3 pb-3 border-b border-white/5 mb-4">
-              <div>
-                <h2 className="text-md font-bold tracking-tight flex items-center gap-2 text-white">
-                  <History className="h-4.5 w-4.5 text-emerald-400" />
-                  Build history (fixed archive)
-                </h2>
-                <p className="text-white/55 text-xs mt-1 leading-relaxed max-w-md">
-                  {buildArchiveNote ||
-                    "These are old June 2026 issues that were already fixed. They are not crashing the live site."}
-                </p>
-              </div>
-              <span
-                className={`shrink-0 text-[10px] px-2 py-1 rounded font-mono font-bold ${
-                  siteBuildHealthy && liveFailureCount === 0
-                    ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                    : "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                }`}
-              >
-                {siteBuildHealthy && liveFailureCount === 0
-                  ? `0 LIVE FAILURES · ${buildErrors.length} FIXED`
-                  : `${liveFailureCount} LIVE FAILURES`}
-              </span>
+        {/* Right: no fake error diary — only live truth summary */}
+        <div className="lg:col-span-6 bg-zinc-950/40 rounded-xl border border-emerald-500/25 p-6 flex flex-col gap-4">
+          <div className="flex justify-between items-start gap-3 pb-3 border-b border-white/5">
+            <div>
+              <h2 className="text-md font-bold tracking-tight flex items-center gap-2 text-white">
+                <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" />
+                Site status (truth)
+              </h2>
+              <p className="text-white/55 text-xs mt-1 leading-relaxed max-w-md">
+                The old red “10 ERRORS CAPTURED” box is gone. It was a static June diary, not a live
+                crash list. Your people live in Firestore — not in that box.
+              </p>
             </div>
-
-            {siteBuildHealthy && liveFailureCount === 0 ? (
-              <div className="mb-4 rounded-lg border border-emerald-500/25 bg-emerald-950/20 px-3 py-3 flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-sm text-emerald-100 m-0 leading-relaxed">
-                  <strong className="text-emerald-300">Site build is healthy.</strong> Green on the left =
-                  live services. This list on the right is a scrapbook of problems that were already
-                  repaired — not a live alarm.
-                </p>
-              </div>
-            ) : null}
-
-            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-2 custom-scrollbar">
-              {buildErrors.map((err) => {
-                const fixed = err.status !== "live";
-                const open = selectedError?.id === err.id;
-                return (
-                  <div
-                    key={err.id}
-                    onClick={() => setSelectedError(open ? null : err)}
-                    className={`p-3 rounded-lg border font-mono text-xs cursor-pointer transition-all ${
-                      open
-                        ? fixed
-                          ? "bg-emerald-950/25 border-emerald-500/50 text-emerald-100"
-                          : "bg-rose-950/30 border-rose-500 text-rose-300"
-                        : "bg-black/60 border-white/5 hover:border-white/10 text-white/80"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <span
-                        className={`text-xs font-bold ${fixed ? "text-emerald-400" : "text-rose-400"}`}
-                      >
-                        #{err.id} {err.code}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold uppercase ${
-                          fixed ? "text-emerald-500/80" : "text-rose-400"
-                        }`}
-                      >
-                        {fixed ? "FIXED" : "LIVE"}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 truncate mt-1">{err.error}</p>
-
-                    {open && (
-                      <div
-                        className={`mt-3 bg-black/80 rounded p-3 text-[11px] leading-relaxed space-y-2 border ${
-                          fixed ? "border-emerald-500/20" : "border-rose-500/20"
-                        }`}
-                      >
-                        <div>
-                          <span className="text-zinc-500 block uppercase font-bold text-[9px]">
-                            What happened then
-                          </span>
-                          <code
-                            className={`font-mono text-left block max-w-full break-all p-1 rounded border mt-1 ${
-                              fixed
-                                ? "text-zinc-300 bg-zinc-900/80 border-zinc-700"
-                                : "text-rose-400 bg-rose-950/20 border-rose-950/50"
-                            }`}
-                          >
-                            {err.error}
-                          </code>
-                        </div>
-                        <div>
-                          <span className="text-zinc-500 block uppercase font-bold text-[9px]">
-                            Context
-                          </span>
-                          <p className="text-white/70 m-0">{err.context}</p>
-                        </div>
-                        <div className="border-t border-white/5 pt-2">
-                          <span className="text-emerald-400 block uppercase font-bold text-[9px]">
-                            How it was fixed
-                          </span>
-                          <p className="text-emerald-300 font-bold m-0">{err.remediation}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <span className="shrink-0 text-[10px] px-2 py-1 rounded font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              0 LIVE BUILD FAILURES
+            </span>
           </div>
 
-          <div className="mt-4 bg-zinc-900/60 rounded p-3 text-[11px] font-mono text-white/50 border border-white/5">
-            <span className="text-[10px] font-bold text-cyan-400 block mb-1">HOW TO READ THIS PAGE</span>
-            Left = live probes (Firebase, Private Login, TwelveData). Grey N/A = key not configured.
-            MarketWatch/Reuters red often means their sites block scrapers — not that your members
-            database is down.
+          <div className="rounded-lg border border-emerald-500/25 bg-emerald-950/20 px-4 py-4 flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="space-y-2 text-sm text-emerald-100 leading-relaxed">
+              <p className="m-0">
+                <strong className="text-emerald-300">How to read the left side:</strong> Green ONLINE =
+                that service is up. Grey N/A = API key not configured. MarketWatch/Reuters red usually
+                means those sites block scrapers — not that Private Login or Firebase is down.
+              </p>
+              <p className="m-0">
+                <strong className="text-emerald-300">Redeploy safety:</strong> Private members are stored
+                in durable Firestore (+ Stripe backup path). A Cloud Run redeploy updates code only — it
+                does not wipe Firestore. Before any deploy you can still click Download disaster backup
+                on CEO Dashboard for a file on your computer.
+              </p>
+            </div>
           </div>
         </div>
 

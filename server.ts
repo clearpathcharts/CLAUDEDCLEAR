@@ -1890,122 +1890,18 @@ async function startServer() {
   });
 
   /**
-   * Historical build diary from early conception (June 2026).
-   * These are NOT live failures — every entry was already remediated.
-   * Diagnostics UI must label them as fixed archive, never as active red alerts.
+   * Build-error diary retired. Returning an empty healthy payload so old clients
+   * cannot paint a fake red "10 ERRORS CAPTURED" alarm. Members live in Firestore.
    */
   app.get('/api/build-errors', (_req, res) => {
-    const historical = [
-      {
-        id: 1,
-        code: "ESM_IMPORT_EXTENSION",
-        error: "TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension \".ts\" for /workspace/server.ts",
-        context: "Node.js standard ESM path resolution failure on initial server.ts launch.",
-        phase: "CONCEPTION BUILD",
-        timestamp: "2026-06-08T12:04:15Z",
-        remediation: "Bundled server.ts to dist/server.cjs with esbuild and configured type:module package mappings.",
-        status: "remediated" as const,
-      },
-      {
-        id: 2,
-        code: "CORS_MISCONFIGURATION",
-        error: "Access-Control-Allow-Origin header is missing / blocked by iframe container sandbox",
-        context: "Reverse proxy routing blocks socket stream inside the Antigravity preview sandbox framing.",
-        phase: "GATEWAY ROUTING",
-        timestamp: "2026-06-08T14:48:20Z",
-        remediation: "Enabled credentials:true, dynamic CORS origin reflection patterns, and configured correct WebSocket tunneling ports.",
-        status: "remediated" as const,
-      },
-      {
-        id: 3,
-        code: "VITE_BUILD_OUTOF_MEMORY",
-        error: "FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
-        context: "Compilation of massive lightweight charts bindings inside sandboxed resource-capped Docker instance.",
-        phase: "PRODUCTION EXPORT",
-        timestamp: "2026-06-08T19:33:41Z",
-        remediation: "Optimized vite.config.ts options: disabled sourcemaps in client-spa context, downsized css minimizers.",
-        status: "remediated" as const,
-      },
-      {
-        id: 4,
-        code: "TWELVEDATA_JSON_429",
-        error: "Twelve Data API Error: You have reached your rate limit (429). Please upgrading plan or wait.",
-        context: "Eight simultaneous chart asset charts requested by home layout in under 1 second.",
-        phase: "DATA INGESTION",
-        timestamp: "2026-06-09T08:12:02Z",
-        remediation: "Built local proxy caching layers, introduced automatic failover to client-simulated high-fidelity telemetry channels.",
-        status: "remediated" as const,
-      },
-      {
-        id: 5,
-        code: "MISSING_FIREBASE_VARIABLE",
-        error: "FirebaseError: [db-initializer] Project ID or private credentials missing in environment context",
-        context: "Startup validation failure of the Google Firebase persistent data stores.",
-        phase: "DATABASE SETUP",
-        timestamp: "2026-06-09T11:40:55Z",
-        remediation: "Switched to lazy initialization checks, added safe dummy fallbacks for local test benches.",
-        status: "remediated" as const,
-      },
-      {
-        id: 6,
-        code: "LINT_UNUSED_IMPORTS",
-        error: "TypeScript error: 'useState' is declared but its value is never read. (no-unused-vars)",
-        context: "TypeScript compilation blocks deployment of the site owing to strict linter checks.",
-        phase: "POST-BUILD LINT",
-        timestamp: "2026-06-09T16:51:11Z",
-        remediation: "Cleaned unused bindings across src/components/Dashboard.tsx and App.tsx.",
-        status: "remediated" as const,
-      },
-      {
-        id: 7,
-        code: "CASING_MISMATCH_IMPORT",
-        error: "Error: Cannot find module './charts/interactiveChart' (expected interactiveChart.tsx, found InteractiveChart.tsx)",
-        context: "Case-insensitive file system dev workspace vs case-sensitive Linux cloud container mismatch.",
-        phase: "CONTAINER REBUILD",
-        timestamp: "2026-06-10T02:04:19Z",
-        remediation: "Standardized all import lines matching exact filename casing protocols (e.g. InteractiveChart.tsx).",
-        status: "remediated" as const,
-      },
-      {
-        id: 8,
-        code: "HMR_RECONNECT_TIMEOUT",
-        error: "WebSocket connection to 'wss://...' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED",
-        context: "Control plane HMR disconnects because preview iframe locks socket listeners to port 3000.",
-        phase: "RUNTIME SIMULATOR",
-        timestamp: "2026-06-10T09:15:33Z",
-        remediation: "Configured DISABLE_HMR=true environment variables to let agent edit work item batches before rebuild refreshes.",
-        status: "remediated" as const,
-      },
-      {
-        id: 9,
-        code: "TS_DUPLICATE_IDENTIFIERS",
-        error: "TypeScript error TS2300: Duplicate identifier 'Candle' in src/components/charts/LightweightCandles.tsx",
-        context: "Merged multiple chart data definition layers during standard charts upgrade.",
-        phase: "COMPILE",
-        timestamp: "2026-06-10T14:41:09Z",
-        remediation: "Abstracted duplicate models, created standalone src/types/indicators.ts files system.",
-        status: "remediated" as const,
-      },
-      {
-        id: 10,
-        code: "ROUTER_EXPRESS_V5_WILDCARD",
-        error: "TypeError: app.get('*') does not capture wildcard matches as expected in Express v5 environment middleware",
-        context: "Routing files fail to forward to index.html default on custom fallback views.",
-        phase: "SERVER BUNDLER",
-        timestamp: "2026-06-10T18:11:44Z",
-        remediation: "Updated path router handlers to support both Express v4 wildcard '*' and Express v5 '*all' structures.",
-        status: "remediated" as const,
-      },
-    ];
     res.json({
       ok: true,
       liveFailureCount: 0,
       siteBuildHealthy: true,
       note:
-        "Right-hand list is a FIXED archive from June 2026 conception — not live build failures. Left-hand probes are the live truth.",
-      historical,
-      // Backward-compat: some older clients expected a bare array.
-      errors: historical,
+        'No live build failures. The old conception diary was removed — it was not a live crash list.',
+      historical: [],
+      errors: [],
     });
   });
 
