@@ -11,8 +11,16 @@ import {
   sendIdentityPreregistrationEmail,
   sendWaitlistConfirmationEmail,
 } from './registrationEmail';
+import { getRegistrationEmailBlock } from './identityRisk';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function assertEmailAllowed(email: string): void {
+  const block = getRegistrationEmailBlock(email);
+  if (block.blocked) {
+    throw new RegistrationError(block.reason || 'This email is not allowed for registration.', 400);
+  }
+}
 
 const IDENTITY_TIERS: Record<string, { name: string }> = {
   blue: { name: 'Retail Trader' },
@@ -62,6 +70,7 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
   if (!emailAddress || !EMAIL_RE.test(emailAddress) || emailAddress.length > 320) {
     throw new RegistrationError('A valid email address is required.');
   }
+  assertEmailAllowed(emailAddress);
   if (!country) {
     throw new RegistrationError('Country of residence is required.');
   }
@@ -119,6 +128,7 @@ export async function registerIdentity(input: IdentityInput): Promise<Registrati
   if (!emailAddress || !EMAIL_RE.test(emailAddress) || emailAddress.length > 320) {
     throw new RegistrationError('A valid email address is required.');
   }
+  assertEmailAllowed(emailAddress);
 
   if (await emailExistsInIdentity(emailAddress)) {
     throw new RegistrationError('This email already has an identity pre-registration.', 409);

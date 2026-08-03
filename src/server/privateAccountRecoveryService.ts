@@ -13,6 +13,7 @@ import {
 } from './privateAuthService';
 import { listStripeCustomerEmails, stripeConfigured } from './stripeService';
 import { generateTempPassword, recordFounderInvite } from './waitlistConvertService';
+import { getRegistrationEmailBlock } from './identityRisk';
 
 export type ImportMemberInput = {
   email: string;
@@ -32,7 +33,8 @@ export type RecoveryResultRow = {
 
 function isTestEmail(email: string): boolean {
   const e = normalizeEmail(email);
-  return e.endsWith('@clearpath.test') || e.endsWith('.test') || e.includes('+smoke');
+  if (e.endsWith('@clearpath.test') || e.includes('+smoke')) return true;
+  return getRegistrationEmailBlock(e).blocked;
 }
 
 async function provisionWithInvite(input: {
