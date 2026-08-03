@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, query, collection, or
 import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase';
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
 import { clearClientAuthArtifacts, clearPrivateSession, fetchPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
+import { FOUNDER_EMAIL } from '../lib/founder';
 
 interface FirebaseContextType {
   user: User | null;
@@ -132,11 +133,10 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const privateEmail = (privateSession?.email || '').trim().toLowerCase();
       const firebaseEmail = (firebaseUser?.email || '').trim().toLowerCase();
-      const founder = 'forexanarchy@gmail.com';
 
       // Founder Google must win over a stale non-founder private/board cookie.
-      if (firebaseEmail === founder) return firebaseUser;
-      if (privateEmail === founder && privateSession) {
+      if (firebaseEmail === FOUNDER_EMAIL) return firebaseUser;
+      if (privateEmail === FOUNDER_EMAIL && privateSession) {
         return privateSession as unknown as User;
       }
       if (privateSession) return privateSession as unknown as User;
