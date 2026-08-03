@@ -333,6 +333,65 @@ export type MembershipStatusReport = {
  * Starts the 15-day Ultimate launch gift on first read if the user has no
  * Stripe membership yet.
  */
+export type StripeCustomerEmailRow = {
+  email: string;
+  stripeCustomerId: string;
+  name?: string;
+  /** ClearPath uid when checkout stored it on the customer/subscription metadata. */
+  uid?: string;
+};
+
+/**
+ * Paginate Stripe customers for boot/founder recovery of private accounts.
+ * Emails only — never card data. Caps at 2000 to bound boot time.
+ */
+export async function listStripeCustomerEmails(options?: {
+  max?: number;
+}): Promise<StripeCustomerEmailRow[]> {
+  const stripe = getStripeClient();
+  if (!stripe) {
+    throw new StripeServiceError('Stripe is not configured on this server (STRIPE_SECRET_KEY missing).', 503);
+  }
+  const max = Math.min(Math.max(1, options?.max ?? 2000), 5000);
+  const out: StripeCustomerEmailRow[] = [];
+  let startingAfter: string | undefined;
+
+  while (out.length < max) {
+    const page = await stripe.customers.list({
+      limit: Math.min(100, max - out.length),
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    });
+    for (const customer of page.data) {
+      // Customer.list omits deleted tombstones; skip any odd deleted-shaped rows.
+      if ((customer as unknown as { deleted?: boolean }).deleted === true) continue;
+      const email = String(customer.email || '').trim().toLowerCase();
+      if (!email.includes('@')) continue;
+      const metaUid = String(customer.metadata?.uid || '').trim();
+      const row: StripeCustomerEmailRow = {
+        email,
+        stripeCustomerId: customer.id,
+      };
+      if (customer.name && String(customer.name).trim()) {
+        row.name = String(customer.name).trim().slice(0, 80);
+      }
+      if (metaUid) row.uid = metaUid;
+      out.push(row);
+      if (out.length >= max) break;
+    }
+    if (!page.has_more || page.data.length === 0) break;
+    startingAfter = page.data[page.data.length - 1]?.id;
+    if (!startingAfter) break;
+  }
+
+  // Dedupe by email (prefer row that carries a uid).
+  const byEmail = new Map<string, StripeCustomerEmailRow>();
+  for (const row of out) {
+    const prev = byEmail.get(row.email);
+    if (!prev || (!prev.uid && row.uid)) byEmail.set(row.email, row);
+  }
+  return [...byEmail.values()].sort((a, b) => a.email.localeCompare(b.email));
+}
+
 export function getMembershipStatus(uid: string): MembershipStatusReport {
   const profile = readProfile(uid);
   const membership = profile?.membership;

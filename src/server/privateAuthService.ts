@@ -1,15 +1,49 @@
 /**
  * ClearPath Trader — Private account auth (email + password).
  * Durable store: Firestore `private_accounts` when Admin is available;
- * local file fallback for offline/local dev. Write-through keeps both in sync.
+ * local file is a cache / offline-dev fallback only.
+ *
+ * Production never silently accepts local-only persistence (Cloud Run disk is ephemeral).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { promisify } from 'node:util';
-import { getAdminFirestore } from './firebaseAdmin';
+import { getAdminFirestore, getFirebaseAdminStatus, isFirestoreDurableReady } from './firebaseAdmin';
 
 const scrypt = promisify(crypto.scrypt);
+
+function isProdEnv(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+/** Test-only: simulate Cloud Run with Firestore Admin offline. */
+let forceEphemeralForTests = false;
+export function _forceEphemeralPrivateStoreForTests(value: boolean) {
+  forceEphemeralForTests = value;
+}
+
+/** True when Firestore Admin is live — the only durable private-account backend. */
+export function hasDurablePrivateStore(): boolean {
+  if (forceEphemeralForTests) return false;
+  return isFirestoreDurableReady() && Boolean(getAdminFirestore());
+}
+
+/**
+ * Production hard-fail for mutating private-account paths when durable store is offline.
+ * Dev/test may continue with the local file.
+ */
+export function assertDurablePrivateWritesAllowed(): void {
+  if (!isProdEnv()) return;
+  if (hasDurablePrivateStore()) return;
+  const status = getFirebaseAdminStatus();
+  throw new PrivateAuthError(
+    `Private accounts require durable Firestore in production (Admin offline` +
+      `${status.reason ? `: ${status.reason}` : ''}). ` +
+      `Set FIREBASE_SERVICE_ACCOUNT or Cloud Run ADC with Firestore access, then use founder recover/import.`,
+    503
+  );
+}
 
 export type PrivateUserRecord = {
   uid: string;
@@ -99,6 +133,7 @@ function docToRecord(data: Record<string, unknown>): PrivateUserRecord | null {
 }
 
 async function readFirestoreUsers(): Promise<PrivateUserRecord[] | null> {
+  if (!hasDurablePrivateStore()) return null;
   const db = getAdminFirestore();
   if (!db) return null;
   try {
@@ -116,6 +151,7 @@ async function readFirestoreUsers(): Promise<PrivateUserRecord[] | null> {
 }
 
 async function findFirestoreUserByEmail(email: string): Promise<PrivateUserRecord | null> {
+  if (!hasDurablePrivateStore()) return null;
   const db = getAdminFirestore();
   if (!db) return null;
   const normalized = normalizeEmail(email);
@@ -139,6 +175,7 @@ async function findFirestoreUserByEmail(email: string): Promise<PrivateUserRecor
 }
 
 async function upsertFirestoreUser(user: PrivateUserRecord): Promise<boolean> {
+  if (!hasDurablePrivateStore()) return false;
   const db = getAdminFirestore();
   if (!db) return false;
   try {
@@ -154,7 +191,7 @@ async function upsertFirestoreUser(user: PrivateUserRecord): Promise<boolean> {
     await db.collection(COLLECTION).doc(user.email).set(payload, { merge: true });
     return true;
   } catch (err) {
-    console.warn('[privateAuth] Firestore upsert failed; local file still written.', err);
+    console.warn('[privateAuth] Firestore upsert failed.', err);
     return false;
   }
 }
@@ -225,23 +262,43 @@ export function getPrivateStorageMeta(): {
   privateStorage: 'firestore' | 'local_file' | 'none';
   privatePath: string;
   privateCollection: string;
+  durable: boolean;
+  writesAllowed: boolean;
+  productionHardFail: boolean;
+  firebaseAdmin: ReturnType<typeof getFirebaseAdminStatus>;
   persistenceWarning?: string;
 } {
-  const db = getAdminFirestore();
-  if (db) {
+  const admin = getFirebaseAdminStatus();
+  const durable = hasDurablePrivateStore();
+  const productionHardFail = isProdEnv() && !durable;
+  const writesAllowed = durable || !isProdEnv();
+
+  if (durable) {
     return {
       privateStorage: 'firestore',
       privatePath: 'data/private_accounts/users.json (local cache)',
       privateCollection: COLLECTION,
+      durable: true,
+      writesAllowed: true,
+      productionHardFail: false,
+      firebaseAdmin: admin,
     };
   }
+
   const local = readLocalUsers();
+  const warning = productionHardFail
+    ? 'PRODUCTION BLOCKED: Firebase Admin / Firestore offline. Private register, login, waitlist convert, and imports refuse local-only writes (Cloud Run disk is wiped on redeploy). Set FIREBASE_SERVICE_ACCOUNT or Cloud Run ADC, then run Recover from Stripe / Import members.'
+    : 'Private accounts are on the local filesystem only (no Firebase Admin). On Cloud Run without Firestore, this list resets when the revision is replaced.';
+
   return {
     privateStorage: local.length ? 'local_file' : 'none',
     privatePath: 'data/private_accounts/users.json',
     privateCollection: COLLECTION,
-    persistenceWarning:
-      'Private accounts are on the local filesystem only (no Firebase Admin). On Cloud Run without Firestore, this list resets when the revision is replaced.',
+    durable: false,
+    writesAllowed,
+    productionHardFail,
+    firebaseAdmin: admin,
+    persistenceWarning: warning,
   };
 }
 
@@ -253,8 +310,15 @@ export async function lookupPrivateUser(email: string): Promise<{
   if (!normalized || !normalized.includes('@')) {
     throw new PrivateAuthError('Enter a valid email address.');
   }
+  if (isProdEnv() && !hasDurablePrivateStore()) {
+    throw new PrivateAuthError(
+      'Private account lookup unavailable: durable Firestore store is offline in production.',
+      503
+    );
+  }
   const remote = await findFirestoreUserByEmail(normalized);
   if (remote) return { exists: true };
+  if (isProdEnv()) return { exists: false };
   const local = readLocalUsers().find((u) => u.email === normalized);
   return { exists: Boolean(local) };
 }
@@ -265,6 +329,8 @@ export async function findPrivateUserByEmail(email: string): Promise<PublicPriva
   if (!normalized.includes('@')) return null;
   const remote = await findFirestoreUserByEmail(normalized);
   if (remote) return toPublic(remote);
+  // Production: never treat ephemeral disk as source of truth.
+  if (isProdEnv()) return null;
   const found = readLocalUsers().find((u) => u.email === normalized);
   return found ? toPublic(found) : null;
 }
@@ -314,12 +380,17 @@ export async function listPrivateMembersSafe(): Promise<{
     return { members, source: 'firestore' };
   }
 
-  // Firestore reachable but empty → still surface local (pre-migrate / offline writes).
-  if (local.length > 0) {
+  if (remote) {
+    // Durable reachable but empty — do not mask with ephemeral local in production.
+    if (isProdEnv()) return { members: [], source: 'firestore' };
+  }
+
+  // Dev / pre-migrate: surface local cache when Firestore is empty or offline.
+  if (!isProdEnv() && local.length > 0) {
     const members = local
       .map((u) => toSafeMember(u, 'local'))
       .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-    return { members, source: remote ? 'local' : 'local' };
+    return { members, source: 'local' };
   }
 
   if (remote) {
@@ -329,14 +400,17 @@ export async function listPrivateMembersSafe(): Promise<{
 }
 
 /**
- * Create a private account (local + Firestore write-through).
- * Used by public register and founder waitlist conversion.
+ * Create a private account (Firestore durable + local cache).
+ * Used by public register, founder waitlist conversion, import, and Stripe recovery.
+ * Production: refuses when Firestore Admin is offline; requires successful durable write.
  */
 export async function provisionPrivateUser(input: {
   email: string;
   password: string;
   displayName: string;
 }): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+
   const email = normalizeEmail(input.email);
   const displayName = (input.displayName || '').trim();
   const password = input.password || '';
@@ -346,7 +420,7 @@ export async function provisionPrivateUser(input: {
   if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
 
   const existingRemote = await findFirestoreUserByEmail(email);
-  const existingLocal = readLocalUsers().find((u) => u.email === email);
+  const existingLocal = isProdEnv() ? null : readLocalUsers().find((u) => u.email === email);
   if (existingRemote || existingLocal) {
     throw new PrivateAuthError('An account with this email already exists. Use Private Login.', 409);
   }
@@ -360,8 +434,21 @@ export async function provisionPrivateUser(input: {
     passwordSalt: salt,
     createdAt: new Date().toISOString(),
   };
+
+  if (hasDurablePrivateStore()) {
+    const ok = await upsertFirestoreUser(record);
+    if (!ok) {
+      throw new PrivateAuthError(
+        'Failed to persist private account to durable Firestore. Account was not created.',
+        503
+      );
+    }
+    upsertLocalUser(record);
+    return toPublic(record);
+  }
+
+  // Non-production offline fallback only.
   upsertLocalUser(record);
-  await upsertFirestoreUser(record);
   return toPublic(record);
 }
 
@@ -383,9 +470,16 @@ export async function loginPrivateUser(input: {
     throw new PrivateAuthError('Email and password are required.');
   }
 
+  if (isProdEnv() && !hasDurablePrivateStore()) {
+    throw new PrivateAuthError(
+      'Private login unavailable: durable Firestore store is offline in production. Accounts are not kept on ephemeral Cloud Run disk.',
+      503
+    );
+  }
+
   const found =
     (await findFirestoreUserByEmail(email)) ||
-    readLocalUsers().find((u) => u.email === email) ||
+    (isProdEnv() ? null : readLocalUsers().find((u) => u.email === email) || null) ||
     null;
   // Generic messages — avoid confirming whether the email is registered.
   if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
@@ -399,7 +493,13 @@ export async function loginPrivateUser(input: {
 
   found.lastLoginAt = new Date().toISOString();
   upsertLocalUser(found);
-  await upsertFirestoreUser(found);
+  const durableOk = await upsertFirestoreUser(found);
+  if (isProdEnv() && !durableOk) {
+    throw new PrivateAuthError(
+      'Private login could not update durable store. Try again shortly.',
+      503
+    );
+  }
   return toPublic(found);
 }
 

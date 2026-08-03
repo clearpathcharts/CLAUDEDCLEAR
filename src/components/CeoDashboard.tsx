@@ -39,6 +39,16 @@ type AdminMembersPayload = {
     privateSource?: string;
     waitlistSource?: string;
     persistenceWarning?: string;
+    durable?: boolean;
+    writesAllowed?: boolean;
+    productionHardFail?: boolean;
+    stripeConfigured?: boolean;
+    firebaseAdmin?: {
+      configured?: boolean;
+      firestore?: boolean;
+      mode?: string;
+      reason?: string;
+    };
   };
 };
 
@@ -74,6 +84,8 @@ export default function CeoDashboard() {
     Array<{ email: string; displayName: string; activationKey: string; tempPassword?: string }>
   >([]);
   const [invitesVisible, setInvitesVisible] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
   
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
@@ -167,6 +179,72 @@ export default function CeoDashboard() {
       );
     } catch (err: any) {
       setConvertMsg(err?.message || 'Could not load invites.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
+  const runStripeRecover = async (dryRun: boolean) => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/recover-from-stripe', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ dryRun }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Stripe recover failed (${res.status})`);
+      if (!body.stripeConfigured) {
+        setConvertMsg('Stripe is not configured on this server — cannot recover from customers.');
+        return;
+      }
+      setConvertMsg(
+        dryRun
+          ? `Stripe dry run: ${body.created} would be created, ${body.already} already have accounts (${body.candidates} customer emails).`
+          : `Stripe recover: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” to copy credentials.`
+      );
+      if (!dryRun) await loadAdminMembers();
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Stripe recovery failed.');
+    } finally {
+      setConvertBusy(false);
+    }
+  };
+
+  const runFounderImport = async (dryRun: boolean) => {
+    setConvertBusy(true);
+    setConvertMsg(null);
+    try {
+      let members: Array<{ email: string; displayName?: string; password?: string }> = [];
+      const raw = importText.trim();
+      if (!raw) throw new Error('Paste a JSON array of { email, displayName?, password? }.');
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) throw new Error('Import JSON must be an array.');
+      members = parsed.map((row: any) => ({
+        email: String(row?.email || ''),
+        ...(row?.displayName ? { displayName: String(row.displayName) } : {}),
+        ...(row?.password ? { password: String(row.password) } : {}),
+      }));
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/import', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ members, dryRun }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Import failed (${res.status})`);
+      setConvertMsg(
+        dryRun
+          ? `Import dry run: ${body.created} would be created, ${body.already} already exist (${body.candidates} rows).`
+          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” if passwords were auto-generated.`
+      );
+      if (!dryRun) await loadAdminMembers();
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Import failed.');
     } finally {
       setConvertBusy(false);
     }
@@ -386,8 +464,91 @@ export default function CeoDashboard() {
               >
                 Show invite passwords
               </button>
+              <button
+                type="button"
+                onClick={() => void runStripeRecover(true)}
+                disabled={convertBusy || membersPayload?.meta?.stripeConfigured === false}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-violet-500/40 bg-violet-500/10 text-violet-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-violet-500/20 disabled:opacity-50"
+              >
+                Dry-run Stripe recover
+              </button>
+              <button
+                type="button"
+                onClick={() => void runStripeRecover(false)}
+                disabled={
+                  convertBusy ||
+                  membersPayload?.meta?.writesAllowed === false ||
+                  membersPayload?.meta?.stripeConfigured === false
+                }
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-fuchsia-500/20 disabled:opacity-50"
+              >
+                Recover from Stripe
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportOpen((v) => !v)}
+                disabled={convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-sky-500/20 disabled:opacity-50"
+              >
+                Import members
+              </button>
             </div>
           </div>
+
+          {membersPayload?.meta?.productionHardFail ? (
+            <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-50 text-sm leading-relaxed">
+              <strong className="uppercase tracking-wider text-rose-200">Production hard-fail</strong>
+              <p className="mt-2 mb-0">
+                Durable Firestore is offline. Private register/login and member writes are blocked so
+                Cloud Run cannot silently store accounts on ephemeral disk. Restore{' '}
+                <span className="font-mono">FIREBASE_SERVICE_ACCOUNT</span> or Cloud Run ADC, then use
+                Recover from Stripe or Import members.
+              </p>
+              {membersPayload.meta.firebaseAdmin?.reason ? (
+                <p className="mt-2 mb-0 font-mono text-xs text-rose-100/80">
+                  {membersPayload.meta.firebaseAdmin.reason}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {importOpen ? (
+            <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 px-4 py-4 space-y-3">
+              <p className="text-sky-100/90 text-sm m-0 leading-relaxed">
+                Paste JSON array of members. Password optional — omitted passwords become founder
+                invites. Example:{' '}
+                <span className="font-mono text-xs">
+                  {`[{"email":"a@example.com","displayName":"Alex"}]`}
+                </span>
+              </p>
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                rows={6}
+                spellCheck={false}
+                className="w-full rounded-lg bg-[#0d0d1a] border border-sky-500/30 text-zinc-100 font-mono text-xs p-3"
+                placeholder='[{"email":"member@example.com","displayName":"Member"}]'
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void runFounderImport(true)}
+                  disabled={convertBusy}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-200 text-xs font-mono uppercase tracking-widest font-black disabled:opacity-50"
+                >
+                  Dry-run import
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runFounderImport(false)}
+                  disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-500/40 bg-sky-500/10 text-sky-200 text-xs font-mono uppercase tracking-widest font-black disabled:opacity-50"
+                >
+                  Import into durable store
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {convertMsg ? (
             <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 px-4 py-3 text-cyan-50/90 text-sm leading-relaxed">

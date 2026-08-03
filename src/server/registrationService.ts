@@ -1,4 +1,5 @@
 import { generateActivationKey, normalizeEmail } from './activationKey';
+import { getAdminFirestore } from './firebaseAdmin';
 import {
   emailExistsInIdentity,
   emailExistsInWaitlist,
@@ -69,6 +70,13 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
     throw new RegistrationError('This email is already registered on the waitlist.', 409);
   }
 
+  if (!getAdminFirestore() && process.env.NODE_ENV === 'production') {
+    throw new RegistrationError(
+      'Waitlist registration unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).',
+      503
+    );
+  }
+
   const activationKey = generateActivationKey();
   const createdAt = new Date().toISOString();
 
@@ -114,6 +122,13 @@ export async function registerIdentity(input: IdentityInput): Promise<Registrati
 
   if (await emailExistsInIdentity(emailAddress)) {
     throw new RegistrationError('This email already has an identity pre-registration.', 409);
+  }
+
+  if (!getAdminFirestore() && process.env.NODE_ENV === 'production') {
+    throw new RegistrationError(
+      'Identity pre-registration unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).',
+      503
+    );
   }
 
   const activationKey = generateActivationKey();

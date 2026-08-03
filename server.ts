@@ -68,7 +68,7 @@ import {
   lookupStock,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
-import { getAdminFirestore } from './src/server/firebaseAdmin';
+import { getAdminFirestore, getFirebaseAdminStatus, probeAdminFirestore } from './src/server/firebaseAdmin';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
@@ -83,6 +83,7 @@ import {
   handleStripeEvent,
   isBillingInterval,
   isMembershipTier,
+  stripeConfigured,
   StripeServiceError,
   verifyStripeWebhook,
 } from './src/server/stripeService';
@@ -118,6 +119,7 @@ import {
   PrivateAuthError,
   buildClientSessionUser,
   getPrivateStorageMeta,
+  hasDurablePrivateStore,
   listPrivateMembersSafe,
   lookupPrivateUser,
   loginPrivateUser,
@@ -125,13 +127,19 @@ import {
   registerPrivateUser,
 } from './src/server/privateAuthService';
 import {
+  bootRecoverPrivateAccountsFromStripe,
+  importPrivateMembers,
+  recoverPrivateAccountsFromStripe,
+} from './src/server/privateAccountRecoveryService';
+import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
 import {
   convertWaitlistToPrivateAccounts,
   listFounderInvites,
   listWaitlistConversionCandidates,
-} from './src/server/waitlistConvertService';import {
+} from './src/server/waitlistConvertService';
+import {
   bumpPrivateApply,
   bumpPublicApply,
   getPublicEntry,
@@ -611,8 +619,10 @@ async function startServer() {
   // 3. API ROUTES
   app.get('/api/health', (req, res) => {
     const adminDb = getAdminFirestore();
+    const privateMeta = getPrivateStorageMeta();
+    const sessionSecretConfigured = Boolean(getSessionSecret() && getSessionSecret().length >= 32);
     res.json({ 
-      status: 'healthy', 
+      status: privateMeta.productionHardFail ? 'degraded' : 'healthy', 
       version: '5.0.0-institutional',
       uptime: process.uptime(),
       timestamp: Date.now(),
@@ -622,6 +632,18 @@ async function startServer() {
           process.env.VITE_APPWRITE_PROJECT_ID &&
           process.env.VITE_APPWRITE_PROJECT_ID !== 'YOUR_PROJECT_ID'
         ),
+      },
+      privateAccounts: {
+        durable: privateMeta.durable,
+        writesAllowed: privateMeta.writesAllowed,
+        productionHardFail: privateMeta.productionHardFail,
+        storage: privateMeta.privateStorage,
+        firebaseAdmin: getFirebaseAdminStatus(),
+      },
+      session: {
+        secretConfigured: sessionSecretConfigured,
+        // Ephemeral secret = logins die on every Cloud Run revision replace.
+        ephemeral: !sessionSecretConfigured && isProd,
       },
     });
   });
@@ -987,6 +1009,11 @@ async function startServer() {
           privateCollection: privateMeta.privateCollection,
           privateSource: privateList.source,
           waitlistSource: waitlist.source,
+          durable: privateMeta.durable,
+          writesAllowed: privateMeta.writesAllowed,
+          productionHardFail: privateMeta.productionHardFail,
+          firebaseAdmin: privateMeta.firebaseAdmin,
+          stripeConfigured: stripeConfigured(),
           ...(privateMeta.persistenceWarning
             ? { persistenceWarning: privateMeta.persistenceWarning }
             : {}),
@@ -1007,9 +1034,50 @@ async function startServer() {
       const dryRun = Boolean(req.body?.dryRun);
       const result = await convertWaitlistToPrivateAccounts({ dryRun });
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
       console.error('[admin/members/convert-waitlist] Failed:', error);
-      res.status(500).json({ error: 'Waitlist conversion failed' });
+      res.status(status).json({ error: error?.message || 'Waitlist conversion failed' });
+    }
+  });
+
+  /**
+   * Founder-only: bulk-import private members into durable Firestore.
+   * Body: { members: [{ email, displayName?, password? }], dryRun?: boolean }
+   * Omitting password generates a temp password stored in founder invites.
+   */
+  app.post('/api/admin/members/import', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const members = Array.isArray(req.body?.members) ? req.body.members : [];
+      if (!members.length) {
+        return res.status(400).json({ error: 'members array required' });
+      }
+      const result = await importPrivateMembers({
+        members,
+        dryRun: Boolean(req.body?.dryRun),
+      });
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/import] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Member import failed' });
+    }
+  });
+
+  /**
+   * Founder-only: rebuild missing private accounts from Stripe customer emails.
+   * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
+   */
+  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const result = await recoverPrivateAccountsFromStripe({
+        dryRun: Boolean(req.body?.dryRun),
+      });
+      res.json(result);
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/recover-from-stripe] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Stripe recovery failed' });
     }
   });
 
@@ -3362,8 +3430,15 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       console.warn('[STARTUP] Firebase web config check skipped:', e?.message || e);
     }
 
-    // Migrate local private accounts → Firestore once, then seed IC badges.
+    // Probe Firestore (ADC can init then fail on first RPC), migrate local → durable,
+    // recover from Stripe when durable, then seed IC badges.
     void (async () => {
+      try {
+        const ok = await probeAdminFirestore();
+        console.log(`[STARTUP] Firebase Admin Firestore probe → ${ok ? 'OK' : 'OFFLINE'}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Firestore probe skipped:', e?.message || e);
+      }
       try {
         const migrated = await migratePrivateAccountsToDurableStore();
         console.log(
@@ -3371,6 +3446,25 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         );
       } catch (e: any) {
         console.warn('[STARTUP] Private accounts migrate skipped:', e?.message || e);
+      }
+      try {
+        const meta = getPrivateStorageMeta();
+        if (meta.productionHardFail) {
+          console.error(
+            '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: durable Firestore offline in production. Register/login/import blocked until FIREBASE_SERVICE_ACCOUNT or Cloud Run ADC is available.'
+          );
+        } else if (hasDurablePrivateStore()) {
+          const recovered = await bootRecoverPrivateAccountsFromStripe();
+          if (recovered.ran) {
+            console.log(
+              `[STARTUP] Stripe private-account recovery → created=${recovered.created} already=${recovered.already} candidates=${recovered.candidates}`
+            );
+          } else if (recovered.skippedReason) {
+            console.log(`[STARTUP] Stripe private-account recovery skipped (${recovered.skippedReason})`);
+          }
+        }
+      } catch (e: any) {
+        console.warn('[STARTUP] Stripe private-account recovery skipped:', e?.message || e);
       }
       // Hydrate redeploy-sensitive stores (profiles/memberships, affiliate, pending badges)
       // from Firestore BEFORE seeding, so a fresh container never starts blank.
