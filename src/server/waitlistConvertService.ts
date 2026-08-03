@@ -8,6 +8,7 @@ import path from 'node:path';
 import { getAdminFirestore } from './firebaseAdmin';
 import { generateActivationKey, normalizeEmail } from './activationKey';
 import {
+  assertDurablePrivateWritesAllowed,
   findPrivateUserByEmail,
   provisionPrivateUser,
   type PublicPrivateUser,
@@ -98,6 +99,17 @@ async function upsertInvite(invite: FounderInviteSafe & { tempPassword: string }
   } catch (err) {
     console.warn('[waitlistConvert] Failed to persist invite to Firestore (local file kept).', err);
   }
+}
+
+/** Founder recovery/import paths — same invite vault as waitlist conversion. */
+export async function recordFounderInvite(
+  invite: FounderInviteSafe & { tempPassword: string }
+): Promise<void> {
+  await upsertInvite(invite);
+}
+
+export function generateTempPassword(): string {
+  return randomTempPassword();
 }
 
 async function markWaitlistConverted(params: {
@@ -220,6 +232,11 @@ export async function convertWaitlistToPrivateAccounts(options?: {
   invitesCreated: number;
 }> {
   const dryRun = Boolean(options?.dryRun);
+  if (!dryRun) {
+    // Production: refuse convert that would only land on ephemeral disk.
+    assertDurablePrivateWritesAllowed();
+  }
+
   const candidates = await listWaitlistConversionCandidates();
   const results: ConvertResultRow[] = [];
   let created = 0;
