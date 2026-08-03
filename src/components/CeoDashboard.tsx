@@ -1084,7 +1084,7 @@ export default function CeoDashboard() {
         </div>
       ) : (
       <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {/* Panel 1: Live Users */}
         <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.3)]">
           <h2 className="text-[#00FFFF] text-xl font-bold uppercase mb-4 flex items-center">
@@ -1108,44 +1108,6 @@ export default function CeoDashboard() {
           <div className="flex justify-between">
             <span className="text-white text-lg">Core Engine:</span>
             <span className="text-[#00FFFF] text-lg font-bold">ONLINE</span>
-          </div>
-        </div>
-
-        {/* Panel 3: Social Media Connections */}
-        <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#4D00FF] shadow-[0_0_15px_rgba(77,0,255,0.3)]">
-          <h2 className="text-xl font-bold uppercase mb-4 flex items-center"
-              style={{
-                background: 'linear-gradient(135deg, #00FFFF, #4D00FF)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-            <Globe size={20} className="mr-2 text-[#00FFFF]" />
-            Social Media Status
-          </h2>
-          <div className="flex justify-between mb-3">
-            <span className="text-lg font-bold"
-                  style={{
-                    background: 'linear-gradient(135deg, #00FFFF, #4D00FF)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>X (Twitter):</span>
-            <span className={`text-lg font-bold truncate max-w-[200px] text-right ${userProfile?.contactInfo?.twitter ? 'text-green-400' : 'text-[#FF4500]'}`}>
-              {userProfile?.contactInfo?.twitter ? <a href={userProfile.contactInfo.twitter} target="_blank" rel="noreferrer" className="hover:underline">{userProfile.contactInfo.twitter}</a> : 'PENDING LINK'}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-lg font-bold"
-                  style={{
-                    background: 'linear-gradient(135deg, #00FFFF, #4D00FF)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}>YouTube:</span>
-            <span className={`text-lg font-bold truncate max-w-[200px] text-right ${(userProfile?.contactInfo as any)?.youtube ? 'text-green-400' : 'text-[#FF4500]'}`}>
-              {(userProfile?.contactInfo as any)?.youtube ? <a href={(userProfile?.contactInfo as any).youtube} target="_blank" rel="noreferrer" className="hover:underline">{(userProfile?.contactInfo as any).youtube}</a> : 'PENDING LINK'}
-            </span>
           </div>
         </div>
       </div>
