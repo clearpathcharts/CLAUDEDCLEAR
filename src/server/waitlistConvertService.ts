@@ -383,6 +383,58 @@ export async function convertWaitlistToPrivateAccounts(options?: {
   };
 }
 
+/**
+ * One-click: mark every waitlist row that already has a Private Login as
+ * `converted` so CEO Waitlist goes empty. Does not create accounts / emails.
+ */
+export async function clearWaitlistAlreadyInPrivateLogin(): Promise<{
+  ok: true;
+  scanned: number;
+  markedConverted: number;
+  skippedNoPrivate: number;
+}> {
+  const db = getAdminFirestore();
+  if (!db) {
+    throw new Error('Firestore Admin offline — cannot clear waitlist statuses.');
+  }
+  assertDurablePrivateWritesAllowed();
+
+  const snap = await db.collection(WAITLIST_COLLECTION).limit(2000).get();
+  let markedConverted = 0;
+  let skippedNoPrivate = 0;
+
+  for (const doc of snap.docs) {
+    const d = doc.data() as Record<string, unknown>;
+    const email = normalizeEmail(String(d.emailAddress || d.email || ''));
+    if (!email.includes('@') || isTestEmail(email)) continue;
+    const status = String(d.status || '').toLowerCase();
+    if (status === 'converted' || status === 'released') continue;
+
+    const existing = await findPrivateUserByEmail(email);
+    if (!existing) {
+      skippedNoPrivate += 1;
+      continue;
+    }
+    await doc.ref.set(
+      {
+        status: 'converted',
+        convertedAt: new Date().toISOString(),
+        convertedUid: existing.uid,
+        clearedFromWaitlistAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+    markedConverted += 1;
+  }
+
+  return {
+    ok: true,
+    scanned: snap.size,
+    markedConverted,
+    skippedNoPrivate,
+  };
+}
+
 /** Founder-only: list invite credentials so Richard can send access. */
 export async function listFounderInvites(): Promise<{
   invites: FounderInviteSafe[];

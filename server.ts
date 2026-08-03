@@ -154,6 +154,7 @@ import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
 import {
+  clearWaitlistAlreadyInPrivateLogin,
   convertWaitlistToPrivateAccounts,
   listFounderInvites,
   listWaitlistConversionCandidates,
@@ -1089,14 +1090,21 @@ async function startServer() {
       const privateList = await listPrivateMembersSafe();
       const waitlist = await listWaitlistRegistrationsSafe();
       const privateMeta = getPrivateStorageMeta();
+      // Anyone already in Private Login should not appear stuck on Waitlist.
+      const privateEmails = new Set(
+        privateList.members.map((m) => String(m.email || '').trim().toLowerCase()).filter(Boolean)
+      );
+      const activeWaitlist = waitlist.members.filter(
+        (row) => !privateEmails.has(String(row.email || '').trim().toLowerCase())
+      );
       res.json({
         ok: true,
         counts: {
           privateMembers: privateList.members.length,
-          waitlist: waitlist.members.length,
+          waitlist: activeWaitlist.length,
         },
         privateMembers: privateList.members,
-        waitlist: waitlist.members,
+        waitlist: activeWaitlist,
         meta: {
           privateStorage: privateMeta.privateStorage,
           privatePath: privateMeta.privatePath,
@@ -1132,6 +1140,21 @@ async function startServer() {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       console.error('[admin/members/convert-waitlist] Failed:', error);
       res.status(status).json({ error: error?.message || 'Waitlist conversion failed' });
+    }
+  });
+
+  /** One-click: hide waitlist rows that already have Private Login (mark converted). */
+  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const result = await clearWaitlistAlreadyInPrivateLogin();
+      res.json({
+        ...result,
+        message: `Waitlist cleared: ${result.markedConverted} marked released (already Private Login). ${result.skippedNoPrivate} left (no private account yet).`,
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      console.error('[admin/members/waitlist/clear-released] Failed:', error);
+      res.status(status).json({ error: error?.message || 'Failed to clear waitlist' });
     }
   });
 
