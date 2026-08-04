@@ -6,6 +6,23 @@ let firestore: Firestore | null = null;
 let initAttempted = false;
 let adminApp: App | null = null;
 
+/**
+ * Only attempt Application Default Credentials when something real is present.
+ * `applicationDefault()` does NOT fail synchronously in CI — it creates an app
+ * that later throws uncaught "Could not load the default credentials" on first
+ * Firestore write. Skip ADC unless we have an explicit key file / JSON, or we
+ * are clearly on GCP (Cloud Run / GCE metadata).
+ */
+function canUseApplicationDefault(): boolean {
+  if (process.env.FIREBASE_DISABLE_ADMIN === '1') return false;
+  if ((process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()) return true;
+  // Cloud Run / Functions / GCE
+  if (process.env.K_SERVICE || process.env.FUNCTION_TARGET || process.env.GCE_METADATA_HOST) {
+    return true;
+  }
+  return false;
+}
+
 /** Initialize Firebase Admin once (Firestore + Auth). Returns null when no credentials. */
 export function ensureAdminApp(): App | null {
   if (initAttempted) return adminApp;
@@ -13,14 +30,13 @@ export function ensureAdminApp(): App | null {
 
   try {
     if (!getApps().length) {
-      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+      const serviceAccountJson = (process.env.FIREBASE_SERVICE_ACCOUNT || '').trim();
       if (serviceAccountJson) {
         adminApp = initializeApp({
           credential: cert(JSON.parse(serviceAccountJson)),
           projectId: firebaseConfig.projectId,
         });
-      } else {
-        // Prefer GOOGLE_APPLICATION_CREDENTIALS, else gcloud application-default credentials.
+      } else if (canUseApplicationDefault()) {
         try {
           adminApp = initializeApp({
             credential: applicationDefault(),
@@ -28,11 +44,16 @@ export function ensureAdminApp(): App | null {
           });
         } catch (adcError) {
           console.warn(
-            '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / ADC). Registration data will use local file fallback.',
+            '[Firebase Admin] ADC failed. Using local file fallback.',
             adcError
           );
           return null;
         }
+      } else {
+        console.warn(
+          '[Firebase Admin] No credentials configured (FIREBASE_SERVICE_ACCOUNT / GOOGLE_APPLICATION_CREDENTIALS / Cloud Run). Using local file fallback.'
+        );
+        return null;
       }
     } else {
       adminApp = getApps()[0]!;

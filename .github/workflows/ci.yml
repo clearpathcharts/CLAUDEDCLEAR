@@ -31,6 +31,9 @@ jobs:
         run: npm run test:firebase-mock
 
       - name: Affiliate rewards self-test
+        env:
+          # Local JSON store only — do not probe GCP ADC in GitHub Actions
+          FIREBASE_DISABLE_ADMIN: '1'
         run: npm run test:affiliate
 
       - name: Build

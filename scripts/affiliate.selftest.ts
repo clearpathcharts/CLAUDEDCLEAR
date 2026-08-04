@@ -10,6 +10,11 @@ import os from 'node:os';
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-aff-'));
 process.chdir(tmp);
 
+// CI / local self-test must never hit live Firestore (no GCP credentials).
+process.env.FIREBASE_DISABLE_ADMIN = '1';
+delete process.env.FIREBASE_SERVICE_ACCOUNT;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
 async function main() {
   const aff = await import('../src/server/affiliateService.ts');
 
