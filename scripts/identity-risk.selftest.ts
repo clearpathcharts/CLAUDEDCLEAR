@@ -151,10 +151,11 @@ expectBlocked('aaaaaa@gmail.com', 'keyboard_smash');
 expectBlocked('xxxxxxxx@gmail.com', 'keyboard_smash');
 expectBlocked('123123@gmail.com', 'blocked_local'); // numeric-only catches first
 
-// --- Vendored disposable list (~75k from disposable/disposable-email-domains) ---
+// --- Vendored disposable list (merged from 3 upstream blocklists) ---
 const disposableStatus = getDisposableDomainListStatus();
 assert.equal(disposableStatus.source, 'file', `expected vendored file, got ${JSON.stringify(disposableStatus)}`);
-assert.ok(disposableStatus.count > 1000, `expected large disposable list, got ${disposableStatus.count}`);
+assert.ok(disposableStatus.count > 50000, `expected large merged disposable list, got ${disposableStatus.count}`);
+assert.ok(disposableStatus.upstream.length >= 3, 'expected three upstream sources');
 
 expectBlocked('a@mailinator.com', 'disposable_domain');
 expectBlocked('a@guerrillamail.com', 'disposable_domain');

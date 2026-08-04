@@ -1,6 +1,8 @@
 /**
- * Disposable / throwaway email domains from:
- * https://github.com/disposable/disposable-email-domains
+ * Disposable / throwaway email domains — merged from:
+ * - https://github.com/disposable/disposable-email-domains
+ * - https://github.com/disposable-email-domains/disposable-email-domains
+ * - https://github.com/sajjadh47/disposable-email-domains-list
  *
  * Vendored at data/disposable-email-domains.txt
  * Refresh: npm run update:disposable-domains
@@ -9,8 +11,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SOURCE_URL =
-  'https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt';
+const SOURCE_URLS = [
+  'https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt',
+  'https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf',
+  'https://raw.githubusercontent.com/sajjadh47/disposable-email-domains-list/master/domains.txt',
+] as const;
 
 /** Always merged on top of the vendored list (aliases / gaps). */
 const EXTRA_DISPOSABLE = [
@@ -99,7 +104,7 @@ function loadSet(): Set<string> {
   loadInfo = { path: null, count: cached.size, source: 'bootstrap' };
   console.warn(
     `[identityRisk] disposable-email-domains.txt missing — using ${cached.size}-domain bootstrap. ` +
-      `Run: npm run update:disposable-domains (source: ${SOURCE_URL})`
+      `Run: npm run update:disposable-domains`
   );
   return cached;
 }
@@ -110,7 +115,7 @@ export function getDisposableDomainListStatus(): {
   count: number;
   source: 'file' | 'bootstrap' | 'unloaded';
   path: string | null;
-  upstream: string;
+  upstream: readonly string[];
 } {
   if (!loadInfo) {
     loadSet();
@@ -120,7 +125,7 @@ export function getDisposableDomainListStatus(): {
     count: loadInfo?.count || 0,
     source: loadInfo?.source || 'unloaded',
     path: loadInfo?.path || null,
-    upstream: SOURCE_URL,
+    upstream: SOURCE_URLS,
   };
 }
 
@@ -147,4 +152,4 @@ export function _resetDisposableDomainCacheForTests(): void {
   loadInfo = null;
 }
 
-export const DISPOSABLE_DOMAINS_SOURCE_URL = SOURCE_URL;
+export const DISPOSABLE_DOMAINS_SOURCE_URLS = SOURCE_URLS;
