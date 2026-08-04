@@ -102,7 +102,9 @@ export function writeProfile(uid: string, patch: Partial<StoredProfile>): Stored
   }
   fs.writeFileSync(fileFor(id), serialized, 'utf8');
   // Write-through to Firestore (fire-and-forget; local file already saved).
-  void pushProfileToFirestore(JSON.parse(serialized) as StoredProfile);
+  void pushProfileToFirestore(JSON.parse(serialized) as StoredProfile).catch((err) => {
+    console.warn('[profileStore] Firestore write-through rejected (local copy saved):', err);
+  });
   return next;
 }
 
