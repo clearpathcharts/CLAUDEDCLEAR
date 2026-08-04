@@ -2008,8 +2008,23 @@ async function startServer() {
   });
 
   app.get('/api/secrets/status', (req, res) => {
-    // Boolean presence only — never returns key material
-    res.json({ secrets: getSecretPresenceReport() });
+    // Boolean presence only — never returns key material.
+    // FIREBASE_SERVICE_ACCOUNT may be false on Cloud Run while Admin still works via ADC.
+    const admin = getFirebaseAdminStatus();
+    res.json({
+      secrets: getSecretPresenceReport(),
+      firebaseAdmin: {
+        envServiceAccountJson: Boolean(
+          String(process.env.FIREBASE_SERVICE_ACCOUNT || '').trim()
+        ),
+        configured: admin.configured,
+        firestoreDurable: admin.firestore === true,
+        mode: admin.mode,
+        projectId: admin.projectId,
+        probed: admin.probed === true,
+        ...(admin.reason ? { reason: admin.reason } : {}),
+      },
+    });
   });
 
   // Social OS is disconnected from this host — runs as social-os/ on its own domain.
