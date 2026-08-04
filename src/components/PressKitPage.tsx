@@ -157,17 +157,21 @@ export default function PressKitPage() {
         </section>
 
         <footer className="pt-6 border-t border-white/10 text-sm md:text-base text-zinc-500 space-y-3">
+          <nav className="flex flex-wrap gap-x-4 gap-y-2 text-xs uppercase tracking-widest font-mono" aria-label="Accessibility and site links">
+            <a href="/accessibility" className="text-[#00E5FF] hover:underline font-bold">
+              Accessibility · WCAG
+            </a>
+            <a href="/ui" className="text-[#00E5FF]/80 hover:underline">
+              Accessible UI Modes
+            </a>
+            <a href="/about" className="text-[#00E5FF] hover:underline">
+              About ClearPath Trader
+            </a>
+          </nav>
           <p>
             For interviews, quotes, or assets, contact{' '}
             <a href={`mailto:${PRESS_KIT.contactEmail}`} className="text-[#00E5FF] hover:underline">
               {PRESS_KIT.contactEmail}
-            </a>
-            .
-          </p>
-          <p>
-            Also see{' '}
-            <a href="/about" className="text-[#00E5FF] hover:underline">
-              About ClearPath Trader
             </a>
             .
           </p>

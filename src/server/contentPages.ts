@@ -133,17 +133,17 @@ export function markdownToHtml(md: string): string {
 
 const NAV_LINKS = [
   { href: '/', label: 'Terminal' },
+  { href: '/accessibility', label: 'Accessibility · WCAG' },
+  { href: '/ui', label: 'Accessible UI' },
   { href: '/learn', label: 'Learn' },
   { href: '/guides', label: 'Guides' },
   { href: '/glossary', label: 'Glossary' },
   { href: '/faq', label: 'FAQ' },
   { href: '/regions', label: 'Regions' },
-  { href: '/accessibility', label: 'Accessibility' },
   { href: '/education', label: 'Education' },
   { href: '/encyclopedia', label: 'Encyclopedia' },
   { href: '/indicators', label: 'Indicators' },
   { href: '/tools/position-size', label: 'Tools' },
-  { href: '/ui', label: 'UI Modes' },
 ];
 
 const PAGE_CSS = `
@@ -305,16 +305,16 @@ ${ctaHtml}
     <footer class="site">
       <div class="inner">
         <span>&copy; ClearPathTrader — analytics &amp; education, not a brokerage.</span>
+        <a href="/accessibility"><strong>Accessibility · WCAG</strong></a>
+        <a href="/ui">Accessible UI Modes</a>
         <a href="/learn">Learn</a>
         <a href="/guides">Guides</a>
         <a href="/glossary">Glossary</a>
         <a href="/regions">Regions</a>
-        <a href="/accessibility">Accessibility</a>
         <a href="/encyclopedia">Encyclopedia</a>
         <a href="/indicators">Indicators</a>
         <a href="/education">Education</a>
         <a href="/tools/position-size">Position size</a>
-        <a href="/ui">UI Modes</a>
         <a href="/about">About</a>
         <a href="/terms.html">Terms</a>
         <a href="/privacy.html">Privacy</a>
@@ -1230,7 +1230,7 @@ function renderAccessibilityPage(): string {
 <h2>How to get help or report a barrier</h2>
 <p>If you encounter an accessibility barrier on clearpathtrader.com, email <a href="mailto:accessibility@clearpathtrader.com">accessibility@clearpathtrader.com</a> with the page URL, what you were trying to do, and the assistive technology you use (if any). We prioritize fixes that block core tasks: reading education, browsing the encyclopedia, and signing in.</p>
 <h2>Standards &amp; scope</h2>
-<p>This statement covers the public marketing site, education content, encyclopedia pages, and the authenticated ClearPath terminal. Last reviewed: July 2026.</p>
+<p>This statement covers the public marketing site, education content, encyclopedia pages, and the authenticated ClearPath terminal. Last reviewed: August 2026.</p>
 <p><a href="/ui">Explore accessible UI modes →</a> · <a href="/faq">FAQ</a> · <a href="/">Launch terminal</a></p>
 </article>`;
 }

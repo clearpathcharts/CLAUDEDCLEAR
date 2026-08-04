@@ -175,12 +175,14 @@ export default function TradingReimaginedLanding() {
       </main>
 
       <footer className="relative z-10 text-center py-8 text-zinc-600 text-[10px] uppercase tracking-widest font-mono border-t border-white/5">
-        <div className="flex flex-wrap justify-center gap-4 mb-4">
+        <nav className="flex flex-wrap justify-center gap-4 mb-4" aria-label="Accessibility and legal links">
+          <a href="/accessibility" className="text-[#00FFFF] hover:text-white transition-colors font-bold">Accessibility · WCAG</a>
+          <a href="/ui" className="hover:text-zinc-400 transition-colors">Accessible UI Modes</a>
           <a href="/about" className="hover:text-zinc-400 transition-colors">About</a>
           <a href="/terms.html" className="hover:text-zinc-400 transition-colors">Terms</a>
           <a href="/privacy.html" className="hover:text-zinc-400 transition-colors">Privacy</a>
           <a href="/disclaimer.html" className="hover:text-zinc-400 transition-colors">Disclaimer</a>
-        </div>
+        </nav>
         <p>&copy; {new Date().getFullYear()} Clear Path Markets Science</p>
         <GovernmentFinanceLinks compact />
       </footer>

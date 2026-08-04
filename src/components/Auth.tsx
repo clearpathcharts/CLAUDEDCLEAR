@@ -1927,7 +1927,19 @@ Not the other way around.`}
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
           </div>
-          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2">
+          <nav
+            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest mb-2"
+            aria-label="Site and accessibility links"
+          >
+            <a
+              href="/accessibility"
+              className="text-[#00FFFF] hover:text-white transition-colors font-bold"
+            >
+              Accessibility · WCAG
+            </a>
+            <a href="/ui" className="text-zinc-300 hover:text-[#B026FF] transition-colors">
+              Accessible UI Modes
+            </a>
             <a href="/if-trading-and-chatgpt-had-a-baby" className="text-[#FF1493] hover:text-[#00FFFF] transition-colors font-bold">
               Trading × AI
             </a>
@@ -1943,14 +1955,8 @@ Not the other way around.`}
             <a href="/glossary" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Glossary
             </a>
-            <a href="/accessibility" className="text-zinc-300 hover:text-[#00FFFF] transition-colors">
-              Accessibility
-            </a>
             <a href="/faq" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               FAQ
-            </a>
-            <a href="/ui" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
-              UI Modes
             </a>
             <a href="/education" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
               Education

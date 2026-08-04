@@ -16,7 +16,18 @@ export default function LegalFooter({ profile, onShowTerms }: LegalFooterProps) 
           <span className="mr-2" style={{ color: profile?.borderA }}>⚖</span>
           <span style={{ color: profile?.borderA }}>Legal Positioning</span> — “Provides financial data visualization with optional user-controlled presentation adjustments for accessibility and visual clarity. The system does not evaluate, alter, or advise on financial decisions.”
         </div>
-        <div className="flex justify-center items-center space-x-6 text-sm font-bold pt-2 flex-wrap gap-y-2">
+        <nav
+          className="flex justify-center items-center space-x-6 text-sm font-bold pt-2 flex-wrap gap-y-2"
+          aria-label="Accessibility and legal links"
+        >
+          <a href="/accessibility" className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA || '#00FFFF' }}>
+            Accessibility · WCAG
+          </a>
+          <span className="opacity-50">•</span>
+          <a href="/ui" className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA }}>
+            Accessible UI Modes
+          </a>
+          <span className="opacity-50">•</span>
           <a href="/platform-scope.html" className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA }}>Platform Scope</a>
           <span className="opacity-50">•</span>
           {onShowTerms ? (
@@ -33,10 +44,10 @@ export default function LegalFooter({ profile, onShowTerms }: LegalFooterProps) 
             <a href="/disclaimer.html" className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA }}>Disclaimer</a>
           )}
           <span className="opacity-50">•</span>
-          <button className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA }}>CPT Bible</button>
+          <button type="button" className="hover:underline transition-all hover:scale-105" style={{ color: profile?.borderA }}>CPT Bible</button>
           <span className="opacity-50">•</span>
           <span className="opacity-50">© {new Date().getFullYear()} Clear Path Markets Science</span>
-        </div>
+        </nav>
       </div>
       <GovernmentFinanceLinks compact />
     </footer>
