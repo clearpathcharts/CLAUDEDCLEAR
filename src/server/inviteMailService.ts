@@ -19,6 +19,7 @@ import {
   recordFounderInvite,
 } from './waitlistConvertService';
 import { getAdminFirestore } from './firebaseAdmin';
+import { getRegistrationEmailBlock } from './identityRisk';
 
 const SEND_LOG_COLLECTION = 'private_account_invite_sends';
 const SEND_LOG_DIR = path.join(process.cwd(), 'data', 'private_accounts');
@@ -61,16 +62,10 @@ type SendLogEntry = {
 
 function isJunkEmail(email: string): boolean {
   const e = normalizeEmail(email);
-  return (
-    !e.includes('@') ||
-    e.endsWith('@clearpath.test') ||
-    e.endsWith('.test') ||
-    e.endsWith('@example.com') ||
-    e.includes('probe@') ||
-    e.includes('recovery-probe') ||
-    e.includes('$(') ||
-    e.includes('+smoke')
-  );
+  if (!e.includes('@') || e.includes('$(') || e.includes('+smoke') || e.includes('recovery-probe')) {
+    return true;
+  }
+  return getRegistrationEmailBlock(e).blocked;
 }
 
 /** Handles / email-local-parts are not real names for "Hi X," greetings. */

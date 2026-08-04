@@ -28,15 +28,15 @@ async function main() {
   await assert.rejects(
     () =>
       auth.provisionPrivateUser({
-        email: 'ghost@example.com',
+        email: 'ghost.durable@gmail.com',
         password: 'password123',
-        displayName: 'Ghost',
+        displayName: 'Ghost Durable',
       }),
     (err: any) => err instanceof auth.PrivateAuthError && err.status === 503
   );
 
   await assert.rejects(
-    () => auth.loginPrivateUser({ email: 'ghost@example.com', password: 'password123' }),
+    () => auth.loginPrivateUser({ email: 'ghost.durable@gmail.com', password: 'password123' }),
     (err: any) => err instanceof auth.PrivateAuthError && err.status === 503
   );
 
@@ -60,15 +60,16 @@ async function main() {
   await assert.rejects(
     () =>
       recovery.importPrivateMembers({
-        members: [{ email: 'a@example.com', displayName: 'A' }],
+        members: [{ email: 'dryrun.import@gmail.com', displayName: 'Dry Run' }],
         dryRun: false,
       }),
     (err: any) => err instanceof auth.PrivateAuthError && err.status === 503
   );
 
   // Dry-run import is allowed without durable store (no writes).
+  // Use a non-blocklisted email (example.com is hard-rejected as reserved).
   const dry = await recovery.importPrivateMembers({
-    members: [{ email: 'a@example.com', displayName: 'A' }],
+    members: [{ email: 'dryrun.import@gmail.com', displayName: 'Dry Run' }],
     dryRun: true,
   });
   assert.equal(dry.created, 1);

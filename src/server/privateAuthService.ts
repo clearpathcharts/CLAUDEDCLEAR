@@ -19,7 +19,12 @@ import {
   stripePrivateStoreConfigured,
   upsertStripePrivateUser,
 } from './stripePrivateAccountStore';
-import { assessIdentityRisk, emailRiskReasons } from './identityRisk';
+import {
+  assertRegistrationEmailAllowedAsync,
+  assertRegistrationNameAllowed,
+  assessIdentityRisk,
+  emailRiskReasons,
+} from './identityRisk';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -798,6 +803,18 @@ export async function provisionPrivateUser(input: {
   if (displayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
   if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
 
+  // Hard no-entry: fake / test / disposable / reserved emails + fake names never create an account.
+  // Founder seed / recovery / waitlist-convert may skip via skipIdentityRisk.
+  if (!input.skipIdentityRisk) {
+    try {
+      await assertRegistrationEmailAllowedAsync(email);
+      assertRegistrationNameAllowed(displayName);
+    } catch (err) {
+      const e = err as Error & { status?: number; code?: string };
+      throw new PrivateAuthError(e.message || 'This email is not allowed for registration.', e.status || 400, e.code);
+    }
+  }
+
   const existingRemote = await findDurableUserByEmail(email);
   const existingLocal = isProdEnv() ? null : readLocalUsers().find((u) => u.email === email);
   if (existingRemote || existingLocal) {
@@ -1077,6 +1094,14 @@ export async function resubmitIdentity(input: {
   const newDisplayName = (input.newDisplayName || '').trim();
   if (!newEmail.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
   if (newDisplayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
+
+  try {
+    await assertRegistrationEmailAllowedAsync(newEmail);
+    assertRegistrationNameAllowed(newDisplayName);
+  } catch (err) {
+    const e = err as Error & { status?: number; code?: string };
+    throw new PrivateAuthError(e.message || 'This email is not allowed for registration.', e.status || 400, e.code);
+  }
 
   if (newEmail !== found.email) {
     const clash = await findUserRecordByEmail(newEmail);

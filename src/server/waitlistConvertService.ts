@@ -14,6 +14,7 @@ import {
   resetPrivateUserPassword,
   type PublicPrivateUser,
 } from './privateAuthService';
+import { getRegistrationEmailBlock } from './identityRisk';
 
 const WAITLIST_COLLECTION = 'site_registrations';
 const INVITES_COLLECTION = 'private_account_invites';
@@ -51,7 +52,8 @@ export type FounderInviteSafe = {
 
 function isTestEmail(email: string): boolean {
   const e = normalizeEmail(email);
-  return e.endsWith('@clearpath.test') || e.endsWith('.test') || e.includes('+smoke');
+  if (e.endsWith('@clearpath.test') || e.includes('+smoke')) return true;
+  return getRegistrationEmailBlock(e).blocked;
 }
 
 /** Already released out of the active waitlist — do not re-convert / re-reset. */

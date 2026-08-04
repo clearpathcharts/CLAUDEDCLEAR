@@ -26,6 +26,7 @@
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
+    "update:disposable-domains": "bash scripts/update-disposable-domains.sh",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",

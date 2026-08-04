@@ -11,8 +11,28 @@ import {
   sendIdentityPreregistrationEmail,
   sendWaitlistConfirmationEmail,
 } from './registrationEmail';
+import {
+  assertRegistrationEmailAllowedAsync,
+  getRegistrationNameBlock,
+} from './identityRisk';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function assertEmailAllowed(email: string): Promise<void> {
+  try {
+    await assertRegistrationEmailAllowedAsync(email);
+  } catch (err) {
+    const e = err as Error & { status?: number };
+    throw new RegistrationError(e.message || 'This email is not allowed for registration.', e.status || 400);
+  }
+}
+
+function assertNameAllowed(name: string): void {
+  const block = getRegistrationNameBlock(name);
+  if (block.blocked) {
+    throw new RegistrationError(block.reason || 'This name is not allowed for registration.', 400);
+  }
+}
 
 const IDENTITY_TIERS: Record<string, { name: string }> = {
   blue: { name: 'Retail Trader' },
@@ -59,9 +79,11 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
   if (!firstName || firstName.length > 200) {
     throw new RegistrationError('A valid first name is required.');
   }
+  assertNameAllowed(firstName);
   if (!emailAddress || !EMAIL_RE.test(emailAddress) || emailAddress.length > 320) {
     throw new RegistrationError('A valid email address is required.');
   }
+  await assertEmailAllowed(emailAddress);
   if (!country) {
     throw new RegistrationError('Country of residence is required.');
   }
@@ -118,6 +140,10 @@ export async function registerIdentity(input: IdentityInput): Promise<Registrati
   }
   if (!emailAddress || !EMAIL_RE.test(emailAddress) || emailAddress.length > 320) {
     throw new RegistrationError('A valid email address is required.');
+  }
+  await assertEmailAllowed(emailAddress);
+  if (input.displayName?.trim()) {
+    assertNameAllowed(input.displayName.trim());
   }
 
   if (await emailExistsInIdentity(emailAddress)) {
