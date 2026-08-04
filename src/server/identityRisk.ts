@@ -7,6 +7,7 @@
  */
 
 import dns from 'node:dns/promises';
+import { isDisposableEmailDomain } from './disposableEmailDomains';
 
 export type IdentityRiskLevel = 'clean' | 'suspect';
 
@@ -108,55 +109,6 @@ const BLOCKED_DOMAINS = new Set([
   'email.com',
   'domain.com',
 ]);
-
-/** Disposable / throwaway providers — block entire domain. */
-const DISPOSABLE_DOMAINS = new Set([
-  'mailinator.com',
-  'guerrillamail.com',
-  'guerrillamail.org',
-  'guerrillamailblock.com',
-  '10minutemail.com',
-  'tempmail.com',
-  'temp-mail.org',
-  'tempmailo.com',
-  'trashmail.com',
-  'trashmail.me',
-  'yopmail.com',
-  'yopmail.fr',
-  'sharklasers.com',
-  'grr.la',
-  'guerrillamail.biz',
-  'maildrop.cc',
-  'getnada.com',
-  'throwawaymail.com',
-  'throwaway.email',
-  'dispostable.com',
-  'mintemail.com',
-  'spamgourmet.com',
-  'emailondeck.com',
-  'fakeinbox.com',
-  'discard.email',
-  'mailnesia.com',
-  'moakt.com',
-  'moakt.cc',
-  'tempail.com',
-  'mailcatch.com',
-  'mytemp.email',
-  'tempinbox.com',
-]);
-
-const DISPOSABLE_DOMAIN_SUBSTRINGS = [
-  'tempmail',
-  'trashmail',
-  'guerrillamail',
-  'mailinator',
-  'yopmail',
-  'throwaway',
-  'fakeinbox',
-  'disposable',
-  '10minutemail',
-  'moakt',
-];
 
 /** Local-part usernames that are never real customers (before +tag). */
 const BLOCKED_LOCAL_PARTS = new Set([
@@ -392,10 +344,10 @@ function isKeyboardSmashToken(token: string): boolean {
 function domainIsBlocked(domain: string): RegistrationBlockResult | null {
   if (!domain) return { blocked: true, code: 'invalid_email', reason: 'Invalid email domain.' };
 
-  if (BLOCKED_DOMAINS.has(domain) || DISPOSABLE_DOMAINS.has(domain)) {
+  if (BLOCKED_DOMAINS.has(domain)) {
     return {
       blocked: true,
-      code: DISPOSABLE_DOMAINS.has(domain) ? 'disposable_domain' : 'blocked_domain',
+      code: 'blocked_domain',
       reason: 'This email domain is not allowed for registration.',
     };
   }
@@ -419,14 +371,13 @@ function domainIsBlocked(domain: string): RegistrationBlockResult | null {
     };
   }
 
-  for (const frag of DISPOSABLE_DOMAIN_SUBSTRINGS) {
-    if (domain.includes(frag)) {
-      return {
-        blocked: true,
-        code: 'disposable_domain',
-        reason: 'Disposable email addresses are not allowed.',
-      };
-    }
+  // Full list from disposable/disposable-email-domains (~75k domains).
+  if (isDisposableEmailDomain(domain)) {
+    return {
+      blocked: true,
+      code: 'disposable_domain',
+      reason: 'Disposable email addresses are not allowed.',
+    };
   }
 
   return null;

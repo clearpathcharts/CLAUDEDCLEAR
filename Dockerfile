@@ -19,6 +19,8 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/public ./public
+# Vendored disposable domain blocklist (https://github.com/disposable/disposable-email-domains)
+COPY --from=build /app/data/disposable-email-domains.txt ./data/disposable-email-domains.txt
 
 RUN chown -R clearpath:clearpath /app
 

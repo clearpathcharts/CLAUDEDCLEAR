@@ -12,6 +12,7 @@ import {
   getRegistrationEmailBlock,
   getRegistrationNameBlock,
 } from '../src/server/identityRisk';
+import { getDisposableDomainListStatus } from '../src/server/disposableEmailDomains';
 
 function expectBlocked(email: string, code?: string) {
   const b = getRegistrationEmailBlock(email);
@@ -150,7 +151,11 @@ expectBlocked('aaaaaa@gmail.com', 'keyboard_smash');
 expectBlocked('xxxxxxxx@gmail.com', 'keyboard_smash');
 expectBlocked('123123@gmail.com', 'blocked_local'); // numeric-only catches first
 
-// --- Hard block: disposables ---
+// --- Vendored disposable list (~75k from disposable/disposable-email-domains) ---
+const disposableStatus = getDisposableDomainListStatus();
+assert.equal(disposableStatus.source, 'file', `expected vendored file, got ${JSON.stringify(disposableStatus)}`);
+assert.ok(disposableStatus.count > 1000, `expected large disposable list, got ${disposableStatus.count}`);
+
 expectBlocked('a@mailinator.com', 'disposable_domain');
 expectBlocked('a@guerrillamail.com', 'disposable_domain');
 expectBlocked('a@10minutemail.com', 'disposable_domain');
@@ -169,6 +174,8 @@ expectBlocked('a@spamgourmet.com', 'disposable_domain');
 expectBlocked('a@moakt.com', 'disposable_domain');
 expectBlocked('a@mailnesia.com', 'disposable_domain');
 expectBlocked('a@fakeinbox.com', 'disposable_domain');
+// Parent-domain match from the big list
+expectBlocked('someone@mail.mailinator.com', 'disposable_domain');
 
 // --- Allowed real customer-shaped emails ---
 expectAllowed('alex.rivera@gmail.com');
