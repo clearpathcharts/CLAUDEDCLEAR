@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ClearPath Automation Console — private multi-channel education publisher">
+  <title>ClearPath Automation Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <main class="container" id="app">
+    <div class="menu">
+      <div class="avatar">
+        <span class="thumb" aria-hidden="true">CP</span>
+        <span class="name"><span class="brand-cyan">CLEAR PATH</span> <span class="brand-magenta">MS</span></span>
+      </div>
+      <nav class="primary" id="main-nav">
+        <a href="#" class="menu-item active" data-view="publish">
+          <span class="nav-ico">▸</span>
+          <span class="desc">Publish</span>
+        </a>
+        <a href="#" class="menu-item" data-view="queue">
+          <span class="nav-ico">☰</span>
+          <span class="desc">Queue</span>
+        </a>
+        <a href="#" class="menu-item" data-view="treasure">
+          <span class="nav-ico">◇</span>
+          <span class="desc">Treasure</span>
+        </a>
+        <a href="#" class="menu-item" data-view="channels">
+          <span class="nav-ico">◎</span>
+          <span class="desc">Channels</span>
+        </a>
+        <a href="#" class="menu-item" data-view="apikeys">
+          <span class="nav-ico">Ky</span>
+          <span class="desc">API Keys</span>
+        </a>
+        <a href="#" class="menu-item" data-view="analytics">
+          <span class="nav-ico">▣</span>
+          <span class="desc">Analytics</span>
+        </a>
+        <a href="#" class="menu-item" data-view="seo">
+          <span class="nav-ico">SEO</span>
+          <span class="desc">SEO</span>
+        </a>
+        <a href="#" class="menu-item" data-view="hashtags">
+          <span class="nav-ico">#</span>
+          <span class="desc">Hashtags</span>
+        </a>
+        <a href="#" class="menu-item" data-view="discovery">
+          <span class="nav-ico">⌕</span>
+          <span class="desc">Discovery</span>
+        </a>
+        <a href="#" class="menu-item" data-view="mission">
+          <span class="nav-ico">◆</span>
+          <span class="desc">Mission</span>
+        </a>
+      </nav>
+      <span class="expander" aria-hidden="true">»</span>
+    </div>
+
+    <div class="topbar">
+      <h1 class="current">Publish</h1>
+      <span class="search">
+        <label for="queue-filter">⌕</label>
+        <input id="queue-filter" class="bar" type="text" placeholder="Filter queue..." />
+      </span>
+      <nav>
+        <a class="menu-item" href="https://clearpathtrader.com" target="_blank" rel="noreferrer">Site</a>
+        <a class="menu-item" href="https://github.com/clearpathcharts/MARKETINGDEPT" target="_blank" rel="noreferrer">Repo</a>
+      </nav>
+    </div>
+
+    <div class="dashboard" id="view-root">
+      <!-- views injected by script -->
+    </div>
+
+    <aside class="side">
+      <div class="card status-card">
+        <header>Ops status</header>
+        <div class="content status-grid">
+          <div><span class="label">Queued</span><strong id="stat-queued">0</strong></div>
+          <div><span class="label">Ready</span><strong id="stat-ready">0</strong></div>
+          <div><span class="label">Channels on</span><strong id="stat-channels">0</strong></div>
+        </div>
+        <p class="hint" id="backend-status">Backend: checking…</p>
+        <p class="hint">Live sends need founder confirmation. Dispatch buttons appear when the ClearPath Publisher backend is running.</p>
+      </div>
+      <div class="card">
+        <header>Quick actions</header>
+        <div class="content quick-actions">
+          <button type="button" id="btn-export-all" class="btn">Export all packages</button>
+          <button type="button" id="btn-clear-queue" class="btn btn-danger">Clear queue</button>
+        </div>
+      </div>
+      <div class="card">
+        <header>Clock</header>
+        <div class="content clock-row">
+          <span id="side-date"></span>
+          <span id="side-time"></span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="bg-wash" aria-hidden="true"></div>
+  <script src="script.js"></script>
+</body>
+</html>

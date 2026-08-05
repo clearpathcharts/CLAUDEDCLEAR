@@ -133,10 +133,11 @@ const CHANNELS = [
   { id: "pinterest", name: "Pinterest", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Pins API" },
   { id: "discord", name: "Discord", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Channel webhook" },
   { id: "threads", name: "Threads", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Threads API" },
-  { id: "telegram", name: "Telegram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "@clearpathtraderfreeaccount" },
-  { id: "whatsapp", name: "WhatsApp", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Cloud API" },
+  { id: "telegram", name: "Telegram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "BotFather token + chat id (easiest win)" },
+  { id: "whatsapp", name: "WhatsApp", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Cloud API" },
   { id: "twitch", name: "Twitch", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / announcements" },
-  { id: "bluesky", name: "Bluesky", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "AT Protocol" },
+  { id: "bluesky", name: "Bluesky", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "AT Protocol app password" },
+  { id: "myspace", name: "MySpace", group: "social", engine: "ClearPath Publisher", status: "blocked", note: "No public posting API — site read-only since 2024" },
   // Professional / networking (15 — LinkedIn also in social)
   { id: "xing", name: "Xing", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
   { id: "viadeo", name: "Viadeo", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
@@ -630,11 +631,170 @@ function renderChannelGroup(title, items) {
 function renderChannels() {
   const live = CHANNELS.filter((ch) => ch.status === "connected" || ch.status === "partial");
   const pending = CHANNELS.filter((ch) => ch.status === "not_yet");
+  const blocked = CHANNELS.filter((ch) => ch.status === "blocked");
   viewRoot.innerHTML = `
     <div class="cardcolumn span-all channels-wrap">
       ${renderChannelGroup("Partial / ready code", live)}
-      ${renderChannelGroup("Not yet — separate wiring", pending)}
-      <p class="hint channel-foot">Partial = Telegram/Discord/Reddit/YouTube adapters exist. Not yet = needs API keys or webhook. Catalog = 15 social + networking list (LinkedIn counted in social).</p>
+      ${renderChannelGroup("Not yet — need API keys / approval", pending)}
+      ${renderChannelGroup("No public API (do not chase)", blocked)}
+      <p class="hint channel-foot">Open <strong>API Keys</strong> in the left nav for step-by-step how to get each credential. Partial = adapters exist. Not yet = need keys. Blocked = platform has no posting API.</p>
+    </div>
+  `;
+}
+
+/** Honest acquisition paths — do first wins first. Never invent “connected” without real keys. */
+const API_KEY_GUIDES = [
+  {
+    priority: 1,
+    id: "telegram",
+    name: "Telegram",
+    difficulty: "Easy — 10 minutes",
+    env: "TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID",
+    steps: [
+      "Open Telegram → search @BotFather → /newbot → copy the token",
+      "Create/open your channel or group → add the bot as admin",
+      "Get chat id (@channelusername or numeric id via @userinfobot)",
+      "Set both on Cloud Run env (never commit the token)",
+      "If a token was ever pasted in chat: BotFather → /revoke → make a new one",
+    ],
+  },
+  {
+    priority: 2,
+    id: "discord",
+    name: "Discord",
+    difficulty: "Easy — 5 minutes",
+    env: "DISCORD_WEBHOOK_URL",
+    steps: [
+      "Server Settings → Integrations → Webhooks → New Webhook",
+      "Pick the education channel → Copy Webhook URL",
+      "Set DISCORD_WEBHOOK_URL on Cloud Run",
+    ],
+  },
+  {
+    priority: 3,
+    id: "youtube",
+    name: "YouTube Data API",
+    difficulty: "Medium — Google Cloud OAuth",
+    env: "YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN",
+    steps: [
+      "Google Cloud Console → same project (or new) → enable YouTube Data API v3",
+      "APIs & Services → Credentials → Create OAuth client (Desktop or Web)",
+      "OAuth consent screen: External or Internal; add your Google account as tester",
+      "Use OAuth playground / a one-time local script to exchange auth code → refresh token (scope: youtube.upload)",
+      "Set the three env vars on Cloud Run; uploads default to unlisted",
+      "Remember: ClearPath file upload already posts to Telegram/Discord without YouTube",
+    ],
+  },
+  {
+    priority: 4,
+    id: "reddit",
+    name: "Reddit",
+    difficulty: "Medium",
+    env: "REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_SUBREDDIT",
+    steps: [
+      "reddit.com/prefs/apps → create app → type script",
+      "Copy client id + secret; use the bot/mod account username + password",
+      "Set REDDIT_SUBREDDIT (e.g. ClearMarketScience) where the account can post",
+    ],
+  },
+  {
+    priority: 5,
+    id: "facebook",
+    name: "Facebook (Meta Graph)",
+    difficulty: "Hard — App Review",
+    env: "META_APP_ID, META_APP_SECRET, META_PAGE_ID, META_PAGE_ACCESS_TOKEN",
+    steps: [
+      "developers.facebook.com → Create App → Business type",
+      "Add Facebook Login + pages_manage_posts / pages_read_engagement permissions",
+      "Connect your Facebook Page; generate a long-lived Page access token",
+      "Submit App Review for pages_manage_posts before production posting",
+      "Until approved: channel stays bridge (copy package) — do not fake “Connected”",
+    ],
+  },
+  {
+    priority: 6,
+    id: "instagram",
+    name: "Instagram (Meta Content Publishing)",
+    difficulty: "Hard — Business account + App Review",
+    env: "META_IG_USER_ID, META_PAGE_ACCESS_TOKEN (same Meta app as Facebook)",
+    steps: [
+      "Instagram Professional (Business/Creator) linked to a Facebook Page",
+      "Same Meta app → Instagram Graph API → instagram_content_publish",
+      "App Review required for live publishing",
+      "Calm still images / calm video only — no flash patterns",
+    ],
+  },
+  {
+    priority: 7,
+    id: "linkedin",
+    name: "LinkedIn",
+    difficulty: "Hard — Marketing Developer Platform",
+    env: "LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_ACCESS_TOKEN, LINKEDIN_AUTHOR_URN",
+    steps: [
+      "linkedin.com/developers → Create app → request Community Management / Share on LinkedIn products",
+      "Many education orgs need LinkedIn partnership approval — expect wait time",
+      "Until approved: bridge package only",
+    ],
+  },
+  {
+    priority: 8,
+    id: "tiktok",
+    name: "TikTok",
+    difficulty: "Hard — Content Posting API audit",
+    env: "TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_ACCESS_TOKEN",
+    steps: [
+      "developers.tiktok.com → Content Posting API",
+      "App audit required; calm static/caption-led edits only for ClearPath mission",
+    ],
+  },
+  {
+    priority: 9,
+    id: "myspace",
+    name: "MySpace",
+    difficulty: "Impossible right now",
+    env: "(none)",
+    steps: [
+      "MySpace has been read-only (no new posts/uploads) since late 2024",
+      "Old developer.myspace.com / OpenSocial APIs are dead — do not buy “MySpace API” packages",
+      "If the brand relaunches with a real API later, we can add an adapter then",
+      "Do not block the rest of the stack waiting on MySpace",
+    ],
+  },
+];
+
+function renderApiKeys() {
+  viewRoot.innerHTML = `
+    <div class="cardcolumn span-all">
+      <div class="card">
+        <header><span class="title">How to get APIs — founder order</span></header>
+        <div class="content">
+          <p class="hint">You do <strong>not</strong> need every API before publishing. ClearPath hosts the file; Telegram + Discord can ship today. YouTube/Meta come next. MySpace has no posting API.</p>
+          <ol class="api-order">
+            <li>Telegram + Discord (minutes)</li>
+            <li>YouTube OAuth (optional — same ClearPath upload)</li>
+            <li>Reddit script app</li>
+            <li>Meta (Facebook + Instagram) App Review</li>
+            <li>LinkedIn / TikTok when approved</li>
+            <li>Skip MySpace until they relaunch a real API</li>
+          </ol>
+        </div>
+      </div>
+      ${API_KEY_GUIDES.map(
+        (g) => `
+        <div class="card api-guide" data-api="${g.id}">
+          <header>
+            <span class="title">${g.priority}. ${g.name}</span>
+            <span class="badge ${g.id === "myspace" ? "blocked" : "partial"}">${escapeHtml(g.difficulty)}</span>
+          </header>
+          <div class="content">
+            <p class="hint"><code>${escapeHtml(g.env)}</code></p>
+            <ol class="api-steps">
+              ${g.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
+            </ol>
+          </div>
+        </div>`,
+      ).join("")}
+      <p class="hint channel-foot">Set secrets only on Cloud Run → Edit &amp; deploy → Variables. Never commit tokens. Never paste live bot tokens into chat.</p>
     </div>
   `;
 }
@@ -1223,6 +1383,7 @@ function render() {
   if (view === "queue") return renderQueue();
   if (view === "treasure") return renderTreasure();
   if (view === "channels") return renderChannels();
+  if (view === "apikeys") return renderApiKeys();
   if (view === "analytics") return renderAnalytics();
   if (view === "seo") return renderSeo();
   if (view === "hashtags") return renderHashtags();

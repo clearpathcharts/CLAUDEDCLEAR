@@ -33,13 +33,32 @@
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
+  overflow-y: auto;
 }
-html::-webkit-scrollbar {
-  width: 6px;
-  background: #555555;
+html,
+body {
+  height: auto;
+  min-height: 100%;
 }
-html::-webkit-scrollbar-thumb {
-  background: #151515;
+/* Visible vertical scrollbar (overlay often hides the bar on Cloud Run / Chromium) */
+html::-webkit-scrollbar,
+main .dashboard::-webkit-scrollbar,
+main .side::-webkit-scrollbar,
+main .menu::-webkit-scrollbar {
+  width: 12px;
+  background: rgba(5, 8, 16, 0.95);
+}
+html::-webkit-scrollbar-thumb,
+main .dashboard::-webkit-scrollbar-thumb,
+main .side::-webkit-scrollbar-thumb,
+main .menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--cp-cyan), var(--cp-magenta));
+  border-radius: 8px;
+  border: 2px solid rgba(5, 8, 16, 0.95);
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-cyan) rgba(5, 8, 16, 0.95);
 }
 
 * {
@@ -63,10 +82,11 @@ body {
   -webkit-box-pack: center;
   -ms-flex-pack: center;
   justify-content: center;
-  -webkit-box-align: center;
-  -ms-flex-align: center;
-  align-items: center;
+  -webkit-box-align: flex-start;
+  -ms-flex-align: start;
+  align-items: flex-start;
   min-height: 100vh;
+  overflow-y: auto;
   position: relative;
 }
 body .bg-wash {
@@ -121,13 +141,16 @@ main .menu {
   -webkit-transition: all 0.3s ease;
   -o-transition: all 0.3s ease;
   transition: all 0.3s ease;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   z-index: 2;
   -webkit-backdrop-filter: blur(1rem);
   backdrop-filter: blur(1rem);
   border-right: solid 1px transparent;
   border-image: linear-gradient(180deg, var(--cp-magenta), var(--cp-cyan)) 1;
   box-shadow: inset -1px 0 12px rgba(0, 210, 255, 0.12);
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-cyan) rgba(5, 8, 16, 0.95);
 }
 main .menu:hover,
 main .menu:active {
@@ -445,16 +468,12 @@ main .dashboard {
   display: grid;
   grid-gap: var(--o-padding);
   position: relative;
-  overflow: overlay;
-}
-main .dashboard::-webkit-scrollbar,
-main .side::-webkit-scrollbar {
-  width: 2px;
-  background: var(--c-darker);
-}
-main .dashboard::-webkit-scrollbar-thumb,
-main .side::-webkit-scrollbar-thumb {
-  background: var(--c-bg-elements);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-cyan) rgba(5, 8, 16, 0.95);
 }
 main .dashboard .cardcolumn {
   display: -webkit-box;
@@ -538,7 +557,12 @@ main .side {
   gap: var(--o-padding);
   -ms-flex-line-pack: start;
   align-content: flex-start;
-  overflow: overlay;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cp-cyan) rgba(5, 8, 16, 0.95);
   -webkit-box-ordinal-group: 0;
   -ms-flex-order: -1;
   order: -1;
@@ -629,7 +653,7 @@ main .side .weather .meta .datetime .time {
     margin: var(--o-padding);
     -webkit-box-shadow: 0 0px 1rem #0003;
     box-shadow: 0 0px 1rem #0003;
-    overflow: hidden;
+    overflow: visible;
   }
   main {
     min-height: 500px;
