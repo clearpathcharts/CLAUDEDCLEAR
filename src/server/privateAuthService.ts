@@ -5,8 +5,9 @@
  *   2) Stripe Customer metadata (STRIPE_SECRET_KEY) — survives Cloud Run redeploys
  * Local file is a cache / offline-dev fallback only — never source of truth in production.
  *
- * Identity quarantine: suspect emails/names create pending_confirm accounts;
- * declined/expired accounts refuse dashboard entry ("Have a good one").
+ * Hard no-entry blocks fake/disposable emails at register.
+ * Soft quarantine no longer traps password login — correct password gets in
+ * (except declined/expired). Declined/expired still refuse entry ("Have a good one").
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,6 +25,7 @@ import {
   assertRegistrationNameAllowed,
   assessIdentityRisk,
   emailRiskReasons,
+  getRegistrationEmailBlock,
 } from './identityRisk';
 
 const scrypt = promisify(crypto.scrypt);
@@ -821,9 +823,20 @@ export async function provisionPrivateUser(input: {
     throw new PrivateAuthError('An account with this email already exists. Use Private Login.', 409);
   }
 
-  const risk = input.skipIdentityRisk
-    ? { risk: 'clean' as const, reasons: [] as string[] }
-    : assessIdentityRisk({ email, displayName });
+  // Hard no-entry already ran above. Soft "suspect" quarantine used to lock people out
+  // after they chose a password — that is gone. Real email + password = active account.
+  if (!input.skipIdentityRisk) {
+    const risk = assessIdentityRisk({ email, displayName });
+    if (risk.risk === 'suspect') {
+      await logIdentityAttempt({
+        email,
+        displayName,
+        reasons: [...risk.reasons, 'register_advisory_only'],
+        ip: input.meta?.ip,
+        userAgent: input.meta?.userAgent,
+      });
+    }
+  }
 
   const { hash, salt } = await hashPassword(password);
   const record: PrivateUserRecord = {
@@ -837,41 +850,6 @@ export async function provisionPrivateUser(input: {
   };
 
   const writeOpts = { tempPassword: input.tempPassword || undefined };
-
-  if (risk.risk === 'suspect') {
-    await logIdentityAttempt({
-      email,
-      displayName,
-      reasons: risk.reasons,
-      ip: input.meta?.ip,
-      userAgent: input.meta?.userAgent,
-    });
-    record.identityStatus = 'pending_confirm';
-    record.identityRiskReasons = risk.reasons;
-    record.identityEmailWasSuspect = emailRiskReasons(risk.reasons);
-    const { rawToken } = mintChallenge(record);
-
-    if (hasDurablePrivateStore()) {
-      const ok = await upsertDurableUser(record, writeOpts);
-      if (!ok) {
-        throw new PrivateAuthError(
-          'Failed to persist private account to durable store (Firestore/Stripe). Account was not created.',
-          503
-        );
-      }
-      upsertLocalUser(record);
-    } else {
-      upsertLocalUser(record);
-    }
-
-    return {
-      kind: 'pending_confirm',
-      user: toPublic(record),
-      reasons: risk.reasons,
-      rawChallengeToken: rawToken,
-      emailWasSuspect: Boolean(record.identityEmailWasSuspect),
-    };
-  }
 
   if (hasDurablePrivateStore()) {
     const ok = await upsertDurableUser(record, writeOpts);
@@ -1000,44 +978,32 @@ export async function loginPrivateUser(input: {
     });
   }
 
-  // Retroactive quarantine: accounts created before the gate (or without status)
-  // still get caught on password login when email/name look fake.
-  if (!found.identityStatus || found.identityStatus === 'ok') {
-    const risk = assessIdentityRisk({ email: found.email, displayName: found.displayName });
-    if (risk.risk === 'suspect') {
-      await logIdentityAttempt({
-        email: found.email,
-        displayName: found.displayName,
-        reasons: [...risk.reasons, 'retroactive_login'],
-      });
-      found.identityStatus = 'pending_confirm';
-      found.identityRiskReasons = risk.reasons;
-      found.identityEmailWasSuspect = emailRiskReasons(risk.reasons);
-      mintChallenge(found);
-      await persistUser(found);
+  // Correct password wins. Clear leftover soft quarantine so real members are not stuck
+  // on "enter real information" after we already hard-block fakes at register time.
+  // Still refuse login if the email itself is on the hard no-entry list.
+  if (found.identityStatus === 'pending_confirm') {
+    const hard = getRegistrationEmailBlock(found.email);
+    if (hard.blocked) {
       return {
         kind: 'pending_confirm',
         user: toPublic(found),
-        reasons: risk.reasons,
+        reasons: found.identityRiskReasons || [hard.code || 'blocked_email'],
       };
     }
-  }
-
-  if (found.identityStatus === 'pending_confirm') {
-    return {
-      kind: 'pending_confirm',
-      user: toPublic(found),
-      reasons: found.identityRiskReasons || [],
-    };
+    found.identityStatus = 'ok';
+    found.identityRiskReasons = [];
+    found.identityEmailWasSuspect = false;
+    found.identityChallengeTokenHash = undefined;
+    found.identityChallengeExpiresAt = undefined;
   }
 
   found.lastLoginAt = new Date().toISOString();
   upsertLocalUser(found);
   const durableOk = await upsertDurableUser(found);
   if (isProdEnv() && !durableOk) {
-    throw new PrivateAuthError(
-      'Private login could not update durable store. Try again shortly.',
-      503
+    // Password already verified — do not trap the member behind a metadata write.
+    console.warn(
+      `[privateAuth] login ok for ${found.email} but lastLoginAt durable write failed; granting session anyway`
     );
   }
   return { kind: 'ok', user: toPublic(found) };
@@ -1309,30 +1275,24 @@ export async function assertSessionIdentityAllowed(input: {
     };
   }
 
-  if (!found.identityStatus || found.identityStatus === 'ok') {
-    const risk = assessIdentityRisk({ email: found.email, displayName: found.displayName });
-    if (risk.risk === 'suspect') {
-      found.identityStatus = 'pending_confirm';
-      found.identityRiskReasons = risk.reasons;
-      found.identityEmailWasSuspect = emailRiskReasons(risk.reasons);
-      mintChallenge(found);
-      await persistUser(found);
+  // Soft quarantine must not keep a valid cookie session locked out.
+  // Hard-blocked emails still cannot use the desk.
+  if (found.identityStatus === 'pending_confirm') {
+    const hard = getRegistrationEmailBlock(found.email);
+    if (hard.blocked) {
       return {
         allowed: false,
         identityStatus: 'pending_confirm',
-        reasons: risk.reasons,
+        reasons: found.identityRiskReasons || [hard.code || 'blocked_email'],
         user: toPublic(found),
       };
     }
-  }
-
-  if (found.identityStatus === 'pending_confirm') {
-    return {
-      allowed: false,
-      identityStatus: 'pending_confirm',
-      reasons: found.identityRiskReasons || [],
-      user: toPublic(found),
-    };
+    found.identityStatus = 'ok';
+    found.identityRiskReasons = [];
+    found.identityEmailWasSuspect = false;
+    found.identityChallengeTokenHash = undefined;
+    found.identityChallengeExpiresAt = undefined;
+    await persistUser(found);
   }
 
   return { allowed: true, identityStatus: found.identityStatus || 'ok', user: toPublic(found) };
