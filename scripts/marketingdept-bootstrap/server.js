@@ -28,6 +28,12 @@ import {
   listChest,
   patchChestItem,
 } from "./lib/treasureChest.js";
+import {
+  getMedia,
+  listMedia,
+  mediaLimits,
+  saveUpload,
+} from "./lib/mediaStore.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -105,6 +111,8 @@ app.get("/api/health", (_req, res) => {
     console: "social-team-private",
     time: new Date().toISOString(),
     teamConfigured: teamAuthConfigured(),
+    mediaUpload: true,
+    media: mediaLimits(),
     telegramReady: Boolean(
       (process.env.TELEGRAM_BOT_TOKEN || "").trim() &&
         (process.env.TELEGRAM_CHAT_ID || "").trim(),
@@ -115,6 +123,56 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/channels", (_req, res) => res.json(channelStatus()));
 app.get("/api/queue", (_req, res) => res.json(loadJobs()));
+
+// ClearPath-hosted media — binary body (not multipart). Headers: X-Filename, Content-Type.
+app.get("/api/media", (_req, res) => {
+  res.json({ items: listMedia(40), limits: mediaLimits() });
+});
+
+app.post(
+  "/api/upload",
+  express.raw({ type: () => true, limit: `${mediaLimits().maxMb + 2}mb` }),
+  async (req, res) => {
+    try {
+      const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || []);
+      const originalName =
+        req.get("x-filename") ||
+        req.query?.filename ||
+        `upload-${Date.now()}.mp4`;
+      const mimeType = req.get("content-type") || "application/octet-stream";
+      const record = await saveUpload({
+        buffer: buf,
+        originalName: String(originalName),
+        mimeType,
+        uploadedBy: req.user.username,
+      });
+      res.status(201).json({
+        mediaId: record.id,
+        fileName: record.originalName,
+        videoFilePath: null, // server-internal; resolved at dispatch via mediaId
+        videoUrl: record.url,
+        mimeType: record.mimeType,
+        size: record.size,
+        gcsUrl: record.gcsUrl,
+      });
+    } catch (err) {
+      res.status(400).json({ error: String(err.message || err) });
+    }
+  },
+);
+
+app.get("/media/:id", (req, res) => {
+  const media = getMedia(req.params.id);
+  if (!media) return res.status(404).json({ error: "media not found" });
+  if (media.gcsUrl && !media.filePath) return res.redirect(media.gcsUrl);
+  if (!media.filePath) return res.status(404).json({ error: "media file missing" });
+  res.setHeader("Content-Type", media.mimeType || "application/octet-stream");
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${encodeURIComponent(media.originalName || "media")}"`,
+  );
+  res.sendFile(media.filePath);
+});
 
 app.post("/api/queue", (req, res) => {
   const job = req.body;
