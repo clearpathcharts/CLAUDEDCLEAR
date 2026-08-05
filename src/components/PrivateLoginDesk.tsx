@@ -364,6 +364,11 @@ export default function PrivateLoginDesk({
 
             {step === 'identify' && (
               <form onSubmit={handleIdentify} className="space-y-4">
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  Use your real email (Gmail, Yahoo, Outlook, iCloud). First time here is normal —
+                  after Continue you will <span className="text-white font-semibold">create your password</span> on the next screen.
+                  Returning members enter the same email, then their password.
+                </p>
                 <label className="block space-y-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
                     Account email
@@ -376,7 +381,7 @@ export default function PrivateLoginDesk({
                       autoFocus
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
+                      placeholder="you@gmail.com"
                       className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
                     />
                   </div>
