@@ -4,6 +4,16 @@ Use when `clearpathcharts/MARKETINGDEPT` cannot receive pushes, but you need
 private login + Brent/Dustin/Brian accounts on Cloud Run, and/or **ClearPath-hosted
 full file upload** (so posts do not require YouTube).
 
+## Team auth (private login)
+
+```bash
+bash scripts/marketingdept-bootstrap/install-team-auth.sh ~/MARKETINGDEPT
+# or one-shot private fix:
+bash scripts/marketingdept-bootstrap/cloud-shell-private-fix.sh
+```
+
+Set `TEAM_USERS` (or `TEAM_*_PASSWORD`) and `SESSION_SECRET` on Cloud Run.
+
 ## Full file upload (no YouTube required)
 
 From a Cloud Shell clone of CLAUDEDCLEAR (this repo) and MARKETINGDEPT:
