@@ -55,8 +55,8 @@ async function initBackend() {
     const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
     if (statusEl) {
       statusEl.textContent = direct.length
-        ? `Backend: ONLINE — direct send ready: ${direct.join(", ")}`
-        : "Backend: ONLINE — add credentials in clearpath-publisher/.env to enable direct sends";
+        ? `Backend: ONLINE — Dispatch ready for: ${direct.join(", ")}`
+        : "Backend: ONLINE — set TELEGRAM_BOT_TOKEN / DISCORD_WEBHOOK_URL (etc.) in Cloud Run → Variables & secrets, then Dispatch appears for those channels";
     }
     const serverQueue = await api("/api/queue");
     if (Array.isArray(serverQueue)) {
@@ -70,7 +70,7 @@ async function initBackend() {
   } catch {
     backendOnline = false;
     if (statusEl) {
-      statusEl.textContent = "Backend: offline — using local queue + copy-package mode. Start it: npm start in clearpath-publisher.";
+      statusEl.textContent = "Backend: offline — login again or check Cloud Run. Publishing is ClearPath Publisher only (no Cursor).";
     }
   }
 }
