@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Activity,
   BarChart3,
   Cpu,
   Crown,
@@ -19,9 +18,9 @@ import { MobileCommandCenter } from "./MobileCommandCenter";
 interface ClearNavProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
-  /** @deprecated Prefer isFounder for Diagnostics / CEO — kept for call-site compat */
+  /** @deprecated Prefer isFounder for CEO — kept for call-site compat */
   isAdmin?: boolean;
-  /** Founder-only tools: CEO Dashboard + Diagnostics */
+  /** Founder-only tools: CEO Dashboard */
   isFounder?: boolean;
   onLogout?: () => void;
   /** Lean APK / installed PWA — trading-focused nav only */
@@ -42,7 +41,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   onLogout,
   lean = false,
 }) => {
-  void isAdmin; // legacy — Diagnostics/CEO use isFounder only
+  void isAdmin; // legacy — CEO uses isFounder only
   const primaryNavItems: NavItem[] = [
     {
       id: "Discovery",
@@ -96,11 +95,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             icon: Shield,
             label: "CEO DASHBOARD",
           },
-          {
-            id: "Diagnostics",
-            icon: Activity,
-            label: "DIAGNOSTICS",
-          },
         ]
       : []),
 
@@ -150,7 +144,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isPink =
       item.id === "Biography" ||
-      item.id === "Diagnostics" ||
       item.id === "CeoDashboard" ||
       item.id === "AffiliateNetwork";
 

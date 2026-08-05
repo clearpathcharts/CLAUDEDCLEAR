@@ -116,7 +116,6 @@ const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
 const CpmsApk = lazy(() => import('./CpmsApk'));
-const MarketDiagnostics = lazy(() => import('./MarketDiagnostics'));
 const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
@@ -445,7 +444,6 @@ const TabContent = ({
       case 'CpmsApk': return <CpmsApk />;
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
-      case 'Diagnostics': return isFounder ? <MarketDiagnostics /> : <YoursPage />;
       case 'EncyclopediaOfIndicators': return gate(
         'advancedIndicators', 'premium', 'Advanced Indicator Library',
         ['Institutional indicator suite', 'Advanced chart overlays', 'Premium research'],
@@ -990,7 +988,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     isFounderEmail(userProfile?.email) ||
     isFounderEmail(auth.currentUser?.email) ||
     authUser?.email === 'creator@clearpatcharge.com';
-  /** CEO + Diagnostics — private session, profile, or live Google founder email. */
+  /** CEO Dashboard — private session, profile, or live Google founder email. */
   const isFounder = () =>
     isFounderEmail(authUser?.email) ||
     isFounderEmail(userProfile?.email) ||
@@ -1040,11 +1038,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const handleTabChange = (tabId: string) => {
     const nextTab = normalizeTabId(tabId);
-    // Diagnostics + CEO Dashboard are founder-only
-    if (
-      (nextTab === 'Diagnostics' || nextTab === 'CeoDashboard') &&
-      !isFounder()
-    ) {
+    // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
+    if (nextTab === 'CeoDashboard' && !isFounder()) {
+      setActiveTab('StrictlyCharts');
+      return;
+    }
+    if (nextTab === 'Diagnostics') {
       setActiveTab('StrictlyCharts');
       return;
     }
@@ -1189,15 +1188,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
           hash === 'LiteracyOS' ||
-          hash === 'ApiMonitor' || 
-          hash === 'Diagnostics';
+          hash === 'ApiMonitor';
         if (validHash) {
           const next = normalizeTabId(hash);
-          // CEO Dashboard + Diagnostics hashes are founder-only
-          if (
-            (next === 'CeoDashboard' || next === 'Diagnostics') &&
-            !isFounderEmail(authUser?.email)
-          ) {
+          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
             setActiveTab('StrictlyCharts');
           } else {
             setActiveTab(next);
@@ -1511,7 +1505,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
         {!isAppShell && authUser && !isFounder() ? (
           <div className="px-4 py-2 bg-amber-950/40 border-b border-amber-500/30 text-amber-100 text-xs sm:text-sm leading-relaxed">
-            CEO Dashboard + Diagnostics are hidden because this session is{' '}
+            CEO Dashboard is hidden because this session is{' '}
             <span className="font-mono text-amber-200">
               {authUser.email || userProfile?.email || 'unknown'}
             </span>
