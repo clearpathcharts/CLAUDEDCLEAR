@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Activity,
   BarChart3,
   BookOpen,
   Cpu,
@@ -27,9 +26,9 @@ import {
 interface MobileCommandCenterProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
-  /** @deprecated Prefer isFounder for Diagnostics / CEO */
+  /** @deprecated Prefer isFounder for CEO */
   isAdmin?: boolean;
-  /** Founder-only: CEO Dashboard + Diagnostics */
+  /** Founder-only: CEO Dashboard */
   isFounder?: boolean;
   onLogout?: () => void;
   /** Lean APK / installed PWA — CHARTS | INDACREATOR | MENU */
@@ -113,14 +112,6 @@ const CEO_DASHBOARD_ITEM: NavItem = {
   glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
 };
 
-const DIAGNOSTICS_ITEM: NavItem = {
-  id: "Diagnostics",
-  icon: Activity,
-  label: "DIAGNOSTICS",
-  colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
-  glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
-};
-
 const ACCOUNT_ITEMS: NavItem[] = [
   {
     id: "Biography",
@@ -170,7 +161,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
   };
 
   const toolsItems = isFounder
-    ? [...TOOLS_ITEMS, CEO_DASHBOARD_ITEM, DIAGNOSTICS_ITEM]
+    ? [...TOOLS_ITEMS, CEO_DASHBOARD_ITEM]
     : TOOLS_ITEMS;
 
   const sections: { title: string; items: NavItem[] }[] = lean

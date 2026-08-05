@@ -2055,7 +2055,9 @@ async function startServer() {
     </body></html>`);
   });
 
-  app.get('/api/status', async (req, res) => {
+  // Founder-only: live probes hit vendor APIs (including TwelveData) and burn quota.
+  // Never leave this public — Diagnostics UI was removed from the site for the same reason.
+  app.get('/api/status', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const data = await getLiveApiHealth();
       res.json(data);
