@@ -115,7 +115,7 @@ export async function dispatchJob(job) {
           ok: false,
           mode: "bridge",
           skipped: true,
-          error: "Direct API pending platform approval — send via Cursor bridge package",
+          error: "Direct API pending platform approval — keep queued until this channel is wired in ClearPath Publisher",
           at: started,
         });
       } else {

@@ -94,8 +94,10 @@ async function dispatchNow(jobId) {
   const msg = [
     `Dispatch "${job.title}" now?`,
     directTargets.length ? `Direct send: ${directTargets.join(", ")}` : "No direct channels ready — nothing will send.",
-    bridgeTargets.length ? `Bridge (via Cursor package): ${bridgeTargets.join(", ")}` : "",
-    "This click is your founder approval.",
+    bridgeTargets.length
+      ? `Not wired for direct send yet (stay in queue / export notes): ${bridgeTargets.join(", ")}`
+      : "",
+    "Dispatch now = founder approval. Posts go out from ClearPath Publisher — no Cursor.",
   ].filter(Boolean).join("\n");
   if (!confirm(msg)) return;
   try {
@@ -110,9 +112,11 @@ async function dispatchNow(jobId) {
     const bridged = (updated.results || []).filter((r) => r.skipped).map((r) => r.channel);
     alert(
       [
-        sent.length ? `SENT: ${sent.join(", ")}` : "",
+        sent.length ? `SENT via ClearPath Publisher: ${sent.join(", ")}` : "",
         failed.length ? `FAILED: ${failed.join("; ")}` : "",
-        bridged.length ? `VIA CURSOR BRIDGE: ${bridged.join(", ")} — copy the package for these.` : "",
+        bridged.length
+          ? `NOT SENT (no API yet): ${bridged.join(", ")} — keep in queue until that channel is wired.`
+          : "",
       ].filter(Boolean).join("\n") || "No results.",
     );
   } catch (err) {
@@ -506,13 +510,22 @@ function renderLatest() {
   box.innerHTML = `
     <p><strong>${escapeHtml(j.title)}</strong></p>
     <p class="hint">${j.channels.join(" · ")} · ${j.status}</p>
-    <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
+    ${
+      backendOnline
+        ? `<button type="button" class="btn btn-primary" data-dispatch="${j.id}">Dispatch now</button>`
+        : `<p class="hint">Backend offline — start ClearPath Publisher to dispatch from this console.</p>`
+    }
+    <button type="button" class="btn" data-copy="${j.id}">Export notes</button>
   `;
+  const dispatchBtn = box.querySelector("[data-dispatch]");
+  if (dispatchBtn) {
+    dispatchBtn.addEventListener("click", () => dispatchNow(j.id));
+  }
   box.querySelector("[data-copy]").addEventListener("click", async () => {
     const ok = await copyText(buildPackage(j));
     j.status = "ready";
     saveQueue();
-    alert(ok ? "Copied. Paste into Cursor and say PUBLISH THIS." : "Copy failed — open Queue view.");
+    alert(ok ? "Notes copied for your records. Live send = Queue → Dispatch now (ClearPath Publisher)." : "Copy failed.");
     renderLatest();
   });
 }
@@ -565,7 +578,7 @@ function renderQueue() {
                     ? `<button type="button" class="btn btn-primary" data-dispatch="${j.id}">Dispatch now</button>`
                     : ""
                 }
-                <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
+                <button type="button" class="btn" data-copy="${j.id}">Export notes</button>
                 <button type="button" class="btn btn-danger" data-del="${j.id}">Remove</button>
               </div>
               <pre class="pkg">${escapeHtml(buildPackage(j))}</pre>
@@ -586,7 +599,7 @@ function renderQueue() {
       const ok = await copyText(buildPackage(job));
       job.status = "ready";
       saveQueue();
-      alert(ok ? "Package copied." : "Clipboard blocked — select the text below.");
+      alert(ok ? "Notes copied. Live send uses Dispatch now — ClearPath Publisher, not Cursor." : "Clipboard blocked — select the text below.");
       render();
     });
   });
@@ -1300,7 +1313,7 @@ function renderMission() {
           <ul>
             <li>Prefer calm video + audio</li>
             <li>Always include “not a brokerage”</li>
-            <li>Live posts only after founder confirmation in Cursor</li>
+            <li>Live posts only after founder clicks Dispatch now in this console</li>
           </ul>
           <p><a class="link" href="https://clearpathtrader.com" target="_blank" rel="noreferrer">clearpathtrader.com</a></p>
         </div>
@@ -1349,7 +1362,7 @@ function render() {
             <label class="check"><input id="f-calm" type="checkbox" /> Calm video — no strobing candles / flash patterns</label>
             <label class="check"><input id="f-edu" type="checkbox" /> Education only — not a brokerage / no signals</label>
             <button type="button" class="btn btn-primary" id="btn-queue">Add to automation queue</button>
-            <p class="hint">Files upload to ClearPath first. Dispatch sends the file itself — YouTube is optional, not required.</p>
+            <p class="hint">Standalone ClearPath Publisher — no Cursor. Upload → Queue → Dispatch. Telegram/Discord send the file when API keys are set on Cloud Run.</p>
           </div>
         </div>
       </div>
@@ -1359,10 +1372,10 @@ function render() {
           <div class="content howto">
             <ol>
               <li>Upload the lesson file to ClearPath (or paste a URL)</li>
-              <li>Pick channels — Telegram/Discord get the file directly</li>
+              <li>Pick channels</li>
               <li>Confirm mission checks</li>
-              <li>Queue → Dispatch now (founder approval)</li>
-              <li>YouTube only if you want that channel too</li>
+              <li>Add to queue</li>
+              <li>Open Queue → <strong>Dispatch now</strong> (posts from this server — not Cursor)</li>
             </ol>
           </div>
         </div>
