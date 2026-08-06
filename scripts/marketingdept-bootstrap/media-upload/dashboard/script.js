@@ -70,7 +70,7 @@ async function initBackend() {
   } catch {
     backendOnline = false;
     if (statusEl) {
-      statusEl.textContent = "Backend: offline — login again or check Cloud Run. Publishing is ClearPath Publisher only (no Cursor).";
+      statusEl.textContent = "Backend: offline — login again or check Cloud Run. Publishing runs only from ClearPath Publisher on this console.";
     }
   }
 }
@@ -97,7 +97,7 @@ async function dispatchNow(jobId) {
     bridgeTargets.length
       ? `Not wired for direct send yet (stay in queue / export notes): ${bridgeTargets.join(", ")}`
       : "",
-    "Dispatch now = founder approval. Posts go out from ClearPath Publisher — no Cursor.",
+    "Dispatch now = founder approval. Posts go out from ClearPath Publisher on this server.",
   ].filter(Boolean).join("\n");
   if (!confirm(msg)) return;
   try {
@@ -420,8 +420,9 @@ async function addFromForm() {
   let videoUrl = document.getElementById("f-url").value.trim();
   const fileInput = document.getElementById("f-file");
   const when = document.getElementById("f-when").value;
-  const calm = document.getElementById("f-calm").checked;
-  const educationOnly = document.getElementById("f-edu").checked;
+  // Mission checks are implied for this education desk — no click-through required.
+  const calm = true;
+  const educationOnly = true;
   const btn = document.getElementById("btn-queue");
 
   if (!title || !caption) {
@@ -430,10 +431,6 @@ async function addFromForm() {
   }
   if (!selectedChannels.length) {
     alert("Pick at least one channel.");
-    return;
-  }
-  if (!calm || !educationOnly) {
-    alert("Both mission checks are required before queueing.");
     return;
   }
 
@@ -487,8 +484,6 @@ async function addFromForm() {
   document.getElementById("f-url").value = "";
   if (fileInput) fileInput.value = "";
   document.getElementById("f-when").value = "";
-  document.getElementById("f-calm").checked = false;
-  document.getElementById("f-edu").checked = false;
   pendingMedia = null;
   setUploadStatus("");
   alert(
@@ -599,7 +594,7 @@ function renderQueue() {
       const ok = await copyText(buildPackage(job));
       job.status = "ready";
       saveQueue();
-      alert(ok ? "Notes copied. Live send uses Dispatch now — ClearPath Publisher, not Cursor." : "Clipboard blocked — select the text below.");
+      alert(ok ? "Notes copied. Live send uses Queue → Dispatch now on this console." : "Clipboard blocked — select the text below.");
       render();
     });
   });
@@ -1302,26 +1297,6 @@ function renderTreasure() {
   });
 }
 
-function renderMission() {
-  viewRoot.innerHTML = `
-    <div class="cardcolumn span-all">
-      <div class="card">
-        <header><span class="title">Mission lock</span></header>
-        <div class="content howto">
-          <p>Clear Path Market Science helps wounded veterans and neurodivergent learners read markets without ticker flash that can trigger PTSD or seizures.</p>
-          <p>This console is a private automation tool for education posts only — not a brokerage, not signal spam, not flashy ads.</p>
-          <ul>
-            <li>Prefer calm video + audio</li>
-            <li>Always include “not a brokerage”</li>
-            <li>Live posts only after founder clicks Dispatch now in this console</li>
-          </ul>
-          <p><a class="link" href="https://clearpathtrader.com" target="_blank" rel="noreferrer">clearpathtrader.com</a></p>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -1359,10 +1334,8 @@ function render() {
               <input id="f-when" type="datetime-local" />
             </label>
             <div class="channel-picks" id="channel-picks"></div>
-            <label class="check"><input id="f-calm" type="checkbox" /> Calm video — no strobing candles / flash patterns</label>
-            <label class="check"><input id="f-edu" type="checkbox" /> Education only — not a brokerage / no signals</label>
             <button type="button" class="btn btn-primary" id="btn-queue">Add to automation queue</button>
-            <p class="hint">Standalone ClearPath Publisher — no Cursor. Upload → Queue → Dispatch. Telegram/Discord send the file when API keys are set on Cloud Run.</p>
+            <p class="hint">Standalone ClearPath Publisher. Upload → Queue → Dispatch. Telegram/Discord send the file when API keys are set on Cloud Run.</p>
           </div>
         </div>
       </div>
@@ -1373,9 +1346,8 @@ function render() {
             <ol>
               <li>Upload the lesson file to ClearPath (or paste a URL)</li>
               <li>Pick channels</li>
-              <li>Confirm mission checks</li>
               <li>Add to queue</li>
-              <li>Open Queue → <strong>Dispatch now</strong> (posts from this server — not Cursor)</li>
+              <li>Open Queue → <strong>Dispatch now</strong> (posts leave from this ClearPath Publisher server)</li>
             </ol>
           </div>
         </div>
@@ -1401,7 +1373,6 @@ function render() {
   if (view === "seo") return renderSeo();
   if (view === "hashtags") return renderHashtags();
   if (view === "discovery") return renderDiscovery();
-  if (view === "mission") return renderMission();
 }
 
 updateClock();
