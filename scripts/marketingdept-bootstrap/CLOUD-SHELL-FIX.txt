@@ -36,3 +36,17 @@ What you should see after SUCCESS
 - Queue → Dispatch now
 - No “Paste into Cursor”
 - No mission checkboxes
+
+────────────────────────────────────────
+If you see: ZIP does not support timestamps before 1980
+────────────────────────────────────────
+
+Do NOT re-paste the big script. In the SAME Cloud Shell run:
+
+  find ~/MARKETINGDEPT -print0 | xargs -0 touch -t 202601011200.00
+  gcloud config set project gen-lang-client-0282858983
+  gcloud run deploy clearpath-automation-console --source ~/MARKETINGDEPT --region europe-west1 --allow-unauthenticated --port 8080 --quiet
+
+Or after pulling latest bootstrap:
+
+  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/RETRY-ZIP-FIX.sh

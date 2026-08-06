@@ -465,8 +465,24 @@ raw = base64.b64decode("".join(chunks))
 root = pathlib.Path.home() / "MARKETINGDEPT"
 with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
     tar.extractall(root)
+# tar members can carry epoch (1970) mtimes; gcloud source ZIP rejects < 1980
+import os, time
+now = time.time()
+for dirpath, _, filenames in os.walk(root):
+    try:
+        os.utime(dirpath, (now, now))
+    except OSError:
+        pass
+    for name in filenames:
+        path = os.path.join(dirpath, name)
+        try:
+            os.utime(path, (now, now))
+        except OSError:
+            pass
 print("extracted UI + private server + dispatch into", root)
 PY
+# belt-and-suspenders for any pre-1980 dates already in ~/MARKETINGDEPT
+find "$ROOT" -print0 | xargs -0 touch -t 202601011200.00 2>/dev/null || true
 grep -q social-team-private clearpath-publisher/server.js
 ! grep -q "Paste into Cursor and say PUBLISH THIS" dashboard-glassmorphism/src/script.js
 ! grep -q 'id="f-calm"' dashboard-glassmorphism/src/script.js
