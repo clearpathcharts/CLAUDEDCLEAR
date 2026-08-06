@@ -1,0 +1,38 @@
+CLEARPATH MARKETING CONSOLE — Cloud Shell fix (NO giant paste)
+
+I was wrong earlier telling you to Raw-copy DEPLOY-NO-CURSOR-UI.sh.
+That file is huge. Pasting it into Cloud Shell crashes the session.
+Do NOT paste that file. Use clone-and-run instead.
+
+────────────────────────────────────────
+ONE METHOD (copy these 4 lines only)
+────────────────────────────────────────
+
+Open a NEW Cloud Shell: https://shell.cloud.google.com
+
+Then paste ONLY this block:
+
+  cd ~
+  gh auth status || gh auth login
+  rm -rf ~/CLAUDEDCLEAR-fix
+  gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/DEPLOY-NO-CURSOR-UI.sh
+
+Wait for SUCCESS.
+Hard-refresh Incognito: https://fuckweasel.net  (Ctrl+Shift+R)
+
+────────────────────────────────────────
+If it says MARKETINGDEPT missing
+────────────────────────────────────────
+
+  ls ~/MARKETINGDEPT
+
+If that folder is gone, tell Rick before continuing.
+
+────────────────────────────────────────
+What you should see after SUCCESS
+────────────────────────────────────────
+
+- Queue → Dispatch now
+- No “Paste into Cursor”
+- No mission checkboxes
