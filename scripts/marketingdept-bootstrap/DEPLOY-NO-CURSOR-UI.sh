@@ -469,6 +469,8 @@ print("extracted UI + private server + dispatch into", root)
 PY
 grep -q social-team-private clearpath-publisher/server.js
 ! grep -q "Paste into Cursor and say PUBLISH THIS" dashboard-glassmorphism/src/script.js
+! grep -q 'id="f-calm"' dashboard-glassmorphism/src/script.js
+! grep -q 'data-view="mission"' dashboard-glassmorphism/src/index.html
 grep -q "Dispatch now" dashboard-glassmorphism/src/script.js
 ! grep -q "bridge via Cursor" clearpath-publisher/lib/dispatch.js
 echo "Local files OK — deploying europe-west1 (keeps your Cloud Run secrets)…"
@@ -485,7 +487,7 @@ for i in $(seq 1 15); do
   echo "try $i: $(echo "$H" | tr "," "\n" | grep console || echo none)"
   echo "$H" | grep -q social-team-private && {
     echo "SUCCESS — hard-refresh Incognito https://fuckweasel.net (Ctrl+Shift+R)"
-    echo "Expect: Queue → Dispatch now buttons. No paste-into-AI alerts."
+    echo "Expect: Queue → Dispatch now. No mission checkboxes. No Cursor paste."
     echo "Telegram/Discord Dispatch needs those vars in Cloud Run → Variables & secrets."
     exit 0
   }
