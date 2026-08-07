@@ -1,52 +1,24 @@
-CLEARPATH MARKETING CONSOLE — Cloud Shell fix (NO giant paste)
+CLEARPATH MARKETING CONSOLE — Cloud Shell (correct method)
 
-I was wrong earlier telling you to Raw-copy DEPLOY-NO-CURSOR-UI.sh.
-That file is huge. Pasting it into Cloud Shell crashes the session.
-Do NOT paste that file. Use clone-and-run instead.
+Do NOT paste giant Raw files into Cloud Shell.
 
 ────────────────────────────────────────
-ONE METHOD (copy these 4 lines only)
+ONE BLOCK — reconnect Cloud Shell, then paste:
 ────────────────────────────────────────
 
-Open a NEW Cloud Shell: https://shell.cloud.google.com
-
-Then paste ONLY this block:
-
-  cd ~
-  gh auth status || gh auth login
-  rm -rf ~/CLAUDEDCLEAR-fix
-  gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
-  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/DEPLOY-NO-CURSOR-UI.sh
+cd ~
+rm -rf ~/CLAUDEDCLEAR-fix
+gh auth status || gh auth login
+gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
 
 Wait for SUCCESS.
-Hard-refresh Incognito: https://fuckweasel.net  (Ctrl+Shift+R)
+Hard-refresh Incognito: https://fuckweasel.net
 
 ────────────────────────────────────────
-If it says MARKETINGDEPT missing
+What this fixes
 ────────────────────────────────────────
-
-  ls ~/MARKETINGDEPT
-
-If that folder is gone, tell Rick before continuing.
-
-────────────────────────────────────────
-What you should see after SUCCESS
-────────────────────────────────────────
-
-- Queue → Dispatch now
-- No “Paste into Cursor”
-- No mission checkboxes
-
-────────────────────────────────────────
-If you see: ZIP does not support timestamps before 1980
-────────────────────────────────────────
-
-Do NOT re-paste the big script. In the SAME Cloud Shell run:
-
-  find ~/MARKETINGDEPT -print0 | xargs -0 touch -t 202601011200.00
-  gcloud config set project gen-lang-client-0282858983
-  gcloud run deploy clearpath-automation-console --source ~/MARKETINGDEPT --region europe-west1 --allow-unauthenticated --port 8080 --quiet
-
-Or after pulling latest bootstrap:
-
-  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/RETRY-ZIP-FIX.sh
+- Missing mediaStore.js (and full publisher files)
+- Bad .dockerignore that dropped server.js from the image
+- ZIP timestamps before 1980
+- Cursor paste UI → Queue / Dispatch UI
