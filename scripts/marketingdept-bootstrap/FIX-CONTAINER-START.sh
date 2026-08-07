@@ -62,14 +62,17 @@ gcloud run deploy clearpath-automation-console \
   --memory 512Mi \
   --quiet
 
-echo "Waiting for health…"
+echo "Waiting for site…"
 for i in $(seq 1 24); do
-  sleep 5
+  sleep 3
   H=$(curl -sS https://fuckweasel.net/api/health || true)
-  echo "try $i: $(echo "$H" | tr ',' '\n' | grep console || echo none)"
-  if echo "$H" | grep -q social-team-private; then
+  R=$(curl -sS https://fuckweasel.net/api/auth/roster || true)
+  L=$(curl -sS https://fuckweasel.net/login || true)
+  echo "try $i: health=$(echo "$H" | tr ',' '\n' | grep console || echo auth_gated_or_down) roster=$(echo "$R" | head -c 80)"
+  if echo "$H$R" | grep -q social-team-private || echo "$R" | grep -q '"configured":true' || echo "$L" | grep -q "Sign in — ClearPath"; then
     echo "SUCCESS — hard-refresh Incognito https://fuckweasel.net (Ctrl+Shift+R)"
     echo "Expect: Queue → Dispatch now. No Cursor paste. No mission checkboxes."
+    echo "Login with brent/dustin/brian/owner (passwords Rick set on Cloud Run)."
     exit 0
   fi
 done

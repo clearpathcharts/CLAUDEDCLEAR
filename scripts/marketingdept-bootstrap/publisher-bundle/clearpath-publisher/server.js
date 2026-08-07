@@ -94,16 +94,7 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-app.use(requireAuth);
-
-app.get("/api/me", (req, res) => {
-  res.json({
-    username: req.user.username,
-    role: req.user.role,
-    roster: listPublicRoster(),
-  });
-});
-
+// Public health (must stay BEFORE requireAuth — Cloud Shell / uptime probes are unauthenticated)
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
@@ -118,6 +109,16 @@ app.get("/api/health", (_req, res) => {
         (process.env.TELEGRAM_CHAT_ID || "").trim(),
     ),
     channels: channelStatus(),
+  });
+});
+
+app.use(requireAuth);
+
+app.get("/api/me", (req, res) => {
+  res.json({
+    username: req.user.username,
+    role: req.user.role,
+    roster: listPublicRoster(),
   });
 });
 
