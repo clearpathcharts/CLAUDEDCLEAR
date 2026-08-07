@@ -84,21 +84,27 @@ export async function dispatchJob(job) {
     const started = new Date().toISOString();
     try {
       if (id === "telegram") {
-        if (!telegramReady()) throw new Error("Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID in .env");
+        if (!telegramReady()) {
+          throw new Error("Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID (Cloud Run → Variables & secrets)");
+        }
         const r = await sendTelegram(
           enriched.videoFilePath ? captionWithFile : textOnly,
           enriched.videoFilePath ? enriched : null,
         );
         results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
       } else if (id === "discord") {
-        if (!discordReady()) throw new Error("Missing DISCORD_WEBHOOK_URL in .env");
+        if (!discordReady()) {
+          throw new Error("Missing DISCORD_WEBHOOK_URL (Cloud Run → Variables & secrets)");
+        }
         const r = await sendDiscord(
           enriched.videoFilePath ? captionWithFile : textOnly,
           enriched.videoFilePath ? enriched : null,
         );
         results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
       } else if (id === "reddit") {
-        if (!redditReady()) throw new Error("Missing REDDIT_* credentials in .env");
+        if (!redditReady()) {
+          throw new Error("Missing REDDIT_* credentials (Cloud Run → Variables & secrets)");
+        }
         const link =
           enriched.videoUrl && String(enriched.videoUrl).startsWith("http")
             ? enriched.videoUrl
@@ -106,7 +112,9 @@ export async function dispatchJob(job) {
         const r = await sendReddit(enriched.title, `${enriched.caption}${FOOTER}`, link);
         results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
       } else if (id === "youtube") {
-        if (!youtubeReady()) throw new Error("Missing YOUTUBE_* credentials in .env");
+        if (!youtubeReady()) {
+          throw new Error("Missing YOUTUBE_* credentials (Cloud Run → Variables & secrets)");
+        }
         const r = await sendYouTube(enriched, `${enriched.caption}${FOOTER}`);
         results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
       } else if (BRIDGE_CHANNELS.has(id)) {
