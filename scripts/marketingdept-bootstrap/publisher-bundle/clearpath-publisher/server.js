@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { loadJobs, getJob, upsertJob, patchJob, deleteJob, replaceAll } from "./lib/store.js";
 import { dispatchJob, guardrailErrors, channelStatus } from "./lib/dispatch.js";
+import { telegramReady, telegramBotToken, telegramChatId } from "./adapters/telegram.js";
 import { startScheduler } from "./lib/scheduler.js";
 import {
   COOKIE_NAME,
@@ -94,6 +95,10 @@ app.get("/logout", (req, res) => {
   res.redirect("/login");
 });
 
+function envPresent(...names) {
+  return names.some((n) => Boolean(String(process.env[n] || "").trim()));
+}
+
 // Public health (must stay BEFORE requireAuth — Cloud Shell / uptime probes are unauthenticated)
 app.get("/api/health", (_req, res) => {
   res.json({
@@ -104,11 +109,39 @@ app.get("/api/health", (_req, res) => {
     teamConfigured: teamAuthConfigured(),
     mediaUpload: true,
     media: mediaLimits(),
-    telegramReady: Boolean(
-      (process.env.TELEGRAM_BOT_TOKEN || "").trim() &&
-        (process.env.TELEGRAM_CHAT_ID || "").trim(),
-    ),
+    telegramReady: telegramReady(),
     channels: channelStatus(),
+  });
+});
+
+/** Boolean presence only — never returns secret values */
+app.get("/api/secrets/status", (_req, res) => {
+  res.json({
+    service: "clearpath-automation-console",
+    note: "true = env name has a value on this running revision. false = missing/empty.",
+    secrets: {
+      TELEGRAM_BOT_TOKEN: envPresent("TELEGRAM_BOT_TOKEN", "TELEGRAM_TOKEN", "BOT_TOKEN", "SOCIAL_TELEGRAM_BOT_TOKEN"),
+      TELEGRAM_CHAT_ID: envPresent(
+        "TELEGRAM_CHAT_ID",
+        "TELEGRAM_CHAT_TOKEN",
+        "TELEGRAM_CHANNEL_ID",
+        "TELEGRAM_CHANNEL",
+        "CHAT_ID",
+        "SOCIAL_TELEGRAM_CHAT_ID",
+      ),
+      DISCORD_WEBHOOK_URL: envPresent("DISCORD_WEBHOOK_URL", "SOCIAL_DISCORD_WEBHOOK_URL"),
+      YOUTUBE_CLIENT_ID: envPresent("YOUTUBE_CLIENT_ID"),
+      YOUTUBE_CLIENT_SECRET: envPresent("YOUTUBE_CLIENT_SECRET"),
+      YOUTUBE_REFRESH_TOKEN: envPresent("YOUTUBE_REFRESH_TOKEN"),
+      SESSION_SECRET: envPresent("SESSION_SECRET"),
+      TEAM_USERS: envPresent("TEAM_USERS"),
+    },
+    resolved: {
+      telegramReady: telegramReady(),
+      telegramTokenFound: Boolean(telegramBotToken()),
+      telegramChatFound: Boolean(telegramChatId()),
+      discordReady: Boolean(String(process.env.DISCORD_WEBHOOK_URL || process.env.SOCIAL_DISCORD_WEBHOOK_URL || "").trim()),
+    },
   });
 });
 

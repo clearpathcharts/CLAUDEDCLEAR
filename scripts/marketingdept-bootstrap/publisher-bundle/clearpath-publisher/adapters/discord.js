@@ -5,8 +5,14 @@
  */
 import fs from "fs";
 
+export function discordWebhookUrl() {
+  return String(
+    process.env.DISCORD_WEBHOOK_URL || process.env.SOCIAL_DISCORD_WEBHOOK_URL || "",
+  ).trim();
+}
+
 export function discordReady() {
-  return Boolean(process.env.DISCORD_WEBHOOK_URL);
+  return Boolean(discordWebhookUrl());
 }
 
 /**
@@ -14,7 +20,7 @@ export function discordReady() {
  * @param {{ videoFilePath?: string, fileName?: string, mimeType?: string } | null} media
  */
 export async function sendDiscord(text, media = null) {
-  const url = process.env.DISCORD_WEBHOOK_URL;
+  const url = discordWebhookUrl();
   const filePath = media?.videoFilePath;
   if (filePath && fs.existsSync(filePath)) {
     const buf = fs.readFileSync(filePath);
