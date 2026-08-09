@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, KeyRound, Copy } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -49,6 +49,16 @@ function formatJoined(value?: string | null): string {
   return d.toLocaleString();
 }
 
+/** Strong, readable one-off temporary password (client-side, crypto-random). */
+function generateTempPassword(): string {
+  const bytes = new Uint8Array(6);
+  (globalThis.crypto || window.crypto).getRandomValues(bytes);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `CP-${hex}`;
+}
+
 export default function CeoDashboard() {
   const db = getDb();
   const [ceoTab, setCeoTab] = useState<'system' | 'members'>('system');
@@ -74,7 +84,12 @@ export default function CeoDashboard() {
     Array<{ email: string; displayName: string; activationKey: string; tempPassword?: string }>
   >([]);
   const [invitesVisible, setInvitesVisible] = useState(false);
-  
+
+  // Founder password-reset for locked-out private members
+  const [resetBusyEmail, setResetBusyEmail] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
 
@@ -110,6 +125,33 @@ export default function CeoDashboard() {
       setMembersPayload(null);
     } finally {
       setMembersLoading(false);
+    }
+  };
+
+  /** Founder: reset a locked-out member's password to a fresh temp password. */
+  const handleResetPassword = async (email: string) => {
+    setResetError(null);
+    setResetResult(null);
+    setResetBusyEmail(email);
+    try {
+      const tempPassword = generateTempPassword();
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/reset-password', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ email, newPassword: tempPassword }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((body && (body.message || body.error)) || `Reset failed (${res.status})`);
+      }
+      setResetResult({ email, tempPassword });
+    } catch (err: any) {
+      console.error('[CeoDashboard] reset-password failed:', err);
+      setResetError(err?.message || 'Password reset failed.');
+    } finally {
+      setResetBusyEmail(null);
     }
   };
 
@@ -503,6 +545,50 @@ export default function CeoDashboard() {
             </div>
           )}
 
+          {resetError && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-300 text-sm font-mono">
+              Password reset failed: {resetError}
+            </div>
+          )}
+
+          {resetResult && (
+            <div className="rounded-lg border border-[#00FF88]/40 bg-[#00FF88]/10 px-4 py-4 text-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[#00FF88] font-bold uppercase tracking-wider text-xs mb-2">
+                    Password reset — send this to the member privately
+                  </p>
+                  <p className="text-white/90 font-mono">
+                    Email: <span className="text-[#00FFFF]">{resetResult.email}</span>
+                  </p>
+                  <p className="text-white/90 font-mono">
+                    Temporary password:{' '}
+                    <span className="text-white bg-black/50 border border-white/20 rounded px-2 py-0.5 select-all">
+                      {resetResult.tempPassword}
+                    </span>
+                  </p>
+                  <p className="text-white/50 text-xs mt-2 leading-relaxed">
+                    The member signs in at Private Login with their email + this password. The site
+                    cannot email it, so send it to them yourself.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      navigator.clipboard?.writeText(resetResult.tempPassword);
+                    } catch {
+                      /* clipboard not available */
+                    }
+                  }}
+                  className="shrink-0 flex items-center gap-1 text-xs text-[#00FF88] border border-[#00FF88]/30 rounded px-2 py-1 hover:bg-[#00FF88]/10"
+                >
+                  <Copy size={12} /> Copy
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
             <h3 className="text-xl text-white font-bold mb-4 uppercase tracking-wider">Private login accounts</h3>
             <div className="overflow-x-auto">
@@ -514,18 +600,19 @@ export default function CeoDashboard() {
                     <th className="px-4 py-3">Joined</th>
                     <th className="px-4 py-3">Last login</th>
                     <th className="px-4 py-3">UID</th>
+                    <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {membersLoading && !membersPayload ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
                         Loading private members…
                       </td>
                     </tr>
                   ) : filteredPrivate.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
+                      <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
                         {memberQ
                           ? `No private members match “${memberSearch}”.`
                           : 'No private members on this server yet. If you expect signups here, Cloud Run may be using ephemeral disk — members persist only when storage is durable.'}
@@ -539,6 +626,18 @@ export default function CeoDashboard() {
                         <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-400">{formatJoined(m.lastLoginAt)}</td>
                         <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.uid}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => handleResetPassword(m.email)}
+                            disabled={resetBusyEmail === m.email}
+                            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#00FFFF] border border-[#00FFFF]/30 rounded px-2.5 py-1.5 hover:bg-[#00FFFF]/10 disabled:opacity-50"
+                            title="Reset this member's password to a new temporary password"
+                          >
+                            <KeyRound size={12} />
+                            {resetBusyEmail === m.email ? 'Resetting…' : 'Reset password'}
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
