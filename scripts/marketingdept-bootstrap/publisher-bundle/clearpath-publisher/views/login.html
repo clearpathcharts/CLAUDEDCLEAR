@@ -85,17 +85,17 @@
   <div class="card">
     <div class="mark" aria-hidden="true">CP</div>
     <h1>ClearPath Automation Console</h1>
-    <p class="sub">Private team login. Brent, Dustin, Brian, and owner each use their own account. Shared treasure chest stays in one place.</p>
+    <p class="sub">Private founder login. One account unlocks the ClearPath Automation Console.</p>
     <form method="POST" action="/login">
       <label for="username">Username</label>
-      <input id="username" name="username" autocomplete="username" placeholder="brent / dustin / brian / owner" required />
+      <input id="username" name="username" autocomplete="username" placeholder="owner" required />
       <label for="password">Password</label>
       <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Your password" required />
       <p class="error" id="error-msg">Login failed. Check username + password.</p>
       <button type="submit">Unlock console</button>
     </form>
-    <p class="roster" id="roster">Loading team roster…</p>
-    <p class="hint">Passwords are set on Cloud Run with <code>TEAM_USERS</code> or <code>TEAM_BRENT_PASSWORD</code> etc. Never commit them.</p>
+    <p class="roster" id="roster">Loading…</p>
+    <p class="hint">Password is set on Cloud Run with <code>TEAM_USERS</code>. Never commit it.</p>
   </div>
   <script>
     if (new URLSearchParams(location.search).get("error") === "1") {

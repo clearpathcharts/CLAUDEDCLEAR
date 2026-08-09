@@ -1206,7 +1206,7 @@ function renderTreasure() {
       <div class="card">
         <header><span class="title">Marketing treasure chest</span></header>
         <div class="content">
-          <p class="hint">One shared open file for Brent, Dustin, Brian, and owner. Drop packages, captions, and channel notes here so everyone can track what is moving.</p>
+          <p class="hint">Shared open file for this console. Drop packages, captions, and channel notes here.</p>
           <label>Title<input id="chest-title" class="bar" type="text" placeholder="e.g. Support levels lesson — week of Aug 4" /></label>
           <label>Body / package<textarea id="chest-body" class="bar" rows="6" placeholder="Paste caption, links, channel plan…"></textarea></label>
           <label>Tags (comma-separated)<input id="chest-tags" class="bar" type="text" placeholder="youtube, telegram, veterans" /></label>

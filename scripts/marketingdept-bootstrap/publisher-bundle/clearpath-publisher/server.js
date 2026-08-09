@@ -1,6 +1,6 @@
 /**
  * ClearPath Publisher + Automation Console (social-only)
- * Team accounts: Brent / Dustin / Brian / owner
+ * Founder login (single owner account via TEAM_USERS)
  * Shared marketing treasure chest for all authenticated users
  * NO Zapier / Buffer / Make / CrewAI — never commit secrets
  */
@@ -311,7 +311,7 @@ app.listen(PORT, HOST, () => {
       ? `Team auth ON — users: ${listPublicRoster()
           .map((u) => u.username)
           .join(", ")}`
-      : "Team auth LOCKED — set TEAM_USERS or TEAM_*_PASSWORD + SESSION_SECRET",
+      : "Team auth LOCKED — set TEAM_USERS (or TEAM_OWNER_PASSWORD) + SESSION_SECRET",
   );
   const ready = channelStatus()
     .filter((c) => c.ready)

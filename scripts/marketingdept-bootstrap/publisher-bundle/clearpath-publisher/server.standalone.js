@@ -1,6 +1,6 @@
 /**
  * ClearPath Publisher — STANDALONE for Cloud Shell paste
- * Team login (brent/dustin/brian/owner) + treasure chest + social console
+ * Founder login (single owner) + treasure chest + social console
  * Set TEAM_USERS + SESSION_SECRET on Cloud Run. Never commit secrets.
  */
 import "dotenv/config";
@@ -40,16 +40,9 @@ function loadUsers() {
       };
     }).filter((u) => u.username && u.password);
   }
-  const out = [];
-  for (const [username, password, role] of [
-    ["brent", process.env.TEAM_BRENT_PASSWORD, "member"],
-    ["dustin", process.env.TEAM_DUSTIN_PASSWORD, "member"],
-    ["brian", process.env.TEAM_BRIAN_PASSWORD, "member"],
-    ["owner", process.env.TEAM_OWNER_PASSWORD || process.env.APP_PASSWORD, "owner"],
-  ]) {
-    if ((password || "").trim()) out.push({ username, password: password.trim(), role });
-  }
-  return out;
+  const ownerPass = (process.env.TEAM_OWNER_PASSWORD || process.env.APP_PASSWORD || "").trim();
+  if (ownerPass) return [{ username: "owner", password: ownerPass, role: "owner" }];
+  return [];
 }
 
 function findUser(username, password) {
@@ -139,10 +132,10 @@ button{margin-top:1.1rem;width:100%;padding:.9rem;border:1px solid rgba(255,43,2
 </style></head><body>
 <div class="card">
 <h1>ClearPath Automation Console</h1>
-<p class="sub">Private team login for Brent, Dustin, Brian, and owner. Shared treasure chest after unlock.</p>
+<p class="sub">Private founder login. One account unlocks the ClearPath Automation Console.</p>
 <form method="POST" action="/login">
 <label for="username">Username</label>
-<input id="username" name="username" autocomplete="username" placeholder="brent / dustin / brian / owner" required/>
+<input id="username" name="username" autocomplete="username" placeholder="owner" required/>
 <label for="password">Password</label>
 <input type="password" id="password" name="password" autocomplete="current-password" required/>
 <p class="error" id="error-msg">Login failed.</p>

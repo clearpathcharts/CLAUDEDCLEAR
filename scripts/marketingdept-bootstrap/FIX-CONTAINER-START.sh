@@ -72,7 +72,7 @@ for i in $(seq 1 24); do
   if echo "$H$R" | grep -q social-team-private || echo "$R" | grep -q '"configured":true' || echo "$L" | grep -q "Sign in — ClearPath"; then
     echo "SUCCESS — hard-refresh Incognito https://fuckweasel.net (Ctrl+Shift+R)"
     echo "Expect: Queue → Dispatch now. No Cursor paste. No mission checkboxes."
-    echo "Login with brent/dustin/brian/owner (passwords Rick set on Cloud Run)."
+    echo "Login with owner (password from Cloud Run TEAM_USERS)."
     exit 0
   fi
 done

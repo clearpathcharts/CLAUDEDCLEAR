@@ -3,7 +3,22 @@ CLEARPATH MARKETING CONSOLE — Cloud Shell (correct method)
 Do NOT paste giant Raw files into Cloud Shell.
 
 ────────────────────────────────────────
-ONE BLOCK — reconnect Cloud Shell, then paste:
+ONE LOGIN ONLY (remove brent / brian / dustin)
+────────────────────────────────────────
+
+cd ~
+rm -rf ~/CLAUDEDCLEAR-fix
+gh auth status || gh auth login
+gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/ONE-LOGIN-OWNER.sh
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
+
+Wait for SUCCESS on both.
+Hard-refresh Incognito: https://fuckweasel.net/login
+Login: owner  (same password you already set for owner)
+
+────────────────────────────────────────
+Dispatch / container fix only (if login already OK)
 ────────────────────────────────────────
 
 cd ~
@@ -18,7 +33,12 @@ Hard-refresh Incognito: https://fuckweasel.net
 ────────────────────────────────────────
 What this fixes
 ────────────────────────────────────────
-- Missing mediaStore.js (and full publisher files)
-- Bad .dockerignore that dropped server.js from the image
-- ZIP timestamps before 1980
+- TEAM_USERS → only owner (brent/brian/dustin removed)
+- Login page text → single founder account
+- Missing mediaStore.js / bad .dockerignore / ZIP timestamps
 - Cursor paste UI → Queue / Dispatch UI
+
+If Telegram Dispatch still fails after FIX:
+  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SHOW-AND-FIX-KEYS.sh
+
+Do not paste giant scripts. Clone and run only.
