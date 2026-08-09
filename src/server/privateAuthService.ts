@@ -27,6 +27,7 @@ import {
   emailRiskReasons,
   getRegistrationEmailBlock,
 } from './identityRisk';
+import { isFounderEmail } from '../lib/founder';
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -805,6 +806,11 @@ export async function provisionPrivateUser(input: {
   if (displayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
   if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
 
+  // Founder inbox cannot be claimed via public register (CEO APIs key off this email).
+  if (isFounderEmail(email) && !input.skipIdentityRisk) {
+    throw new PrivateAuthError('This email is reserved.', 403, 'FOUNDER_RESERVED');
+  }
+
   // Hard no-entry: fake / test / disposable / reserved emails + fake names never create an account.
   // Founder seed / recovery / waitlist-convert may skip via skipIdentityRisk.
   if (!input.skipIdentityRisk) {
@@ -1060,6 +1066,10 @@ export async function resubmitIdentity(input: {
   const newDisplayName = (input.newDisplayName || '').trim();
   if (!newEmail.includes('@')) throw new PrivateAuthError('Enter a valid email address.');
   if (newDisplayName.length < 2) throw new PrivateAuthError('Display name must be at least 2 characters.');
+
+  if (isFounderEmail(newEmail) && !isFounderEmail(found.email)) {
+    throw new PrivateAuthError('This email is reserved.', 403, 'FOUNDER_RESERVED');
+  }
 
   try {
     await assertRegistrationEmailAllowedAsync(newEmail);

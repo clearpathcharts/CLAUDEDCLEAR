@@ -1581,9 +1581,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         >
           {/* Hero/cover banner removed per ZERO HERO IMAGES rule --
               content starts immediately and flows top-to-bottom. */}
-          {activeTab !== 'Insights' && activeTab !== 'StrictlyCharts' && activeTab !== 'ThemeTerminal' && activeTab !== 'Encyclopedia' && activeTab !== 'EncyclopediaOfIndicators' && !isAppShell && (
-            <SystemIntelligencePanel />
-          )}
+          {/* Ingress Monitor is founder-only — never show market-key posture to the public. */}
+          {isFounder() &&
+            activeTab !== 'Insights' &&
+            activeTab !== 'StrictlyCharts' &&
+            activeTab !== 'ThemeTerminal' &&
+            activeTab !== 'Encyclopedia' &&
+            activeTab !== 'EncyclopediaOfIndicators' &&
+            !isAppShell && <SystemIntelligencePanel />}
 
           {/* Content Views */}
           <div className="flex-1 flex flex-col w-full relative min-h-full">

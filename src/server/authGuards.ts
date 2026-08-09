@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
 import { getAuth } from 'firebase-admin/auth';
-import { isFounderEmail } from '../lib/founder';
+import { isFounderEmail, isFounderFirebaseUid } from '../lib/founder';
 import { ensureAdminApp } from './firebaseAdmin';
 import { getCatalogAdminSecret, getIntelligenceWebhookSecret } from './secrets';
 
@@ -45,6 +45,21 @@ export function requirePrivateSession(req: Request, res: Response, next: NextFun
   const user = getPrivateSessionUser(req);
   if (!user?.uid) {
     res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    return;
+  }
+  next();
+}
+
+/**
+ * Blocks simple top-level navigation CSRF on founder secret exports.
+ * CEO Dashboard always sends `x-clearpath-founder-action: 1`.
+ */
+export function requireFounderActionHeader(req: Request, res: Response, next: NextFunction): void {
+  if (req.get('x-clearpath-founder-action') !== '1') {
+    res.status(403).json({
+      error: 'Forbidden',
+      message: 'Missing founder action header. Use the CEO Dashboard.',
+    });
     return;
   }
   next();
@@ -126,6 +141,7 @@ export async function requireFounderOrCatalogAdmin(
 
     const sessionUser = getPrivateSessionUser(req);
     if (sessionUser && isFounderEmail(sessionUser.email)) {
+      // Private Login founder session — email reserved at register so this cannot be claimed by strangers.
       next();
       return;
     }
@@ -142,7 +158,7 @@ export async function requireFounderOrCatalogAdmin(
       }
       try {
         const decoded = await getAuth().verifyIdToken(match[1].trim());
-        if (isFounderEmail(decoded.email)) {
+        if (isFounderEmail(decoded.email) && isFounderFirebaseUid(decoded.uid)) {
           next();
           return;
         }

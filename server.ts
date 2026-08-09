@@ -199,7 +199,9 @@ import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
   requireFounderOrCatalogAdmin,
+  requireFounderActionHeader,
   requireIntelligenceAdmin,
+  requirePrivateSession,
   getPrivateSessionUser,
 } from './src/server/authGuards';
 import {
@@ -513,34 +515,57 @@ async function startServer() {
 
   const aiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 40,
+    max: 30,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
   });
 
-  // Charts poll /api/quote on a live tick (server quote cache is ~5s). A single
-  // open chart + ticker strip easily exceeds a few hundred req/15min, which used
-  // to blank StrictlyCharts with "Market data rate limit reached" while Twelve
-  // Data itself was healthy. Budget for multi-tab / multi-symbol use without
-  // removing abuse protection.
-  const marketLimiter = rateLimit({
+  // Charts poll /api/quote on a live tick (server quote cache is ~5s). Signed-in
+  // members keep a high ceiling; anonymous traffic gets a tight budget so open
+  // proxies cannot burn TwelveData credits.
+  const marketLimiterAuthed = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 2400,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+    skip: (req) => !getPrivateSessionUser(req),
   });
+  const marketLimiterAnon = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 90,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    skip: (req) => Boolean(getPrivateSessionUser(req)),
+  });
+  const marketLimiter = [marketLimiterAnon, marketLimiterAuthed];
 
-  // Live quote ticks are cheaper (5s gateway cache) and much hotter than candle
-  // history fetches — give them a dedicated higher ceiling so a chart left open
-  // cannot starve /api/market/history reloads.
-  const quoteLimiter = rateLimit({
+  const quoteLimiterAuthed = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 3600,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+    skip: (req) => !getPrivateSessionUser(req),
+  });
+  const quoteLimiterAnon = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    skip: (req) => Boolean(getPrivateSessionUser(req)),
+  });
+  const quoteLimiter = [quoteLimiterAnon, quoteLimiterAuthed];
+
+  const newsLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'News rate limit reached. Please wait a few minutes.' },
   });
 
   const logErrorLimiter = rateLimit({
@@ -1498,22 +1523,31 @@ async function startServer() {
    * Includes private-account password hashes + invite temp passwords.
    * Keep offline. Agents must never claim backups are unnecessary.
    */
-  app.get('/api/admin/backup/download', requireFounderOrCatalogAdmin, async (_req, res) => {
-    try {
-      const backup = await buildFounderBackupPackage();
-      const stamp = backup.exportedAt.replace(/[:.]/g, '-');
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="clearpath-founder-backup-${stamp}.json"`
-      );
-      res.setHeader('Cache-Control', 'no-store');
-      res.status(200).send(JSON.stringify(backup, null, 2));
-    } catch (error: any) {
-      console.error('[admin/backup/download] Failed:', error);
-      res.status(500).json({ error: error?.message || 'Backup download failed' });
-    }
+  // POST + founder action header — blocks SameSite=Lax top-level GET CSRF downloads.
+  app.get('/api/admin/backup/download', (_req, res) => {
+    res.status(405).json({ error: 'Method Not Allowed', message: 'Use POST from the CEO Dashboard.' });
   });
+  app.post(
+    '/api/admin/backup/download',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const backup = await buildFounderBackupPackage();
+        const stamp = backup.exportedAt.replace(/[:.]/g, '-');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="clearpath-founder-backup-${stamp}.json"`
+        );
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(200).send(JSON.stringify(backup, null, 2));
+      } catch (error: any) {
+        console.error('[admin/backup/download] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Backup download failed' });
+      }
+    }
+  );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
   app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, async (_req, res) => {
@@ -1578,49 +1612,67 @@ async function startServer() {
 
   /**
    * Founder-only invite export (email + temp password + activation key).
-   * Query ?includeSecrets=1 required to include tempPassword.
+   * Query ?includeSecrets=1 required to include tempPassword — also needs founder action header.
    */
-  app.get('/api/admin/members/invites', requireFounderOrCatalogAdmin, async (req, res) => {
-    try {
-      const includeSecrets = String(req.query.includeSecrets || '') === '1';
-      const listed = await listFounderInvites();
-      const invites = listed.invites.map((inv) => {
-        const row: Record<string, string> = {
-          email: inv.email,
-          displayName: inv.displayName,
-          uid: inv.uid,
-          activationKey: inv.activationKey,
-          createdAt: inv.createdAt,
-        };
-        if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
-        if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
-        return row;
-      });
-      res.json({
-        ok: true,
-        source: listed.source,
-        count: invites.length,
-        includeSecrets,
-        invites,
-        howToSend:
-          'Use CEO Dashboard → Invite emails → SEND EMAIL (one click). Or copy email + tempPassword and send privately.',
-      });
-    } catch (error) {
-      console.error('[admin/members/invites] Failed:', error);
-      res.status(500).json({ error: 'Failed to list invites' });
+  app.get(
+    '/api/admin/members/invites',
+    requireFounderOrCatalogAdmin,
+    (req, res, next) => {
+      if (String(req.query.includeSecrets || '') === '1') {
+        return requireFounderActionHeader(req, res, next);
+      }
+      next();
+    },
+    async (req, res) => {
+      try {
+        const includeSecrets = String(req.query.includeSecrets || '') === '1';
+        const listed = await listFounderInvites();
+        const invites = listed.invites.map((inv) => {
+          const row: Record<string, string> = {
+            email: inv.email,
+            displayName: inv.displayName,
+            uid: inv.uid,
+            activationKey: inv.activationKey,
+            createdAt: inv.createdAt,
+          };
+          if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
+          if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
+          return row;
+        });
+        res.json({
+          ok: true,
+          source: listed.source,
+          count: invites.length,
+          includeSecrets,
+          invites,
+          howToSend:
+            'Use CEO Dashboard → Invite emails → SEND EMAIL (one click). Or copy email + tempPassword and send privately.',
+        });
+      } catch (error) {
+        console.error('[admin/members/invites] Failed:', error);
+        res.status(500).json({ error: 'Failed to list invites' });
+      }
     }
-  });
+  );
 
-  /** Founder mail-merge built from durable invites + private accounts (backend spreadsheet). */
-  app.get('/api/admin/members/invite-mail', requireFounderOrCatalogAdmin, async (_req, res) => {
-    try {
-      const result = await listInviteMailRows();
-      res.json(result);
-    } catch (error: any) {
-      console.error('[admin/members/invite-mail] Failed:', error);
-      res.status(500).json({ error: error?.message || 'Failed to build invite mail list' });
-    }
+  /** Founder mail-merge — POST only (temps included). */
+  app.get('/api/admin/members/invite-mail', (_req, res) => {
+    res.status(405).json({ error: 'Method Not Allowed', message: 'Use POST from the CEO Dashboard.' });
   });
+  app.post(
+    '/api/admin/members/invite-mail',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await listInviteMailRows();
+        res.json(result);
+      } catch (error: any) {
+        console.error('[admin/members/invite-mail] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Failed to build invite mail list' });
+      }
+    }
+  );
 
   /**
    * One-click: send Private Login invite email to one person.
@@ -1683,7 +1735,7 @@ async function startServer() {
     res.json({ entry });
   });
 
-  app.post('/api/river/catalog/public', moderateBodyFields('pineSource', 'description'), (req, res) => {
+  app.post('/api/river/catalog/public', requirePrivateSession, moderateBodyFields('pineSource', 'description'), (req, res) => {
     const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
       return res.status(400).json({ error: 'pineSource is required.' });
@@ -1764,7 +1816,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2007,7 +2059,7 @@ async function startServer() {
     }
   });
 
-  app.get('/api/secrets/status', (req, res) => {
+  app.get('/api/secrets/status', requireFounderOrCatalogAdmin, (req, res) => {
     // Boolean presence only — never returns key material.
     // FIREBASE_SERVICE_ACCOUNT may be false on Cloud Run while Admin still works via ADC.
     const admin = getFirebaseAdminStatus();
@@ -2212,7 +2264,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2261,7 +2313,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2492,7 +2544,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Latest daily swap-hour timeframe accuracy report (read-only)
-  app.get('/api/diagnostics/timeframe-verify', (_req, res) => {
+  app.get('/api/diagnostics/timeframe-verify', requireFounderOrCatalogAdmin, (_req, res) => {
     const report = getLatestTimeframeVerifyReport();
     if (!report) {
       return res.status(404).json({
@@ -2505,7 +2557,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', registrationLimiter, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, registrationLimiter, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -2524,7 +2576,7 @@ ${CPT_SITE_GUIDE}`;
     String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', quoteLimiter, async (req, res) => {
+  app.get('/api/quote', ...quoteLimiter, async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2565,7 +2617,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
-  app.get('/api/quotes', quoteLimiter, async (req, res) => {
+  app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
       return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
@@ -2593,7 +2645,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', marketLimiter, async (req, res) => {
+  app.get('/api/candles', ...marketLimiter, async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2627,7 +2679,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', marketLimiter, async (req, res) => {
+  app.get('/api/market/history', ...marketLimiter, async (req, res) => {
     const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2688,7 +2740,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // NewsData Live Ingress API with fallback
-  app.get('/api/newsdata/latest', async (req, res) => {
+  app.get('/api/newsdata/latest', newsLimiter, async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
@@ -2776,7 +2828,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
-  app.get('/api/economic/news', async (req, res) => {
+  app.get('/api/economic/news', newsLimiter, async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid =
@@ -2980,7 +3032,7 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  app.post('/api/literacy/truth-search', moderateBodyFields('query'), async (req, res) => {
+  app.post('/api/literacy/truth-search', requirePrivateSession, ...marketLimiter, moderateBodyFields('query'), async (req, res) => {
     const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
     if (!query) {
       return res.status(400).json({ error: 'query required' });
@@ -3137,7 +3189,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
-  app.get('/api/fred/observations', marketLimiter, async (req, res) => {
+  app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3166,7 +3218,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
-  app.get('/api/fmp/:endpoint/:symbol', marketLimiter, async (req, res) => {
+  app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
     const { limit } = req.query;
     if (!symbol || !endpoint) {
@@ -3214,7 +3266,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', aiLimiter, async (req, res) => {
+  app.get('/api/news/search', requirePrivateSession, aiLimiter, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
