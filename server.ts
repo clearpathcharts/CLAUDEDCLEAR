@@ -469,12 +469,24 @@ async function startServer() {
   app.set('trust proxy', 1);
   app.use('/api/', limiter);
 
+  // Account creation / password reset — abuse-sensitive, kept moderate.
   const registrationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: 20,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
+  });
+
+  // Login + lookup — normal members retry these and multiple people share one
+  // office/home IP, so this must be generous or legitimate users get locked out.
+  // (Each login attempt in the UI is a lookup + a login = 2 requests.)
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts from this address. Please wait a few minutes and try again.' },
   });
 
   const aiLimiter = rateLimit({
@@ -639,7 +651,7 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/lookup', loginLimiter, async (req, res) => {
     try {
       const result = await lookupPrivateUser(req.body?.email || '');
       res.json(result);
@@ -676,7 +688,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/login', loginLimiter, async (req, res) => {
     try {
       const user = await loginPrivateUser({
         email: req.body?.email || '',
