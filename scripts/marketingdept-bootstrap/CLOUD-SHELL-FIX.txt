@@ -1,10 +1,9 @@
-CLEARPATH MARKETING CONSOLE — Cloud Shell (correct method)
+CLEARPATH MARKETING CONSOLE — Cloud Shell
 
-Do NOT paste giant Raw files into Cloud Shell.
+Do NOT paste giant Raw files.
 
 ────────────────────────────────────────
-FIX file upload crash (ISO-8859-1 / Unicode filename)
-+ Backend ONLINE + one owner login
+A) Redeploy (upload fix + money-channel Dispatch code)
 ────────────────────────────────────────
 
 cd ~
@@ -13,17 +12,23 @@ gh auth status || gh auth login
 gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
 bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
 
-Wait for SUCCESS.
-Hard-refresh Incognito: https://fuckweasel.net
-Login: owner
-Pick the file again — Unicode / fancy filenames now upload.
-
-If Latest still says old "Backend offline" on an old failed job:
-  Open Queue → delete that "test" job, or ignore it and queue a new Discord-only post.
-
 ────────────────────────────────────────
-Notes
+B) Open money channels (YouTube / FB / IG / TikTok)
 ────────────────────────────────────────
-- Backend ONLINE + Discord ready = Dispatch Discord works now.
-- telegram/youtube failed = those keys still incomplete (Telegram needs TELEGRAM_CHAT_ID).
-- Do not paste giant scripts. Clone and run only.
+
+Read:
+  cat ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/MONEY-CHANNELS.txt
+
+Fastest money channel = YouTube (set 3 Google OAuth vars):
+  YOUTUBE_CLIENT_ID=... YOUTUBE_CLIENT_SECRET=... YOUTUBE_REFRESH_TOKEN=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-YOUTUBE.sh
+
+Meta (Facebook + Instagram):
+  META_PAGE_ID=... META_PAGE_ACCESS_TOKEN=... META_IG_USER_ID=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-META.sh
+
+TikTok:
+  TIKTOK_ACCESS_TOKEN=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-TIKTOK.sh
+
+Discord is closed-circuit. It will not acquire paying students.
