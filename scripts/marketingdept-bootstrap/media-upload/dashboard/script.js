@@ -171,11 +171,11 @@ async function dispatchNow(jobId) {
 
 const CHANNELS = [
   // Social / video (15)
-  { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Graph Page post" },
-  { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Business Content Publishing API" },
+  { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_PAGE_* set (+ App Review)" },
+  { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_IG_USER_ID set (+ App Review)" },
   { id: "x", name: "X (Twitter)", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "X API v2" },
-  { id: "tiktok", name: "TikTok", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Calm edits only — flash risk" },
-  { id: "youtube", name: "YouTube", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Optional — ClearPath file upload first, then Data API if OAuth set" },
+  { id: "tiktok", name: "TikTok", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when TIKTOK_ACCESS_TOKEN set (+ API audit)" },
+  { id: "youtube", name: "YouTube", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when YOUTUBE_* OAuth set + ClearPath file upload" },
   { id: "linkedin", name: "LinkedIn", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "UGC / Posts API" },
   { id: "reddit", name: "Reddit", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Script app submit" },
   { id: "snapchat", name: "Snapchat", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Story / Spotlight education" },
@@ -225,7 +225,7 @@ const queueFilter = document.getElementById("queue-filter");
 
 let view = "publish";
 let queue = loadQueue();
-let selectedChannels = ["facebook", "youtube", "instagram", "linkedin", "reddit"];
+let selectedChannels = ["youtube", "facebook", "instagram", "tiktok"];
 let me = null;
 let treasure = [];
 
@@ -734,12 +734,54 @@ const API_KEY_GUIDES = [
       "APIs & Services → Credentials → Create OAuth client (Desktop or Web)",
       "OAuth consent screen: External or Internal; add your Google account as tester",
       "Use OAuth playground / a one-time local script to exchange auth code → refresh token (scope: youtube.upload)",
-      "Set the three env vars on Cloud Run; uploads default to unlisted",
-      "Remember: ClearPath file upload already posts to Telegram/Discord without YouTube",
+      "Set the three env vars on Cloud Run (or run SET-YOUTUBE.sh); uploads default to unlisted",
+      "FASTEST money channel — code already Dispatch-ready once keys are set",
     ],
   },
   {
     priority: 4,
+    id: "facebook",
+    name: "Facebook (Meta Graph)",
+    difficulty: "Hard — App Review",
+    env: "META_PAGE_ID, META_PAGE_ACCESS_TOKEN (+ META_APP_ID recommended)",
+    steps: [
+      "developers.facebook.com → Create App → Business type",
+      "Add pages_manage_posts / pages_read_engagement / pages_show_list (+ publish_video)",
+      "Connect your Facebook Page; generate a long-lived Page access token",
+      "Set META_PAGE_ID + META_PAGE_ACCESS_TOKEN on Cloud Run — Dispatch code is live",
+      "Submit App Review for production; until approved tokens may only work for app admins/testers",
+    ],
+  },
+  {
+    priority: 5,
+    id: "instagram",
+    name: "Instagram (Meta Content Publishing)",
+    difficulty: "Hard — Business account + App Review",
+    env: "META_IG_USER_ID, META_PAGE_ACCESS_TOKEN (same Meta app as Facebook)",
+    steps: [
+      "Instagram Professional (Business/Creator) linked to a Facebook Page",
+      "Same Meta app → Instagram Graph API → instagram_content_publish",
+      "Set META_IG_USER_ID + META_PAGE_ACCESS_TOKEN; PUBLIC_BASE_URL defaults to fuckweasel.net",
+      "App Review required for live publishing to non-testers",
+      "Calm still images / calm video only — no flash patterns",
+    ],
+  },
+  {
+    priority: 6,
+    id: "tiktok",
+    name: "TikTok",
+    difficulty: "Hard — Content Posting API audit",
+    env: "TIKTOK_ACCESS_TOKEN (+ TIKTOK_CLIENT_KEY/SECRET for OAuth refresh)",
+    steps: [
+      "developers.tiktok.com → Content Posting API → enable Direct Post",
+      "Complete app audit; mint user access token with video.publish",
+      "Set TIKTOK_ACCESS_TOKEN on Cloud Run — Dispatch uploads from ClearPath file",
+      "Default privacy SELF_ONLY until audit; set TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE when allowed",
+      "Calm static/caption-led edits only for ClearPath mission",
+    ],
+  },
+  {
+    priority: 7,
     id: "reddit",
     name: "Reddit",
     difficulty: "Medium",
@@ -751,34 +793,7 @@ const API_KEY_GUIDES = [
     ],
   },
   {
-    priority: 5,
-    id: "facebook",
-    name: "Facebook (Meta Graph)",
-    difficulty: "Hard — App Review",
-    env: "META_APP_ID, META_APP_SECRET, META_PAGE_ID, META_PAGE_ACCESS_TOKEN",
-    steps: [
-      "developers.facebook.com → Create App → Business type",
-      "Add Facebook Login + pages_manage_posts / pages_read_engagement permissions",
-      "Connect your Facebook Page; generate a long-lived Page access token",
-      "Submit App Review for pages_manage_posts before production posting",
-      "Until approved: channel stays bridge (copy package) — do not fake “Connected”",
-    ],
-  },
-  {
-    priority: 6,
-    id: "instagram",
-    name: "Instagram (Meta Content Publishing)",
-    difficulty: "Hard — Business account + App Review",
-    env: "META_IG_USER_ID, META_PAGE_ACCESS_TOKEN (same Meta app as Facebook)",
-    steps: [
-      "Instagram Professional (Business/Creator) linked to a Facebook Page",
-      "Same Meta app → Instagram Graph API → instagram_content_publish",
-      "App Review required for live publishing",
-      "Calm still images / calm video only — no flash patterns",
-    ],
-  },
-  {
-    priority: 7,
+    priority: 8,
     id: "linkedin",
     name: "LinkedIn",
     difficulty: "Hard — Marketing Developer Platform",
@@ -787,17 +802,6 @@ const API_KEY_GUIDES = [
       "linkedin.com/developers → Create app → request Community Management / Share on LinkedIn products",
       "Many education orgs need LinkedIn partnership approval — expect wait time",
       "Until approved: bridge package only",
-    ],
-  },
-  {
-    priority: 8,
-    id: "tiktok",
-    name: "TikTok",
-    difficulty: "Hard — Content Posting API audit",
-    env: "TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_ACCESS_TOKEN",
-    steps: [
-      "developers.tiktok.com → Content Posting API",
-      "App audit required; calm static/caption-led edits only for ClearPath mission",
     ],
   },
   {
@@ -821,7 +825,7 @@ function renderApiKeys() {
       <div class="card">
         <header><span class="title">How to get APIs — founder order</span></header>
         <div class="content">
-          <p class="hint">You do <strong>not</strong> need every API before publishing. ClearPath hosts the file; Telegram + Discord can ship today. YouTube/Meta come next. MySpace has no posting API.</p>
+          <p class="hint">Money channels = YouTube, Facebook, Instagram, TikTok. Wire their keys on Cloud Run, then Queue → Dispatch. Discord/Telegram are closed-circuit backups. MySpace has no posting API.</p>
           <ol class="api-order">
             <li>Telegram + Discord (minutes)</li>
             <li>YouTube OAuth (optional — same ClearPath upload)</li>

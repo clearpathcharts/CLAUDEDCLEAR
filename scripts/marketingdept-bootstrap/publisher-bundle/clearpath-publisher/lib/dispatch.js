@@ -1,26 +1,26 @@
 /**
  * Fan-out dispatch: sends one job to every selected channel using direct APIs.
- * Channels without direct API access yet (Meta review, LinkedIn approval) are
- * reported as "bridge" — queued in-console until that channel's API is wired.
- * ClearPath-hosted media (mediaId / videoFilePath) is preferred over YouTube links.
+ * Money channels (YouTube / Facebook / Instagram / TikTok) are wired when Cloud Run
+ * credentials are present. Remaining platforms stay bridge until approved + keyed.
+ * ClearPath-hosted media (mediaId / videoFilePath) is preferred over external links.
  */
 import { telegramReady, sendTelegram } from "../adapters/telegram.js";
 import { discordReady, sendDiscord } from "../adapters/discord.js";
 import { redditReady, sendReddit } from "../adapters/reddit.js";
 import { youtubeReady, sendYouTube } from "../adapters/youtube.js";
+import { facebookReady, sendFacebook } from "../adapters/facebook.js";
+import { instagramReady, sendInstagram } from "../adapters/instagram.js";
+import { tiktokReady, sendTikTok } from "../adapters/tiktok.js";
 import { resolveMediaForJob } from "./mediaStore.js";
 
 const FOOTER =
   "\n\nClearPath Trader — market education for calm learning.\nNot a brokerage. https://clearpathtrader.com";
 
-// Direct API pending platform approval — show as bridge until Cloud Run keys + API access land.
+// Still waiting on platform API / partnership — not coded as direct send yet.
 const BRIDGE_CHANNELS = new Set([
-  "facebook",
-  "instagram",
   "linkedin",
   "whatsapp",
   "wechat",
-  "tiktok",
   "douyin",
   "snapchat",
   "lemon8",
@@ -32,13 +32,37 @@ export function channelStatus() {
     { id: "telegram", name: "Telegram", mode: "direct", ready: telegramReady(), needs: "TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID" },
     { id: "discord", name: "Discord", mode: "direct", ready: discordReady(), needs: "DISCORD_WEBHOOK_URL" },
     { id: "reddit", name: "Reddit", mode: "direct", ready: redditReady(), needs: "REDDIT_CLIENT_ID/SECRET/USERNAME/PASSWORD/SUBREDDIT" },
-    { id: "youtube", name: "YouTube", mode: "direct", ready: youtubeReady(), needs: "YOUTUBE_CLIENT_ID/SECRET/REFRESH_TOKEN + ClearPath file upload" },
-    { id: "facebook", name: "Facebook", mode: "bridge", ready: false, needs: "Meta Graph API app review (pending — not Dispatch-ready yet)" },
-    { id: "instagram", name: "Instagram", mode: "bridge", ready: false, needs: "Meta Graph API app review (pending — not Dispatch-ready yet)" },
+    {
+      id: "youtube",
+      name: "YouTube",
+      mode: "direct",
+      ready: youtubeReady(),
+      needs: "YOUTUBE_CLIENT_ID + YOUTUBE_CLIENT_SECRET + YOUTUBE_REFRESH_TOKEN + ClearPath file upload",
+    },
+    {
+      id: "facebook",
+      name: "Facebook",
+      mode: "direct",
+      ready: facebookReady(),
+      needs: "META_PAGE_ID + META_PAGE_ACCESS_TOKEN (App Review: pages_manage_posts)",
+    },
+    {
+      id: "instagram",
+      name: "Instagram",
+      mode: "direct",
+      ready: instagramReady(),
+      needs: "META_IG_USER_ID + META_PAGE_ACCESS_TOKEN + PUBLIC_BASE_URL (App Review: instagram_content_publish)",
+    },
+    {
+      id: "tiktok",
+      name: "TikTok",
+      mode: "direct",
+      ready: tiktokReady(),
+      needs: "TIKTOK_ACCESS_TOKEN (Content Posting API audit) + ClearPath file upload",
+    },
     { id: "linkedin", name: "LinkedIn", mode: "bridge", ready: false, needs: "LinkedIn API approval (pending — not Dispatch-ready yet)" },
     { id: "whatsapp", name: "WhatsApp", mode: "bridge", ready: false, needs: "WhatsApp Business API" },
     { id: "wechat", name: "WeChat", mode: "bridge", ready: false, needs: "WeChat Official Account" },
-    { id: "tiktok", name: "TikTok", mode: "bridge", ready: false, needs: "TikTok Content Posting API" },
     { id: "douyin", name: "Douyin", mode: "bridge", ready: false, needs: "Douyin Open Platform" },
     { id: "snapchat", name: "Snapchat", mode: "bridge", ready: false, needs: "Snap Kit" },
     { id: "lemon8", name: "Lemon8", mode: "bridge", ready: false, needs: "No public API yet" },
@@ -55,7 +79,6 @@ function composeText(job, { attachUrl = true } = {}) {
 }
 
 function composeCaption(job) {
-  // Used when the platform gets the file as an attachment — skip duplicating a bare path URL.
   const parts = [job.title, "", job.caption];
   if (job.videoUrl && String(job.videoUrl).startsWith("http")) parts.push("", job.videoUrl);
   parts.push(FOOTER.trimEnd());
@@ -116,6 +139,27 @@ export async function dispatchJob(job) {
           throw new Error("Missing YOUTUBE_* credentials (Cloud Run → Variables & secrets)");
         }
         const r = await sendYouTube(enriched, `${enriched.caption}${FOOTER}`);
+        results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
+      } else if (id === "facebook") {
+        if (!facebookReady()) {
+          throw new Error("Missing META_PAGE_ID / META_PAGE_ACCESS_TOKEN (Cloud Run → Variables & secrets)");
+        }
+        const r = await sendFacebook(
+          enriched.videoFilePath || enriched.videoUrl ? captionWithFile : textOnly,
+          enriched,
+        );
+        results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
+      } else if (id === "instagram") {
+        if (!instagramReady()) {
+          throw new Error("Missing META_IG_USER_ID / META_PAGE_ACCESS_TOKEN (Cloud Run → Variables & secrets)");
+        }
+        const r = await sendInstagram(captionWithFile, enriched);
+        results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
+      } else if (id === "tiktok") {
+        if (!tiktokReady()) {
+          throw new Error("Missing TIKTOK_ACCESS_TOKEN (Cloud Run → Variables & secrets)");
+        }
+        const r = await sendTikTok(captionWithFile, enriched);
         results.push({ channel: id, ok: true, mode: "direct", detail: r, at: started });
       } else if (BRIDGE_CHANNELS.has(id)) {
         results.push({

@@ -11,6 +11,10 @@ import { fileURLToPath } from "url";
 import { loadJobs, getJob, upsertJob, patchJob, deleteJob, replaceAll } from "./lib/store.js";
 import { dispatchJob, guardrailErrors, channelStatus } from "./lib/dispatch.js";
 import { telegramReady, telegramBotToken, telegramChatId } from "./adapters/telegram.js";
+import { youtubeReady } from "./adapters/youtube.js";
+import { facebookReady } from "./adapters/facebook.js";
+import { instagramReady } from "./adapters/instagram.js";
+import { tiktokReady } from "./adapters/tiktok.js";
 import { startScheduler } from "./lib/scheduler.js";
 import {
   COOKIE_NAME,
@@ -133,6 +137,11 @@ app.get("/api/secrets/status", (_req, res) => {
       YOUTUBE_CLIENT_ID: envPresent("YOUTUBE_CLIENT_ID"),
       YOUTUBE_CLIENT_SECRET: envPresent("YOUTUBE_CLIENT_SECRET"),
       YOUTUBE_REFRESH_TOKEN: envPresent("YOUTUBE_REFRESH_TOKEN"),
+      META_PAGE_ID: envPresent("META_PAGE_ID", "FACEBOOK_PAGE_ID"),
+      META_PAGE_ACCESS_TOKEN: envPresent("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_ACCESS_TOKEN"),
+      META_IG_USER_ID: envPresent("META_IG_USER_ID", "INSTAGRAM_USER_ID"),
+      TIKTOK_ACCESS_TOKEN: envPresent("TIKTOK_ACCESS_TOKEN", "TIKTOK_USER_ACCESS_TOKEN"),
+      PUBLIC_BASE_URL: envPresent("PUBLIC_BASE_URL"),
       SESSION_SECRET: envPresent("SESSION_SECRET"),
       TEAM_USERS: envPresent("TEAM_USERS"),
     },
@@ -141,8 +150,26 @@ app.get("/api/secrets/status", (_req, res) => {
       telegramTokenFound: Boolean(telegramBotToken()),
       telegramChatFound: Boolean(telegramChatId()),
       discordReady: Boolean(String(process.env.DISCORD_WEBHOOK_URL || process.env.SOCIAL_DISCORD_WEBHOOK_URL || "").trim()),
+      youtubeReady: youtubeReady(),
+      facebookReady: facebookReady(),
+      instagramReady: instagramReady(),
+      tiktokReady: tiktokReady(),
     },
   });
+});
+
+// Public media bytes — Meta/TikTok/Instagram servers must fetch these without a login cookie.
+app.get("/media/:id", (req, res) => {
+  const media = getMedia(req.params.id);
+  if (!media) return res.status(404).json({ error: "media not found" });
+  if (media.gcsUrl && !media.filePath) return res.redirect(media.gcsUrl);
+  if (!media.filePath) return res.status(404).json({ error: "media file missing" });
+  res.setHeader("Content-Type", media.mimeType || "application/octet-stream");
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${encodeURIComponent(media.originalName || "media")}"`,
+  );
+  res.sendFile(media.filePath);
 });
 
 app.use(requireAuth);
@@ -204,19 +231,6 @@ app.post(
     }
   },
 );
-
-app.get("/media/:id", (req, res) => {
-  const media = getMedia(req.params.id);
-  if (!media) return res.status(404).json({ error: "media not found" });
-  if (media.gcsUrl && !media.filePath) return res.redirect(media.gcsUrl);
-  if (!media.filePath) return res.status(404).json({ error: "media file missing" });
-  res.setHeader("Content-Type", media.mimeType || "application/octet-stream");
-  res.setHeader(
-    "Content-Disposition",
-    `inline; filename="${encodeURIComponent(media.originalName || "media")}"`,
-  );
-  res.sendFile(media.filePath);
-});
 
 app.post("/api/queue", (req, res) => {
   const job = req.body;

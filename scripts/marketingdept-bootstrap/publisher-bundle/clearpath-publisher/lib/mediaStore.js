@@ -80,7 +80,9 @@ function guessMime(name, provided) {
 }
 
 function publicBase() {
-  return String(process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
+  // Default to live console so Instagram/Meta/TikTok can pull /media/:id without extra env.
+  const raw = process.env.PUBLIC_BASE_URL || process.env.PUBLIC_URL || "https://fuckweasel.net";
+  return String(raw).replace(/\/$/, "");
 }
 
 async function gcsAccessToken() {
