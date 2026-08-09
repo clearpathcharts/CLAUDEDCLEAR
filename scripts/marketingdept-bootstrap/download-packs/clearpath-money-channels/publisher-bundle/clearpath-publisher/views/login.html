@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — ClearPath Automation Console</title>
+  <style>
+    :root {
+      --bg: #070a14;
+      --pink: #ff2bd6;
+      --blue: #4169e1;
+      --text: #f4f6ff;
+      --muted: #8b93b0;
+      --border: rgba(65, 105, 225, 0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(255, 43, 214, 0.14), transparent 55%),
+        radial-gradient(800px 480px at 85% 90%, rgba(65, 105, 225, 0.18), transparent 50%),
+        var(--bg);
+    }
+    .card {
+      width: min(440px, 92vw);
+      padding: 2rem 1.75rem;
+      border: 1px solid var(--border);
+      background: rgba(14, 19, 36, 0.92);
+    }
+    .mark {
+      width: 48px; height: 48px;
+      display: grid; place-items: center;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      color: var(--pink);
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+    }
+    h1 { margin: 0 0 0.4rem; font-size: 1.35rem; font-weight: 600; }
+    .sub { margin: 0 0 1.2rem; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
+    label {
+      display: block; margin: 0.85rem 0 0.35rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.72rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    input {
+      width: 100%;
+      padding: 0.85rem 0.9rem;
+      border: 1px solid var(--border);
+      background: #050812;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+    input:focus { border-color: var(--pink); }
+    .error { display: none; margin-top: 0.75rem; color: #ff8fab; font-size: 0.9rem; }
+    .error.show { display: block; }
+    button {
+      margin-top: 1.15rem;
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border: 1px solid rgba(255, 43, 214, 0.45);
+      background: linear-gradient(135deg, rgba(255, 43, 214, 0.18), rgba(65, 105, 225, 0.22));
+      color: var(--text);
+      font-family: ui-monospace, monospace;
+      cursor: pointer;
+    }
+    .roster {
+      margin: 1rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-family: ui-monospace, monospace;
+    }
+    .hint { margin: 1.1rem 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+    code { font-family: ui-monospace, monospace; color: #c9d4ff; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark" aria-hidden="true">CP</div>
+    <h1>ClearPath Automation Console</h1>
+    <p class="sub">Private founder login. One account unlocks the ClearPath Automation Console.</p>
+    <form method="POST" action="/login">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" placeholder="owner" required />
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Your password" required />
+      <p class="error" id="error-msg">Login failed. Check username + password.</p>
+      <button type="submit">Unlock console</button>
+    </form>
+    <p class="roster" id="roster">Loading…</p>
+    <p class="hint">Password is set on Cloud Run with <code>TEAM_USERS</code>. Never commit it.</p>
+  </div>
+  <script>
+    if (new URLSearchParams(location.search).get("error") === "1") {
+      document.getElementById("error-msg").classList.add("show");
+    }
+    fetch("/api/auth/roster")
+      .then((r) => r.json())
+      .then((data) => {
+        const el = document.getElementById("roster");
+        if (!data.configured || !data.users?.length) {
+          el.textContent = "Team not configured yet on this server.";
+          return;
+        }
+        el.textContent = "Accounts on this server: " + data.users.join(", ");
+      })
+      .catch(() => {
+        document.getElementById("roster").textContent = "Could not load roster.";
+      });
+  </script>
+</body>
+</html>
