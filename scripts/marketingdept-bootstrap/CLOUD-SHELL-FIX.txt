@@ -3,29 +3,27 @@ CLEARPATH MARKETING CONSOLE — Cloud Shell (correct method)
 Do NOT paste giant Raw files into Cloud Shell.
 
 ────────────────────────────────────────
-FIX "Backend offline" + file upload + one login
+FIX file upload crash (ISO-8859-1 / Unicode filename)
++ Backend ONLINE + one owner login
 ────────────────────────────────────────
 
 cd ~
 rm -rf ~/CLAUDEDCLEAR-fix
 gh auth status || gh auth login
 gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
-bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/ONE-LOGIN-OWNER.sh
 bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
 
-Wait for SUCCESS (must show health with mediaUpload — not login_required).
+Wait for SUCCESS.
 Hard-refresh Incognito: https://fuckweasel.net
 Login: owner
-Expect status line: Backend: ONLINE
-Then pick a file again — upload should host on ClearPath.
+Pick the file again — Unicode / fancy filenames now upload.
+
+If Latest still says old "Backend offline" on an old failed job:
+  Open Queue → delete that "test" job, or ignore it and queue a new Discord-only post.
 
 ────────────────────────────────────────
 Notes
 ────────────────────────────────────────
-- "Backend offline — start ClearPath Publisher" = old revision had /api/health behind login.
-  FIX-CONTAINER-START ships public health + media upload.
-- youtube · telegram · failed = those channel keys are missing/wrong on Cloud Run.
-  Discord works when DISCORD_WEBHOOK_URL is set. For Telegram:
-  bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SHOW-AND-FIX-KEYS.sh
-
-Do not paste giant scripts. Clone and run only.
+- Backend ONLINE + Discord ready = Dispatch Discord works now.
+- telegram/youtube failed = those keys still incomplete (Telegram needs TELEGRAM_CHAT_ID).
+- Do not paste giant scripts. Clone and run only.

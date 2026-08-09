@@ -163,6 +163,16 @@ app.get("/api/media", (_req, res) => {
   res.json({ items: listMedia(40), limits: mediaLimits() });
 });
 
+function decodeUploadFilename(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
 app.post(
   "/api/upload",
   express.raw({ type: () => true, limit: `${mediaLimits().maxMb + 2}mb` }),
@@ -170,8 +180,8 @@ app.post(
     try {
       const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body || []);
       const originalName =
-        req.get("x-filename") ||
-        req.query?.filename ||
+        decodeUploadFilename(req.get("x-filename")) ||
+        decodeUploadFilename(req.query?.filename) ||
         `upload-${Date.now()}.mp4`;
       const mimeType = req.get("content-type") || "application/octet-stream";
       const record = await saveUpload({

@@ -35,6 +35,19 @@ function setBackendStatusOnline() {
     : "Backend: ONLINE — set TELEGRAM_BOT_TOKEN / DISCORD_WEBHOOK_URL (etc.) in Cloud Run → Variables & secrets, then Dispatch appears for those channels";
 }
 
+/** HTTP headers must be ISO-8859-1 — encode Unicode filenames (spaces, emoji, smart quotes). */
+function headerSafeFilename(name) {
+  const base = String(name || "upload.bin").split(/[/\\]/).pop() || "upload.bin";
+  return encodeURIComponent(base);
+}
+
+function headerSafeMime(type) {
+  const t = String(type || "").trim();
+  // Only allow plain ASCII mime tokens; browsers can surface odd values.
+  if (/^[a-zA-Z0-9!#$&\-\^_+.]+\/[a-zA-Z0-9!#$&\-\^_+.]+$/.test(t)) return t;
+  return "application/octet-stream";
+}
+
 /** Upload a File to ClearPath media store (binary body — not JSON). */
 async function uploadMedia(file, onProgress) {
   if (!backendOnline) {
@@ -44,12 +57,13 @@ async function uploadMedia(file, onProgress) {
     throw new Error("Backend offline — hard-refresh and login again. File hosting runs on this same fuckweasel.net server.");
   }
   if (onProgress) onProgress(0);
-  const res = await fetch(`${API_BASE}/api/upload`, {
+  const safeName = headerSafeFilename(file.name);
+  const res = await fetch(`${API_BASE}/api/upload?filename=${safeName}`, {
     method: "POST",
     credentials: "same-origin",
     headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-Filename": file.name,
+      "Content-Type": headerSafeMime(file.type),
+      "X-Filename": safeName,
     },
     body: file,
   });
@@ -66,6 +80,7 @@ async function uploadMedia(file, onProgress) {
 
 async function initBackend() {
   const statusEl = document.getElementById("backend-status");
+  const wasOnline = backendOnline;
   try {
     let channels = [];
     try {
@@ -83,6 +98,7 @@ async function initBackend() {
     if (statusEl) {
       statusEl.textContent = "Backend: offline — hard-refresh, login again. If this persists, redeploy FIX-CONTAINER-START.";
     }
+    if (wasOnline) renderLatest();
     return;
   }
 
@@ -95,11 +111,13 @@ async function initBackend() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
       updateStats();
       if (changed && view === "queue") render();
-      else if (changed) renderLatest();
     }
   } catch {
     /* keep backendOnline */
   }
+
+  // Always refresh Latest/Dispatch when backend flips online (clears stale "Backend offline" text).
+  if (!wasOnline || view !== "queue") renderLatest();
 }
 
 function syncToBackend() {
