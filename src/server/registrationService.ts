@@ -15,10 +15,14 @@ import {
   assertRegistrationEmailAllowedAsync,
   getRegistrationNameBlock,
 } from './identityRisk';
+import { isFounderEmail } from '../lib/founder';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function assertEmailAllowed(email: string): Promise<void> {
+  if (isFounderEmail(email)) {
+    throw new RegistrationError('This email is reserved.', 403);
+  }
   try {
     await assertRegistrationEmailAllowedAsync(email);
   } catch (err) {

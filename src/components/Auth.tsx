@@ -217,7 +217,7 @@ export default function Auth() {
 
   // Floating live alerts for cinematic immersive feel
   const [announcements, setAnnouncements] = useState<string[]>([
-    "Waitlist active: 11,842 / 15,000 slots per country locked. Registration ending safely.",
+    "Private Login open — create your account with email + password.",
     "Quantitative nodes linked for real-time market data ingestion.",
     "System countdown running: Stage-1 opens June 25.",
     "Macroeconomic intelligence data clusters verified."
@@ -546,8 +546,8 @@ export default function Auth() {
       a: "ClearPath Trader is an elite macroeconomic intelligence system built specifically to help ordinary retail users understand and navigate complex market environments. It pairs academic-level training structured on inflation, liquidity, and asset values with premium visual interfaces and autonomous tools."
     },
     {
-      q: "How does the Soft Launch Waitlist work?",
-      a: "We are releasing exactly 15,000 public accounts PER COUNTRY for $0 during our soft launch phase. Sign-ups are filling fast and closing automatically. Once you register on this waitlist, you lock in permanent priority rights. You will receive an exclusive private key via email to access your trading education desk when the portal opens in 14 days."
+      q: "How do I get access?",
+      a: "Use Private Login on this page: enter your email and password to create your account, or sign in if you already have one. That email + password is your real access — not a waitlist activation key. Optional email updates are separate and are never a login password."
     },
     {
       q: "What systems are integrated with the platform?",
@@ -921,10 +921,10 @@ CLARITY BEFORE DECISIONS.`}
           </div>
           <div className="text-left">
             <div className="text-[17px] sm:text-lg font-black tracking-tight text-[#00FFFF] text-transparent bg-clip-text bg-gradient-to-r from-[#00FFFF] to-[#B026FF] drop-shadow-[0_0_15px_rgba(0,255,255,0.8)] uppercase">
-              15,000 FREE ACCOUNTS PER COUNTRY
+              PRIVATE LOGIN — EMAIL + PASSWORD
             </div>
-            <p className="text-[10px] text-[#FF1493] font-bold uppercase tracking-wider animate-pulse mt-1">
-              Hurry — Registrations Ending Quickly
+            <p className="text-[10px] text-[#FF1493] font-bold uppercase tracking-wider mt-1">
+              Create your account · unlock your own terminal
             </p>
           </div>
         </motion.div>
