@@ -123,6 +123,49 @@ export async function sendIdentityPreregistrationEmail(params: {
   return sendEmail({ to: params.to, subject, text, html });
 }
 
+/** True when SMTP creds are present so email can actually be delivered. */
+export function isEmailConfigured(): boolean {
+  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  tempPassword: string;
+  displayName?: string;
+}): Promise<boolean> {
+  const greeting = params.displayName ? `Hi ${params.displayName}` : 'Hello';
+  const subject = 'Your ClearPath Trader password was reset';
+  const text = [
+    greeting + ',',
+    '',
+    'A password reset was requested for your ClearPath Trader private login.',
+    '',
+    `Temporary password: ${params.tempPassword}`,
+    '',
+    'Sign in at the Private Login desk with your email and this temporary password.',
+    'If you did not request this, you can ignore this email and keep using your old password —',
+    'this temporary password only works if it reaches you.',
+    '',
+    '— ClearPath Trader',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Password Reset</h1>
+      <p>${greeting},</p>
+      <p>A password reset was requested for your ClearPath Trader private login.</p>
+      <div style="margin:24px 0; padding:20px; border:1px solid #00FFFF; border-radius:12px; background:#0a0a0a;">
+        <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:2px;">Temporary Password</div>
+        <div style="font-size:24px; font-weight:bold; color:#FF1493; margin-top:8px; font-family:monospace;">${params.tempPassword}</div>
+      </div>
+      <p style="color:#aaa;">Sign in at the Private Login desk with your email and this temporary password.</p>
+      <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
+    </div>
+  `;
+
+  return sendEmail({ to: params.to, subject, text, html });
+}
+
 export async function notifyAdminNewRegistration(params: {
   type: 'waitlist' | 'identity';
   email: string;

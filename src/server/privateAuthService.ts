@@ -431,6 +431,31 @@ export async function resetPrivateUserPassword(input: {
   return toPublic(found);
 }
 
+/**
+ * Self-serve reset: set an EXISTING member's password to a fresh temp password
+ * and return it so the caller can email it. Returns null if no such account.
+ * Persists to both local store and Firestore.
+ */
+export async function resetPasswordToTemp(
+  email: string
+): Promise<{ tempPassword: string; displayName: string; email: string } | null> {
+  const normalized = normalizeEmail(email);
+  if (!normalized.includes('@')) return null;
+  const found =
+    (await findFirestoreUserByEmail(normalized)) ||
+    readLocalUsers().find((u) => u.email === normalized) ||
+    null;
+  if (!found) return null;
+
+  const tempPassword = `CP-${crypto.randomBytes(6).toString('hex')}`;
+  const { hash, salt } = await hashPassword(tempPassword);
+  found.passwordHash = hash;
+  found.passwordSalt = salt;
+  upsertLocalUser(found);
+  await upsertFirestoreUser(found);
+  return { tempPassword, displayName: found.displayName, email: found.email };
+}
+
 /** Client-facing session payload stored in localStorage + mirrored in Express session */
 export function buildClientSessionUser(user: PublicPrivateUser) {
   return {

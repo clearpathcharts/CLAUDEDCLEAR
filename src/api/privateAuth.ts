@@ -122,6 +122,20 @@ export async function loginPrivateAccount(input: {
   return data.user as PrivateSessionUser;
 }
 
+/** Self-serve password reset — emails the member a temporary password. */
+export async function requestPasswordReset(email: string): Promise<{
+  ok: boolean;
+  devTempPassword?: string;
+}> {
+  const res = await fetch('/api/auth/private/request-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  return parseJson(res);
+}
+
 export async function verifyBoardAccess(code: string): Promise<PrivateSessionUser> {
   clearPrivateSession();
   const res = await fetch('/api/auth/board/verify', {

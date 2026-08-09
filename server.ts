@@ -124,10 +124,15 @@ import {
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
   resetPrivateUserPassword,
+  resetPasswordToTemp,
 } from './src/server/privateAuthService';
 import {
   listWaitlistRegistrationsSafe,
 } from './src/server/registrationStore';
+import {
+  isEmailConfigured,
+  sendPasswordResetEmail,
+} from './src/server/registrationEmail';
 import {
   convertWaitlistToPrivateAccounts,
   listFounderInvites,
@@ -683,6 +688,49 @@ async function startServer() {
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       res.status(status).json({ error: error.message || 'Login failed.' });
+    }
+  });
+
+  /**
+   * Self-serve password reset. Emails the member a fresh temporary password.
+   * Generic response — never reveals whether an email is registered.
+   * Requires SMTP to be configured to actually deliver (in dev without SMTP,
+   * returns the temp password directly so it can be tested locally).
+   */
+  app.post('/api/auth/private/request-reset', registrationLimiter, async (req, res) => {
+    const email = String(req.body?.email || '');
+    try {
+      const smtpReady = isEmailConfigured();
+
+      if (!smtpReady && isProd) {
+        return res.status(503).json({
+          ok: false,
+          error: 'Email delivery is not configured yet. Please contact the site owner to reset your password.',
+        });
+      }
+
+      const result = await resetPasswordToTemp(email);
+
+      if (result && smtpReady) {
+        await sendPasswordResetEmail({
+          to: result.email,
+          tempPassword: result.tempPassword,
+          displayName: result.displayName,
+        });
+        return res.json({ ok: true });
+      }
+
+      // Dev/local (no SMTP): surface the temp password so it can be tested.
+      if (result && !smtpReady && !isProd) {
+        return res.json({ ok: true, devTempPassword: result.tempPassword });
+      }
+
+      // Account not found (or nothing to do) — respond generically to avoid enumeration.
+      return res.json({ ok: true });
+    } catch (error) {
+      console.error('[auth/private/request-reset] failed:', error);
+      // Still generic to avoid leaking account existence.
+      return res.json({ ok: true });
     }
   });
 

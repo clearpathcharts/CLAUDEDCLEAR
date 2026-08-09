@@ -5,6 +5,7 @@ import {
   lookupPrivateAccount,
   loginPrivateAccount,
   registerPrivateAccount,
+  requestPasswordReset,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
@@ -37,6 +38,8 @@ export default function PrivateLoginDesk({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [knownName, setKnownName] = useState('');
+  const [resetMsg, setResetMsg] = useState('');
+  const [resetBusy, setResetBusy] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Pick up activation-link prefill when the desk opens (prop arrives after mount).
@@ -55,6 +58,8 @@ export default function PrivateLoginDesk({
     setError('');
     setBusy(false);
     setKnownName('');
+    setResetMsg('');
+    setResetBusy(false);
   };
 
   const handleClose = () => {
@@ -99,6 +104,27 @@ export default function PrivateLoginDesk({
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       setBusy(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setResetMsg('');
+    setResetBusy(true);
+    try {
+      const result = await requestPasswordReset(email);
+      if (result.devTempPassword) {
+        // Dev/local only (SMTP not configured) — surfaces the temp password.
+        setResetMsg(`Temporary password (dev): ${result.devTempPassword}`);
+      } else {
+        setResetMsg(
+          `If an account exists for ${email}, we've emailed a temporary password. Check your inbox (and spam), then sign in with it.`
+        );
+      }
+    } catch (err: any) {
+      setError(err.message || 'Could not start password reset.');
+    } finally {
+      setResetBusy(false);
     }
   };
 
@@ -260,10 +286,26 @@ export default function PrivateLoginDesk({
 
                 <button
                   type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetBusy}
+                  className="w-full text-[11px] text-[#FF1493] hover:text-[#FF5AAF] transition-colors disabled:opacity-50"
+                >
+                  {resetBusy ? 'Sending…' : 'Forgot password?'}
+                </button>
+
+                {resetMsg && (
+                  <p className="text-[11px] text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/25 rounded-xl px-3 py-2 leading-relaxed">
+                    {resetMsg}
+                  </p>
+                )}
+
+                <button
+                  type="button"
                   onClick={() => {
                     setStep('identify');
                     setPassword('');
                     setError('');
+                    setResetMsg('');
                   }}
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
