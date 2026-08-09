@@ -68,12 +68,17 @@ for i in $(seq 1 24); do
   H=$(curl -sS https://fuckweasel.net/api/health || true)
   R=$(curl -sS https://fuckweasel.net/api/auth/roster || true)
   L=$(curl -sS https://fuckweasel.net/login || true)
-  echo "try $i: health=$(echo "$H" | tr ',' '\n' | grep console || echo auth_gated_or_down) roster=$(echo "$R" | head -c 80)"
-  if echo "$H$R" | grep -q social-team-private || echo "$R" | grep -q '"configured":true' || echo "$L" | grep -q "Sign in — ClearPath"; then
+  echo "try $i: health=$(echo "$H" | head -c 120) roster=$(echo "$R" | head -c 80)"
+  # Require PUBLIC health with mediaUpload — auth-gated health was the false "Backend offline" bug.
+  if echo "$H" | grep -q '"ok":true' && echo "$H" | grep -q 'mediaUpload' && echo "$H" | grep -q 'social-team-private'; then
     echo "SUCCESS — hard-refresh Incognito https://fuckweasel.net (Ctrl+Shift+R)"
-    echo "Expect: Queue → Dispatch now. No Cursor paste. No mission checkboxes."
+    echo "Expect: Backend ONLINE, file upload works, Queue → Dispatch now."
     echo "Login with owner (password from Cloud Run TEAM_USERS)."
+    echo "Telegram/YouTube only send if those keys are set — Discord works when webhook is set."
     exit 0
+  fi
+  if echo "$H" | grep -q login_required; then
+    echo "  (health still auth-gated — waiting for new revision)"
   fi
 done
 

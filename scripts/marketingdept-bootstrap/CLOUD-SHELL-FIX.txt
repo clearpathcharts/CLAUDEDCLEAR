@@ -3,7 +3,7 @@ CLEARPATH MARKETING CONSOLE — Cloud Shell (correct method)
 Do NOT paste giant Raw files into Cloud Shell.
 
 ────────────────────────────────────────
-ONE LOGIN ONLY (remove brent / brian / dustin)
+FIX "Backend offline" + file upload + one login
 ────────────────────────────────────────
 
 cd ~
@@ -13,32 +13,19 @@ gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --bra
 bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/ONE-LOGIN-OWNER.sh
 bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
 
-Wait for SUCCESS on both.
-Hard-refresh Incognito: https://fuckweasel.net/login
-Login: owner  (same password you already set for owner)
-
-────────────────────────────────────────
-Dispatch / container fix only (if login already OK)
-────────────────────────────────────────
-
-cd ~
-rm -rf ~/CLAUDEDCLEAR-fix
-gh auth status || gh auth login
-gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
-bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
-
-Wait for SUCCESS.
+Wait for SUCCESS (must show health with mediaUpload — not login_required).
 Hard-refresh Incognito: https://fuckweasel.net
+Login: owner
+Expect status line: Backend: ONLINE
+Then pick a file again — upload should host on ClearPath.
 
 ────────────────────────────────────────
-What this fixes
+Notes
 ────────────────────────────────────────
-- TEAM_USERS → only owner (brent/brian/dustin removed)
-- Login page text → single founder account
-- Missing mediaStore.js / bad .dockerignore / ZIP timestamps
-- Cursor paste UI → Queue / Dispatch UI
-
-If Telegram Dispatch still fails after FIX:
+- "Backend offline — start ClearPath Publisher" = old revision had /api/health behind login.
+  FIX-CONTAINER-START ships public health + media upload.
+- youtube · telegram · failed = those channel keys are missing/wrong on Cloud Run.
+  Discord works when DISCORD_WEBHOOK_URL is set. For Telegram:
   bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SHOW-AND-FIX-KEYS.sh
 
 Do not paste giant scripts. Clone and run only.

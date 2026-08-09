@@ -13,9 +13,11 @@ let backendOnline = false;
 let backendChannels = [];
 
 async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     ...options,
+    headers,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -24,14 +26,27 @@ async function api(path, options = {}) {
   return res.json();
 }
 
+function setBackendStatusOnline() {
+  const statusEl = document.getElementById("backend-status");
+  const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
+  if (!statusEl) return;
+  statusEl.textContent = direct.length
+    ? `Backend: ONLINE — Dispatch ready for: ${direct.join(", ")}`
+    : "Backend: ONLINE — set TELEGRAM_BOT_TOKEN / DISCORD_WEBHOOK_URL (etc.) in Cloud Run → Variables & secrets, then Dispatch appears for those channels";
+}
+
 /** Upload a File to ClearPath media store (binary body — not JSON). */
 async function uploadMedia(file, onProgress) {
   if (!backendOnline) {
-    throw new Error("Backend offline — start ClearPath Publisher to host the file.");
+    await initBackend();
+  }
+  if (!backendOnline) {
+    throw new Error("Backend offline — hard-refresh and login again. File hosting runs on this same fuckweasel.net server.");
   }
   if (onProgress) onProgress(0);
   const res = await fetch(`${API_BASE}/api/upload`, {
     method: "POST",
+    credentials: "same-origin",
     headers: {
       "Content-Type": file.type || "application/octet-stream",
       "X-Filename": file.name,
@@ -40,6 +55,9 @@ async function uploadMedia(file, onProgress) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Session expired — refresh and login again, then re-choose the file.");
+    }
     throw new Error(body.error || `Upload failed (HTTP ${res.status})`);
   }
   if (onProgress) onProgress(100);
@@ -49,29 +67,38 @@ async function uploadMedia(file, onProgress) {
 async function initBackend() {
   const statusEl = document.getElementById("backend-status");
   try {
-    const health = await api("/api/health");
-    backendOnline = true;
-    backendChannels = health.channels || [];
-    const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
-    if (statusEl) {
-      statusEl.textContent = direct.length
-        ? `Backend: ONLINE — Dispatch ready for: ${direct.join(", ")}`
-        : "Backend: ONLINE — set TELEGRAM_BOT_TOKEN / DISCORD_WEBHOOK_URL (etc.) in Cloud Run → Variables & secrets, then Dispatch appears for those channels";
+    let channels = [];
+    try {
+      const health = await api("/api/health");
+      channels = health.channels || [];
+    } catch {
+      // Older revisions gated /api/health; channels still prove the publisher is up.
+      channels = await api("/api/channels");
     }
+    backendOnline = true;
+    backendChannels = Array.isArray(channels) ? channels : [];
+    setBackendStatusOnline();
+  } catch {
+    backendOnline = false;
+    if (statusEl) {
+      statusEl.textContent = "Backend: offline — hard-refresh, login again. If this persists, redeploy FIX-CONTAINER-START.";
+    }
+    return;
+  }
+
+  // Queue sync must not flip the whole publisher offline (upload/dispatch still work).
+  try {
     const serverQueue = await api("/api/queue");
     if (Array.isArray(serverQueue)) {
       const changed = JSON.stringify(serverQueue) !== JSON.stringify(queue);
       queue = serverQueue;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
       updateStats();
-      // Only re-render the queue view; never clobber the composer mid-typing.
       if (changed && view === "queue") render();
+      else if (changed) renderLatest();
     }
   } catch {
-    backendOnline = false;
-    if (statusEl) {
-      statusEl.textContent = "Backend: offline — login again or check Cloud Run. Publishing runs only from ClearPath Publisher on this console.";
-    }
+    /* keep backendOnline */
   }
 }
 
