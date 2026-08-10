@@ -26,6 +26,8 @@ export type StripePrivateUserRecord = {
   identityDeclinedAt?: string;
   identityConfirmedAt?: string;
   identityEmailWasSuspect?: boolean;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: string;
 };
 
 const META = {
@@ -38,6 +40,8 @@ const META = {
   tempPassword: 'cp_temp_password',
   /** Compact JSON blob for identity quarantine fields (Stripe metadata value ≤500 chars). */
   identity: 'cp_priv_identity',
+  /** Compact JSON blob for self-serve password reset token (≤200 chars). */
+  pwreset: 'cp_priv_pwreset',
 } as const;
 
 function normalizeEmail(email: string): string {
@@ -90,6 +94,20 @@ function recordFromCustomer(customer: {
       if (typeof parsed.emailSuspect === 'boolean') record.identityEmailWasSuspect = parsed.emailSuspect;
     } catch {
       /* ignore corrupt identity blob */
+    }
+  }
+  const pwresetRaw = metaGet(customer.metadata, META.pwreset);
+  if (pwresetRaw) {
+    try {
+      const parsed = JSON.parse(pwresetRaw) as Record<string, unknown>;
+      if (typeof parsed.chal === 'string' && parsed.chal.trim()) {
+        record.passwordResetTokenHash = parsed.chal.trim();
+      }
+      if (typeof parsed.exp === 'string' && parsed.exp.trim()) {
+        record.passwordResetExpiresAt = parsed.exp.trim();
+      }
+    } catch {
+      /* ignore corrupt pwreset blob */
     }
   }
   return record;
@@ -161,6 +179,16 @@ export async function upsertStripePrivateUser(
           : {}),
       }).slice(0, 500);
       metadata[META.identity] = blob;
+    }
+
+    if (user.passwordResetTokenHash && user.passwordResetExpiresAt) {
+      metadata[META.pwreset] = JSON.stringify({
+        chal: user.passwordResetTokenHash,
+        exp: user.passwordResetExpiresAt,
+      }).slice(0, 200);
+    } else {
+      // Explicit clear so consumed tokens do not survive on Stripe metadata.
+      metadata[META.pwreset] = '';
     }
 
     if (customer) {

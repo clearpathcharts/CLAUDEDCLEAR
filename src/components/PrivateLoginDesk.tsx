@@ -7,6 +7,8 @@ import {
   resubmitIdentity,
   declineIdentity,
   resendIdentityConfirm,
+  requestPasswordReset,
+  completePasswordResetWithToken,
   PrivateAuthClientError,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
@@ -15,6 +17,9 @@ type Step =
   | 'identify'
   | 'login'
   | 'register'
+  | 'forgot'
+  | 'forgot_sent'
+  | 'reset_password'
   | 'real_info'
   | 'pending_email'
   | 'goodbye';
@@ -25,6 +30,8 @@ interface PrivateLoginDeskProps {
   initialMode?: 'login' | 'register';
   /** Prefill from activation links (/activate?email=...). */
   initialEmail?: string;
+  /** One-time token from password-reset email link. */
+  initialResetToken?: string;
 }
 
 /**
@@ -37,8 +44,11 @@ export default function PrivateLoginDesk({
   onClose,
   initialMode = 'login',
   initialEmail = '',
+  initialResetToken = '',
 }: PrivateLoginDeskProps) {
-  const [step, setStep] = useState<Step>(initialMode === 'register' ? 'register' : 'login');
+  const [step, setStep] = useState<Step>(
+    initialResetToken ? 'reset_password' : initialMode === 'register' ? 'register' : 'login'
+  );
   const [email, setEmail] = useState(initialEmail);
   const [accountEmail, setAccountEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState('');
@@ -49,23 +59,32 @@ export default function PrivateLoginDesk({
   const [busy, setBusy] = useState(false);
   const [knownName, setKnownName] = useState('');
   const [infoBanner, setInfoBanner] = useState('');
+  const [resetToken, setResetToken] = useState(initialResetToken);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!open) return;
-    setStep(initialMode === 'register' ? 'register' : 'login');
+    if (initialResetToken) {
+      setResetToken(initialResetToken);
+      setStep('reset_password');
+      setInfoBanner('Choose a new password for your Private Login.');
+    } else {
+      setStep(initialMode === 'register' ? 'register' : 'login');
+    }
     if (initialEmail) {
       setEmail(initialEmail);
       setAccountEmail(initialEmail);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialMode, initialEmail]);
+  }, [open, initialMode, initialEmail, initialResetToken]);
 
   React.useEffect(() => {
     if (!open || typeof window === 'undefined') return;
     try {
       const params = new URLSearchParams(window.location.search);
       const identity = params.get('identity');
+      const reset = params.get('reset');
+      const token = String(params.get('token') || '').trim();
       if (identity === 'confirmed') {
         setInfoBanner('Identity confirmed. Sign in with your email and password.');
         setStep('login');
@@ -73,6 +92,16 @@ export default function PrivateLoginDesk({
         setStep('goodbye');
       } else if (identity === 'invalid') {
         setError('That confirmation link is invalid or expired.');
+      } else if (reset === '1' && token) {
+        setResetToken(token);
+        setStep('reset_password');
+        setInfoBanner('Choose a new password for your Private Login.');
+      } else if (reset === 'expired') {
+        setStep('forgot');
+        setError('That reset link expired. Enter your email and we’ll send a fresh one.');
+      } else if (reset === 'invalid') {
+        setStep('forgot');
+        setError('That reset link is invalid. Enter your email and we’ll send a fresh one.');
       }
     } catch {
       /* ignore */
@@ -91,6 +120,7 @@ export default function PrivateLoginDesk({
     setBusy(false);
     setKnownName('');
     setInfoBanner('');
+    setResetToken('');
   };
 
   const handleClose = () => {
@@ -240,20 +270,75 @@ export default function PrivateLoginDesk({
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const result = await requestPasswordReset(email);
+      setInfoBanner(
+        result.emailSent
+          ? result.message
+          : `${result.message} If nothing arrives in a few minutes, SMTP may be offline — try again later or ask Rick.`
+      );
+      setStep('forgot_sent');
+    } catch (err: any) {
+      setError(err.message || 'Could not start password reset.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!resetToken) {
+      setError('Reset link is missing. Request a new one from Forgot password.');
+      setStep('forgot');
+      return;
+    }
+    setBusy(true);
+    try {
+      await completePasswordResetWithToken({ token: resetToken, newPassword: password });
+      window.location.href = '/';
+    } catch (err: any) {
+      const code = err instanceof PrivateAuthClientError ? err.code : undefined;
+      if (code === 'RESET_EXPIRED' || code === 'RESET_INVALID') {
+        setStep('forgot');
+        setError(err.message || 'That reset link is invalid or expired. Request a new one.');
+      } else {
+        setError(err.message || 'Could not reset password.');
+      }
+      setBusy(false);
+    }
+  };
+
   if (!open) return null;
 
   const title =
     step === 'login'
       ? 'Private Login'
-      : step === 'register'
-        ? 'Create your private account'
-        : step === 'real_info'
-          ? 'Please enter real information'
-          : step === 'pending_email'
-            ? 'Confirm your identity'
-            : step === 'goodbye'
-              ? 'Have a good one.'
-              : 'Private Login';
+      : step === 'forgot' || step === 'forgot_sent'
+        ? 'Forgot password'
+        : step === 'reset_password'
+          ? 'Choose a new password'
+          : step === 'register'
+            ? 'Create your private account'
+            : step === 'real_info'
+              ? 'Please enter real information'
+              : step === 'pending_email'
+                ? 'Confirm your identity'
+                : step === 'goodbye'
+                  ? 'Have a good one.'
+                  : 'Private Login';
 
   return (
     <AnimatePresence>
@@ -298,9 +383,15 @@ export default function PrivateLoginDesk({
                   <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
                     {step === 'login'
                       ? 'Email and password. That’s it.'
-                      : step === 'register'
-                        ? 'Create your login — then you’re in.'
-                        : 'Your workspace stays yours.'}
+                      : step === 'forgot'
+                        ? 'We’ll email a one-time reset link. No password in the email.'
+                        : step === 'forgot_sent'
+                          ? 'Check your inbox (and spam).'
+                          : step === 'reset_password'
+                            ? 'Pick something you’ll remember — at least 8 characters.'
+                            : step === 'register'
+                              ? 'Create your login — then you’re in.'
+                              : 'Your workspace stays yours.'}
                   </p>
                 )}
               </div>
@@ -401,6 +492,20 @@ export default function PrivateLoginDesk({
                 <button
                   type="button"
                   onClick={() => {
+                    setStep('forgot');
+                    setPassword('');
+                    setConfirmPassword('');
+                    setError('');
+                    setInfoBanner('');
+                  }}
+                  className="w-full text-[11px] text-zinc-400 hover:text-[#FF1493] transition-colors"
+                >
+                  Forgot password?
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setStep('register');
                     setPassword('');
                     setConfirmPassword('');
@@ -410,6 +515,140 @@ export default function PrivateLoginDesk({
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
                   Need an account? Create one
+                </button>
+              </form>
+            )}
+
+            {step === 'forgot' && (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Account email
+                  </span>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Mail size={14} />
+                  {busy ? 'Sending…' : 'Email me a reset link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('login');
+                    setError('');
+                    setInfoBanner('');
+                  }}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                >
+                  Back to sign in
+                </button>
+              </form>
+            )}
+
+            {step === 'forgot_sent' && (
+              <div className="space-y-4">
+                <p className="text-[12px] text-zinc-400 leading-relaxed">
+                  If an account exists for <span className="text-white">{email}</span>, the reset email
+                  is on its way. Open the link within 1 hour, choose a new password, then sign in.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('login');
+                    setPassword('');
+                    setError('');
+                    setInfoBanner('After you reset, sign in with your new password.');
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest"
+                >
+                  Back to sign in
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    const fakeEvent = { preventDefault() {} } as React.FormEvent;
+                    void handleForgot(fakeEvent);
+                  }}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors disabled:opacity-50"
+                >
+                  Resend reset email
+                </button>
+              </div>
+            )}
+
+            {step === 'reset_password' && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    New password
+                  </span>
+                  <div className="relative">
+                    <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF1493]/80" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      autoFocus
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl pl-10 pr-12 py-3 text-sm text-white outline-none tracking-widest"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                    </button>
+                  </div>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Confirm password
+                  </span>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none tracking-widest"
+                    />
+                  </div>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <KeyRound size={14} />
+                  {busy ? 'Saving…' : 'Save new password'}
                 </button>
               </form>
             )}
