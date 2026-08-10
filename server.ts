@@ -1047,7 +1047,7 @@ async function startServer() {
       );
     const token = typeof req.query.token === 'string' ? req.query.token : '';
     const checked = await validatePasswordResetToken(token);
-    if (!checked.valid) {
+    if (checked.valid === false) {
       const reason = checked.reason === 'expired' ? 'expired' : 'invalid';
       return res.redirect(302, `${site}/activate?reset=${reason}`);
     }
