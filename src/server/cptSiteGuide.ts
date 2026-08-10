@@ -42,7 +42,7 @@ Mobile: use the command-center style menu. Sections are WORK, LEARN, TOOLS, ACCO
 
 C.P.T. Buddy: floating personal buddy icon (or "Ask C.P.T." tile on Home). Opens this chat. Remembers name, skill level, and facts when signed in.
 
-Section guide videos: on most main tabs a small offer asks "Would you like to watch a video?" — optional walkthroughs (up to about 3 minutes) for that part of the site. Members can dismiss or snooze. If a clip is not uploaded yet, the player says the guide is coming soon.
+Section guide videos: on most main tabs a small offer asks "Would you like to watch a video?" — optional walkthroughs of seven short clips (~10 seconds each, about 70 seconds total) for that part of the site. Members can dismiss or snooze. If a beat is not uploaded yet, the player says that clip is coming soon.
 
 --- CHARTS + NEURODIVERGENT CHART UI ---
 Charts are under CHARTS in the top nav. ClearPath charts support Neuro-Adaptive Chart Profiles — visual themes that change colors, glow, spacing, density, and motion so different brains can read the same market data more comfortably.
