@@ -23,6 +23,8 @@
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
+    "test:section-guides": "tsx scripts/section-guides.selftest.ts",
+    "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",

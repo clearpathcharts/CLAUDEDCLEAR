@@ -39,6 +39,9 @@ jobs:
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable
 
+      - name: Section guide video catalog self-test
+        run: npm run test:section-guides
+
       - name: Founder disaster-backup self-test
         run: npm run test:founder-backup
 
