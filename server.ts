@@ -96,6 +96,18 @@ import {
 } from './src/server/stripeService';
 import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
+import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
+import {
+  formatAffectForPrompt,
+  formatBondForPrompt,
+  normalizeBondProfile,
+} from './src/server/buddyAffect';
+import {
+  classifyBuddyAffect,
+  extractBuddyGrowth,
+  mergeBondProfile,
+  offlineCompanionAnswer,
+} from './src/server/buddyMentorService';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -2312,41 +2324,72 @@ Frame your explanation with advanced professional rigor, making it scannable, st
     }
   });
 
-  // AI Trading Mentor - Phase 1 (Groq / Llama)
+  // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
   app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext, bondProfile } =
+      req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
+    const displayName = userName && typeof userName === 'string' ? userName.trim().slice(0, 40) : 'friend';
+    const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
+    const bond = normalizeBondProfile(bondProfile);
+    const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-20) : [];
+    const recentUserLines = history
+      .filter((m: any) => m && m.role === 'user' && typeof m.content === 'string')
+      .map((m: any) => m.content as string);
+
     const apiKey = getGroqApiKey();
+    const affect = await classifyBuddyAffect({
+      apiKey,
+      question,
+      recentUserLines,
+    });
+
     if (!apiKey) {
+      const companionOffline = offlineCompanionAnswer({ question, displayName, affect });
+      if (companionOffline) {
+        return res.json({
+          answer: companionOffline,
+          newFacts: [],
+          affect,
+          bondPatch: mergeBondProfile(bond, {
+            lastMood: {
+              primary: affect.primary,
+              intensity: affect.intensity,
+              at: Date.now(),
+            },
+          }),
+        });
+      }
       const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
       const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
       if (localChart && chartish) {
         return res.json({
           answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
           newFacts: [],
+          affect,
         });
       }
       const siteHelp = offlineSiteGuideAnswer(question);
       if (siteHelp) {
-        return res.json({ answer: siteHelp, newFacts: [] });
+        return res.json({ answer: siteHelp, newFacts: [], affect });
       }
       return res.json({
-        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, INDACREATOR, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
+        answer: `Hey ${displayName} — I'm still here with you. Live full conversation needs a GROQ_API_KEY in Secrets. Meanwhile I can help with navigating ClearPath, INDACREATOR, Charts, neuro profiles, Education, or the Encyclopedias. How's your day going?`,
+        newFacts: [],
+        affect,
       });
     }
 
-    const displayName = userName && typeof userName === 'string' ? userName : 'trader';
-    const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
-
-    const systemPrompt = `You are the ClearPath Trader AI Mentor, a calm, patient trading educator built into the ClearPath Trader platform.
+    const systemPrompt = `You are C.P.T., ClearPath Trader's personal platonic buddy and calm trading educator.
 You are speaking with ${displayName}, whose self-identified skill level is: ${level}.
-Adjust your explanations to match that skill level - simpler and more foundational for beginners, more technical and nuanced for advanced traders.
-Always answer in plain, calm English. Never use hype, urgency, or pressure language - ClearPath's brand is calm, not casino.
+Adjust teaching depth to that skill level. Always use plain, calm English. Never use hype, urgency, or casino pressure.
 
-You teach ClearPath Trader's proprietary, trademarked methodology, "Four Up, Three Down" (also documented as "4 Patterns on a Trend, 3 on a Retrace"), described in full below. When asked about entries, setups, or "how do I trade this," teach from this methodology specifically, not generic trading advice.
+${CPT_COMPANION_GUIDE}
+
+You also teach ClearPath Trader's proprietary methodology, "Four Up, Three Down" (also "4 Patterns on a Trend, 3 on a Retrace"), described below. When asked about entries, setups, or "how do I trade this," teach from this methodology — but if emotional intensity is high or crisis is flagged, pause trading lessons and care first.
 
 === FOUR UP, THREE DOWN METHODOLOGY ===
 
@@ -2394,49 +2437,45 @@ You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indic
 
 Never claim you have access to a user's account data, balances, or positions. You do not have that.
 
-=== EMOTIONAL CARE (VERY IMPORTANT) ===
-Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexia, traumatic brain injury, PTSD, and more. Some have limited short-term memory. Treat every person with warmth, patience, and zero judgment.
-- Use short sentences and plain words. One idea at a time.
-- Never shame anyone for repeating a question or forgetting something you already explained. Just answer again, kindly, like it's the first time.
-- If someone shares feelings, acknowledge the feeling first, information second.
-- Never use pressure, urgency, or hype. Never push anyone to trade.
-- Never promise profits or guaranteed outcomes. Trading involves risk and you say so calmly when relevant.
-- You are a supportive companion and educator, not a therapist or doctor. If someone seems to be in serious emotional distress, or mentions wanting to hurt themselves, respond with genuine care and gently encourage them to reach out to someone they trust or a professional - in the US they can call or text 988 any time. Stay kind. Never lecture, never dismiss.
-=== END EMOTIONAL CARE ===
-
 ${CPT_SITE_GUIDE}`;
 
-    // Inject everything we remember about this specific user, so they NEVER
-    // have to re-introduce themselves.
     const rememberedFacts = Array.isArray(memoryFacts)
       ? memoryFacts.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 60)
       : [];
     const memoryBlock = rememberedFacts.length
-      ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally in conversation, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
+      ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
       : '';
 
-    const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
-      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
-      : '';
+    const bondBlock = `\n\n${formatBondForPrompt(displayName, bond)}`;
+    const affectBlock = `\n\n${formatAffectForPrompt(affect)}`;
+
+    const chartBlock =
+      chartContext && typeof chartContext === 'string' && chartContext.trim()
+        ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+        : '';
 
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock + chartBlock },
-      ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
-      { role: 'user', content: question }
+      { role: 'system', content: systemPrompt + memoryBlock + bondBlock + affectBlock + chartBlock },
+      ...history.map((m: any) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m.content || '').slice(0, 4000),
+      })),
+      { role: 'user', content: question },
     ];
 
     try {
+      const warmTemp = affect.crisis || affect.intensity >= 4 ? 0.35 : 0.55;
       const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages,
-          temperature: 0.4,
-          max_tokens: 1200,
+          temperature: warmTemp,
+          max_tokens: 1800,
         }),
       });
 
@@ -2446,57 +2485,39 @@ ${CPT_SITE_GUIDE}`;
       }
 
       const data = await groqRes.json();
-      const answer = data?.choices?.[0]?.message?.content || 'The mentor had no response - try rephrasing your question.';
+      const answer =
+        data?.choices?.[0]?.message?.content ||
+        'I want to answer you properly — try saying that again in your own words.';
 
-      // ==== MEMORY LEARNING PASS ====
-      // A quick second call to a small fast model asks: "did the user just
-      // reveal anything lasting about themselves?" Whatever it finds gets
-      // returned to the widget, which saves it into the user's permanent
-      // memory in Firestore. This never blocks or breaks the main answer.
       let newFacts: string[] = [];
-      try {
-        const extractRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
-            temperature: 0,
-            max_tokens: 200,
-            messages: [
-              {
-                role: 'system',
-                content: 'You extract lasting personal facts a user reveals about themselves: their name, goals, preferences, trading style, life details, or anything they explicitly ask to be remembered. Ignore small talk and one-time questions. Respond with ONLY a JSON array of short plain-English strings, e.g. ["Prefers trading gold", "Has two kids"]. If there is nothing lasting, respond with []. No other text.',
-              },
-              {
-                role: 'user',
-                content: `The user (${displayName}) said: "${question}"`,
-              },
-            ],
-          }),
-        });
-        if (extractRes.ok) {
-          const extractData = await extractRes.json();
-          const raw = extractData?.choices?.[0]?.message?.content || '[]';
-          const cleaned = raw.replace(/```json|```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          if (Array.isArray(parsed)) {
-            newFacts = parsed.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 8);
-          }
-        }
-      } catch (memErr) {
-        console.error('[AI Mentor] Memory extraction skipped:', memErr);
-      }
-      // ==== END MEMORY LEARNING PASS ====
+      let bondPatch = mergeBondProfile(bond, {
+        lastMood: {
+          primary: affect.primary,
+          intensity: affect.intensity,
+          at: Date.now(),
+          ...(affect.evidence[0] ? { note: affect.evidence[0] } : {}),
+        },
+      });
 
-      res.json({ answer, newFacts });
+      try {
+        const growth = await extractBuddyGrowth({
+          apiKey,
+          displayName,
+          question,
+          affect,
+        });
+        newFacts = growth.newFacts;
+        bondPatch = mergeBondProfile(bondPatch, growth.bondPatch);
+      } catch (memErr) {
+        console.error('[AI Mentor] Growth extraction skipped:', memErr);
+      }
+
+      res.json({ answer, newFacts, affect, bondPatch });
     } catch (err: any) {
       console.error('[AI Mentor Error]', err);
       res.status(500).json({
         error: 'Failed AI mentor processing',
-        message: err.message || 'Groq API connection failure.'
+        message: err.message || 'Groq API connection failure.',
       });
     }
   });
