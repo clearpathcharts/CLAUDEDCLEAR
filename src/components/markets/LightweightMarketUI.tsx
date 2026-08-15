@@ -379,7 +379,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
               <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
                 {isNarrowViewport
-                  ? 'Three chart slots — search a symbol to load. Charts stack full-size for phone screens; scroll to the next.'
+                  ? 'Three chart slots — each fills your phone screen. Swipe/scroll to the next full-size chart.'
                   : 'Three chart slots — all empty until you search. Grab the handle on any chart and drag it anywhere in this workspace.'}
               </p>
 
@@ -387,7 +387,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 id="master-chart-stack"
                 className={
                   isNarrowViewport
-                    ? 'flex w-full flex-col gap-4'
+                    ? 'flex w-full flex-col gap-0 snap-y snap-mandatory'
                     : 'multi-chart-container relative w-full'
                 }
                 style={isNarrowViewport ? undefined : { minHeight: canvasMinHeight }}
@@ -408,7 +408,11 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     zIndex={10 + idx}
                     position={{ x: 0, y: isNarrowViewport ? 0 : slot.y }}
                     onPositionChange={(pos) => updateSlot(idx, { x: 0, y: Math.max(0, pos.y) })}
-                    className={`glass shadow-2xl ${isNarrowViewport ? 'min-h-0' : '!h-[500px]'}`}
+                    className={`glass shadow-2xl ${
+                      isNarrowViewport
+                        ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
+                        : '!h-[500px]'
+                    }`}
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">
                         <ChartSymbolSearch
@@ -434,10 +438,18 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     }
                   >
                     {slot.symbol ? (
-                      <div className="relative flex-1" style={{ height: chartBodyH, minHeight: chartBodyH }}>
+                      <div
+                        className="relative flex-1 min-h-0"
+                        style={
+                          isNarrowViewport
+                            ? { minHeight: chartBodyH, height: '100%' }
+                            : { height: chartBodyH, minHeight: chartBodyH }
+                        }
+                      >
                         <LightweightCandles
                           profileId={profile.id}
                           height={candleH}
+                          fillParent={isNarrowViewport}
                           timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}
@@ -448,8 +460,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                       </div>
                     ) : (
                       <div
-                        className="flex flex-col items-center justify-center gap-3 px-6 text-center border-t border-dashed border-white/10 bg-black/40 sm:px-8"
-                        style={{ height: chartBodyH, minHeight: chartBodyH }}
+                        className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 px-6 text-center border-t border-dashed border-white/10 bg-black/40 sm:px-8"
+                        style={
+                          isNarrowViewport
+                            ? { minHeight: chartBodyH, height: '100%' }
+                            : { height: chartBodyH, minHeight: chartBodyH }
+                        }
                       >
                         <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">
                           Chart slot {idx + 1} — empty
