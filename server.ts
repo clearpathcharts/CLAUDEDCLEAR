@@ -114,6 +114,11 @@ import {
   startTimeframeAccuracyScheduler,
 } from './src/server/timeframeAccuracyVerifier';
 import {
+  getLatestSiteDoctorReport,
+  runSiteDoctorSweep,
+  startSiteDoctorScheduler,
+} from './src/server/siteDoctor';
+import {
   moderateBodyFields,
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
