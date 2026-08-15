@@ -26,7 +26,7 @@ import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-07-27C";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-10A";
 
 type Candle = {
   time: number;

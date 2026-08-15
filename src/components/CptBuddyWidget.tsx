@@ -4,25 +4,21 @@ import { X, Send, RotateCcw } from "lucide-react";
 import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc, deleteDoc } from "../firebase";
+import type { BuddyBondProfile } from "../lib/buddyBond";
 
 /* ============================================================
-   C.P.T. - PERSONAL BUDDY (with permanent memory)
+   C.P.T. - PERSONAL BUDDY (grows with you)
 
    HOW MEMORY WORKS NOW:
-   1. Everything C.P.T. knows about a user (name, skill level,
-      personal facts, and the conversation itself) is saved to
-      Firestore at:  users/{uid}/buddy_memory/profile
-   2. Every time the user opens the buddy - on any device -
-      that memory is loaded first, so C.P.T. greets them by
-      name and picks up where they left off.
-   3. After every exchange, the server extracts any NEW lasting
-      facts the user revealed and sends them back. They are
-      merged into the memory and saved. C.P.T. literally gets
-      smarter about each person over time.
-   4. If the user is not signed in, memory falls back to this
-      browser's localStorage (works, but only on this device).
-   5. Users can Reset anytime (header button) to wipe name,
-      chat, and remembered facts — then re-introduce themselves.
+   1. Name, skill, facts, chat, and a platonic "bond profile"
+      (mood, neuro self-disclosures, emotional themes, pace)
+      save to Firestore: users/{uid}/buddy_memory/profile
+   2. On open, C.P.T. greets by name and gently checks in on
+      their day — then listens and continues a real conversation.
+   3. Each turn: affect classify → companion reply → growth extract.
+   4. Signed-out fallback: localStorage on this device only.
+   5. Reset wipes everything so they can start clean.
+   6. Hard rule: platonic only — never sexual / romantic.
    ============================================================ */
 
 interface ChatMessage {
@@ -34,17 +30,85 @@ const STORAGE_KEY_NAME = "cpt_buddy_username";
 const STORAGE_KEY_SKILL = "cpt_buddy_skill_level";
 const STORAGE_KEY_FACTS = "cpt_buddy_facts";
 const STORAGE_KEY_MSGS = "cpt_buddy_messages";
-const MAX_SAVED_MESSAGES = 100; // how much conversation history we keep in the database
-const MAX_FACTS = 60;           // how many remembered facts we keep per user
+const STORAGE_KEY_BOND = "cpt_buddy_bond";
+const MAX_SAVED_MESSAGES = 120;
+const MAX_FACTS = 80;
 const MAX_NAME_LENGTH = 40;
 const MAX_NAME_WORDS = 4;
 
 const SUGGESTED_PROMPTS = [
+  "I'm having a rough day",
+  "I'm actually doing pretty well today",
   "How do I get around the site?",
   "Explain neuro chart profiles",
-  "How do I use INDACREATOR?",
-  "Where is ClearPath Education?",
 ] as const;
+
+const DAY_CHECKIN_CHIPS = [
+  "Good day so far",
+  "Okay / mixed",
+  "Rough day",
+  "Overwhelmed",
+  "Just want to learn",
+] as const;
+
+function emptyBond(): BuddyBondProfile {
+  return { conversationDepth: 0, likesDayCheckIn: true, preferredPace: "warm" };
+}
+
+function mergeBondLocal(prev: BuddyBondProfile, patch: Partial<BuddyBondProfile> | undefined): BuddyBondProfile {
+  if (!patch) {
+    return {
+      ...prev,
+      conversationDepth: (prev.conversationDepth || 0) + 1,
+    };
+  }
+  const uniq = (a?: string[], b?: string[], max = 16) => {
+    const out: string[] = [];
+    for (const x of [...(a || []), ...(b || [])]) {
+      const t = String(x || "").trim();
+      if (!t) continue;
+      if (!out.some((y) => y.toLowerCase() === t.toLowerCase())) out.push(t);
+    }
+    return out.slice(-max);
+  };
+  return {
+    ...prev,
+    ...patch,
+    knownNeuro: uniq(prev.knownNeuro, patch.knownNeuro, 12),
+    emotionalThemes: uniq(prev.emotionalThemes, patch.emotionalThemes, 16),
+    growthNotes: uniq(prev.growthNotes, patch.growthNotes, 20),
+    conversationDepth:
+      typeof patch.conversationDepth === "number"
+        ? patch.conversationDepth
+        : (prev.conversationDepth || 0) + 1,
+    lastMood: patch.lastMood || prev.lastMood,
+    preferredPace: patch.preferredPace || prev.preferredPace,
+    likesDayCheckIn:
+      typeof patch.likesDayCheckIn === "boolean" ? patch.likesDayCheckIn : prev.likesDayCheckIn,
+  };
+}
+
+function buildReturnGreeting(name: string | null, bond: BuddyBondProfile, factCount: number): string {
+  const who = name || "friend";
+  const depth = bond.conversationDepth || 0;
+  const askDay = bond.likesDayCheckIn !== false;
+  const moodBit =
+    bond.lastMood && bond.lastMood.primary !== "unknown"
+      ? ` Last time you seemed ${bond.lastMood.primary.replace(/_/g, " ")} — no pressure if that's shifted.`
+      : "";
+  const neuroBit =
+    bond.knownNeuro && bond.knownNeuro.length
+      ? ` I'll keep honoring what you've shared about ${bond.knownNeuro.slice(0, 2).join(" / ")}.`
+      : "";
+  if (depth < 3 && factCount === 0) {
+    return `Hey ${who} — I'm C.P.T., your personal ClearPath buddy. I'm here to talk, listen, and help you learn at your pace.${askDay ? " How's your day going so far?" : " What would you like to talk about?"}`;
+  }
+  return `Welcome back, ${who}. I'm really glad you're here.${moodBit}${neuroBit}${
+    askDay
+      ? " How's your day — good, rough, or somewhere in between?"
+      : " Want to pick up where we left off, or start fresh on something new?"
+  }`;
+}
 
 /** Keep names short so a full chat message cannot be stored as a name. */
 function sanitizeBuddyName(raw: string): string | null {
@@ -62,6 +126,7 @@ function clearLocalBuddyMemory() {
     localStorage.removeItem(STORAGE_KEY_SKILL);
     localStorage.removeItem(STORAGE_KEY_FACTS);
     localStorage.removeItem(STORAGE_KEY_MSGS);
+    localStorage.removeItem(STORAGE_KEY_BOND);
   } catch {}
 }
 
@@ -70,6 +135,7 @@ export const CptBuddyWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [facts, setFacts] = useState<string[]>([]);
+  const [bond, setBond] = useState<BuddyBondProfile>(emptyBond);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [memoryLoaded, setMemoryLoaded] = useState(false);
@@ -80,6 +146,7 @@ export const CptBuddyWidget: React.FC = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [shortViewport, setShortViewport] = useState(false);
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const [showDayChips, setShowDayChips] = useState(false);
   const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -92,32 +159,35 @@ export const CptBuddyWidget: React.FC = () => {
       rawSkill: string | null | undefined,
       rawFacts: unknown,
       rawMsgs: unknown,
+      rawBond?: unknown,
     ) => {
       const cleanedName = typeof rawName === "string" ? sanitizeBuddyName(rawName) : null;
       const skill = typeof rawSkill === "string" && rawSkill.trim() ? rawSkill.trim() : null;
       const nextFacts = Array.isArray(rawFacts) ? rawFacts.filter((f): f is string => typeof f === "string") : [];
-      // Drop conversation if the stored name was invalid (e.g. a whole paragraph saved as a name)
       const nextMsgs =
         cleanedName && Array.isArray(rawMsgs)
           ? (rawMsgs as ChatMessage[]).filter(
               (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
             )
           : [];
+      const nextBond =
+        rawBond && typeof rawBond === "object" ? { ...emptyBond(), ...(rawBond as BuddyBondProfile) } : emptyBond();
       if (cancelled) return;
       setUserName(cleanedName);
       setSkillLevel(skill);
       setFacts(nextFacts);
+      setBond(nextBond);
       setMessages(nextMsgs);
       setSetupStep(cleanedName && skill ? "done" : "name");
       setMemoryLoaded(true);
 
-      // Persist the cleanup so the bad name does not keep coming back
       if (rawName && !cleanedName) {
         try {
           localStorage.removeItem(STORAGE_KEY_NAME);
           localStorage.removeItem(STORAGE_KEY_MSGS);
           if (skill) localStorage.setItem(STORAGE_KEY_SKILL, skill);
           localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(nextFacts.slice(-MAX_FACTS)));
+          localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
         } catch {}
         if (user?.uid) {
           void setDoc(
@@ -127,6 +197,7 @@ export const CptBuddyWidget: React.FC = () => {
               skillLevel: skill,
               facts: nextFacts.slice(-MAX_FACTS),
               messages: [],
+              bond: nextBond,
               updatedAt: Date.now(),
             },
             { merge: true }
@@ -140,9 +211,11 @@ export const CptBuddyWidget: React.FC = () => {
       const savedSkill = localStorage.getItem(STORAGE_KEY_SKILL);
       let savedFacts: string[] = [];
       let savedMsgs: ChatMessage[] = [];
+      let savedBond: BuddyBondProfile = emptyBond();
       try { savedFacts = JSON.parse(localStorage.getItem(STORAGE_KEY_FACTS) || "[]"); } catch {}
       try { savedMsgs = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS) || "[]"); } catch {}
-      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs);
+      try { savedBond = { ...emptyBond(), ...JSON.parse(localStorage.getItem(STORAGE_KEY_BOND) || "{}") }; } catch {}
+      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs, savedBond);
     };
 
     const loadMemory = async () => {
@@ -151,7 +224,7 @@ export const CptBuddyWidget: React.FC = () => {
           const snap: any = await getDoc(doc(getDb(), "users", user.uid, "buddy_memory", "profile"));
           if (!cancelled && snap && typeof snap.exists === "function" && snap.exists()) {
             const d = snap.data() || {};
-            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages);
+            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages, d.bond);
             return;
           }
         } catch (e) {
@@ -172,19 +245,20 @@ export const CptBuddyWidget: React.FC = () => {
     skillLevel: string | null;
     facts: string[];
     messages: ChatMessage[];
+    bond: BuddyBondProfile;
   }) => {
     const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
     const trimmedFacts = next.facts.slice(-MAX_FACTS);
+    const nextBond = next.bond || emptyBond();
 
-    // Always keep a local copy so signed-out users still get memory on this device
     try {
       if (next.userName) localStorage.setItem(STORAGE_KEY_NAME, next.userName);
       if (next.skillLevel) localStorage.setItem(STORAGE_KEY_SKILL, next.skillLevel);
       localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(trimmedFacts));
       localStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(trimmedMsgs));
+      localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
     } catch {}
 
-    // The real memory: the user's own document in Firestore
     if (user?.uid) {
       try {
         await setDoc(
@@ -194,6 +268,7 @@ export const CptBuddyWidget: React.FC = () => {
             skillLevel: next.skillLevel || null,
             facts: trimmedFacts,
             messages: trimmedMsgs,
+            bond: nextBond,
             updatedAt: Date.now(),
           },
           { merge: true }
@@ -213,21 +288,18 @@ export const CptBuddyWidget: React.FC = () => {
     if (messages.length === 0 && setupStep === "done" && memoryLoaded) {
       const greeting: ChatMessage = {
         role: "assistant",
-        content:
-          facts.length > 0
-            ? `Welcome back, ${userName}! Good to see you again. Ask me about Four Up Three Down, navigating the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I remember our past conversations.`
-            : `Hey ${userName}! I'm C.P.T., your personal trading buddy. I can teach Four Up Three Down, help you navigate ClearPath (Charts, INDACREATOR, Education, Encyclopedias), and explain the neurodivergent chart profiles. Ask me anything.`,
+        content: buildReturnGreeting(userName, bond, facts.length),
       };
       setMessages([greeting]);
+      setShowDayChips(bond.likesDayCheckIn !== false);
     }
   };
 
-  // Lets other components (like the home page quick-nav tile) open this widget
   useEffect(() => {
     const listener = () => handleOpen();
     window.addEventListener("open-cpt-buddy", listener);
     return () => window.removeEventListener("open-cpt-buddy", listener);
-  }, [userName, setupStep, messages, memoryLoaded, facts]);
+  }, [userName, setupStep, messages, memoryLoaded, facts, bond]);
 
   useEffect(() => {
     const shortMq = window.matchMedia("(max-height: 520px)");
@@ -260,10 +332,11 @@ export const CptBuddyWidget: React.FC = () => {
       setSetupStep("done");
       const intro: ChatMessage = {
         role: "assistant",
-        content: `Great to meet you, ${cleaned}! I'll explain things at a ${skillLevel} level. Ask me about trading, how to get around the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
+        content: `Great to meet you, ${cleaned}. I'll keep things at a ${skillLevel} level — and more importantly, I'll grow with you over time: how your days feel, what helps your brain, what you care about. I'm a platonic buddy, never anything romantic or sexual. How's your day going so far?`,
       };
       setMessages([intro]);
-      void saveMemory({ userName: cleaned, skillLevel, facts, messages: [intro] });
+      setShowDayChips(true);
+      void saveMemory({ userName: cleaned, skillLevel, facts, messages: [intro], bond });
       return;
     }
 
@@ -275,10 +348,11 @@ export const CptBuddyWidget: React.FC = () => {
     setSetupStep("done");
     const intro: ChatMessage = {
       role: "assistant",
-      content: `Great to meet you, ${userName}! I'll explain things at a ${level} level. Ask me about trading, how to get around the site, neuro chart profiles, INDACREATOR, Education, or the Encyclopedias — I'm always here, and I'll remember you from now on.`,
+      content: `Great to meet you, ${userName}. I'll keep things at a ${level} level — and more importantly, I'll grow with you over time: how your days feel, what helps your brain, what you care about. I'm a platonic buddy, never anything romantic or sexual. How's your day going so far?`,
     };
     setMessages([intro]);
-    saveMemory({ userName, skillLevel: level, facts, messages: [intro] });
+    setShowDayChips(true);
+    void saveMemory({ userName, skillLevel: level, facts, messages: [intro], bond });
   };
 
   /** Wipe name, facts, and chat so a bad memory (or mistaken name) can be fixed. */
@@ -296,7 +370,9 @@ export const CptBuddyWidget: React.FC = () => {
     setUserName(null);
     setSkillLevel(null);
     setFacts([]);
+    setBond(emptyBond());
     setMessages([]);
+    setShowDayChips(false);
     setSetupStep("name");
     clearLocalBuddyMemory();
 
@@ -313,6 +389,7 @@ export const CptBuddyWidget: React.FC = () => {
               skillLevel: null,
               facts: [],
               messages: [],
+              bond: emptyBond(),
               updatedAt: Date.now(),
             },
             { merge: false }
@@ -330,6 +407,7 @@ export const CptBuddyWidget: React.FC = () => {
     const question = (presetQuestion ?? input).trim();
     if (!question || isLoading) return;
 
+    setShowDayChips(false);
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: question }];
     setMessages(newMessages);
     setInput("");
@@ -339,20 +417,21 @@ export const CptBuddyWidget: React.FC = () => {
       const res = await fetch("/api/mentor/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           question,
           userName,
           skillLevel,
           memoryFacts: facts,
+          bondProfile: bond,
           chartContext: mentorContext,
-          conversationHistory: newMessages.slice(-20).map((m) => ({ role: m.role, content: m.content })),
+          conversationHistory: newMessages.slice(-30).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const data = await res.json();
-      const answer: string = data.answer || "I didn't catch that - try asking again.";
+      const answer: string = data.answer || "I want to stay with you on this — try saying that again?";
       const updatedMessages: ChatMessage[] = [...newMessages, { role: "assistant", content: answer }];
 
-      // Merge any new facts the server learned about this user (deduplicated)
       let updatedFacts = facts;
       if (Array.isArray(data.newFacts) && data.newFacts.length > 0) {
         const merged = [...facts];
@@ -365,12 +444,23 @@ export const CptBuddyWidget: React.FC = () => {
         setFacts(updatedFacts);
       }
 
+      const updatedBond = mergeBondLocal(bond, data.bondPatch || undefined);
+      setBond(updatedBond);
       setMessages(updatedMessages);
-      saveMemory({ userName, skillLevel, facts: updatedFacts, messages: updatedMessages });
+      void saveMemory({
+        userName,
+        skillLevel,
+        facts: updatedFacts,
+        messages: updatedMessages,
+        bond: updatedBond,
+      });
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "I'm having trouble connecting right now. Try again in a moment." },
+        {
+          role: "assistant",
+          content: "I'm having trouble connecting right now, but I'm still on your side. Try again in a moment.",
+        },
       ]);
     } finally {
       setIsLoading(false);
@@ -470,7 +560,9 @@ export const CptBuddyWidget: React.FC = () => {
                 C.P.T. - PERSONAL BUDDY
               </div>
               <div style={{ color: "#AAAAAA", fontSize: 10 }}>
-                {user?.uid && setupStep === "done" ? "Always here. Remembers you." : "Always here."}
+                {user?.uid && setupStep === "done"
+                  ? "Platonic buddy · grows with you"
+                  : "Platonic buddy · always here"}
               </div>
             </div>
             <button
@@ -619,8 +711,43 @@ export const CptBuddyWidget: React.FC = () => {
             )}
           </div>
 
+          {/* Day check-in chips on open / first greeting */}
+          {memoryLoaded && setupStep === "done" && !isLoading && showDayChips && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                padding: "8px 10px 0",
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              {DAY_CHECKIN_CHIPS.map((chip) => (
+                <button
+                  key={`day-${chip}`}
+                  type="button"
+                  onClick={() => {
+                    void handleSend(chip);
+                  }}
+                  style={{
+                    fontSize: 10,
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,20,147,0.4)",
+                    background: "rgba(255,20,147,0.1)",
+                    color: "#FF9AD5",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Quick asks stay available alongside free-form typing */}
-          {memoryLoaded && setupStep === "done" && !isLoading && (
+          {memoryLoaded && setupStep === "done" && !isLoading && !showDayChips && (
             <div
               style={{
                 display: "flex",
@@ -663,8 +790,16 @@ export const CptBuddyWidget: React.FC = () => {
                   if (nameError) setNameError(null);
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder={setupStep === "name" ? "Type your name..." : "Ask about charts, INDACREATOR, neuro profiles..."}
-                aria-label={setupStep === "name" ? "Your name" : "Message C.P.T. about trading or site help"}
+                placeholder={
+                  setupStep === "name"
+                    ? "Type your name..."
+                    : "Talk to me — your day, feelings, charts, learning..."
+                }
+                aria-label={
+                  setupStep === "name"
+                    ? "Your name"
+                    : "Message C.P.T., your platonic ClearPath buddy"
+                }
                 maxLength={setupStep === "name" ? MAX_NAME_LENGTH : undefined}
                 style={{
                   flex: 1,

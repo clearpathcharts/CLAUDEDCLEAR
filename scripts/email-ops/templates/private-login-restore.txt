@@ -1,0 +1,14 @@
+Hi {{firstName}},
+
+Your ClearPath Private Login is ready.
+
+Login: {{activateUrl}}
+Email: {{email}}
+Temporary password: {{tempPassword}}
+
+Please sign in, update your password, and keep this email private.
+
+Affiliate program (optional): {{affiliateTermsUrl}}
+
+— Rick Floyd
+ClearPath Trader

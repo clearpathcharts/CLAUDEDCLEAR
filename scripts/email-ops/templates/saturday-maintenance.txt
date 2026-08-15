@@ -1,0 +1,14 @@
+Hi {{firstName}},
+
+ClearPathTrader.com will be temporarily offline Saturday for a scheduled upgrade to our financial data infrastructure and platform security.
+
+No action is required. Your account, membership, and affiliate progress are preserved.
+
+When we are back online, log in as usual:
+{{activateUrl}}
+
+Thank you for your patience.
+
+— Rick Floyd
+Founder & CEO
+ClearPath Trader

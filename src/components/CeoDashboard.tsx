@@ -81,6 +81,25 @@ type InviteMailRow = {
   nameFlag?: string;
 };
 
+type SiteDoctorCheck = {
+  id: string;
+  label: string;
+  ok: boolean;
+  severity: 'critical' | 'warn' | 'info';
+  detail: string;
+  latencyMs?: number;
+};
+
+type SiteDoctorReport = {
+  ranAt: string;
+  overall: 'green' | 'yellow' | 'red';
+  okCount: number;
+  failCount: number;
+  warnCount: number;
+  checks: SiteDoctorCheck[];
+  nextDueHint: string;
+};
+
 function formatJoined(value?: string | null): string {
   if (!value) return '—';
   const d = new Date(value);
@@ -129,7 +148,11 @@ export default function CeoDashboard() {
       return '';
     }
   });
-  
+  const [siteDoctor, setSiteDoctor] = useState<SiteDoctorReport | null>(null);
+  const [siteDoctorLoading, setSiteDoctorLoading] = useState(false);
+  const [siteDoctorError, setSiteDoctorError] = useState<string | null>(null);
+  const [siteDoctorBusy, setSiteDoctorBusy] = useState(false);
+
   const { user, userProfile } = useAuth();
   const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
   const showsUnauthorized =
@@ -692,6 +715,55 @@ export default function CeoDashboard() {
   useEffect(() => {
     if (!founderOk || ceoTab !== 'members') return;
     void loadAdminMembers();
+  }, [founderOk, ceoTab]);
+
+  const loadSiteDoctor = async () => {
+    setSiteDoctorLoading(true);
+    setSiteDoctorError(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/site-doctor', { headers, credentials: 'include' });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || `Site Doctor unavailable (${res.status})`);
+      }
+      setSiteDoctor(body as SiteDoctorReport);
+    } catch (err: any) {
+      setSiteDoctor(null);
+      setSiteDoctorError(err?.message || 'Failed to load Site Doctor');
+    } finally {
+      setSiteDoctorLoading(false);
+    }
+  };
+
+  const runSiteDoctorNow = async () => {
+    setSiteDoctorBusy(true);
+    setSiteDoctorError(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/site-doctor/run', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: '{}',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body.message || body.error || `Sweep failed (${res.status})`);
+      }
+      setSiteDoctor(body as SiteDoctorReport);
+    } catch (err: any) {
+      setSiteDoctorError(err?.message || 'Sweep failed');
+    } finally {
+      setSiteDoctorBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!founderOk || ceoTab !== 'system') return;
+    void loadSiteDoctor();
+    const id = window.setInterval(() => void loadSiteDoctor(), 60_000);
+    return () => window.clearInterval(id);
   }, [founderOk, ceoTab]);
 
   const filteredUsers = users.filter(u => 
@@ -1341,6 +1413,109 @@ export default function CeoDashboard() {
         </div>
       ) : (
       <>
+          {/* Site Doctor — hourly detect+report pulse */}
+          <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#39FF14]/20 shadow-[0_0_18px_rgba(57,255,20,0.12)] mb-10">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-[#39FF14] text-xl font-bold uppercase mb-1 flex items-center gap-2">
+                  <Activity size={20} />
+                  Site Doctor — Hourly Pulse
+                </h2>
+                <p className="text-white/55 text-sm max-w-2xl">
+                  Detect + report only (no auto code rewrites). Same model TradingView/Alpaca use: continuous checks, human fix, rollback when needed.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void loadSiteDoctor()}
+                  disabled={siteDoctorLoading || siteDoctorBusy}
+                  className="px-3 py-2 rounded-md border border-white/20 text-white/80 text-xs font-bold uppercase tracking-wider hover:bg-white/5 disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void runSiteDoctorNow()}
+                  disabled={siteDoctorBusy || siteDoctorLoading}
+                  className="px-3 py-2 rounded-md border border-[#39FF14]/50 text-[#39FF14] text-xs font-bold uppercase tracking-wider hover:bg-[#39FF14]/10 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <RefreshCw size={14} className={siteDoctorBusy ? 'animate-spin' : ''} />
+                  Run now
+                </button>
+              </div>
+            </div>
+
+            {siteDoctorError && (
+              <p className="text-amber-300 text-sm mb-3 font-mono">{siteDoctorError}</p>
+            )}
+
+            {siteDoctorLoading && !siteDoctor ? (
+              <p className="text-white/50 font-mono text-xs">Loading latest sweep…</p>
+            ) : siteDoctor ? (
+              <>
+                <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
+                  <span
+                    className={`px-3 py-1 rounded font-black uppercase tracking-widest text-xs border ${
+                      siteDoctor.overall === 'green'
+                        ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40'
+                        : siteDoctor.overall === 'yellow'
+                          ? 'text-amber-300 bg-amber-500/15 border-amber-500/40'
+                          : 'text-red-300 bg-red-500/15 border-red-500/40'
+                    }`}
+                  >
+                    {siteDoctor.overall}
+                  </span>
+                  <span className="text-white/70 font-mono text-xs">
+                    ok={siteDoctor.okCount} warn={siteDoctor.warnCount} critical={siteDoctor.failCount}
+                  </span>
+                  <span className="text-white/45 font-mono text-xs">
+                    last {formatJoined(siteDoctor.ranAt)} · {siteDoctor.nextDueHint}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-white/80 text-sm">
+                    <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
+                      <tr>
+                        <th className="px-3 py-2">Check</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Detail</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {siteDoctor.checks.map((c) => (
+                        <tr key={c.id} className="hover:bg-white/5">
+                          <td className="px-3 py-2 font-medium">{c.label}</td>
+                          <td className="px-3 py-2">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase border ${
+                                c.ok && c.severity === 'info'
+                                  ? 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40'
+                                  : c.severity === 'warn'
+                                    ? 'text-amber-300 bg-amber-500/15 border-amber-500/40'
+                                    : 'text-red-300 bg-red-500/15 border-red-500/40'
+                              }`}
+                            >
+                              {c.ok ? (c.severity === 'warn' ? 'warn' : 'ok') : c.severity}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 font-mono text-xs text-zinc-300">
+                            {c.detail}
+                            {typeof c.latencyMs === 'number' ? ` (${c.latencyMs}ms)` : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p className="text-white/50 text-sm">
+                No report yet — first sweep runs ~20s after server boot, then hourly. Use Run now after Unlock.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {/* Panel 1: Live Users */}
         <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.3)]">
