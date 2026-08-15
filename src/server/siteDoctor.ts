@@ -289,22 +289,19 @@ export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
     checks.push(await checkTwelveData());
 
     const failCount = checks.filter((c) => !c.ok && c.severity === "critical").length;
-    const warnCount = checks.filter(
-      (c) => (!c.ok && c.severity === "warn") || (c.ok && c.severity === "warn")
-    ).length;
+    const warnCount = checks.filter((c) => c.severity === "warn").length;
     const okCount = checks.filter((c) => c.ok && c.severity !== "warn").length;
-    const softWarns = checks.filter((c) => c.ok && c.severity === "warn").length;
 
     let overall: SiteDoctorReport["overall"] = "green";
     if (failCount > 0) overall = "red";
-    else if (warnCount > 0 || softWarns > 0) overall = "yellow";
+    else if (warnCount > 0 || checks.some((c) => !c.ok)) overall = "yellow";
 
     const report: SiteDoctorReport = {
       ranAt: new Date().toISOString(),
       overall,
       okCount,
       failCount,
-      warnCount: warnCount + softWarns,
+      warnCount,
       checks,
       nextDueHint: `Automatic sweep every ${Math.round(intervalMs() / 60000)} minutes`,
     };

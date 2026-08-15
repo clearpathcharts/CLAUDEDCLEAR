@@ -2520,6 +2520,30 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
+  // Hourly Site Doctor report for CEO Dashboard
+  app.get('/api/admin/site-doctor', requireFounderOrCatalogAdmin, (_req, res) => {
+    const report = getLatestSiteDoctorReport();
+    if (!report) {
+      return res.status(404).json({
+        error: 'NO_REPORT',
+        message: 'No Site Doctor report yet — first sweep runs ~20s after boot, then hourly.',
+      });
+    }
+    res.json(report);
+  });
+
+  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await runSiteDoctorSweep();
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'SITE_DOCTOR_FAILED',
+        message: e?.message || 'Site Doctor sweep failed',
+      });
+    }
+  });
+
   // Defense in depth: upstream error messages can embed request URLs, which
   // carry the Twelve Data API key. Strip any key before a message leaves the
   // server so it can never surface in the browser UI.
@@ -3888,6 +3912,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startTimeframeAccuracyScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startSiteDoctorScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
     }
 
     try {
