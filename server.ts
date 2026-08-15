@@ -3864,6 +3864,26 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     return res.redirect(301, '/companies');
   });
 
+  // TikTok for Developers — URL prefix verification (terms.html/ and site root)
+  const tiktokSiteVerify =
+    'tiktok-developers-site-verification=gACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C';
+  const tiktokSiteVerifyFile = 'tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
+  const sendTikTokSiteVerify = (_req: any, res: any) => {
+    res.status(200).type('text/plain').send(tiktokSiteVerify);
+  };
+  app.get(`/${tiktokSiteVerifyFile}`, sendTikTokSiteVerify);
+  app.get(`/terms.html/${tiktokSiteVerifyFile}`, sendTikTokSiteVerify);
+
+  // TikTok for Developers URL-prefix verification (Clearpathtrader app)
+  const tiktokVerifyName = 'tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
+  const tiktokVerifyBody = 'tiktok-developers-site-verification=gACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C';
+  const sendTiktokVerify = (_req: any, res: any) => {
+    res.status(200).type('text/plain').send(tiktokVerifyBody);
+  };
+  app.get(`/${tiktokVerifyName}`, sendTiktokVerify);
+  // TikTok modal asks for file under the Terms URL prefix
+  app.get(`/terms.html/${tiktokVerifyName}`, sendTiktokVerify);
+
   // 4. Vite / Static Serving
   if (isDev) {
     vite = await createViteServer({
