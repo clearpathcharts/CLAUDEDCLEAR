@@ -39,6 +39,9 @@ jobs:
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable
 
+      - name: C.P.T. Buddy affect / bond self-test
+        run: npm run test:buddy-affect
+
       - name: Founder disaster-backup self-test
         run: npm run test:founder-backup
 
