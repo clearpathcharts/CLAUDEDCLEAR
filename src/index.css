@@ -219,8 +219,9 @@ html, body {
    overscroll-behavior-y here only disables pull-to-refresh at the very
    top edge; it does not affect normal scrolling. */
 html {
-  /* TBI/ADHD readability — raise rem root so Tailwind rem utilities scale site-wide (+2px from 16) */
-  font-size: 18px;
+  /* Readability — raise rem root so all Tailwind rem text utilities scale up
+     site-wide. Bumped to 20px so the whole site reads larger and stands out. */
+  font-size: 20px;
   overflow-x: hidden;  /* no sideways wiggle on phones */
   overflow-y: auto;
   overscroll-behavior-y: contain;
@@ -228,19 +229,39 @@ html {
 
 /* Absolute px utilities do not scale with rem — lift the worst micro-type globally */
 [class*="text-[8px]"] {
-  font-size: 11px !important;
-}
-[class*="text-[9px]"] {
-  font-size: 12px !important;
-}
-[class*="text-[10px]"] {
   font-size: 13px !important;
 }
-[class*="text-[11px]"] {
+[class*="text-[9px]"] {
   font-size: 14px !important;
 }
+[class*="text-[10px]"] {
+  font-size: 15px !important;
+}
+[class*="text-[11px]"] {
+  font-size: 16px !important;
+}
+[class*="text-[12px]"] {
+  font-size: 17px !important;
+}
+[class*="text-[13px]"] {
+  font-size: 18px !important;
+}
 .text-xs {
-  font-size: 0.8125rem !important; /* ~14.6px at 18px root (was ~12px at 16) */
+  font-size: 0.85rem !important; /* ~17px at 20px root */
+}
+
+/* —— Site-wide bold emphasis — make copy stand out ——
+   Set a heavier default and raise the lightest Tailwind weights to a floor,
+   while leaving semibold/bold/extrabold/black display weights untouched. */
+body {
+  font-weight: 500;
+}
+.font-thin,
+.font-extralight,
+.font-light,
+.font-normal,
+.font-medium {
+  font-weight: 600 !important;
 }
 
 /* SCROLL FIX: body must NOT be its own scroll container. When body had
