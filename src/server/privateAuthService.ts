@@ -87,6 +87,9 @@ export type PrivateUserRecord = {
   identityConfirmedAt?: string;
   /** True when original signup flagged the email itself as suspect. */
   identityEmailWasSuspect?: boolean;
+  /** SHA-256 hex of one-time forgot-password token (raw token only in email). */
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: string;
 };
 
 export type PublicPrivateUser = {
@@ -113,6 +116,8 @@ const ATTEMPTS_COLLECTION = 'identity_attempts';
 const DATA_DIR = path.join(process.cwd(), 'data', 'private_accounts');
 const USERS_FILE = 'users.json';
 const CHALLENGE_TTL_MS = 48 * 60 * 60 * 1000;
+/** Forgot-password links expire after 1 hour. */
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 let migrateAttempted = false;
 
@@ -180,6 +185,12 @@ function applyIdentityFields(record: PrivateUserRecord, data: Record<string, unk
   if (typeof data.identityEmailWasSuspect === 'boolean') {
     record.identityEmailWasSuspect = data.identityEmailWasSuspect;
   }
+  if (typeof data.passwordResetTokenHash === 'string' && data.passwordResetTokenHash.trim()) {
+    record.passwordResetTokenHash = data.passwordResetTokenHash.trim();
+  }
+  if (typeof data.passwordResetExpiresAt === 'string' && data.passwordResetExpiresAt.trim()) {
+    record.passwordResetExpiresAt = data.passwordResetExpiresAt.trim();
+  }
 }
 
 function identityPayload(user: PrivateUserRecord): Record<string, unknown> {
@@ -193,6 +204,9 @@ function identityPayload(user: PrivateUserRecord): Record<string, unknown> {
   if (typeof user.identityEmailWasSuspect === 'boolean') {
     payload.identityEmailWasSuspect = user.identityEmailWasSuspect;
   }
+  // Always write these so merge:true clears spent / expired tokens.
+  payload.passwordResetTokenHash = user.passwordResetTokenHash || '';
+  payload.passwordResetExpiresAt = user.passwordResetExpiresAt || '';
   return payload;
 }
 
@@ -326,6 +340,12 @@ async function upsertDurableUser(
       ...(user.identityConfirmedAt ? { identityConfirmedAt: user.identityConfirmedAt } : {}),
       ...(typeof user.identityEmailWasSuspect === 'boolean'
         ? { identityEmailWasSuspect: user.identityEmailWasSuspect }
+        : {}),
+      ...(user.passwordResetTokenHash ? { passwordResetTokenHash: user.passwordResetTokenHash } : {}),
+      ...(user.passwordResetExpiresAt ? { passwordResetExpiresAt: user.passwordResetExpiresAt } : {}),
+      // Explicit clear when tokens were spent (Stripe identity blob rebuild).
+      ...(!user.passwordResetTokenHash && !user.passwordResetExpiresAt
+        ? { clearPasswordReset: true as const }
         : {}),
     });
     ok = stripeOk || ok;
@@ -1325,4 +1345,133 @@ export function buildClientSessionUser(user: PublicPrivateUser) {
 export function buildIdentityConfirmUrl(baseUrl: string, rawToken: string): string {
   const base = (baseUrl || '').replace(/\/$/, '');
   return `${base}/api/auth/private/identity/confirm?token=${encodeURIComponent(rawToken)}`;
+}
+
+/** Build SPA URL that opens Private Login on the reset-password step. */
+export function buildPasswordResetUrl(baseUrl: string, rawToken: string): string {
+  const base = (baseUrl || '').replace(/\/$/, '');
+  return `${base}/login?reset=${encodeURIComponent(rawToken)}`;
+}
+
+/**
+ * Mint a forgot-password token for an existing account.
+ * Does not reveal whether the email exists to the HTTP caller — route always returns generic OK.
+ * Returns rawToken only so the route can email the link (never put rawToken in the JSON body).
+ */
+export async function requestPasswordReset(input: {
+  email: string;
+}): Promise<{ accountFound: boolean; rawToken?: string; displayName?: string; email?: string }> {
+  assertDurablePrivateWritesAllowed();
+  const email = normalizeEmail(input.email);
+  if (!email.includes('@')) {
+    throw new PrivateAuthError('Enter a valid email address.');
+  }
+
+  const found = await findUserRecordByEmail(email);
+  if (!found) {
+    return { accountFound: false };
+  }
+
+  const rawToken = crypto.randomBytes(24).toString('base64url');
+  found.passwordResetTokenHash = hashToken(rawToken);
+  found.passwordResetExpiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString();
+  await persistUser(found);
+  return {
+    accountFound: true,
+    rawToken,
+    displayName: found.displayName,
+    email: found.email,
+  };
+}
+
+async function findUserByPasswordResetToken(rawToken: string): Promise<PrivateUserRecord | null> {
+  const tokenHash = hashToken(rawToken);
+  const durable = await listDurableUsers();
+  const pool =
+    durable ||
+    (!isProdEnv() || forceEphemeralForTests ? readLocalUsers() : []);
+  for (const user of pool) {
+    if (user.passwordResetTokenHash && user.passwordResetTokenHash === tokenHash) {
+      return user;
+    }
+  }
+  return null;
+}
+
+/** Consume a forgot-password token and set a new password the member chooses. */
+export async function completePasswordReset(input: {
+  token: string;
+  newPassword: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+  const token = String(input.token || '').trim();
+  const password = String(input.newPassword || '').trim();
+  if (!token) throw new PrivateAuthError('Reset link is missing or invalid.');
+  if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
+
+  const found = await findUserByPasswordResetToken(token);
+  if (!found) {
+    throw new PrivateAuthError('Reset link is invalid or expired.', 400);
+  }
+  const exp = found.passwordResetExpiresAt ? Date.parse(found.passwordResetExpiresAt) : NaN;
+  if (!Number.isFinite(exp) || Date.now() > exp) {
+    found.passwordResetTokenHash = undefined;
+    found.passwordResetExpiresAt = undefined;
+    try {
+      await persistUser(found);
+    } catch {
+      /* ignore cleanup failure */
+    }
+    throw new PrivateAuthError('Reset link is invalid or expired.', 400);
+  }
+
+  const { hash, salt } = await hashPassword(password);
+  const updated: PrivateUserRecord = {
+    ...found,
+    passwordHash: hash,
+    passwordSalt: salt,
+    passwordResetTokenHash: undefined,
+    passwordResetExpiresAt: undefined,
+  };
+  await persistUser(updated);
+  return toPublic(updated);
+}
+
+/** Logged-in member changes their own password (current password required). */
+export async function changePrivatePassword(input: {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+  const email = normalizeEmail(input.email);
+  const currentPassword = String(input.currentPassword || '');
+  const newPassword = String(input.newPassword || '').trim();
+  if (!email.includes('@') || !currentPassword) {
+    throw new PrivateAuthError('Email and current password are required.');
+  }
+  if (newPassword.length < 8) {
+    throw new PrivateAuthError('New password must be at least 8 characters.');
+  }
+
+  const found = await findUserRecordByEmail(email);
+  if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
+
+  const { hash: currentHash } = await hashPassword(currentPassword, found.passwordSalt);
+  const a = Buffer.from(currentHash, 'hex');
+  const b = Buffer.from(found.passwordHash, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    throw new PrivateAuthError('Current password is incorrect.', 401);
+  }
+
+  const { hash, salt } = await hashPassword(newPassword);
+  const updated: PrivateUserRecord = {
+    ...found,
+    passwordHash: hash,
+    passwordSalt: salt,
+    passwordResetTokenHash: undefined,
+    passwordResetExpiresAt: undefined,
+  };
+  await persistUser(updated);
+  return toPublic(updated);
 }
