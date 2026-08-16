@@ -443,19 +443,31 @@ input, textarea, select {
 }
 
 .market-terminal-ui [class*="text-[8px]"] {
-  font-size: 0.6875rem !important; /* 11px */
+  font-size: 0.8rem !important; /* ~16px at 20px root */
 }
 
 .market-terminal-ui [class*="text-[9px]"] {
-  font-size: 0.8125rem !important; /* 13px */
+  font-size: 0.85rem !important; /* ~17px */
 }
 
 .market-terminal-ui [class*="text-[10px]"] {
-  font-size: 0.875rem !important; /* 14px */
+  font-size: 0.9rem !important; /* ~18px */
+}
+
+.market-terminal-ui [class*="text-[11px]"] {
+  font-size: 0.9rem !important; /* ~18px */
+}
+
+.market-terminal-ui [class*="text-[12px]"] {
+  font-size: 0.95rem !important; /* ~19px */
 }
 
 .market-terminal-ui .text-xs {
-  font-size: 0.875rem !important; /* 14px */
+  font-size: 0.9rem !important; /* ~18px */
+}
+
+.market-terminal-ui .text-sm {
+  font-size: 1rem !important; /* ~20px */
 }
 
 .market-terminal-ui h1.text-2xl {
