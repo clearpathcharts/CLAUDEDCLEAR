@@ -19,6 +19,7 @@ secrets/
 /data/badges/
 /data/social-os/
 /data/timeframe-verify/
+/data/site-doctor/
 /data/*.log
 
 # Generated at server startup by the SEO asset node -- never commit

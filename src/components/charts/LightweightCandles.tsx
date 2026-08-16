@@ -26,7 +26,7 @@ import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-07-27C";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-15A";
 
 type Candle = {
   time: number;
@@ -116,6 +116,7 @@ export function LightweightCandles({
   profileId,
   height = 520,
   isExpanded = false,
+  fillParent = false,
   timeframe = "1h",
   theme: customTheme,
   userTier = "BRONZE",
@@ -139,6 +140,8 @@ export function LightweightCandles({
   profileId: string;
   height?: number;
   isExpanded?: boolean;
+  /** Fill the parent flex box (phone stacked full-viewport panels). */
+  fillParent?: boolean;
   timeframe?: string;
   theme?: any;
   userTier?: string;
@@ -942,7 +945,7 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, height, isExpanded, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, height, isExpanded, fillParent, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   const handleFocusRecent = () => {
     const chart = chartRef.current;
@@ -956,14 +959,14 @@ export function LightweightCandles({
     );
   };
 
-  const frameHeight = isExpanded ? "100%" : `${height}px`;
+  const frameHeight = isExpanded || fillParent ? "100%" : `${height}px`;
 
   return (
     <div
       className="flex w-full flex-col overflow-hidden rounded-[20px]"
       style={{
         height: frameHeight,
-        minHeight: isExpanded ? 320 : undefined,
+        minHeight: isExpanded || fillParent ? Math.max(320, height || 0) || 320 : undefined,
         boxShadow:
           defaultTheme.physics.glowBlur > 0
             ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
