@@ -8,11 +8,14 @@ import {
 
 export type FormingPatternId = ChartPatternId;
 
+export type FormingLifecycleStatus = 'possible' | 'forming' | 'confirmed' | 'triggered' | 'watch';
+
 export interface FormingPossibility {
   id: FormingPatternId;
   label: string;
   probability: number;
-  status: 'forming' | 'possible' | 'watch';
+  /** Structure lifecycle — watch retained as early Possible alias for legacy watches. */
+  status: FormingLifecycleStatus;
   detail: string;
 }
 
@@ -40,6 +43,15 @@ export interface FormingStructureBrief {
   possibilities: FormingPossibility[];
   narrativeLines: string[];
   updatedAt: number;
+  /** Unix seconds of the latest bar open — for candle-close countdown UI. */
+  lastBarTime?: number;
+  /** Educational market structure classification (optional). */
+  marketStateId?: string;
+  marketStateLabel?: string;
+  /** Educational MTF agreement badge (optional). */
+  mtfBadge?: string;
+  /** One-line structure read headline (optional). */
+  structureReadHeadline?: string;
 }
 
 /** Normalize UI timeframe labels to a stable key (works on every chart interval). */
@@ -316,6 +328,7 @@ export function analyzeFormingStructure(
     clock,
     legs,
     possibilities,
+    lastBarTime: last.time,
   };
 
   return {
@@ -328,23 +341,25 @@ export function analyzeFormingStructure(
 export function formatFormingBriefForChat(brief: FormingStructureBrief | null): string {
   if (!brief) return 'No live chart structure loaded.';
   return [
-    `=== LIVE CHART STRUCTURE · ${brief.symbol} ${brief.timeframe} (forming possibilities — not confirmed) ===`,
+    `=== LIVE CHART STRUCTURE · ${brief.symbol} ${brief.timeframe} (educational literacy) ===`,
+    brief.structureReadHeadline ? `Structure read: ${brief.structureReadHeadline}` : undefined,
     ...brief.narrativeLines,
     '=== END LIVE CHART STRUCTURE ===',
-    'Always describe these as possible or forming. Never state certainty. No harmonics.',
-  ].join('\n');
+    'Describe Possible/Forming/Confirmed/Triggered as geometry lifecycle states only. Never recommend buy/sell/enter/exit. No harmonics. Not financial advice.',
+  ].filter((line): line is string => line !== undefined).join('\n');
 }
 
 export function formatAllFormingBriefsForChat(briefs: FormingStructureBrief[]): string {
   if (!briefs.length) return 'No live chart structure loaded on any open chart.';
   return [
-    '=== LIVE CHART STRUCTURE — ALL OPEN CHARTS (forming possibilities — not confirmed) ===',
+    '=== LIVE CHART STRUCTURE — ALL OPEN CHARTS (educational literacy) ===',
     ...briefs.flatMap((brief, i) => [
       i > 0 ? '' : undefined,
       `--- ${brief.symbol} · ${brief.timeframe} (${brief.scannedBars} bars) ---`,
+      brief.structureReadHeadline ? `Structure read: ${brief.structureReadHeadline}` : undefined,
       ...brief.narrativeLines,
     ].filter((line): line is string => line !== undefined)),
     '=== END LIVE CHART STRUCTURE ===',
-    'Always describe these as possible or forming. Never state certainty. No harmonics.',
+    'Describe Possible/Forming/Confirmed/Triggered as geometry lifecycle states only. Never recommend buy/sell/enter/exit. No harmonics. Not financial advice.',
   ].join('\n');
 }

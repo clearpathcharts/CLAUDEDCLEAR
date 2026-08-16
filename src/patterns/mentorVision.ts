@@ -2,17 +2,30 @@ import { formingChartKey } from './activeForming';
 import type { ChartPatternScan } from './activeScan';
 import type { FormingStructureBrief } from './forming';
 import type { DetectedPattern } from './types';
+import { MENTOR_COMPLIANCE_RULES } from './complianceCopy';
+import { formatStructureReadForMentor, synthesizeStructureRead } from './structureRead';
+import { alignPatternsAcrossTimeframes } from './mtfAlign';
+import { getAllPatternScans } from './activeScan';
+import type { MarketStructureId } from './marketState';
 
 function formatMeasuredPattern(p: DetectedPattern): string {
   const pct = Math.round(p.confidence * 100);
+  const life = p.lifecycle ? `, lifecycle ${p.lifecycle}` : '';
   const note = p.detail || `${p.label} measured on the latest candles.`;
-  return `- ${p.label} (${p.direction}, ${pct}% geometric confidence): ${note}`;
+  return `- ${p.label} (${p.direction}, ${pct}% geometric confidence${life}): ${note}`;
 }
 
 function formatMethodologyContext(brief: FormingStructureBrief): string[] {
   const lines: string[] = [
     `Trend bias: ${brief.trendBias} · ${brief.scannedBars} bars scanned`,
   ];
+
+  if (brief.marketStateLabel) {
+    lines.push(`Market structure state: ${brief.marketStateLabel}`);
+  }
+  if (brief.mtfBadge) {
+    lines.push(brief.mtfBadge);
+  }
 
   if (brief.clock.active) {
     lines.push(
@@ -44,6 +57,20 @@ function formatChartSection(
 
   const lines: string[] = [`--- ${symbol} · ${timeframe} ---`];
 
+  const mtf = alignPatternsAcrossTimeframes(symbol, timeframe, getAllPatternScans());
+  const read = synthesizeStructureRead(patterns, brief, {
+    marketState: brief?.marketStateLabel
+      ? {
+          id: (brief.marketStateId as MarketStructureId) || 'transition',
+          displayLabel: brief.marketStateLabel,
+          detail: '',
+          strength: 0.5,
+        }
+      : null,
+    mtf,
+  });
+  lines.push(formatStructureReadForMentor(read));
+
   if (brief) {
     lines.push(...formatMethodologyContext(brief));
   }
@@ -68,6 +95,7 @@ function formatChartSection(
 /**
  * Build the chart-vision block injected into the mentor system prompt.
  * Only includes geometry-measured patterns — never heuristic guesses.
+ * Educational literacy only — never financial advice.
  */
 export function formatChartVisionForMentor(
   briefs: FormingStructureBrief[],
@@ -76,6 +104,7 @@ export function formatChartVisionForMentor(
   if (!briefs.length && !scans.length) {
     return `=== LIVE CHART VISION ===
 No chart is open right now. If the user asks what pattern is forming, tell them to open a chart first. Do NOT invent patterns.
+${MENTOR_COMPLIANCE_RULES}
 === END CHART VISION ===`;
   }
 
@@ -96,6 +125,7 @@ No chart is open right now. If the user asks what pattern is forming, tell them 
   return `=== LIVE CHART VISION — MEASURED FROM REAL CANDLES (latest window only) ===
 ${sections.join('\n\n')}
 
-These patterns were measured by ClearPath's geometry engine from actual OHLC data on the RIGHT EDGE of the chart — not guessed from history. Speak about them as "possible" or "forming," never "confirmed." Only discuss patterns listed above. If the user asks about a pattern NOT listed, explain it in general, then say it is not currently measured on this chart. Never invent percentages or pattern names.
+These patterns were measured by ClearPath's geometry engine from actual OHLC data on the RIGHT EDGE of the chart — not guessed from history. Speak about Possible / Forming / Confirmed / Triggered as geometry lifecycle states on the chart. Geometric fit % is fit quality, not a win-rate prediction. Only discuss patterns listed above. If the user asks about a pattern NOT listed, explain it in general, then say it is not currently measured on this chart. Never invent percentages or pattern names.
+${MENTOR_COMPLIANCE_RULES}
 === END CHART VISION ===`;
 }

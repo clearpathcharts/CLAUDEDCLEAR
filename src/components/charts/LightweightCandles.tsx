@@ -15,10 +15,11 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
+import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision, timeframeStepSeconds, scheduleMtfSiblingScans } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
+import { CandleCloseCountdown } from "./CandleCloseCountdown";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
 import { Crosshair, Scan, Radio, Focus } from "lucide-react";
@@ -35,30 +36,6 @@ type Candle = {
   low: number;
   close: number;
 };
-
-/** Seconds per bar for live updates. Keep `1M` (month) distinct from `1m` (minute). */
-function timeframeStepSeconds(timeframe: string): number {
-  const raw = (timeframe || "1h").trim();
-  if (raw === "1M") return 30 * 86400;
-  const tf = raw.toLowerCase();
-  const stepMap: Record<string, number> = {
-    "1m": 60,
-    "2m": 120,
-    "3m": 180,
-    "5m": 300,
-    "10m": 600,
-    "15m": 900,
-    "30m": 1800,
-    "1h": 3600,
-    "2h": 7200,
-    "3h": 10800,
-    "4h": 14400,
-    "1d": 86400,
-    "1w": 604800,
-    ytd: 86400,
-  };
-  return stepMap[tf] || 3600;
-}
 
 /** Minimum price change that counts as a real new bar (blocks weekend flat-bar spam). */
 function minMeaningfulPriceMove(price: number): number {
@@ -471,6 +448,7 @@ export function LightweightCandles({
             if (!active) return;
             setPatternScan(output.scan);
             setFormingBrief(output.forming);
+            void scheduleMtfSiblingScans({ symbol: sym, timeframe, userTier });
 
             try {
               const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
@@ -1068,8 +1046,15 @@ export function LightweightCandles({
             Forming
           </button>
         )}
+        {hidePatternChrome && formingBrief?.lastBarTime != null && (
+          <div className="absolute top-2 left-2 z-40 rounded-md border border-[#00E5FF]/25 bg-black/70 px-2 py-1 pointer-events-none">
+            <CandleCloseCountdown barOpenTime={formingBrief.lastBarTime} timeframe={timeframe} compact />
+          </div>
+        )}
         <ChartPatternHud
           symbol={sym}
+          timeframe={timeframe}
+          forming={formingBrief}
           scan={!hidePatternChrome && showPatternHud ? patternScan : null}
           onClose={() => {
             setShowPatternHud(false);

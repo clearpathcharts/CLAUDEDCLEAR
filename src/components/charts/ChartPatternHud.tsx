@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
-import type { PatternScanResult, PatternGroup } from '../../patterns';
-import { PATTERN_GROUP_LABELS } from '../../patterns';
+import type { PatternScanResult, PatternGroup, FormingStructureBrief } from '../../patterns';
+import {
+  PATTERN_GROUP_LABELS,
+  synthesizeStructureRead,
+  EDUCATIONAL_DISCLAIMER,
+  LIFECYCLE_LABELS,
+} from '../../patterns';
+import { CandleCloseCountdown } from './CandleCloseCountdown';
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
@@ -19,11 +25,41 @@ const GROUP_BADGE: Record<PatternGroup, string> = {
 interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
+  forming?: FormingStructureBrief | null;
+  timeframe?: string;
   onClose?: () => void;
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
+export function ChartPatternHud({ symbol, scan, forming = null, timeframe = '1h', onClose }: ChartPatternHudProps) {
+  const structureRead = useMemo(
+    () =>
+      synthesizeStructureRead(scan?.patterns ?? [], forming, {
+        marketState: forming?.marketStateLabel
+          ? {
+              id: (forming.marketStateId as any) || 'transition',
+              displayLabel: forming.marketStateLabel,
+              detail: '',
+              strength: 0.5,
+            }
+          : null,
+        mtf: forming?.mtfBadge
+          ? {
+              symbol,
+              primaryTimeframe: timeframe,
+              comparedTimeframes: [],
+              agreementCount: 0,
+              comparedCount: 0,
+              badge: forming.mtfBadge,
+              sharedFamily: null,
+              sharedDirection: null,
+              detail: '',
+            }
+          : null,
+      }),
+    [scan, forming, symbol, timeframe],
+  );
+
   if (!scan) return null;
 
   const chartPatterns = scan.patterns.filter((p) => p.category === 'chart');
@@ -37,7 +73,7 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
 
   return (
     <div
-      className="absolute bottom-3 left-3 z-[55] w-72 max-h-64 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
+      className="absolute bottom-3 left-3 z-[55] w-72 max-h-72 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
       id={`pattern-hud-${symbol}`}
     >
       {onClose && (
@@ -60,6 +96,17 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
         <span className="ml-auto text-[10px] text-[#BF00FF]">{symbol}</span>
       </div>
 
+      <div className="mb-2">
+        <CandleCloseCountdown barOpenTime={forming?.lastBarTime} timeframe={timeframe} compact />
+      </div>
+
+      <div className="mb-2 rounded-lg border border-[#00E5FF]/25 bg-[#00E5FF]/5 px-2 py-1.5">
+        <p className="text-[8px] font-black uppercase tracking-widest text-[#00E5FF]">Structure Read</p>
+        <p className="text-[10px] leading-snug text-white/90 font-bold">{structureRead.headline}</p>
+        {forming?.mtfBadge && <p className="text-[8px] text-[#BF00FF]/90 mt-0.5">{forming.mtfBadge}</p>}
+        <p className="text-[7px] text-white/35 mt-0.5">{EDUCATIONAL_DISCLAIMER}</p>
+      </div>
+
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
         {total > 0
           ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
@@ -78,6 +125,9 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
                 <div key={`${group}-${p.id}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
                   <Icon size={10} className="text-[#FF1493]" />
                   <span className="flex-1 truncate text-white/90">{p.label}</span>
+                  {p.lifecycle && (
+                    <span className="text-[7px] uppercase text-white/45">{LIFECYCLE_LABELS[p.lifecycle]}</span>
+                  )}
                   <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
                 </div>
               );

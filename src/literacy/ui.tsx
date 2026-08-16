@@ -13,7 +13,7 @@ export const PANEL_META: Array<{ id: LiteracyPanelId; label: string; blurb: stri
   { id: "trust", label: "Mentor Trust", blurb: "Score tutor answers with receipts" },
   { id: "coach", label: "Study Coach", blurb: "Stim load & focus sessions" },
   { id: "pins", label: "Idea Pins", blurb: "Notes that decay until re-verified" },
-  { id: "patterns", label: "Pattern Studio", blurb: "Chart structures as lessons" },
+  { id: "patterns", label: "Pattern Studio", blurb: "Structure Read · lifecycle literacy (education only)" },
   { id: "encyclopedia", label: "Encyclopedia", blurb: "Cinematic conceptual world" },
 ];
 

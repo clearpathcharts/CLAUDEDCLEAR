@@ -1,11 +1,14 @@
 import React from 'react';
 import { Radio, ChevronRight, X } from 'lucide-react';
 import type { FormingPossibility, FormingStructureBrief } from '../../patterns/forming';
+import { EDUCATIONAL_DISCLAIMER } from '../../patterns/complianceCopy';
 
 const STATUS_STYLE: Record<FormingPossibility['status'], string> = {
   forming: 'text-[#FF1493] border-[#FF1493]/50 bg-[#FF1493]/10',
   possible: 'text-[#BF00FF] border-[#BF00FF]/40 bg-[#BF00FF]/10',
   watch: 'text-[#9D00FF] border-[#9D00FF]/30 bg-[#9D00FF]/5',
+  confirmed: 'text-emerald-300 border-emerald-500/40 bg-emerald-500/10',
+  triggered: 'text-amber-300 border-amber-500/40 bg-amber-500/10',
 };
 
 interface ChartFormingWatchProps {
@@ -20,7 +23,7 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
 
   return (
     <div
-      className="absolute top-3 right-3 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
+      className="absolute top-3 right-3 z-[55] w-72 max-h-56 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
       id={`forming-watch-${symbol}`}
     >
       {onClose && (
@@ -43,6 +46,13 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
         <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>
       </div>
 
+      {brief.structureReadHeadline && (
+        <p className="mb-2 text-[9px] leading-snug text-[#00E5FF]/90">
+          <span className="font-black uppercase tracking-wide">Structure Read · </span>
+          {brief.structureReadHeadline}
+        </p>
+      )}
+
       {brief.clock.active && (
         <p className="mb-2 text-[9px] leading-relaxed text-[#FF00CC]/90">
           {brief.clock.type === '16-bar-retrace' ? '16' : '12'}-bar clock:{' '}
@@ -59,7 +69,7 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
         <div className="space-y-1 overflow-y-auto max-h-32">
           {brief.possibilities.map((p) => (
             <div
-              key={p.id}
+              key={`${p.id}-${p.label}`}
               className={`rounded border px-2 py-1.5 text-[10px] ${STATUS_STYLE[p.status]}`}
             >
               <div className="flex items-center gap-1">
@@ -74,7 +84,7 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
         </div>
       )}
 
-      <p className="mt-2 text-[8px] text-white/30">Possible only — not confirmed. Ask C.P.T. for detail.</p>
+      <p className="mt-2 text-[8px] text-white/30">{EDUCATIONAL_DISCLAIMER}</p>
     </div>
   );
 }

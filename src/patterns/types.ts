@@ -30,6 +30,9 @@ export type ChartPatternId =
 
 export type PatternId = CandlestickPatternId | ChartPatternId;
 
+/** Structure-event lifecycle on measured patterns (educational — not trade signals). */
+export type PatternLifecycleStatus = 'possible' | 'forming' | 'confirmed' | 'triggered';
+
 export interface DetectedPattern {
   id: PatternId;
   category: PatternCategory;
@@ -42,6 +45,8 @@ export interface DetectedPattern {
   confidence: number;
   detail?: string;
   geometry?: PatternGeometry;
+  /** Geometry lifecycle state — Confirmed/Triggered are structure events only. */
+  lifecycle?: PatternLifecycleStatus;
 }
 
 export interface PatternLineSegment {

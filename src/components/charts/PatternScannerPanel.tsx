@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight, BookOpen } from "lucide-react";
 import {
   getActivePatternScan,
   getPatternScan,
@@ -7,12 +7,18 @@ import {
   PATTERN_GROUP_LABELS,
   getFormingBrief,
   subscribeFormingBrief,
+  synthesizeStructureRead,
+  EDUCATIONAL_DISCLAIMER,
+  LIFECYCLE_LABELS,
   type PatternGroup,
   type PatternScanResult,
+  type PatternLifecycleStatus,
 } from "../../patterns";
 import type { FormingPossibility } from "../../patterns/forming";
 import { describeBarWindow } from "../../patterns/forming";
 import { getLatencyClass, LATENCY_LABEL, type LatencyClass } from "../../constants/assetRegistry";
+import { CandleCloseCountdown } from "./CandleCloseCountdown";
+import { PatternLiteracyTour } from "./PatternLiteracyTour";
 
 function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
   if (symbol && symbol !== "—") {
@@ -39,6 +45,15 @@ const FORMING_STATUS: Record<FormingPossibility["status"], string> = {
   forming: "text-[#FF1493] border-[#FF1493]/50 bg-[#FF1493]/10",
   possible: "text-[#BF00FF] border-[#BF00FF]/40 bg-[#BF00FF]/10",
   watch: "text-[#9D00FF] border-[#9D00FF]/30 bg-[#9D00FF]/5",
+  confirmed: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10",
+  triggered: "text-amber-300 border-amber-500/40 bg-amber-500/10",
+};
+
+const LIFECYCLE_BADGE: Record<PatternLifecycleStatus, string> = {
+  possible: "text-[#BF00FF] border-[#BF00FF]/40",
+  forming: "text-[#FF1493] border-[#FF1493]/50",
+  confirmed: "text-emerald-300 border-emerald-500/40",
+  triggered: "text-amber-300 border-amber-500/40",
 };
 
 const LATENCY_BADGE: Record<LatencyClass, string> = {
@@ -61,6 +76,7 @@ interface PatternScannerPanelProps {
 export function PatternScannerPanel({ symbol, timeframe, compact = false }: PatternScannerPanelProps) {
   const [scan, setScan] = useState<PatternScanResult | null>(() => resolvePanelScan(symbol, timeframe));
   const [forming, setForming] = useState(() => getFormingBrief(symbol, timeframe));
+  const [tourOpen, setTourOpen] = useState(false);
   const hasSymbol = Boolean(symbol && symbol !== '—');
 
   useEffect(() => {
@@ -80,6 +96,34 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
   const total = scan?.patterns.length ?? 0;
   const latency = hasSymbol ? getLatencyClass(symbol) : null;
 
+  const structureRead = useMemo(
+    () =>
+      synthesizeStructureRead(scan?.patterns ?? [], forming, {
+        marketState: forming?.marketStateLabel
+          ? {
+              id: (forming.marketStateId as any) || "transition",
+              displayLabel: forming.marketStateLabel,
+              detail: "",
+              strength: 0.5,
+            }
+          : null,
+        mtf: forming?.mtfBadge
+          ? {
+              symbol,
+              primaryTimeframe: timeframe,
+              comparedTimeframes: [],
+              agreementCount: 0,
+              comparedCount: 0,
+              badge: forming.mtfBadge,
+              sharedFamily: null,
+              sharedDirection: null,
+              detail: "",
+            }
+          : null,
+      }),
+    [scan, forming, symbol, timeframe],
+  );
+
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
     items: chartPatterns.filter((p) => p.patternGroup === group),
@@ -95,6 +139,15 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
         <div className="flex items-center gap-2 mb-2">
           <Scan size={18} className="text-[#FF1493]" />
           <span className="text-sm font-black uppercase tracking-wider text-white">Pattern Scanner</span>
+          <button
+            type="button"
+            onClick={() => setTourOpen(true)}
+            className="ml-auto inline-flex items-center gap-1 rounded border border-[#FF1493]/35 bg-[#FF1493]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#FF1493] hover:bg-[#FF1493]/20"
+            title="Rick's 2-min pattern literacy tour"
+          >
+            <BookOpen size={11} />
+            Tour
+          </button>
         </div>
         <div className="flex items-center justify-between text-xs text-zinc-400 gap-2 flex-wrap">
           <span className="text-[#BF00FF] font-bold">{symbol}</span>
@@ -118,6 +171,31 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
             <span>{timeframe.toUpperCase()}</span>
           </span>
         </div>
+
+        {hasSymbol && (
+          <div className="mt-2">
+            <CandleCloseCountdown
+              barOpenTime={forming?.lastBarTime}
+              timeframe={timeframe}
+              compact={compact}
+            />
+          </div>
+        )}
+
+        {hasSymbol && (
+          <div className="mt-3 rounded-xl border border-[#00E5FF]/25 bg-[#00E5FF]/5 px-3 py-2 space-y-1">
+            <p className="text-[9px] font-black uppercase tracking-widest text-[#00E5FF]">Structure Read</p>
+            <p className="text-xs leading-snug text-white/90 font-bold">{structureRead.headline}</p>
+            {forming?.marketStateLabel && (
+              <p className="text-[10px] text-white/55">Market structure: {forming.marketStateLabel}</p>
+            )}
+            {forming?.mtfBadge && (
+              <p className="text-[10px] text-[#BF00FF]/90">{forming.mtfBadge}</p>
+            )}
+            <p className="text-[9px] text-white/35">{EDUCATIONAL_DISCLAIMER}</p>
+          </div>
+        )}
+
         <p className="mt-2 text-xs leading-relaxed text-white/50">
           {!hasSymbol
             ? "Load a symbol in any chart slot — the scanner needs candles to read structure."
@@ -143,6 +221,7 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
             <div className="space-y-1.5">
               {items.map((p, i) => {
                 const Icon = DIRECTION_ICON[p.direction];
+                const life = p.lifecycle;
                 return (
                   <div
                     key={`${group}-${p.id}-${p.time}-${i}`}
@@ -150,6 +229,11 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
                   >
                     <Icon size={14} className="text-[#FF1493] shrink-0" />
                     <span className="flex-1 text-white/90 leading-snug">{p.label}</span>
+                    {life && (
+                      <span className={`text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${LIFECYCLE_BADGE[life]}`}>
+                        {LIFECYCLE_LABELS[life]}
+                      </span>
+                    )}
                     <span className="text-[#9D00FF] text-xs font-bold">{Math.round(p.confidence * 100)}%</span>
                   </div>
                 );
@@ -180,6 +264,9 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
                       }
                     />
                     <span className="flex-1 text-white/80">{p.label}</span>
+                    {p.lifecycle && (
+                      <span className="text-[9px] uppercase text-white/40">{LIFECYCLE_LABELS[p.lifecycle]}</span>
+                    )}
                   </div>
                 );
               })}
@@ -226,7 +313,7 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           ) : (
             <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
               {forming.possibilities.map((p) => (
-                <div key={p.id} className={`rounded-lg border px-3 py-2 text-xs ${FORMING_STATUS[p.status]}`}>
+                <div key={`${p.id}-${p.label}`} className={`rounded-lg border px-3 py-2 text-xs ${FORMING_STATUS[p.status]}`}>
                   <div className="flex items-center gap-1.5">
                     <ChevronRight size={12} />
                     <span className="font-bold uppercase">{p.status}</span>
@@ -240,6 +327,8 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           )}
         </div>
       )}
+
+      <PatternLiteracyTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
 }

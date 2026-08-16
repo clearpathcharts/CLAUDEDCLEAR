@@ -6,7 +6,10 @@ import {
   getAllPatternScans,
   subscribeFormingBrief,
   subscribePatternScan,
+  EDUCATIONAL_DISCLAIMER,
+  LITERACY_FOOTER,
 } from "../patterns";
+import { PatternLiteracyTour } from "../components/charts/PatternLiteracyTour";
 import { DEFAULT_SENTINEL_SOURCES } from "./data/sentinelSources";
 import { EDUCATIONAL_FEEDS, LISTEN_CONCEPT_HINTS } from "./data/educationalFeeds";
 import { LITERACY_TRACKS } from "./data/literacyCurriculum";
@@ -993,6 +996,7 @@ export function IdeaPinsPanel({ api }: { api: StoreApi }) {
 export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
   const [scans, setScans] = useState(() => getAllPatternScans());
   const [forming, setForming] = useState(() => getActiveFormingBrief());
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     const unsubScan = subscribePatternScan(() => setScans(getAllPatternScans()));
@@ -1006,17 +1010,37 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
   return (
     <PanelShell
       title="Pattern Literacy Studio"
-      subtitle="Auto-detected chart structures become teaching moments with plain-language explainers — not instructions."
+      subtitle="Auto-detected chart structures become teaching moments with plain-language explainers — educational literacy only, never buy/sell instructions."
       accent="#00F5D4"
     >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <TextButton tone="pink" onClick={() => setTourOpen(true)}>
+          Rick&apos;s 2-min pattern literacy tour
+        </TextButton>
+        <span className="text-[10px] text-white/40">{EDUCATIONAL_DISCLAIMER}</span>
+      </div>
+
       {forming && (
         <div className="mb-4 rounded-xl border border-[#00F5D4]/30 p-3 bg-[#00F5D4]/5">
           <h3 className="text-sm font-bold text-[#00F5D4]">
             Forming structure · {forming.symbol} · {forming.timeframe}
           </h3>
+          {forming.structureReadHeadline && (
+            <p className="mt-2 text-xs text-[#00E5FF]">
+              <span className="font-black uppercase tracking-wide">Structure Read · </span>
+              {forming.structureReadHeadline}
+            </p>
+          )}
+          {forming.marketStateLabel && (
+            <p className="mt-1 text-[11px] text-white/55">Market structure: {forming.marketStateLabel}</p>
+          )}
+          {forming.mtfBadge && (
+            <p className="mt-1 text-[11px] text-[#BF00FF]/90">{forming.mtfBadge}</p>
+          )}
           <p className="text-xs text-white/70 mt-1 whitespace-pre-wrap">
             {formatFormingBriefForChat(forming)}
           </p>
+          <p className="mt-2 text-[9px] text-white/30">{LITERACY_FOOTER}</p>
           <div className="mt-2">
             <TextButton
               tone="muted"
@@ -1047,7 +1071,8 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
                     <span>
                       {p.label}{" "}
                       <span className="text-white/35">
-                        ({p.direction}, {Math.round(p.confidence * 100)}%)
+                        ({p.direction}, {Math.round(p.confidence * 100)}% geometric fit
+                        {p.lifecycle ? `, ${p.lifecycle}` : ""})
                       </span>
                       {p.detail ? <span className="block text-white/45">{p.detail}</span> : null}
                     </span>
@@ -1056,7 +1081,7 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
                       onClick={() =>
                         api.addVaultItem({
                           title: `Pattern lesson: ${p.label}`,
-                          body: `Teaching moment on ${label}.\n${p.detail || "Describe the geometry in your own words and link it in Concept Wiki."}\nDirection: ${p.direction}. Confidence: ${Math.round(p.confidence * 100)}%.`,
+                          body: `Teaching moment on ${label}.\n${p.detail || "Describe the geometry in your own words and link it in Concept Wiki."}\nDirection bias of the pattern class: ${p.direction}. Geometric fit: ${Math.round(p.confidence * 100)}%. Lifecycle: ${p.lifecycle || "n/a"}.\n\n${EDUCATIONAL_DISCLAIMER}`,
                           kind: "chart",
                           tags: ["pattern", "literacy", p.category],
                         })
@@ -1079,6 +1104,7 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
           </p>
         )}
       </ul>
+      <PatternLiteracyTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </PanelShell>
   );
 }

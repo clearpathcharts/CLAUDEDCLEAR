@@ -29,7 +29,33 @@ export {
   formingChartKey,
   subscribeFormingBrief,
 } from './activeForming';
-export type { FormingStructureBrief, FormingPossibility } from './forming';
+export type { FormingStructureBrief, FormingPossibility, FormingLifecycleStatus } from './forming';
+export {
+  STRUCTURE_READ_LABEL,
+  EDUCATIONAL_DISCLAIMER,
+  LITERACY_FOOTER,
+  MENTOR_COMPLIANCE_RULES,
+} from './complianceCopy';
+export {
+  timeframeStepSeconds,
+  secondsUntilCandleClose,
+  formatCandleCountdown,
+  candleCloseAtUnix,
+  siblingTimeframes,
+} from './timeframeDuration';
+export type { PatternLifecycleStatus } from './types';
+export {
+  classifyPatternLifecycle,
+  annotatePatternsWithLifecycle,
+  LIFECYCLE_LABELS,
+} from './lifecycle';
+export { synthesizeStructureRead, formatStructureReadForMentor } from './structureRead';
+export type { StructureRead } from './structureRead';
+export { analyzeMarketStructure } from './marketState';
+export type { MarketStructureState, MarketStructureId } from './marketState';
+export { alignPatternsAcrossTimeframes } from './mtfAlign';
+export type { MtfAlignment } from './mtfAlign';
+export { scheduleMtfSiblingScans } from './mtfFanout';
 export type {
   DetectedPattern,
   PatternScanResult,

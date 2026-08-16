@@ -1,13 +1,19 @@
 import { formingChartKey } from './activeForming';
 import { setActiveFormingBrief, clearFormingBrief } from './activeForming';
-import { setActivePatternScan, clearPatternScan } from './activeScan';
-import { resolvePatternConflicts } from './conflicts';
+import { setActivePatternScan, clearPatternScan, getAllPatternScans } from './activeScan';
 import { analyzeFormingStructure } from './forming';
+import { annotatePatternsWithLifecycle } from './lifecycle';
+import { analyzeMarketStructure } from './marketState';
+import { alignPatternsAcrossTimeframes } from './mtfAlign';
 import { scanAllPatterns } from './scan';
 import { analysisWindow, candleFingerprint, sanitizeCandles } from './sanitize';
+import { synthesizeStructureRead } from './structureRead';
 import type { Candle } from './types';
 import type { FormingStructureBrief } from './forming';
 import type { PatternScanResult } from './types';
+import type { StructureRead } from './structureRead';
+import type { MarketStructureState } from './marketState';
+import type { MtfAlignment } from './mtfAlign';
 
 export interface ChartVisionInput {
   candles: Candle[];
@@ -22,12 +28,19 @@ export interface ChartVisionOutput {
   forming: FormingStructureBrief;
   fingerprint: string;
   analyzedAt: number;
+  structureRead: StructureRead;
+  marketState: MarketStructureState;
+  mtf: MtfAlignment;
 }
 
 const fingerprintCache = new Map<string, string>();
 
 function buildScan(candles: Candle[]): PatternScanResult {
-  return scanAllPatterns(analysisWindow(candles));
+  const raw = scanAllPatterns(analysisWindow(candles));
+  return {
+    ...raw,
+    patterns: annotatePatternsWithLifecycle(raw.patterns, candles),
+  };
 }
 
 /**
@@ -54,8 +67,47 @@ export function runChartVisionPipeline(
     fingerprintCache.set(key, fingerprint);
 
     const scan = buildScan(safe);
-    const forming = analyzeFormingStructure(safe, symbol, timeframe, scan.patterns);
-    if (!forming) return null;
+    const formingBase = analyzeFormingStructure(safe, symbol, timeframe, scan.patterns);
+    if (!formingBase) return null;
+
+    const marketState = analyzeMarketStructure(safe);
+    // Include this scan in MTF compare by merging with published peers.
+    const peerScans = getAllPatternScans().filter(
+      (s) => formingChartKey(s.symbol, s.timeframe) !== key,
+    );
+    const selfScan = {
+      symbol: formingBase.symbol,
+      timeframe: formingBase.timeframe,
+      scan,
+      updatedAt: Date.now(),
+    };
+    const mtf = alignPatternsAcrossTimeframes(formingBase.symbol, formingBase.timeframe, [
+      ...peerScans,
+      selfScan,
+    ]);
+
+    const structureRead = synthesizeStructureRead(scan.patterns, formingBase, {
+      marketState,
+      mtf,
+    });
+
+    const forming: FormingStructureBrief = {
+      ...formingBase,
+      marketStateId: marketState.id,
+      marketStateLabel: marketState.displayLabel,
+      mtfBadge: mtf.badge,
+      structureReadHeadline: structureRead.headline,
+      possibilities: formingBase.possibilities.map((p) => {
+        const measured = scan.patterns.find(
+          (x) => x.category === 'chart' && x.id === p.id && x.label === p.label,
+        );
+        if (measured?.lifecycle) {
+          return { ...p, status: measured.lifecycle };
+        }
+        if (p.status === 'watch') return { ...p, status: 'possible' as const };
+        return p;
+      }),
+    };
 
     return {
       symbol: forming.symbol,
@@ -64,6 +116,9 @@ export function runChartVisionPipeline(
       forming,
       fingerprint,
       analyzedAt: Date.now(),
+      structureRead,
+      marketState,
+      mtf,
     };
   } catch (err) {
     console.error('[ChartVision] pipeline error (recovered):', err);
