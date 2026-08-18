@@ -29,6 +29,10 @@ const STEPS = [
     title: 'Multi-timeframe agreement',
     body: 'MTF structure agreement compares pattern family and resolution bias across timeframes you have scanned. Agreement is educational confluence, not a stacked trade signal.',
   },
+  {
+    title: 'Ramp vs wall',
+    body: 'A wedge is two ramps squeezing to a point. An ascending or descending triangle is one ramp hitting a flat wall. A falling wedge usually resolves up; a descending triangle usually resolves down. Study the pictures in Chart Shapes school before you trust a live label.',
+  },
 ];
 
 interface PatternLiteracyTourProps {

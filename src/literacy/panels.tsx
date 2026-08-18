@@ -993,7 +993,13 @@ export function IdeaPinsPanel({ api }: { api: StoreApi }) {
   );
 }
 
-export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
+export function PatternLiteracyPanel({
+  api,
+  onNavigate,
+}: {
+  api: StoreApi;
+  onNavigate?: (tab: string) => void;
+}) {
   const [scans, setScans] = useState(() => getAllPatternScans());
   const [forming, setForming] = useState(() => getActiveFormingBrief());
   const [tourOpen, setTourOpen] = useState(false);
@@ -1016,6 +1022,9 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <TextButton tone="pink" onClick={() => setTourOpen(true)}>
           Rick&apos;s 2-min pattern literacy tour
+        </TextButton>
+        <TextButton tone="muted" onClick={() => onNavigate?.("ClearPathEducation")}>
+          Chart Shapes school — ramp vs wall
         </TextButton>
         <span className="text-[10px] text-white/40">{EDUCATIONAL_DISCLAIMER}</span>
       </div>
@@ -1126,6 +1135,11 @@ export function EncyclopediaWorldPanel({ onNavigate }: { onNavigate?: (tab: stri
           title="Encyclopedia of Indicators"
           body="Directory of indicator concepts with explanations for study."
           onClick={() => onNavigate?.("EncyclopediaOfIndicators")}
+        />
+        <WorldCard
+          title="Chart Shapes school"
+          body="Wedge or triangle? Two ramps come to a point. One ramp hits a wall. Falling wedge usually up; descending triangle usually down."
+          onClick={() => onNavigate?.("ClearPathEducation")}
         />
         <WorldCard
           title="ClearPath Education schools"

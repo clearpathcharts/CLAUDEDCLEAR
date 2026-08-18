@@ -25,7 +25,7 @@ export const SEED_WIKI: WikiNode[] = [
     id: "wiki_patterns",
     title: "Chart Patterns as Teaching Moments",
     summary: "Recognizable shapes used for education and vocabulary.",
-    body: "Patterns are labels for recurring geometry. ClearPath surfaces them so you can learn the language of charts with plain-English explainers.",
+    body: "Patterns are labels for recurring geometry. Start with Chart Shapes school: two ramps that meet at a point are a wedge; one ramp into a flat wall is an ascending or descending triangle. A falling wedge usually resolves up; a descending triangle usually resolves down. Name the two lines before you name the ending.",
     links: ["wiki_structure", "wiki_indicators"],
     tags: ["patterns", "literacy"],
     updatedAt: now,

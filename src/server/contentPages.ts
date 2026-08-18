@@ -513,6 +513,9 @@ function renderEducationLesson(schoolId: string, unitId: string, lessonId: strin
   const lesson = unit?.lessons.find((l) => l.id === lessonId);
   if (!school || !unit || !lesson) return null;
   const body = getLessonBody(lesson.id, lesson.title, school.name, unit.title);
+  const pictureNote = body.visual
+    ? `<p><em>Open this lesson in ClearPath Education to see the labeled chart picture (ramp vs wall).</em></p>`
+    : '';
   const sections = body.sections
     .map(
       (s) =>
@@ -530,6 +533,7 @@ function renderEducationLesson(schoolId: string, unitId: string, lessonId: strin
 <h1>${escapeHtml(lesson.title)}</h1>
 <p class="lead">${escapeHtml(body.summary)}</p>
 <article>
+${pictureNote}
 ${sections}
 <h2>Key takeaways</h2>
 <ul>${takeaways}</ul>
@@ -758,7 +762,7 @@ function renderEducationHub(): string {
   }).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Education' }])}
 <h1>ClearPath Education</h1>
-<p class="lead">Ten schools from crypto to economics — plain-language lessons, unit quizzes, and a path from first concepts to advanced structure.</p>
+<p class="lead">Start with Chart Shapes if wedges and triangles look the same — two ramps come to a point, one ramp hits a wall. Then pick any market school. Plain-language lessons and unit quizzes.</p>
 ${liveDeskCta('/education', 'Open interactive classroom')}
 <article>
 <ul class="card-list">${cards}</ul>

@@ -32,6 +32,104 @@ export type Quiz = {
 
 export const QUIZZES: Record<string, Quiz> = {
   // ==========================================================================
+  // CHART SHAPES — Unit 1: Wedges vs Triangles
+  // ==========================================================================
+  "shapes-u1": {
+    unitId: "shapes-u1",
+    passingScore: 5,
+    questions: [
+      {
+        q: "Both lines tilt the same way and squeeze toward a point. What is that family?",
+        options: [
+          "A wedge",
+          "An ascending or descending triangle",
+          "A wall",
+          "A candlestick",
+        ],
+        answer: 0,
+        why: "Two ramps that meet at a point = wedge. A triangle of this kind has one flat wall.",
+      },
+      {
+        q: "The bottom is flat like a floor. The top slants down into it. What is it, and what does it usually do?",
+        options: [
+          "Descending triangle — usually goes down through the floor",
+          "Falling wedge — usually goes up",
+          "Ascending triangle — usually goes up",
+          "Rising wedge — usually goes down",
+        ],
+        answer: 0,
+        why: "A flat floor is the wall. That is a descending triangle. The usual textbook ending is down through that wall. A falling wedge has no flat floor.",
+      },
+      {
+        q: "A falling wedge looks like price is sliding down. What is the usual textbook ending?",
+        options: [
+          "It usually breaks up",
+          "It usually breaks down because it looks weak",
+          "It always sits still",
+          "It becomes a descending triangle",
+        ],
+        answer: 0,
+        why: "Looks down, usually goes up. That opposite ending is why people mix it with a descending triangle.",
+      },
+      {
+        q: "Fastest way to tell a falling wedge from a descending triangle?",
+        options: [
+          "Look at the lows: still falling (wedge) or bouncing off the same floor (triangle)",
+          "Count the candles",
+          "Check if volume is green",
+          "Use a higher timeframe only",
+        ],
+        answer: 0,
+        why: "Both can have falling highs. The bottom line decides: two ramps vs one wall.",
+      },
+      {
+        q: "Rising lows are not enough to name the pattern. What else do you check?",
+        options: [
+          "The highs: still rising (rising wedge) or hitting the same ceiling (ascending triangle)",
+          "Whether the ticker is a stock or forex",
+          "The color of the last candle",
+          "The moving average",
+        ],
+        answer: 0,
+        why: "Rising lows appear in both the rising wedge and the ascending triangle. The top line is the tell.",
+      },
+      {
+        q: "A wedge comes to a ______. An ascending/descending triangle hits a ______.",
+        options: [
+          "point · wall",
+          "wall · point",
+          "candle · indicator",
+          "high · low",
+        ],
+        answer: 0,
+        why: "Two ramps squeeze to a point. One ramp runs into a flat wall.",
+      },
+      {
+        q: "You see two ramps both tilting down, getting tighter. What do you call it?",
+        options: [
+          "Falling wedge",
+          "Descending triangle",
+          "Ascending triangle",
+          "Rising wedge",
+        ],
+        answer: 0,
+        why: "No wall. Both lines tilt down. That is a falling wedge — usually up, not down.",
+      },
+      {
+        q: "Why does this mix-up matter?",
+        options: [
+          "A falling wedge usually goes up; a descending triangle usually goes down — backwards names mean backwards expectations",
+          "They are the same pattern with two names",
+          "Triangles only exist on stocks",
+          "Wedges never appear on currency charts",
+        ],
+        answer: 0,
+        why: "Same-looking squeeze, opposite textbook endings. Name the picture from the two lines before you guess the ending.",
+      },
+    ],
+  },
+
+  // ==========================================================================
   // CRYPTO — Unit 1: Before You Touch Crypto
   // ==========================================================================
   "crypto-u1": {

@@ -55,7 +55,7 @@ export const LITERACY_TRACKS: LiteracyTrack[] = [
         id: "pat_1",
         title: "Label geometry",
         minutes: 7,
-        body: "When Pattern Literacy Studio highlights a structure, describe the geometry in plain language and link it to a Concept Wiki node.",
+        body: "Open Chart Shapes in ClearPath Education. For a falling wedge vs a descending triangle, write whether the bottom is a second ramp (point) or a flat wall (floor). Link the note to a Concept Wiki node.",
         unlocksWikiIds: ["wiki_patterns", "wiki_structure"],
         neuroHint: "Autism Predictable keeps layout stable while you study.",
       },

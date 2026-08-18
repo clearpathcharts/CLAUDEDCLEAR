@@ -47,6 +47,37 @@ const L = (schoolId: string, unitNum: number, titles: string[]): Lesson[] =>
 
 export const CURRICULUM: School[] = [
   // ==========================================================================
+  // 0. CHART SHAPES  — visual ID lab (wedges vs triangles)
+  // First school on purpose: this is the mix-up that fools almost everyone.
+  // One open unit so the pictures are not locked behind quizzes.
+  // ==========================================================================
+  {
+    id: "shapes",
+    name: "Chart Shapes",
+    tagline:
+      "Wedge or triangle? Look at two lines. If you can tell a ramp from a wall, you can name the pattern.",
+    colors: { head: NEON.pink, unit: NEON.violet, lesson: NEON.teal },
+    units: [
+      {
+        id: "shapes-u1",
+        title: "Unit 1 — Wedges vs Triangles",
+        lessons: L("shapes", 1, [
+          "The Only Question: Ramp or Wall?",
+          "A Wedge Comes to a Point",
+          "A Triangle Hits a Wall",
+          "Rising Wedge — Looks Up, Usually Goes Down",
+          "Falling Wedge — Looks Down, Usually Goes Up",
+          "Ascending Triangle — Ramp Into a Ceiling",
+          "Descending Triangle — Ramp Into a Floor",
+          "The Mix-Up: Falling Wedge vs Descending Triangle",
+          "The Mix-Up: Rising Wedge vs Ascending Triangle",
+          "Practice: Name the Picture",
+        ]),
+      },
+    ],
+  },
+
+  // ==========================================================================
   // 1. CRYPTO  (full template — all units built out)
   // ==========================================================================
   {

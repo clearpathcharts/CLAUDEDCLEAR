@@ -66,7 +66,7 @@ export default function LiteracyOSPage({
       body = <IdeaPinsPanel api={api} />;
       break;
     case "patterns":
-      body = <PatternLiteracyPanel api={api} />;
+      body = <PatternLiteracyPanel api={api} onNavigate={onNavigate} />;
       break;
     case "encyclopedia":
       body = <EncyclopediaWorldPanel onNavigate={onNavigate} />;

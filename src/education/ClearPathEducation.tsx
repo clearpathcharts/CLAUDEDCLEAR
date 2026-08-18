@@ -26,6 +26,7 @@ import { getLessonBody } from "./lessonContent";
 import { hasQuiz } from "./quizData";
 import { QuizEngine } from "./QuizEngine";
 import { useEducationProgress } from "./useEducationProgress";
+import { LessonVisual, MiniShapePreview } from "./shapeDiagrams";
 
 const PAGE_BG = "#0A0E14";
 const BODY = "#E8EDF5";
@@ -187,8 +188,9 @@ function Header({ view, setView }: { view: View; setView: (v: View) => void }) {
             ClearPath Education
           </h1>
           <p style={{ color: SUBTLE, marginTop: 6, maxWidth: 640 }}>
-            A free, plain-language school for every market — written by humans,
-            built to be read calmly. Pick a school to begin.
+            Start with Chart Shapes if wedges and triangles look the same.
+            Then pick any market school. Written in plain language, built to
+            be read calmly.
           </p>
         </>
       )}
@@ -240,7 +242,8 @@ function SchoolCard({ school, onOpen }: { school: School; onOpen: (id: string) =
       <div style={{ fontSize: 19, fontWeight: 800, color: school.colors.head, marginBottom: 6 }}>
         {school.name}
       </div>
-      <div style={{ fontSize: 13, color: SUBTLE, lineHeight: 1.5, minHeight: 56 }}>
+      {school.id === "shapes" && <MiniShapePreview />}
+      <div style={{ fontSize: 13, color: SUBTLE, lineHeight: 1.5, minHeight: school.id === "shapes" ? 0 : 56 }}>
         {school.tagline}
       </div>
       <div
@@ -575,7 +578,7 @@ function LessonReader({
     lessonIndex < unit.lessons.length - 1 ? unit.lessons[lessonIndex + 1] : null;
 
   return (
-    <article style={{ maxWidth: 760 }}>
+    <article style={{ maxWidth: body.visual ? 920 : 760 }}>
       <button type="button" onClick={onBack} style={{ ...crumbStyle, marginBottom: 16, color: school.colors.head }}>
         ← Back to unit chapters
       </button>
@@ -602,9 +605,11 @@ function LessonReader({
       >
         {lesson.title}
       </h2>
-      <p style={{ color: BODY, fontSize: 16, lineHeight: 1.65, margin: "0 0 24px" }}>
+      <p style={{ color: BODY, fontSize: 16, lineHeight: 1.65, margin: "0 0 20px" }}>
         {body.summary}
       </p>
+
+      {body.visual && <LessonVisual visual={body.visual} />}
 
       {body.sections.map((section) => (
         <section key={section.heading} style={{ marginBottom: 22 }}>
