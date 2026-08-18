@@ -99,16 +99,37 @@ export function stripePrivateStoreConfigured(): boolean {
   return stripeConfigured();
 }
 
+/**
+ * Stripe permits several customers per email (Checkout creates new ones), and
+ * `customers.list` returns newest first. Returning the newest blindly let a
+ * payment-only duplicate shadow the record holding the password, which failed
+ * login with "Invalid email or password" for an account that was perfectly fine.
+ * Always prefer the customer that actually carries the ClearPath credential.
+ */
 async function findCustomerByEmail(email: string) {
   const stripe = getStripeClient();
   if (!stripe) return null;
   const normalized = normalizeEmail(email);
-  const found = await stripe.customers.list({ email: normalized, limit: 5 });
-  for (const customer of found.data) {
-    if ((customer as unknown as { deleted?: boolean }).deleted) continue;
-    if (normalizeEmail(String(customer.email || '')) === normalized) return customer;
+  const found = await stripe.customers.list({ email: normalized, limit: 20 });
+
+  const matches = found.data.filter(
+    (customer) =>
+      !(customer as unknown as { deleted?: boolean }).deleted &&
+      normalizeEmail(String(customer.email || '')) === normalized
+  );
+  if (!matches.length) return null;
+
+  const withCredential = matches.filter((customer) => {
+    const meta = customer.metadata || {};
+    return Boolean(metaGet(meta, META.hash) && metaGet(meta, META.salt));
+  });
+  if (withCredential.length > 1) {
+    console.warn(
+      `[stripePrivateStore] ${withCredential.length} customers hold credentials for ${normalized}; using the most recently created.`
+    );
   }
-  return null;
+
+  return withCredential[0] || matches[0] || null;
 }
 
 export async function findStripePrivateUserByEmail(

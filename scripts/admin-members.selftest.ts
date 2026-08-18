@@ -80,6 +80,15 @@ async function main() {
   const meta = auth.getPrivateStorageMeta();
   assert.ok(meta.privateCollection === 'private_accounts');
 
+  const mail = await import('../src/server/inviteMailService.ts');
+  assert.equal(mail.friendlyFirstName('Brent Miller', 'clearpath.brent@gmail.com'), 'Brent');
+  mail._resetPublicForgotCooldownForTests();
+  const forgotUnknown = await mail.requestPublicPasswordReset('nobody-unknown@example.com');
+  assert.equal(forgotUnknown.ok, true);
+  assert.equal(forgotUnknown.message, mail.PUBLIC_FORGOT_PASSWORD_UNAVAILABLE);
+  const forgotInvalid = await mail.requestPublicPasswordReset('not-an-email');
+  assert.equal(forgotInvalid.message, mail.PUBLIC_FORGOT_PASSWORD_MESSAGE);
+
   console.log('admin-members.selftest: ok');
 }
 

@@ -6,7 +6,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { generateActivationKey, normalizeEmail } from './activationKey';
-import { sendPrivateLoginInviteEmail, isSmtpConfigured } from './registrationEmail';
+import {
+  sendPasswordResetEmail,
+  sendPrivateLoginInviteEmail,
+  isSmtpConfigured,
+  verifySmtpTransport,
+} from './registrationEmail';
 import {
   assertDurablePrivateWritesAllowed,
   findPrivateUserByEmail,
@@ -52,7 +57,18 @@ export type InviteMailSendResult = {
   smtpConfigured: boolean;
   message: string;
   tempPasswordIssued?: boolean;
+  /** Admin-only: returned so the founder can copy it if the member misses the email. */
+  tempPassword?: string;
 };
+
+export const PUBLIC_FORGOT_PASSWORD_MESSAGE =
+  'If that email has a Private Login, we emailed a new password. Check inbox and spam.';
+
+export const PUBLIC_FORGOT_PASSWORD_UNAVAILABLE =
+  'Password reset by email is not available yet. Contact ClearPath and we will reset your website password.';
+
+const FORGOT_COOLDOWN_MS = 10 * 60 * 1000;
+const lastPublicForgotAt = new Map<string, number>();
 
 type SendLogEntry = {
   email: string;
@@ -285,9 +301,15 @@ export async function listInviteMailRows(): Promise<{
 
 /**
  * One-click: ensure temp password exists (reset if needed), then SMTP-send the invite.
+ * forceFreshPassword: always mint a new password first (use this for "they forgot").
  */
-export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMailSendResult> {
+export async function sendInviteMailToEmail(
+  rawEmail: string,
+  opts?: { forceFreshPassword?: boolean; kind?: 'invite' | 'reset' }
+): Promise<InviteMailSendResult> {
   const email = normalizeEmail(rawEmail);
+  const forceFresh = Boolean(opts?.forceFreshPassword);
+  const kind = opts?.kind || (forceFresh ? 'reset' : 'invite');
   if (!email.includes('@') || isJunkEmail(email)) {
     return {
       ok: false,
@@ -299,14 +321,64 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
   }
 
   if (!isSmtpConfigured()) {
-    return {
-      ok: false,
-      email,
-      sendStatus: 'error',
-      smtpConfigured: false,
-      message:
-        'SMTP is not configured on the server (SMTP_HOST / SMTP_USER / SMTP_PASS). Emails cannot send until those env vars are set on Cloud Run.',
-    };
+    if (!forceFresh) {
+      return {
+        ok: false,
+        email,
+        sendStatus: 'error',
+        smtpConfigured: false,
+        message:
+          'SMTP is not configured on the server (SMTP_HOST / SMTP_USER / SMTP_PASS). Emails cannot send until those env vars are set on Cloud Run.',
+      };
+    }
+    // Still mint a website password so the founder can copy it even when mail is down.
+    try {
+      assertDurablePrivateWritesAllowed();
+      const existing = await findPrivateUserByEmail(email);
+      if (!existing) {
+        return {
+          ok: false,
+          email,
+          sendStatus: 'error',
+          smtpConfigured: false,
+          message: 'No Private Login account for this email. SMTP is also not configured.',
+        };
+      }
+      const tempPassword = generateTempPassword();
+      const activationKey = generateActivationKey();
+      await resetPrivateUserPassword({
+        email,
+        password: tempPassword,
+        tempPassword,
+      });
+      await recordFounderInvite({
+        email: existing.email,
+        displayName: existing.displayName,
+        uid: existing.uid,
+        activationKey,
+        tempPassword,
+        createdAt: new Date().toISOString(),
+        waitlistSource: 'ceo_email_reset_smtp_down',
+      });
+      return {
+        ok: true,
+        email,
+        sendStatus: 'needs_password',
+        smtpConfigured: false,
+        tempPasswordIssued: true,
+        tempPassword,
+        message:
+          `Email cannot send (SMTP is not set on Cloud Run). Website password WAS reset. Copy this and send it to them privately: ${tempPassword}`,
+      };
+    } catch (err: any) {
+      return {
+        ok: false,
+        email,
+        sendStatus: 'error',
+        smtpConfigured: false,
+        message: err?.message || 'SMTP is not configured and password reset failed.',
+      };
+    }
   }
 
   assertDurablePrivateWritesAllowed();
@@ -326,7 +398,7 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
   let invite = listed.invites.find((i) => normalizeEmail(i.email) === email);
   let tempPasswordIssued = false;
 
-  if (!invite?.tempPassword) {
+  if (forceFresh || !invite?.tempPassword) {
     const tempPassword = generateTempPassword();
     const activationKey = generateActivationKey();
     await resetPrivateUserPassword({
@@ -341,7 +413,7 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
       activationKey,
       tempPassword,
       createdAt: new Date().toISOString(),
-      waitlistSource: 'ceo_one_click_send',
+      waitlistSource: forceFresh ? 'ceo_email_reset' : 'ceo_one_click_send',
     });
     invite = {
       email: existing.email,
@@ -350,7 +422,7 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
       activationKey,
       tempPassword,
       createdAt: new Date().toISOString(),
-      waitlistSource: 'ceo_one_click_send',
+      waitlistSource: forceFresh ? 'ceo_email_reset' : 'ceo_one_click_send',
     };
     tempPasswordIssued = true;
   }
@@ -362,13 +434,21 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
     tempPassword: invite.tempPassword,
   });
 
-  const sent = await sendPrivateLoginInviteEmail({
-    to: email,
-    firstName,
-    activateUrl: buildActivateUrl(email),
-    tempPassword: invite.tempPassword!,
-    affiliateTermsUrl: AFFILIATE_TERMS_URL,
-  });
+  const sent =
+    kind === 'reset'
+      ? await sendPasswordResetEmail({
+          to: email,
+          firstName,
+          activateUrl: buildActivateUrl(email),
+          tempPassword: invite.tempPassword!,
+        })
+      : await sendPrivateLoginInviteEmail({
+          to: email,
+          firstName,
+          activateUrl: buildActivateUrl(email),
+          tempPassword: invite.tempPassword!,
+          affiliateTermsUrl: AFFILIATE_TERMS_URL,
+        });
 
   if (!sent) {
     return {
@@ -376,15 +456,18 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
       email,
       sendStatus: 'error',
       smtpConfigured: true,
-      message: 'SMTP send failed. Check Cloud Run SMTP credentials / logs.',
+      message: `SMTP send failed. Check Cloud Run SMTP credentials / logs.${
+        invite.tempPassword ? ` Temp password (send privately): ${invite.tempPassword}` : ''
+      }`,
       tempPasswordIssued,
+      tempPassword: invite.tempPassword,
     };
   }
 
   await recordSend({
     email,
     sentAt: new Date().toISOString(),
-    subject: copy.subject,
+    subject: kind === 'reset' ? 'Your ClearPath password reset' : copy.subject,
   });
 
   return {
@@ -393,8 +476,70 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
     sendStatus: 'sent',
     smtpConfigured: true,
     message: tempPasswordIssued
-      ? `Sent login email to ${email} (fresh temp password issued).`
+      ? `Emailed a new password to ${email}. Temp password (if they miss the mail): ${invite.tempPassword}`
       : `Sent login email to ${email}.`,
     tempPasswordIssued,
+    tempPassword: invite.tempPassword,
   };
+}
+
+/**
+ * Public forgot-password. Always the same message. Never leaks whether the account exists.
+ * Does not reset unless we can actually email the new password.
+ */
+export async function requestPublicPasswordReset(rawEmail: string): Promise<{
+  ok: true;
+  message: string;
+}> {
+  const email = normalizeEmail(rawEmail);
+  if (!email.includes('@')) {
+    return { ok: true, message: PUBLIC_FORGOT_PASSWORD_MESSAGE };
+  }
+
+  const last = lastPublicForgotAt.get(email) || 0;
+  if (Date.now() - last < FORGOT_COOLDOWN_MS) {
+    return { ok: true, message: PUBLIC_FORGOT_PASSWORD_MESSAGE };
+  }
+  lastPublicForgotAt.set(email, Date.now());
+
+  if (!isSmtpConfigured()) {
+    console.warn('[forgot-password] SMTP not configured — no email sent.');
+    return { ok: true, message: PUBLIC_FORGOT_PASSWORD_UNAVAILABLE };
+  }
+
+  // The reset mints the new password before the message goes out, so a dead relay
+  // would rotate a member's password into an email that never arrives and lock
+  // them out. Prove the relay authenticates before touching the account.
+  const transport = await verifySmtpTransport();
+  if (!transport.ok) {
+    console.error(
+      `[forgot-password] Mail relay unhealthy (${transport.error}) — refusing to rotate the password for ${email}.`
+    );
+    return { ok: true, message: PUBLIC_FORGOT_PASSWORD_UNAVAILABLE };
+  }
+
+  try {
+    const existing = await findPrivateUserByEmail(email);
+    if (!existing || isJunkEmail(email)) {
+      return { ok: true, message: PUBLIC_FORGOT_PASSWORD_MESSAGE };
+    }
+    const result = await sendInviteMailToEmail(email, { forceFreshPassword: true, kind: 'reset' });
+    if (!result.ok) {
+      // Password already rotated. Recoverable: the temp password is on the founder
+      // invite record and in Stripe metadata, so surface it loudly for support.
+      console.error(
+        `[forgot-password] Password for ${email} was rotated but the email FAILED to send ` +
+          `(${result.message}). Recover the temp password from CEO Dashboard → invites.`
+      );
+    }
+  } catch (err) {
+    console.error('[forgot-password] Reset/send failed:', err);
+  }
+
+  return { ok: true, message: PUBLIC_FORGOT_PASSWORD_MESSAGE };
+}
+
+/** Test helper. */
+export function _resetPublicForgotCooldownForTests() {
+  lastPublicForgotAt.clear();
 }

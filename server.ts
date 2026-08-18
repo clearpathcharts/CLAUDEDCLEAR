@@ -170,9 +170,14 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
+import {
+  sendIdentityConfirmEmail,
+  sendMailSelfTest,
+  verifySmtpTransport,
+} from './src/server/registrationEmail';
 import {
   listInviteMailRows,
+  requestPublicPasswordReset,
   sendInviteMailToEmail,
 } from './src/server/inviteMailService';
 import {
@@ -335,6 +340,19 @@ async function startServer() {
   // Enable trust proxy for Cloud Run environments
   // This allows express-rate-limit to see the real client IP
   app.set('trust proxy', 1);
+
+  // TikTok URL-property verify — must run before static/SPA (Express "." path quirks).
+  const TIKTOK_VERIFY_BODY =
+    'tiktok-developers-site-verification=gACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C';
+  const TIKTOK_VERIFY_FILE = '/tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
+  app.use((req, res, next) => {
+    const p = String(req.path || '');
+    if (p === TIKTOK_VERIFY_FILE || p === `/terms.html${TIKTOK_VERIFY_FILE}`) {
+      res.status(200).type('text/plain; charset=utf-8').send(TIKTOK_VERIFY_BODY);
+      return;
+    }
+    next();
+  });
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
   // Dev: CSP off so Vite HMR works. Prod: enforce CSP + HSTS + framing defenses.
@@ -514,6 +532,32 @@ async function startServer() {
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
+  });
+
+  // Signing in is not registering. The login desk spends two requests per attempt
+  // (lookup + login), so the 20/hour registration bucket locked members out after
+  // ~10 tries — and every member behind one office/NAT address shared that budget,
+  // then got told they had made "too many registration attempts".
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Too many sign-in attempts from this address. Please wait a few minutes and try again.',
+    },
+  });
+
+  // Password reset is throttled per email inside inviteMailService; this only
+  // stops address-level flooding.
+  const forgotPasswordLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      error: 'Too many password reset requests from this address. Please try again in an hour.',
+    },
   });
 
   const aiLimiter = rateLimit({
@@ -709,13 +753,28 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/lookup', loginLimiter, async (req, res) => {
     try {
       const result = await lookupPrivateUser(req.body?.email || '');
       res.json(result);
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       res.status(status).json({ error: error.message || 'Lookup failed.' });
+    }
+  });
+
+  /** Public: forgot / misplaced password — emails a new temp password if the account exists. */
+  app.post('/api/auth/private/forgot-password', forgotPasswordLimiter, async (req, res) => {
+    try {
+      const result = await requestPublicPasswordReset(String(req.body?.email || ''));
+      res.json(result);
+    } catch (error: any) {
+      console.error('[auth/private/forgot-password] Failed:', error);
+      res.json({
+        ok: true,
+        message:
+          'If that email has a Private Login, we emailed a new password. Check inbox and spam.',
+      });
     }
   });
 
@@ -781,7 +840,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/login', loginLimiter, async (req, res) => {
     try {
       const result = await loginPrivateUser({
         email: req.body?.email || '',
@@ -1629,7 +1688,8 @@ async function startServer() {
 
   /**
    * One-click: send Private Login invite email to one person.
-   * If no temp password exists, issues a fresh one, then SMTP-sends.
+   * Body: { email, forceFreshPassword?: boolean }
+   * forceFreshPassword always mints a new website password, then emails it (use for forgotten logins).
    */
   app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
@@ -1637,7 +1697,11 @@ async function startServer() {
       if (!email.trim()) {
         return res.status(400).json({ error: 'email required' });
       }
-      const result = await sendInviteMailToEmail(email);
+      const forceFreshPassword = Boolean(req.body?.forceFreshPassword);
+      const result = await sendInviteMailToEmail(email, {
+        forceFreshPassword,
+        kind: forceFreshPassword ? 'reset' : 'invite',
+      });
       const status = result.ok ? 200 : result.sendStatus === 'skipped_junk' ? 400 : 503;
       res.status(status).json(result);
     } catch (error: any) {
@@ -2518,6 +2582,34 @@ ${CPT_SITE_GUIDE}`;
         message: e?.message || 'Timeframe verify failed',
       });
     }
+  });
+
+  /**
+   * Founder-only: is outbound mail actually working?
+   * GET  → authenticated SMTP handshake against the configured relay.
+   * POST → additionally sends a real test message to ?to / body.to.
+   */
+  app.get('/api/admin/mail/selftest', requireFounderOrCatalogAdmin, async (_req, res) => {
+    const status = await verifySmtpTransport();
+    res.status(status.ok ? 200 : 503).json(status);
+  });
+
+  app.post('/api/admin/mail/selftest', requireFounderOrCatalogAdmin, async (req, res) => {
+    const status = await verifySmtpTransport();
+    if (!status.ok) return res.status(503).json(status);
+    const to = String(req.body?.to || '').trim();
+    if (!to.includes('@')) {
+      return res.status(400).json({ ...status, error: 'Provide a "to" email address.' });
+    }
+    const sent = await sendMailSelfTest(to);
+    res.status(sent ? 200 : 502).json({
+      ...status,
+      sent,
+      to,
+      message: sent
+        ? `Test email sent to ${to}. If it does not arrive, the relay accepted it but the provider dropped it.`
+        : 'Transport verified but the send was rejected. Check server logs for the provider error.',
+    });
   });
 
   // Hourly Site Doctor report for CEO Dashboard
@@ -3840,24 +3932,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   });
 
   // TikTok for Developers — URL prefix verification (terms.html/ and site root)
-  const tiktokSiteVerify =
+  // Note: Express path-to-regexp treats "." specially, so terms.html routes must use RegExp.
+  const tiktokVerifyBody =
     'tiktok-developers-site-verification=gACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C';
-  const tiktokSiteVerifyFile = 'tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
+  const tiktokVerifyFile = 'tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
   const sendTikTokSiteVerify = (_req: any, res: any) => {
-    res.status(200).type('text/plain').send(tiktokSiteVerify);
-  };
-  app.get(`/${tiktokSiteVerifyFile}`, sendTikTokSiteVerify);
-  app.get(`/terms.html/${tiktokSiteVerifyFile}`, sendTikTokSiteVerify);
-
-  // TikTok for Developers URL-prefix verification (Clearpathtrader app)
-  const tiktokVerifyName = 'tiktokgACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C.txt';
-  const tiktokVerifyBody = 'tiktok-developers-site-verification=gACrcTqHKMlqeWU7bjZwYAP6JqjeXg8C';
-  const sendTiktokVerify = (_req: any, res: any) => {
     res.status(200).type('text/plain').send(tiktokVerifyBody);
   };
-  app.get(`/${tiktokVerifyName}`, sendTiktokVerify);
-  // TikTok modal asks for file under the Terms URL prefix
-  app.get(`/terms.html/${tiktokVerifyName}`, sendTiktokVerify);
+  app.get(`/${tiktokVerifyFile}`, sendTikTokSiteVerify);
+  app.get(
+    new RegExp(`^/terms\\.html/${tiktokVerifyFile.replace(/\./g, '\\.')}$`),
+    sendTikTokSiteVerify,
+  );
 
   // 4. Vite / Static Serving
   if (isDev) {
@@ -3895,10 +3981,25 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   // 5. GLOBAL ERROR HANDLER
   app.use((err: any, req: any, res: any, next: any) => {
+    if (res.headersSent) return next(err);
+
+    const status = Number(err?.status || err?.statusCode) || 500;
+
+    // Client faults (malformed JSON body, payload too large, bad encoding) must
+    // surface as 4xx with the real reason. Reporting them as a 500 "terminal
+    // fault" sent us hunting a server outage that did not exist.
+    if (status >= 400 && status < 500) {
+      console.warn(`[client-error] ${req.method} ${req.originalUrl} → ${status}: ${err?.message}`);
+      return res.status(status).json({
+        error: err?.type === 'entity.parse.failed' ? 'Malformed JSON body' : 'Bad request',
+        message: err?.message || 'Request could not be processed.',
+      });
+    }
+
     console.error('[CRITICAL] Unhandled Server Error:', err);
-    res.status(500).json({ 
-      error: 'Institutional Terminal Fault', 
-      message: 'System auto-recovery in progress.' 
+    res.status(500).json({
+      error: 'Institutional Terminal Fault',
+      message: 'System auto-recovery in progress.',
     });
   });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, KeyRound } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -109,7 +109,7 @@ function formatJoined(value?: string | null): string {
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'members'>('system');
+  const [ceoTab, setCeoTab] = useState<'system' | 'members'>('members');
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -138,7 +138,15 @@ export default function CeoDashboard() {
   const [inviteMailMsg, setInviteMailMsg] = useState<string | null>(null);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
+  const [resetEmail, setResetEmail] = useState('');
+  const [rowBusyEmail, setRowBusyEmail] = useState<string | null>(null);
+  // Two-step, in-page confirmation. window.confirm() cannot be used here: Chrome
+  // lets the user permanently suppress dialogs on a page, after which confirm()
+  // silently returns false and every reset button becomes a no-op with no error.
+  const [rowConfirm, setRowConfirm] = useState<{ email: string; kind: 'reset' | 'email' } | null>(null);
+  // Result shown inline on the row, so the new password appears where it was clicked
+  // instead of in a banner that may be scrolled off screen.
+  const [rowResult, setRowResult] = useState<Record<string, string>>({});
   const [apiUnlocked, setApiUnlocked] = useState(false);
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [catalogSecretInput, setCatalogSecretInput] = useState(() => {
@@ -501,11 +509,12 @@ export default function CeoDashboard() {
     }
   };
 
-  const runResetMemberPassword = async (emailRaw: string) => {
+  const runResetMemberPassword = async (emailRaw: string): Promise<string> => {
     const email = (emailRaw || '').trim().toLowerCase();
     if (!email.includes('@')) {
-      setConvertMsg('Enter a valid member email to reset.');
-      return;
+      const msg = 'Enter a valid member email to reset.';
+      setConvertMsg(msg);
+      return msg;
     }
     setConvertBusy(true);
     setConvertMsg(null);
@@ -519,13 +528,17 @@ export default function CeoDashboard() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Password reset failed (${res.status})`);
+      const msg = `New password: ${body.tempPassword} — send it to them privately.`;
       setConvertMsg(
         `Reset OK for ${body.email} (${body.created ? 'account created' : 'password updated'}). Temp password: ${body.tempPassword}. Send privately — they use Private Login.`
       );
       await loadAdminMembers();
       await loadFounderInvites();
+      return msg;
     } catch (err: any) {
-      setConvertMsg(err?.message || 'Password reset failed.');
+      const msg = err?.message || 'Password reset failed.';
+      setConvertMsg(msg);
+      return msg;
     } finally {
       setConvertBusy(false);
     }
@@ -533,6 +546,57 @@ export default function CeoDashboard() {
 
   const runResetDawnPassword = async () => {
     await runResetMemberPassword('dawnhobson@aol.com');
+  };
+
+  const runResetMemberPasswordFromRow = async (email: string) => {
+    setRowConfirm(null);
+    setRowBusyEmail(email);
+    setRowResult((prev) => ({ ...prev, [email]: 'Working…' }));
+    try {
+      const msg = await runResetMemberPassword(email);
+      setRowResult((prev) => ({ ...prev, [email]: msg }));
+    } finally {
+      setRowBusyEmail(null);
+    }
+  };
+
+  const runEmailResetMember = async (email: string) => {
+    setRowConfirm(null);
+    setRowBusyEmail(email);
+    setConvertMsg(null);
+    setRowResult((prev) => ({ ...prev, [email]: 'Sending…' }));
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/members/invite-mail/send', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ email, forceFreshPassword: true }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok) {
+        throw new Error(body.message || body.error || `Email reset failed (${res.status})`);
+      }
+      setConvertMsg(
+        body.tempPassword
+          ? `${body.message || `Emailed new password to ${email}.`} Copy if they miss the mail: ${body.tempPassword}`
+          : body.message || `Emailed new password to ${email}.`
+      );
+      setRowResult((prev) => ({
+        ...prev,
+        [email]: body.tempPassword
+          ? `Emailed. New password: ${body.tempPassword}`
+          : body.message || `Emailed new password to ${email}.`,
+      }));
+      await loadAdminMembers();
+      await loadFounderInvites();
+    } catch (err: any) {
+      const msg = err?.message || `Could not email a reset to ${email}.`;
+      setConvertMsg(msg);
+      setRowResult((prev) => ({ ...prev, [email]: msg }));
+    } finally {
+      setRowBusyEmail(null);
+    }
   };
 
   const downloadDisasterBackup = async () => {
@@ -828,7 +892,7 @@ export default function CeoDashboard() {
               : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
           }`}
         >
-          MEMBERS / ALL USERS
+          MEMBERS / RESET PASSWORDS
         </button>
       </div>
 
@@ -1302,7 +1366,11 @@ export default function CeoDashboard() {
           )}
 
           <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
-            <h3 className="text-xl text-white font-bold mb-4 uppercase tracking-wider">Private login accounts</h3>
+            <h3 className="text-xl text-white font-bold mb-2 uppercase tracking-wider">Private login accounts</h3>
+            <p className="text-amber-100 text-sm mb-4 leading-relaxed">
+              Each row has <strong>RESET WEB PASSWORD</strong> (shows the new password here) and{' '}
+              <strong>EMAIL RESET</strong> (emails them a new password). Use those — not the tool pile above.
+            </p>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-white/80 text-sm">
                 <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
@@ -1313,18 +1381,19 @@ export default function CeoDashboard() {
                     <th className="px-4 py-3">Joined</th>
                     <th className="px-4 py-3">Last login</th>
                     <th className="px-4 py-3">UID</th>
+                    <th className="px-4 py-3">Reset</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {membersLoading && !membersPayload ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
+                      <td colSpan={7} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
                         Loading private members…
                       </td>
                     </tr>
                   ) : filteredPrivate.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
+                      <td colSpan={7} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
                         {memberQ
                           ? `No private members match “${memberSearch}”.`
                           : 'No private members on this server yet. If you expect signups here, Cloud Run may be using ephemeral disk — members persist only when storage is durable.'}
@@ -1333,6 +1402,8 @@ export default function CeoDashboard() {
                   ) : (
                     filteredPrivate.map((m) => {
                       const badge = identityBadge(m.identityStatus);
+                      const rowBusy = rowBusyEmail === m.email || convertBusy;
+                      const writesBlocked = membersPayload?.meta?.writesAllowed === false;
                       return (
                       <tr key={m.uid} className="hover:bg-white/5">
                         <td className="px-4 py-3 font-mono text-[#00FFFF]">{m.email}</td>
@@ -1345,6 +1416,64 @@ export default function CeoDashboard() {
                         <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-400">{formatJoined(m.lastLoginAt)}</td>
                         <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.uid}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-2 min-w-[200px]">
+                            {rowConfirm?.email === m.email ? (
+                              <>
+                                <div className="text-[10px] font-mono text-amber-200 leading-snug">
+                                  {rowConfirm.kind === 'email'
+                                    ? `Email a new password to ${m.email}? Their current password stops working.`
+                                    : `Reset ${m.email}? Their current password stops working immediately.`}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void (rowConfirm.kind === 'email'
+                                      ? runEmailResetMember(m.email)
+                                      : runResetMemberPasswordFromRow(m.email))
+                                  }
+                                  disabled={rowBusy || writesBlocked}
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-red-500/60 bg-red-500/25 text-red-50 text-[10px] font-mono uppercase tracking-widest font-black hover:bg-red-500/40 disabled:opacity-40"
+                                >
+                                  Yes — do it now
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRowConfirm(null)}
+                                  className="px-3 py-1.5 rounded-lg border border-white/20 text-white/70 text-[10px] font-mono uppercase tracking-widest hover:bg-white/10"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setRowConfirm({ email: m.email, kind: 'reset' })}
+                                  disabled={rowBusy || writesBlocked}
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-[10px] font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-40"
+                                >
+                                  <KeyRound size={12} />
+                                  {rowBusyEmail === m.email ? 'Working…' : 'Reset web password'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setRowConfirm({ email: m.email, kind: 'email' })}
+                                  disabled={rowBusy || writesBlocked}
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-100 text-[10px] font-mono uppercase tracking-widest font-black hover:bg-amber-500/25 disabled:opacity-40"
+                                >
+                                  <Mail size={12} />
+                                  Email reset
+                                </button>
+                              </>
+                            )}
+                            {rowResult[m.email] && (
+                              <div className="rounded border border-[#00FFFF]/40 bg-[#00FFFF]/10 px-2 py-1.5 text-[10px] font-mono text-[#9ffcff] break-all leading-snug">
+                                {rowResult[m.email]}
+                              </div>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                       );
                     })

@@ -34,23 +34,94 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
+/**
+ * Providers that authenticate a mailbox (Gmail, Workspace, most SMTP relays)
+ * reject a From address that is not the authenticated user or a verified alias.
+ * Defaulting to an unverified noreply@ domain made every send fail with
+ * "Invalid sender", so fall back to the authenticated account instead.
+ */
+function resolveFromAddress(): string {
+  const explicit = (process.env.SMTP_FROM || '').trim();
+  if (explicit) return explicit;
+  const user = (process.env.SMTP_USER || '').trim();
+  if (user) return `ClearPath Trader <${user}>`;
+  return 'ClearPath Trader <noreply@clearpathtrader.com>';
+}
+
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const mailer = getTransporter();
-  const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';
+  const from = resolveFromAddress();
 
   if (!mailer) {
     // Never log activation keys / PII when SMTP is unset
-    console.info('[Registration Email] SMTP not configured — email not sent (preview suppressed).');
+    console.error(
+      '[Registration Email] BLOCKED: no mail transport configured (SMTP_HOST/SMTP_USER/SMTP_PASS). ' +
+        `Email to ${payload.to} was NOT sent: "${payload.subject}"`
+    );
     return false;
   }
 
   try {
     await mailer.sendMail({ from, ...payload });
+    console.info(`[Registration Email] Sent "${payload.subject}" to ${payload.to}`);
     return true;
   } catch (error) {
-    console.error('[Registration Email] Send failed:', error);
+    console.error(`[Registration Email] Send FAILED to ${payload.to} from ${from}:`, error);
     return false;
   }
+}
+
+/**
+ * Founder diagnostic: prove the mail path end to end instead of assuming it works.
+ * `verify()` opens a real authenticated SMTP handshake, so a bad app password or
+ * blocked port fails here rather than silently swallowing member emails.
+ */
+export async function verifySmtpTransport(): Promise<{
+  ok: boolean;
+  configured: boolean;
+  host?: string;
+  port?: number;
+  user?: string;
+  from: string;
+  error?: string;
+}> {
+  const from = resolveFromAddress();
+  if (!isSmtpConfigured()) {
+    return {
+      ok: false,
+      configured: false,
+      from,
+      error: 'SMTP_HOST, SMTP_USER and SMTP_PASS are not all set on this server.',
+    };
+  }
+
+  const mailer = getTransporter();
+  const base = {
+    configured: true,
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER,
+    from,
+  };
+  if (!mailer) return { ok: false, ...base, error: 'Transport could not be created.' };
+
+  try {
+    await mailer.verify();
+    return { ok: true, ...base };
+  } catch (error) {
+    return { ok: false, ...base, error: (error as Error)?.message || 'SMTP verify failed.' };
+  }
+}
+
+/** Founder diagnostic: send a real test message to a chosen inbox. */
+export async function sendMailSelfTest(to: string): Promise<boolean> {
+  const stamp = new Date().toISOString();
+  return sendEmail({
+    to,
+    subject: 'ClearPath mail self-test',
+    text: `Mail transport is working. Sent ${stamp}.`,
+    html: `<p>Mail transport is working.</p><p style="color:#666;">Sent ${stamp}.</p>`,
+  });
 }
 
 export async function sendWaitlistConfirmationEmail(params: {
@@ -180,6 +251,47 @@ export async function sendPrivateLoginInviteEmail(params: {
         <p style="margin:8px 0 0; font-family:monospace; color:#FFD700;">Temp password: ${params.tempPassword}</p>
       </div>
       <p style="color:#aaa;">Please sign in, update your password in your profile, and keep this email private.</p>
+      <p style="color:#666; font-size:12px;">— Rick Floyd · ClearPath Trader</p>
+    </div>
+  `;
+
+  return sendEmail({ to: params.to, subject, text, html });
+}
+
+/** Member (or founder) asked to reset a forgotten / misplaced Private Login password. */
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  firstName: string;
+  activateUrl: string;
+  tempPassword: string;
+}): Promise<boolean> {
+  const subject = 'Your ClearPath password reset';
+  const text = [
+    `Hi ${params.firstName},`,
+    '',
+    'You asked to reset a forgotten or misplaced ClearPath Private Login password.',
+    '',
+    `Login: ${params.activateUrl}`,
+    `Email: ${params.to}`,
+    `New temporary password: ${params.tempPassword}`,
+    '',
+    'Sign in with this password, then change it after you get in. If you did not ask for this, reply to this email.',
+    '',
+    '— Rick Floyd',
+    'ClearPath Trader',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#FFD700; text-transform:uppercase; letter-spacing:2px;">Password Reset</h1>
+      <p>Hi ${params.firstName},</p>
+      <p>You asked to reset a forgotten or misplaced ClearPath Private Login password.</p>
+      <div style="margin:24px 0; padding:20px; border:1px solid #FFD700; border-radius:12px; background:#0a0a0a;">
+        <p style="margin:0 0 8px;"><a href="${params.activateUrl}" style="color:#00FFFF;">Open login desk</a></p>
+        <p style="margin:0; font-family:monospace; color:#FF1493;">Email: ${params.to}</p>
+        <p style="margin:8px 0 0; font-family:monospace; color:#FFD700;">New temporary password: ${params.tempPassword}</p>
+      </div>
+      <p style="color:#aaa;">Sign in with this password, then change it after you get in.</p>
       <p style="color:#666; font-size:12px;">— Rick Floyd · ClearPath Trader</p>
     </div>
   `;

@@ -170,10 +170,10 @@ export default function Auth() {
   const boardVerifyingRef = useRef(false);
   const passcodeRef = useRef<HTMLInputElement>(null);
   const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
-  const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
+  const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [activationEmail, setActivationEmail] = useState('');
 
-  const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
+  const openPrivateLogin = (mode: 'login' | 'register' | 'forgot' = 'login') => {
     setPrivateLoginMode(mode);
     setPrivateLoginOpen(true);
   };
@@ -191,6 +191,8 @@ export default function Auth() {
         openPrivateLogin('login');
       } else if (path === '/join' || params.get('register') === '1') {
         openPrivateLogin('register');
+      } else if (path === '/forgot' || params.get('forgot') === '1') {
+        openPrivateLogin('forgot');
       }
     } catch {
       /* ignore malformed URLs */
@@ -697,7 +699,7 @@ export default function Auth() {
           </div>
 
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => openPrivateLogin('login')}
@@ -705,6 +707,13 @@ export default function Auth() {
             >
               <Lock size={12} aria-hidden="true" />
               Private Login
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('forgot')}
+              className="text-[10px] sm:text-[11px] text-amber-200 hover:text-white underline underline-offset-2 text-right max-w-[240px] sm:max-w-[320px] leading-snug"
+            >
+              Forgot or misplaced your password? Click here and we&apos;ll email you.
             </button>
           </div>
         </div>
@@ -746,6 +755,13 @@ export default function Auth() {
           <a href="/learn" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Learn</a>
           <a href="/guides" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Guides</a>
           <a href="/faq" className="auth-nav-tab-label auth-nav-lava-text shrink-0">FAQ</a>
+          <button
+            type="button"
+            onClick={() => openPrivateLogin('forgot')}
+            className="auth-nav-tab-label shrink-0 text-amber-200 hover:text-white transition-colors border border-amber-400/40 bg-amber-400/10 px-2.5 py-1 rounded-lg"
+          >
+            Forgot password?
+          </button>
         </div>
       </nav>
       </header>
@@ -1840,6 +1856,13 @@ Not the other way around.`}
             >
               Create Private Account
               <ArrowRight size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('forgot')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl border border-amber-400/50 bg-amber-400/10 text-amber-100 text-xs font-black uppercase tracking-widest hover:bg-amber-400/20 transition-colors cursor-pointer flex items-center justify-center gap-2"
+            >
+              Forgot or misplaced your password? We&apos;ll email you
             </button>
           </div>
           <p className="relative z-10 text-[10px] text-zinc-300 font-mono">

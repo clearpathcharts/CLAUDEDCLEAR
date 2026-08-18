@@ -261,6 +261,22 @@ export async function resendIdentityConfirm(input: {
   return { emailSent: Boolean(data.emailSent) };
 }
 
+export async function requestForgotPassword(email: string): Promise<{ ok: true; message: string }> {
+  const res = await fetch('/api/auth/private/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  const data = await parseJson(res);
+  return {
+    ok: true,
+    message:
+      String(data.message || '') ||
+      'If that email has a Private Login, we emailed a new password. Check inbox and spam.',
+  };
+}
+
 export async function verifyBoardAccess(code: string): Promise<PrivateSessionUser> {
   clearPrivateSession();
   const res = await fetch('/api/auth/board/verify', {

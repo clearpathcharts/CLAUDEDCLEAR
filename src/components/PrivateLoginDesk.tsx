@@ -8,6 +8,7 @@ import {
   resubmitIdentity,
   declineIdentity,
   resendIdentityConfirm,
+  requestForgotPassword,
   PrivateAuthClientError,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
@@ -16,6 +17,7 @@ type Step =
   | 'identify'
   | 'login'
   | 'register'
+  | 'forgot'
   | 'real_info'
   | 'pending_email'
   | 'goodbye';
@@ -23,7 +25,7 @@ type Step =
 interface PrivateLoginDeskProps {
   open: boolean;
   onClose: () => void;
-  initialMode?: 'login' | 'register';
+  initialMode?: 'login' | 'register' | 'forgot';
   /** Prefill from activation links (/activate?email=...). */
   initialEmail?: string;
 }
@@ -56,6 +58,15 @@ export default function PrivateLoginDesk({
     if (open && initialEmail && !email) setEmail(initialEmail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialEmail]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (initialMode === 'forgot') {
+      setStep('forgot');
+      setError('');
+      setInfoBanner('');
+    }
+  }, [open, initialMode]);
 
   React.useEffect(() => {
     if (!open || typeof window === 'undefined') return;
@@ -98,6 +109,26 @@ export default function PrivateLoginDesk({
     open,
     onClose: handleClose,
   });
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const result = await requestForgotPassword(email);
+      setInfoBanner(
+        result.message ||
+          'If that email has a Private Login, we emailed a new password. Check inbox and spam.'
+      );
+      setStep('forgot');
+    } catch {
+      setInfoBanner(
+        'If that email has a Private Login, we emailed a new password. Check inbox and spam.'
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleIdentify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,7 +301,9 @@ export default function PrivateLoginDesk({
       ? `Welcome back, ${knownName}`
       : step === 'register'
         ? 'Create your private account'
-        : step === 'real_info'
+        : step === 'forgot'
+          ? 'Forgot or misplaced your password?'
+          : step === 'real_info'
           ? 'Please enter real information'
           : step === 'pending_email'
             ? 'Confirm your identity'
@@ -389,6 +422,17 @@ export default function PrivateLoginDesk({
                   {busy ? 'Checking…' : 'Continue'}
                   <ArrowRight size={14} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('forgot');
+                    setError('');
+                    setInfoBanner('');
+                  }}
+                  className="w-full text-[12px] text-amber-200 hover:text-white leading-snug"
+                >
+                  Forgot or misplaced your password? Click here and we&apos;ll email you.
+                </button>
               </form>
             )}
 
@@ -443,6 +487,19 @@ export default function PrivateLoginDesk({
                 <button
                   type="button"
                   onClick={() => {
+                    setStep('forgot');
+                    setPassword('');
+                    setError('');
+                    setInfoBanner('');
+                  }}
+                  className="w-full text-[12px] text-amber-200 hover:text-white leading-snug"
+                >
+                  Forgot or misplaced your password? Click here and we&apos;ll email you.
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setStep('identify');
                     setPassword('');
                     setError('');
@@ -450,6 +507,49 @@ export default function PrivateLoginDesk({
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
                   Use a different email
+                </button>
+              </form>
+            )}
+
+            {step === 'forgot' && (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <p className="text-[12px] text-zinc-300 leading-relaxed">
+                  Enter the email on your Private Login. If we have an account for it, we email you a new
+                  temporary password. Check inbox and spam.
+                </p>
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Account email
+                  </span>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FFD700]/80" />
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full bg-black border border-white/10 focus:border-[#FFD700]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FFD700] to-[#FF8C00] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {busy ? 'Sending…' : 'Email me a new password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('identify');
+                    setError('');
+                  }}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                >
+                  Back to sign in
                 </button>
               </form>
             )}
