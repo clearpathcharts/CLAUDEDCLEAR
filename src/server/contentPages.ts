@@ -235,17 +235,17 @@ function renderShell(
             'ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
           launchLabel: 'Launch the terminal',
           educationLabel: 'Start education',
-          waitlistTitle: 'Join the soft-launch waitlist',
+          waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'Get activation updates when new desks and features open. No spam — education and launch notes only.',
+            'Create an account with email + password on the terminal (Private Login). Optional: leave your email below for launch notes only — this is not a login password.',
           firstNameLabel: 'First name',
-          emailLabel: 'Email',
+          emailLabel: 'Email (updates only)',
           countryLabel: 'Country',
           countryPlaceholder: 'United States',
           experienceLabel: 'Experience',
-          submitLabel: 'Join waitlist',
+          submitLabel: 'Email me launch notes',
           submittingMsg: 'Submitting…',
-          successMsg: 'You are on the waitlist. Check your email for confirmation.',
+          successMsg: 'Saved for launch notes. Create your Private Login on the terminal for real access.',
         };
 
   const ctaHtml = c

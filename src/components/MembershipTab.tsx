@@ -165,13 +165,6 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
   const [checkoutError, setCheckoutError] = useState('');
   const [checkoutBanner, setCheckoutBanner] = useState<'success' | 'cancelled' | null>(null);
 
-  const [wlFirstName, setWlFirstName] = useState(userProfile?.displayName?.split(' ')[0] || '');
-  const [wlCountry, setWlCountry] = useState('');
-  const [wlExperience] = useState('Beginner');
-  const [wlSubmitting, setWlSubmitting] = useState(false);
-  const [wlError, setWlError] = useState('');
-  const [wlSuccess, setWlSuccess] = useState<{ activationKey: string; emailSent: boolean } | null>(null);
-
   useEffect(() => {
     const next = loadStoredLinks(userProfile);
     setLinks(next);
@@ -282,34 +275,6 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     }
   };
 
-  const waitlistCountries = [
-    'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany',
-    'France', 'Japan', 'Singapore', 'Switzerland', 'United Arab Emirates',
-    'South Africa', 'Nigeria', 'India', 'Brazil', 'New Zealand', 'Other',
-  ];
-
-  const handleWaitlistPreregister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user?.email) return;
-    setWlError('');
-    setWlSubmitting(true);
-    try {
-      const { submitWaitlistRegistration } = await import('../api/registrations');
-      const result = await submitWaitlistRegistration({
-        firstName: wlFirstName.trim() || userProfile?.displayName || 'Member',
-        emailAddress: user.email,
-        country: wlCountry.trim(),
-        experienceLevel: wlExperience,
-        uid: user.uid,
-      });
-      setWlSuccess({ activationKey: result.activationKey, emailSent: result.emailSent });
-    } catch (err: unknown) {
-      setWlError(err instanceof Error ? err.message : 'Waitlist registration failed.');
-    } finally {
-      setWlSubmitting(false);
-    }
-  };
-
   const handleSaveLinks = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingLinks(true);
@@ -326,7 +291,6 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
       if (value && !isRealStripePaymentLink(value)) {
         setLinksSaveStatus('error');
         setIsSavingLinks(false);
-        setWlError('');
         alert(`Invalid Stripe Payment Link for ${key}. Use a real https://buy.stripe.com/... URL (no mock links).`);
         return;
       }
@@ -496,47 +460,24 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
           <div className="p-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-zinc-950 to-black space-y-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-sm font-black font-mono text-cyan-400 uppercase tracking-widest">Soft Launch Waitlist</h3>
+              <h3 className="text-sm font-black font-mono text-cyan-400 uppercase tracking-widest">Private Login</h3>
             </div>
-            {wlSuccess ? (
-              <div className="space-y-3 text-center py-4">
-                <Check className="w-8 h-8 text-cyan-400 mx-auto" />
-                <p className="text-xs text-zinc-300">
-                  {wlSuccess.emailSent ? 'Confirmed! Check your email for your activation key.' : 'Registered! Save your activation key:'}
-                </p>
-                <code className="text-lg font-black text-pink-400 font-mono block">{wlSuccess.activationKey}</code>
-              </div>
-            ) : (
-              <form onSubmit={handleWaitlistPreregister} className="space-y-3">
-                <p className="text-zinc-500 text-xs">Lock in your free soft launch account ({user?.email}).</p>
-                {wlError && <p className="text-red-400 text-xs font-mono">{wlError}</p>}
-                <input
-                  type="text"
-                  value={wlFirstName}
-                  onChange={(e) => setWlFirstName(e.target.value)}
-                  placeholder="First name"
-                  className="w-full bg-black/60 border border-zinc-800 rounded-xl py-2.5 px-4 text-xs font-mono"
-                />
-                <select
-                  value={wlCountry}
-                  onChange={(e) => setWlCountry(e.target.value)}
-                  required
-                  className="w-full bg-black border border-zinc-800 rounded-xl py-2.5 px-4 text-xs font-mono"
-                >
-                  <option value="">Select country...</option>
-                  {waitlistCountries.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={wlSubmitting || !wlCountry}
-                  className="w-full py-3 bg-gradient-to-r from-cyan-600 to-pink-600 rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
-                  {wlSubmitting ? 'Registering...' : 'Pre-Register for Soft Launch'}
-                </button>
-              </form>
-            )}
+            <p className="text-zinc-500 text-xs leading-relaxed">
+              Real access is your email + password via Private Login on the home page.
+              Waitlist activation keys are not passwords and will not open your terminal.
+            </p>
+            <p className="text-zinc-400 text-xs font-mono">
+              Signed in as {user?.email || 'member'} — use Private Login if you need to create or recover a password desk.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/?tab=Discovery#PrivateLogin';
+              }}
+              className="w-full py-3 bg-gradient-to-r from-cyan-600 to-pink-600 rounded-xl text-xs font-black uppercase tracking-widest"
+            >
+              Go to Private Login
+            </button>
           </div>
 
           <div className="p-6 rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-zinc-950 to-black space-y-4 flex flex-col justify-between">

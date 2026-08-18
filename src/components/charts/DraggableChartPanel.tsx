@@ -39,11 +39,11 @@ export function DraggableChartPanel({
         style={{ width }}
         className={`rounded-2xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-md overflow-hidden flex flex-col ${className}`}
       >
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/50 select-none">
+        <div className="flex shrink-0 items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/50 select-none">
           <GripVertical size={14} className="text-zinc-700 shrink-0" aria-hidden />
           <div className="flex-1 min-w-0">{header}</div>
         </div>
-        <div className="flex-1 min-h-0">{children}</div>
+        <div className="flex-1 min-h-0 flex flex-col">{children}</div>
       </div>
     );
   }

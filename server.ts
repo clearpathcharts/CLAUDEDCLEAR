@@ -96,6 +96,18 @@ import {
 } from './src/server/stripeService';
 import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
+import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
+import {
+  formatAffectForPrompt,
+  formatBondForPrompt,
+  normalizeBondProfile,
+} from './src/server/buddyAffect';
+import {
+  classifyBuddyAffect,
+  extractBuddyGrowth,
+  mergeBondProfile,
+  offlineCompanionAnswer,
+} from './src/server/buddyMentorService';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -209,7 +221,9 @@ import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
   requireFounderOrCatalogAdmin,
+  requireFounderActionHeader,
   requireIntelligenceAdmin,
+  requirePrivateSession,
   getPrivateSessionUser,
 } from './src/server/authGuards';
 import {
@@ -562,34 +576,57 @@ async function startServer() {
 
   const aiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 40,
+    max: 30,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
   });
 
-  // Charts poll /api/quote on a live tick (server quote cache is ~5s). A single
-  // open chart + ticker strip easily exceeds a few hundred req/15min, which used
-  // to blank StrictlyCharts with "Market data rate limit reached" while Twelve
-  // Data itself was healthy. Budget for multi-tab / multi-symbol use without
-  // removing abuse protection.
-  const marketLimiter = rateLimit({
+  // Charts poll /api/quote on a live tick (server quote cache is ~5s). Signed-in
+  // members keep a high ceiling; anonymous traffic gets a tight budget so open
+  // proxies cannot burn TwelveData credits.
+  const marketLimiterAuthed = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 2400,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+    skip: (req) => !getPrivateSessionUser(req),
   });
+  const marketLimiterAnon = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 90,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    skip: (req) => Boolean(getPrivateSessionUser(req)),
+  });
+  const marketLimiter = [marketLimiterAnon, marketLimiterAuthed];
 
-  // Live quote ticks are cheaper (5s gateway cache) and much hotter than candle
-  // history fetches — give them a dedicated higher ceiling so a chart left open
-  // cannot starve /api/market/history reloads.
-  const quoteLimiter = rateLimit({
+  const quoteLimiterAuthed = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 3600,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
+    skip: (req) => !getPrivateSessionUser(req),
+  });
+  const quoteLimiterAnon = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 180,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    skip: (req) => Boolean(getPrivateSessionUser(req)),
+  });
+  const quoteLimiter = [quoteLimiterAnon, quoteLimiterAuthed];
+
+  const newsLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'News rate limit reached. Please wait a few minutes.' },
   });
 
   const logErrorLimiter = rateLimit({
@@ -1562,22 +1599,31 @@ async function startServer() {
    * Includes private-account password hashes + invite temp passwords.
    * Keep offline. Agents must never claim backups are unnecessary.
    */
-  app.get('/api/admin/backup/download', requireFounderOrCatalogAdmin, async (_req, res) => {
-    try {
-      const backup = await buildFounderBackupPackage();
-      const stamp = backup.exportedAt.replace(/[:.]/g, '-');
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="clearpath-founder-backup-${stamp}.json"`
-      );
-      res.setHeader('Cache-Control', 'no-store');
-      res.status(200).send(JSON.stringify(backup, null, 2));
-    } catch (error: any) {
-      console.error('[admin/backup/download] Failed:', error);
-      res.status(500).json({ error: error?.message || 'Backup download failed' });
-    }
+  // POST + founder action header — blocks SameSite=Lax top-level GET CSRF downloads.
+  app.get('/api/admin/backup/download', (_req, res) => {
+    res.status(405).json({ error: 'Method Not Allowed', message: 'Use POST from the CEO Dashboard.' });
   });
+  app.post(
+    '/api/admin/backup/download',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const backup = await buildFounderBackupPackage();
+        const stamp = backup.exportedAt.replace(/[:.]/g, '-');
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="clearpath-founder-backup-${stamp}.json"`
+        );
+        res.setHeader('Cache-Control', 'no-store');
+        res.status(200).send(JSON.stringify(backup, null, 2));
+      } catch (error: any) {
+        console.error('[admin/backup/download] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Backup download failed' });
+      }
+    }
+  );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
   app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, async (_req, res) => {
@@ -1642,49 +1688,67 @@ async function startServer() {
 
   /**
    * Founder-only invite export (email + temp password + activation key).
-   * Query ?includeSecrets=1 required to include tempPassword.
+   * Query ?includeSecrets=1 required to include tempPassword — also needs founder action header.
    */
-  app.get('/api/admin/members/invites', requireFounderOrCatalogAdmin, async (req, res) => {
-    try {
-      const includeSecrets = String(req.query.includeSecrets || '') === '1';
-      const listed = await listFounderInvites();
-      const invites = listed.invites.map((inv) => {
-        const row: Record<string, string> = {
-          email: inv.email,
-          displayName: inv.displayName,
-          uid: inv.uid,
-          activationKey: inv.activationKey,
-          createdAt: inv.createdAt,
-        };
-        if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
-        if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
-        return row;
-      });
-      res.json({
-        ok: true,
-        source: listed.source,
-        count: invites.length,
-        includeSecrets,
-        invites,
-        howToSend:
-          'Use CEO Dashboard → Invite emails → SEND EMAIL (one click). Or copy email + tempPassword and send privately.',
-      });
-    } catch (error) {
-      console.error('[admin/members/invites] Failed:', error);
-      res.status(500).json({ error: 'Failed to list invites' });
+  app.get(
+    '/api/admin/members/invites',
+    requireFounderOrCatalogAdmin,
+    (req, res, next) => {
+      if (String(req.query.includeSecrets || '') === '1') {
+        return requireFounderActionHeader(req, res, next);
+      }
+      next();
+    },
+    async (req, res) => {
+      try {
+        const includeSecrets = String(req.query.includeSecrets || '') === '1';
+        const listed = await listFounderInvites();
+        const invites = listed.invites.map((inv) => {
+          const row: Record<string, string> = {
+            email: inv.email,
+            displayName: inv.displayName,
+            uid: inv.uid,
+            activationKey: inv.activationKey,
+            createdAt: inv.createdAt,
+          };
+          if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
+          if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
+          return row;
+        });
+        res.json({
+          ok: true,
+          source: listed.source,
+          count: invites.length,
+          includeSecrets,
+          invites,
+          howToSend:
+            'Use CEO Dashboard → Invite emails → SEND EMAIL (one click). Or copy email + tempPassword and send privately.',
+        });
+      } catch (error) {
+        console.error('[admin/members/invites] Failed:', error);
+        res.status(500).json({ error: 'Failed to list invites' });
+      }
     }
-  });
+  );
 
-  /** Founder mail-merge built from durable invites + private accounts (backend spreadsheet). */
-  app.get('/api/admin/members/invite-mail', requireFounderOrCatalogAdmin, async (_req, res) => {
-    try {
-      const result = await listInviteMailRows();
-      res.json(result);
-    } catch (error: any) {
-      console.error('[admin/members/invite-mail] Failed:', error);
-      res.status(500).json({ error: error?.message || 'Failed to build invite mail list' });
-    }
+  /** Founder mail-merge — POST only (temps included). */
+  app.get('/api/admin/members/invite-mail', (_req, res) => {
+    res.status(405).json({ error: 'Method Not Allowed', message: 'Use POST from the CEO Dashboard.' });
   });
+  app.post(
+    '/api/admin/members/invite-mail',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await listInviteMailRows();
+        res.json(result);
+      } catch (error: any) {
+        console.error('[admin/members/invite-mail] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Failed to build invite mail list' });
+      }
+    }
+  );
 
   /**
    * One-click: send Private Login invite email to one person.
@@ -1752,7 +1816,7 @@ async function startServer() {
     res.json({ entry });
   });
 
-  app.post('/api/river/catalog/public', moderateBodyFields('pineSource', 'description'), (req, res) => {
+  app.post('/api/river/catalog/public', requirePrivateSession, moderateBodyFields('pineSource', 'description'), (req, res) => {
     const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
       return res.status(400).json({ error: 'pineSource is required.' });
@@ -1833,7 +1897,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2076,7 +2140,7 @@ async function startServer() {
     }
   });
 
-  app.get('/api/secrets/status', (req, res) => {
+  app.get('/api/secrets/status', requireFounderOrCatalogAdmin, (req, res) => {
     // Boolean presence only — never returns key material.
     // FIREBASE_SERVICE_ACCOUNT may be false on Cloud Run while Admin still works via ADC.
     const admin = getFirebaseAdminStatus();
@@ -2124,7 +2188,9 @@ async function startServer() {
     </body></html>`);
   });
 
-  app.get('/api/status', async (req, res) => {
+  // Founder-only: live probes hit vendor APIs (including TwelveData) and burn quota.
+  // Never leave this public — Diagnostics UI was removed from the site for the same reason.
+  app.get('/api/status', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const data = await getLiveApiHealth();
       res.json(data);
@@ -2279,7 +2345,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2327,41 +2393,72 @@ Frame your explanation with advanced professional rigor, making it scannable, st
     }
   });
 
-  // AI Trading Mentor - Phase 1 (Groq / Llama)
-  app.post('/api/mentor/chat', aiLimiter, moderateBodyFields('question'), async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext } = req.body;
+  // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
+  app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext, bondProfile } =
+      req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
 
+    const displayName = userName && typeof userName === 'string' ? userName.trim().slice(0, 40) : 'friend';
+    const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
+    const bond = normalizeBondProfile(bondProfile);
+    const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-20) : [];
+    const recentUserLines = history
+      .filter((m: any) => m && m.role === 'user' && typeof m.content === 'string')
+      .map((m: any) => m.content as string);
+
     const apiKey = getGroqApiKey();
+    const affect = await classifyBuddyAffect({
+      apiKey,
+      question,
+      recentUserLines,
+    });
+
     if (!apiKey) {
+      const companionOffline = offlineCompanionAnswer({ question, displayName, affect });
+      if (companionOffline) {
+        return res.json({
+          answer: companionOffline,
+          newFacts: [],
+          affect,
+          bondPatch: mergeBondProfile(bond, {
+            lastMood: {
+              primary: affect.primary,
+              intensity: affect.intensity,
+              at: Date.now(),
+            },
+          }),
+        });
+      }
       const localChart = chartContext && typeof chartContext === 'string' ? chartContext.trim() : '';
       const chartish = /chart|pattern|wedge|triangle|forming|retrace|setup|structure/i.test(question);
       if (localChart && chartish) {
         return res.json({
           answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
           newFacts: [],
+          affect,
         });
       }
       const siteHelp = offlineSiteGuideAnswer(question);
       if (siteHelp) {
-        return res.json({ answer: siteHelp, newFacts: [] });
+        return res.json({ answer: siteHelp, newFacts: [], affect });
       }
       return res.json({
-        answer: "Live AI mentor replies need a GROQ_API_KEY in Secrets. Meanwhile, ask me about navigating ClearPath, INDACREATOR, Charts, neuro chart profiles, Education, or the Encyclopedias — I can still walk you through those.",
+        answer: `Hey ${displayName} — I'm still here with you. Live full conversation needs a GROQ_API_KEY in Secrets. Meanwhile I can help with navigating ClearPath, INDACREATOR, Charts, neuro profiles, Education, or the Encyclopedias. How's your day going?`,
+        newFacts: [],
+        affect,
       });
     }
 
-    const displayName = userName && typeof userName === 'string' ? userName : 'trader';
-    const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
-
-    const systemPrompt = `You are the ClearPath Trader AI Mentor, a calm, patient trading educator built into the ClearPath Trader platform.
+    const systemPrompt = `You are C.P.T., ClearPath Trader's personal platonic buddy and calm trading educator.
 You are speaking with ${displayName}, whose self-identified skill level is: ${level}.
-Adjust your explanations to match that skill level - simpler and more foundational for beginners, more technical and nuanced for advanced traders.
-Always answer in plain, calm English. Never use hype, urgency, or pressure language - ClearPath's brand is calm, not casino.
+Adjust teaching depth to that skill level. Always use plain, calm English. Never use hype, urgency, or casino pressure.
 
-You teach ClearPath Trader's proprietary, trademarked methodology, "Four Up, Three Down" (also documented as "4 Patterns on a Trend, 3 on a Retrace"), described in full below. When asked about entries, setups, or "how do I trade this," teach from this methodology specifically, not generic trading advice.
+${CPT_COMPANION_GUIDE}
+
+You also teach ClearPath Trader's proprietary methodology, "Four Up, Three Down" (also "4 Patterns on a Trend, 3 on a Retrace"), described below. When asked about entries, setups, or "how do I trade this," teach from this methodology — but if emotional intensity is high or crisis is flagged, pause trading lessons and care first.
 
 === FOUR UP, THREE DOWN METHODOLOGY ===
 
@@ -2409,49 +2506,45 @@ You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indic
 
 Never claim you have access to a user's account data, balances, or positions. You do not have that.
 
-=== EMOTIONAL CARE (VERY IMPORTANT) ===
-Many ClearPath members are neurodivergent - autism, ADHD, Down syndrome, dyslexia, traumatic brain injury, PTSD, and more. Some have limited short-term memory. Treat every person with warmth, patience, and zero judgment.
-- Use short sentences and plain words. One idea at a time.
-- Never shame anyone for repeating a question or forgetting something you already explained. Just answer again, kindly, like it's the first time.
-- If someone shares feelings, acknowledge the feeling first, information second.
-- Never use pressure, urgency, or hype. Never push anyone to trade.
-- Never promise profits or guaranteed outcomes. Trading involves risk and you say so calmly when relevant.
-- You are a supportive companion and educator, not a therapist or doctor. If someone seems to be in serious emotional distress, or mentions wanting to hurt themselves, respond with genuine care and gently encourage them to reach out to someone they trust or a professional - in the US they can call or text 988 any time. Stay kind. Never lecture, never dismiss.
-=== END EMOTIONAL CARE ===
-
 ${CPT_SITE_GUIDE}`;
 
-    // Inject everything we remember about this specific user, so they NEVER
-    // have to re-introduce themselves.
     const rememberedFacts = Array.isArray(memoryFacts)
       ? memoryFacts.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 60)
       : [];
     const memoryBlock = rememberedFacts.length
-      ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally in conversation, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
+      ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
       : '';
 
-    const chartBlock = chartContext && typeof chartContext === 'string' && chartContext.trim()
-      ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
-      : '';
+    const bondBlock = `\n\n${formatBondForPrompt(displayName, bond)}`;
+    const affectBlock = `\n\n${formatAffectForPrompt(affect)}`;
+
+    const chartBlock =
+      chartContext && typeof chartContext === 'string' && chartContext.trim()
+        ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
+        : '';
 
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock + chartBlock },
-      ...(Array.isArray(conversationHistory) ? conversationHistory.slice(-10) : []),
-      { role: 'user', content: question }
+      { role: 'system', content: systemPrompt + memoryBlock + bondBlock + affectBlock + chartBlock },
+      ...history.map((m: any) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m.content || '').slice(0, 4000),
+      })),
+      { role: 'user', content: question },
     ];
 
     try {
+      const warmTemp = affect.crisis || affect.intensity >= 4 ? 0.35 : 0.55;
       const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages,
-          temperature: 0.4,
-          max_tokens: 1200,
+          temperature: warmTemp,
+          max_tokens: 1800,
         }),
       });
 
@@ -2461,57 +2554,39 @@ ${CPT_SITE_GUIDE}`;
       }
 
       const data = await groqRes.json();
-      const answer = data?.choices?.[0]?.message?.content || 'The mentor had no response - try rephrasing your question.';
+      const answer =
+        data?.choices?.[0]?.message?.content ||
+        'I want to answer you properly — try saying that again in your own words.';
 
-      // ==== MEMORY LEARNING PASS ====
-      // A quick second call to a small fast model asks: "did the user just
-      // reveal anything lasting about themselves?" Whatever it finds gets
-      // returned to the widget, which saves it into the user's permanent
-      // memory in Firestore. This never blocks or breaks the main answer.
       let newFacts: string[] = [];
-      try {
-        const extractRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
-            temperature: 0,
-            max_tokens: 200,
-            messages: [
-              {
-                role: 'system',
-                content: 'You extract lasting personal facts a user reveals about themselves: their name, goals, preferences, trading style, life details, or anything they explicitly ask to be remembered. Ignore small talk and one-time questions. Respond with ONLY a JSON array of short plain-English strings, e.g. ["Prefers trading gold", "Has two kids"]. If there is nothing lasting, respond with []. No other text.',
-              },
-              {
-                role: 'user',
-                content: `The user (${displayName}) said: "${question}"`,
-              },
-            ],
-          }),
-        });
-        if (extractRes.ok) {
-          const extractData = await extractRes.json();
-          const raw = extractData?.choices?.[0]?.message?.content || '[]';
-          const cleaned = raw.replace(/```json|```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
-          if (Array.isArray(parsed)) {
-            newFacts = parsed.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 8);
-          }
-        }
-      } catch (memErr) {
-        console.error('[AI Mentor] Memory extraction skipped:', memErr);
-      }
-      // ==== END MEMORY LEARNING PASS ====
+      let bondPatch = mergeBondProfile(bond, {
+        lastMood: {
+          primary: affect.primary,
+          intensity: affect.intensity,
+          at: Date.now(),
+          ...(affect.evidence[0] ? { note: affect.evidence[0] } : {}),
+        },
+      });
 
-      res.json({ answer, newFacts });
+      try {
+        const growth = await extractBuddyGrowth({
+          apiKey,
+          displayName,
+          question,
+          affect,
+        });
+        newFacts = growth.newFacts;
+        bondPatch = mergeBondProfile(bondPatch, growth.bondPatch);
+      } catch (memErr) {
+        console.error('[AI Mentor] Growth extraction skipped:', memErr);
+      }
+
+      res.json({ answer, newFacts, affect, bondPatch });
     } catch (err: any) {
       console.error('[AI Mentor Error]', err);
       res.status(500).json({
         error: 'Failed AI mentor processing',
-        message: err.message || 'Groq API connection failure.'
+        message: err.message || 'Groq API connection failure.',
       });
     }
   });
@@ -2559,7 +2634,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Latest daily swap-hour timeframe accuracy report (read-only)
-  app.get('/api/diagnostics/timeframe-verify', (_req, res) => {
+  app.get('/api/diagnostics/timeframe-verify', requireFounderOrCatalogAdmin, (_req, res) => {
     const report = getLatestTimeframeVerifyReport();
     if (!report) {
       return res.status(404).json({
@@ -2572,7 +2647,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', registrationLimiter, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, registrationLimiter, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -2586,31 +2661,37 @@ ${CPT_SITE_GUIDE}`;
 
   /**
    * Founder-only: is outbound mail actually working?
-   * GET  → authenticated SMTP handshake against the configured relay.
-   * POST → additionally sends a real test message to ?to / body.to.
+   * GET  → authenticated SMTP handshake against the configured relay (read-only).
+   * POST → additionally sends a real test message to body.to, so it also needs the
+   *        founder action header (same rule as the other admin routes that act, not just read).
    */
   app.get('/api/admin/mail/selftest', requireFounderOrCatalogAdmin, async (_req, res) => {
     const status = await verifySmtpTransport();
     res.status(status.ok ? 200 : 503).json(status);
   });
 
-  app.post('/api/admin/mail/selftest', requireFounderOrCatalogAdmin, async (req, res) => {
-    const status = await verifySmtpTransport();
-    if (!status.ok) return res.status(503).json(status);
-    const to = String(req.body?.to || '').trim();
-    if (!to.includes('@')) {
-      return res.status(400).json({ ...status, error: 'Provide a "to" email address.' });
+  app.post(
+    '/api/admin/mail/selftest',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      const status = await verifySmtpTransport();
+      if (!status.ok) return res.status(503).json(status);
+      const to = String(req.body?.to || '').trim();
+      if (!to.includes('@')) {
+        return res.status(400).json({ ...status, error: 'Provide a "to" email address.' });
+      }
+      const sent = await sendMailSelfTest(to);
+      res.status(sent ? 200 : 502).json({
+        ...status,
+        sent,
+        to,
+        message: sent
+          ? `Test email sent to ${to}. If it does not arrive, the relay accepted it but the provider dropped it.`
+          : 'Transport verified but the send was rejected. Check server logs for the provider error.',
+      });
     }
-    const sent = await sendMailSelfTest(to);
-    res.status(sent ? 200 : 502).json({
-      ...status,
-      sent,
-      to,
-      message: sent
-        ? `Test email sent to ${to}. If it does not arrive, the relay accepted it but the provider dropped it.`
-        : 'Transport verified but the send was rejected. Check server logs for the provider error.',
-    });
-  });
+  );
 
   // Hourly Site Doctor report for CEO Dashboard
   app.get('/api/admin/site-doctor', requireFounderOrCatalogAdmin, (_req, res) => {
@@ -2643,7 +2724,7 @@ ${CPT_SITE_GUIDE}`;
     String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', quoteLimiter, async (req, res) => {
+  app.get('/api/quote', ...quoteLimiter, async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2684,7 +2765,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
-  app.get('/api/quotes', quoteLimiter, async (req, res) => {
+  app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
       return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
@@ -2712,7 +2793,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', marketLimiter, async (req, res) => {
+  app.get('/api/candles', ...marketLimiter, async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2746,7 +2827,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', marketLimiter, async (req, res) => {
+  app.get('/api/market/history', ...marketLimiter, async (req, res) => {
     const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -2807,7 +2888,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // NewsData Live Ingress API with fallback
-  app.get('/api/newsdata/latest', async (req, res) => {
+  app.get('/api/newsdata/latest', newsLimiter, async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
@@ -2895,7 +2976,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
-  app.get('/api/economic/news', async (req, res) => {
+  app.get('/api/economic/news', newsLimiter, async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid =
@@ -3099,7 +3180,7 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
-  app.post('/api/literacy/truth-search', moderateBodyFields('query'), async (req, res) => {
+  app.post('/api/literacy/truth-search', requirePrivateSession, ...marketLimiter, moderateBodyFields('query'), async (req, res) => {
     const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
     if (!query) {
       return res.status(400).json({ error: 'query required' });
@@ -3256,7 +3337,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
-  app.get('/api/fred/observations', marketLimiter, async (req, res) => {
+  app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3285,7 +3366,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
-  app.get('/api/fmp/:endpoint/:symbol', marketLimiter, async (req, res) => {
+  app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
     const { limit } = req.query;
     if (!symbol || !endpoint) {
@@ -3333,7 +3414,7 @@ ${CPT_SITE_GUIDE}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', aiLimiter, async (req, res) => {
+  app.get('/api/news/search', requirePrivateSession, aiLimiter, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });

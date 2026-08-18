@@ -89,19 +89,19 @@ export default function SystemIntelligencePanel() {
               </span>
             </div>
 
-            {/* key loaded */}
+            {/* TwelveData market API key — NOT private-login credentials */}
             <div className="min-w-0">
-              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">CREDENTIALS</span>
+              <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">MARKET API KEY</span>
               <span className={`font-black flex items-center gap-1 text-sm sm:text-base ${health.apiKeyPresent ? 'text-emerald-400' : 'text-zinc-400'}`}>
                 {health.apiKeyPresent ? (
                   <>
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline shrink-0" />
-                    <span>REGISTERED</span>
+                    <span>LOADED</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-500 inline mr-0.5 shrink-0" />
-                    <span className="text-amber-500">PENDING</span>
+                    <span className="text-amber-500">NOT SET</span>
                   </>
                 )}
               </span>

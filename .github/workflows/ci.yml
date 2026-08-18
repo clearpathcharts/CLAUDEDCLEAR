@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Never probe GCP ADC in Actions (lazy firebase-admin client crashes CI).
+      CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
 
     steps:
       # Pin third-party actions to full commit SHAs (Aikido / supply-chain)
@@ -31,20 +34,18 @@ jobs:
         run: npm run test:firebase-mock
 
       - name: Affiliate rewards self-test
-        env:
-          # Self-test is local-file only; never probe GCP ADC in Actions.
-          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:affiliate
 
       - name: Private accounts durable-store self-test
-        env:
-          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:private-durable
 
+      - name: C.P.T. Buddy affect / bond self-test
+        run: npm run test:buddy-affect
+
       - name: Founder disaster-backup self-test
-        env:
-          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run test:founder-backup
 
       - name: Build
+        env:
+          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
         run: npm run build

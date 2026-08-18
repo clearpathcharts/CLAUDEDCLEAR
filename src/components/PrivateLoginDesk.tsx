@@ -1,8 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Mail, User, Eye, EyeOff, X, Shield, ArrowRight, KeyRound } from 'lucide-react';
+import { Lock, Mail, User, Eye, EyeOff, X, Shield, KeyRound } from 'lucide-react';
 import {
-  lookupPrivateAccount,
   loginPrivateAccount,
   registerPrivateAccount,
   resubmitIdentity,
@@ -32,8 +31,8 @@ interface PrivateLoginDeskProps {
 
 /**
  * Private per-member login desk.
- * Step 1: email → Step 2a: personalized login OR Step 2b: create account.
- * Suspect signups quarantine into real_info / pending_email / goodbye.
+ * Default: one screen — email + password. Register adds display name.
+ * Hard-blocked fake emails still reject at register; soft quarantine no longer traps login.
  */
 export default function PrivateLoginDesk({
   open,
@@ -41,7 +40,7 @@ export default function PrivateLoginDesk({
   initialMode = 'login',
   initialEmail = '',
 }: PrivateLoginDeskProps) {
-  const [step, setStep] = useState<Step>('identify');
+  const [step, setStep] = useState<Step>(initialMode === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState(initialEmail);
   const [accountEmail, setAccountEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState('');
@@ -55,9 +54,14 @@ export default function PrivateLoginDesk({
   const dialogRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (open && initialEmail && !email) setEmail(initialEmail);
+    if (!open) return;
+    setStep(initialMode === 'register' ? 'register' : 'login');
+    if (initialEmail) {
+      setEmail(initialEmail);
+      setAccountEmail(initialEmail);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialEmail]);
+  }, [open, initialMode, initialEmail]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -75,7 +79,7 @@ export default function PrivateLoginDesk({
       const identity = params.get('identity');
       if (identity === 'confirmed') {
         setInfoBanner('Identity confirmed. Sign in with your email and password.');
-        setStep('identify');
+        setStep('login');
       } else if (identity === 'declined') {
         setStep('goodbye');
       } else if (identity === 'invalid') {
@@ -87,7 +91,7 @@ export default function PrivateLoginDesk({
   }, [open]);
 
   const reset = () => {
-    setStep('identify');
+    setStep(initialMode === 'register' ? 'register' : 'login');
     setEmail('');
     setAccountEmail('');
     setDisplayName('');
@@ -125,33 +129,6 @@ export default function PrivateLoginDesk({
       setInfoBanner(
         'If that email has a Private Login, we emailed a new password. Check inbox and spam.'
       );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleIdentify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setBusy(true);
-    try {
-      const result = await lookupPrivateAccount(email);
-      const normalized = email.trim().toLowerCase();
-      if (result.exists) {
-        if (result.identityStatus === 'declined' || result.identityStatus === 'expired') {
-          setEmail(normalized);
-          setStep('goodbye');
-          return;
-        }
-        setKnownName('Member');
-        setEmail(normalized);
-        setStep('login');
-      } else {
-        setEmail(normalized);
-        setStep('register');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Lookup failed.');
     } finally {
       setBusy(false);
     }
@@ -298,7 +275,7 @@ export default function PrivateLoginDesk({
 
   const title =
     step === 'login'
-      ? `Welcome back, ${knownName}`
+      ? 'Private Login'
       : step === 'register'
         ? 'Create your private account'
         : step === 'forgot'
@@ -309,7 +286,7 @@ export default function PrivateLoginDesk({
             ? 'Confirm your identity'
             : step === 'goodbye'
               ? 'Have a good one.'
-              : 'Enter your private login';
+              : 'Private Login';
 
   return (
     <AnimatePresence>
@@ -352,7 +329,11 @@ export default function PrivateLoginDesk({
                 </h2>
                 {step !== 'goodbye' && (
                   <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
-                    Each ClearPath member has a private login screen. Your workspace stays yours.
+                    {step === 'login'
+                      ? 'Email and password. That’s it.'
+                      : step === 'register'
+                        ? 'Create your login — then you’re in.'
+                        : 'Your workspace stays yours.'}
                   </p>
                 )}
               </div>
@@ -395,11 +376,11 @@ export default function PrivateLoginDesk({
               </div>
             )}
 
-            {step === 'identify' && (
-              <form onSubmit={handleIdentify} className="space-y-4">
+            {step === 'login' && (
+              <form onSubmit={handleLogin} className="space-y-4">
                 <label className="block space-y-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Account email
+                    Email
                   </span>
                   <div className="relative">
                     <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
@@ -414,50 +395,15 @@ export default function PrivateLoginDesk({
                     />
                   </div>
                 </label>
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {busy ? 'Checking…' : 'Continue'}
-                  <ArrowRight size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('forgot');
-                    setError('');
-                    setInfoBanner('');
-                  }}
-                  className="w-full text-[12px] text-amber-200 hover:text-white leading-snug"
-                >
-                  Forgot or misplaced your password? Click here and we&apos;ll email you.
-                </button>
-              </form>
-            )}
-
-            {step === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="rounded-2xl border border-[#00E5FF]/20 bg-[#00E5FF]/5 p-4 flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center text-[#00E5FF] font-black text-sm">
-                    {(knownName || 'M').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white">{knownName}</p>
-                    <p className="text-[11px] font-mono text-zinc-500">{email}</p>
-                  </div>
-                </div>
-
                 <label className="block space-y-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Private password
+                    Password
                   </span>
                   <div className="relative">
                     <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF1493]/80" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
-                      autoFocus
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -481,7 +427,7 @@ export default function PrivateLoginDesk({
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Lock size={14} />
-                  {busy ? 'Unlocking…' : 'Enter my private terminal'}
+                  {busy ? 'Signing in…' : 'Sign in'}
                 </button>
 
                 <button
@@ -500,13 +446,15 @@ export default function PrivateLoginDesk({
                 <button
                   type="button"
                   onClick={() => {
-                    setStep('identify');
+                    setStep('register');
                     setPassword('');
+                    setConfirmPassword('');
                     setError('');
+                    setInfoBanner('');
                   }}
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
-                  Use a different email
+                  Need an account? Create one
                 </button>
               </form>
             )}
@@ -544,7 +492,7 @@ export default function PrivateLoginDesk({
                 <button
                   type="button"
                   onClick={() => {
-                    setStep('identify');
+                    setStep('login');
                     setError('');
                   }}
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
@@ -556,25 +504,37 @@ export default function PrivateLoginDesk({
 
             {step === 'register' && (
               <form onSubmit={handleRegister} className="space-y-4">
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  No account yet for <span className="text-[#00E5FF] font-mono">{email}</span>.
-                  Create your private ClearPath login — only you can open this desk.
-                </p>
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Email
+                  </span>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
 
                 <label className="block space-y-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Display name
+                    Your name
                   </span>
                   <div className="relative">
                     <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B026FF]" />
                     <input
                       type="text"
                       required
-                      autoFocus
                       minLength={2}
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your real name"
+                      placeholder="Your name"
                       className="w-full bg-black border border-white/10 focus:border-[#B026FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
                     />
                   </div>
@@ -582,7 +542,7 @@ export default function PrivateLoginDesk({
 
                 <label className="block space-y-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Create password (min 8)
+                    Password (min 8)
                   </span>
                   <div className="relative">
                     <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF1493]" />
@@ -627,20 +587,21 @@ export default function PrivateLoginDesk({
                   disabled={busy}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest disabled:opacity-50"
                 >
-                  {busy ? 'Creating desk…' : 'Create private account & enter'}
+                  {busy ? 'Creating…' : 'Create account & enter'}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
-                    setStep('identify');
+                    setStep('login');
                     setPassword('');
                     setConfirmPassword('');
                     setError('');
+                    setInfoBanner('');
                   }}
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
-                  Back
+                  Already have an account? Sign in
                 </button>
               </form>
             )}

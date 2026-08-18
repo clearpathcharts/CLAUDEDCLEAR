@@ -172,6 +172,7 @@ export default function CeoDashboard() {
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'x-clearpath-founder-action': '1',
     };
     // Only attach Firebase Bearer when it is the founder email.
     const current = auth.currentUser;
@@ -396,8 +397,10 @@ export default function CeoDashboard() {
     try {
       const headers = await founderApiHeaders();
       const res = await fetch('/api/admin/members/invite-mail', {
+        method: 'POST',
         headers,
         credentials: 'include',
+        body: '{}',
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Invite mail failed (${res.status})`);
@@ -435,8 +438,10 @@ export default function CeoDashboard() {
       // Refresh row statuses without hiding the panel
       const headers2 = await founderApiHeaders();
       const refresh = await fetch('/api/admin/members/invite-mail', {
+        method: 'POST',
         headers: headers2,
         credentials: 'include',
+        body: '{}',
       });
       const refreshed = await refresh.json().catch(() => ({}));
       if (refresh.ok && Array.isArray(refreshed.rows)) {
@@ -605,8 +610,10 @@ export default function CeoDashboard() {
     try {
       const headers = await founderApiHeaders();
       const res = await fetch('/api/admin/backup/download', {
+        method: 'POST',
         headers,
         credentials: 'include',
+        body: '{}',
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
