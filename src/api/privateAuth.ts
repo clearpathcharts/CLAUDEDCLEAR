@@ -287,3 +287,67 @@ export async function logoutPrivateAccount(): Promise<void> {
     clearClientAuthArtifacts();
   }
 }
+
+/** Request a forgot-password email (generic success either way). */
+export async function requestForgotPassword(email: string): Promise<{
+  ok: boolean;
+  message: string;
+  emailSent: boolean;
+  smtpConfigured?: boolean;
+  hint?: string;
+}> {
+  const res = await fetch('/api/auth/private/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  const data = await parseJson(res);
+  return {
+    ok: Boolean(data.ok),
+    message: String(data.message || 'If that email has a Private Login, check your inbox.'),
+    emailSent: Boolean(data.emailSent),
+    smtpConfigured: data.smtpConfigured,
+    hint: typeof data.hint === 'string' ? data.hint : undefined,
+  };
+}
+
+/** Complete password reset from email link token. */
+export async function completeForgotPassword(input: {
+  token: string;
+  newPassword: string;
+}): Promise<{ ok: boolean; email?: string; message: string }> {
+  const res = await fetch('/api/auth/private/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      token: input.token,
+      newPassword: input.newPassword,
+    }),
+  });
+  const data = await parseJson(res);
+  return {
+    ok: Boolean(data.ok),
+    email: typeof data.email === 'string' ? data.email : undefined,
+    message: String(data.message || 'Password updated.'),
+  };
+}
+
+/** Change password while signed in (session cookie). */
+export async function changePrivatePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch('/api/auth/private/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+  const data = await parseJson(res);
+  return {
+    ok: Boolean(data.ok),
+    message: String(data.message || 'Password updated.'),
+  };
+}

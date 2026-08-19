@@ -224,3 +224,41 @@ export async function sendIdentityConfirmEmail(params: {
 
   return sendEmail({ to: params.to, subject, text, html });
 }
+
+/** Member-initiated forgot password — link opens Private Login reset step. */
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  displayName?: string;
+  resetUrl: string;
+}): Promise<boolean> {
+  const greeting = params.displayName ? `Hi ${params.displayName}` : 'Hello';
+  const subject = 'Reset your ClearPath Private Login password';
+  const text = [
+    greeting + ',',
+    '',
+    'Someone asked to reset the password for your ClearPath Private Login.',
+    '',
+    `Choose a new password here (link expires in 1 hour): ${params.resetUrl}`,
+    '',
+    'If you did not ask for this, ignore this email — your password stays the same.',
+    '',
+    '— ClearPath Trader',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Reset Password</h1>
+      <p>${greeting},</p>
+      <p>Someone asked to reset the password for your ClearPath Private Login.</p>
+      <p style="margin:28px 0;">
+        <a href="${params.resetUrl}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+          Choose a new password
+        </a>
+      </p>
+      <p style="color:#aaa;font-size:13px;">This link expires in 1 hour. If you did not ask for this, ignore this email.</p>
+      <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
+    </div>
+  `;
+
+  return sendEmail({ to: params.to, subject, text, html });
+}

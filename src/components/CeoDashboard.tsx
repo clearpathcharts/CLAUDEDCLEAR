@@ -526,8 +526,27 @@ export default function CeoDashboard() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Password reset failed (${res.status})`);
+
+      let mailNote = '';
+      try {
+        const mailRes = await fetch('/api/admin/members/invite-mail/send', {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+        const mailBody = await mailRes.json().catch(() => ({}));
+        if (mailRes.ok && mailBody.ok) {
+          mailNote = ' Invite email sent (if SMTP is configured).';
+        } else {
+          mailNote = ` Email not sent (${mailBody.error || mailBody.message || mailRes.status}). Text them the temp password privately.`;
+        }
+      } catch {
+        mailNote = ' Email not sent. Text them the temp password privately.';
+      }
+
       setConvertMsg(
-        `Reset OK for ${body.email} (${body.created ? 'account created' : 'password updated'}). Temp password: ${body.tempPassword}. Send privately — they use Private Login.`
+        `Reset OK for ${body.email} (${body.created ? 'account created' : 'password updated'}). Temp password: ${body.tempPassword}.${mailNote} They use Private Login → email + that password, then Forgot password / Change password.`
       );
       await loadAdminMembers();
       await loadFounderInvites();
@@ -1026,7 +1045,7 @@ export default function CeoDashboard() {
                   disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-50"
                 >
-                  Reset this email now
+                  Reset + email this member
                 </button>
               </div>
               <button

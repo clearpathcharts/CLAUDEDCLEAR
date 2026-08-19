@@ -151,6 +151,9 @@ import {
   assertSessionIdentityAllowed,
   buildClientSessionUser,
   buildIdentityConfirmUrl,
+  buildPasswordResetUrl,
+  changePrivatePassword,
+  completePasswordReset,
   confirmIdentityByToken,
   declineIdentity,
   getPrivateStorageMeta,
@@ -161,6 +164,7 @@ import {
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
   remintIdentityChallenge,
+  requestPasswordReset,
   resetPrivateUserPassword,
   resubmitIdentity,
 } from './src/server/privateAuthService';
@@ -189,7 +193,11 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
+import {
+  isSmtpConfigured,
+  sendIdentityConfirmEmail,
+  sendPasswordResetEmail,
+} from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -1020,6 +1028,100 @@ async function startServer() {
       }
       return res.json({ ok: true });
     });
+  });
+
+  /**
+   * Forgot password — always returns the same generic message (no account enumeration).
+   * When an account exists and SMTP is configured, emails a one-hour reset link.
+   */
+  app.post('/api/auth/private/forgot-password', registrationLimiter, async (req, res) => {
+    const generic = {
+      ok: true,
+      message:
+        'If that email has a Private Login, we sent a reset link. Check your inbox (and spam). The link expires in 1 hour.',
+    };
+    try {
+      const minted = await requestPasswordReset({ email: req.body?.email || '' });
+      let emailSent = false;
+      let smtpConfigured = isSmtpConfigured();
+      if (minted.accountFound && minted.rawToken && minted.email) {
+        const origin =
+          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+          `${req.protocol}://${req.get('host')}`;
+        const resetUrl = buildPasswordResetUrl(origin, minted.rawToken);
+        emailSent = await sendPasswordResetEmail({
+          to: minted.email,
+          displayName: minted.displayName,
+          resetUrl,
+        });
+        if (!emailSent && !isProd) {
+          console.info('[forgot-password] SMTP offline — reset URL (dev only):', resetUrl);
+        }
+      }
+      res.json({
+        ...generic,
+        emailSent: Boolean(emailSent),
+        smtpConfigured,
+        hint:
+          emailSent
+            ? undefined
+            : 'If you do not get an email within a few minutes, ask the founder to use CEO → Reset this email now (they can text you a temp password).',
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      if (status === 400) {
+        return res.status(400).json({ error: error.message || 'Invalid email.' });
+      }
+      console.error('[forgot-password] Failed:', error);
+      // Still generic for 503/500 when possible — avoid leaking store status to attackers.
+      res.status(status).json({
+        error: error.message || 'Could not start password reset.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
+    }
+  });
+
+  /** Complete forgot-password with token from email link + new password. */
+  app.post('/api/auth/private/reset-password', registrationLimiter, async (req, res) => {
+    try {
+      const user = await completePasswordReset({
+        token: req.body?.token || '',
+        newPassword: req.body?.newPassword || req.body?.password || '',
+      });
+      res.json({
+        ok: true,
+        email: user.email,
+        message: 'Password updated. Sign in with your email and new password.',
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({
+        error: error.message || 'Password reset failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
+    }
+  });
+
+  /** Logged-in member changes password (session required). */
+  app.post('/api/auth/private/change-password', registrationLimiter, async (req, res) => {
+    try {
+      const sessionUser = (req.session as any)?.privateUser;
+      if (!sessionUser?.email || sessionUser.isAnonymous) {
+        return res.status(401).json({ error: 'Sign in first to change your password.' });
+      }
+      const user = await changePrivatePassword({
+        email: sessionUser.email,
+        currentPassword: req.body?.currentPassword || req.body?.password || '',
+        newPassword: req.body?.newPassword || '',
+      });
+      res.json({ ok: true, email: user.email, message: 'Password updated.' });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      res.status(status).json({
+        error: error.message || 'Could not change password.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
+    }
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.

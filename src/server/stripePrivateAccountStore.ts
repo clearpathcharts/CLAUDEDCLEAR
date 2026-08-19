@@ -26,6 +26,8 @@ export type StripePrivateUserRecord = {
   identityDeclinedAt?: string;
   identityConfirmedAt?: string;
   identityEmailWasSuspect?: boolean;
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: string;
 };
 
 const META = {
@@ -88,6 +90,12 @@ function recordFromCustomer(customer: {
       if (typeof parsed.declined === 'string') record.identityDeclinedAt = parsed.declined;
       if (typeof parsed.confirmed === 'string') record.identityConfirmedAt = parsed.confirmed;
       if (typeof parsed.emailSuspect === 'boolean') record.identityEmailWasSuspect = parsed.emailSuspect;
+      if (typeof parsed.pwd === 'string' && parsed.pwd.trim()) {
+        record.passwordResetTokenHash = parsed.pwd.trim();
+      }
+      if (typeof parsed.pwdExp === 'string' && parsed.pwdExp.trim()) {
+        record.passwordResetExpiresAt = parsed.pwdExp.trim();
+      }
     } catch {
       /* ignore corrupt identity blob */
     }
@@ -126,7 +134,7 @@ export async function findStripePrivateUserByEmail(
 }
 
 export async function upsertStripePrivateUser(
-  user: StripePrivateUserRecord & { tempPassword?: string }
+  user: StripePrivateUserRecord & { tempPassword?: string; clearPasswordReset?: boolean }
 ): Promise<boolean> {
   const stripe = getStripeClient();
   if (!stripe) return false;
@@ -148,9 +156,9 @@ export async function upsertStripePrivateUser(
     else if (customer?.metadata?.[META.tempPassword]) {
       // Clear temp password once replaced by a real login path if explicitly empty string passed — keep otherwise.
     }
-    if (user.identityStatus) {
+    if (user.identityStatus || user.passwordResetTokenHash || user.clearPasswordReset) {
       const blob = JSON.stringify({
-        status: user.identityStatus,
+        status: user.identityStatus || 'ok',
         reasons: (user.identityRiskReasons || []).slice(0, 8),
         ...(user.identityChallengeTokenHash ? { chal: user.identityChallengeTokenHash } : {}),
         ...(user.identityChallengeExpiresAt ? { exp: user.identityChallengeExpiresAt } : {}),
@@ -158,6 +166,9 @@ export async function upsertStripePrivateUser(
         ...(user.identityConfirmedAt ? { confirmed: user.identityConfirmedAt } : {}),
         ...(typeof user.identityEmailWasSuspect === 'boolean'
           ? { emailSuspect: user.identityEmailWasSuspect }
+          : {}),
+        ...(user.passwordResetTokenHash && !user.clearPasswordReset
+          ? { pwd: user.passwordResetTokenHash, pwdExp: user.passwordResetExpiresAt || '' }
           : {}),
       }).slice(0, 500);
       metadata[META.identity] = blob;
