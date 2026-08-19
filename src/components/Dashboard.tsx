@@ -1503,17 +1503,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {/* PERSISTENT Clear NAV */}
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} isFounder={isFounder()} onLogout={handleLogout} lean={isAppShell} />
 
-        {!isAppShell && authUser && !isFounder() ? (
-          <div className="px-4 py-2 bg-amber-950/40 border-b border-amber-500/30 text-amber-100 text-xs sm:text-sm leading-relaxed">
-            CEO Dashboard is hidden because this session is{' '}
-            <span className="font-mono text-amber-200">
-              {authUser.email || userProfile?.email || 'unknown'}
-            </span>
-            . Sign in as <span className="font-mono text-[#00FFFF]">forexanarchy@gmail.com</span> (Google or
-            Private Login), then hard refresh.
-          </div>
-        ) : null}
-
         {/* TOP MARKET TICKER */}
         {showTicker && !isAppShell && (
           <div className="z-40">

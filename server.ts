@@ -1316,7 +1316,7 @@ async function startServer() {
         return res.status(401).json({
           error: 'Unauthorized',
           code: 'NEED_GOOGLE_FOUNDER',
-          message: `Sign into Google on this site as ${FOUNDER_EMAIL}, then click Unlock again.`,
+          message: 'Sign in with the founder Google account on this site, then click Unlock again.',
         });
       }
       if (!ensureAdminApp()) {
@@ -1330,7 +1330,7 @@ async function startServer() {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
-          message: `Wrong Google account (${decoded.email || 'unknown'}). Switch Google to ${FOUNDER_EMAIL}.`,
+          message: 'Wrong Google account. Switch to the founder Google account and try again.',
         });
       }
       const sessionUser = {
