@@ -63,7 +63,7 @@ export function refreshMembership(): Promise<MembershipInfo> {
   return fetchMembershipOnce(true);
 }
 
-export function useMembership(legacyProfile?: { vipStatus?: string; subscriptionActive?: boolean } | null) {
+export function useMembership(_legacyProfile?: { vipStatus?: string; subscriptionActive?: boolean } | null) {
   const [membership, setMembership] = useState<MembershipInfo | null>(cache);
 
   useEffect(() => {
@@ -79,9 +79,9 @@ export function useMembership(legacyProfile?: { vipStatus?: string; subscription
     };
   }, []);
 
-  const legacyPaid =
-    legacyProfile?.vipStatus === 'vip_pro' || Boolean(legacyProfile?.subscriptionActive);
-  const tierRank = Math.max(membership?.tierRank ?? 0, legacyPaid ? 4 : 0);
+  // Paid rank comes only from /api/membership/me (Stripe / launch trial).
+  // Client vipStatus / subscriptionActive must never grant Ultimate.
+  const tierRank = membership?.tierRank ?? 0;
 
   return {
     membership,

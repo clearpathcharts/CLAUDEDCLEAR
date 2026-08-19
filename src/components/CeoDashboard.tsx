@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
+import DailyOpsDesk from './DailyOpsDesk';
+import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
 
 type SafePrivateMemberRow = {
@@ -814,6 +816,9 @@ export default function CeoDashboard() {
       <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-6">
         CEO Dashboard — Founder Console
       </h1>
+
+      <CeoAlwaysOnMonitor />
+      <DailyOpsDesk getHeaders={founderApiHeaders} />
 
       {/* CEO Micro-Tabs */}
       <div className="flex border-b border-indigo-500/20 mb-8 gap-4 select-none flex-wrap">
