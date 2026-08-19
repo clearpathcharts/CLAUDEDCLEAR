@@ -802,8 +802,7 @@ export default function CeoDashboard() {
           <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
           <h1 className="text-xl font-black uppercase tracking-widest text-white">CEO Dashboard Locked</h1>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            This console is restricted to the ClearPath founder account
-            (<span className="font-mono text-[#00FFFF]">{FOUNDER_EMAIL}</span>).
+            This console is restricted. If you landed here by mistake, go back to Markets.
           </p>
         </div>
       </div>
