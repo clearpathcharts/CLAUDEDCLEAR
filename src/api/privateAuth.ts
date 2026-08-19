@@ -287,3 +287,42 @@ export async function logoutPrivateAccount(): Promise<void> {
     clearClientAuthArtifacts();
   }
 }
+
+export async function changeOwnPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  const res = await fetch('/api/auth/private/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+  await parseJson(res);
+  clearClientAuthArtifacts();
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch('/api/auth/private/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  await parseJson(res);
+}
+
+export async function resetPasswordWithToken(input: {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  const res = await fetch('/api/auth/private/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+  await parseJson(res);
+}

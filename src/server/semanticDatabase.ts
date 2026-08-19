@@ -661,6 +661,22 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Home", url: "" },
       { name: "Education", url: "/education" }
     ]));
+  } else if (pathClean.startsWith('/u/')) {
+    const handle = pathClean.slice('/u/'.length).replace(/[^a-z0-9_-]/g, '');
+    title = handle
+      ? `@${handle} on ClearPath Trader`
+      : 'Member profile | ClearPath Trader';
+    description =
+      'Public ClearPath Trader member page. Education and analytics — not a brokerage. No live account or trade execution.';
+    keywords = 'ClearPath Trader profile, member page, market education';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: handle ? `@${handle}` : 'Profile', url: pathClean },
+    ]));
+  } else if (pathClean === '/reset-password') {
+    title = 'Reset Private Login password | ClearPath Trader';
+    description = 'Choose a new password for your ClearPath Trader Private Login.';
+    robotsMeta = 'noindex, nofollow';
   } else if (pathClean === '/tools' || pathClean === '/tools/position-size') {
     if (pathClean === '/tools') {
       title = 'Free Trading Calculators & Tools | ClearPathTrader';

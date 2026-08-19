@@ -21,3 +21,24 @@ export async function loadProfileFromServer(uid?: string): Promise<any | null> {
   const data = await res.json().catch(() => null);
   return data?.profile || null;
 }
+
+export type PublicMemberProfile = {
+  displayName: string;
+  username: string;
+  bio: string;
+  avatarUrl: string;
+  coverUrl: string;
+  instagramType?: string;
+  contractorBadges: { id: string; label: string; imageUrl: string }[];
+};
+
+export async function loadPublicProfile(username: string): Promise<PublicMemberProfile | null> {
+  const handle = encodeURIComponent(String(username || '').trim());
+  if (!handle) return null;
+  const res = await fetch(`/api/profile/public/${handle}`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  return data?.profile || null;
+}

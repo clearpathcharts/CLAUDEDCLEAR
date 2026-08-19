@@ -7,6 +7,7 @@ import {
   resubmitIdentity,
   declineIdentity,
   resendIdentityConfirm,
+  requestPasswordReset,
   PrivateAuthClientError,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
@@ -15,6 +16,7 @@ type Step =
   | 'identify'
   | 'login'
   | 'register'
+  | 'forgot'
   | 'real_info'
   | 'pending_email'
   | 'goodbye';
@@ -102,6 +104,23 @@ export default function PrivateLoginDesk({
     open,
     onClose: handleClose,
   });
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await requestPasswordReset(email);
+      setInfoBanner(
+        'If that email has a Private Login, we sent a reset link. Check that inbox (and spam). The link expires in 2 hours.'
+      );
+      setStep('login');
+    } catch (err: any) {
+      setError(err instanceof PrivateAuthClientError ? err.message : 'Could not send reset email.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,13 +266,15 @@ export default function PrivateLoginDesk({
       ? 'Private Login'
       : step === 'register'
         ? 'Create your private account'
-        : step === 'real_info'
-          ? 'Please enter real information'
-          : step === 'pending_email'
-            ? 'Confirm your identity'
-            : step === 'goodbye'
-              ? 'Have a good one.'
-              : 'Private Login';
+        : step === 'forgot'
+          ? 'Reset your password'
+          : step === 'real_info'
+            ? 'Please enter real information'
+            : step === 'pending_email'
+              ? 'Confirm your identity'
+              : step === 'goodbye'
+                ? 'Have a good one.'
+                : 'Private Login';
 
   return (
     <AnimatePresence>
@@ -300,7 +321,9 @@ export default function PrivateLoginDesk({
                       ? 'Email and password. That’s it.'
                       : step === 'register'
                         ? 'Create your login — then you’re in.'
-                        : 'Your workspace stays yours.'}
+                        : step === 'forgot'
+                          ? 'We’ll email a 2-hour link to the address on this account.'
+                          : 'Your workspace stays yours.'}
                   </p>
                 )}
               </div>
@@ -401,6 +424,20 @@ export default function PrivateLoginDesk({
                 <button
                   type="button"
                   onClick={() => {
+                    setStep('forgot');
+                    setPassword('');
+                    setConfirmPassword('');
+                    setError('');
+                    setInfoBanner('');
+                  }}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#FF1493] transition-colors"
+                >
+                  Forgot password?
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     setStep('register');
                     setPassword('');
                     setConfirmPassword('');
@@ -410,6 +447,45 @@ export default function PrivateLoginDesk({
                   className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
                 >
                   Need an account? Create one
+                </button>
+              </form>
+            )}
+
+            {step === 'forgot' && (
+              <form onSubmit={handleForgot} className="space-y-4">
+                <label className="block space-y-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    Email
+                  </span>
+                  <div className="relative">
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
+                    />
+                  </div>
+                </label>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {busy ? 'Sending…' : 'Email me a reset link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('login');
+                    setError('');
+                  }}
+                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                >
+                  Back to sign in
                 </button>
               </form>
             )}

@@ -10,6 +10,11 @@
 import fs from 'fs';
 import path from 'path';
 import { getAdminFirestore } from './firebaseAdmin';
+import {
+  isPublicPublishStatus,
+  isValidProfileUsername,
+  normalizeProfileUsername,
+} from '../lib/profileUsername';
 
 export type StoredProfile = {
   uid: string;
@@ -206,4 +211,73 @@ export async function hydrateProfilesFromDurableStore(): Promise<{
   }
 
   return { source: 'firestore', pulled, pushed };
+}
+
+export function listLocalProfiles(): StoredProfile[] {
+  ensureDir();
+  try {
+    return fs
+      .readdirSync(DIR)
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(DIR, file), 'utf8')) as StoredProfile;
+        } catch {
+          return null;
+        }
+      })
+      .filter((row): row is StoredProfile => Boolean(row?.uid));
+  } catch {
+    return [];
+  }
+}
+
+export function findProfileByUsername(username: string): StoredProfile | null {
+  const handle = normalizeProfileUsername(username);
+  if (!handle) return null;
+  return (
+    listLocalProfiles().find(
+      (row) => normalizeProfileUsername(String(row.username || '')) === handle
+    ) || null
+  );
+}
+
+export function usernameTakenByOther(username: string, uid: string): boolean {
+  const found = findProfileByUsername(username);
+  return Boolean(found && found.uid !== uid);
+}
+
+/** Public card only — never email, uid, membership, or Stripe ids. */
+export type PublicMemberProfile = {
+  displayName: string;
+  username: string;
+  bio: string;
+  avatarUrl: string;
+  coverUrl: string;
+  instagramType?: string;
+  contractorBadges: { id: string; label: string; imageUrl: string }[];
+};
+
+export function toPublicMemberProfile(row: StoredProfile | null): PublicMemberProfile | null {
+  if (!row) return null;
+  const username = normalizeProfileUsername(row.username || '');
+  if (!isValidProfileUsername(username)) return null;
+  if (!isPublicPublishStatus(row.publishStatus)) return null;
+  return {
+    displayName: String(row.displayName || '').trim() || username,
+    username,
+    bio: String(row.bio || '').slice(0, 8000),
+    avatarUrl: String(row.avatarUrl || row.photoURL || ''),
+    coverUrl: String(row.coverUrl || row.coverURL || ''),
+    instagramType: row.instagramType,
+    contractorBadges: Array.isArray(row.contractorBadges)
+      ? row.contractorBadges
+          .map((badge) => ({
+            id: String(badge.id || ''),
+            label: String(badge.label || ''),
+            imageUrl: String(badge.imageUrl || ''),
+          }))
+          .filter((badge) => badge.id)
+      : [],
+  };
 }

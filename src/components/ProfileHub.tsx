@@ -4,6 +4,13 @@ import TermsAndConditions from "./TermsAndConditions";
 import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
 import { saveProfileToServer, loadProfileFromServer } from "../api/profileApi";
+import ChangePasswordCard from "./profile/ChangePasswordCard";
+import {
+  isReservedProfileUsername,
+  isValidProfileUsername,
+  normalizeProfileUsername,
+  publicProfileUrl,
+} from "../lib/profileUsername";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
   const uid = user?.uid || "";
@@ -23,6 +30,8 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   // Immediate image save state indicators
   const [isImageSaving, setIsImageSaving] = useState(false);
@@ -142,7 +151,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         const serverProfile = await loadProfileFromServer(uid || undefined);
         if (serverProfile) {
           setDisplayName(serverProfile.displayName || user?.displayName || "");
-          setProfileUrl(serverProfile.username || "");
+          setProfileUrl(normalizeProfileUsername(serverProfile.username || ""));
           setBio(serverProfile.bio || "");
           setPhotoURL(serverProfile.avatarUrl || serverProfile.photoURL || "");
           setCoverURL(serverProfile.coverUrl || serverProfile.coverURL || "");
@@ -163,7 +172,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         const data = await getProfile(uid);
         if (data) {
           setDisplayName(data.displayName || "");
-          setProfileUrl(data.username || data.profileUrl || "");
+          setProfileUrl(normalizeProfileUsername(data.username || data.profileUrl || ""));
           setInstagramType(data.instagramType || "Creator");
           setPublishStatus(data.publishStatus || "Public");
           setBio(data.bio || "");
@@ -331,11 +340,24 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
   const handleSaveProfile = async () => {
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveError("");
+    const handle = normalizeProfileUsername(profileUrl);
+    if (handle && !isValidProfileUsername(handle)) {
+      setSaveError("Profile URL must be 3–24 characters: letters, numbers, underscore, or hyphen.");
+      setIsSaving(false);
+      return;
+    }
+    if (handle && isReservedProfileUsername(handle)) {
+      setSaveError("That profile URL is reserved. Pick another handle.");
+      setIsSaving(false);
+      return;
+    }
+    setProfileUrl(handle);
     try {
       const payload = {
         uid: uid || undefined,
         displayName,
-        username: profileUrl,
+        username: handle,
         avatarUrl: photoURL,
         coverUrl: coverURL,
         bio: bio,
@@ -351,41 +373,63 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         );
         localStorage.setItem(
           "clearpath_profile_meta",
-          JSON.stringify({ displayName, profileUrl, bio, instagramType, publishStatus }),
+          JSON.stringify({ displayName, profileUrl: handle, bio, instagramType, publishStatus }),
         );
       } catch {}
 
       const serverResult = await saveProfileToServer(payload);
       if (serverResult.ok) {
+        const savedHandle = normalizeProfileUsername(serverResult.profile?.username || handle);
+        setProfileUrl(savedHandle);
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3500);
         return;
       }
-
-      // Firestore fallback — ignore permission errors (common without Firebase Auth)
-      if (uid) {
-        try {
-          await updateBasicProfile(uid, payload);
-        } catch (fsErr: any) {
-          const msg = String(fsErr?.message || fsErr || "");
-          if (/permission|insufficient/i.test(msg)) {
-            console.warn("Firestore profile save blocked; local + server path used instead:", msg);
-          } else {
-            throw fsErr;
-          }
-        }
-      }
-
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3500);
+      setSaveError(serverResult.error || "Could not save profile.");
+      return;
     } catch (err: any) {
       console.error("Failed to save profile:", err);
-      // Never hard-fail with Firebase permission noise — profile is on-device.
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3500);
+      setSaveError(String(err?.message || "Could not save profile."));
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const advertisedUrl =
+    profileUrl && isValidProfileUsername(profileUrl)
+      ? publicProfileUrl(
+          typeof window !== "undefined" ? window.location.origin : "https://clearpathtrader.com",
+          profileUrl
+        )
+      : "";
+  const shareBlurb = advertisedUrl ? `Here's my ClearPath Trader page: ${advertisedUrl}` : "";
+
+  const copyShareUrl = async () => {
+    if (!advertisedUrl) return;
+    try {
+      await navigator.clipboard.writeText(advertisedUrl);
+      setCopiedUrl(true);
+      window.setTimeout(() => setCopiedUrl(false), 2200);
+    } catch {
+      setSaveError("Could not copy. Select the link and copy it yourself.");
+    }
+  };
+
+  const nativeShare = async () => {
+    if (!advertisedUrl) return;
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: displayName || "ClearPath Trader",
+          text: shareBlurb,
+          url: advertisedUrl,
+        });
+        return;
+      } catch {
+        /* user cancelled or share unavailable — fall through to copy */
+      }
+    }
+    await copyShareUrl();
   };
 
   return (
@@ -510,14 +554,23 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
 
             <div className="flex flex-col gap-2.5">
               <label className="text-[11px] md:text-[13px] tracking-widest text-[#999] uppercase font-bold">
-                Profile URL
+                Profile URL (your public handle)
               </label>
-              <input
-                className="bg-[#0f0f0f] border border-white/10 rounded-[18px] p-4 md:p-[18px] text-white text-[14px] md:text-[15px] outline-none focus:border-[#00e5ff] focus:shadow-[0_0_18px_rgba(0,229,255,0.45)] transition-all"
-                placeholder="/u/ricktrades"
-                value={profileUrl}
-                onChange={(e) => setProfileUrl(e.target.value)}
-              />
+              <div className="flex items-stretch rounded-[18px] border border-white/10 bg-[#0f0f0f] focus-within:border-[#00e5ff] focus-within:shadow-[0_0_18px_rgba(0,229,255,0.45)] transition-all overflow-hidden">
+                <span className="px-4 py-4 md:py-[18px] text-[14px] md:text-[15px] text-[#00e5ff] font-mono border-r border-white/10 shrink-0">
+                  /u/
+                </span>
+                <input
+                  className="flex-1 bg-transparent p-4 md:p-[18px] text-white text-[14px] md:text-[15px] outline-none min-w-0"
+                  placeholder="ricktrades"
+                  value={profileUrl}
+                  onChange={(e) => setProfileUrl(normalizeProfileUsername(e.target.value))}
+                  onBlur={() => setProfileUrl(normalizeProfileUsername(profileUrl))}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2.5">
@@ -549,6 +602,67 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
                 <option>Followers Only</option>
               </select>
             </div>
+          </div>
+
+          <div className="mt-5 p-5 border border-[#00e5ff]/20 rounded-[18px] bg-[#00e5ff]/5">
+            <p className="text-[11px] tracking-widest text-[#999] uppercase font-bold mb-2">
+              Share this link on social media
+            </p>
+            {advertisedUrl ? (
+              <>
+                <p className="font-mono text-sm text-[#00e5ff] break-all">{advertisedUrl}</p>
+                {publishStatus !== "Public" && (
+                  <p className="text-[11px] text-amber-300/90 mt-2">
+                    Publish Status is not Public, so visitors will see “profile unavailable” until you set it to Public and save.
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => void copyShareUrl()}
+                    className="bg-[#00e5ff]/10 hover:bg-[#00e5ff]/20 border border-[#00e5ff]/25 px-4 py-2.5 rounded-[12px] text-[11px] font-black text-[#00e5ff] uppercase tracking-widest"
+                  >
+                    {copiedUrl ? "Copied" : "Copy link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void nativeShare()}
+                    className="bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2.5 rounded-[12px] text-[11px] font-black text-white uppercase tracking-widest"
+                  >
+                    Share
+                  </button>
+                  <a
+                    href={advertisedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2.5 rounded-[12px] text-[11px] font-black text-white uppercase tracking-widest"
+                  >
+                    Open page
+                  </a>
+                  <a
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareBlurb)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2.5 rounded-[12px] text-[11px] font-black text-white uppercase tracking-widest"
+                  >
+                    Post on X
+                  </a>
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(advertisedUrl)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white/5 hover:bg-white/10 border border-white/15 px-4 py-2.5 rounded-[12px] text-[11px] font-black text-white uppercase tracking-widest"
+                  >
+                    Facebook
+                  </a>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-[#999] leading-relaxed">
+                Pick a handle (3–24 characters) and click Save Profile Settings. Then copy the full
+                https://…/u/yourhandle link for Instagram, X, or Facebook.
+              </p>
+            )}
           </div>
 
           {/* AVATAR IMAGE WORKSPACE */}
@@ -733,6 +847,8 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
               onChange={(e) => setBio(e.target.value)}
             ></textarea>
           </div>
+
+          <ChangePasswordCard />
         </div>
 
         {/* INTEGRATED SOCIAL LINKS FORM (Replacing old OAuth Login Hub) */}
@@ -792,6 +908,9 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
               "Save Profile Settings"
             )}
           </button>
+          {saveError && (
+            <p className="mt-3 text-xs font-mono text-rose-400 text-center">{saveError}</p>
+          )}
         </div>
 
         {/* COMPLIANCE & RISK STATUS PANEL */}

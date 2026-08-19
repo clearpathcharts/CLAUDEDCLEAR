@@ -26,6 +26,7 @@
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
     "test:founder-privacy": "tsx scripts/founder-privacy.selftest.ts",
+    "test:profile-share": "tsx scripts/profile-share-password.selftest.ts",
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
