@@ -933,6 +933,27 @@ export async function resetPrivateUserPassword(input: {
   return toPublic(updated);
 }
 
+/** Logged-in member changes their own password after proving the current one. */
+export async function changeOwnPassword(input: {
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+}): Promise<PublicPrivateUser> {
+  const current = (input.currentPassword || '').trim();
+  const next = (input.newPassword || '').trim();
+  if (current.length < 8 || next.length < 8) {
+    throw new PrivateAuthError('Password must be at least 8 characters.');
+  }
+  if (current === next) {
+    throw new PrivateAuthError('Choose a new password that is different from the current one.');
+  }
+  const login = await loginPrivateUser({ email: input.email, password: current });
+  if (login.kind !== 'ok') {
+    throw new PrivateAuthError('Sign in with your current password before changing it.', 403);
+  }
+  return resetPrivateUserPassword({ email: input.email, password: next });
+}
+
 export type LoginPrivateResult =
   | { kind: 'ok'; user: PublicPrivateUser }
   | {

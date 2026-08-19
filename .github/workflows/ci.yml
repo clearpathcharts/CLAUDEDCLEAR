@@ -48,6 +48,9 @@ jobs:
       - name: Founder / member login privacy self-test
         run: npm run test:founder-privacy
 
+      - name: Profile share URL + password reset self-test
+        run: npm run test:profile-share
+
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 

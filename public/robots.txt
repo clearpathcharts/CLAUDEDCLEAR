@@ -4,6 +4,7 @@ Allow: /
 Disallow: /api/
 Disallow: /auth/
 Disallow: /login
+Disallow: /reset-password
 Disallow: /dashboard
 
 # Multi-engine: Google, Bing, Yahoo, DuckDuckGo, Yandex, Brave, Ecosia, Qwant, Naver, Baidu

@@ -79,10 +79,19 @@ import { FOUNDER_EMAIL, isFounderEmail } from './src/lib/founder';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
+  findProfileByUsername,
   readProfile,
   refreshProfileFromDurable,
+  toPublicMemberProfile,
+  usernameTakenByOther,
   writeProfile,
 } from './src/server/profileStore';
+import {
+  isReservedProfileUsername,
+  isValidProfileUsername,
+  normalizeProfileUsername,
+} from './src/lib/profileUsername';
+import { consumePasswordResetToken, mintPasswordResetToken } from './src/server/passwordResetStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -157,12 +166,14 @@ import {
   hasDurablePrivateStore,
   listPrivateMembersSafe,
   lookupPrivateUser,
+  findPrivateUserByEmail,
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
   remintIdentityChallenge,
   resetPrivateUserPassword,
   resubmitIdentity,
+  changeOwnPassword,
 } from './src/server/privateAuthService';
 import {
   bootRecoverPrivateAccountsFromStripe,
@@ -189,7 +200,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
+import { sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -1074,6 +1085,17 @@ async function startServer() {
     }
   });
 
+  const publicSiteOrigin = (req: express.Request) => {
+    const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
+    if (fromEnv) return fromEnv;
+    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+    if (host && !isProd) {
+      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+      return `${proto}://${host}`;
+    }
+    return 'https://clearpathtrader.com';
+  };
+
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
     const uid = sessionUser?.uid;
@@ -1089,10 +1111,122 @@ async function startServer() {
       for (const key of allowed) {
         if (req.body?.[key] !== undefined) patch[key] = req.body[key];
       }
+      if (patch.username !== undefined) {
+        const handle = normalizeProfileUsername(String(patch.username || ''));
+        if (!handle) {
+          patch.username = '';
+        } else if (!isValidProfileUsername(handle)) {
+          return res.status(400).json({
+            error: 'Profile URL must be 3–24 characters: letters, numbers, underscore, or hyphen.',
+          });
+        } else if (isReservedProfileUsername(handle)) {
+          return res.status(400).json({ error: 'That profile URL is reserved.' });
+        } else if (usernameTakenByOther(handle, uid)) {
+          return res.status(409).json({ error: 'That profile URL is already taken.' });
+        } else {
+          patch.username = handle;
+        }
+      }
       const profile = writeProfile(uid, patch);
       res.json({ ok: true, profile });
     } catch (err: any) {
       res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
+  });
+
+  /** Public member card for /u/:username — never email, uid, or billing. */
+  app.get('/api/profile/public/:username', (req, res) => {
+    const handle = normalizeProfileUsername(String(req.params.username || ''));
+    if (!isValidProfileUsername(handle)) {
+      return res.status(404).json({ error: 'Profile not found.' });
+    }
+    const publicProfile = toPublicMemberProfile(findProfileByUsername(handle));
+    if (!publicProfile) {
+      return res.status(404).json({ error: 'Profile not found.' });
+    }
+    res.json({ ok: true, profile: publicProfile });
+  });
+
+  app.post('/api/auth/private/change-password', registrationLimiter, async (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    if (!sessionUser?.email || !sessionUser.privateAccount) {
+      return res.status(401).json({ error: 'Sign in to change your password.' });
+    }
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || req.body?.password || '');
+    const confirmPassword = String(req.body?.confirmPassword || '');
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirmation do not match.' });
+    }
+    try {
+      await changeOwnPassword({
+        email: sessionUser.email,
+        currentPassword,
+        newPassword,
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 400;
+      return res.status(status).json({ error: error.message || 'Could not change password.' });
+    }
+    try {
+      delete (req.session as any).privateUser;
+      delete (req.session as any).boardAccess;
+    } catch {
+      /* ignore */
+    }
+    req.session.destroy((err) => {
+      res.clearCookie('cpt.sid', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProd,
+      });
+      if (err) {
+        return res.status(500).json({ error: 'Password updated, but sign-out did not finish. Close this tab and sign in again.' });
+      }
+      return res.json({ ok: true, signedOut: true });
+    });
+  });
+
+  app.post('/api/auth/private/forgot-password', registrationLimiter, async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    try {
+      if (email.includes('@')) {
+        const user = await findPrivateUserByEmail(email);
+        if (user?.uid && user.email) {
+          const { rawToken } = mintPasswordResetToken({ uid: user.uid, email: user.email });
+          const resetUrl = `${publicSiteOrigin(req)}/reset-password?token=${encodeURIComponent(rawToken)}`;
+          await sendPasswordResetEmail({
+            to: user.email,
+            displayName: user.displayName,
+            resetUrl,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[password-reset] forgot-password failed silently:', (err as Error)?.message || err);
+    }
+    // Always the same answer — never confirm whether the email has an account.
+    return res.json({ ok: true });
+  });
+
+  app.post('/api/auth/private/reset-password', registrationLimiter, async (req, res) => {
+    const token = String(req.body?.token || '');
+    const newPassword = String(req.body?.newPassword || req.body?.password || '');
+    const confirmPassword = String(req.body?.confirmPassword || '');
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirmation do not match.' });
+    }
+    const record = consumePasswordResetToken(token);
+    if (!record) {
+      return res.status(400).json({ error: 'That reset link is invalid or expired. Request a new one from Private Login.' });
+    }
+    try {
+      await resetPrivateUserPassword({ email: record.email, password: newPassword });
+      return res.json({ ok: true });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 400;
+      return res.status(status).json({ error: error.message || 'Could not reset password.' });
     }
   });
 
@@ -3975,6 +4109,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/ui/:profileId',
     '/tools',
     '/tools/position-size',
+    '/u/:username',
+    '/reset-password',
   ];
 
   SEO_PAGES.forEach(pagePath => {
