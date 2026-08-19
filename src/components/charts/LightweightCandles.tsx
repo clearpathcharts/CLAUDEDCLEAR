@@ -24,9 +24,16 @@ import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
 import { Crosshair, Scan, Radio, Focus } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
+import {
+  attachShiftWheelPriceScale,
+  chartHandleScroll,
+  CHART_HANDLE_SCALE,
+  CHART_PRICE_SCALE_GESTURE,
+  CHART_TIME_SCALE_GESTURE,
+} from "../../lib/charts/chartInteraction";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-15A";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-19-AXIS";
 
 type Candle = {
   time: number;
@@ -305,24 +312,20 @@ export function LightweightCandles({
         ...defaultTheme.crosshair,
         mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
       },
-      rightPriceScale: defaultTheme.rightPriceScale,
-      timeScale: defaultTheme.timeScale,
-      // PERFORMANCE TWEAKS & OPTIMIZATIONS FOR HIGH-VOLUME DENSITY (40k NODES)
-      // MOBILE SCROLL FIX: vertTouchDrag defaults to true in this library, which
-      // means a one-finger vertical swipe anywhere on the chart gets captured by
-      // the chart itself (to pan/zoom it) instead of being passed through to
-      // scroll the page. That's what was freezing the page at the first chart on
-      // mobile. horzTouchDrag stays on so users can still drag the chart
-      // left/right through time; only vertical drag is released back to the page.
-      // When expanded (fullscreen modal), re-enable vertical drag so the chart
-      // can be panned freely — body scroll is locked while the modal is open.
-      handleScroll: {
-        mouseWheel: true,
-        pressedMouseMove: true,
-        horzTouchDrag: true,
-        vertTouchDrag: isExpanded,
+      rightPriceScale: {
+        ...defaultTheme.rightPriceScale,
+        ...CHART_PRICE_SCALE_GESTURE,
       },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+      timeScale: {
+        ...defaultTheme.timeScale,
+        ...CHART_TIME_SCALE_GESTURE,
+      },
+      // Phone stacked charts keep vertTouchDrag off so a vertical swipe can
+      // snap to the next full-screen slot. Expanded / desktop / tablet keep
+      // vertical pan. Time stretch = drag the bottom axis; price lift/squish =
+      // drag the right axis (or the axis buttons / Shift+wheel).
+      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+      handleScale: CHART_HANDLE_SCALE,
     });
 
     chartRef.current = chart;
@@ -503,7 +506,10 @@ export function LightweightCandles({
           },
         );
 
-        chart.timeScale().applyOptions({ barSpacing: tierOptimizedData.length > 800 ? 6 : 8, minBarSpacing: 3 });
+        chart.timeScale().applyOptions({
+          ...CHART_TIME_SCALE_GESTURE,
+          barSpacing: tierOptimizedData.length > 800 ? 6 : 8,
+        });
 
         const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
         const visibleBars = embedMode ? 72 : isMobile ? 96 : 160;
@@ -930,8 +936,14 @@ export function LightweightCandles({
 
     resizeObserver.observe(containerRef.current);
 
+    const detachShiftWheel = attachShiftWheelPriceScale(
+      containerRef.current,
+      () => (active ? chart : null),
+    );
+
     return () => {
       active = false;
+      detachShiftWheel();
       chartRef.current = null;
       candleSeriesRef.current = null;
       barCountRef.current = 0;
@@ -975,6 +987,7 @@ export function LightweightCandles({
     >
       {/* Chrome ABOVE the canvas only — drawing toolbox lives under Pattern Scanner */}
       {!embedMode && (
+        <>
         <div
           className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"
           aria-label="Chart controls"
@@ -1008,12 +1021,17 @@ export function LightweightCandles({
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
+        <p className="px-2 pb-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">
+          Drag the right axis to lift/squish · drag the bottom axis to stretch time · Shift+wheel = price
+        </p>
+        </>
       )}
 
       <div
         ref={containerRef}
         className="relative min-h-0 w-full flex-1 overflow-hidden"
         style={{
+          touchAction: fillParent && !isExpanded ? 'pan-y' : 'none',
           background: activeCustomTheme
             ? activeCustomTheme.background
             : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
@@ -1065,7 +1083,7 @@ export function LightweightCandles({
               }
             }}
             aria-label="Open forming watch"
-            className="absolute top-3 right-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+            className="absolute top-3 right-16 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
           >
             <Radio size={10} className="animate-pulse" />
             Forming
@@ -1116,6 +1134,7 @@ export function LightweightCandles({
 function series_priceScaleMargins(chart: any, hasOscillator: boolean) {
   try {
     chart.priceScale("right").applyOptions({
+      ...CHART_PRICE_SCALE_GESTURE,
       scaleMargins: hasOscillator
         ? { top: 0.08, bottom: 0.28 }   // leave room for the oscillator sub-pane
         : { top: 0.08, bottom: 0.08 },  // no oscillator: candles fill the chart

@@ -63,7 +63,6 @@ export function DraggableChartPanel({
         top: 0,
         width,
         zIndex,
-        touchAction: "none",
       }}
       onDragEnd={(_, info) => {
         onPositionChange({

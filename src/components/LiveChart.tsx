@@ -3,6 +3,13 @@ import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries 
 import { TradingHaltController } from '../truth/TradingHaltController';
 import { intensifyCandleColors } from '../lib/charts/intensifyColor';
 import { ChartZoomControls } from './charts/ChartZoomControls';
+import {
+  attachShiftWheelPriceScale,
+  chartHandleScroll,
+  CHART_HANDLE_SCALE,
+  CHART_PRICE_SCALE_GESTURE,
+  CHART_TIME_SCALE_GESTURE,
+} from '../lib/charts/chartInteraction';
 
 interface LiveChartProps {
   symbol?: string;
@@ -56,19 +63,17 @@ export default function LiveChart({
       },
       rightPriceScale: {
         borderColor: 'rgba(255, 255, 255, 0.1)',
+        ...CHART_PRICE_SCALE_GESTURE,
       },
       timeScale: {
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        timeVisible: true,
-        secondsVisible: false,
+        ...CHART_TIME_SCALE_GESTURE,
       },
       crosshair: {
         mode: 0,
       },
-      // MOBILE FIX: one finger swiping up/down now scrolls the PAGE.
-      // The chart keeps left/right dragging for panning through candles.
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+      handleScroll: chartHandleScroll(true),
+      handleScale: CHART_HANDLE_SCALE,
     });
 
     const vivid = intensifyCandleColors({
@@ -143,8 +148,13 @@ export default function LiveChart({
 
     window.addEventListener('resize', handleResize);
 
+    const detachShiftWheel = chartContainerRef.current
+      ? attachShiftWheelPriceScale(chartContainerRef.current, () => (isMounted ? chart : null))
+      : () => {};
+
     return () => {
       isMounted = false;
+      detachShiftWheel();
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
@@ -171,8 +181,8 @@ export default function LiveChart({
   return (
     <div className="w-full h-full min-h-[400px] relative">
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <div ref={chartContainerRef} className="w-full h-full" />
-        <ChartZoomControls chartRef={chartRef} className="absolute bottom-3 right-3 z-20" />
+        <div ref={chartContainerRef} className="w-full h-full" style={{ touchAction: 'none' }} />
+        <ChartZoomControls chartRef={chartRef} className="absolute bottom-12 left-3 z-20 flex-row" />
       </div>
     </div>
   );
