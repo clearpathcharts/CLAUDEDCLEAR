@@ -53,8 +53,23 @@ export function zoomTimeScale(timeScale: TimeScaleZoomApi, factor: number): void
   });
 }
 
-function logicalCenter(range: { from: number; to: number }): number {
+export type VisibleRange = { from: number; to: number };
+
+function logicalCenter(range: VisibleRange): number {
   return (range.from + range.to) / 2;
+}
+
+/** Scale a logical/time window around its center. factor < 1 = fewer bars (wider). */
+export function nextCenteredRange(
+  range: VisibleRange,
+  factor: number,
+  minSpan = MIN_LOGICAL_SPAN,
+): VisibleRange {
+  const span = Math.max(range.to - range.from, minSpan);
+  const nextSpan = Math.max(span * factor, minSpan);
+  const half = nextSpan / 2;
+  const center = logicalCenter(range);
+  return { from: center - half, to: center + half };
 }
 
 function zoomLogicalRange(
@@ -65,16 +80,8 @@ function zoomLogicalRange(
   const range = timeScale.getVisibleLogicalRange();
   if (!range) return;
 
-  const center = logicalCenter(range);
-  const span = Math.max(range.to - range.from, MIN_LOGICAL_SPAN);
   const factor = direction === 'in' ? 1 - TIME_ZOOM_STEP : 1 + TIME_ZOOM_STEP;
-  const nextSpan = Math.max(span * factor, MIN_LOGICAL_SPAN);
-  const half = nextSpan / 2;
-
-  timeScale.setVisibleLogicalRange({
-    from: center - half,
-    to: center + half,
-  });
+  timeScale.setVisibleLogicalRange(nextCenteredRange(range, factor));
 }
 
 function zoomPriceRange(
@@ -89,16 +96,34 @@ function zoomPriceRange(
     return;
   }
 
-  const center = (range.from + range.to) / 2;
-  const span = Math.max(range.to - range.from, 1e-9);
   const factor = direction === 'in' ? 1 - PRICE_ZOOM_STEP : 1 + PRICE_ZOOM_STEP;
-  const nextSpan = span * factor;
-  const half = nextSpan / 2;
+  priceScale.setVisibleRange(nextCenteredRange(range, factor, 1e-9));
+}
 
-  priceScale.setVisibleRange({
-    from: center - half,
-    to: center + half,
-  });
+/** Stretch or squeeze the time axis only (bar width / how many candles fit). */
+export function stretchTimeOnly(
+  chart: IChartApi | null | undefined,
+  direction: 'wider' | 'tighter',
+): void {
+  if (!chart) return;
+  try {
+    zoomLogicalRange(chart, direction === 'wider' ? 'in' : 'out');
+  } catch (err) {
+    console.warn('[ChartZoom] time stretch failed:', err);
+  }
+}
+
+/** Lift (more price room) or squish (taller candles) without changing time. */
+export function scalePriceOnly(
+  chart: IChartApi | null | undefined,
+  direction: 'lift' | 'squish',
+): void {
+  if (!chart) return;
+  try {
+    zoomPriceRange(chart, direction === 'squish' ? 'in' : 'out');
+  } catch (err) {
+    console.warn('[ChartZoom] price scale failed:', err);
+  }
 }
 
 /** Zoom in on time and price around the current viewport center. */

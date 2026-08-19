@@ -48,6 +48,9 @@ jobs:
       - name: Founder / member login privacy self-test
         run: npm run test:founder-privacy
 
+      - name: Chart axis stretch / lift-squish self-test
+        run: npm run test:chart-zoom
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

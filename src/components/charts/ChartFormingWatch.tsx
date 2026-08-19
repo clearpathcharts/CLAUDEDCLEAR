@@ -20,7 +20,7 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
 
   return (
     <div
-      className="absolute top-3 right-3 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
+      className="absolute top-3 right-16 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
       id={`forming-watch-${symbol}`}
     >
       {onClose && (

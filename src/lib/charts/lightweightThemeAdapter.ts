@@ -37,11 +37,17 @@ export function lightweightThemeAdapter(profile: ThemeProfile) {
     },
     rightPriceScale: {
       borderColor: profile.grid,
+      minimumWidth: 64,
+      borderVisible: true,
+      entireTextOnly: false,
     },
     timeScale: {
       borderColor: profile.grid,
       timeVisible: true,
       secondsVisible: false,
+      lockVisibleTimeRangeOnResize: true,
+      minBarSpacing: 0.5,
+      rightOffset: 4,
     },
     candleSeries,
     physics,
