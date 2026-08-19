@@ -172,6 +172,7 @@ export default function Auth() {
   const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
   const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
   const [activationEmail, setActivationEmail] = useState('');
+  const [activationResetToken, setActivationResetToken] = useState('');
 
   const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
     setPrivateLoginMode(mode);
@@ -180,14 +181,22 @@ export default function Auth() {
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,
   // optionally prefilling the email (?email=member@example.com). /join opens register.
+  // Password-reset email lands on /activate?reset=1&token=...
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const path = window.location.pathname.toLowerCase();
       const params = new URLSearchParams(window.location.search);
       const emailParam = String(params.get('email') || '').trim();
+      const resetToken = String(params.get('token') || '').trim();
+      const resetFlag = params.get('reset');
       if (emailParam && emailParam.includes('@')) setActivationEmail(emailParam);
-      if (path === '/activate' || path === '/login' || params.get('login') === '1') {
+      if (resetFlag === '1' && resetToken) {
+        setActivationResetToken(resetToken);
+        openPrivateLogin('login');
+      } else if (resetFlag === 'expired' || resetFlag === 'invalid') {
+        openPrivateLogin('login');
+      } else if (path === '/activate' || path === '/login' || params.get('login') === '1') {
         openPrivateLogin('login');
       } else if (path === '/join' || params.get('register') === '1') {
         openPrivateLogin('register');
@@ -2496,7 +2505,11 @@ Not the other way around.`}
         open={privateLoginOpen}
         initialMode={privateLoginMode}
         initialEmail={activationEmail}
-        onClose={() => setPrivateLoginOpen(false)}
+        initialResetToken={activationResetToken}
+        onClose={() => {
+          setPrivateLoginOpen(false);
+          setActivationResetToken('');
+        }}
       />
 
     </div>

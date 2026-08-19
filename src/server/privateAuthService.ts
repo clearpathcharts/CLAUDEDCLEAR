@@ -87,6 +87,9 @@ export type PrivateUserRecord = {
   identityConfirmedAt?: string;
   /** True when original signup flagged the email itself as suspect. */
   identityEmailWasSuspect?: boolean;
+  /** SHA-256 hex of one-time password-reset token (raw token only in email). */
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: string;
 };
 
 export type PublicPrivateUser = {
@@ -113,6 +116,7 @@ const ATTEMPTS_COLLECTION = 'identity_attempts';
 const DATA_DIR = path.join(process.cwd(), 'data', 'private_accounts');
 const USERS_FILE = 'users.json';
 const CHALLENGE_TTL_MS = 48 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 let migrateAttempted = false;
 
@@ -179,6 +183,12 @@ function applyIdentityFields(record: PrivateUserRecord, data: Record<string, unk
   }
   if (typeof data.identityEmailWasSuspect === 'boolean') {
     record.identityEmailWasSuspect = data.identityEmailWasSuspect;
+  }
+  if (typeof data.passwordResetTokenHash === 'string' && data.passwordResetTokenHash.trim()) {
+    record.passwordResetTokenHash = data.passwordResetTokenHash.trim();
+  }
+  if (typeof data.passwordResetExpiresAt === 'string' && data.passwordResetExpiresAt.trim()) {
+    record.passwordResetExpiresAt = data.passwordResetExpiresAt.trim();
   }
 }
 
@@ -274,6 +284,9 @@ async function upsertFirestoreUser(user: PrivateUserRecord): Promise<boolean> {
       passwordSalt: user.passwordSalt,
       createdAt: user.createdAt,
       ...identityPayload(user),
+      // Always write so a consumed/cleared token does not linger under merge:true.
+      passwordResetTokenHash: user.passwordResetTokenHash || null,
+      passwordResetExpiresAt: user.passwordResetExpiresAt || null,
     };
     if (user.lastLoginAt) payload.lastLoginAt = user.lastLoginAt;
     await db.collection(COLLECTION).doc(user.email).set(payload, { merge: true });
@@ -327,6 +340,12 @@ async function upsertDurableUser(
       ...(typeof user.identityEmailWasSuspect === 'boolean'
         ? { identityEmailWasSuspect: user.identityEmailWasSuspect }
         : {}),
+      ...(user.passwordResetTokenHash
+        ? { passwordResetTokenHash: user.passwordResetTokenHash }
+        : { passwordResetTokenHash: '' }),
+      ...(user.passwordResetExpiresAt
+        ? { passwordResetExpiresAt: user.passwordResetExpiresAt }
+        : { passwordResetExpiresAt: '' }),
     });
     ok = stripeOk || ok;
   }
@@ -914,6 +933,9 @@ export async function resetPrivateUserPassword(input: {
     passwordHash: hash,
     passwordSalt: salt,
   };
+  // Any successful password change invalidates outstanding self-serve reset links.
+  delete updated.passwordResetTokenHash;
+  delete updated.passwordResetExpiresAt;
 
   if (hasDurablePrivateStore()) {
     const ok = await upsertDurableUser(updated, {
@@ -931,6 +953,145 @@ export async function resetPrivateUserPassword(input: {
 
   upsertLocalUser(updated);
   return toPublic(updated);
+}
+
+/**
+ * Mint a one-time password-reset token for an existing private account.
+ * Does not reveal whether the email exists to callers of the HTTP layer —
+ * returns `found: false` silently when missing.
+ */
+export async function mintPasswordResetToken(emailRaw: string): Promise<{
+  found: boolean;
+  user?: PublicPrivateUser;
+  rawToken?: string;
+  expiresAt?: string;
+}> {
+  assertDurablePrivateWritesAllowed();
+  const email = normalizeEmail(emailRaw);
+  if (!email.includes('@')) return { found: false };
+
+  const found = await findUserRecordByEmail(email);
+  if (!found) return { found: false };
+
+  // Declined / expired identity accounts stay locked — do not send reset mail.
+  const gated = expireIfNeeded(found);
+  if (gated.identityStatus === 'declined' || gated.identityStatus === 'expired') {
+    return { found: false };
+  }
+
+  const rawToken = crypto.randomBytes(24).toString('base64url');
+  found.passwordResetTokenHash = hashToken(rawToken);
+  found.passwordResetExpiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS).toISOString();
+  await persistUser(found);
+  return {
+    found: true,
+    user: toPublic(found),
+    rawToken,
+    expiresAt: found.passwordResetExpiresAt,
+  };
+}
+
+async function findUserByPasswordResetTokenHash(
+  tokenHash: string
+): Promise<PrivateUserRecord | null> {
+  if (!tokenHash) return null;
+  const durable = await listDurableUsers();
+  const pool = durable || (!isProdEnv() ? readLocalUsers() : []);
+  const local = readLocalUsers();
+  return (
+    pool.find((u) => u.passwordResetTokenHash === tokenHash) ||
+    local.find((u) => u.passwordResetTokenHash === tokenHash) ||
+    null
+  );
+}
+
+/** Validate a reset token without consuming it (for UI gate). */
+export async function validatePasswordResetToken(
+  rawToken: string
+): Promise<{ valid: true; email: string } | { valid: false; reason: 'invalid' | 'expired' }> {
+  const token = String(rawToken || '').trim();
+  if (!token) return { valid: false, reason: 'invalid' };
+  const found = await findUserByPasswordResetTokenHash(hashToken(token));
+  if (!found) return { valid: false, reason: 'invalid' };
+  const exp = found.passwordResetExpiresAt ? Date.parse(found.passwordResetExpiresAt) : NaN;
+  if (!Number.isFinite(exp) || Date.now() > exp) {
+    found.passwordResetTokenHash = undefined;
+    found.passwordResetExpiresAt = undefined;
+    try {
+      await persistUser(found);
+    } catch {
+      /* ignore cleanup failure */
+    }
+    return { valid: false, reason: 'expired' };
+  }
+  return { valid: true, email: found.email };
+}
+
+/**
+ * Consume a one-time reset token and set a new password.
+ * Returns the public user (caller may open a session).
+ */
+export async function completePasswordReset(input: {
+  token: string;
+  newPassword: string;
+}): Promise<PublicPrivateUser> {
+  assertDurablePrivateWritesAllowed();
+  const token = String(input.token || '').trim();
+  const password = String(input.newPassword || '').trim();
+  if (!token) throw new PrivateAuthError('Reset link is invalid or expired.', 400, 'RESET_INVALID');
+  if (password.length < 8) throw new PrivateAuthError('Password must be at least 8 characters.');
+
+  const found = await findUserByPasswordResetTokenHash(hashToken(token));
+  if (!found) {
+    throw new PrivateAuthError('Reset link is invalid or expired.', 400, 'RESET_INVALID');
+  }
+  const exp = found.passwordResetExpiresAt ? Date.parse(found.passwordResetExpiresAt) : NaN;
+  if (!Number.isFinite(exp) || Date.now() > exp) {
+    found.passwordResetTokenHash = undefined;
+    found.passwordResetExpiresAt = undefined;
+    try {
+      await persistUser(found);
+    } catch {
+      /* ignore */
+    }
+    throw new PrivateAuthError('Reset link is invalid or expired.', 400, 'RESET_EXPIRED');
+  }
+
+  return resetPrivateUserPassword({ email: found.email, password });
+}
+
+/** Absolute URL for the password-reset email button. */
+export function buildPasswordResetUrl(baseUrl: string, rawToken: string): string {
+  const base = (baseUrl || '').replace(/\/$/, '');
+  return `${base}/api/auth/private/password/reset/confirm?token=${encodeURIComponent(rawToken)}`;
+}
+
+/**
+ * Detect member asks to reset / can't log in — used by C.P.T. Buddy before the LLM.
+ * Keep this conservative so normal trading questions never trip it.
+ */
+export function isPasswordResetIntent(question: string): boolean {
+  const q = String(question || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!q) return false;
+  if (
+    /\b(reset|forgot|forgotten|change|recover|send)\b.{0,40}\b(password|passwd|login|sign ?in)\b/.test(
+      q
+    )
+  ) {
+    return true;
+  }
+  if (
+    /\b(password|passwd|login|sign ?in)\b.{0,40}\b(reset|forgot|forgotten|recover)\b/.test(q)
+  ) {
+    return true;
+  }
+  if (
+    /\b(can'?t|cannot|unable to|won'?t)\b.{0,30}\b(log ?in|sign ?in|get in|access)\b/.test(q)
+  ) {
+    return true;
+  }
+  if (/\b(locked out|lockout)\b/.test(q)) return true;
+  return false;
 }
 
 export type LoginPrivateResult =

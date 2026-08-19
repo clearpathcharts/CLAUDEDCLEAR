@@ -261,6 +261,48 @@ export async function resendIdentityConfirm(input: {
   return { emailSent: Boolean(data.emailSent) };
 }
 
+/** Request a self-serve password reset email (works while logged out). */
+export async function requestPasswordReset(email: string): Promise<{
+  ok: boolean;
+  emailSent: boolean;
+  message: string;
+}> {
+  const res = await fetch('/api/auth/private/password/forgot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  const data = await parseJson(res);
+  return {
+    ok: Boolean(data.ok),
+    emailSent: Boolean(data.emailSent),
+    message:
+      typeof data.message === 'string'
+        ? data.message
+        : 'If an account exists for that email, a reset link is on its way.',
+  };
+}
+
+/** Complete reset from the one-time email token; opens a private session cookie. */
+export async function completePasswordResetWithToken(input: {
+  token: string;
+  newPassword: string;
+}): Promise<PrivateSessionUser> {
+  clearPrivateSession();
+  const res = await fetch('/api/auth/private/password/reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      token: input.token,
+      newPassword: input.newPassword,
+    }),
+  });
+  const data = await parseJson(res);
+  return data.user as PrivateSessionUser;
+}
+
 export async function verifyBoardAccess(code: string): Promise<PrivateSessionUser> {
   clearPrivateSession();
   const res = await fetch('/api/auth/board/verify', {

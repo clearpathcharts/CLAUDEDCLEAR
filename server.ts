@@ -151,18 +151,23 @@ import {
   assertSessionIdentityAllowed,
   buildClientSessionUser,
   buildIdentityConfirmUrl,
+  buildPasswordResetUrl,
+  completePasswordReset,
   confirmIdentityByToken,
   declineIdentity,
   getPrivateStorageMeta,
   hasDurablePrivateStore,
+  isPasswordResetIntent,
   listPrivateMembersSafe,
   lookupPrivateUser,
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
+  mintPasswordResetToken,
   registerPrivateUser,
   remintIdentityChallenge,
   resetPrivateUserPassword,
   resubmitIdentity,
+  validatePasswordResetToken,
 } from './src/server/privateAuthService';
 import {
   bootRecoverPrivateAccountsFromStripe,
@@ -189,7 +194,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
+import { isSmtpConfigured, sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -998,6 +1003,98 @@ async function startServer() {
           ''
         ) + (declined ? '/activate?identity=declined' : '/activate?identity=invalid');
       return res.redirect(302, dest);
+    }
+  });
+
+  /**
+   * Self-serve forgot password. No session required (lockouts are logged out).
+   * Always returns a generic ok payload — never confirms whether the email exists.
+   * Email contains a one-time link (no temp password in mail or chat).
+   */
+  app.post('/api/auth/private/password/forgot', registrationLimiter, async (req, res) => {
+    try {
+      const email = String(req.body?.email || '').trim();
+      if (!email.includes('@')) {
+        return res.status(400).json({ error: 'Enter a valid email address.' });
+      }
+
+      const minted = await mintPasswordResetToken(email);
+      let emailSent = false;
+      if (minted.found && minted.rawToken && minted.user) {
+        const origin =
+          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+          `${req.protocol}://${req.get('host')}`;
+        const resetUrl = buildPasswordResetUrl(origin, minted.rawToken);
+        emailSent = await sendPasswordResetEmail({
+          to: minted.user.email,
+          displayName: minted.user.displayName,
+          resetUrl,
+        });
+        if (!emailSent && !isSmtpConfigured()) {
+          console.info(
+            '[password-reset] SMTP not configured — reset token minted but email not sent for',
+            minted.user.email.replace(/(.{2}).+(@.+)/, '$1…$2')
+          );
+        }
+      }
+
+      return res.json({
+        ok: true,
+        emailSent: Boolean(emailSent),
+        message:
+          'If an account exists for that email, a reset link is on its way. Check your inbox (and spam). The link expires in 1 hour.',
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      // Still avoid account enumeration on unexpected durable-store failures.
+      if (status === 503) {
+        return res.status(503).json({
+          error: error.message || 'Password reset temporarily unavailable.',
+        });
+      }
+      console.error('[password/forgot] Failed:', error);
+      return res.json({
+        ok: true,
+        emailSent: false,
+        message:
+          'If an account exists for that email, a reset link is on its way. Check your inbox (and spam). The link expires in 1 hour.',
+      });
+    }
+  });
+
+  /** Email link landing — validate token, then send member to the set-password desk. */
+  app.get('/api/auth/private/password/reset/confirm', async (req, res) => {
+    const site =
+      (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
+        /\/$/,
+        ''
+      );
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    const checked = await validatePasswordResetToken(token);
+    if (checked.valid === false) {
+      const reason = checked.reason === 'expired' ? 'expired' : 'invalid';
+      return res.redirect(302, `${site}/activate?reset=${reason}`);
+    }
+    return res.redirect(
+      302,
+      `${site}/activate?reset=1&token=${encodeURIComponent(token)}`
+    );
+  });
+
+  /** Set a new password using the one-time email token; opens a private session. */
+  app.post('/api/auth/private/password/reset', registrationLimiter, async (req, res) => {
+    try {
+      const token = String(req.body?.token || '').trim();
+      const newPassword = String(req.body?.newPassword || req.body?.password || '').trim();
+      const user = await completePasswordReset({ token, newPassword });
+      (req.session as any).privateUser = buildClientSessionUser(user);
+      return res.json({ ok: true, user: buildClientSessionUser(user) });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 500;
+      return res.status(status).json({
+        error: error.message || 'Password reset failed.',
+        code: error instanceof PrivateAuthError ? error.code : undefined,
+      });
     }
   });
 
@@ -2344,6 +2441,59 @@ Frame your explanation with advanced professional rigor, making it scannable, st
       return res.status(400).json({ error: 'question required' });
     }
 
+    // Password-reset support: server action, never through the LLM (no secrets in chat).
+    if (isPasswordResetIntent(question)) {
+      const sessionUser = getPrivateSessionUser(req);
+      const sessionEmail = String(sessionUser?.email || '').trim();
+      if (!sessionEmail.includes('@')) {
+        return res.json({
+          answer:
+            "I can send a password reset email, but I don't have your account email on this session. Open Private Login on the home page, tap Forgot password, and enter the email you use to sign in.",
+          newFacts: [],
+        });
+      }
+      try {
+        const minted = await mintPasswordResetToken(sessionEmail);
+        let emailSent = false;
+        if (minted.found && minted.rawToken && minted.user) {
+          const origin =
+            (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
+            `${req.protocol}://${req.get('host')}`;
+          emailSent = await sendPasswordResetEmail({
+            to: minted.user.email,
+            displayName: minted.user.displayName,
+            resetUrl: buildPasswordResetUrl(origin, minted.rawToken),
+          });
+        }
+        if (emailSent) {
+          return res.json({
+            answer:
+              `I just sent a password reset link to ${sessionEmail}. Check your inbox (and spam). The link expires in 1 hour — open it, choose a new password, then sign in. I never put passwords in this chat.`,
+            newFacts: [],
+          });
+        }
+        if (!isSmtpConfigured()) {
+          return res.json({
+            answer:
+              "I'd send your reset email right now, but the server's mail (SMTP) isn't configured yet. Open Private Login → Forgot password once mail is live, or ask Rick from the CEO desk. Meanwhile I won't invent a temporary password.",
+            newFacts: [],
+          });
+        }
+        return res.json({
+          answer:
+            `I tried to email a reset link to ${sessionEmail}, but the send didn't go through. Wait a minute and ask me again, or use Private Login → Forgot password. I won't put a password in this chat.`,
+          newFacts: [],
+        });
+      } catch (resetErr: any) {
+        console.error('[AI Mentor] password reset intent failed:', resetErr);
+        return res.json({
+          answer:
+            "I couldn't start a password reset just now. Open Private Login on the home page and tap Forgot password — or try asking me again in a minute.",
+          newFacts: [],
+        });
+      }
+    }
+
     const displayName = userName && typeof userName === 'string' ? userName.trim().slice(0, 40) : 'friend';
     const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
     const bond = normalizeBondProfile(bondProfile);
@@ -2448,6 +2598,7 @@ PHILOSOPHY: This is not chaos - it is calculated freedom. Structure gives the tr
 You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indicators, though you do not yet have their full text loaded - if asked something highly specific from those, answer from general financial knowledge and clearly note that deeper direct citation from the encyclopedia is coming in a future update. Do not pretend you have read specific encyclopedia entries you have not been given.
 
 Never claim you have access to a user's account data, balances, or positions. You do not have that.
+If they ask to reset a password, the server handles it outside this prompt — never invent a temporary password or paste credentials into chat.
 
 ${CPT_SITE_GUIDE}`;
 
