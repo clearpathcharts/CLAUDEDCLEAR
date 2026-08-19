@@ -338,7 +338,7 @@ function checkStripe(): AutoCheck {
 }
 
 function checkIndicatorBank(): AutoCheck {
-  const n = SUPPORTED_CHART_INDICATORS.length;
+  const n = Number(SUPPORTED_CHART_INDICATORS.length);
   const placeholders = n === 0 || n === 99 || n === 100 || n === 999;
   const ok = n >= 20 && !placeholders;
   return {
