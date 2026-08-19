@@ -131,6 +131,13 @@ import {
   startSiteDoctorScheduler,
 } from './src/server/siteDoctor';
 import {
+  getLatestDailyOpsReport,
+  runDailyOpsSweep,
+  completeDailyOpsItem,
+  recordInvestorAction,
+  startDailyOpsScheduler,
+} from './src/server/dailyOpsService';
+import {
   moderateBodyFields,
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
@@ -2770,6 +2777,76 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
+  app.get('/api/admin/daily-ops', requireFounderOrCatalogAdmin, (_req, res) => {
+    const report = getLatestDailyOpsReport();
+    if (!report) {
+      return res.status(404).json({
+        error: 'NO_REPORT',
+        message: 'No Daily Ops report yet — first sweep runs ~45s after boot, then once per Pacific day.',
+      });
+    }
+    res.json(report);
+  });
+
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await runDailyOpsSweep(true);
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_OPS_FAILED',
+        message: e?.message || 'Daily Ops sweep failed',
+      });
+    }
+  });
+
+  app.post(
+    '/api/admin/daily-ops/complete',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    (req, res) => {
+      try {
+        const itemId = String(req.body?.itemId || '');
+        const done = Boolean(req.body?.done);
+        const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
+        const report = completeDailyOpsItem(itemId, done, note);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_OPS_COMPLETE_FAILED',
+          message: e?.message || 'Could not save checklist item',
+        });
+      }
+    }
+  );
+
+  app.post(
+    '/api/admin/daily-ops/investor',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    (req, res) => {
+      try {
+        const investorId = String(req.body?.investorId || '');
+        const status = String(req.body?.status || '');
+        if (!investorId || !['contacted', 'skipped', 'followup', 'queued'].includes(status)) {
+          return res.status(400).json({ error: 'BAD_PIPELINE', message: 'investorId and status required.' });
+        }
+        const report = recordInvestorAction({
+          investorId,
+          status: status as 'contacted' | 'skipped' | 'followup' | 'queued',
+          notes: typeof req.body?.notes === 'string' ? req.body.notes : undefined,
+          followUpDate: typeof req.body?.followUpDate === 'string' ? req.body.followUpDate : undefined,
+        });
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_OPS_INVESTOR_FAILED',
+          message: e?.message || 'Could not update investor pipeline',
+        });
+      }
+    }
+  );
+
   // Defense in depth: upstream error messages can embed request URLs, which
   // carry the Twelve Data API key. Strip any key before a message leaves the
   // server so it can never surface in the browser UI.
@@ -4144,6 +4221,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startSiteDoctorScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startDailyOpsScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Daily Ops scheduler failed to start:', e?.message || e);
     }
 
     try {

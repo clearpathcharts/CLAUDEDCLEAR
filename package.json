@@ -29,6 +29,7 @@
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
+    "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "update:disposable-domains": "bash scripts/update-disposable-domains.sh",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",

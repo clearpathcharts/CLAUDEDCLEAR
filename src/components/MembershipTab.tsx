@@ -315,10 +315,7 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
     }
   };
 
-  const isPaid =
-    Boolean(membership?.active) ||
-    userProfile?.vipStatus === 'vip_pro' ||
-    Boolean(userProfile?.subscriptionActive);
+  const isPaid = Boolean(membership?.active);
   const onLaunchTrial = membership?.status === 'launch_trial';
   const tierDisplayName = (id: string | null | undefined) => {
     const t = TIERS.find((x) => x.id === id);
