@@ -20,6 +20,7 @@ secrets/
 /data/social-os/
 /data/timeframe-verify/
 /data/site-doctor/
+/data/daily-ops/
 /data/*.log
 
 # Generated at server startup by the SEO asset node -- never commit

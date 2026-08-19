@@ -17,11 +17,17 @@ service cloud.firestore {
         && field.size() >= minLen
         && field.size() <= maxLen;
     }
+    function noClientPrivilegeKeys(data) {
+      return !data.keys().hasAny(['vipStatus', 'subscriptionActive', 'role', 'membership']);
+    }
 
     // User profile + private subcollections
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create, update: if isOwner(userId);
+      allow create: if isOwner(userId) && noClientPrivilegeKeys(request.resource.data);
+      allow update: if isOwner(userId)
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                      .hasAny(['vipStatus', 'subscriptionActive', 'role', 'membership']);
       allow delete: if isOwner(userId) || isFounder();
 
       match /analysis_entries/{entryId} {
@@ -50,7 +56,12 @@ service cloud.firestore {
     // Biography / ProfileHub documents (avatar, cover, bio, socials)
     match /profiles/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && noClientPrivilegeKeys(request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                      .hasAny(['vipStatus', 'subscriptionActive', 'role', 'membership']);
+      allow delete: if request.auth != null && request.auth.uid == userId;
 
       match /socials/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
