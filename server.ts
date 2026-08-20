@@ -144,6 +144,7 @@ import {
   runDailyOpsSweep,
   completeDailyOpsItem,
   recordInvestorAction,
+  pinInvestorResearch,
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
 import {
@@ -2771,9 +2772,11 @@ ${CPT_SITE_GUIDE}`;
     res.json(report);
   });
 
-  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
-      const report = await runDailyOpsSweep(true);
+      const investorId =
+        typeof req.body?.investorId === 'string' ? req.body.investorId.trim() : '';
+      const report = await runDailyOpsSweep(true, investorId || undefined);
       res.json(report);
     } catch (e: any) {
       res.status(500).json({
@@ -2798,6 +2801,30 @@ ${CPT_SITE_GUIDE}`;
         res.status(400).json({
           error: 'DAILY_OPS_COMPLETE_FAILED',
           message: e?.message || 'Could not save checklist item',
+        });
+      }
+    }
+  );
+
+  app.post(
+    '/api/admin/daily-ops/investor/research',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const query = String(req.body?.investorId || req.body?.query || '').trim();
+        if (!query) {
+          return res.status(400).json({
+            error: 'BAD_INVESTOR',
+            message: 'investorId or query required (name or catalog id).',
+          });
+        }
+        const report = await pinInvestorResearch(query);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_OPS_INVESTOR_RESEARCH_FAILED',
+          message: e?.message || 'Could not research that investor',
         });
       }
     }

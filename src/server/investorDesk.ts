@@ -11,7 +11,7 @@ import path from "node:path";
 import { getGroqApiKey } from "./secrets";
 import { pacificDateKey } from "./dailyOpsCatalog";
 
-export type InvestorKind = "vc" | "seed" | "angel" | "accelerator";
+export type InvestorKind = "vc" | "seed" | "angel" | "accelerator" | "ib";
 
 export type InvestorSeed = {
   id: string;
@@ -19,6 +19,10 @@ export type InvestorSeed = {
   kind: InvestorKind;
   website: string;
   wikipediaTitle?: string;
+  /** Public profile for founder outreach — never auto-messaged. */
+  linkedin?: string;
+  /** Founder-only how-to-reach. Not copied into the outbound draft. */
+  outreachHint?: string;
   stage: string;
   thesis: string;
   whyClearPath: string;
@@ -300,7 +304,36 @@ export const INVESTOR_SEED: InvestorSeed[] = [
     whyClearPath: "Angel check + network; accessibility/education story travels.",
     suggestedAngle: "Educational product with a founder who built for his own nervous system.",
   },
+  {
+    id: "baird_augustine",
+    name: "Ryan Baird / Baird Augustine",
+    kind: "ib",
+    website: "https://bairdaugustine.com",
+    linkedin: "https://www.linkedin.com/in/ryandbaird",
+    outreachHint:
+      "LinkedIn ryandbaird or the Schedule a Call form on bairdaugustine.com. This is an investment-bank / placement relationship, not a typical seed-fund email.",
+    stage: "Placement / IB — not a seed-fund check",
+    thesis:
+      "Silicon Valley neo-investment bank (Los Gatos, founded 2023): Corporate-Development-as-a-Service, due-diligence certification, roadshow membership, and institutional fundraising. Public about page lists Ryan Baird as CEO & co-founder (Morgan Stanley PWM on Sand Hill Road, derivatives trading, Flotilla Asset Management in 2010, LYKA raise then sale) and Henry Augustine as co-founder.",
+    whyClearPath:
+      "Ryan’s public bio is trader-then-operator, so a charting + education terminal is legible to him. Baird Augustine is a placement/IB shop that says it connects private companies to institutional capital — useful for intros and a raise process, not as today’s seed check. Homepage stats ($700B capital-network AUM, $20B+ dry powder) are marketing claims we have not verified; do not repeat them in outreach.",
+    suggestedAngle:
+      "Ask for a conversation and possible LP/operator intros, not a fund check. Lead with: educational charting software (not a broker, not advice) with 13 neurodivergent accessibility profiles, built by a trader. Offer a 10-minute product walk-through.",
+  },
 ];
+
+export function findInvestorSeed(query: string): InvestorSeed | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  const exact = INVESTOR_SEED.find((s) => s.id.toLowerCase() === q);
+  if (exact) return exact;
+  return INVESTOR_SEED.find(
+    (s) =>
+      s.name.toLowerCase().includes(q) ||
+      s.id.replace(/_/g, " ").includes(q) ||
+      (s.linkedin && s.linkedin.toLowerCase().includes(q))
+  );
+}
 
 type PipelineFile = { rows: PipelineRow[] };
 
@@ -342,7 +375,12 @@ export function updatePipeline(
   return rows;
 }
 
-function pickInvestor(dateKey: string): InvestorSeed {
+function pickInvestor(dateKey: string, investorId?: string): InvestorSeed {
+  if (investorId) {
+    const named = findInvestorSeed(investorId);
+    if (named) return named;
+    throw new Error(`Unknown investor: ${investorId}`);
+  }
   const pipeline = readPipeline();
   const contacted = new Set(
     pipeline.filter((r) => r.status === "contacted" || r.status === "skipped").map((r) => r.investorId)
@@ -444,9 +482,12 @@ function draftNote(inv: InvestorSeed): string {
   ].join("\n");
 }
 
-export async function researchInvestorForDate(at: Date = new Date()): Promise<InvestorResearch> {
+export async function researchInvestorForDate(
+  at: Date = new Date(),
+  investorId?: string
+): Promise<InvestorResearch> {
   const date = pacificDateKey(at);
-  const investor = pickInvestor(date);
+  const investor = pickInvestor(date, investorId);
   const sources: string[] = ["seed_catalog"];
   const warnings: string[] = [];
   let wikiExtract: string | undefined;
@@ -494,6 +535,11 @@ export async function researchInvestorForDate(at: Date = new Date()): Promise<In
 
   if (sources.length === 1) {
     warnings.push("No live public page retrieved — using only our seed notes. Do not treat this as diligence.");
+  }
+  if (investor.kind === "ib") {
+    warnings.push(
+      "Investment bank / placement shop, not a seed VC. Do not treat homepage AUM or dry-powder figures as verified."
+    );
   }
 
   return {

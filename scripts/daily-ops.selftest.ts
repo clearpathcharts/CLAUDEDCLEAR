@@ -12,7 +12,7 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED } from "../src/server/investorDesk";
+import { INVESTOR_SEED, findInvestorSeed } from "../src/server/investorDesk";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
 import { themeProfiles } from "../src/lib/theme/profiles";
 
@@ -41,6 +41,15 @@ for (const s of INVESTOR_SEED) {
   assert.ok(s.website.startsWith("https://"), `${s.id} website must be https`);
   assert.ok(s.whyClearPath.length > 20, `${s.id} needs a real why`);
 }
+
+const baird = INVESTOR_SEED.find((s) => s.id === "baird_augustine");
+assert.ok(baird, "Ryan Baird / Baird Augustine must be in the catalog");
+assert.equal(baird?.kind, "ib");
+assert.ok(baird?.linkedin?.includes("ryandbaird"));
+assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`));
+
+assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
+assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
 
 assert.ok(SUPPORTED_CHART_INDICATORS.length >= 20);
 assert.equal(Object.keys(themeProfiles).length, 13);
