@@ -318,7 +318,7 @@ export const INVESTOR_SEED: InvestorSeed[] = [
     whyClearPath:
       "Ryan’s public bio is trader-then-operator, so a charting + education terminal is legible to him. Baird Augustine is a placement/IB shop that says it connects private companies to institutional capital — useful for intros and a raise process, not as today’s seed check. Homepage stats ($700B capital-network AUM, $20B+ dry powder) are marketing claims we have not verified; do not repeat them in outreach.",
     suggestedAngle:
-      "Ask for a conversation and possible LP/operator intros, not a fund check. Lead with: educational charting software (not a broker, not advice) with 13 neurodivergent accessibility profiles, built by a trader. Offer a 10-minute product walk-through.",
+      "You're a trader who became an operator — this is educational charting software (not a broker), with 13 neurodivergent accessibility profiles. Looking for a conversation and possible LP/operator intros, not a fund check.",
   },
 ];
 
