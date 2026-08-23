@@ -24,6 +24,7 @@ import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
 import { InstitutionalRegistry } from "./src/core/registry/InstitutionalRegistry";
 import { RealityValidator } from "./src/core/audit/RealityValidator";
+import riverCompilerManifest from "./src/river/compiler/manifest.json";
 import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
 import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
@@ -1874,10 +1875,8 @@ async function startServer() {
   // The River — compiler manifest (controlled self-update channel)
   app.get('/api/river/compiler/manifest', (_req, res) => {
     try {
-      const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
-      const raw = safeReadTextFile(manifestPath);
       res.setHeader('Cache-Control', 'public, max-age=300');
-      res.json(JSON.parse(raw));
+      res.json(riverCompilerManifest);
     } catch (error: any) {
       res.status(500).json({ error: 'Compiler manifest unavailable.', message: error.message });
     }
@@ -2397,7 +2396,7 @@ async function startServer() {
   });
 
   // Reality Enforcement Audit Report endpoint
-  app.get('/api/reality-audit', (req, res) => {
+  app.get('/api/reality-audit', requireFounderOrCatalogAdmin, (req, res) => {
     try {
       const report = RealityValidator.getLatestReport();
       res.json(report);

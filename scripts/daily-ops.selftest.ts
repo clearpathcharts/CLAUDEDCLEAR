@@ -13,6 +13,7 @@ import {
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
 import { INVESTOR_SEED, findInvestorSeed } from "../src/server/investorDesk";
+import { featuredStocks } from "../src/server/crawlCatalog";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
 import { themeProfiles } from "../src/lib/theme/profiles";
 
@@ -50,6 +51,11 @@ assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`))
 
 assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
 assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
+
+const featured = featuredStocks(8);
+const jpm = featured.find((s: { ticker?: string }) => String(s.ticker).toUpperCase() === "JPM");
+assert.ok(jpm, "featured stocks should include JPM");
+assert.match(String(jpm.company), /JPMorgan/i, "JPM must not be a procedural fake issuer");
 
 assert.ok(SUPPORTED_CHART_INDICATORS.length >= 20);
 assert.equal(Object.keys(themeProfiles).length, 13);

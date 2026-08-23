@@ -36,36 +36,117 @@ export function getProceduralStocks(): any[] {
   // Generate 10,000+ stocks
   const list: any[] = [];
   
-  // Apple and Tesla from database
-  list.push({
-    "ticker": "AAPL",
-    "company": "Apple Inc.",
-    "sector": "Technology",
-    "industry": "Consumer Electronics",
-    "exchange": "NASDAQ",
-    "marketCap": "3.2T",
-    "description": "Apple designs consumer electronics, software, and AI ecosystems.",
-    "founded": 1976,
-    "headquarters": "Cupertino, California",
-    "tags": ["AI", "iPhone", "Cloud", "Consumer Tech"],
-    "relatedMarkets": ["Semiconductors", "Consumer Spending", "AI"],
-    "whatMoves": ["Interest Rates", "Consumer Demand", "China Production", "Earnings Reports"]
-  });
-
-  list.push({
-    "ticker": "TSLA",
-    "company": "Tesla Inc.",
-    "sector": "Automotive",
-    "industry": "Electric Vehicles",
-    "exchange": "NASDAQ",
-    "marketCap": "950B",
-    "description": "Tesla develops electric vehicles, robotics, batteries, and AI systems.",
-    "founded": 2003,
-    "headquarters": "Austin, Texas",
-    "tags": ["EV", "AI", "Robotics", "Energy"],
-    "relatedMarkets": ["Lithium", "Auto", "Solar", "Robotics"],
-    "whatMoves": ["EV Demand", "Battery Prices", "Interest Rates", "China Manufacturing"]
-  });
+  // Real majors first so hub pages never show a procedural name on a live ticker.
+  const realMajors: any[] = [
+    {
+      ticker: "AAPL",
+      company: "Apple Inc.",
+      sector: "Technology",
+      industry: "Consumer Electronics",
+      exchange: "NASDAQ",
+      marketCap: "3.2T",
+      description: "Apple designs consumer electronics, software, and AI ecosystems.",
+      founded: 1976,
+      headquarters: "Cupertino, California",
+      tags: ["AI", "iPhone", "Cloud", "Consumer Tech"],
+      relatedMarkets: ["Semiconductors", "Consumer Spending", "AI"],
+      whatMoves: ["Interest Rates", "Consumer Demand", "China Production", "Earnings Reports"],
+    },
+    {
+      ticker: "TSLA",
+      company: "Tesla Inc.",
+      sector: "Automotive",
+      industry: "Electric Vehicles",
+      exchange: "NASDAQ",
+      marketCap: "950B",
+      description: "Tesla develops electric vehicles, robotics, batteries, and AI systems.",
+      founded: 2003,
+      headquarters: "Austin, Texas",
+      tags: ["EV", "AI", "Robotics", "Energy"],
+      relatedMarkets: ["Lithium", "Auto", "Solar", "Robotics"],
+      whatMoves: ["EV Demand", "Battery Prices", "Interest Rates", "China Manufacturing"],
+    },
+    {
+      ticker: "MSFT",
+      company: "Microsoft Corporation",
+      sector: "Technology",
+      industry: "Software Infrastructure",
+      exchange: "NASDAQ",
+      description: "Microsoft builds cloud, productivity, and developer platforms.",
+      founded: 1975,
+      headquarters: "Redmond, Washington",
+      tags: ["Cloud", "Software", "AI"],
+      relatedMarkets: ["Cloud", "Enterprise Software"],
+      whatMoves: ["Azure demand", "Enterprise IT spend", "Interest Rates"],
+    },
+    {
+      ticker: "NVDA",
+      company: "NVIDIA Corporation",
+      sector: "Technology",
+      industry: "Semiconductors",
+      exchange: "NASDAQ",
+      description: "NVIDIA designs GPUs and accelerated-computing platforms.",
+      founded: 1993,
+      headquarters: "Santa Clara, California",
+      tags: ["AI", "Semiconductors", "Data Center"],
+      relatedMarkets: ["Semiconductors", "AI"],
+      whatMoves: ["GPU demand", "Data-center capex", "Export controls"],
+    },
+    {
+      ticker: "AMZN",
+      company: "Amazon.com, Inc.",
+      sector: "Consumer Discretionary",
+      industry: "E-Commerce",
+      exchange: "NASDAQ",
+      description: "Amazon operates e-commerce, logistics, and AWS cloud.",
+      founded: 1994,
+      headquarters: "Seattle, Washington",
+      tags: ["E-Commerce", "Cloud", "Retail"],
+      relatedMarkets: ["Consumer Spending", "Cloud"],
+      whatMoves: ["Consumer Demand", "AWS growth", "Interest Rates"],
+    },
+    {
+      ticker: "GOOGL",
+      company: "Alphabet Inc.",
+      sector: "Communication Services",
+      industry: "Internet Platforms",
+      exchange: "NASDAQ",
+      description: "Alphabet is the parent of Google Search, YouTube, and Google Cloud.",
+      founded: 1998,
+      headquarters: "Mountain View, California",
+      tags: ["Search", "Cloud", "Advertising"],
+      relatedMarkets: ["Digital Ads", "Cloud"],
+      whatMoves: ["Ad spend", "Cloud demand", "Regulation"],
+    },
+    {
+      ticker: "META",
+      company: "Meta Platforms, Inc.",
+      sector: "Communication Services",
+      industry: "Social Media Nets",
+      exchange: "NASDAQ",
+      description: "Meta operates Facebook, Instagram, WhatsApp, and Reality Labs.",
+      founded: 2004,
+      headquarters: "Menlo Park, California",
+      tags: ["Social", "Advertising", "AI"],
+      relatedMarkets: ["Digital Ads", "Consumer Tech"],
+      whatMoves: ["Ad spend", "User engagement", "Regulation"],
+    },
+    {
+      ticker: "JPM",
+      company: "JPMorgan Chase & Co.",
+      sector: "Financials",
+      industry: "Investment Banking",
+      exchange: "NYSE",
+      description: "JPMorgan Chase is a systemically important U.S. bank and global markets firm.",
+      founded: 1799,
+      headquarters: "New York, New York",
+      tags: ["Banking", "Markets", "Credit"],
+      relatedMarkets: ["Interest Rates", "Credit"],
+      whatMoves: ["Fed policy", "Credit spreads", "Trading revenue"],
+    },
+  ];
+  list.push(...realMajors);
+  const reservedTickers = new Set(realMajors.map((s) => s.ticker));
 
   // Procedural stocks up to 10050
   for (let i = 1; i <= 10050; i++) {
@@ -82,8 +163,8 @@ export function getProceduralStocks(): any[] {
     const char4 = r4 > 0.4 ? String.fromCharCode(65 + Math.floor(r4 * 26)) : "";
     const ticker = `${char1}${char2}${char3}${char4}`;
 
-    if (ticker === "AAPL" || ticker === "TSLA") {
-      continue; // Skip duplicates of the master starter stocks
+    if (reservedTickers.has(ticker)) {
+      continue; // Skip duplicates of the reserved real majors
     }
 
     const pName = prefixes[Math.floor(seededRandom(seed + 4) * prefixes.length)];
