@@ -343,15 +343,11 @@ async function checkTwilio(): Promise<AutoCheck> {
 }
 
 function checkStripe(): AutoCheck {
-  const rep = getSecretPresenceReport();
-  const ok = Boolean(rep.STRIPE_SECRET_KEY);
   return {
     id: "auto_stripe",
-    ok,
-    severity: ok ? "info" : "warn",
-    detail: ok
-      ? "STRIPE_SECRET_KEY present — checkout can run; MRR stays N/A until first charge"
-      : "STRIPE_SECRET_KEY missing — catalog CTAs cannot start Checkout",
+    ok: true,
+    severity: "info",
+    detail: "Payments removed — Stripe checkout, webhooks, and cash payouts are disabled",
   };
 }
 

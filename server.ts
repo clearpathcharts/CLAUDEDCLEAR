@@ -105,6 +105,7 @@ import {
   verifyStripeWebhook,
 } from './src/server/stripeService';
 import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
+import { PAYMENTS_DISABLED_MESSAGE, PAYMENTS_ENABLED } from './src/lib/paymentsEnabled';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -441,6 +442,9 @@ async function startServer() {
   // Stripe webhook — MUST be mounted before express.json() because signature
   // verification needs the raw, unparsed request body. Auth = Stripe signature.
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const signature = req.get('stripe-signature') || '';
     if (!signature) {
       return res.status(400).json({ error: 'Missing stripe-signature header.' });
@@ -1271,11 +1275,32 @@ async function startServer() {
   // ——— Stripe membership billing ———
   /** Boolean presence only — never key material. */
   app.get('/api/stripe/config', (_req, res) => {
-    res.json(getStripeConfigReport());
+    if (!PAYMENTS_ENABLED) {
+      return res.json({
+        configured: false,
+        paymentsEnabled: false,
+        webhookConfigured: false,
+        tiers: [],
+        message: PAYMENTS_DISABLED_MESSAGE,
+      });
+    }
+    res.json({ ...getStripeConfigReport(), paymentsEnabled: true });
   });
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.json({
+        ok: true,
+        membership: {
+          active: true,
+          tier: 'free',
+          status: 'payments_disabled',
+          tierRank: 4,
+          features: unlockedFeatures('ultimate'),
+        },
+      });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
@@ -1297,6 +1322,9 @@ async function startServer() {
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
   app.post('/api/stripe/create-checkout-session', registrationLimiter, async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to subscribe.' });
@@ -1410,6 +1438,9 @@ async function startServer() {
 
   /** Member requests a cash payout of accumulated affiliate credit. */
   app.post('/api/affiliate/payout-request', (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to request a payout.' });
@@ -1424,10 +1455,16 @@ async function startServer() {
   });
 
   app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     res.json({ ok: true, payouts: adminListPayouts() });
   });
 
   app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
     const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
     if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
@@ -1599,6 +1636,9 @@ async function startServer() {
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
   app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     try {
       const result = await recoverPrivateAccountsFromStripe({
         dryRun: Boolean(req.body?.dryRun),
@@ -1858,6 +1898,9 @@ async function startServer() {
   });
 
   app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
     const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
     if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
@@ -4274,7 +4317,9 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: no durable store in production (Firestore Admin offline and Stripe unavailable). Register/login/import blocked until STRIPE_SECRET_KEY and/or FIREBASE_SERVICE_ACCOUNT is available.'
           );
         } else if (hasDurablePrivateStore()) {
-          const recovered = await bootRecoverPrivateAccountsFromStripe();
+          const recovered = PAYMENTS_ENABLED
+            ? await bootRecoverPrivateAccountsFromStripe()
+            : { ran: false, skippedReason: 'payments_disabled', created: 0, already: 0, candidates: 0 };
           if (recovered.ran) {
             console.log(
               `[STARTUP] Stripe private-account recovery → created=${recovered.created} already=${recovered.already} candidates=${recovered.candidates}`
