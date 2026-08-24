@@ -249,7 +249,7 @@ export function YwcChartDock({ variant = "wide" }: { variant?: "wide" | "sidebar
     .map((slot, index) => ({ slot, index }))
     .sort((a, b) => a.slot.dockOrder - b.slot.dockOrder);
   const isSidebar = variant === "sidebar";
-  const chartHeight = isSidebar ? 192 : 168;
+  const chartHeight = isSidebar ? 280 : 420;
 
   return (
     <YwcLavaPanel className="space-y-3">
