@@ -30,6 +30,18 @@ assert.ok(CATALOG.some((c) => c.survival), "need a survival subset");
 assert.ok(CATALOG.filter((c) => c.kind === "auto").length >= 8, "auto checks too thin");
 assert.ok(SHIPPED_AS_OF_2026_08_18.length >= 10, "shipped list should record real work");
 assert.ok(OPEN_SITE_WORK.some((w) => w.id === "ava_voice"));
+assert.ok(OPEN_SITE_WORK.some((w) => w.id === "cloud_run_after_merge"));
+assert.ok(OPEN_SITE_WORK.some((w) => w.id === "google_flow_section_guides"));
+assert.equal(
+  OPEN_SITE_WORK.some((w) => w.id === "stripe_first_charge"),
+  false,
+  "payments are hard-off — do not list first Stripe charge as open site work"
+);
+assert.equal(
+  OPEN_SITE_WORK.some((w) => w.id === "github_token"),
+  false,
+  "GITHUB_TOKEN is optional skip, not open site work"
+);
 
 const today = itemsForDay();
 assert.ok(today.some((i) => i.id === "auto_site_doctor"));
