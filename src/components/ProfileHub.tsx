@@ -501,11 +501,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
               </div>
             ))}
           </div>
-        ) : (
-          <div className="flex justify-center gap-3 mt-4 text-[26px]">
-            🥇 🥈 🥉 ☕ 🍦 🥧
-          </div>
-        )}
+        ) : null}
 
         {onNavigate && (
           <button
@@ -516,20 +512,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
             🔥 Affiliate Network
           </button>
         )}
-        <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Followers: 12,450
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Connected Platforms: 11
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Verified Challenges: 7
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Community Rewards Earned: 42
-          </div>
-        </div>
       </div>
 
       {/* MAIN */}

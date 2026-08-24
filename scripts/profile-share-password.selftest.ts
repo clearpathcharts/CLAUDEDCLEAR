@@ -142,6 +142,9 @@ async function main() {
   assert.match(hub, /Save Profile Settings/);
   assert.doesNotMatch(hub, /COMMUNITY INCENTIVES/);
   assert.doesNotMatch(hub, /Coffees Earned/);
+  assert.doesNotMatch(hub, /Community Rewards Earned/);
+  assert.doesNotMatch(hub, /Followers:\s*12,450/);
+  assert.doesNotMatch(hub, /🥇 🥈 🥉 ☕/);
 
   console.log('profile-share-password.selftest: ok');
 }
