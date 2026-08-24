@@ -439,8 +439,3 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
     </section>
   );
 }
-
-/** Back-compat name used by the Y.W.C. catalog route. */
-export function YwcRssCatalog({ onBack }: { onBack: () => void }) {
-  return <YwcPublicationHub onBack={onBack} />;
-}

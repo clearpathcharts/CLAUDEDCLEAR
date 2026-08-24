@@ -1,7 +1,10 @@
 node_modules/
 dist/
+social-os/dist/
 build/
 coverage/
+.vite/
+*.tsbuildinfo
 .DS_Store
 *.log
 .env*
