@@ -31,30 +31,18 @@ export const encyclopediaArticles: Article[] = [
     title: 'This is how the market works as seen by the founders',
     category: 'Founders Perspective',
     difficulty: 'Advanced',
-    summary: 'Structured Pattern Videos created by Nano Banana explaining the underlying market mechanisms and our core philosophy.',
+    summary: 'Pattern-structure lab: liquidity sweeps, fair value gaps, and how ClearPath reads chart geometry — with the interactive Pattern Visualizer, not video players.',
     content: `
-### Disclamer: This is how we see the market.
-It's not strictly right or wrong, but this represents the core structured pattern philosophy under which ClearPath Trader was established. 
+### Disclaimer: This is how we see the market.
+It's not strictly right or wrong, but this represents the core structured pattern philosophy under which ClearPath Trader was established.
 
-The market is an aggregate of liquidity and human behavior. By visualizing the structural patterns below—developed specifically by **Nano Banana**—you can begin to see alternative geometries inside charts that most standard indicators fail to recognize.
+The market is an aggregate of liquidity and human behavior. By studying the structural patterns below, you can begin to see alternative geometries inside charts that most standard indicators fail to recognize.
 
-*(Structured Pattern Videos by Nano Banana)*
+The **Pattern Visualizer** under this article is the live lab: Fair Value Gaps, pin bars, engulfing blocks, and Asian-range liquidity sweeps as labeled diagrams — standard still illustrations, not video feeds.
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 2rem;">
-  <div style="padding: 1rem; border: 1px solid #36E6FF; border-radius: 12px; background: rgba(54, 230, 255, 0.05);">
-    <h4 style="color: #36E6FF; text-transform: uppercase; font-weight: bold; margin-bottom: 0.5rem; font-size: 0.9rem;">Structural Sweep Dynamics</h4>
-    <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; color: #888; border: 1px solid #222;">
-      [ NANO BANANA VIDEO FEED 1 ]<br/>*Offline / Secure Encrypted*
-    </div>
-  </div>
-  <div style="padding: 1rem; border: 1px solid #FF00C8; border-radius: 12px; background: rgba(255, 0, 200, 0.05);">
-    <h4 style="color: #FF00C8; text-transform: uppercase; font-weight: bold; margin-bottom: 0.5rem; font-size: 0.9rem;">Liquidity Void Refill</h4>
-    <div style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; color: #888; border: 1px solid #222;">
-      [ NANO BANANA VIDEO FEED 2 ]<br/>*Offline / Secure Encrypted*
-    </div>
-  </div>
-</div>
-`
+1. **Structural Sweep Dynamics** — price runs stops beyond a swing, then reverses into the range.
+2. **Liquidity Void / Fair Value Gap** — a fast displacement leaves an unfilled zone that later price often revisits.
+`,
   },
   {
     id: 'bid-ask-spread-microstructure',

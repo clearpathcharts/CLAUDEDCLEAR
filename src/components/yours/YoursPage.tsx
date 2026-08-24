@@ -28,7 +28,8 @@ import {
   Lock,
   Unlock,
   TrendingUp,
-  Plus
+  Plus,
+  Library
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import PoliticalHub from '../PoliticalHub';
@@ -40,6 +41,8 @@ import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
+import { YwcMagazineRack } from './YwcMagazineRack';
+import { YwcPublicationHub } from './YwcPublicationHub';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -53,6 +56,15 @@ const COINDESK_FEED = 'https://www.coindesk.com/arc/outboundfeeds/rss/';
 export default function YoursPageHub() {
   // Navigation / Filter control inside the YWC View
   const [selectedFeedCategory, setSelectedFeedCategory] = useState<'all' | 'sports' | 'news' | 'finance' | 'crypto' | 'politics' | 'tech' | 'magazine' | 'relief'>('all');
+  const [hubOpen, setHubOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const ywc = new URLSearchParams(window.location.search).get('ywc');
+      return ywc === 'catalog' || ywc === 'hub';
+    } catch {
+      return false;
+    }
+  });
   
   // Custom states for simulations
   const [xmlPollingInterval, setXmlPollingInterval] = useState<6 | 12>(12);
@@ -402,6 +414,38 @@ export default function YoursPageHub() {
     }
   ]);
 
+  useEffect(() => {
+    try {
+      const ywc = new URLSearchParams(window.location.search).get('ywc');
+      if (ywc === 'catalog' || ywc === 'hub') {
+        setHubOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setYwcCatalogParam = (open: boolean) => {
+    try {
+      const url = new URL(window.location.href);
+      if (open) url.searchParams.set('ywc', 'hub');
+      else url.searchParams.delete('ywc');
+      window.history.replaceState({}, '', url);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const openRssCatalog = () => {
+    setHubOpen(true);
+    setYwcCatalogParam(true);
+  };
+
+  const closeRssCatalog = () => {
+    setHubOpen(false);
+    setYwcCatalogParam(false);
+  };
+
   // Handle simulated auto RSS update triggers (every 6 or 12 hours check)
   const handleSimulateRSSFetch = () => {
     setIsSimulatingFetch(true);
@@ -502,6 +546,45 @@ export default function YoursPageHub() {
   const filteredFeed = selectedFeedCategory === 'all'
     ? newsFeed
     : newsFeed.filter(item => item.category === selectedFeedCategory);
+  const deskFeed = selectedFeedCategory === 'all'
+    ? newsFeed.filter(
+        (item) => item.category === 'relief' || item.id === OPTIMISTIC_INJUSTICE_ARTICLE.id,
+      )
+    : filteredFeed;
+
+  if (hubOpen) {
+    return (
+      <YwcChartWorkspace>
+        <div
+          id="ywc-page-canvas"
+          className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(57,255,20,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+          <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#00E5FF]/12 blur-[140px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-[#39ff14]/10 blur-[130px] rounded-full pointer-events-none" />
+          <YwcLavaPanel rounded="3xl" padding="p-5 md:p-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[9px] font-mono tracking-[0.3em] bg-cyan-400 text-black px-3 py-1 rounded-full font-black uppercase">
+                Hub 2 of 2
+              </span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                RSS feed list — not the live newspaper
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black font-serif italic tracking-tight text-white pt-3">
+              Your World Connected
+              <span className="block text-cyan-300 text-2xl md:text-3xl font-sans not-italic font-black mt-1">
+                Second hub
+              </span>
+            </h1>
+          </YwcLavaPanel>
+          <YwcLavaPanel rounded="3xl" padding="p-4 md:p-6">
+            <YwcPublicationHub onBack={closeRssCatalog} />
+          </YwcLavaPanel>
+        </div>
+      </YwcChartWorkspace>
+    );
+  }
 
   return (
     <YwcChartWorkspace>
@@ -696,6 +779,35 @@ export default function YoursPageHub() {
         <YwcPersonalCharts />
       </YwcLavaPanel>
 
+      <button
+        type="button"
+        onClick={openRssCatalog}
+        className="w-full text-left"
+        aria-label="Open the online publication hub"
+      >
+        <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8" className="group cursor-pointer hover:border-[#39ff14]/40">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] uppercase">
+                <Library className="w-3.5 h-3.5" />
+                <span>Bento — tap to leave the newspaper</span>
+              </div>
+              <h2 className="text-2xl md:text-4xl font-serif italic font-black text-white group-hover:text-cyan-300 transition-colors">
+                SECOND HUB — RSS FEED LIST
+              </h2>
+              <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
+                Leaves the live newspaper so you can scan a numbered publication list — interests,
+                desks, and publisher homepages — without mixing it into headlines. Add titles to your
+                own rack. Clicks still open the publisher so people can subscribe there.
+              </p>
+            </div>
+            <span className="shrink-0 px-5 py-3 rounded-2xl bg-[#39ff14] text-black text-[11px] font-black uppercase tracking-widest">
+              Open feed list
+            </span>
+          </div>
+        </YwcLavaPanel>
+      </button>
+
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -704,8 +816,8 @@ export default function YoursPageHub() {
 
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
-          <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-start justify-between pb-4 border-b-2 border-[#FF4500]/30 gap-3">
+            <div className="flex flex-wrap items-center gap-2 py-1">
               <span className="text-sm font-black text-[#39ff14] uppercase tracking-wider shrink-0 pr-2 border-r border-white/10 hidden sm:inline">
                 SECTIONS:
               </span>
@@ -718,12 +830,15 @@ export default function YoursPageHub() {
                 { id: 'crypto', label: 'CRYPTO' },
                 { id: 'politics', label: 'POLITICAL HUB' },
                 { id: 'tech', label: 'TECH' },
-                { id: 'magazine', label: 'MAGAZINE EDITS' }
+                { id: 'magazine', label: 'MAGAZINE EDITS' },
               ].map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedFeedCategory(cat.id as any)}
-                  className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  type="button"
+                  onClick={() => {
+                    setSelectedFeedCategory(cat.id as typeof selectedFeedCategory);
+                  }}
+                  className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedFeedCategory === cat.id 
                       ? 'bg-[#39ff14] text-black shadow-[0_0_15px_rgba(57,255,20,0.65)] font-extrabold' 
                       : 'text-zinc-400 hover:text-[#39ff14] hover:bg-zinc-900/50'
@@ -738,60 +853,6 @@ export default function YoursPageHub() {
           </div>
           </YwcLavaPanel>
 
-          {selectedFeedCategory === 'all' && (
-            /* 1. HERO TOP STORY (Giant Cinematic layout preview) */
-            <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="min-h-[460px] flex flex-col justify-end animate-fade-in group">
-              <img 
-                src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1600"
-                alt="Global news background matrix" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:scale-102 transition-transform duration-700 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-[#ff0088] text-white text-[9px] font-mono font-black tracking-widest px-3 py-1 rounded">
-                    HERO TOP STORY
-                  </span>
-                  <span className="bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20 text-[9px] font-mono px-2.5 py-1 rounded">
-                    HOT NEWS BENCH
-                  </span>
-                  <span className="text-zinc-400 text-xs font-mono">{lastSyncTime}</span>
-                </div>
-
-                <h2 className="text-3xl md:text-5xl font-serif italic font-black leading-tight text-white max-w-3xl hover:text-cyan-400 transition-colors pointer-events-auto cursor-pointer" onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}>
-                  Global Markets Rally on Cooling Inflation Signs as Yields Retreat
-                </h2>
-
-                <p className="text-zinc-300 font-sans text-xs md:text-sm max-w-2xl leading-relaxed">
-                  Optimism sweeps across global indices after Consumer Price levels print below baseline analyst estimates. Sovereign debt desks release deep bid blocks on longer-duration paper.
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#ff0088] to-[#00f0ff] flex items-center justify-center p-[1px]">
-                      <div className="w-full h-full bg-zinc-950 rounded-full flex items-center justify-center text-[10px] font-bold text-white font-mono">
-                        CP
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-zinc-300 block">ClearPath Markets Node</span>
-                      <span className="text-[9px] font-mono text-zinc-500">Live global transmission</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}
-                    className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ff0088] rounded-xl text-xs font-black tracking-wider transition-all duration-300 cursor-pointer"
-                  >
-                    READ COVERAGE
-                  </button>
-                </div>
-              </div>
-            </YwcLavaPanel>
-          )}
-
           {selectedFeedCategory === 'politics' ? (
             <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
@@ -802,14 +863,42 @@ export default function YoursPageHub() {
             <YwcLavaPanel rounded="3xl"><WorldHub /></YwcLavaPanel>
           ) : (
             <>
-              {/* DYNAMIC STORIES GRID */}
+              {(selectedFeedCategory === 'all' ||
+                selectedFeedCategory === 'sports' ||
+                selectedFeedCategory === 'tech') && (
               <YwcLavaPanel className="space-y-4">
                 <YwcSectionTitle className="text-xs tracking-[0.2em]">
                   Online Newspaper — Live Editorial Grid
                 </YwcSectionTitle>
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-3xl">
+                  Live magazine wires. Headline, photo, and READ ON open the publisher&apos;s website
+                  (Motorsport, MotorTrend, and the rest) so you can subscribe there. ClearPath does not sell these titles.
+                </p>
+                <YwcMagazineRack
+                  hideIntro
+                  showHero={selectedFeedCategory === 'all'}
+                  category={
+                    selectedFeedCategory === 'sports'
+                      ? 'automotive'
+                      : selectedFeedCategory === 'tech'
+                        ? 'tech'
+                        : 'all'
+                  }
+                />
+              </YwcLavaPanel>
+              )}
+
+              {(selectedFeedCategory === 'all' ||
+                selectedFeedCategory === 'relief' ||
+                selectedFeedCategory === 'crypto') &&
+                deskFeed.length > 0 && (
+              <YwcLavaPanel className="space-y-4">
+                <YwcSectionTitle className="text-xs tracking-[0.2em]">
+                  {selectedFeedCategory === 'all' ? 'ClearPath desk' : 'Online Newspaper — Live Editorial Grid'}
+                </YwcSectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AnimatePresence mode="popLayout">
-                  {filteredFeed.map((article) => (
+                  {deskFeed.map((article) => (
                     <motion.article 
                       key={article.id}
                       layout
@@ -875,6 +964,7 @@ export default function YoursPageHub() {
                 </AnimatePresence>
               </div>
               </YwcLavaPanel>
+              )}
 
               {/* AI INSIGHTS & ANALYSES SECTION */}
               <YwcLavaPanel as="section" className="space-y-4">

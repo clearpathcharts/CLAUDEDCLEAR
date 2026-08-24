@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { Maximize2, Minimize2, X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
+import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { PatternScannerPanel } from '../charts/PatternScannerPanel';
@@ -17,11 +18,13 @@ import { resolveMarketAsset } from '../../constants/marketAssets';
 import {
   createEmptyMarketSlots,
   ensureMarketSlotsHaveSymbols,
-  MARKET_CHART_DESKTOP_BODY_HEIGHT,
-  MARKET_CHART_DESKTOP_CANDLE_HEIGHT,
   MARKET_CHART_HEIGHT,
   MARKET_CHART_SLOT_COUNT,
+  MARKET_CHART_DESKTOP_CHROME,
+  desktopMarketPanelHeight,
+  desktopStackedMarketChartHeight,
   mobileStackedMarketChartHeight,
+  normalizeMarketSlotY,
   type ChartLayoutSlot,
 } from '../../constants/chartLayout';
 import { usePersistedLayout } from '../../hooks/useDraggablePosition';
@@ -34,6 +37,17 @@ const timeframesMapping: Record<string, string> = {
 };
 
 const CHART_LAYOUT_STORAGE_KEY = 'cpt-market-terminal-chart-layout';
+const EXPANDED_SLOT_STORAGE_KEY = 'cpt-market-terminal-expanded-slot';
+
+function readExpandedSlot(): number | null {
+  try {
+    const raw = sessionStorage.getItem(EXPANDED_SLOT_STORAGE_KEY);
+    if (raw === '0' || raw === '1' || raw === '2') return Number(raw);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 function loadMarketSlots(): ChartLayoutSlot[] {
   try {
@@ -46,7 +60,10 @@ function loadMarketSlots(): ChartLayoutSlot[] {
           // Horizontal drag offsets shoved charts into the right third of the page —
           // always dock full-width; only vertical stacking uses y.
           x: 0,
-          y: typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
+          y: normalizeMarketSlotY(
+            typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
+            i,
+          ),
         }));
         return ensureMarketSlotsHaveSymbols(slots);
       }
@@ -89,12 +106,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
+  const [expandedSlot, setExpandedSlot] = useState<number | null>(readExpandedSlot);
   const [chartSlots, saveChartSlots] = usePersistedLayout<ChartLayoutSlot[]>(
     CHART_LAYOUT_STORAGE_KEY,
     loadMarketSlots
   );
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
+  const [activeSlot, setActiveSlot] = useState(0);
   /** Phones: stack charts in document flow — absolute drag panels crush Chrome mobile. */
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
@@ -103,6 +122,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const [mobileChartBodyH, setMobileChartBodyH] = useState(() =>
     mobileStackedMarketChartHeight(),
   );
+  const [desktopChartBodyH, setDesktopChartBodyH] = useState(() =>
+    desktopStackedMarketChartHeight(),
+  );
+  const chartStageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -111,6 +134,26 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
   }, []);
+
+  const remeasureDesktopCharts = useCallback(() => {
+    const vh = window.visualViewport?.height || window.innerHeight;
+    const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
+    const reserved = Math.max(56, top + MARKET_CHART_DESKTOP_CHROME);
+    setDesktopChartBodyH(desktopStackedMarketChartHeight(vh, reserved));
+  }, []);
+
+  useEffect(() => {
+    if (isNarrowViewport) return;
+    remeasureDesktopCharts();
+    const raf = window.requestAnimationFrame(remeasureDesktopCharts);
+    window.addEventListener('resize', remeasureDesktopCharts);
+    window.visualViewport?.addEventListener('resize', remeasureDesktopCharts);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener('resize', remeasureDesktopCharts);
+      window.visualViewport?.removeEventListener('resize', remeasureDesktopCharts);
+    };
+  }, [isNarrowViewport, remeasureDesktopCharts]);
 
   useEffect(() => {
     if (!isNarrowViewport) return;
@@ -137,7 +180,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       return prev.map((s, i) => ({
         symbol: s?.symbol ?? null,
         x: 0,
-        y: typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+        y: normalizeMarketSlotY(
+          typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+          i,
+        ),
       }));
     });
   }, [saveChartSlots]);
@@ -150,13 +196,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   const primarySymbol = chartSlots[0]?.symbol ?? null;
   const compareSymbol = chartSlots[1]?.symbol ?? null;
-  const patternPanelSymbol = chartSlots.find((s) => s.symbol)?.symbol ?? primarySymbol ?? '';
+  const focusedSymbol = chartSlots[activeSlot]?.symbol ?? null;
+  const patternPanelSymbol =
+    focusedSymbol || chartSlots.find((s) => s.symbol)?.symbol || primarySymbol || '';
   const patternTimeframe = timeframesMapping[activeTimeframe] || '1h';
-
-  const canvasMinHeight = useMemo(() => {
-    const bottoms = chartSlots.map((s) => s.y + MARKET_CHART_HEIGHT);
-    return Math.max(MARKET_CHART_HEIGHT * MARKET_CHART_SLOT_COUNT, ...bottoms, 0) + 40;
-  }, [chartSlots]);
 
   useEffect(() => {
     return TradingHaltController.subscribe((isHalted, reason) => {
@@ -167,12 +210,40 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   useEffect(() => {
     if (!isBlackoutMode) return;
+    const html = document.documentElement;
+    html.classList.add('blackout-scroll-lock');
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsBlackoutMode(false);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      html.classList.remove('blackout-scroll-lock');
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [isBlackoutMode]);
+
+  useEffect(() => {
+    try {
+      if (expandedSlot === null) sessionStorage.removeItem(EXPANDED_SLOT_STORAGE_KEY);
+      else sessionStorage.setItem(EXPANDED_SLOT_STORAGE_KEY, String(expandedSlot));
+    } catch {
+      /* ignore */
+    }
+  }, [expandedSlot]);
+
+  useEffect(() => {
+    if (expandedSlot === null) return;
+    const html = document.documentElement;
+    html.classList.add('chart-slot-expand-lock');
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedSlot(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      html.classList.remove('chart-slot-expand-lock');
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [expandedSlot]);
 
   const updateSlot = useCallback(
     (index: number, patch: Partial<ChartLayoutSlot>) => {
@@ -209,7 +280,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   if (isBlackoutMode) {
     return createPortal(
       <ChartDrawingSessionProvider>
-        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
+        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col overflow-y-auto overscroll-contain">
           <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
@@ -226,7 +297,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
             </button>
           </div>
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2 pr-3">
             <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0 flex-col gap-2">
               <div className="min-h-0 flex-1">
                 <PatternScannerPanel
@@ -244,6 +315,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               return (
                 <div key={slotIndex} className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
                   <div className="shrink-0 px-3 py-2 border-b border-zinc-900 space-y-2">
+                    <ChartLocalTimeAndPulse
+                      slotId={`blackout-${slotIndex}`}
+                      symbol={sym}
+                    />
                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{label} · {activeTimeframe}</span>
                     <ChartSymbolSearch
                       compact
@@ -257,7 +332,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                       <LightweightCandles
                         profileId={profile.id}
                         isExpanded
-                        height={800}
+                        fillParent
+                        height={desktopChartBodyH}
                         timeframe={patternTimeframe}
                         symbol={sym}
                         theme={chartTheme}
@@ -290,54 +366,54 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       style={{ background: profile.bgTop }}
     >
       <div
-        className="flex items-center justify-between px-3 py-3 border-b glass sm:px-8 sm:py-4"
+        className="flex items-center justify-between gap-3 px-3 py-2 border-b glass sm:px-4"
         style={{
           backgroundColor: 'rgba(0,0,0,0.5)',
           borderColor: `${profile.borderB}22`,
         }}
       >
-        <div className="flex min-w-0 items-center space-x-3 sm:space-x-6">
+        <div className="flex min-w-0 items-center gap-3">
           <BackToDashboard onBack={onBack} color={profile.text} />
-          <div className="h-6 w-[1px] shrink-0" style={{ backgroundColor: `${profile.borderA}22` }} />
-          <h1 className="truncate text-lg font-black tracking-tighter uppercase italic sm:text-2xl" style={{ color: profile.text }}>
+          <div className="h-5 w-px shrink-0" style={{ backgroundColor: `${profile.borderA}22` }} />
+          <h1 className="truncate text-sm font-black tracking-tighter uppercase italic sm:text-lg" style={{ color: profile.text }}>
             MARKET <span style={{ color: profile.borderA }}>TERMINAL</span>
           </h1>
         </div>
-        <p className="text-[10px] font-mono text-zinc-500 max-w-xs text-right hidden md:block">
-          Charts open with Gold, EUR/USD, and DXY so the pattern scanner can run immediately. Search to swap any slot — drag to arrange.
-        </p>
+        <button
+          type="button"
+          onClick={() => setIsBlackoutMode(true)}
+          className="shrink-0 px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-white hover:text-black transition-colors text-[10px] font-black uppercase tracking-widest text-zinc-400 group flex items-center gap-2"
+        >
+          <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
+          BLACKOUT
+        </button>
       </div>
 
-      <div className="flex-1 p-3 sm:p-8" style={{ background: '#000000' }}>
-        <div className="max-w-7xl mx-auto w-full space-y-4 sm:space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-indigo-500/20 pb-4 sm:gap-4 sm:pb-6">
-            <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase italic border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] px-3 py-2 rounded-lg sm:px-4" style={{ color: profile.text }}>
-              CLEAR PATH <span style={{ color: profile.borderA }}>COMMAND TERMINAL</span>
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 sm:space-x-4 sm:gap-0">
-              <button
-                onClick={() => setIsBlackoutMode(true)}
-                className="px-4 py-1 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-white hover:text-black transition-colors text-[10px] font-black uppercase tracking-widest text-zinc-400 group flex items-center gap-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
-                BLACKOUT MODE
-              </button>
-              <div className="hidden sm:block px-4 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                Your charts · drag to move
-              </div>
-            </div>
-          </div>
-
+      <div className="flex-1 p-2" style={{ background: '#000000' }}>
+        <div className="w-full max-w-none space-y-2">
           {onProfileChange && (
-            <NeuroProfilePicker
-              activeProfileId={profile.id}
-              onProfileChange={onProfileChange}
-            />
+            <details
+              className="rounded-xl border border-[#FF1493]/40 bg-black/70"
+              onToggle={() => {
+                window.requestAnimationFrame(remeasureDesktopCharts);
+              }}
+            >
+              <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
+                Neuro-adaptive chart profiles
+              </summary>
+              <div className="px-2 pb-2">
+                <NeuroProfilePicker
+                  compact
+                  activeProfileId={profile.id}
+                  onProfileChange={onProfileChange}
+                />
+              </div>
+            </details>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)] gap-3">
             {/* Desktop: scanner + tools in left rail (tools always UNDER scanner) */}
-            <div className="hidden lg:flex lg:col-span-1 flex-col gap-4 lg:sticky lg:top-8 lg:self-start">
+            <div className="hidden lg:flex flex-col gap-3 lg:sticky lg:top-2 lg:self-start lg:max-h-[calc(100dvh-5rem)] min-h-0">
               <PatternScannerPanel
                 symbol={patternPanelSymbol || '—'}
                 timeframe={patternTimeframe}
@@ -345,7 +421,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <ChartDrawingToolsPanel />
             </div>
 
-            <div className="lg:col-span-3 space-y-6">
+            <div className="min-w-0 space-y-2">
               {/* Mobile: same stack — scanner then tools — never over candles */}
               <div className="lg:hidden space-y-3">
                 <PatternScannerPanel
@@ -371,55 +447,80 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
               </div>
 
-              <ChartIndicatorPicker
-                activeIndicators={activeIndicators}
-                onToggle={toggleIndicator}
-                onClear={() => setActiveIndicators([])}
-              />
-
-              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
-                {isNarrowViewport
-                  ? 'Three chart slots — each fills your phone screen. Swipe/scroll to the next full-size chart.'
-                  : 'Three chart slots — all empty until you search. Grab the handle on any chart and drag it anywhere in this workspace.'}
-              </p>
+              <details
+                className="rounded-xl border border-white/10 bg-black/60"
+                onToggle={() => window.requestAnimationFrame(remeasureDesktopCharts)}
+              >
+                <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#00D9FF]">
+                  Indicators ({activeIndicators.length} on) — tap to open
+                </summary>
+                <div className="px-2 pb-2">
+                  <ChartIndicatorPicker
+                    compact
+                    activeIndicators={activeIndicators}
+                    onToggle={toggleIndicator}
+                    onClear={() => setActiveIndicators([])}
+                  />
+                </div>
+              </details>
 
               <div
                 id="master-chart-stack"
-                className={
-                  isNarrowViewport
-                    ? 'flex w-full flex-col gap-0 snap-y snap-mandatory'
-                    : 'multi-chart-container relative w-full'
-                }
-                style={isNarrowViewport ? undefined : { minHeight: canvasMinHeight }}
+                ref={chartStageRef}
+                className="flex w-full flex-col gap-3"
               >
                 {chartSlots.map((slot, idx) => {
-                  const chartBodyH = isNarrowViewport
-                    ? mobileChartBodyH
-                    : MARKET_CHART_DESKTOP_BODY_HEIGHT;
-                  const candleH = isNarrowViewport
-                    ? mobileChartBodyH
-                    : MARKET_CHART_DESKTOP_CANDLE_HEIGHT;
+                  const slotExpanded = expandedSlot === idx;
+                  const chartBodyH = slotExpanded
+                    ? Math.max(
+                        desktopChartBodyH,
+                        Math.round(
+                          (typeof window !== 'undefined'
+                            ? window.visualViewport?.height || window.innerHeight
+                            : 900) - MARKET_CHART_DESKTOP_CHROME,
+                        ),
+                      )
+                    : isNarrowViewport
+                      ? mobileChartBodyH
+                      : desktopChartBodyH;
+                  const candleH = chartBodyH;
+                  const panelH = slotExpanded || isNarrowViewport
+                    ? undefined
+                    : desktopMarketPanelHeight(desktopChartBodyH);
                   return (
                   <DraggableChartPanel
                     key={`market-chart-${idx}`}
-                    mode={isNarrowViewport ? 'static' : 'absolute'}
-                    draggable={!isNarrowViewport}
+                    mode="static"
+                    draggable={false}
                     width="100%"
-                    zIndex={10 + idx}
-                    position={{ x: 0, y: isNarrowViewport ? 0 : slot.y }}
-                    onPositionChange={(pos) => updateSlot(idx, { x: 0, y: Math.max(0, pos.y) })}
+                    zIndex={slotExpanded ? 160 : 10 + idx}
+                    panelHeight={panelH}
+                    position={{ x: 0, y: 0 }}
+                    onPositionChange={() => {}}
                     className={`glass shadow-2xl ${
-                      isNarrowViewport
-                        ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
-                        : '!h-[500px]'
+                      slotExpanded
+                        ? '!fixed !inset-0 !z-[160] !h-[100dvh] !min-h-[100dvh] !max-h-[100dvh] !w-full !rounded-none'
+                        : isNarrowViewport
+                          ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
+                          : ''
                     }`}
+                    preHeader={
+                      <ChartLocalTimeAndPulse
+                        slotId={`market-${idx}`}
+                        symbol={slot.symbol}
+                        onInteract={() => setActiveSlot(idx)}
+                      />
+                    }
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">
                         <ChartSymbolSearch
                           compact
                           placeholder="Search your chart…"
                           activeSymbol={slot.symbol}
-                          onSubmit={(sym) => updateSlot(idx, { symbol: resolveMarketAsset(sym).value })}
+                          onSubmit={(sym) => {
+                            setActiveSlot(idx);
+                            updateSlot(idx, { symbol: resolveMarketAsset(sym).value });
+                          }}
                         />
                         {slot.symbol && (
                           <button
@@ -431,8 +532,20 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                             <X size={12} />
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSlot(idx);
+                            setExpandedSlot(slotExpanded ? null : idx);
+                          }}
+                          aria-label={slotExpanded ? 'Exit full size' : 'Expand chart to fill the window'}
+                          title={slotExpanded ? 'Exit full size (Esc)' : 'Expand chart to fill the window'}
+                          className="p-1 rounded text-zinc-400 hover:text-emerald-300 transition-colors shrink-0"
+                        >
+                          {slotExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                        </button>
                         <span className="text-[8px] font-mono text-zinc-600 uppercase shrink-0 hidden lg:inline">
-                          {activeTimeframe}
+                          {slotExpanded ? 'FULL SIZE' : activeTimeframe}
                         </span>
                       </div>
                     }
@@ -440,16 +553,19 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     {slot.symbol ? (
                       <div
                         className="relative flex-1 min-h-0"
-                        style={
-                          isNarrowViewport
-                            ? { minHeight: chartBodyH, height: '100%' }
-                            : { height: chartBodyH, minHeight: chartBodyH }
-                        }
+                        onPointerDown={() => setActiveSlot(idx)}
+                        style={{ minHeight: chartBodyH }}
                       >
                         <LightweightCandles
                           profileId={profile.id}
                           height={candleH}
-                          fillParent={isNarrowViewport}
+                          fillParent
+                          isExpanded={slotExpanded}
+                          hideChartToolbar
+                          onExpandToggle={() => {
+                            setActiveSlot(idx);
+                            setExpandedSlot(slotExpanded ? null : idx);
+                          }}
                           timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}
@@ -461,11 +577,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     ) : (
                       <div
                         className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 px-6 text-center border-t border-dashed border-white/10 bg-black/40 sm:px-8"
-                        style={
-                          isNarrowViewport
-                            ? { minHeight: chartBodyH, height: '100%' }
-                            : { height: chartBodyH, minHeight: chartBodyH }
-                        }
+                        style={{ minHeight: chartBodyH }}
                       >
                         <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">
                           Chart slot {idx + 1} — empty

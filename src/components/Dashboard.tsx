@@ -445,9 +445,7 @@ const TabContent = ({
       case 'CpmsApk': return <CpmsApk />;
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
-      case 'EncyclopediaOfIndicators': return gate(
-        'advancedIndicators', 'premium', 'Advanced Indicator Library',
-        ['Institutional indicator suite', 'Advanced chart overlays', 'Premium research'],
+      case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
         </Suspense>
@@ -610,16 +608,19 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         ) {
           return 'Encyclopedia';
         }
+        if (
+          path === '/indicators' ||
+          path === '/encyclopedia-of-indicators' ||
+          path.startsWith('/indicators/')
+        ) {
+          return 'EncyclopediaOfIndicators';
+        }
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
         }
         if (path === '/literacy' || path === '/literacy-os') {
           return 'LiteracyOS';
         }
-        // Encyclopedia of Indicators hidden from site (videos broken) — path routing disabled.
-        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-        //   return 'EncyclopediaOfIndicators';
-        // }
       } catch (e) {
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
@@ -1058,10 +1059,27 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     if (typeof window !== 'undefined') {
       try {
-        const params = new URLSearchParams(window.location.search);
-        params.set('tab', nextTab);
-        const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
-        window.history.pushState({ tabId: nextTab }, '', newUrl);
+        if (nextTab === 'EncyclopediaOfIndicators') {
+          const path = window.location.pathname.toLowerCase();
+          const target = path.startsWith('/indicators/') ? window.location.pathname : '/indicators';
+          window.history.pushState({ tabId: nextTab }, '', target);
+        } else if (nextTab === 'Encyclopedia') {
+          const path = window.location.pathname.toLowerCase();
+          const keep =
+            path === '/encyclopedia' ||
+            path.startsWith('/stocks') ||
+            path.startsWith('/crypto') ||
+            path.startsWith('/forex') ||
+            path.startsWith('/commodities') ||
+            path.startsWith('/companies') ||
+            path.startsWith('/economy');
+          window.history.pushState({ tabId: nextTab }, '', keep ? window.location.pathname : '/encyclopedia');
+        } else {
+          const params = new URLSearchParams(window.location.search);
+          params.set('tab', nextTab);
+          const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
+          window.history.pushState({ tabId: nextTab }, '', newUrl);
+        }
       } catch (e) {
         console.error('Failed to push tab status state:', e);
       }
@@ -1109,15 +1127,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('Encyclopedia');
           return;
         }
+        if (
+          path === '/indicators' ||
+          path === '/encyclopedia-of-indicators' ||
+          path.startsWith('/indicators/')
+        ) {
+          setActiveTab('EncyclopediaOfIndicators');
+          return;
+        }
         if (path === '/education' || path === '/clearpath-education') {
           setActiveTab('ClearPathEducation');
           return;
         }
-        // Encyclopedia of Indicators hidden — path routing disabled.
-        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-        //   setActiveTab('EncyclopediaOfIndicators');
-        //   return;
-        // }
       }
 
       if (event.state && event.state.tabId) {
@@ -1154,11 +1175,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       path === '/encyclopedia'
     ) {
       setActiveTab('Encyclopedia');
+    } else if (
+      path === '/indicators' ||
+      path === '/encyclopedia-of-indicators' ||
+      path.startsWith('/indicators/')
+    ) {
+      setActiveTab('EncyclopediaOfIndicators');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
-    // Encyclopedia of Indicators hidden — path routing disabled.
-    // } else if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-    //   setActiveTab('EncyclopediaOfIndicators');
     } else {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
@@ -1504,19 +1528,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         {/* PERSISTENT Clear NAV */}
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} isFounder={isFounder()} onLogout={handleLogout} lean={isAppShell} />
 
-        {!isAppShell && authUser && !isFounder() ? (
-          <div className="px-4 py-2 bg-amber-950/40 border-b border-amber-500/30 text-amber-100 text-xs sm:text-sm leading-relaxed">
-            CEO Dashboard is hidden because this session is{' '}
-            <span className="font-mono text-amber-200">
-              {authUser.email || userProfile?.email || 'unknown'}
-            </span>
-            . Sign in as <span className="font-mono text-[#00FFFF]">forexanarchy@gmail.com</span> (Google or
-            Private Login), then hard refresh.
-          </div>
-        ) : null}
-
         {/* TOP MARKET TICKER */}
-        {showTicker && !isAppShell && (
+        {showTicker && !isAppShell && activeTab !== 'StrictlyCharts' && (
           <div className="z-40">
             <Suspense fallback={<div className="h-10 bg-black/40  border-b border-white/5" />}>
               <MarketTicker profile={profile} />
@@ -1572,6 +1585,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           className={`flex-1 overflow-visible ${
             activeTab === 'Insights' 
               ? 'p-0 pb-32 md:pb-5' 
+              : activeTab === 'StrictlyCharts'
+                ? 'p-0 pb-20 md:pb-0'
               : layoutDensity === 'compact'
                 ? 'p-1.5 md:p-2.5 pb-20'
                 : layoutDensity === 'cozy'
@@ -1598,9 +1613,15 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   key={`${activeTab}:${selectedLightweightSymbol}`}
                   className="flex flex-col flex-1 h-full w-full min-h-[400px]"
                 >
-                  <div className="px-6 lg:px-12 pb-16 pt-8 flex-1 flex flex-col min-h-[50vh]">
+                  <div className={`flex-1 flex flex-col ${
+                    activeTab === 'StrictlyCharts'
+                      ? 'p-0 min-h-0'
+                      : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
+                  }`}>
                     {activeTab !== 'CeoDashboard' && (
-                      <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
+                      <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
+                        <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
+                      </div>
                     )}
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
@@ -1814,7 +1835,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: 'spring', damping: 22, stiffness: 220 }}
-            className="fixed bottom-4 right-4 z-[90] w-[min(100vw-1.5rem,360px)] h-[min(70vh,480px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
+            className="fixed bottom-3 right-3 z-[90] w-[min(100vw-1rem,min(42rem,92vw))] h-[min(92dvh,900px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
           >
             <Suspense fallback={<TabLoading />}>
               <ClearPathChatroom

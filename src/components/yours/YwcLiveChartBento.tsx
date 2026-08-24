@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo } fro
 import { Activity, ChevronDown, ChevronUp, Pin, X } from "lucide-react";
 import { LightweightCandles } from "../charts/LightweightCandles";
 import { ChartSymbolSearch } from "../charts/ChartSymbolSearch";
+import { ChartLocalTimeAndPulse } from "../charts/ChartLocalTimeAndPulse";
 import { DraggableChartPanel } from "../charts/DraggableChartPanel";
 import { resolveMarketAsset } from "../../constants/marketAssets";
 import {
@@ -165,6 +166,13 @@ function YwcChartSlotPanel({
       position={{ x: 0, y: 0 }}
       onPositionChange={() => {}}
       width="100%"
+      preHeader={
+        <ChartLocalTimeAndPulse
+          compact
+          slotId={`ywc-${slotIndex}`}
+          symbol={slot.symbol}
+        />
+      }
       header={header}
     >
       {body}
@@ -241,7 +249,7 @@ export function YwcChartDock({ variant = "wide" }: { variant?: "wide" | "sidebar
     .map((slot, index) => ({ slot, index }))
     .sort((a, b) => a.slot.dockOrder - b.slot.dockOrder);
   const isSidebar = variant === "sidebar";
-  const chartHeight = isSidebar ? 192 : 168;
+  const chartHeight = isSidebar ? 320 : 520;
 
   return (
     <YwcLavaPanel className="space-y-3">

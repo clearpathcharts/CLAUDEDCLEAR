@@ -449,36 +449,6 @@ export default function CeoDashboard() {
     }
   };
 
-  const runStripeRecover = async (dryRun: boolean) => {
-    setConvertBusy(true);
-    setConvertMsg(null);
-    try {
-      const headers = await founderApiHeaders();
-      const res = await fetch('/api/admin/members/recover-from-stripe', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ dryRun }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.message || body.error || `Stripe recover failed (${res.status})`);
-      if (!body.stripeConfigured) {
-        setConvertMsg('Stripe is not configured on this server — cannot recover from customers.');
-        return;
-      }
-      setConvertMsg(
-        dryRun
-          ? `Stripe dry run: ${body.created} would be created, ${body.already} already have accounts (${body.candidates} customer emails).`
-          : `Stripe recover: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” to copy credentials.`
-      );
-      if (!dryRun) await loadAdminMembers();
-    } catch (err: any) {
-      setConvertMsg(err?.message || 'Stripe recovery failed.');
-    } finally {
-      setConvertBusy(false);
-    }
-  };
-
   const runEmergencySeed = async (dryRun: boolean) => {
     setConvertBusy(true);
     setConvertMsg(null);
@@ -802,8 +772,7 @@ export default function CeoDashboard() {
           <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
           <h1 className="text-xl font-black uppercase tracking-widest text-white">CEO Dashboard Locked</h1>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            This console is restricted to the ClearPath founder account
-            (<span className="font-mono text-[#00FFFF]">{FOUNDER_EMAIL}</span>).
+            This console is restricted. If you landed here by mistake, go back to Markets.
           </p>
         </div>
       </div>
@@ -967,26 +936,9 @@ export default function CeoDashboard() {
               >
                 Show passwords only
               </button>
-              <button
-                type="button"
-                onClick={() => void runStripeRecover(true)}
-                disabled={convertBusy || membersPayload?.meta?.stripeConfigured === false}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-violet-500/40 bg-violet-500/10 text-violet-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-violet-500/20 disabled:opacity-50"
-              >
-                Dry-run Stripe recover
-              </button>
-              <button
-                type="button"
-                onClick={() => void runStripeRecover(false)}
-                disabled={
-                  convertBusy ||
-                  membersPayload?.meta?.writesAllowed === false ||
-                  membersPayload?.meta?.stripeConfigured === false
-                }
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-fuchsia-500/20 disabled:opacity-50"
-              >
-                Recover from Stripe
-              </button>
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                Stripe recover removed — billing is off
+              </p>
               <button
                 type="button"
                 onClick={() => void runEmergencySeed(true)}

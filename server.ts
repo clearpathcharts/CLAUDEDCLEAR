@@ -24,6 +24,7 @@ import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
 import { InstitutionalRegistry } from "./src/core/registry/InstitutionalRegistry";
 import { RealityValidator } from "./src/core/audit/RealityValidator";
+import riverCompilerManifest from "./src/river/compiler/manifest.json";
 import { IndicatorEngine } from "./src/core/engine/IndicatorEngine";
 import { TruthEnforcementEngine } from "./src/truth/TruthEnforcementEngine";
 import { writeTruthAuditRecoveryFile } from "./src/truth/serverAuditBackup";
@@ -79,10 +80,19 @@ import { FOUNDER_EMAIL, isFounderEmail } from './src/lib/founder';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
+  findProfileByUsername,
   readProfile,
   refreshProfileFromDurable,
+  toPublicMemberProfile,
+  usernameTakenByOther,
   writeProfile,
 } from './src/server/profileStore';
+import {
+  isReservedProfileUsername,
+  isValidProfileUsername,
+  normalizeProfileUsername,
+} from './src/lib/profileUsername';
+import { consumePasswordResetToken, mintPasswordResetToken } from './src/server/passwordResetStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -95,6 +105,7 @@ import {
   verifyStripeWebhook,
 } from './src/server/stripeService';
 import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
+import { PAYMENTS_DISABLED_MESSAGE, PAYMENTS_ENABLED } from './src/lib/paymentsEnabled';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -135,8 +146,20 @@ import {
   runDailyOpsSweep,
   completeDailyOpsItem,
   recordInvestorAction,
+  pinInvestorResearch,
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
+import {
+  fireDueSubscriptions,
+  getChartPulseDeliveryStatus,
+  isPulseInterval,
+  listSubscriptionsForOwner,
+  removeSubscription,
+  startChartPulseScheduler,
+  upsertSubscription,
+  type ChartPulseChannel,
+} from './src/server/chartPulseService';
+import { getMagazineRack, translateMagazineStory } from './src/server/magazineRack';
 import {
   moderateBodyFields,
   runContentModerationSelfTest,
@@ -157,12 +180,14 @@ import {
   hasDurablePrivateStore,
   listPrivateMembersSafe,
   lookupPrivateUser,
+  findPrivateUserByEmail,
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
   registerPrivateUser,
   remintIdentityChallenge,
   resetPrivateUserPassword,
   resubmitIdentity,
+  changeOwnPassword,
 } from './src/server/privateAuthService';
 import {
   bootRecoverPrivateAccountsFromStripe,
@@ -189,7 +214,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail } from './src/server/registrationEmail';
+import { sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -428,6 +453,9 @@ async function startServer() {
   // Stripe webhook — MUST be mounted before express.json() because signature
   // verification needs the raw, unparsed request body. Auth = Stripe signature.
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const signature = req.get('stripe-signature') || '';
     if (!signature) {
       return res.status(400).json({ error: 'Missing stripe-signature header.' });
@@ -1074,6 +1102,17 @@ async function startServer() {
     }
   });
 
+  const publicSiteOrigin = (req: express.Request) => {
+    const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
+    if (fromEnv) return fromEnv;
+    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+    if (host && !isProd) {
+      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
+      return `${proto}://${host}`;
+    }
+    return 'https://clearpathtrader.com';
+  };
+
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
     const uid = sessionUser?.uid;
@@ -1089,10 +1128,122 @@ async function startServer() {
       for (const key of allowed) {
         if (req.body?.[key] !== undefined) patch[key] = req.body[key];
       }
+      if (patch.username !== undefined) {
+        const handle = normalizeProfileUsername(String(patch.username || ''));
+        if (!handle) {
+          patch.username = '';
+        } else if (!isValidProfileUsername(handle)) {
+          return res.status(400).json({
+            error: 'Profile URL must be 3–24 characters: letters, numbers, underscore, or hyphen.',
+          });
+        } else if (isReservedProfileUsername(handle)) {
+          return res.status(400).json({ error: 'That profile URL is reserved.' });
+        } else if (usernameTakenByOther(handle, uid)) {
+          return res.status(409).json({ error: 'That profile URL is already taken.' });
+        } else {
+          patch.username = handle;
+        }
+      }
       const profile = writeProfile(uid, patch);
       res.json({ ok: true, profile });
     } catch (err: any) {
       res.status(400).json({ error: err?.message || 'Failed to save profile' });
+    }
+  });
+
+  /** Public member card for /u/:username — never email, uid, or billing. */
+  app.get('/api/profile/public/:username', (req, res) => {
+    const handle = normalizeProfileUsername(String(req.params.username || ''));
+    if (!isValidProfileUsername(handle)) {
+      return res.status(404).json({ error: 'Profile not found.' });
+    }
+    const publicProfile = toPublicMemberProfile(findProfileByUsername(handle));
+    if (!publicProfile) {
+      return res.status(404).json({ error: 'Profile not found.' });
+    }
+    res.json({ ok: true, profile: publicProfile });
+  });
+
+  app.post('/api/auth/private/change-password', registrationLimiter, async (req, res) => {
+    const sessionUser = (req.session as any)?.privateUser;
+    if (!sessionUser?.email || !sessionUser.privateAccount) {
+      return res.status(401).json({ error: 'Sign in to change your password.' });
+    }
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || req.body?.password || '');
+    const confirmPassword = String(req.body?.confirmPassword || '');
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirmation do not match.' });
+    }
+    try {
+      await changeOwnPassword({
+        email: sessionUser.email,
+        currentPassword,
+        newPassword,
+      });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 400;
+      return res.status(status).json({ error: error.message || 'Could not change password.' });
+    }
+    try {
+      delete (req.session as any).privateUser;
+      delete (req.session as any).boardAccess;
+    } catch {
+      /* ignore */
+    }
+    req.session.destroy((err) => {
+      res.clearCookie('cpt.sid', {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProd,
+      });
+      if (err) {
+        return res.status(500).json({ error: 'Password updated, but sign-out did not finish. Close this tab and sign in again.' });
+      }
+      return res.json({ ok: true, signedOut: true });
+    });
+  });
+
+  app.post('/api/auth/private/forgot-password', registrationLimiter, async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    try {
+      if (email.includes('@')) {
+        const user = await findPrivateUserByEmail(email);
+        if (user?.uid && user.email) {
+          const { rawToken } = mintPasswordResetToken({ uid: user.uid, email: user.email });
+          const resetUrl = `${publicSiteOrigin(req)}/reset-password?token=${encodeURIComponent(rawToken)}`;
+          await sendPasswordResetEmail({
+            to: user.email,
+            displayName: user.displayName,
+            resetUrl,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('[password-reset] forgot-password failed silently:', (err as Error)?.message || err);
+    }
+    // Always the same answer — never confirm whether the email has an account.
+    return res.json({ ok: true });
+  });
+
+  app.post('/api/auth/private/reset-password', registrationLimiter, async (req, res) => {
+    const token = String(req.body?.token || '');
+    const newPassword = String(req.body?.newPassword || req.body?.password || '');
+    const confirmPassword = String(req.body?.confirmPassword || '');
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'New password and confirmation do not match.' });
+    }
+    const record = consumePasswordResetToken(token);
+    if (!record) {
+      return res.status(400).json({ error: 'That reset link is invalid or expired. Request a new one from Private Login.' });
+    }
+    try {
+      await resetPrivateUserPassword({ email: record.email, password: newPassword });
+      return res.json({ ok: true });
+    } catch (error: any) {
+      const status = error instanceof PrivateAuthError ? error.status : 400;
+      return res.status(status).json({ error: error.message || 'Could not reset password.' });
     }
   });
 
@@ -1132,14 +1283,114 @@ async function startServer() {
     res.json({ user });
   });
 
+  const chartPulseOwnerKey = (req: express.Request): string => {
+    const user = getPrivateSessionUser(req);
+    if (user?.uid) return `uid:${user.uid}`;
+    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
+  };
+
+  const chartPulseLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many chart pulse changes. Please wait and try again.' },
+  });
+
+  app.get('/api/chart-pulse/status', (req, res) => {
+    const user = getPrivateSessionUser(req);
+    res.json({
+      ...getChartPulseDeliveryStatus(),
+      sessionEmail: user?.email || null,
+      subscriptions: listSubscriptionsForOwner(chartPulseOwnerKey(req)),
+    });
+  });
+
+  app.post('/api/chart-pulse/subscribe', chartPulseLimiter, (req, res) => {
+    const body = req.body || {};
+    const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
+    const sessionEmail = getPrivateSessionUser(req)?.email;
+    const email = typeof body.email === 'string' && body.email.trim() ? body.email : sessionEmail;
+    if (!isPulseInterval(body.intervalMinutes)) {
+      return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
+    }
+    const result = upsertSubscription({
+      ownerKey: chartPulseOwnerKey(req),
+      slotId: String(body.slotId || ''),
+      symbol: String(body.symbol || ''),
+      intervalMinutes: body.intervalMinutes,
+      channel,
+      email,
+      phone: typeof body.phone === 'string' ? body.phone : undefined,
+    });
+    if (result.ok === false) {
+      return res.status(400).json({ error: result.error });
+    }
+    const delivery = getChartPulseDeliveryStatus();
+    const transportReady = channel === 'email' ? delivery.emailConfigured : delivery.smsConfigured;
+    res.json({
+      ok: true,
+      subscription: result.subscription,
+      delivery,
+      message: transportReady
+        ? `Armed. You will get a ${channel === 'sms' ? 'text' : 'email'} every ${body.intervalMinutes} minutes while this host is running.`
+        : channel === 'sms'
+          ? 'Armed on this host, but Twilio SMS is not configured yet (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM). Browser alerts still work while this tab is open.'
+          : 'Armed on this host, but SMTP is not configured yet. Browser alerts still work while this tab is open.',
+    });
+  });
+
+  app.post('/api/chart-pulse/unsubscribe', chartPulseLimiter, (req, res) => {
+    const body = req.body || {};
+    if (!isPulseInterval(body.intervalMinutes)) {
+      return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
+    }
+    const channel: ChartPulseChannel | undefined =
+      body.channel === 'sms' || body.channel === 'email' ? body.channel : undefined;
+    const result = removeSubscription({
+      ownerKey: chartPulseOwnerKey(req),
+      slotId: String(body.slotId || ''),
+      intervalMinutes: body.intervalMinutes,
+      channel,
+    });
+    res.json({ ok: true, removed: result.removed });
+  });
+
+  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, async (_req, res) => {
+    const result = await fireDueSubscriptions();
+    res.json({ ok: true, ...result });
+  });
+
   // ——— Stripe membership billing ———
   /** Boolean presence only — never key material. */
   app.get('/api/stripe/config', (_req, res) => {
-    res.json(getStripeConfigReport());
+    if (!PAYMENTS_ENABLED) {
+      return res.json({
+        configured: false,
+        paymentsEnabled: false,
+        webhookConfigured: false,
+        tiers: [],
+        message: PAYMENTS_DISABLED_MESSAGE,
+      });
+    }
+    res.json({ ...getStripeConfigReport(), paymentsEnabled: true });
   });
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.json({
+        ok: true,
+        membership: {
+          active: true,
+          tier: 'free',
+          status: 'payments_disabled',
+          tierRank: 4,
+          features: unlockedFeatures('ultimate'),
+        },
+      });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
@@ -1161,6 +1412,9 @@ async function startServer() {
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
   app.post('/api/stripe/create-checkout-session', registrationLimiter, async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to subscribe.' });
@@ -1274,6 +1528,9 @@ async function startServer() {
 
   /** Member requests a cash payout of accumulated affiliate credit. */
   app.post('/api/affiliate/payout-request', (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to request a payout.' });
@@ -1288,10 +1545,16 @@ async function startServer() {
   });
 
   app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     res.json({ ok: true, payouts: adminListPayouts() });
   });
 
   app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
     const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
     if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
@@ -1316,7 +1579,7 @@ async function startServer() {
         return res.status(401).json({
           error: 'Unauthorized',
           code: 'NEED_GOOGLE_FOUNDER',
-          message: `Sign into Google on this site as ${FOUNDER_EMAIL}, then click Unlock again.`,
+          message: 'Sign in with the founder Google account on this site, then click Unlock again.',
         });
       }
       if (!ensureAdminApp()) {
@@ -1330,7 +1593,7 @@ async function startServer() {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
-          message: `Wrong Google account (${decoded.email || 'unknown'}). Switch Google to ${FOUNDER_EMAIL}.`,
+          message: 'Wrong Google account. Switch to the founder Google account and try again.',
         });
       }
       const sessionUser = {
@@ -1463,6 +1726,9 @@ async function startServer() {
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
   app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     try {
       const result = await recoverPrivateAccountsFromStripe({
         dryRun: Boolean(req.body?.dryRun),
@@ -1722,6 +1988,9 @@ async function startServer() {
   });
 
   app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
+    if (!PAYMENTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    }
     const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
     const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
     if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
@@ -1739,10 +2008,8 @@ async function startServer() {
   // The River — compiler manifest (controlled self-update channel)
   app.get('/api/river/compiler/manifest', (_req, res) => {
     try {
-      const manifestPath = path.join(process.cwd(), 'src/river/compiler/manifest.json');
-      const raw = safeReadTextFile(manifestPath);
       res.setHeader('Cache-Control', 'public, max-age=300');
-      res.json(JSON.parse(raw));
+      res.json(riverCompilerManifest);
     } catch (error: any) {
       res.status(500).json({ error: 'Compiler manifest unavailable.', message: error.message });
     }
@@ -2262,7 +2529,7 @@ async function startServer() {
   });
 
   // Reality Enforcement Audit Report endpoint
-  app.get('/api/reality-audit', (req, res) => {
+  app.get('/api/reality-audit', requireFounderOrCatalogAdmin, (req, res) => {
     try {
       const report = RealityValidator.getLatestReport();
       res.json(report);
@@ -2637,9 +2904,11 @@ ${CPT_SITE_GUIDE}`;
     res.json(report);
   });
 
-  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
-      const report = await runDailyOpsSweep(true);
+      const investorId =
+        typeof req.body?.investorId === 'string' ? req.body.investorId.trim() : '';
+      const report = await runDailyOpsSweep(true, investorId || undefined);
       res.json(report);
     } catch (e: any) {
       res.status(500).json({
@@ -2664,6 +2933,30 @@ ${CPT_SITE_GUIDE}`;
         res.status(400).json({
           error: 'DAILY_OPS_COMPLETE_FAILED',
           message: e?.message || 'Could not save checklist item',
+        });
+      }
+    }
+  );
+
+  app.post(
+    '/api/admin/daily-ops/investor/research',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const query = String(req.body?.investorId || req.body?.query || '').trim();
+        if (!query) {
+          return res.status(400).json({
+            error: 'BAD_INVESTOR',
+            message: 'investorId or query required (name or catalog id).',
+          });
+        }
+        const report = await pinInvestorResearch(query);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_OPS_INVESTOR_RESEARCH_FAILED',
+          message: e?.message || 'Could not research that investor',
         });
       }
     }
@@ -3215,6 +3508,35 @@ ${CPT_SITE_GUIDE}`;
       res.status(500).json({ error: error?.message || 'Trust scoring failed' });
     }
   });
+
+  app.get('/api/ywc/magazines', async (_req, res) => {
+    try {
+      const rack = await getMagazineRack();
+      res.setHeader('Cache-Control', 'public, max-age=120');
+      res.json(rack);
+    } catch (error) {
+      console.error('[YWC magazine rack]', error);
+      res.status(502).json({ error: 'Magazine wires are quiet right now' });
+    }
+  });
+
+  app.post(
+    '/api/ywc/translate',
+    ...marketLimiter,
+    moderateBodyFields('storyId', 'lang'),
+    async (req, res) => {
+      const storyId = String(req.body?.storyId || '').slice(0, 200);
+      const lang = String(req.body?.lang || '').slice(0, 8);
+      try {
+        const out = await translateMagazineStory(storyId, lang);
+        res.json(out);
+      } catch (error: any) {
+        const message = error?.message || 'Translate failed';
+        const status = message === 'Story not on the rack' ? 404 : 400;
+        res.status(status).json({ error: message });
+      }
+    },
+  );
 
   app.get('/api/rss', async (req, res) => {
     const { url } = req.query;
@@ -3975,6 +4297,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/ui/:profileId',
     '/tools',
     '/tools/position-size',
+    '/u/:username',
+    '/reset-password',
   ];
 
   SEO_PAGES.forEach(pagePath => {
@@ -4079,6 +4403,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
 
     try {
+      startChartPulseScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Chart pulse scheduler failed to start:', e?.message || e);
+    }
+
+    try {
       if (firebaseWebClientConfigured()) {
         console.log('[STARTUP] Firebase web client config present — will inject into HTML');
       } else {
@@ -4112,7 +4442,9 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: no durable store in production (Firestore Admin offline and Stripe unavailable). Register/login/import blocked until STRIPE_SECRET_KEY and/or FIREBASE_SERVICE_ACCOUNT is available.'
           );
         } else if (hasDurablePrivateStore()) {
-          const recovered = await bootRecoverPrivateAccountsFromStripe();
+          const recovered = PAYMENTS_ENABLED
+            ? await bootRecoverPrivateAccountsFromStripe()
+            : { ran: false, skippedReason: 'payments_disabled', created: 0, already: 0, candidates: 0 };
           if (recovered.ran) {
             console.log(
               `[STARTUP] Stripe private-account recovery → created=${recovered.created} already=${recovered.already} candidates=${recovered.candidates}`

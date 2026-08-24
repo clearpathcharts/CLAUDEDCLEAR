@@ -34,6 +34,11 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
+/** Generic transactional send — used by registration mail and chart pulses. */
+export async function sendTransactionalEmail(payload: EmailPayload): Promise<boolean> {
+  return sendEmail(payload);
+}
+
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const mailer = getTransporter();
   const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';
@@ -222,5 +227,40 @@ export async function sendIdentityConfirmEmail(params: {
     </div>
   `;
 
+  return sendEmail({ to: params.to, subject, text, html });
+}
+
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  displayName?: string;
+  resetUrl: string;
+}): Promise<boolean> {
+  const greeting = params.displayName ? `Hi ${params.displayName}` : 'Hello';
+  const subject = 'Reset your ClearPath Private Login password';
+  const text = [
+    greeting + ',',
+    '',
+    'Someone asked to set a new password for this ClearPath Private Login.',
+    '',
+    `Choose a new password here (link expires in 2 hours): ${params.resetUrl}`,
+    '',
+    'If you did not ask for this, ignore this email — your current password still works.',
+    '',
+    '— ClearPath Trader',
+  ].join('\n');
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Reset Password</h1>
+      <p>${greeting},</p>
+      <p>Use this link to choose a new Private Login password. It expires in 2 hours.</p>
+      <p style="margin:28px 0;">
+        <a href="${params.resetUrl}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+          Choose a new password
+        </a>
+      </p>
+      <p style="color:#aaa;font-size:13px;">If you did not request this, ignore the email. Your current password still works.</p>
+      <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
+    </div>
+  `;
   return sendEmail({ to: params.to, subject, text, html });
 }

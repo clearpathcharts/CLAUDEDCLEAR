@@ -6,14 +6,18 @@ import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
 import SocialOsMovedPage from './components/SocialOsMovedPage';
+import PublicMemberProfile from './components/PublicMemberProfile';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+import { ExplainOverlay, getExplainContent } from './components/explain';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
+const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 
@@ -30,6 +34,29 @@ function AuthenticatedShell({
       <Dashboard profile={profile} onProfileChange={onProfileChange} />
       {!isAppShell && <CptBuddyWidget />}
     </div>
+  );
+}
+
+function ExplainDeepLink() {
+  const [id, setId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('explain');
+  });
+  if (!id || !getExplainContent(id)) return null;
+  return (
+    <ExplainOverlay
+      contentId={id}
+      onClose={() => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('explain');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        } catch {
+          /* ignore */
+        }
+        setId(null);
+      }}
+    />
   );
 }
 
@@ -53,6 +80,15 @@ function isEncyclopediaPath(path: string): boolean {
   );
 }
 
+
+function isIndicatorsPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return (
+    p === '/indicators' ||
+    p === '/encyclopedia-of-indicators' ||
+    p.startsWith('/indicators/')
+  );
+}
 
 function isEducationPath(path: string): boolean {
   const p = path.toLowerCase().trim();
@@ -84,6 +120,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
+            <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
             <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
           </div>
         </nav>
@@ -221,6 +258,10 @@ export default function App() {
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {
     // Social OS runs on its own domain — not embedded in clearpathtrader.com
     content = <SocialOsMovedPage />;
+  } else if (currentPath === '/reset-password') {
+    content = <ResetPasswordPage />;
+  } else if (currentPath.toLowerCase().startsWith('/u/')) {
+    content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
   } else if (!user) {
@@ -231,15 +272,19 @@ export default function App() {
           <EncyclopediaLayout />
         </PublicLearnShell>
       );
-    }
-    // Encyclopedia of Indicators SPA hub hidden while videos are broken (component kept).
-    else if (isEducationPath(currentPath)) {
+    } else if (isIndicatorsPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <EncyclopediaOfIndicators />
+        </PublicLearnShell>
+      );
+    } else if (isEducationPath(currentPath)) {
       content = (
         <PublicLearnShell>
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
               else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
             }}
           />
@@ -251,7 +296,7 @@ export default function App() {
           <LiteracyOSPage
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
-              else if (tabId === 'EncyclopediaOfIndicators') { /* hidden while videos broken */ }
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
               else if (tabId === 'ClearPathEducation') window.location.assign('/education');
               else if (tabId === 'Yours') window.location.assign('/');
             }}
@@ -273,6 +318,7 @@ export default function App() {
   return (
     <>
       {content}
+      <ExplainDeepLink />
       {/* Consent-first web/APK update prompt — never silent install */}
       <AppUpdateBanner />
     </>

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { HelmetProvider } from 'react-helmet-async';
 import { FirebaseProvider } from './contexts/FirebaseContext';
 import { A11yPreferencesProvider } from './contexts/A11yPreferencesContext';
+import { ExplainModeProvider } from './components/explain';
 import { BootErrorBoundary, BootReadySignal } from './components/BootErrorBoundary';
 import { markBootFailed } from './lib/bootWatchdog';
 import App from './App.tsx';
@@ -21,10 +22,12 @@ try {
       <BootErrorBoundary>
         <HelmetProvider>
           <A11yPreferencesProvider>
+            <ExplainModeProvider>
             <FirebaseProvider>
               <BootReadySignal />
               <App />
             </FirebaseProvider>
+            </ExplainModeProvider>
           </A11yPreferencesProvider>
         </HelmetProvider>
       </BootErrorBoundary>

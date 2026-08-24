@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { MobileCommandCenter } from "./MobileCommandCenter";
+import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 
 interface ClearNavProps {
   activeTab: string;
@@ -122,13 +123,11 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "ENCYCLOPEDIA OF FINANCE",
     },
 
-    // Encyclopedia of Indicators — hidden from nav while videos are broken.
-    // Component + Dashboard tab id remain; re-add this item when ready.
-    // {
-    //   id: "EncyclopediaOfIndicators",
-    //   icon: BarChart3,
-    //   label: "ENCYCLOPEDIA OF INDICATORS",
-    // },
+    {
+      id: "EncyclopediaOfIndicators",
+      icon: BarChart3,
+      label: "ENCYCLOPEDIA OF INDICATORS",
+    },
 
   ];
   const renderNavButton = (
@@ -195,13 +194,12 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     }
 
     return (
+      <div key={item.id} className="flex items-center gap-1 shrink-0 snap-start">
       <button
-        key={item.id}
         type="button"
         onClick={() => onNavigate(item.id)}
         className={`
           shrink-0
-          snap-start
           flex
           items-center
           gap-2
@@ -245,6 +243,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
         <span>{item.label}</span>
       </button>
+      <ExplainTrigger contentId={item.id} color={explainColorForNavTab(item.id)} />
+      </div>
     );
   };
   return (
@@ -307,6 +307,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             {primaryNavItems.map((item, index) =>
               renderNavButton(item, index, false)
             )}
+            <ExplainModeToggle />
           </div>
         </div>
 

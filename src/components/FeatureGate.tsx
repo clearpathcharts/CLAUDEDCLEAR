@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { TIER_LABEL, type PlanTier } from '../lib/entitlements';
+import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
 
 const TIER_PRICE_LABEL: Record<Exclude<PlanTier, 'basic'>, string> = {
   pro: '$9.95/mo',
@@ -33,7 +34,7 @@ export default function FeatureGate({
   onUpgrade: () => void;
   children: React.ReactNode;
 }) {
-  if (allowed) return <>{children}</>;
+  if (PAYMENTS_ENABLED === false || allowed) return <>{children}</>;
 
   if (loading) {
     return (
