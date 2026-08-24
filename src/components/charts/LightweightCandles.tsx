@@ -35,7 +35,7 @@ import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout"
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-EXPAND";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FIT";
 
 type Candle = {
   time: number;
@@ -303,6 +303,9 @@ export function LightweightCandles({
     const initialHeight = containerRef.current.clientHeight || height || 450;
 
     const chart = createChart(containerRef.current, {
+      // Library ResizeObserver fills the flex parent. Explicit width/height
+      // are fallbacks only if that observer is missing.
+      autoSize: true,
       width: initialWidth,
       height: initialHeight,
       layout: {
@@ -935,6 +938,7 @@ export function LightweightCandles({
 
     const resizeObserver = new ResizeObserver((entries) => {
       if (!active || !entries || entries.length === 0) return;
+      if (chart.autoSizeActive()) return;
       const { width, height: rectHeight } = entries[0].contentRect;
       const next = nextChartPixelSize(width, rectHeight);
       if (!next) return;
@@ -964,7 +968,7 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -973,6 +977,17 @@ export function LightweightCandles({
       handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
     });
   }, [isExpanded, fillParent, chartReadyKey]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      crosshair: {
+        ...defaultTheme.crosshair,
+        mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
+      },
+    });
+  }, [crosshairEnabled, defaultTheme.crosshair, chartReadyKey]);
 
   const handleFocusRecent = () => {
     const chart = chartRef.current;
