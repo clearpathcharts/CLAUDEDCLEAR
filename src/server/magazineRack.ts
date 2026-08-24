@@ -337,6 +337,15 @@ export async function getMagazineRack(force = false): Promise<MagazineRackPayloa
       category: p.category,
     })),
     items: interleave(groups),
+    shelves: MAGAZINE_PUBLICATIONS.map((p, i) => ({
+      publication: {
+        id: p.id,
+        name: p.name,
+        homepage: p.homepage,
+        category: p.category,
+      },
+      items: groups[i] ?? [],
+    })),
   };
   cache = { at: Date.now(), payload };
   return payload;

@@ -7,6 +7,7 @@ const EMPTY: MagazineRackPayload = {
   fetchedAt: '',
   publications: [],
   items: [],
+  shelves: [],
 };
 
 function formatWhen(iso: string): string {
@@ -115,10 +116,13 @@ export function useMagazineRack() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as MagazineRackPayload;
       const items = Array.isArray(data.items) ? data.items : [];
+      const publications = Array.isArray(data.publications) ? data.publications : [];
+      const shelves = Array.isArray(data.shelves) ? data.shelves : [];
       setRack({
         fetchedAt: data.fetchedAt || new Date().toISOString(),
-        publications: Array.isArray(data.publications) ? data.publications : [],
+        publications,
         items,
+        shelves,
       });
       setStatus(items.length ? 'ready' : 'empty');
     } catch {

@@ -28,7 +28,8 @@ import {
   Lock,
   Unlock,
   TrendingUp,
-  Plus
+  Plus,
+  Library
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import PoliticalHub from '../PoliticalHub';
@@ -41,6 +42,7 @@ import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 import { YwcMagazineRack } from './YwcMagazineRack';
+import { YwcRssCatalog } from './YwcRssCatalog';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -53,7 +55,7 @@ const COINDESK_FEED = 'https://www.coindesk.com/arc/outboundfeeds/rss/';
 
 export default function YoursPageHub() {
   // Navigation / Filter control inside the YWC View
-  const [selectedFeedCategory, setSelectedFeedCategory] = useState<'all' | 'sports' | 'news' | 'finance' | 'crypto' | 'politics' | 'tech' | 'magazine' | 'relief'>('all');
+  const [selectedFeedCategory, setSelectedFeedCategory] = useState<'all' | 'sports' | 'news' | 'finance' | 'crypto' | 'politics' | 'tech' | 'magazine' | 'relief' | 'catalog'>('all');
   
   // Custom states for simulations
   const [xmlPollingInterval, setXmlPollingInterval] = useState<6 | 12>(12);
@@ -403,6 +405,35 @@ export default function YoursPageHub() {
     }
   ]);
 
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get('ywc') === 'catalog') {
+        setSelectedFeedCategory('catalog');
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setYwcCatalogParam = (open: boolean) => {
+    try {
+      const url = new URL(window.location.href);
+      if (open) url.searchParams.set('ywc', 'catalog');
+      else url.searchParams.delete('ywc');
+      window.history.replaceState({}, '', url);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const openRssCatalog = () => {
+    setSelectedFeedCategory('catalog');
+    setYwcCatalogParam(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById('ywc-rss-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   // Handle simulated auto RSS update triggers (every 6 or 12 hours check)
   const handleSimulateRSSFetch = () => {
     setIsSimulatingFetch(true);
@@ -703,6 +734,34 @@ export default function YoursPageHub() {
         <YwcPersonalCharts />
       </YwcLavaPanel>
 
+      <button
+        type="button"
+        onClick={openRssCatalog}
+        className="w-full text-left"
+        aria-label="Open the RSS catalog"
+      >
+        <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8" className="group cursor-pointer hover:border-[#39ff14]/40">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] uppercase">
+                <Library className="w-3.5 h-3.5" />
+                <span>Bento — tap to open</span>
+              </div>
+              <h2 className="text-2xl md:text-4xl font-serif italic font-black text-white group-hover:text-cyan-300 transition-colors">
+                RSS CATALOG
+              </h2>
+              <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
+                The full magazine rack on a second Y.W.C. desk. Motorsport, MotorTrend, WIRED, Smithsonian —
+                every headline still leaves ClearPath and opens the publisher so people can subscribe there.
+              </p>
+            </div>
+            <span className="shrink-0 px-5 py-3 rounded-2xl bg-[#39ff14] text-black text-[11px] font-black uppercase tracking-widest">
+              Open catalog
+            </span>
+          </div>
+        </YwcLavaPanel>
+      </button>
+
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -725,11 +784,16 @@ export default function YoursPageHub() {
                 { id: 'crypto', label: 'CRYPTO' },
                 { id: 'politics', label: 'POLITICAL HUB' },
                 { id: 'tech', label: 'TECH' },
-                { id: 'magazine', label: 'MAGAZINE EDITS' }
+                { id: 'magazine', label: 'MAGAZINE EDITS' },
+                { id: 'catalog', label: 'RSS CATALOG' }
               ].map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedFeedCategory(cat.id as any)}
+                  type="button"
+                  onClick={() => {
+                    setSelectedFeedCategory(cat.id as typeof selectedFeedCategory);
+                    setYwcCatalogParam(cat.id === 'catalog');
+                  }}
                   className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     selectedFeedCategory === cat.id 
                       ? 'bg-[#39ff14] text-black shadow-[0_0_15px_rgba(57,255,20,0.65)] font-extrabold' 
@@ -745,7 +809,16 @@ export default function YoursPageHub() {
           </div>
           </YwcLavaPanel>
 
-          {selectedFeedCategory === 'politics' ? (
+          {selectedFeedCategory === 'catalog' ? (
+            <YwcLavaPanel id="ywc-rss-catalog" rounded="3xl">
+              <YwcRssCatalog
+                onBack={() => {
+                  setSelectedFeedCategory('all');
+                  setYwcCatalogParam(false);
+                }}
+              />
+            </YwcLavaPanel>
+          ) : selectedFeedCategory === 'politics' ? (
             <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
             <YwcLavaPanel rounded="3xl"><GlobalFinance /></YwcLavaPanel>

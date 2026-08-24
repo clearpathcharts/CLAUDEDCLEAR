@@ -13,13 +13,21 @@ export type MagazineStory = {
   articleUrl: string;
 };
 
+export type MagazinePublicationCard = {
+  id: string;
+  name: string;
+  homepage: string;
+  category: MagazineCategory;
+};
+
+export type MagazineShelf = {
+  publication: MagazinePublicationCard;
+  items: MagazineStory[];
+};
+
 export type MagazineRackPayload = {
   fetchedAt: string;
-  publications: Array<{
-    id: string;
-    name: string;
-    homepage: string;
-    category: MagazineCategory;
-  }>;
+  publications: MagazinePublicationCard[];
   items: MagazineStory[];
+  shelves: MagazineShelf[];
 };
