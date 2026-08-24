@@ -154,7 +154,11 @@ function CatalogNav({
           </button>
         ))}
       </div>
-      <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{bandNote}</p>
+      <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+        {desk === 'everyone'
+          ? bandNote
+          : 'Opt-in desk — you opened this. ClearPath does not sort people into it.'}
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {agents.map((a) => (
           <button
@@ -313,10 +317,12 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
               Two matching racks
             </h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              35 interest desks per life stage, plus 15 gay-men desks and 15 lesbian/queer-women desks.
-              Each desk opens the publisher&apos;s own site so people can subscribe there. Dating apps and
-              official health pages are bookmarks — not scraped feeds, and not medical advice. ClearPath
-              does not sell these titles.
+              35 interest desks per life stage, plus opt-in 15-desk maps you choose: gay men,
+              lesbian/queer women, Republican-leaning men, and Republican-leaning women. You add
+              those tags to your own rack — ClearPath does not guess orientation or politics. Each
+              card opens the publisher so people can subscribe there. Dating apps and official health
+              pages are bookmarks, not scraped feeds, and not medical advice. ClearPath does not sell
+              these titles.
             </p>
           </div>
           <button

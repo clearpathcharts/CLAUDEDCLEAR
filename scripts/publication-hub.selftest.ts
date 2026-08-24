@@ -19,9 +19,14 @@ import {
   GAY_MEN_AGENTS,
   LATER_LIFE_AGENTS,
   QUEER_WOMEN_AGENTS,
+  REPUBLICAN_MEN_AGENTS,
+  REPUBLICAN_WOMEN_AGENTS,
   agentsFor,
   allCatalogSources,
   isFetchableKind,
+  isOptInDesk,
+  orientationForDesk,
+  politicsForDesk,
 } from '../src/lib/ywc/interestCatalog.ts';
 
 assert.equal(parseFavoriteHomepage('https://www.out.com/'), 'https://www.out.com/');
@@ -116,10 +121,23 @@ assert.equal(EARLY_ADULT_AGENTS.length, 35);
 assert.equal(LATER_LIFE_AGENTS.length, 35);
 assert.equal(GAY_MEN_AGENTS.length, 15);
 assert.equal(QUEER_WOMEN_AGENTS.length, 15);
+assert.equal(REPUBLICAN_MEN_AGENTS.length, 15);
+assert.equal(REPUBLICAN_WOMEN_AGENTS.length, 15);
 assert.equal(agentsFor('19-22', 'everyone').length, 35);
 assert.equal(agentsFor('58-80', 'everyone').length, 35);
 assert.equal(agentsFor('19-22', 'gay-men').length, 15);
 assert.equal(agentsFor('58-80', 'queer-women').length, 15);
+assert.equal(agentsFor('30-38', 'republican-men').length, 15);
+assert.equal(agentsFor('58-80', 'republican-women').length, 15);
+assert.equal(isOptInDesk('everyone'), false);
+assert.equal(isOptInDesk('republican-men'), true);
+assert.equal(isOptInDesk('gay-men'), true);
+assert.equal(orientationForDesk('republican-men'), 'general');
+assert.equal(orientationForDesk('queer-women'), 'lgbtq');
+assert.equal(politicsForDesk('republican-women'), 'right');
+assert.equal(politicsForDesk('everyone'), 'nonpartisan');
+assert.ok(REPUBLICAN_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('foxnews.com'))));
+assert.ok(REPUBLICAN_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('eviemagazine.com'))));
 
 const catalog = allCatalogSources();
 assert.ok(catalog.length > 40);
