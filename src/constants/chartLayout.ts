@@ -25,13 +25,16 @@ export const MARKET_CHART_SLOT_COUNT = 3;
 export const YWC_CHART_SLOT_COUNT = 4;
 export const YWC_LAYOUT_STORAGE_VERSION = 3;
 
-/** Stacking pitch for Market Terminal slots (pulse + search + candle body). */
-export const MARKET_CHART_HEIGHT = 640;
+/** Stacking pitch fallback; live desktop panels use desktopMarketPanelHeight(). */
+export const MARKET_CHART_HEIGHT = 1000;
 /** Older pulse layout used 576px panels — remap saved y so slots do not overlap. */
 export const MARKET_CHART_HEIGHT_LEGACY = 576;
-/** Desktop in-panel candle body — never shrink this when the pulse bar wraps. */
-export const MARKET_CHART_DESKTOP_BODY_HEIGHT = 520;
-export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = 508;
+/** Pulse + search chrome above the candle plot. */
+export const MARKET_CHART_DESKTOP_CHROME = 96;
+/** Desktop candle body — a full window of candles, never a 520px thumbnail. */
+export const MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT = 860;
+export const MARKET_CHART_DESKTOP_BODY_HEIGHT = MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT;
+export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT - 12;
 /** LOAD / search row plus compact local-time + pulse bar on a stacked phone panel. */
 export const MARKET_CHART_MOBILE_SLOT_HEADER = 72;
 /** Floor so short phones still get a usable plot, not a thumbnail. */
@@ -55,6 +58,21 @@ export function mobileStackedMarketChartHeight(
   );
 }
 
+/** Desktop Market Terminal: each slot is a full window of candles (or larger). */
+export function desktopStackedMarketChartHeight(
+  viewportHeight =
+    (typeof window !== "undefined" && window.visualViewport?.height) ||
+    (typeof window !== "undefined" ? window.innerHeight : 900),
+): number {
+  const h = Number.isFinite(viewportHeight) && viewportHeight > 0 ? viewportHeight : 900;
+  // Subtract only the persistent top nav; panel chrome sits above this body.
+  return Math.round(Math.max(MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT, h - 56));
+}
+
+export function desktopMarketPanelHeight(bodyHeight = desktopStackedMarketChartHeight()): number {
+  return bodyHeight + MARKET_CHART_DESKTOP_CHROME;
+}
+
 /** Default symbols so pattern scanner + charts load on first open (neurodivergent-friendly). */
 export const DEFAULT_MARKET_SYMBOLS = ["XAUUSD", "EURUSD", "DXY"] as const;
 
@@ -71,9 +89,14 @@ export function createEmptyMarketSlots(): ChartLayoutSlot[] {
 }
 
 /** Snap saved y from the old 576px grid onto the current stacking pitch. */
-export function normalizeMarketSlotY(y: number, index: number): number {
-  if (Math.abs(y - index * MARKET_CHART_HEIGHT_LEGACY) < 12) {
-    return index * MARKET_CHART_HEIGHT;
+export function normalizeMarketSlotY(
+  y: number,
+  index: number,
+  pitch: number = MARKET_CHART_HEIGHT,
+): number {
+  const legacyPitches = [480, 520, 576, 640, 760, 880, MARKET_CHART_HEIGHT_LEGACY, pitch];
+  for (const old of legacyPitches) {
+    if (Math.abs(y - index * old) < 16) return index * pitch;
   }
   return Math.max(0, y);
 }
