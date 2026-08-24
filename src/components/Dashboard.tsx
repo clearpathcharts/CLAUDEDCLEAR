@@ -79,6 +79,7 @@ import { auth } from '../firebase';
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 import FeatureGate from './FeatureGate';
+import SectionGuideOffer from './sectionGuides/SectionGuideOffer';
 import { useMembership } from '../hooks/useMembership';
 import { useAppShell } from '../contexts/AppShellContext';
 import { isAppShell as detectAppShell } from '../lib/appShell';
@@ -1617,6 +1618,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                       ? 'p-0 min-h-0'
                       : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
                   }`}>
+                    {activeTab !== 'CeoDashboard' && (
+                      <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
+                        <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
+                      </div>
+                    )}
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
