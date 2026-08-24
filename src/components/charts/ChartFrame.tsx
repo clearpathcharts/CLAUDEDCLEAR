@@ -4,6 +4,7 @@
 import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { ChartLocalTimeAndPulse } from "./ChartLocalTimeAndPulse";
 import {
   themeProfiles,
   type ThemeProfileId,
@@ -69,6 +70,10 @@ export function ChartFrame({
               </button>
             )}
           </div>
+        </div>
+
+        <div className="mt-3">
+          <ChartLocalTimeAndPulse slotId={`frame-${title}`} symbol={title} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">

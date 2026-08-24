@@ -122,6 +122,9 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     SQL_HOST: Boolean(clean(process.env.SQL_HOST)),
     FIREBASE_SERVICE_ACCOUNT: Boolean(clean(process.env.FIREBASE_SERVICE_ACCOUNT)),
     VITE_FIREBASE_API_KEY: Boolean(clean(process.env.VITE_FIREBASE_API_KEY) || clean(process.env.FIREBASE_WEB_API_KEY)),
+    SMTP_HOST: Boolean(clean(process.env.SMTP_HOST)),
+    TWILIO_ACCOUNT_SID: Boolean(clean(process.env.TWILIO_ACCOUNT_SID)),
+    TWILIO_FROM: Boolean(clean(process.env.TWILIO_FROM) || clean(process.env.TWILIO_PHONE_NUMBER)),
   };
 }
 

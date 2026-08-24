@@ -21,6 +21,7 @@ secrets/
 /data/timeframe-verify/
 /data/site-doctor/
 /data/daily-ops/
+/data/chart-pulse/
 /data/*.log
 
 # Generated at server startup by the SEO asset node -- never commit

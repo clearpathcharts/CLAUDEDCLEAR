@@ -25,12 +25,12 @@ export const MARKET_CHART_SLOT_COUNT = 3;
 export const YWC_CHART_SLOT_COUNT = 4;
 export const YWC_LAYOUT_STORAGE_VERSION = 3;
 
-export const MARKET_CHART_HEIGHT = 500;
-/** Desktop in-panel candle body (below the slot header). */
+export const MARKET_CHART_HEIGHT = 576;
+/** Desktop in-panel candle body (below the slot header + local-time pulse bar). */
 export const MARKET_CHART_DESKTOP_BODY_HEIGHT = 452;
 export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = 440;
-/** Approx height of the LOAD / search row on a stacked phone panel. */
-export const MARKET_CHART_MOBILE_SLOT_HEADER = 48;
+/** LOAD / search row plus local-time + pulse bar on a stacked phone panel. */
+export const MARKET_CHART_MOBILE_SLOT_HEADER = 124;
 /** Floor so short phones still get a usable plot, not a thumbnail. */
 export const MARKET_CHART_MOBILE_MIN_BODY_HEIGHT = 640;
 export const YWC_CHART_WIDTH = 280;

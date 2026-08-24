@@ -150,6 +150,16 @@ import {
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
 import {
+  fireDueSubscriptions,
+  getChartPulseDeliveryStatus,
+  isPulseInterval,
+  listSubscriptionsForOwner,
+  removeSubscription,
+  startChartPulseScheduler,
+  upsertSubscription,
+  type ChartPulseChannel,
+} from './src/server/chartPulseService';
+import {
   moderateBodyFields,
   runContentModerationSelfTest,
 } from './src/server/contentModeration';
@@ -1270,6 +1280,85 @@ async function startServer() {
       /* ignore */
     }
     res.json({ user });
+  });
+
+  const chartPulseOwnerKey = (req: express.Request): string => {
+    const user = getPrivateSessionUser(req);
+    if (user?.uid) return `uid:${user.uid}`;
+    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
+    return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
+  };
+
+  const chartPulseLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many chart pulse changes. Please wait and try again.' },
+  });
+
+  app.get('/api/chart-pulse/status', (req, res) => {
+    const user = getPrivateSessionUser(req);
+    res.json({
+      ...getChartPulseDeliveryStatus(),
+      sessionEmail: user?.email || null,
+      subscriptions: listSubscriptionsForOwner(chartPulseOwnerKey(req)),
+    });
+  });
+
+  app.post('/api/chart-pulse/subscribe', chartPulseLimiter, (req, res) => {
+    const body = req.body || {};
+    const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
+    const sessionEmail = getPrivateSessionUser(req)?.email;
+    const email = typeof body.email === 'string' && body.email.trim() ? body.email : sessionEmail;
+    if (!isPulseInterval(body.intervalMinutes)) {
+      return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
+    }
+    const result = upsertSubscription({
+      ownerKey: chartPulseOwnerKey(req),
+      slotId: String(body.slotId || ''),
+      symbol: String(body.symbol || ''),
+      intervalMinutes: body.intervalMinutes,
+      channel,
+      email,
+      phone: typeof body.phone === 'string' ? body.phone : undefined,
+    });
+    if (result.ok === false) {
+      return res.status(400).json({ error: result.error });
+    }
+    const delivery = getChartPulseDeliveryStatus();
+    const transportReady = channel === 'email' ? delivery.emailConfigured : delivery.smsConfigured;
+    res.json({
+      ok: true,
+      subscription: result.subscription,
+      delivery,
+      message: transportReady
+        ? `Armed. You will get a ${channel === 'sms' ? 'text' : 'email'} every ${body.intervalMinutes} minutes while this host is running.`
+        : channel === 'sms'
+          ? 'Armed on this host, but Twilio SMS is not configured yet (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM). Browser alerts still work while this tab is open.'
+          : 'Armed on this host, but SMTP is not configured yet. Browser alerts still work while this tab is open.',
+    });
+  });
+
+  app.post('/api/chart-pulse/unsubscribe', chartPulseLimiter, (req, res) => {
+    const body = req.body || {};
+    if (!isPulseInterval(body.intervalMinutes)) {
+      return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
+    }
+    const channel: ChartPulseChannel | undefined =
+      body.channel === 'sms' || body.channel === 'email' ? body.channel : undefined;
+    const result = removeSubscription({
+      ownerKey: chartPulseOwnerKey(req),
+      slotId: String(body.slotId || ''),
+      intervalMinutes: body.intervalMinutes,
+      channel,
+    });
+    res.json({ ok: true, removed: result.removed });
+  });
+
+  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, async (_req, res) => {
+    const result = await fireDueSubscriptions();
+    res.json({ ok: true, ...result });
   });
 
   // ——— Stripe membership billing ———
@@ -4281,6 +4370,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startDailyOpsScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Daily Ops scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startChartPulseScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Chart pulse scheduler failed to start:', e?.message || e);
     }
 
     try {
