@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
@@ -20,6 +20,7 @@ import {
   ensureMarketSlotsHaveSymbols,
   MARKET_CHART_HEIGHT,
   MARKET_CHART_SLOT_COUNT,
+  MARKET_CHART_DESKTOP_CHROME,
   desktopMarketPanelHeight,
   desktopStackedMarketChartHeight,
   mobileStackedMarketChartHeight,
@@ -112,6 +113,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const [desktopChartBodyH, setDesktopChartBodyH] = useState(() =>
     desktopStackedMarketChartHeight(),
   );
+  const chartStageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -123,11 +125,19 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   useEffect(() => {
     if (isNarrowViewport) return;
-    const syncHeight = () => setDesktopChartBodyH(desktopStackedMarketChartHeight());
+    const syncHeight = () => {
+      const vh = window.visualViewport?.height || window.innerHeight;
+      const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
+      // Fill the hole from the first chart to the bottom of the window.
+      const reserved = Math.max(56, top + MARKET_CHART_DESKTOP_CHROME);
+      setDesktopChartBodyH(desktopStackedMarketChartHeight(vh, reserved));
+    };
     syncHeight();
+    const raf = window.requestAnimationFrame(syncHeight);
     window.addEventListener('resize', syncHeight);
     window.visualViewport?.addEventListener('resize', syncHeight);
     return () => {
+      window.cancelAnimationFrame(raf);
       window.removeEventListener('resize', syncHeight);
       window.visualViewport?.removeEventListener('resize', syncHeight);
     };
@@ -316,54 +326,58 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       style={{ background: profile.bgTop }}
     >
       <div
-        className="flex items-center justify-between px-3 py-3 border-b glass sm:px-8 sm:py-4"
+        className="flex items-center justify-between gap-3 px-3 py-2 border-b glass sm:px-4"
         style={{
           backgroundColor: 'rgba(0,0,0,0.5)',
           borderColor: `${profile.borderB}22`,
         }}
       >
-        <div className="flex min-w-0 items-center space-x-3 sm:space-x-6">
+        <div className="flex min-w-0 items-center gap-3">
           <BackToDashboard onBack={onBack} color={profile.text} />
-          <div className="h-6 w-[1px] shrink-0" style={{ backgroundColor: `${profile.borderA}22` }} />
-          <h1 className="truncate text-lg font-black tracking-tighter uppercase italic sm:text-2xl" style={{ color: profile.text }}>
+          <div className="h-5 w-px shrink-0" style={{ backgroundColor: `${profile.borderA}22` }} />
+          <h1 className="truncate text-sm font-black tracking-tighter uppercase italic sm:text-lg" style={{ color: profile.text }}>
             MARKET <span style={{ color: profile.borderA }}>TERMINAL</span>
           </h1>
         </div>
-        <p className="text-[10px] font-mono text-zinc-500 max-w-xs text-right hidden md:block">
-          Charts open with Gold, EUR/USD, and DXY so the pattern scanner can run immediately. Search to swap any slot — drag to arrange.
-        </p>
+        <button
+          type="button"
+          onClick={() => setIsBlackoutMode(true)}
+          className="shrink-0 px-3 py-1 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-white hover:text-black transition-colors text-[10px] font-black uppercase tracking-widest text-zinc-400 group flex items-center gap-2"
+        >
+          <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
+          BLACKOUT
+        </button>
       </div>
 
-      <div className="flex-1 p-2 sm:p-3" style={{ background: '#000000' }}>
-        <div className="w-full max-w-none space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-indigo-500/20 pb-4 sm:gap-4 sm:pb-6">
-            <h1 className="text-xl sm:text-3xl font-black tracking-tighter uppercase italic border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] px-3 py-2 rounded-lg sm:px-4" style={{ color: profile.text }}>
-              CLEAR PATH <span style={{ color: profile.borderA }}>COMMAND TERMINAL</span>
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 sm:space-x-4 sm:gap-0">
-              <button
-                onClick={() => setIsBlackoutMode(true)}
-                className="px-4 py-1 rounded-full border border-zinc-700 bg-zinc-900 hover:bg-white hover:text-black transition-colors text-[10px] font-black uppercase tracking-widest text-zinc-400 group flex items-center gap-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
-                BLACKOUT MODE
-              </button>
-              <div className="hidden sm:block px-4 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                Your charts · drag to move
-              </div>
-            </div>
-          </div>
-
+      <div className="flex-1 p-2" style={{ background: '#000000' }}>
+        <div className="w-full max-w-none space-y-2">
           {onProfileChange && (
-            <NeuroProfilePicker
-              activeProfileId={profile.id}
-              onProfileChange={onProfileChange}
-            />
+            <details
+              className="rounded-xl border border-[#FF1493]/40 bg-black/70"
+              onToggle={() => {
+                const vh = window.visualViewport?.height || window.innerHeight;
+                const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
+                setDesktopChartBodyH(
+                  desktopStackedMarketChartHeight(vh, Math.max(56, top + MARKET_CHART_DESKTOP_CHROME)),
+                );
+              }}
+            >
+              <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
+                Neuro-adaptive chart profiles
+              </summary>
+              <div className="px-2 pb-2">
+                <NeuroProfilePicker
+                  compact
+                  activeProfileId={profile.id}
+                  onProfileChange={onProfileChange}
+                />
+              </div>
+            </details>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)] gap-4 lg:gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)] gap-3">
             {/* Desktop: scanner + tools in left rail (tools always UNDER scanner) */}
-            <div className="hidden lg:flex flex-col gap-4 lg:sticky lg:top-2 lg:self-start lg:max-h-[calc(100dvh-4rem)] min-h-0">
+            <div className="hidden lg:flex flex-col gap-3 lg:sticky lg:top-2 lg:self-start lg:max-h-[calc(100dvh-5rem)] min-h-0">
               <PatternScannerPanel
                 symbol={patternPanelSymbol || '—'}
                 timeframe={patternTimeframe}
@@ -371,7 +385,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <ChartDrawingToolsPanel />
             </div>
 
-            <div className="min-w-0 space-y-4">
+            <div className="min-w-0 space-y-2">
               {/* Mobile: same stack — scanner then tools — never over candles */}
               <div className="lg:hidden space-y-3">
                 <PatternScannerPanel
@@ -398,20 +412,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               </div>
 
               <ChartIndicatorPicker
+                compact
                 activeIndicators={activeIndicators}
                 onToggle={toggleIndicator}
                 onClear={() => setActiveIndicators([])}
               />
 
-              <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
-                {isNarrowViewport
-                  ? 'Three chart slots — each fills your phone screen. Swipe/scroll to the next full-size chart.'
-                  : 'Three full-screen charts — each plot is a full window of candles. Scroll the page for the next one. Pulse 5m/10m/15m/30m arms the chart you tap.'}
-              </p>
-
               <div
                 id="master-chart-stack"
-                className="flex w-full flex-col gap-4"
+                ref={chartStageRef}
+                className="flex w-full flex-col gap-3"
               >
                 {chartSlots.map((slot, idx) => {
                   const chartBodyH = isNarrowViewport

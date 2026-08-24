@@ -34,7 +34,7 @@ import {
 import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FULLSCREEN";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-VIEWPORT";
 
 type Candle = {
   time: number;
