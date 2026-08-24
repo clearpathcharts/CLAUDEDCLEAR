@@ -318,12 +318,13 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
             </h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
               35 interest desks per life stage, plus opt-in 15-desk maps you choose: gay men,
-              lesbian/queer women, Republican-leaning men and women, and Democrat-leaning men and
-              women. Those chips are tags you add to your own feed — not a bucket assigned by
-              inferred political affiliation. Y.W.C. covers the full spectrum without ClearPath
-              guessing where you sit politically. Each card opens the publisher so people can
-              subscribe there. Dating apps and official health pages are bookmarks, not scraped
-              feeds, and not medical advice. ClearPath does not sell these titles.
+              lesbian/queer women, Republican-leaning and Democrat-leaning men and women, and
+              sports — men / sports — women. Those chips are tags you add to your own feed — not a
+              bucket assigned by inferred politics or gender. Anyone can open the NFL/NASCAR list
+              or the WNBA/NWSL list. Y.W.C. covers the full spectrum without ClearPath guessing who
+              you are. Each card opens the publisher so people can subscribe there. Dating apps and
+              official health pages are bookmarks, not scraped feeds, and not medical advice.
+              ClearPath does not sell these titles.
             </p>
           </div>
           <button

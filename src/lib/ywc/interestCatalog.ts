@@ -15,7 +15,9 @@ export type InterestDeskId =
   | 'republican-men'
   | 'republican-women'
   | 'democrat-men'
-  | 'democrat-women';
+  | 'democrat-women'
+  | 'sports-men'
+  | 'sports-women';
 export type InterestSourceKind = 'publication' | 'official' | 'app' | 'social' | 'organization';
 
 export type InterestSource = {
@@ -49,6 +51,8 @@ export const INTEREST_DESKS: Array<{ id: InterestDeskId; label: string; optIn: b
   { id: 'republican-women', label: 'Republican-leaning women — 15 (opt-in)', optIn: true },
   { id: 'democrat-men', label: 'Democrat-leaning men — 15 (opt-in)', optIn: true },
   { id: 'democrat-women', label: 'Democrat-leaning women — 15 (opt-in)', optIn: true },
+  { id: 'sports-men', label: 'Sports — men — 15 (opt-in)', optIn: true },
+  { id: 'sports-women', label: 'Sports — women — 15 (opt-in)', optIn: true },
 ];
 
 export const SOURCE_KIND_LABEL: Record<InterestSourceKind, string> = {
@@ -619,6 +623,110 @@ export const DEMOCRAT_WOMEN_AGENTS: InterestAgent[] = [
   ]),
 ];
 
+/**
+ * Opt-in only. Not a gender-assigned default — anyone can open either sports desk.
+ * League/org/shop homepages are bookmarks, not live RSS.
+ */
+export const SPORTS_MEN_AGENTS: InterestAgent[] = [
+  agent('sm-general', 'General Sports News', 'Cross-sport news and scores', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('sm-nfl', 'NFL / Football', 'Football news, scores, analysis', [
+    s('nfl', 'NFL', 'https://www.nfl.com/', 'official'),
+  ]),
+  agent('sm-nba', 'NBA / Basketball', 'Basketball news, scores, analysis', [
+    s('nba', 'NBA', 'https://www.nba.com/', 'official'),
+  ]),
+  agent('sm-mlb', 'MLB / Baseball', 'Baseball news, scores, analysis', [
+    s('mlb', 'MLB', 'https://www.mlb.com/', 'official'),
+  ]),
+  agent('sm-nhl', 'NHL / Hockey', 'Hockey news, scores, analysis', [
+    s('nhl', 'NHL', 'https://www.nhl.com/', 'official'),
+  ]),
+  agent('sm-ncaa', 'College Football & Basketball', 'NCAA sports coverage', [
+    s('espn-cfb', 'ESPN College Football', 'https://www.espn.com/college-football'),
+  ]),
+  agent('sm-soccer', 'Soccer / Football (Global)', 'Soccer news, leagues, transfers', [
+    s('espn-soccer', 'ESPN Soccer', 'https://www.espn.com/soccer'),
+  ]),
+  agent('sm-mma', 'MMA & Boxing', 'Fight news, results, analysis', [
+    s('mmafighting', 'MMA Fighting', 'https://www.mmafighting.com/'),
+  ]),
+  agent('sm-golf', 'Golf', 'Tour news, scores, equipment', [
+    s('golfdigest', 'Golf Digest', 'https://www.golfdigest.com/'),
+  ]),
+  agent('sm-motor', 'Motorsports (F1, NASCAR)', 'Racing news, results', [
+    s('nascar', 'NASCAR', 'https://www.nascar.com/', 'official'),
+  ]),
+  agent('sm-fantasy', 'Fantasy Sports', 'Fantasy football/basketball/baseball tools', [
+    s('fantasypros', 'FantasyPros', 'https://www.fantasypros.com/'),
+  ]),
+  agent('sm-odds', 'Sports Betting & Odds', 'Odds, lines, analysis', [
+    s('actionnetwork', 'Action Network', 'https://www.actionnetwork.com/'),
+  ]),
+  agent('sm-biz', 'Sports Business & Finance', 'Contracts, deals, league business', [
+    s('sportico', 'Sportico', 'https://www.sportico.com/'),
+  ]),
+  agent('sm-fitness', 'Fitness & Athletic Training', 'Training, performance, recovery — not medical advice', [
+    s('menshealth', "Men's Health", 'https://www.menshealth.com/'),
+  ]),
+  agent('sm-sneakers', 'Sneakers & Athletic Gear', 'Sneaker releases, sports gear', [
+    s('sneakernews', 'Sneaker News', 'https://sneakernews.com/'),
+  ]),
+];
+
+/**
+ * Opt-in only. Not a gender-assigned default — anyone can open either sports desk.
+ * League/org/shop homepages are bookmarks, not live RSS.
+ */
+export const SPORTS_WOMEN_AGENTS: InterestAgent[] = [
+  agent('sw-general', 'General Sports News', 'Cross-sport news and scores', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('sw-wnba', "WNBA / Women's Basketball", 'League news, scores, analysis', [
+    s('wnba', 'WNBA', 'https://www.wnba.com/', 'official'),
+  ]),
+  agent('sw-nwsl', "NWSL / Women's Soccer", 'League news, scores, analysis', [
+    s('nwsl', 'NWSL', 'https://www.nwslsoccer.com/', 'official'),
+  ]),
+  agent('sw-ncaa', "Women's College Sports (NCAA)", "NCAA women's sports coverage", [
+    s('espn-wcb', "ESPN Women's College Basketball", 'https://www.espn.com/womens-college-basketball'),
+  ]),
+  agent('sw-tennis', 'Tennis', 'Tour news, scores, rankings', [
+    s('wta', 'WTA Tennis', 'https://www.wtatennis.com/', 'official'),
+  ]),
+  agent('sw-gym', 'Gymnastics', 'Competition news, athletes', [
+    s('usagym', 'USA Gymnastics', 'https://usagym.org/', 'organization'),
+  ]),
+  agent('sw-usa', 'Olympic & Team USA Sports', 'Team USA news, athlete profiles', [
+    s('teamusa', 'Team USA', 'https://www.teamusa.org/', 'organization'),
+  ]),
+  agent('sw-golf', 'Golf (LPGA)', 'Tour news, scores, equipment', [
+    s('lpga', 'LPGA', 'https://www.lpga.com/', 'official'),
+  ]),
+  agent('sw-running', 'Running & Track and Field', 'Race news, training, results', [
+    s('runnersworld', "Runner's World", 'https://www.runnersworld.com/'),
+  ]),
+  agent('sw-volley', 'Volleyball', 'League and college volleyball news', [
+    s('volleyballmag', 'Volleyball Magazine', 'https://www.volleyballmag.com/'),
+  ]),
+  agent('sw-fantasy', 'Fantasy Sports', 'Fantasy sports tools and leagues', [
+    s('fantasypros', 'FantasyPros', 'https://www.fantasypros.com/'),
+  ]),
+  agent('sw-biz', 'Sports Business & Finance', 'Contracts, deals, league business', [
+    s('sportico', 'Sportico', 'https://www.sportico.com/'),
+  ]),
+  agent('sw-fitness', 'Fitness & Athletic Training', 'Training, performance, recovery — not medical advice', [
+    s('womenshealth', "Women's Health", 'https://www.womenshealthmag.com/'),
+  ]),
+  agent('sw-athleisure', 'Sports Fashion & Athleisure', 'Athletic wear, gear', [
+    s('athleta', 'Athleta', 'https://athleta.gap.com/', 'official'),
+  ]),
+  agent('sw-media', "Women's Sports Media & Advocacy", "Coverage and advocacy for women's sports", [
+    s('jws', "Just Women's Sports", 'https://justwomenssports.com/'),
+  ]),
+];
+
 export function audienceAgeForBand(band: AgeBandId): AudienceAge {
   if (band === '19-22' || band === '23-29') return 'young-adult';
   if (band === '58-80' || band === '49-57') return 'fifty-plus';
@@ -647,6 +755,8 @@ export function agentsFor(band: AgeBandId, desk: InterestDeskId): InterestAgent[
   if (desk === 'republican-women') return REPUBLICAN_WOMEN_AGENTS;
   if (desk === 'democrat-men') return DEMOCRAT_MEN_AGENTS;
   if (desk === 'democrat-women') return DEMOCRAT_WOMEN_AGENTS;
+  if (desk === 'sports-men') return SPORTS_MEN_AGENTS;
+  if (desk === 'sports-women') return SPORTS_WOMEN_AGENTS;
   return band === '58-80' ? LATER_LIFE_AGENTS : EARLY_ADULT_AGENTS;
 }
 
@@ -668,6 +778,8 @@ export function allCatalogSources(): InterestSource[] {
     REPUBLICAN_WOMEN_AGENTS,
     DEMOCRAT_MEN_AGENTS,
     DEMOCRAT_WOMEN_AGENTS,
+    SPORTS_MEN_AGENTS,
+    SPORTS_WOMEN_AGENTS,
   ];
   const out: InterestSource[] = [];
   const seen = new Set<string>();

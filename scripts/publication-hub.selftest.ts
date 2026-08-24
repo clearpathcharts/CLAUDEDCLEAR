@@ -23,6 +23,8 @@ import {
   REPUBLICAN_WOMEN_AGENTS,
   DEMOCRAT_MEN_AGENTS,
   DEMOCRAT_WOMEN_AGENTS,
+  SPORTS_MEN_AGENTS,
+  SPORTS_WOMEN_AGENTS,
   INTEREST_DESKS,
   agentsFor,
   allCatalogSources,
@@ -128,6 +130,8 @@ assert.equal(REPUBLICAN_MEN_AGENTS.length, 15);
 assert.equal(REPUBLICAN_WOMEN_AGENTS.length, 15);
 assert.equal(DEMOCRAT_MEN_AGENTS.length, 15);
 assert.equal(DEMOCRAT_WOMEN_AGENTS.length, 15);
+assert.equal(SPORTS_MEN_AGENTS.length, 15);
+assert.equal(SPORTS_WOMEN_AGENTS.length, 15);
 assert.equal(agentsFor('19-22', 'everyone').length, 35);
 assert.equal(agentsFor('58-80', 'everyone').length, 35);
 assert.equal(agentsFor('19-22', 'gay-men').length, 15);
@@ -136,9 +140,13 @@ assert.equal(agentsFor('30-38', 'republican-men').length, 15);
 assert.equal(agentsFor('58-80', 'republican-women').length, 15);
 assert.equal(agentsFor('23-29', 'democrat-men').length, 15);
 assert.equal(agentsFor('49-57', 'democrat-women').length, 15);
+assert.equal(agentsFor('19-22', 'sports-men').length, 15);
+assert.equal(agentsFor('58-80', 'sports-women').length, 15);
 assert.equal(isOptInDesk('everyone'), false);
 assert.equal(isOptInDesk('republican-men'), true);
 assert.equal(isOptInDesk('democrat-women'), true);
+assert.equal(isOptInDesk('sports-men'), true);
+assert.equal(isOptInDesk('sports-women'), true);
 assert.equal(isOptInDesk('gay-men'), true);
 assert.equal(orientationForDesk('republican-men'), 'general');
 assert.equal(orientationForDesk('democrat-men'), 'general');
@@ -195,6 +203,67 @@ assert.ok(DEMOCRAT_WOMEN_AGENTS[2].watches.includes('not medical advice'));
 assert.equal(INTEREST_DESKS[0].id, 'everyone');
 assert.equal(politicsForDesk('democrat-women'), 'left');
 assert.equal(orientationForDesk('democrat-women'), 'general');
+assert.equal(orientationForDesk('sports-men'), 'general');
+assert.equal(orientationForDesk('sports-women'), 'general');
+assert.equal(politicsForDesk('sports-men'), 'nonpartisan');
+assert.equal(politicsForDesk('sports-women'), 'nonpartisan');
+assert.deepEqual(
+  SPORTS_MEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.espn.com/',
+    'https://www.nfl.com/',
+    'https://www.nba.com/',
+    'https://www.mlb.com/',
+    'https://www.nhl.com/',
+    'https://www.espn.com/college-football',
+    'https://www.espn.com/soccer',
+    'https://www.mmafighting.com/',
+    'https://www.golfdigest.com/',
+    'https://www.nascar.com/',
+    'https://www.fantasypros.com/',
+    'https://www.actionnetwork.com/',
+    'https://www.sportico.com/',
+    'https://www.menshealth.com/',
+    'https://sneakernews.com/',
+  ],
+);
+assert.deepEqual(
+  SPORTS_WOMEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.espn.com/',
+    'https://www.wnba.com/',
+    'https://www.nwslsoccer.com/',
+    'https://www.espn.com/womens-college-basketball',
+    'https://www.wtatennis.com/',
+    'https://usagym.org/',
+    'https://www.teamusa.org/',
+    'https://www.lpga.com/',
+    'https://www.runnersworld.com/',
+    'https://www.volleyballmag.com/',
+    'https://www.fantasypros.com/',
+    'https://www.sportico.com/',
+    'https://www.womenshealthmag.com/',
+    'https://athleta.gap.com/',
+    'https://justwomenssports.com/',
+  ],
+);
+assert.equal(SPORTS_MEN_AGENTS[1].sources[0].kind, 'official');
+assert.equal(SPORTS_WOMEN_AGENTS[1].sources[0].kind, 'official');
+assert.equal(SPORTS_WOMEN_AGENTS[5].sources[0].kind, 'organization');
+assert.equal(SPORTS_WOMEN_AGENTS[13].sources[0].kind, 'official');
+assert.ok(SPORTS_MEN_AGENTS[13].watches.includes('not medical advice'));
+assert.ok(SPORTS_WOMEN_AGENTS[12].watches.includes('not medical advice'));
+assert.ok(!isFetchableKind(SPORTS_MEN_AGENTS[1].sources[0].kind), 'league sites are not RSS-fetched');
+assert.ok(SPORTS_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('nfl.com'))));
+assert.ok(SPORTS_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('wnba.com'))));
+assert.ok(
+  SPORTS_MEN_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'sports-men homepages are https bookmarks',
+);
+assert.ok(
+  SPORTS_WOMEN_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'sports-women homepages are https bookmarks',
+);
 
 const catalog = allCatalogSources();
 assert.ok(catalog.length > 40);
