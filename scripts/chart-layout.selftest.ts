@@ -18,6 +18,7 @@ import {
   mobileStackedMarketChartHeight,
   normalizeMarketSlotY,
 } from '../src/constants/chartLayout.ts';
+import { nextChartPixelSize } from '../src/lib/charts/chartResize.ts';
 
 assert.equal(
   mobileStackedMarketChartHeight(300),
@@ -89,6 +90,10 @@ assert.equal(
   900 + MARKET_CHART_DESKTOP_CHROME,
   'panel height is candle body plus pulse/search chrome',
 );
+assert.equal(nextChartPixelSize(0, 800), null, 'skip resize while width is 0');
+assert.equal(nextChartPixelSize(1200, 0), null, 'skip resize while height is 0 — never lock a stale px fallback');
+assert.deepEqual(nextChartPixelSize(1200.9, 640.2), { width: 1200, height: 640 });
+
 assert.equal(normalizeMarketSlotY(0, 0), 0);
 assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY, 1), MARKET_CHART_HEIGHT);
 assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY * 2, 2), MARKET_CHART_HEIGHT * 2);

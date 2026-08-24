@@ -21,7 +21,7 @@ import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
-import { Crosshair, Scan, Radio, Focus } from "lucide-react";
+import { Crosshair, Scan, Radio, Focus, Maximize2, Minimize2 } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 import {
@@ -32,9 +32,10 @@ import {
   CHART_TIME_SCALE_GESTURE,
 } from "../../lib/charts/chartInteraction";
 import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
+import { nextChartPixelSize } from "../../lib/charts/chartResize";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-SLOT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-EXPAND";
 
 type Candle = {
   time: number;
@@ -143,6 +144,7 @@ export function LightweightCandles({
   /** Publish drawing controls to the Pattern Scanner column toolbox (Charts tab). */
   publishDrawingSession = false,
   hideChartToolbar = false,
+  onExpandToggle,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -173,10 +175,14 @@ export function LightweightCandles({
   publishDrawingSession?: boolean;
   /** Hide the in-plot CROSSHAIR/zoom bar so candles fill the empty-slot box. */
   hideChartToolbar?: boolean;
+  /** Full-window expand for this slot — not zoom-reset. */
+  onExpandToggle?: () => void;
 }) {
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const layoutRef = useRef({ isExpanded, fillParent });
+  layoutRef.current = { isExpanded, fillParent };
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
@@ -328,7 +334,7 @@ export function LightweightCandles({
       // snap to the next full-screen slot. Expanded / desktop / tablet keep
       // vertical pan. Time stretch = drag the bottom axis; price lift/squish =
       // drag the right axis (or the axis buttons / Shift+wheel).
-      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+      handleScroll: chartHandleScroll(Boolean(layoutRef.current.isExpanded || !layoutRef.current.fillParent)),
       handleScale: CHART_HANDLE_SCALE,
     });
 
@@ -930,12 +936,9 @@ export function LightweightCandles({
     const resizeObserver = new ResizeObserver((entries) => {
       if (!active || !entries || entries.length === 0) return;
       const { width, height: rectHeight } = entries[0].contentRect;
-      if (width > 0) {
-        chart.applyOptions({
-          width,
-          height: rectHeight > 0 ? rectHeight : initialHeight
-        });
-      }
+      const next = nextChartPixelSize(width, rectHeight);
+      if (!next) return;
+      chart.applyOptions(next);
     });
 
     resizeObserver.observe(containerRef.current);
@@ -961,7 +964,15 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, height, isExpanded, fillParent, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+    });
+  }, [isExpanded, fillParent, chartReadyKey]);
 
   const handleFocusRecent = () => {
     const chart = chartRef.current;
@@ -1022,6 +1033,17 @@ export function LightweightCandles({
             >
               <Focus size={13} strokeWidth={2.5} />
             </button>
+            {onExpandToggle ? (
+              <button
+                type="button"
+                onClick={onExpandToggle}
+                aria-label={isExpanded ? "Exit full size" : "Expand chart to fill the window"}
+                title={isExpanded ? "Exit full size (Esc)" : "Expand chart to fill the window"}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-400/40 text-emerald-300 transition-all hover:border-emerald-300/70 hover:bg-emerald-400/10 active:scale-95"
+              >
+                {isExpanded ? <Minimize2 size={13} strokeWidth={2.5} /> : <Maximize2 size={13} strokeWidth={2.5} />}
+              </button>
+            ) : null}
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
@@ -1050,6 +1072,17 @@ export function LightweightCandles({
           >
             {CHART_UI_BUILD_STAMP}
           </span>
+        ) : null}
+        {!embedMode && hideChartToolbar && onExpandToggle ? (
+          <button
+            type="button"
+            onClick={onExpandToggle}
+            aria-label={isExpanded ? "Exit full size" : "Expand chart to fill the window"}
+            title={isExpanded ? "Exit full size (Esc)" : "Expand chart to fill the window"}
+            className="absolute top-2 right-2 z-[60] flex h-8 w-8 items-center justify-center rounded-md border border-emerald-400/40 bg-black/75 text-emerald-300 shadow-lg backdrop-blur-md transition-all hover:border-emerald-300/70 hover:bg-emerald-400/10"
+          >
+            {isExpanded ? <Minimize2 size={14} strokeWidth={2.5} /> : <Maximize2 size={14} strokeWidth={2.5} />}
+          </button>
         ) : null}
         {isLoading && !error && (
           <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { Maximize2, Minimize2, X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
@@ -37,6 +37,17 @@ const timeframesMapping: Record<string, string> = {
 };
 
 const CHART_LAYOUT_STORAGE_KEY = 'cpt-market-terminal-chart-layout';
+const EXPANDED_SLOT_STORAGE_KEY = 'cpt-market-terminal-expanded-slot';
+
+function readExpandedSlot(): number | null {
+  try {
+    const raw = sessionStorage.getItem(EXPANDED_SLOT_STORAGE_KEY);
+    if (raw === '0' || raw === '1' || raw === '2') return Number(raw);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 function loadMarketSlots(): ChartLayoutSlot[] {
   try {
@@ -95,6 +106,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
+  const [expandedSlot, setExpandedSlot] = useState<number | null>(readExpandedSlot);
   const [chartSlots, saveChartSlots] = usePersistedLayout<ChartLayoutSlot[]>(
     CHART_LAYOUT_STORAGE_KEY,
     loadMarketSlots
@@ -209,6 +221,29 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [isBlackoutMode]);
+
+  useEffect(() => {
+    try {
+      if (expandedSlot === null) sessionStorage.removeItem(EXPANDED_SLOT_STORAGE_KEY);
+      else sessionStorage.setItem(EXPANDED_SLOT_STORAGE_KEY, String(expandedSlot));
+    } catch {
+      /* ignore */
+    }
+  }, [expandedSlot]);
+
+  useEffect(() => {
+    if (expandedSlot === null) return;
+    const html = document.documentElement;
+    html.classList.add('chart-slot-expand-lock');
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedSlot(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      html.classList.remove('chart-slot-expand-lock');
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [expandedSlot]);
 
   const updateSlot = useCallback(
     (index: number, patch: Partial<ChartLayoutSlot>) => {
@@ -435,11 +470,21 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 className="flex w-full flex-col gap-3"
               >
                 {chartSlots.map((slot, idx) => {
-                  const chartBodyH = isNarrowViewport
-                    ? mobileChartBodyH
-                    : desktopChartBodyH;
+                  const slotExpanded = expandedSlot === idx;
+                  const chartBodyH = slotExpanded
+                    ? Math.max(
+                        desktopChartBodyH,
+                        Math.round(
+                          (typeof window !== 'undefined'
+                            ? window.visualViewport?.height || window.innerHeight
+                            : 900) - MARKET_CHART_DESKTOP_CHROME,
+                        ),
+                      )
+                    : isNarrowViewport
+                      ? mobileChartBodyH
+                      : desktopChartBodyH;
                   const candleH = chartBodyH;
-                  const panelH = isNarrowViewport
+                  const panelH = slotExpanded || isNarrowViewport
                     ? undefined
                     : desktopMarketPanelHeight(desktopChartBodyH);
                   return (
@@ -448,14 +493,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     mode="static"
                     draggable={false}
                     width="100%"
-                    zIndex={10 + idx}
+                    zIndex={slotExpanded ? 160 : 10 + idx}
                     panelHeight={panelH}
                     position={{ x: 0, y: 0 }}
                     onPositionChange={() => {}}
                     className={`glass shadow-2xl ${
-                      isNarrowViewport
-                        ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
-                        : ''
+                      slotExpanded
+                        ? '!fixed !inset-0 !z-[160] !h-[100dvh] !min-h-[100dvh] !max-h-[100dvh] !w-full !rounded-none'
+                        : isNarrowViewport
+                          ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
+                          : ''
                     }`}
                     preHeader={
                       <ChartLocalTimeAndPulse
@@ -485,8 +532,20 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                             <X size={12} />
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSlot(idx);
+                            setExpandedSlot(slotExpanded ? null : idx);
+                          }}
+                          aria-label={slotExpanded ? 'Exit full size' : 'Expand chart to fill the window'}
+                          title={slotExpanded ? 'Exit full size (Esc)' : 'Expand chart to fill the window'}
+                          className="p-1 rounded text-zinc-400 hover:text-emerald-300 transition-colors shrink-0"
+                        >
+                          {slotExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                        </button>
                         <span className="text-[8px] font-mono text-zinc-600 uppercase shrink-0 hidden lg:inline">
-                          {activeTimeframe}
+                          {slotExpanded ? 'FULL SIZE' : activeTimeframe}
                         </span>
                       </div>
                     }
@@ -501,7 +560,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           profileId={profile.id}
                           height={candleH}
                           fillParent
+                          isExpanded={slotExpanded}
                           hideChartToolbar
+                          onExpandToggle={() => {
+                            setActiveSlot(idx);
+                            setExpandedSlot(slotExpanded ? null : idx);
+                          }}
                           timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}

@@ -231,7 +231,9 @@ html {
 /* Blackout is a fixed overlay. Without this, the page scrollbar still shows
    and looks like it should move the charts — it only scrolls the hidden page. */
 html.blackout-scroll-lock,
-html.blackout-scroll-lock body {
+html.blackout-scroll-lock body,
+html.chart-slot-expand-lock,
+html.chart-slot-expand-lock body {
   overflow: hidden !important;
   overscroll-behavior: none;
 }
