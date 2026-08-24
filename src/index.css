@@ -224,6 +224,16 @@ html {
   overflow-x: hidden;  /* no sideways wiggle on phones */
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  /* Keep the lava page scrollbar off the chart price axis (Windows overlay scrollbars). */
+  scrollbar-gutter: stable;
+}
+
+/* Blackout is a fixed overlay. Without this, the page scrollbar still shows
+   and looks like it should move the charts — it only scrolls the hidden page. */
+html.blackout-scroll-lock,
+html.blackout-scroll-lock body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
 
 /* Absolute px utilities do not scale with rem — lift the worst micro-type globally */
