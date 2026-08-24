@@ -108,9 +108,10 @@ Open ENCYCLOPEDIA OF FINANCE (or /encyclopedia). Large knowledge library with fi
 
 --- ENCYCLOPEDIA OF INDICATORS ---
 Open ENCYCLOPEDIA OF INDICATORS (or /indicators).
-- Left: Filters — search, Technical/Fundamental category, max complexity, video-only, sort.
-- Center: Grid of indicator cards.
-- Click a card for the detail panel (description, tags, optional video).
+- Left: Filters — search, category, max complexity, live-overlay toggle, sort.
+- Center: Grid of indicator cards. Each card uses a standard SVG chart illustration (no videos).
+- Click a card for the study article (description, formula, how to read, limitations, typical settings).
+- Live overlay badge means that model can be added to Charts.
 - "Back to Terminal Desktop" returns toward Home.
 
 --- MEMBERSHIPS / PROFILE / NEWS / SENTINEL ---
@@ -179,8 +180,8 @@ export function offlineSiteGuideAnswer(question: string): string | null {
     return [
       "Encyclopedia of Indicators:",
       "1. Open ENCYCLOPEDIA OF INDICATORS in the menu (or go to /indicators).",
-      "2. Use the left filters to search or pick Technical / Fundamental.",
-      "3. Click any card to open its detail panel.",
+      "2. Use the left filters to search or pick a category.",
+      "3. Click any card to open its study article. Cards use standard SVG illustrations — no videos.",
       "4. Use Back to Terminal Desktop when you want to return toward Home.",
     ].join("\n");
   }

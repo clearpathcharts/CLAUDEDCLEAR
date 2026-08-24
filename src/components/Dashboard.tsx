@@ -444,9 +444,7 @@ const TabContent = ({
       case 'CpmsApk': return <CpmsApk />;
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
-      case 'EncyclopediaOfIndicators': return gate(
-        'advancedIndicators', 'premium', 'Advanced Indicator Library',
-        ['Institutional indicator suite', 'Advanced chart overlays', 'Premium research'],
+      case 'EncyclopediaOfIndicators': return (
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
         </Suspense>
@@ -609,16 +607,19 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         ) {
           return 'Encyclopedia';
         }
+        if (
+          path === '/indicators' ||
+          path === '/encyclopedia-of-indicators' ||
+          path.startsWith('/indicators/')
+        ) {
+          return 'EncyclopediaOfIndicators';
+        }
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
         }
         if (path === '/literacy' || path === '/literacy-os') {
           return 'LiteracyOS';
         }
-        // Encyclopedia of Indicators hidden from site (videos broken) — path routing disabled.
-        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-        //   return 'EncyclopediaOfIndicators';
-        // }
       } catch (e) {
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
@@ -1057,10 +1058,27 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     if (typeof window !== 'undefined') {
       try {
-        const params = new URLSearchParams(window.location.search);
-        params.set('tab', nextTab);
-        const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
-        window.history.pushState({ tabId: nextTab }, '', newUrl);
+        if (nextTab === 'EncyclopediaOfIndicators') {
+          const path = window.location.pathname.toLowerCase();
+          const target = path.startsWith('/indicators/') ? window.location.pathname : '/indicators';
+          window.history.pushState({ tabId: nextTab }, '', target);
+        } else if (nextTab === 'Encyclopedia') {
+          const path = window.location.pathname.toLowerCase();
+          const keep =
+            path === '/encyclopedia' ||
+            path.startsWith('/stocks') ||
+            path.startsWith('/crypto') ||
+            path.startsWith('/forex') ||
+            path.startsWith('/commodities') ||
+            path.startsWith('/companies') ||
+            path.startsWith('/economy');
+          window.history.pushState({ tabId: nextTab }, '', keep ? window.location.pathname : '/encyclopedia');
+        } else {
+          const params = new URLSearchParams(window.location.search);
+          params.set('tab', nextTab);
+          const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
+          window.history.pushState({ tabId: nextTab }, '', newUrl);
+        }
       } catch (e) {
         console.error('Failed to push tab status state:', e);
       }
@@ -1108,15 +1126,18 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('Encyclopedia');
           return;
         }
+        if (
+          path === '/indicators' ||
+          path === '/encyclopedia-of-indicators' ||
+          path.startsWith('/indicators/')
+        ) {
+          setActiveTab('EncyclopediaOfIndicators');
+          return;
+        }
         if (path === '/education' || path === '/clearpath-education') {
           setActiveTab('ClearPathEducation');
           return;
         }
-        // Encyclopedia of Indicators hidden — path routing disabled.
-        // if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-        //   setActiveTab('EncyclopediaOfIndicators');
-        //   return;
-        // }
       }
 
       if (event.state && event.state.tabId) {
@@ -1153,11 +1174,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       path === '/encyclopedia'
     ) {
       setActiveTab('Encyclopedia');
+    } else if (
+      path === '/indicators' ||
+      path === '/encyclopedia-of-indicators' ||
+      path.startsWith('/indicators/')
+    ) {
+      setActiveTab('EncyclopediaOfIndicators');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
-    // Encyclopedia of Indicators hidden — path routing disabled.
-    // } else if (path === '/indicators' || path === '/encyclopedia-of-indicators') {
-    //   setActiveTab('EncyclopediaOfIndicators');
     } else {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');

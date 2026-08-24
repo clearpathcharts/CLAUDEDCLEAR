@@ -368,7 +368,12 @@ function UnitList({
           >
             Encyclopedia of Finance
           </button>
-          {/* Encyclopedia of Indicators link hidden while videos are broken — component kept */}
+          <button
+            onClick={() => onNavigate?.("EncyclopediaOfIndicators")}
+            style={resourceLinkStyle("#39FF14")}
+          >
+            Encyclopedia of Indicators
+          </button>
           <button
             onClick={() => onNavigate?.("LiteracyOS")}
             style={resourceLinkStyle("#FFD700")}
