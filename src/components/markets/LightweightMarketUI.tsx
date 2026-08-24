@@ -198,11 +198,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   useEffect(() => {
     if (!isBlackoutMode) return;
+    const html = document.documentElement;
+    html.classList.add('blackout-scroll-lock');
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsBlackoutMode(false);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      html.classList.remove('blackout-scroll-lock');
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [isBlackoutMode]);
 
   const updateSlot = useCallback(
@@ -240,7 +245,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   if (isBlackoutMode) {
     return createPortal(
       <ChartDrawingSessionProvider>
-        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col">
+        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col overflow-y-auto overscroll-contain">
           <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />
@@ -257,7 +262,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <span className="text-zinc-500 normal-case font-mono">(Esc)</span>
             </button>
           </div>
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2">
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2 p-2 pr-3">
             <div className="hidden lg:flex lg:w-80 xl:w-96 shrink-0 min-h-0 flex-col gap-2">
               <div className="min-h-0 flex-1">
                 <PatternScannerPanel
