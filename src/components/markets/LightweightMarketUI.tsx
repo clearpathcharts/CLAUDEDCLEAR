@@ -496,6 +496,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           profileId={profile.id}
                           height={candleH}
                           fillParent
+                          hideChartToolbar
                           timeframe={patternTimeframe}
                           symbol={slot.symbol}
                           theme={chartTheme}
