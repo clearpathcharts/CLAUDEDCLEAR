@@ -239,9 +239,10 @@ export default function DailyOpsDesk({
               Daily Ops — {report?.date || "today (Pacific)"}
             </h2>
             <p className="text-white/55 text-sm max-w-2xl">
-              Once a day the server pings the live site, GitHub Actions, Groq, Twilio, and Stripe,
+              Once a day the server pings the live site, GitHub Actions, Groq, and related probes,
               then researches one investor from public sources. You check the human boxes. Nothing
-              auto-posts or auto-emails.
+              auto-posts or auto-emails. Merging GitHub is not the same as updating Cloud Run —
+              after a fix lands on main, redeploy the service, then tap Run today’s sweep.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -306,10 +307,16 @@ export default function DailyOpsDesk({
 
       {report && (
         <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
-          <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4 flex items-center gap-2">
+          <h3 className="text-white font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
             <ShieldAlert size={16} className="text-[#FF4500]" />
             Automated site checks
           </h3>
+          <p className="text-zinc-500 text-xs mb-4 max-w-3xl">
+            Live probes from the Cloud Run process that is serving right now. A merged PR only
+            appears here after that service is rebuilt/redeployed — then tap{" "}
+            <span className="text-zinc-300">Run today’s sweep</span>. Stale CRITICAL/WARN text
+            usually means production is still on an older revision.
+          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-white/80 text-sm">
               <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
@@ -554,9 +561,14 @@ export default function DailyOpsDesk({
       {report && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-[#1a1a2e] p-6 rounded-lg border border-amber-500/20">
-            <h3 className="text-amber-200 font-black uppercase tracking-widest text-sm mb-3">
+            <h3 className="text-amber-200 font-black uppercase tracking-widest text-sm mb-2">
               Still open on the site
             </h3>
+            <p className="text-zinc-500 text-xs mb-3">
+              Backlog / ops checklist — not the same as the auto-check table above. These stay
+              listed until you finish the action (Firebase deploy, Flow uploads, build Ava, etc.).
+              Merging a PR alone will not clear this panel.
+            </p>
             <ul className="space-y-3">
               {report.openWork.map((w) => (
                 <li key={w.id}>

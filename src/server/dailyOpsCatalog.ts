@@ -122,32 +122,29 @@ export const SHIPPED_AS_OF_2026_08_18: Array<{ id: string; title: string; eviden
   },
 ];
 
-/** Remaining site/product work — not daily. Pick at most two. */
+/** Remaining site/product work — backlog / ops, not Daily Ops auto-checks.
+ *  These do NOT clear when you merge a PR. Each needs its own action
+ *  (Firebase CLI, product build, or a conscious “drop the claim”). */
 export const OPEN_SITE_WORK: Array<{ id: string; title: string; why: string }> = [
   {
     id: "deploy_firestore_rules",
     title: "Deploy Firestore rules that lock vipStatus / membership fields",
-    why: "Rules file is updated locally; production only changes after firebase deploy --only firestore:rules",
+    why: "Merging rules into GitHub is not enough — run `firebase deploy --only firestore:rules` against the production project (or confirm rules already match in Console).",
   },
   {
     id: "ava_voice",
-    title: "Ava voice receptionist — not in this repo",
-    why: "Twilio account probe exists; no Ava voice endpoint to ping. Build or drop the claim.",
+    title: "Ava voice receptionist — not built yet",
+    why: "Intentionally open product work. Daily Ops no longer paints WARN for missing Twilio; build Ava or drop the claim from marketing copy.",
   },
   {
-    id: "stripe_first_charge",
-    title: "First real Stripe charge → then MRR / humanitarian tracker",
-    why: "Checkout sessions exist; business metrics stay N/A until money moves",
+    id: "google_flow_section_guides",
+    title: "Upload Google Flow section-guide clips (7×~10s per tab)",
+    why: "Catalog + player shipped; videoUrl slots are empty until Flow exports are hosted on HTTPS. Run `npm run section-guides:print`, then set URLs in catalog.ts.",
   },
   {
-    id: "github_token",
-    title: "Optional GITHUB_TOKEN for Actions auto-check",
-    why: "CLAUDEDCLEAR is private — without GITHUB_TOKEN the Actions probe skips cleanly; set a fine-scoped token (actions:read) on Cloud Run to monitor CI failures",
-  },
-  {
-    id: "google_flow_ads",
-    title: "Wire 180-video Google Flow campaign into this desk (or stop listing it daily)",
-    why: "No in-app connector today — check Ads UI until one exists",
+    id: "cloud_run_after_merge",
+    title: "Redeploy Cloud Run after merging main",
+    why: "GitHub merge ≠ live site. This host has no auto-deploy-on-merge. Build/push the new image and update the Cloud Run service, then tap Run today’s sweep.",
   },
 ];
 
