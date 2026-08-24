@@ -1,38 +1,40 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Heart, Library, Plus, Search } from 'lucide-react';
 import { useMagazineRack } from './YwcMagazineRack';
 import { PublicationTranslator } from './YwcPublicationTranslator';
 import { usePublicationFavorites } from './usePublicationFavorites';
-import type { AudienceAge, MagazinePublicationCard, MagazineStory, OrientationDesk, PoliticsDesk } from '../../lib/ywc/magazineTypes';
+import type { AudienceAge, MagazineStory, OrientationDesk, PoliticsDesk } from '../../lib/ywc/magazineTypes';
 import {
   AUDIENCE_AGE_OPTIONS,
   ORIENTATION_OPTIONS,
   POLITICS_OPTIONS,
   favoriteFromForm,
-  favoriteFromPublication,
-  matchesHubFilters,
   type PublicationFavorite,
 } from '../../lib/ywc/publicationHub';
+import {
+  AGE_BANDS,
+  INTEREST_DESKS,
+  SOURCE_KIND_LABEL,
+  agentsFor,
+  favoriteFromInterestSource,
+  sourceHost,
+  type AgeBandId,
+  type InterestDeskId,
+  type InterestSource,
+} from '../../lib/ywc/interestCatalog';
 
-type HubFilters = {
-  title: string;
-  audienceAge: 'any' | AudienceAge;
-  orientation: 'any' | OrientationDesk;
-  politics: 'any' | PoliticsDesk;
-};
+function facetPills(src: { kind?: string; audienceAge?: string; orientation?: string; politics?: string }, extra: string[] = []) {
+  const kind = src.kind ? SOURCE_KIND_LABEL[src.kind as keyof typeof SOURCE_KIND_LABEL] : '';
+  const age = AUDIENCE_AGE_OPTIONS.find((o) => o.id === src.audienceAge)?.label;
+  const ori = ORIENTATION_OPTIONS.find((o) => o.id === src.orientation)?.label;
+  const pol = POLITICS_OPTIONS.find((o) => o.id === src.politics)?.label;
+  return [kind, age, ori, pol, ...extra].filter(Boolean) as string[];
+}
 
-const EMPTY_FILTERS: HubFilters = {
-  title: '',
-  audienceAge: 'any',
-  orientation: 'any',
-  politics: 'any',
-};
-
-function facetPills(pub: Pick<MagazinePublicationCard, 'audienceAge' | 'orientation' | 'politics'>) {
-  const age = AUDIENCE_AGE_OPTIONS.find((o) => o.id === pub.audienceAge)?.label || pub.audienceAge;
-  const ori = ORIENTATION_OPTIONS.find((o) => o.id === pub.orientation)?.label || pub.orientation;
-  const pol = POLITICS_OPTIONS.find((o) => o.id === pub.politics)?.label || pub.politics;
-  return [age, ori, pol];
+function liveStoryFor(homepage: string, stories: MagazineStory[]): MagazineStory | undefined {
+  const host = sourceHost(homepage);
+  if (!host) return undefined;
+  return stories.find((s) => sourceHost(s.homepage) === host || sourceHost(s.articleUrl) === host);
 }
 
 function TwinCard({
@@ -101,65 +103,83 @@ function TwinCard({
   );
 }
 
-function FilterBar({
-  filters,
-  onChange,
+function CatalogNav({
+  band,
+  desk,
+  agentSlug,
+  title,
+  onBand,
+  onDesk,
+  onAgent,
+  onTitle,
 }: {
-  filters: HubFilters;
-  onChange: (next: HubFilters) => void;
+  band: AgeBandId;
+  desk: InterestDeskId;
+  agentSlug: string;
+  title: string;
+  onBand: (id: AgeBandId) => void;
+  onDesk: (id: InterestDeskId) => void;
+  onAgent: (slug: string) => void;
+  onTitle: (q: string) => void;
 }) {
-  const selectClass =
-    'bg-black/70 border border-white/15 rounded-lg px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-white';
+  const agents = agentsFor(band, desk);
+  const bandNote = AGE_BANDS.find((b) => b.id === band)?.note || '';
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
-      <label className="relative sm:col-span-2 xl:col-span-1">
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {AGE_BANDS.map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            onClick={() => onBand(b.id)}
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 ${
+              band === b.id ? 'bg-[#39ff14] text-black' : 'text-zinc-400 border border-white/10 hover:text-[#39ff14]'
+            }`}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {INTEREST_DESKS.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => onDesk(d.id)}
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg shrink-0 ${
+              desk === d.id ? 'bg-cyan-400 text-black' : 'text-zinc-400 border border-white/10 hover:text-cyan-300'
+            }`}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">{bandNote}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {agents.map((a) => (
+          <button
+            key={a.slug}
+            type="button"
+            onClick={() => onAgent(a.slug)}
+            className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg shrink-0 ${
+              agentSlug === a.slug
+                ? 'bg-white text-black'
+                : 'text-zinc-400 border border-white/10 hover:text-white'
+            }`}
+          >
+            {a.name}
+          </button>
+        ))}
+      </div>
+      <label className="relative block">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
         <input
-          value={filters.title}
-          onChange={(e) => onChange({ ...filters, title: e.target.value })}
-          placeholder="By title…"
+          value={title}
+          onChange={(e) => onTitle(e.target.value)}
+          placeholder="Search this desk by title…"
           className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[#39ff14]/40"
         />
       </label>
-      <select
-        value={filters.audienceAge}
-        onChange={(e) => onChange({ ...filters, audienceAge: e.target.value as HubFilters['audienceAge'] })}
-        className={selectClass}
-        aria-label="Filter by audience age"
-      >
-        <option value="any">By age — any</option>
-        {AUDIENCE_AGE_OPTIONS.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <select
-        value={filters.orientation}
-        onChange={(e) => onChange({ ...filters, orientation: e.target.value as HubFilters['orientation'] })}
-        className={selectClass}
-        aria-label="Filter by orientation desk"
-      >
-        <option value="any">By orientation — any</option>
-        {ORIENTATION_OPTIONS.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <select
-        value={filters.politics}
-        onChange={(e) => onChange({ ...filters, politics: e.target.value as HubFilters['politics'] })}
-        className={selectClass}
-        aria-label="Filter by political affiliation"
-      >
-        <option value="any">By politics — any</option>
-        {POLITICS_OPTIONS.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }
@@ -240,33 +260,37 @@ function AddFavoriteForm({ onAdd }: { onAdd: (fav: PublicationFavorite) => void 
 export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
   const { rack, status, refresh } = useMagazineRack();
   const { favs, add, remove, hasHomepage } = usePublicationFavorites();
-  const [filters, setFilters] = useState<HubFilters>(EMPTY_FILTERS);
+  const [band, setBand] = useState<AgeBandId>('19-22');
+  const [desk, setDesk] = useState<InterestDeskId>('everyone');
+  const [agentSlug, setAgentSlug] = useState('ai');
+  const [titleQ, setTitleQ] = useState('');
 
-  const hubCards = useMemo(() => {
-    return (rack.shelves || [])
-      .filter((shelf) =>
-        matchesHubFilters(
-          {
-            title: shelf.publication.name,
-            homepage: shelf.publication.homepage,
-            audienceAge: shelf.publication.audienceAge,
-            orientation: shelf.publication.orientation,
-            politics: shelf.publication.politics,
-          },
-          filters,
-        ),
-      )
-      .map((shelf) => ({ pub: shelf.publication, story: shelf.items[0] as MagazineStory | undefined }));
-  }, [rack.shelves, filters]);
+  const agents = useMemo(() => agentsFor(band, desk), [band, desk]);
+  useEffect(() => {
+    if (!agents.some((a) => a.slug === agentSlug)) {
+      setAgentSlug(agents[0]?.slug || '');
+    }
+  }, [agents, agentSlug]);
+
+  const selected = agents.find((a) => a.slug === agentSlug) || agents[0];
+  const q = titleQ.trim().toLowerCase();
+  const sources = useMemo(() => {
+    const list = selected?.sources || [];
+    if (!q) return list;
+    return list.filter((src) => `${src.name} ${src.homepage} ${selected?.name || ''}`.toLowerCase().includes(q));
+  }, [selected, q]);
 
   const favCards = useMemo(() => {
-    return favs.filter((f) =>
-      matchesHubFilters(
-        { title: f.title, homepage: f.homepage, audienceAge: f.audienceAge, orientation: f.orientation, politics: f.politics },
-        filters,
-      ),
-    );
-  }, [favs, filters]);
+    return favs.filter((f) => {
+      if (!q) return true;
+      return `${f.title} ${f.homepage}`.toLowerCase().includes(q);
+    });
+  }, [favs, q]);
+
+  const addSource = (src: InterestSource) => {
+    const fav = favoriteFromInterestSource(src, band, desk);
+    if (fav) add(fav);
+  };
 
   return (
     <section className="space-y-6" aria-label="Online publication hub">
@@ -289,10 +313,10 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
               Two matching racks
             </h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Left is the live magazine rack. Right is yours. Add favorites by title, audience age,
-              orientation desk, or political affiliation. Every card has a translator. Headlines still
-              open <strong className="text-zinc-200 font-semibold">their</strong> site so people can
-              subscribe there. ClearPath does not sell these titles.
+              35 interest desks per life stage, plus 15 gay-men desks and 15 lesbian/queer-women desks.
+              Each desk opens the publisher&apos;s own site so people can subscribe there. Dating apps and
+              official health pages are bookmarks — not scraped feeds, and not medical advice. ClearPath
+              does not sell these titles.
             </p>
           </div>
           <button
@@ -305,48 +329,65 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <FilterBar filters={filters} onChange={setFilters} />
+      <CatalogNav
+        band={band}
+        desk={desk}
+        agentSlug={selected?.slug || ''}
+        title={titleQ}
+        onBand={setBand}
+        onDesk={setDesk}
+        onAgent={setAgentSlug}
+        onTitle={setTitleQ}
+      />
+
+      {selected ? (
+        <p className="text-[11px] text-zinc-400 leading-relaxed">
+          <span className="text-white font-semibold">{selected.name}</span>
+          {' — '}
+          {selected.watches}
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
         <div className="rounded-3xl border border-white/10 bg-black/20 p-4 md:p-5 space-y-4 min-h-[28rem]">
           <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
             <h3 className="text-xl font-serif italic font-black text-white">The hub</h3>
             <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
-              {hubCards.length} titles
+              {sources.length} sources
             </span>
           </div>
-          {status === 'loading' && hubCards.length === 0 ? (
+          {status === 'loading' && rack.items.length === 0 ? (
             <p className="text-xs font-mono text-zinc-500">Pulling magazine RSS…</p>
           ) : null}
-          {status === 'error' && hubCards.length === 0 ? (
-            <p className="text-xs font-mono text-rose-400">Wires are quiet. Try refresh.</p>
-          ) : null}
           <div className="space-y-3">
-            {hubCards.map(({ pub, story }) => (
-              <TwinCard
-                key={pub.id}
-                name={pub.name}
-                homepage={pub.homepage}
-                facets={facetPills(pub)}
-                story={story}
-                translatorPageUrl={story?.articleUrl || pub.homepage}
-                storyId={story?.id}
-                action={
-                  hasHomepage(pub.homepage) ? (
-                    <span className="text-[9px] font-mono uppercase tracking-widest text-[#39ff14]">On your rack</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => add(favoriteFromPublication(pub))}
-                      className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-[#39ff14] text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5"
-                    >
-                      <Heart size={11} />
-                      Add fav
-                    </button>
-                  )
-                }
-              />
-            ))}
+            {sources.map((src) => {
+              const story = liveStoryFor(src.homepage, rack.items);
+              return (
+                <TwinCard
+                  key={`${src.id}:${src.homepage}`}
+                  name={src.name}
+                  homepage={src.homepage}
+                  facets={facetPills(src)}
+                  story={story}
+                  translatorPageUrl={story?.articleUrl || src.homepage}
+                  storyId={story?.id}
+                  action={
+                    hasHomepage(src.homepage) ? (
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-[#39ff14]">On your rack</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => addSource(src)}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-[#39ff14] text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5"
+                      >
+                        <Heart size={11} />
+                        Add fav
+                      </button>
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -365,8 +406,7 @@ export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
           ) : (
             <div className="space-y-3">
               {favCards.map((fav) => {
-                const shelf = rack.shelves.find((s) => s.publication.homepage === fav.homepage);
-                const story = shelf?.items[0];
+                const story = liveStoryFor(fav.homepage, rack.items);
                 return (
                   <TwinCard
                     key={fav.id}

@@ -13,6 +13,16 @@ import {
   upsertFavorite,
 } from '../src/lib/ywc/publicationHub.ts';
 import { MAGAZINE_PUBLICATIONS, toPublicationCard } from '../src/server/magazineRack.ts';
+import {
+  AGE_BANDS,
+  EARLY_ADULT_AGENTS,
+  GAY_MEN_AGENTS,
+  LATER_LIFE_AGENTS,
+  QUEER_WOMEN_AGENTS,
+  agentsFor,
+  allCatalogSources,
+  isFetchableKind,
+} from '../src/lib/ywc/interestCatalog.ts';
 
 assert.equal(parseFavoriteHomepage('https://www.out.com/'), 'https://www.out.com/');
 assert.equal(parseFavoriteHomepage('http://www.out.com/'), null);
@@ -100,5 +110,26 @@ assert.equal(stored[0].title, 'Good');
 const merged = upsertFavorite(stored, starred);
 assert.equal(merged[0].id, starred.id);
 assert.ok(merged.some((f) => f.homepage === 'https://reason.com/'));
+
+assert.equal(AGE_BANDS.length, 6);
+assert.equal(EARLY_ADULT_AGENTS.length, 35);
+assert.equal(LATER_LIFE_AGENTS.length, 35);
+assert.equal(GAY_MEN_AGENTS.length, 15);
+assert.equal(QUEER_WOMEN_AGENTS.length, 15);
+assert.equal(agentsFor('19-22', 'everyone').length, 35);
+assert.equal(agentsFor('58-80', 'everyone').length, 35);
+assert.equal(agentsFor('19-22', 'gay-men').length, 15);
+assert.equal(agentsFor('58-80', 'queer-women').length, 15);
+
+const catalog = allCatalogSources();
+assert.ok(catalog.length > 40);
+assert.ok(catalog.every((s) => s.homepage.startsWith('https://')));
+assert.ok(
+  catalog.filter((s) => s.kind === 'app').every((s) => s.id === 'grindr' || s.id === 'her'),
+);
+assert.ok(
+  catalog.filter((s) => s.kind === 'app').every((s) => !isFetchableKind(s.kind)),
+  'dating apps are never RSS-fetched',
+);
 
 console.log('publication-hub.selftest: ok');
