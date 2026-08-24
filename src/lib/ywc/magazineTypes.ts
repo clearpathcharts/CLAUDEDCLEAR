@@ -1,4 +1,12 @@
-export type MagazineCategory = 'automotive' | 'lifestyle' | 'tech' | 'science';
+export type MagazineCategory = 'automotive' | 'lifestyle' | 'tech' | 'science' | 'news';
+
+/** Who the magazine is written for — not a person's age. */
+export type AudienceAge = 'all-ages' | 'young-adult' | 'adult' | 'fifty-plus';
+
+/** Press desk, not a dating profile. */
+export type OrientationDesk = 'general' | 'lgbtq';
+
+export type PoliticsDesk = 'nonpartisan' | 'left' | 'center' | 'right';
 
 export type MagazineStory = {
   id: string;
@@ -18,6 +26,9 @@ export type MagazinePublicationCard = {
   name: string;
   homepage: string;
   category: MagazineCategory;
+  audienceAge: AudienceAge;
+  orientation: OrientationDesk;
+  politics: PoliticsDesk;
 };
 
 export type MagazineShelf = {

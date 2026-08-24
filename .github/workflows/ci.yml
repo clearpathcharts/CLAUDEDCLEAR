@@ -60,6 +60,9 @@ jobs:
       - name: YWC RSS discover self-test
         run: npm run test:rss-discover
 
+      - name: YWC publication hub self-test
+        run: npm run test:publication-hub
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

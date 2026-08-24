@@ -1,7 +1,24 @@
 import React, { useCallback, useState } from 'react';
 import { ArrowUpRight, BookOpen, Newspaper } from 'lucide-react';
 import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
-import type { MagazineCategory, MagazineRackPayload, MagazineStory } from '../../lib/ywc/magazineTypes';
+import type {
+  MagazineCategory,
+  MagazinePublicationCard,
+  MagazineRackPayload,
+  MagazineStory,
+} from '../../lib/ywc/magazineTypes';
+
+function withDeskFacets(pub: MagazinePublicationCard | undefined): MagazinePublicationCard {
+  return {
+    id: pub?.id || '',
+    name: pub?.name || '',
+    homepage: pub?.homepage || '',
+    category: pub?.category || 'lifestyle',
+    audienceAge: pub?.audienceAge || 'all-ages',
+    orientation: pub?.orientation || 'general',
+    politics: pub?.politics || 'nonpartisan',
+  };
+}
 
 const EMPTY: MagazineRackPayload = {
   fetchedAt: '',
@@ -116,8 +133,11 @@ export function useMagazineRack() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as MagazineRackPayload;
       const items = Array.isArray(data.items) ? data.items : [];
-      const publications = Array.isArray(data.publications) ? data.publications : [];
-      const shelves = Array.isArray(data.shelves) ? data.shelves : [];
+      const publications = (Array.isArray(data.publications) ? data.publications : []).map(withDeskFacets);
+      const shelves = (Array.isArray(data.shelves) ? data.shelves : []).map((shelf) => ({
+        publication: withDeskFacets(shelf.publication),
+        items: Array.isArray(shelf.items) ? shelf.items : [],
+      }));
       setRack({
         fetchedAt: data.fetchedAt || new Date().toISOString(),
         publications,

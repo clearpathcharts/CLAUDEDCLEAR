@@ -9,6 +9,7 @@ const TABS: Array<{ id: 'all' | MagazineCategory; label: string }> = [
   { id: 'lifestyle', label: 'LIFESTYLE' },
   { id: 'tech', label: 'TECH' },
   { id: 'science', label: 'SCIENCE' },
+  { id: 'news', label: 'NEWS & POLITICS' },
 ];
 
 export default function MagazineHub() {

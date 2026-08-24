@@ -18,8 +18,16 @@ assert.ok(
   'Motorsport F1 wire is on the rack',
 );
 assert.ok(
-  MAGAZINE_PUBLICATIONS.some((p) => p.id === 'smithsonian'),
-  'Smithsonian Magazine is on the rack',
+  MAGAZINE_PUBLICATIONS.some((p) => p.id === 'them' && p.orientation === 'lgbtq'),
+  'LGBTQ+ press is on the rack',
+);
+assert.ok(
+  MAGAZINE_PUBLICATIONS.some((p) => p.id === 'national-review' && p.politics === 'right'),
+  'right-leaning desk is on the rack',
+);
+assert.ok(
+  MAGAZINE_PUBLICATIONS.every((p) => p.audienceAge && p.orientation && p.politics),
+  'every publication has hub facets',
 );
 assert.ok(
   MAGAZINE_PUBLICATIONS.every((p) => p.homepage.startsWith('https://') && p.feedUrl.startsWith('https://')),

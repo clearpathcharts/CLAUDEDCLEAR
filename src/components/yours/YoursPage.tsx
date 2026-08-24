@@ -42,7 +42,7 @@ import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 import { YwcMagazineRack } from './YwcMagazineRack';
-import { YwcRssCatalog } from './YwcRssCatalog';
+import { YwcPublicationHub } from './YwcPublicationHub';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -407,7 +407,8 @@ export default function YoursPageHub() {
 
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get('ywc') === 'catalog') {
+      const ywc = new URLSearchParams(window.location.search).get('ywc');
+      if (ywc === 'catalog' || ywc === 'hub') {
         setSelectedFeedCategory('catalog');
       }
     } catch {
@@ -418,7 +419,7 @@ export default function YoursPageHub() {
   const setYwcCatalogParam = (open: boolean) => {
     try {
       const url = new URL(window.location.href);
-      if (open) url.searchParams.set('ywc', 'catalog');
+      if (open) url.searchParams.set('ywc', 'hub');
       else url.searchParams.delete('ywc');
       window.history.replaceState({}, '', url);
     } catch {
@@ -430,7 +431,7 @@ export default function YoursPageHub() {
     setSelectedFeedCategory('catalog');
     setYwcCatalogParam(true);
     window.requestAnimationFrame(() => {
-      document.getElementById('ywc-rss-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('ywc-publication-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
@@ -738,25 +739,26 @@ export default function YoursPageHub() {
         type="button"
         onClick={openRssCatalog}
         className="w-full text-left"
-        aria-label="Open the RSS catalog"
+        aria-label="Open the online publication hub"
       >
         <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8" className="group cursor-pointer hover:border-[#39ff14]/40">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-2 max-w-2xl">
               <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] uppercase">
                 <Library className="w-3.5 h-3.5" />
-                <span>Bento — tap to open</span>
+                <span>Bento — tap to open the twin desk</span>
               </div>
               <h2 className="text-2xl md:text-4xl font-serif italic font-black text-white group-hover:text-cyan-300 transition-colors">
-                RSS CATALOG
+                ONLINE PUBLICATION HUB
               </h2>
               <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
-                The full magazine rack on a second Y.W.C. desk. Motorsport, MotorTrend, WIRED, Smithsonian —
-                every headline still leaves ClearPath and opens the publisher so people can subscribe there.
+                Twin racks: the live magazine wire on the left, your favorites on the right. Add titles by
+                name, audience age, orientation desk, or political affiliation. Every card has a translator.
+                Clicks still leave ClearPath and open the publisher so people can subscribe there.
               </p>
             </div>
             <span className="shrink-0 px-5 py-3 rounded-2xl bg-[#39ff14] text-black text-[11px] font-black uppercase tracking-widest">
-              Open catalog
+              Open hub
             </span>
           </div>
         </YwcLavaPanel>
@@ -770,8 +772,8 @@ export default function YoursPageHub() {
 
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
-          <div className="flex items-center justify-between pb-4 border-b-2 border-[#FF4500]/30">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-start justify-between pb-4 border-b-2 border-[#FF4500]/30 gap-3">
+            <div className="flex flex-wrap items-center gap-2 py-1">
               <span className="text-sm font-black text-[#39ff14] uppercase tracking-wider shrink-0 pr-2 border-r border-white/10 hidden sm:inline">
                 SECTIONS:
               </span>
@@ -785,7 +787,7 @@ export default function YoursPageHub() {
                 { id: 'politics', label: 'POLITICAL HUB' },
                 { id: 'tech', label: 'TECH' },
                 { id: 'magazine', label: 'MAGAZINE EDITS' },
-                { id: 'catalog', label: 'RSS CATALOG' }
+                { id: 'catalog', label: 'PUBLICATION HUB' }
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -794,7 +796,7 @@ export default function YoursPageHub() {
                     setSelectedFeedCategory(cat.id as typeof selectedFeedCategory);
                     setYwcCatalogParam(cat.id === 'catalog');
                   }}
-                  className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedFeedCategory === cat.id 
                       ? 'bg-[#39ff14] text-black shadow-[0_0_15px_rgba(57,255,20,0.65)] font-extrabold' 
                       : 'text-zinc-400 hover:text-[#39ff14] hover:bg-zinc-900/50'
@@ -810,8 +812,8 @@ export default function YoursPageHub() {
           </YwcLavaPanel>
 
           {selectedFeedCategory === 'catalog' ? (
-            <YwcLavaPanel id="ywc-rss-catalog" rounded="3xl">
-              <YwcRssCatalog
+            <YwcLavaPanel id="ywc-publication-hub" rounded="3xl">
+              <YwcPublicationHub
                 onBack={() => {
                   setSelectedFeedCategory('all');
                   setYwcCatalogParam(false);

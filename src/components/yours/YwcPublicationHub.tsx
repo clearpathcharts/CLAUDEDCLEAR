@@ -1,0 +1,402 @@
+import React, { useMemo, useState } from 'react';
+import { ArrowLeft, ArrowUpRight, Heart, Library, Plus, Search } from 'lucide-react';
+import { useMagazineRack } from './YwcMagazineRack';
+import { PublicationTranslator } from './YwcPublicationTranslator';
+import { usePublicationFavorites } from './usePublicationFavorites';
+import type { AudienceAge, MagazinePublicationCard, MagazineStory, OrientationDesk, PoliticsDesk } from '../../lib/ywc/magazineTypes';
+import {
+  AUDIENCE_AGE_OPTIONS,
+  ORIENTATION_OPTIONS,
+  POLITICS_OPTIONS,
+  favoriteFromForm,
+  favoriteFromPublication,
+  matchesHubFilters,
+  type PublicationFavorite,
+} from '../../lib/ywc/publicationHub';
+
+type HubFilters = {
+  title: string;
+  audienceAge: 'any' | AudienceAge;
+  orientation: 'any' | OrientationDesk;
+  politics: 'any' | PoliticsDesk;
+};
+
+const EMPTY_FILTERS: HubFilters = {
+  title: '',
+  audienceAge: 'any',
+  orientation: 'any',
+  politics: 'any',
+};
+
+function facetPills(pub: Pick<MagazinePublicationCard, 'audienceAge' | 'orientation' | 'politics'>) {
+  const age = AUDIENCE_AGE_OPTIONS.find((o) => o.id === pub.audienceAge)?.label || pub.audienceAge;
+  const ori = ORIENTATION_OPTIONS.find((o) => o.id === pub.orientation)?.label || pub.orientation;
+  const pol = POLITICS_OPTIONS.find((o) => o.id === pub.politics)?.label || pub.politics;
+  return [age, ori, pol];
+}
+
+function TwinCard({
+  name,
+  homepage,
+  facets,
+  story,
+  action,
+  translatorPageUrl,
+  storyId,
+}: {
+  name: string;
+  homepage: string;
+  facets: string[];
+  story?: MagazineStory;
+  action: React.ReactNode;
+  translatorPageUrl: string;
+  storyId?: string;
+}) {
+  return (
+    <article className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4 space-y-3 flex flex-col">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1 min-w-0">
+          <h4 className="text-lg font-serif italic font-black text-white leading-tight">{name}</h4>
+          <div className="flex flex-wrap gap-1">
+            {facets.map((f) => (
+              <span
+                key={f}
+                className="text-[8px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full border border-white/10 text-zinc-400"
+              >
+                {f}
+              </span>
+            ))}
+          </div>
+        </div>
+        {action}
+      </div>
+      {story ? (
+        <a
+          href={story.articleUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-zinc-200 hover:text-cyan-300 line-clamp-2 leading-snug"
+        >
+          {story.title}
+        </a>
+      ) : (
+        <p className="text-xs text-zinc-500 font-mono">Opens the publisher homepage.</p>
+      )}
+      <PublicationTranslator
+        pageUrl={translatorPageUrl}
+        storyId={storyId}
+        title={story?.title}
+        snippet={story?.snippet}
+      />
+      <a
+        href={homepage}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-[#00f0ff] hover:text-[#ff0088]"
+      >
+        Subscribe at publisher
+        <ArrowUpRight size={12} />
+      </a>
+    </article>
+  );
+}
+
+function FilterBar({
+  filters,
+  onChange,
+}: {
+  filters: HubFilters;
+  onChange: (next: HubFilters) => void;
+}) {
+  const selectClass =
+    'bg-black/70 border border-white/15 rounded-lg px-2 py-1.5 text-[10px] font-mono uppercase tracking-wider text-white';
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
+      <label className="relative sm:col-span-2 xl:col-span-1">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <input
+          value={filters.title}
+          onChange={(e) => onChange({ ...filters, title: e.target.value })}
+          placeholder="By title…"
+          className="w-full bg-black/50 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-[#39ff14]/40"
+        />
+      </label>
+      <select
+        value={filters.audienceAge}
+        onChange={(e) => onChange({ ...filters, audienceAge: e.target.value as HubFilters['audienceAge'] })}
+        className={selectClass}
+        aria-label="Filter by audience age"
+      >
+        <option value="any">By age — any</option>
+        {AUDIENCE_AGE_OPTIONS.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filters.orientation}
+        onChange={(e) => onChange({ ...filters, orientation: e.target.value as HubFilters['orientation'] })}
+        className={selectClass}
+        aria-label="Filter by orientation desk"
+      >
+        <option value="any">By orientation — any</option>
+        {ORIENTATION_OPTIONS.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <select
+        value={filters.politics}
+        onChange={(e) => onChange({ ...filters, politics: e.target.value as HubFilters['politics'] })}
+        className={selectClass}
+        aria-label="Filter by political affiliation"
+      >
+        <option value="any">By politics — any</option>
+        {POLITICS_OPTIONS.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function AddFavoriteForm({ onAdd }: { onAdd: (fav: PublicationFavorite) => void }) {
+  const [title, setTitle] = useState('');
+  const [homepage, setHomepage] = useState('');
+  const [audienceAge, setAudienceAge] = useState<AudienceAge>('all-ages');
+  const [orientation, setOrientation] = useState<OrientationDesk>('general');
+  const [politics, setPolitics] = useState<PoliticsDesk>('nonpartisan');
+  const [error, setError] = useState('');
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const fav = favoriteFromForm({ title, homepage, audienceAge, orientation, politics });
+    if (!fav) {
+      setError('Need a title and an https:// publisher homepage.');
+      return;
+    }
+    onAdd(fav);
+    setTitle('');
+    setHomepage('');
+    setError('');
+  };
+
+  const field = 'w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white';
+  return (
+    <form onSubmit={submit} className="space-y-2 rounded-2xl border border-[#39ff14]/25 bg-black/30 p-3">
+      <p className="text-[9px] font-mono uppercase tracking-widest text-[#39ff14]">Add your fav</p>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Publication title"
+        className={field}
+        maxLength={80}
+      />
+      <input
+        value={homepage}
+        onChange={(e) => setHomepage(e.target.value)}
+        placeholder="https://publisher.example/"
+        className={field}
+      />
+      <div className="grid grid-cols-3 gap-1.5">
+        <select value={audienceAge} onChange={(e) => setAudienceAge(e.target.value as AudienceAge)} className={field}>
+          {AUDIENCE_AGE_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select value={orientation} onChange={(e) => setOrientation(e.target.value as OrientationDesk)} className={field}>
+          {ORIENTATION_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <select value={politics} onChange={(e) => setPolitics(e.target.value as PoliticsDesk)} className={field}>
+          {POLITICS_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {error ? <p className="text-[10px] text-rose-400">{error}</p> : null}
+      <button
+        type="submit"
+        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#39ff14] text-black text-[10px] font-black uppercase tracking-widest py-2"
+      >
+        <Plus size={12} />
+        Add favorite
+      </button>
+    </form>
+  );
+}
+
+export function YwcPublicationHub({ onBack }: { onBack: () => void }) {
+  const { rack, status, refresh } = useMagazineRack();
+  const { favs, add, remove, hasHomepage } = usePublicationFavorites();
+  const [filters, setFilters] = useState<HubFilters>(EMPTY_FILTERS);
+
+  const hubCards = useMemo(() => {
+    return (rack.shelves || [])
+      .filter((shelf) =>
+        matchesHubFilters(
+          {
+            title: shelf.publication.name,
+            homepage: shelf.publication.homepage,
+            audienceAge: shelf.publication.audienceAge,
+            orientation: shelf.publication.orientation,
+            politics: shelf.publication.politics,
+          },
+          filters,
+        ),
+      )
+      .map((shelf) => ({ pub: shelf.publication, story: shelf.items[0] as MagazineStory | undefined }));
+  }, [rack.shelves, filters]);
+
+  const favCards = useMemo(() => {
+    return favs.filter((f) =>
+      matchesHubFilters(
+        { title: f.title, homepage: f.homepage, audienceAge: f.audienceAge, orientation: f.orientation, politics: f.politics },
+        filters,
+      ),
+    );
+  }, [favs, filters]);
+
+  return (
+    <section className="space-y-6" aria-label="Online publication hub">
+      <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="self-start inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-zinc-400 hover:text-white"
+        >
+          <ArrowLeft size={14} />
+          Back to Your World Connected
+        </button>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1 max-w-2xl">
+            <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] uppercase">
+              <Library className="w-3 h-3" />
+              <span>Online publication hub — twin desk</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-serif italic font-black text-white">
+              Two matching racks
+            </h2>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Left is the live magazine rack. Right is yours. Add favorites by title, audience age,
+              orientation desk, or political affiliation. Every card has a translator. Headlines still
+              open <strong className="text-zinc-200 font-semibold">their</strong> site so people can
+              subscribe there. ClearPath does not sell these titles.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 hover:text-[#39ff14] border border-white/10 rounded-lg px-3 py-1.5"
+          >
+            Refresh wires
+          </button>
+        </div>
+      </div>
+
+      <FilterBar filters={filters} onChange={setFilters} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-start">
+        <div className="rounded-3xl border border-white/10 bg-black/20 p-4 md:p-5 space-y-4 min-h-[28rem]">
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <h3 className="text-xl font-serif italic font-black text-white">The hub</h3>
+            <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
+              {hubCards.length} titles
+            </span>
+          </div>
+          {status === 'loading' && hubCards.length === 0 ? (
+            <p className="text-xs font-mono text-zinc-500">Pulling magazine RSS…</p>
+          ) : null}
+          {status === 'error' && hubCards.length === 0 ? (
+            <p className="text-xs font-mono text-rose-400">Wires are quiet. Try refresh.</p>
+          ) : null}
+          <div className="space-y-3">
+            {hubCards.map(({ pub, story }) => (
+              <TwinCard
+                key={pub.id}
+                name={pub.name}
+                homepage={pub.homepage}
+                facets={facetPills(pub)}
+                story={story}
+                translatorPageUrl={story?.articleUrl || pub.homepage}
+                storyId={story?.id}
+                action={
+                  hasHomepage(pub.homepage) ? (
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-[#39ff14]">On your rack</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => add(favoriteFromPublication(pub))}
+                      className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-[#39ff14] text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5"
+                    >
+                      <Heart size={11} />
+                      Add fav
+                    </button>
+                  )
+                }
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-[#39ff14]/25 bg-black/20 p-4 md:p-5 space-y-4 min-h-[28rem] shadow-[0_0_40px_rgba(57,255,20,0.06)]">
+          <div className="flex items-center justify-between gap-2 border-b border-[#39ff14]/20 pb-3">
+            <h3 className="text-xl font-serif italic font-black text-white">Your favorites</h3>
+            <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
+              {favCards.length} saved
+            </span>
+          </div>
+          <AddFavoriteForm onAdd={add} />
+          {favCards.length === 0 ? (
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Twin is empty until you add a title from the hub or paste an https homepage here.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {favCards.map((fav) => {
+                const shelf = rack.shelves.find((s) => s.publication.homepage === fav.homepage);
+                const story = shelf?.items[0];
+                return (
+                  <TwinCard
+                    key={fav.id}
+                    name={fav.title}
+                    homepage={fav.homepage}
+                    facets={facetPills(fav)}
+                    story={story}
+                    translatorPageUrl={story?.articleUrl || fav.homepage}
+                    storyId={story?.id}
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => remove(fav.id)}
+                        className="shrink-0 text-[9px] font-mono uppercase tracking-widest text-zinc-500 hover:text-rose-300 border border-white/10 rounded-lg px-2 py-1"
+                      >
+                        Remove
+                      </button>
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Back-compat name used by the Y.W.C. catalog route. */
+export function YwcRssCatalog({ onBack }: { onBack: () => void }) {
+  return <YwcPublicationHub onBack={onBack} />;
+}

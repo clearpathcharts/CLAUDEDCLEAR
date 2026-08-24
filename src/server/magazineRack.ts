@@ -5,10 +5,15 @@
  * ClearPath does not sell these magazines and is not their partner.
  */
 import RSSParser from 'rss-parser';
+import { googleTranslatePageUrl, isHubTranslateLang } from '../lib/ywc/publicationHub';
 import type {
+  AudienceAge,
   MagazineCategory,
+  MagazinePublicationCard,
   MagazineRackPayload,
   MagazineStory,
+  OrientationDesk,
+  PoliticsDesk,
 } from '../lib/ywc/magazineTypes';
 
 export type { MagazineCategory, MagazineRackPayload, MagazineStory };
@@ -22,6 +27,27 @@ export type MagazinePublication = {
   category: MagazineCategory;
   /** Hosts allowed on article links (not image CDNs). */
   articleHosts: string[];
+  audienceAge: AudienceAge;
+  orientation: OrientationDesk;
+  politics: PoliticsDesk;
+};
+
+export function toPublicationCard(p: MagazinePublication): MagazinePublicationCard {
+  return {
+    id: p.id,
+    name: p.name,
+    homepage: p.homepage,
+    category: p.category,
+    audienceAge: p.audienceAge,
+    orientation: p.orientation,
+    politics: p.politics,
+  };
+}
+
+const GENERAL_DESK = {
+  audienceAge: 'all-ages' as const,
+  orientation: 'general' as const,
+  politics: 'nonpartisan' as const,
 };
 
 export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
@@ -32,6 +58,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.motorsport.com/rss/f1/news/',
     category: 'automotive',
     articleHosts: ['motorsport.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'motorsport-motogp',
@@ -40,6 +67,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.motorsport.com/rss/motogp/news/',
     category: 'automotive',
     articleHosts: ['motorsport.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'autosport',
@@ -48,6 +76,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.autosport.com/rss/feed/news',
     category: 'automotive',
     articleHosts: ['autosport.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'motortrend',
@@ -56,6 +85,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.motortrend.com/news/rss',
     category: 'automotive',
     articleHosts: ['motortrend.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'caranddriver',
@@ -64,6 +94,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.caranddriver.com/rss/all.xml',
     category: 'automotive',
     articleHosts: ['caranddriver.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'roadandtrack',
@@ -72,6 +103,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.roadandtrack.com/rss/all.xml/',
     category: 'automotive',
     articleHosts: ['roadandtrack.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'popularmechanics',
@@ -80,6 +112,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.popularmechanics.com/rss/all.xml/',
     category: 'tech',
     articleHosts: ['popularmechanics.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'wired',
@@ -88,6 +121,9 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.wired.com/feed/rss',
     category: 'tech',
     articleHosts: ['wired.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'nonpartisan',
   },
   {
     id: 'gq',
@@ -96,6 +132,9 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.gq.com/feed/rss',
     category: 'lifestyle',
     articleHosts: ['gq.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'nonpartisan',
   },
   {
     id: 'esquire',
@@ -104,6 +143,9 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.esquire.com/rss/all.xml/',
     category: 'lifestyle',
     articleHosts: ['esquire.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'nonpartisan',
   },
   {
     id: 'bbc-f1',
@@ -112,6 +154,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://feeds.bbci.co.uk/sport/formula1/rss.xml',
     category: 'automotive',
     articleHosts: ['bbc.co.uk', 'bbc.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'smithsonian',
@@ -120,6 +163,7 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.smithsonianmag.com/rss/latest_articles/',
     category: 'science',
     articleHosts: ['smithsonianmag.com'],
+    ...GENERAL_DESK,
   },
   {
     id: 'popsci',
@@ -128,11 +172,100 @@ export const MAGAZINE_PUBLICATIONS: MagazinePublication[] = [
     feedUrl: 'https://www.popsci.com/feed/',
     category: 'science',
     articleHosts: ['popsci.com'],
+    ...GENERAL_DESK,
+  },
+  {
+    id: 'them',
+    name: 'Them',
+    homepage: 'https://www.them.us/',
+    feedUrl: 'https://www.them.us/feed/rss',
+    category: 'lifestyle',
+    articleHosts: ['them.us'],
+    audienceAge: 'adult',
+    orientation: 'lgbtq',
+    politics: 'left',
+  },
+  {
+    id: 'out',
+    name: 'Out',
+    homepage: 'https://www.out.com/',
+    feedUrl: 'https://www.out.com/rss.xml',
+    category: 'lifestyle',
+    articleHosts: ['out.com'],
+    audienceAge: 'adult',
+    orientation: 'lgbtq',
+    politics: 'nonpartisan',
+  },
+  {
+    id: 'advocate',
+    name: 'The Advocate',
+    homepage: 'https://www.advocate.com/',
+    feedUrl: 'https://www.advocate.com/rss.xml',
+    category: 'lifestyle',
+    articleHosts: ['advocate.com'],
+    audienceAge: 'adult',
+    orientation: 'lgbtq',
+    politics: 'left',
+  },
+  {
+    id: 'teen-vogue',
+    name: 'Teen Vogue',
+    homepage: 'https://www.teenvogue.com/',
+    feedUrl: 'https://www.teenvogue.com/feed/rss',
+    category: 'lifestyle',
+    articleHosts: ['teenvogue.com'],
+    audienceAge: 'young-adult',
+    orientation: 'general',
+    politics: 'left',
+  },
+  {
+    id: 'the-atlantic',
+    name: 'The Atlantic',
+    homepage: 'https://www.theatlantic.com/',
+    feedUrl: 'https://www.theatlantic.com/feed/all/',
+    category: 'news',
+    articleHosts: ['theatlantic.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'left',
+  },
+  {
+    id: 'the-hill',
+    name: 'The Hill',
+    homepage: 'https://thehill.com/',
+    feedUrl: 'https://thehill.com/feed/',
+    category: 'news',
+    articleHosts: ['thehill.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'center',
+  },
+  {
+    id: 'national-review',
+    name: 'National Review',
+    homepage: 'https://www.nationalreview.com/',
+    feedUrl: 'https://www.nationalreview.com/feed/',
+    category: 'news',
+    articleHosts: ['nationalreview.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'right',
+  },
+  {
+    id: 'reason',
+    name: 'Reason',
+    homepage: 'https://reason.com/',
+    feedUrl: 'https://reason.com/feed/',
+    category: 'news',
+    articleHosts: ['reason.com'],
+    audienceAge: 'adult',
+    orientation: 'general',
+    politics: 'right',
   },
 ];
 
 const ITEMS_PER_FEED = 4;
-const MAX_RACK_ITEMS = 28;
+const MAX_RACK_ITEMS = 40;
 const CACHE_MS = 15 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -309,7 +442,7 @@ async function fetchFeedXml(feedUrl: string): Promise<string> {
 async function fetchOneFeed(pub: MagazinePublication): Promise<MagazineStory[]> {
   const xml = await fetchFeedXml(pub.feedUrl);
   const feed = await parser.parseString(sanitizeRssXml(xml));
-  return storiesFromFeed(pub, (feed.items || []) as Array<Record<string, unknown>>);
+  return storiesFromFeed(pub, (feed.items || []) as unknown as Array<Record<string, unknown>>);
 }
 
 export async function getMagazineRack(force = false): Promise<MagazineRackPayload> {
@@ -330,20 +463,10 @@ export async function getMagazineRack(force = false): Promise<MagazineRackPayloa
 
   const payload: MagazineRackPayload = {
     fetchedAt: new Date().toISOString(),
-    publications: MAGAZINE_PUBLICATIONS.map((p) => ({
-      id: p.id,
-      name: p.name,
-      homepage: p.homepage,
-      category: p.category,
-    })),
+    publications: MAGAZINE_PUBLICATIONS.map(toPublicationCard),
     items: interleave(groups),
     shelves: MAGAZINE_PUBLICATIONS.map((p, i) => ({
-      publication: {
-        id: p.id,
-        name: p.name,
-        homepage: p.homepage,
-        category: p.category,
-      },
+      publication: toPublicationCard(p),
       items: groups[i] ?? [],
     })),
   };
@@ -357,5 +480,80 @@ export async function parseMagazineFeedXml(
   xml: string,
 ): Promise<MagazineStory[]> {
   const feed = await parser.parseString(sanitizeRssXml(xml));
-  return storiesFromFeed(pub, (feed.items || []) as Array<Record<string, unknown>>);
+  return storiesFromFeed(pub, (feed.items || []) as unknown as Array<Record<string, unknown>>);
+}
+
+export async function findMagazineStory(storyId: string): Promise<MagazineStory | null> {
+  const id = storyId.trim();
+  if (!id) return null;
+  const rack = await getMagazineRack();
+  const hit = rack.items.find((s) => s.id === id);
+  if (hit) return hit;
+  for (const shelf of rack.shelves) {
+    const nested = shelf.items.find((s) => s.id === id);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+type GtxChunk = [string, string, ...unknown[]];
+
+async function gtxTranslate(text: string, lang: string): Promise<string | null> {
+  const q = text.trim().slice(0, 500);
+  if (!q) return text;
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(lang)}&dt=t&q=${encodeURIComponent(q)}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    if (!Array.isArray(data) || !Array.isArray(data[0])) return null;
+    const parts = (data[0] as GtxChunk[]).map((chunk) =>
+      typeof chunk?.[0] === 'string' ? chunk[0] : '',
+    );
+    return parts.join('').trim() || null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function translateMagazineStory(
+  storyId: string,
+  lang: string,
+): Promise<{
+  title: string;
+  snippet: string;
+  translated: boolean;
+  articleUrl: string;
+  translatePageUrl: string;
+}> {
+  if (!isHubTranslateLang(lang)) {
+    throw new Error('Unsupported language');
+  }
+  const story = await findMagazineStory(storyId);
+  if (!story) throw new Error('Story not on the rack');
+  const translatePageUrl = googleTranslatePageUrl(story.articleUrl, lang);
+  if (lang === 'en') {
+    return {
+      title: story.title,
+      snippet: story.snippet,
+      translated: false,
+      articleUrl: story.articleUrl,
+      translatePageUrl,
+    };
+  }
+  const [title, snippet] = await Promise.all([
+    gtxTranslate(story.title, lang),
+    story.snippet ? gtxTranslate(story.snippet, lang) : Promise.resolve(story.snippet),
+  ]);
+  return {
+    title: title || story.title,
+    snippet: snippet || story.snippet,
+    translated: Boolean(title && title !== story.title),
+    articleUrl: story.articleUrl,
+    translatePageUrl,
+  };
 }

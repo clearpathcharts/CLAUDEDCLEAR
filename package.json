@@ -35,6 +35,7 @@
     "test:chart-zoom": "tsx scripts/chart-zoom.selftest.ts",
     "test:magazine-rack": "tsx scripts/magazine-rack.selftest.ts",
     "test:rss-discover": "tsx scripts/rss-discover.selftest.ts",
+    "test:publication-hub": "tsx scripts/publication-hub.selftest.ts",
     "ingest:rss-catalog": "tsx scripts/ingest-rss-catalog.ts",
     "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
