@@ -31,6 +31,7 @@
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
     "test:chart-pulse": "tsx scripts/chart-pulse.selftest.ts",
+    "test:explain-nav": "tsx scripts/explain-nav.selftest.ts",
     "test:chart-zoom": "tsx scripts/chart-zoom.selftest.ts",
     "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
