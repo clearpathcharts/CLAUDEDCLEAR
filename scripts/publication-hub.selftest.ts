@@ -25,9 +25,11 @@ import {
   DEMOCRAT_WOMEN_AGENTS,
   SPORTS_MEN_AGENTS,
   SPORTS_WOMEN_AGENTS,
+  WEIRD_AGENTS,
   INTEREST_DESKS,
   agentsFor,
   allCatalogSources,
+  feedRowsFor,
   isFetchableKind,
   isOptInDesk,
   orientationForDesk,
@@ -264,6 +266,47 @@ assert.ok(
   SPORTS_WOMEN_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
   'sports-women homepages are https bookmarks',
 );
+assert.equal(WEIRD_AGENTS.length, 21);
+assert.equal(agentsFor('19-22', 'weird').length, 21);
+assert.equal(feedRowsFor('19-22', 'weird').length, 21);
+assert.equal(feedRowsFor('19-22', 'everyone').length, 35);
+assert.equal(isOptInDesk('weird'), true);
+assert.equal(orientationForDesk('weird'), 'general');
+assert.equal(politicsForDesk('weird'), 'nonpartisan');
+assert.deepEqual(
+  WEIRD_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.yachtingmagazine.com/',
+    'https://www.superyachtnews.com/',
+    'https://www.hodinkee.com/',
+    'https://www.beeculture.com/',
+    'https://www.arrl.org/',
+    'https://nava.org/',
+    'https://www.mushroomexpert.com/',
+    'https://skyandtelescope.org/',
+    'https://www.trains.com/',
+    'https://www.geocaching.com/',
+    'https://abandonedspaces.com/',
+    'https://theghostinmyhouse.com/',
+    'https://www.homesteadingtoday.com/',
+    'https://www.bladeforums.com/',
+    'https://pinballnews.com/',
+    'https://www.reptilesmagazine.com/',
+    'https://majorleagueeating.com/',
+    'https://ica-proj.org/',
+    'https://roomescapeartist.com/',
+    'https://www.taxidermy.net/',
+    'https://robbreport.com/',
+  ],
+);
+assert.ok(WEIRD_AGENTS[20].name.includes('Robb Report'));
+assert.ok(WEIRD_AGENTS[20].watches.toLowerCase().includes('horology'));
+assert.equal(WEIRD_AGENTS[4].sources[0].kind, 'organization');
+assert.ok(
+  WEIRD_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'weird-desk homepages are https bookmarks',
+);
+assert.ok(INTEREST_DESKS.some((d) => d.id === 'weird'));
 
 const catalog = allCatalogSources();
 assert.ok(catalog.length > 40);

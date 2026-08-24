@@ -17,7 +17,8 @@ export type InterestDeskId =
   | 'democrat-men'
   | 'democrat-women'
   | 'sports-men'
-  | 'sports-women';
+  | 'sports-women'
+  | 'weird';
 export type InterestSourceKind = 'publication' | 'official' | 'app' | 'social' | 'organization';
 
 export type InterestSource = {
@@ -53,6 +54,7 @@ export const INTEREST_DESKS: Array<{ id: InterestDeskId; label: string; optIn: b
   { id: 'democrat-women', label: 'Democrat-leaning women — 15 (opt-in)', optIn: true },
   { id: 'sports-men', label: 'Sports — men — 15 (opt-in)', optIn: true },
   { id: 'sports-women', label: 'Sports — women — 15 (opt-in)', optIn: true },
+  { id: 'weird', label: 'Weird / off-the-wall — 21 (opt-in)', optIn: true },
 ];
 
 export const SOURCE_KIND_LABEL: Record<InterestSourceKind, string> = {
@@ -727,6 +729,80 @@ export const SPORTS_WOMEN_AGENTS: InterestAgent[] = [
   ]),
 ];
 
+/**
+ * Opt-in niche / oddball desk — one unified list, not split by gender.
+ * Robb Report sits here as a luxury cross-read for yachting, charters, and horology.
+ * Homepages are bookmarks; forums and orgs are not live-fetched.
+ */
+export const WEIRD_AGENTS: InterestAgent[] = [
+  agent('w-yachting', 'Nautical & Yachting', 'Boats, sailing, marine lifestyle', [
+    s('yachting', 'Yachting Magazine', 'https://www.yachtingmagazine.com/'),
+  ]),
+  agent('w-superyacht', 'Charter & Superyacht Industry', 'Yacht charters, crewing, industry news', [
+    s('superyachtnews', 'SuperYacht News', 'https://www.superyachtnews.com/'),
+  ]),
+  agent('w-watches', 'Vintage Watches & Horology', 'Watch collecting, repair, auctions', [
+    s('hodinkee', 'Hodinkee', 'https://www.hodinkee.com/'),
+  ]),
+  agent('w-bees', 'Beekeeping & Apiculture', 'Hive management, honey, pollinators', [
+    s('beeculture', 'Bee Culture', 'https://www.beeculture.com/'),
+  ]),
+  agent('w-ham', 'Ham Radio & Amateur Radio', 'Radio operation, gear, licensing', [
+    s('arrl', 'ARRL', 'https://www.arrl.org/', 'organization'),
+  ]),
+  agent('w-flags', 'Vexillology (Flags)', 'Flag design, history, symbolism', [
+    s('nava', 'NAVA', 'https://nava.org/', 'organization'),
+  ]),
+  agent('w-mycology', 'Mycology & Foraging', 'Mushroom ID, foraging, fungi culture', [
+    s('mushroomexpert', 'MushroomExpert', 'https://www.mushroomexpert.com/'),
+  ]),
+  agent('w-astro', 'Amateur Astronomy', 'Telescopes, stargazing, celestial events', [
+    s('skyandtelescope', 'Sky & Telescope', 'https://skyandtelescope.org/'),
+  ]),
+  agent('w-trains', 'Model Trains & Railroading', 'Model railroads, real rail history', [
+    s('trains', 'Trains', 'https://www.trains.com/'),
+  ]),
+  agent('w-geo', 'Geocaching & Treasure Hunting', 'GPS treasure hunting, caching culture', [
+    s('geocaching', 'Geocaching', 'https://www.geocaching.com/', 'official'),
+  ]),
+  agent('w-urbex', 'Urban Exploration & Abandoned Places', 'Ruins, abandoned buildings, history', [
+    s('abandonedspaces', 'Abandoned Spaces', 'https://abandonedspaces.com/'),
+  ]),
+  agent('w-paranormal', 'Paranormal & Ghost Hunting', 'Investigations, hauntings, folklore', [
+    s('ghostinmyhouse', 'The Ghost in My House', 'https://theghostinmyhouse.com/'),
+  ]),
+  agent('w-offgrid', 'Off-Grid Living & Homesteading', 'Self-sufficiency, land, sustainability', [
+    s('homesteadingtoday', 'Homesteading Today', 'https://www.homesteadingtoday.com/', 'social'),
+  ]),
+  agent('w-blades', 'Bladesmithing & Knife Making', 'Forging, custom knives, craftsmanship', [
+    s('bladeforums', 'BladeForums', 'https://www.bladeforums.com/', 'social'),
+  ]),
+  agent('w-pinball', 'Vintage Arcade & Pinball Collecting', 'Machine restoration, collecting', [
+    s('pinballnews', 'Pinball News', 'https://pinballnews.com/'),
+  ]),
+  agent('w-reptiles', 'Exotic Reptile & Amphibian Keeping', 'Husbandry, breeding, species care', [
+    s('reptilesmag', 'Reptiles Magazine', 'https://www.reptilesmagazine.com/'),
+  ]),
+  agent('w-eating', 'Competitive Eating', 'Events, records, circuit news', [
+    s('mle', 'Major League Eating', 'https://majorleagueeating.com/', 'official'),
+  ]),
+  agent('w-maps', 'Cartography & Map Collecting', 'Antique maps, mapmaking, GIS hobbyists', [
+    s('ica-proj', 'ICA Map Projections', 'https://ica-proj.org/', 'organization'),
+  ]),
+  agent('w-escape', 'Escape Rooms & Puzzle Hunts', 'Room reviews, puzzle design', [
+    s('roomescape', 'Room Escape Artist', 'https://roomescapeartist.com/'),
+  ]),
+  agent('w-taxidermy', 'Taxidermy & Natural Curiosities', 'Taxidermy craft, oddities collecting', [
+    s('taxidermynet', 'Taxidermy.net', 'https://www.taxidermy.net/', 'social'),
+  ]),
+  agent(
+    'w-robb',
+    'Luxury Lifestyle & Robb Report',
+    'Yachts, watches, cars, real estate, luxury goods — cross-read for nautical, charters, and horology',
+    [s('robbreport', 'Robb Report', 'https://robbreport.com/')],
+  ),
+];
+
 export function audienceAgeForBand(band: AgeBandId): AudienceAge {
   if (band === '19-22' || band === '23-29') return 'young-adult';
   if (band === '58-80' || band === '49-57') return 'fifty-plus';
@@ -757,7 +833,18 @@ export function agentsFor(band: AgeBandId, desk: InterestDeskId): InterestAgent[
   if (desk === 'democrat-women') return DEMOCRAT_WOMEN_AGENTS;
   if (desk === 'sports-men') return SPORTS_MEN_AGENTS;
   if (desk === 'sports-women') return SPORTS_WOMEN_AGENTS;
+  if (desk === 'weird') return WEIRD_AGENTS;
   return band === '58-80' ? LATER_LIFE_AGENTS : EARLY_ADULT_AGENTS;
+}
+
+export type InterestFeedRow = {
+  n: number;
+  agent: InterestAgent;
+};
+
+/** Numbered feed-list rows for Hub 2 — one row per interest, not a headline grid. */
+export function feedRowsFor(band: AgeBandId, desk: InterestDeskId): InterestFeedRow[] {
+  return agentsFor(band, desk).map((agentRow, i) => ({ n: i + 1, agent: agentRow }));
 }
 
 export function sourceHost(homepage: string): string {
@@ -780,6 +867,7 @@ export function allCatalogSources(): InterestSource[] {
     DEMOCRAT_WOMEN_AGENTS,
     SPORTS_MEN_AGENTS,
     SPORTS_WOMEN_AGENTS,
+    WEIRD_AGENTS,
   ];
   const out: InterestSource[] = [];
   const seen = new Set<string>();

@@ -55,7 +55,16 @@ const COINDESK_FEED = 'https://www.coindesk.com/arc/outboundfeeds/rss/';
 
 export default function YoursPageHub() {
   // Navigation / Filter control inside the YWC View
-  const [selectedFeedCategory, setSelectedFeedCategory] = useState<'all' | 'sports' | 'news' | 'finance' | 'crypto' | 'politics' | 'tech' | 'magazine' | 'relief' | 'catalog'>('all');
+  const [selectedFeedCategory, setSelectedFeedCategory] = useState<'all' | 'sports' | 'news' | 'finance' | 'crypto' | 'politics' | 'tech' | 'magazine' | 'relief'>('all');
+  const [hubOpen, setHubOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const ywc = new URLSearchParams(window.location.search).get('ywc');
+      return ywc === 'catalog' || ywc === 'hub';
+    } catch {
+      return false;
+    }
+  });
   
   // Custom states for simulations
   const [xmlPollingInterval, setXmlPollingInterval] = useState<6 | 12>(12);
@@ -409,7 +418,7 @@ export default function YoursPageHub() {
     try {
       const ywc = new URLSearchParams(window.location.search).get('ywc');
       if (ywc === 'catalog' || ywc === 'hub') {
-        setSelectedFeedCategory('catalog');
+        setHubOpen(true);
       }
     } catch {
       /* ignore */
@@ -428,11 +437,13 @@ export default function YoursPageHub() {
   };
 
   const openRssCatalog = () => {
-    setSelectedFeedCategory('catalog');
+    setHubOpen(true);
     setYwcCatalogParam(true);
-    window.requestAnimationFrame(() => {
-      document.getElementById('ywc-publication-hub')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  };
+
+  const closeRssCatalog = () => {
+    setHubOpen(false);
+    setYwcCatalogParam(false);
   };
 
   // Handle simulated auto RSS update triggers (every 6 or 12 hours check)
@@ -541,6 +552,39 @@ export default function YoursPageHub() {
       )
     : filteredFeed;
 
+  if (hubOpen) {
+    return (
+      <YwcChartWorkspace>
+        <div
+          id="ywc-page-canvas"
+          className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(57,255,20,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
+          <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#00E5FF]/12 blur-[140px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-[#39ff14]/10 blur-[130px] rounded-full pointer-events-none" />
+          <YwcLavaPanel rounded="3xl" padding="p-5 md:p-6">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[9px] font-mono tracking-[0.3em] bg-cyan-400 text-black px-3 py-1 rounded-full font-black uppercase">
+                Hub 2 of 2
+              </span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                RSS feed list — not the live newspaper
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black font-serif italic tracking-tight text-white pt-3">
+              Your World Connected
+              <span className="block text-cyan-300 text-2xl md:text-3xl font-sans not-italic font-black mt-1">
+                Second hub
+              </span>
+            </h1>
+          </YwcLavaPanel>
+          <YwcLavaPanel rounded="3xl" padding="p-4 md:p-6">
+            <YwcPublicationHub onBack={closeRssCatalog} />
+          </YwcLavaPanel>
+        </div>
+      </YwcChartWorkspace>
+    );
+  }
 
   return (
     <YwcChartWorkspace>
@@ -746,19 +790,19 @@ export default function YoursPageHub() {
             <div className="space-y-2 max-w-2xl">
               <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] uppercase">
                 <Library className="w-3.5 h-3.5" />
-                <span>Bento — tap to open the twin desk</span>
+                <span>Bento — tap to leave the newspaper</span>
               </div>
               <h2 className="text-2xl md:text-4xl font-serif italic font-black text-white group-hover:text-cyan-300 transition-colors">
-                ONLINE PUBLICATION HUB
+                SECOND HUB — RSS FEED LIST
               </h2>
               <p className="text-xs md:text-sm text-zinc-400 leading-relaxed">
-                Twin racks: the live magazine wire on the left, your favorites on the right. Add titles by
-                name, audience age, orientation desk, or political affiliation. Every card has a translator.
-                Clicks still leave ClearPath and open the publisher so people can subscribe there.
+                Leaves the live newspaper so you can scan a numbered publication list — interests,
+                desks, and publisher homepages — without mixing it into headlines. Add titles to your
+                own rack. Clicks still open the publisher so people can subscribe there.
               </p>
             </div>
             <span className="shrink-0 px-5 py-3 rounded-2xl bg-[#39ff14] text-black text-[11px] font-black uppercase tracking-widest">
-              Open hub
+              Open feed list
             </span>
           </div>
         </YwcLavaPanel>
@@ -787,14 +831,12 @@ export default function YoursPageHub() {
                 { id: 'politics', label: 'POLITICAL HUB' },
                 { id: 'tech', label: 'TECH' },
                 { id: 'magazine', label: 'MAGAZINE EDITS' },
-                { id: 'catalog', label: 'PUBLICATION HUB' }
               ].map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => {
                     setSelectedFeedCategory(cat.id as typeof selectedFeedCategory);
-                    setYwcCatalogParam(cat.id === 'catalog');
                   }}
                   className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedFeedCategory === cat.id 
@@ -811,16 +853,7 @@ export default function YoursPageHub() {
           </div>
           </YwcLavaPanel>
 
-          {selectedFeedCategory === 'catalog' ? (
-            <YwcLavaPanel id="ywc-publication-hub" rounded="3xl">
-              <YwcPublicationHub
-                onBack={() => {
-                  setSelectedFeedCategory('all');
-                  setYwcCatalogParam(false);
-                }}
-              />
-            </YwcLavaPanel>
-          ) : selectedFeedCategory === 'politics' ? (
+          {selectedFeedCategory === 'politics' ? (
             <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
             <YwcLavaPanel rounded="3xl"><GlobalFinance /></YwcLavaPanel>
