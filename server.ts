@@ -159,6 +159,7 @@ import {
   upsertSubscription,
   type ChartPulseChannel,
 } from './src/server/chartPulseService';
+import { getMagazineRack, translateMagazineStory } from './src/server/magazineRack';
 import {
   moderateBodyFields,
   runContentModerationSelfTest,
@@ -3507,6 +3508,35 @@ ${CPT_SITE_GUIDE}`;
       res.status(500).json({ error: error?.message || 'Trust scoring failed' });
     }
   });
+
+  app.get('/api/ywc/magazines', async (_req, res) => {
+    try {
+      const rack = await getMagazineRack();
+      res.setHeader('Cache-Control', 'public, max-age=120');
+      res.json(rack);
+    } catch (error) {
+      console.error('[YWC magazine rack]', error);
+      res.status(502).json({ error: 'Magazine wires are quiet right now' });
+    }
+  });
+
+  app.post(
+    '/api/ywc/translate',
+    ...marketLimiter,
+    moderateBodyFields('storyId', 'lang'),
+    async (req, res) => {
+      const storyId = String(req.body?.storyId || '').slice(0, 200);
+      const lang = String(req.body?.lang || '').slice(0, 8);
+      try {
+        const out = await translateMagazineStory(storyId, lang);
+        res.json(out);
+      } catch (error: any) {
+        const message = error?.message || 'Translate failed';
+        const status = message === 'Story not on the rack' ? 404 : 400;
+        res.status(status).json({ error: message });
+      }
+    },
+  );
 
   app.get('/api/rss', async (req, res) => {
     const { url } = req.query;

@@ -1,0 +1,8 @@
+# One publisher homepage or domain per line.
+# Run: npx tsx scripts/ingest-rss-catalog.ts data/ywc-rss-ingest.example.txt
+# Working feeds print as JSON for review — they are NOT auto-merged until a human (or Cursor) adds them to magazineRack.ts.
+# Do not paste getrssfeed.com itself. Paste the magazine sites you want on the catalog.
+
+https://www.motorsport.com/
+https://www.wired.com/
+https://www.smithsonianmag.com/
