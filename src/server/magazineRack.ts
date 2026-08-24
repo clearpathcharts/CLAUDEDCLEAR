@@ -189,6 +189,11 @@ export function isSafeImageUrl(raw: string | null | undefined): string | null {
   return url.href;
 }
 
+/** Hearst / Motorsport feeds sometimes emit bare `&` which xml2js rejects. */
+export function sanitizeRssXml(xml: string): string {
+  return String(xml || '').replace(/&(?![#a-zA-Z0-9]+;)/g, '&amp;');
+}
+
 export function stripHtmlSnippet(raw: string | null | undefined, max = 220): string {
   const text = String(raw || '')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -279,13 +284,31 @@ function interleave(groups: MagazineStory[][]): MagazineStory[] {
   return mixed;
 }
 
+async function fetchFeedXml(feedUrl: string): Promise<string> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(feedUrl, {
+      signal: ctrl.signal,
+      headers: {
+        'User-Agent': 'ClearPathTrader/1.0 (+https://clearpathtrader.com)',
+        Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
+      },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const xml = await res.text();
+    if (/^\s*<!DOCTYPE html/i.test(xml) || /^\s*<html/i.test(xml)) {
+      throw new Error('feed returned HTML, not RSS');
+    }
+    return xml;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchOneFeed(pub: MagazinePublication): Promise<MagazineStory[]> {
-  const feed = await Promise.race([
-    parser.parseURL(pub.feedUrl),
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('feed timeout')), FETCH_TIMEOUT_MS + 500);
-    }),
-  ]);
+  const xml = await fetchFeedXml(pub.feedUrl);
+  const feed = await parser.parseString(sanitizeRssXml(xml));
   return storiesFromFeed(pub, (feed.items || []) as Array<Record<string, unknown>>);
 }
 
@@ -324,6 +347,6 @@ export async function parseMagazineFeedXml(
   pub: MagazinePublication,
   xml: string,
 ): Promise<MagazineStory[]> {
-  const feed = await parser.parseString(xml);
+  const feed = await parser.parseString(sanitizeRssXml(xml));
   return storiesFromFeed(pub, (feed.items || []) as Array<Record<string, unknown>>);
 }

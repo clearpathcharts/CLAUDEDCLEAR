@@ -10,6 +10,7 @@ import {
   isSafeImageUrl,
   parseMagazineFeedXml,
   stripHtmlSnippet,
+  sanitizeRssXml,
 } from '../src/server/magazineRack.ts';
 
 assert.ok(
@@ -55,6 +56,9 @@ assert.equal(
   true,
 );
 assert.equal(isSafeImageUrl('javascript:alert(1)'), null);
+
+assert.ok(sanitizeRssXml('<t>A & B</t>').includes('A &amp; B'));
+assert.ok(sanitizeRssXml('<t>A &amp; B</t>').includes('A &amp; B'));
 
 assert.equal(
   stripHtmlSnippet('<p>Hello <b>world</b> &amp; friends</p>'),
