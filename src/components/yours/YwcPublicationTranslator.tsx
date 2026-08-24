@@ -56,9 +56,11 @@ export function PublicationTranslator({ pageUrl, storyId, title = '', snippet = 
 
   const translatedPage = googleTranslatePageUrl(pageUrl, lang);
 
+  const showTranslation = lang !== 'en' && (busy || viewTitle !== title || viewSnippet !== snippet);
+
   return (
     <div className="space-y-2">
-      {(viewTitle || viewSnippet) && lang !== 'en' ? (
+      {showTranslation ? (
         <div className="rounded-xl border border-cyan-400/20 bg-black/40 p-3 space-y-1">
           {viewTitle ? (
             <p className="text-sm font-serif italic text-white leading-snug">{viewTitle}</p>
