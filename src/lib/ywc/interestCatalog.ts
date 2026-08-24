@@ -13,7 +13,9 @@ export type InterestDeskId =
   | 'gay-men'
   | 'queer-women'
   | 'republican-men'
-  | 'republican-women';
+  | 'republican-women'
+  | 'democrat-men'
+  | 'democrat-women';
 export type InterestSourceKind = 'publication' | 'official' | 'app' | 'social' | 'organization';
 
 export type InterestSource = {
@@ -45,6 +47,8 @@ export const INTEREST_DESKS: Array<{ id: InterestDeskId; label: string; optIn: b
   { id: 'queer-women', label: 'Lesbian / queer women — 15 (opt-in)', optIn: true },
   { id: 'republican-men', label: 'Republican-leaning men — 15 (opt-in)', optIn: true },
   { id: 'republican-women', label: 'Republican-leaning women — 15 (opt-in)', optIn: true },
+  { id: 'democrat-men', label: 'Democrat-leaning men — 15 (opt-in)', optIn: true },
+  { id: 'democrat-women', label: 'Democrat-leaning women — 15 (opt-in)', optIn: true },
 ];
 
 export const SOURCE_KIND_LABEL: Record<InterestSourceKind, string> = {
@@ -517,6 +521,104 @@ export const REPUBLICAN_WOMEN_AGENTS: InterestAgent[] = [
   ]),
 ];
 
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const DEMOCRAT_MEN_AGENTS: InterestAgent[] = [
+  agent('dm-news', 'Progressive News & Politics', 'Breaking news, commentary, policy', [
+    s('msnbc', 'MSNBC', 'https://www.msnbc.com/'),
+  ]),
+  agent('dm-commentary', 'Political Commentary & Opinion', 'Long-form progressive analysis', [
+    s('motherjones', 'Mother Jones', 'https://www.motherjones.com/'),
+  ]),
+  agent('dm-youth', 'Youth/Culture Progressive Commentary', 'Podcasts, culture commentary', [
+    s('vox', 'Vox', 'https://www.vox.com/'),
+  ]),
+  agent('dm-investigative', 'Investigative & Policy Journalism', 'In-depth reporting, accountability journalism', [
+    s('propublica', 'ProPublica', 'https://www.propublica.org/'),
+  ]),
+  agent('dm-labor', "Labor & Workers' Rights", 'Unions, labor news, workplace policy', [
+    s('aflcio', 'AFL-CIO', 'https://aflcio.org/', 'organization'),
+  ]),
+  agent('dm-climate', 'Climate & Environment', 'Climate policy, environmental news', [
+    s('grist', 'Grist', 'https://grist.org/'),
+  ]),
+  agent('dm-civil', 'Civil Rights & Social Justice', 'Civil liberties, advocacy', [
+    s('aclu', 'ACLU', 'https://www.aclu.org/', 'organization'),
+  ]),
+  agent('dm-science', 'Science & Technology Policy', 'Science news, tech policy', [
+    s('arstechnica', 'Ars Technica', 'https://arstechnica.com/'),
+  ]),
+  agent('dm-urban', 'Urban Life & City Living', 'Urban planning, city culture', [
+    s('citylab', 'Bloomberg CityLab', 'https://www.bloomberg.com/citylab'),
+  ]),
+  agent('dm-business', 'Business & Entrepreneurship', 'Startups, innovation, business news', [
+    s('fastcompany', 'Fast Company', 'https://www.fastcompany.com/'),
+  ]),
+  agent('dm-money', 'Money, Investing & Taxes', 'Personal finance, economic policy', [
+    s('nerdwallet', 'NerdWallet', 'https://www.nerdwallet.com/'),
+  ]),
+  agent('dm-ev', 'Cars, EVs & Sustainable Tech', 'EVs, sustainable transportation', [
+    s('electrek', 'Electrek', 'https://electrek.co/'),
+  ]),
+  agent('dm-sports', 'Sports', 'Mainstream sports coverage', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('dm-music', 'Hip-Hop & Indie Music', 'Music news, culture', [
+    s('pitchfork', 'Pitchfork', 'https://pitchfork.com/'),
+  ]),
+  agent('dm-gaming', 'Gaming & Esports', 'Games, esports, culture', [
+    s('polygon', 'Polygon', 'https://www.polygon.com/'),
+  ]),
+];
+
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const DEMOCRAT_WOMEN_AGENTS: InterestAgent[] = [
+  agent('dw-news', 'Progressive News & Politics', 'Breaking news, commentary', [
+    s('msnbc', 'MSNBC', 'https://www.msnbc.com/'),
+  ]),
+  agent('dw-commentary', "Women's Progressive Commentary", 'Culture, politics, opinion', [
+    s('thecut', 'The Cut', 'https://www.thecut.com/'),
+  ]),
+  agent('dw-repro', 'Reproductive Rights & Health Policy', 'Advocacy, policy, resources — not medical advice', [
+    s('pp', 'Planned Parenthood', 'https://www.plannedparenthood.org/', 'organization'),
+  ]),
+  agent('dw-feminism', 'Feminism & Gender Equity', 'Feminist commentary, culture', [
+    s('jezebel', 'Jezebel', 'https://www.jezebel.com/'),
+  ]),
+  agent('dw-parenting', 'Motherhood & Parenting', 'Modern parenting, family life', [
+    s('romper', 'Romper', 'https://www.romper.com/'),
+  ]),
+  agent('dw-ed', 'Public Education & Education Policy', 'Public school advocacy, policy', [
+    s('edweek', 'Education Week', 'https://www.edweek.org/'),
+  ]),
+  agent('dw-home', 'Home & Sustainable Living', 'Home life, sustainability', [
+    s('apttherapy', 'Apartment Therapy', 'https://www.apartmenttherapy.com/'),
+  ]),
+  agent('dw-civil', 'Civil Rights & Social Justice', 'Civil liberties, advocacy', [
+    s('aclu', 'ACLU', 'https://www.aclu.org/', 'organization'),
+  ]),
+  agent('dw-health', 'Health & Wellness', 'Nutrition, fitness, wellness — not medical advice', [
+    s('self', 'SELF', 'https://www.self.com/'),
+  ]),
+  agent('dw-food', 'Cooking & Food Culture', 'Recipes, food trends', [
+    s('bonappetit', 'Bon Appétit', 'https://www.bonappetit.com/'),
+  ]),
+  agent('dw-fashion', 'Fashion & Style', 'Style, fashion trends', [
+    s('refinery29', 'Refinery29', 'https://www.refinery29.com/'),
+  ]),
+  agent('dw-money', 'Money, Budgeting & Family Finance', 'Household finance, budgeting', [
+    s('hf100k', 'Her First 100K', 'https://herfirst100k.com/', 'organization'),
+  ]),
+  agent('dw-business', 'Small Business & Entrepreneurship', 'Women-owned business, entrepreneurship', [
+    s('score', 'SCORE', 'https://www.score.org/', 'organization'),
+  ]),
+  agent('dw-travel', 'Travel & Adventure', 'Travel, culture, experiences', [
+    s('afar', 'AFAR', 'https://www.afar.com/'),
+  ]),
+  agent('dw-books', 'Books & Literature', 'Book culture, recommendations', [
+    s('bookriot', 'Book Riot', 'https://bookriot.com/'),
+  ]),
+];
+
 export function audienceAgeForBand(band: AgeBandId): AudienceAge {
   if (band === '19-22' || band === '23-29') return 'young-adult';
   if (band === '58-80' || band === '49-57') return 'fifty-plus';
@@ -530,6 +632,7 @@ export function orientationForDesk(desk: InterestDeskId): OrientationDesk {
 
 export function politicsForDesk(desk: InterestDeskId): PoliticsDesk {
   if (desk === 'republican-men' || desk === 'republican-women') return 'right';
+  if (desk === 'democrat-men' || desk === 'democrat-women') return 'left';
   return 'nonpartisan';
 }
 
@@ -542,6 +645,8 @@ export function agentsFor(band: AgeBandId, desk: InterestDeskId): InterestAgent[
   if (desk === 'queer-women') return QUEER_WOMEN_AGENTS;
   if (desk === 'republican-men') return REPUBLICAN_MEN_AGENTS;
   if (desk === 'republican-women') return REPUBLICAN_WOMEN_AGENTS;
+  if (desk === 'democrat-men') return DEMOCRAT_MEN_AGENTS;
+  if (desk === 'democrat-women') return DEMOCRAT_WOMEN_AGENTS;
   return band === '58-80' ? LATER_LIFE_AGENTS : EARLY_ADULT_AGENTS;
 }
 
@@ -561,6 +666,8 @@ export function allCatalogSources(): InterestSource[] {
     QUEER_WOMEN_AGENTS,
     REPUBLICAN_MEN_AGENTS,
     REPUBLICAN_WOMEN_AGENTS,
+    DEMOCRAT_MEN_AGENTS,
+    DEMOCRAT_WOMEN_AGENTS,
   ];
   const out: InterestSource[] = [];
   const seen = new Set<string>();

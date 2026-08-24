@@ -21,6 +21,9 @@ import {
   QUEER_WOMEN_AGENTS,
   REPUBLICAN_MEN_AGENTS,
   REPUBLICAN_WOMEN_AGENTS,
+  DEMOCRAT_MEN_AGENTS,
+  DEMOCRAT_WOMEN_AGENTS,
+  INTEREST_DESKS,
   agentsFor,
   allCatalogSources,
   isFetchableKind,
@@ -123,21 +126,75 @@ assert.equal(GAY_MEN_AGENTS.length, 15);
 assert.equal(QUEER_WOMEN_AGENTS.length, 15);
 assert.equal(REPUBLICAN_MEN_AGENTS.length, 15);
 assert.equal(REPUBLICAN_WOMEN_AGENTS.length, 15);
+assert.equal(DEMOCRAT_MEN_AGENTS.length, 15);
+assert.equal(DEMOCRAT_WOMEN_AGENTS.length, 15);
 assert.equal(agentsFor('19-22', 'everyone').length, 35);
 assert.equal(agentsFor('58-80', 'everyone').length, 35);
 assert.equal(agentsFor('19-22', 'gay-men').length, 15);
 assert.equal(agentsFor('58-80', 'queer-women').length, 15);
 assert.equal(agentsFor('30-38', 'republican-men').length, 15);
 assert.equal(agentsFor('58-80', 'republican-women').length, 15);
+assert.equal(agentsFor('23-29', 'democrat-men').length, 15);
+assert.equal(agentsFor('49-57', 'democrat-women').length, 15);
 assert.equal(isOptInDesk('everyone'), false);
 assert.equal(isOptInDesk('republican-men'), true);
+assert.equal(isOptInDesk('democrat-women'), true);
 assert.equal(isOptInDesk('gay-men'), true);
 assert.equal(orientationForDesk('republican-men'), 'general');
+assert.equal(orientationForDesk('democrat-men'), 'general');
 assert.equal(orientationForDesk('queer-women'), 'lgbtq');
 assert.equal(politicsForDesk('republican-women'), 'right');
+assert.equal(politicsForDesk('democrat-men'), 'left');
 assert.equal(politicsForDesk('everyone'), 'nonpartisan');
 assert.ok(REPUBLICAN_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('foxnews.com'))));
 assert.ok(REPUBLICAN_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('eviemagazine.com'))));
+assert.ok(DEMOCRAT_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('msnbc.com'))));
+assert.ok(DEMOCRAT_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('thecut.com'))));
+assert.deepEqual(
+  DEMOCRAT_MEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.msnbc.com/',
+    'https://www.motherjones.com/',
+    'https://www.vox.com/',
+    'https://www.propublica.org/',
+    'https://aflcio.org/',
+    'https://grist.org/',
+    'https://www.aclu.org/',
+    'https://arstechnica.com/',
+    'https://www.bloomberg.com/citylab',
+    'https://www.fastcompany.com/',
+    'https://www.nerdwallet.com/',
+    'https://electrek.co/',
+    'https://www.espn.com/',
+    'https://pitchfork.com/',
+    'https://www.polygon.com/',
+  ],
+);
+assert.deepEqual(
+  DEMOCRAT_WOMEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.msnbc.com/',
+    'https://www.thecut.com/',
+    'https://www.plannedparenthood.org/',
+    'https://www.jezebel.com/',
+    'https://www.romper.com/',
+    'https://www.edweek.org/',
+    'https://www.apartmenttherapy.com/',
+    'https://www.aclu.org/',
+    'https://www.self.com/',
+    'https://www.bonappetit.com/',
+    'https://www.refinery29.com/',
+    'https://herfirst100k.com/',
+    'https://www.score.org/',
+    'https://www.afar.com/',
+    'https://bookriot.com/',
+  ],
+);
+assert.equal(DEMOCRAT_WOMEN_AGENTS[2].sources[0].kind, 'organization');
+assert.ok(DEMOCRAT_WOMEN_AGENTS[2].watches.includes('not medical advice'));
+assert.equal(INTEREST_DESKS[0].id, 'everyone');
+assert.equal(politicsForDesk('democrat-women'), 'left');
+assert.equal(orientationForDesk('democrat-women'), 'general');
 
 const catalog = allCatalogSources();
 assert.ok(catalog.length > 40);
