@@ -40,6 +40,7 @@ import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
 import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
+import { YwcMagazineRack } from './YwcMagazineRack';
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -502,6 +503,12 @@ export default function YoursPageHub() {
   const filteredFeed = selectedFeedCategory === 'all'
     ? newsFeed
     : newsFeed.filter(item => item.category === selectedFeedCategory);
+  const deskFeed = selectedFeedCategory === 'all'
+    ? newsFeed.filter(
+        (item) => item.category === 'relief' || item.id === OPTIMISTIC_INJUSTICE_ARTICLE.id,
+      )
+    : filteredFeed;
+
 
   return (
     <YwcChartWorkspace>
@@ -738,60 +745,6 @@ export default function YoursPageHub() {
           </div>
           </YwcLavaPanel>
 
-          {selectedFeedCategory === 'all' && (
-            /* 1. HERO TOP STORY (Giant Cinematic layout preview) */
-            <YwcLavaPanel as="section" rounded="3xl" padding="p-6 md:p-10" className="min-h-[460px] flex flex-col justify-end animate-fade-in group">
-              <img 
-                src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1600"
-                alt="Global news background matrix" 
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:scale-102 transition-transform duration-700 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-[#ff0088] text-white text-[9px] font-mono font-black tracking-widest px-3 py-1 rounded">
-                    HERO TOP STORY
-                  </span>
-                  <span className="bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20 text-[9px] font-mono px-2.5 py-1 rounded">
-                    HOT NEWS BENCH
-                  </span>
-                  <span className="text-zinc-400 text-xs font-mono">{lastSyncTime}</span>
-                </div>
-
-                <h2 className="text-3xl md:text-5xl font-serif italic font-black leading-tight text-white max-w-3xl hover:text-cyan-400 transition-colors pointer-events-auto cursor-pointer" onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}>
-                  Global Markets Rally on Cooling Inflation Signs as Yields Retreat
-                </h2>
-
-                <p className="text-zinc-300 font-sans text-xs md:text-sm max-w-2xl leading-relaxed">
-                  Optimism sweeps across global indices after Consumer Price levels print below baseline analyst estimates. Sovereign debt desks release deep bid blocks on longer-duration paper.
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#ff0088] to-[#00f0ff] flex items-center justify-center p-[1px]">
-                      <div className="w-full h-full bg-zinc-950 rounded-full flex items-center justify-center text-[10px] font-bold text-white font-mono">
-                        CP
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-zinc-300 block">ClearPath Markets Node</span>
-                      <span className="text-[9px] font-mono text-zinc-500">Live global transmission</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => setActiveStoryDetails(newsFeed.find(n => n.id === 'a4'))}
-                    className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ff0088] rounded-xl text-xs font-black tracking-wider transition-all duration-300 cursor-pointer"
-                  >
-                    READ COVERAGE
-                  </button>
-                </div>
-              </div>
-            </YwcLavaPanel>
-          )}
-
           {selectedFeedCategory === 'politics' ? (
             <YwcLavaPanel rounded="3xl"><PoliticalHub /></YwcLavaPanel>
           ) : selectedFeedCategory === 'finance' ? (
@@ -802,14 +755,42 @@ export default function YoursPageHub() {
             <YwcLavaPanel rounded="3xl"><WorldHub /></YwcLavaPanel>
           ) : (
             <>
-              {/* DYNAMIC STORIES GRID */}
+              {(selectedFeedCategory === 'all' ||
+                selectedFeedCategory === 'sports' ||
+                selectedFeedCategory === 'tech') && (
               <YwcLavaPanel className="space-y-4">
                 <YwcSectionTitle className="text-xs tracking-[0.2em]">
                   Online Newspaper — Live Editorial Grid
                 </YwcSectionTitle>
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-3xl">
+                  Live magazine wires. Headline, photo, and READ ON open the publisher&apos;s website
+                  (Motorsport, MotorTrend, and the rest) so you can subscribe there. ClearPath does not sell these titles.
+                </p>
+                <YwcMagazineRack
+                  hideIntro
+                  showHero={selectedFeedCategory === 'all'}
+                  category={
+                    selectedFeedCategory === 'sports'
+                      ? 'automotive'
+                      : selectedFeedCategory === 'tech'
+                        ? 'tech'
+                        : 'all'
+                  }
+                />
+              </YwcLavaPanel>
+              )}
+
+              {(selectedFeedCategory === 'all' ||
+                selectedFeedCategory === 'relief' ||
+                selectedFeedCategory === 'crypto') &&
+                deskFeed.length > 0 && (
+              <YwcLavaPanel className="space-y-4">
+                <YwcSectionTitle className="text-xs tracking-[0.2em]">
+                  {selectedFeedCategory === 'all' ? 'ClearPath desk' : 'Online Newspaper — Live Editorial Grid'}
+                </YwcSectionTitle>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AnimatePresence mode="popLayout">
-                  {filteredFeed.map((article) => (
+                  {deskFeed.map((article) => (
                     <motion.article 
                       key={article.id}
                       layout
@@ -875,6 +856,7 @@ export default function YoursPageHub() {
                 </AnimatePresence>
               </div>
               </YwcLavaPanel>
+              )}
 
               {/* AI INSIGHTS & ANALYSES SECTION */}
               <YwcLavaPanel as="section" className="space-y-4">

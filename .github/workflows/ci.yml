@@ -54,6 +54,9 @@ jobs:
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 
+      - name: YWC magazine rack allowlist self-test
+        run: npm run test:magazine-rack
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

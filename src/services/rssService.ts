@@ -27,8 +27,9 @@ export const magazineFeeds = {
     "https://kids.scholastic.com/kidspress/feed/"
   ],
   automotive: [
-    "https://www.motortrend.com/rss/",
-    "https://www.caranddriver.com/rss/all.xml/"
+    "https://www.motorsport.com/rss/f1/news/",
+    "https://www.motortrend.com/news/rss",
+    "https://www.caranddriver.com/rss/all.xml"
   ],
   tech: [
     "https://www.wired.com/feed/rss",

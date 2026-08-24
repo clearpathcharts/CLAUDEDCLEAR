@@ -33,6 +33,7 @@
     "test:chart-pulse": "tsx scripts/chart-pulse.selftest.ts",
     "test:explain-nav": "tsx scripts/explain-nav.selftest.ts",
     "test:chart-zoom": "tsx scripts/chart-zoom.selftest.ts",
+    "test:magazine-rack": "tsx scripts/magazine-rack.selftest.ts",
     "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
     "update:disposable-domains": "bash scripts/update-disposable-domains.sh",

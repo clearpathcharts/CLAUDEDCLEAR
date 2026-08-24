@@ -159,6 +159,7 @@ import {
   upsertSubscription,
   type ChartPulseChannel,
 } from './src/server/chartPulseService';
+import { getMagazineRack } from './src/server/magazineRack';
 import {
   moderateBodyFields,
   runContentModerationSelfTest,
@@ -3505,6 +3506,17 @@ ${CPT_SITE_GUIDE}`;
     } catch (error: any) {
       console.error('[Literacy Mentor Trust Error]', error);
       res.status(500).json({ error: error?.message || 'Trust scoring failed' });
+    }
+  });
+
+  app.get('/api/ywc/magazines', async (_req, res) => {
+    try {
+      const rack = await getMagazineRack();
+      res.setHeader('Cache-Control', 'public, max-age=120');
+      res.json(rack);
+    } catch (error) {
+      console.error('[YWC magazine rack]', error);
+      res.status(502).json({ error: 'Magazine wires are quiet right now' });
     }
   });
 
