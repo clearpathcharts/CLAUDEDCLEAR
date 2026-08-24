@@ -5,6 +5,7 @@ import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { TradingHaltController } from '../../truth/TradingHaltController';
+import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT, MARKET_CHART_HEIGHT } from '../../constants/chartLayout';
 
 import { setClearState, getClearState } from '../../lib/trading/clearState';
 import { describeTimeframe } from '../../services/marketData';
@@ -34,8 +35,12 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
   const dataSymbol = toDataSymbol(asset.value);
 
   return (
-    <div className="individual-chart-wrapper !h-[576px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6" id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
-      <div className="px-4 pt-3 border-b bg-black/40 backdrop-blur-md border-white/5 shrink-0">
+    <div
+      className="individual-chart-wrapper flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6"
+      style={{ height: MARKET_CHART_HEIGHT }}
+      id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}
+    >
+      <div className="px-3 py-1 border-b bg-black/40 backdrop-blur-md border-white/5 shrink-0">
         <ChartLocalTimeAndPulse slotId={`std-${dataSymbol}`} symbol={dataSymbol} />
       </div>
       <div className="flex items-center justify-between px-6 py-3 border-b bg-black/40 backdrop-blur-md border-white/5 select-none shrink-0">
@@ -52,10 +57,10 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
           <span>{activeTimeframe} STREAM</span>
         </div>
       </div>
-      <div className="flex-1 w-full min-h-0 relative">
+      <div className="w-full shrink-0 relative" style={{ height: MARKET_CHART_DESKTOP_CANDLE_HEIGHT, minHeight: MARKET_CHART_DESKTOP_CANDLE_HEIGHT }}>
         <LightweightCandles
           profileId={profile.id}
-          height={440}
+          height={MARKET_CHART_DESKTOP_CANDLE_HEIGHT}
           timeframe={timeframesMapping[activeTimeframe] || '1h'}
           symbol={dataSymbol}
         />

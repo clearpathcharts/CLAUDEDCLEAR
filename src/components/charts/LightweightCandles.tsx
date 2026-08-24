@@ -33,7 +33,7 @@ import {
 } from "../../lib/charts/chartInteraction";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-19-AXIS";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-PULSE-HEIGHT";
 
 type Candle = {
   time: number;

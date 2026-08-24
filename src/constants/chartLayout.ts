@@ -25,12 +25,15 @@ export const MARKET_CHART_SLOT_COUNT = 3;
 export const YWC_CHART_SLOT_COUNT = 4;
 export const YWC_LAYOUT_STORAGE_VERSION = 3;
 
-export const MARKET_CHART_HEIGHT = 576;
-/** Desktop in-panel candle body (below the slot header + local-time pulse bar). */
-export const MARKET_CHART_DESKTOP_BODY_HEIGHT = 452;
-export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = 440;
-/** LOAD / search row plus local-time + pulse bar on a stacked phone panel. */
-export const MARKET_CHART_MOBILE_SLOT_HEADER = 124;
+/** Stacking pitch for Market Terminal slots (pulse + search + candle body). */
+export const MARKET_CHART_HEIGHT = 640;
+/** Older pulse layout used 576px panels — remap saved y so slots do not overlap. */
+export const MARKET_CHART_HEIGHT_LEGACY = 576;
+/** Desktop in-panel candle body — never shrink this when the pulse bar wraps. */
+export const MARKET_CHART_DESKTOP_BODY_HEIGHT = 520;
+export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = 508;
+/** LOAD / search row plus compact local-time + pulse bar on a stacked phone panel. */
+export const MARKET_CHART_MOBILE_SLOT_HEADER = 72;
 /** Floor so short phones still get a usable plot, not a thumbnail. */
 export const MARKET_CHART_MOBILE_MIN_BODY_HEIGHT = 640;
 export const YWC_CHART_WIDTH = 280;
@@ -65,6 +68,14 @@ export function createEmptyMarketSlots(): ChartLayoutSlot[] {
     x: 0,
     y: i * MARKET_CHART_HEIGHT,
   }));
+}
+
+/** Snap saved y from the old 576px grid onto the current stacking pitch. */
+export function normalizeMarketSlotY(y: number, index: number): number {
+  if (Math.abs(y - index * MARKET_CHART_HEIGHT_LEGACY) < 12) {
+    return index * MARKET_CHART_HEIGHT;
+  }
+  return Math.max(0, y);
 }
 
 /** If a saved layout wiped every symbol, restore defaults so the scanner can run. */
