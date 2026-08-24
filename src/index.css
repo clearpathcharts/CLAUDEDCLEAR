@@ -224,6 +224,18 @@ html {
   overflow-x: hidden;  /* no sideways wiggle on phones */
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  /* Keep the lava page scrollbar off the chart price axis (Windows overlay scrollbars). */
+  scrollbar-gutter: stable;
+}
+
+/* Blackout is a fixed overlay. Without this, the page scrollbar still shows
+   and looks like it should move the charts — it only scrolls the hidden page. */
+html.blackout-scroll-lock,
+html.blackout-scroll-lock body,
+html.chart-slot-expand-lock,
+html.chart-slot-expand-lock body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
 
 /* Absolute px utilities do not scale with rem — lift the worst micro-type globally */
@@ -362,6 +374,25 @@ body::-webkit-scrollbar-thumb:hover,
   display: none !important;
   width: 0 !important;
   height: 0 !important;
+}
+
+/* Pattern Scanner: one always-visible vertical scrollbar (hits list). */
+.pattern-scanner-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: #ff1493 #14000a;
+  overscroll-behavior: contain;
+}
+.pattern-scanner-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+.pattern-scanner-scroll::-webkit-scrollbar-track {
+  background: #14000a;
+  border-left: 1px solid rgba(255, 20, 147, 0.35);
+}
+.pattern-scanner-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff1493 0%, #bf00ff 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 20, 147, 0.6);
 }
 
 /* Mobile nav -- make sure bottom nav doesn't cover content */

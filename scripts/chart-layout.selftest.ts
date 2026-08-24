@@ -1,15 +1,24 @@
 /**
- * Guards Market Terminal phone chart sizing — stacked slots must be full-size,
- * not ~300px thumbnails.
+ * Guards Market Terminal chart sizing — stacked slots must fill the
+ * remaining window, not sit as 520px thumbnails under a tall header stack.
  *
  * Run: npx tsx scripts/chart-layout.selftest.ts
  */
 import assert from 'node:assert/strict';
 import {
+  MARKET_CHART_DESKTOP_BODY_HEIGHT,
+  MARKET_CHART_DESKTOP_CHROME,
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
+  MARKET_CHART_HEIGHT,
+  MARKET_CHART_HEIGHT_LEGACY,
   MARKET_CHART_MOBILE_MIN_BODY_HEIGHT,
   MARKET_CHART_MOBILE_SLOT_HEADER,
+  desktopMarketPanelHeight,
+  desktopStackedMarketChartHeight,
   mobileStackedMarketChartHeight,
+  normalizeMarketSlotY,
 } from '../src/constants/chartLayout.ts';
+import { nextChartPixelSize } from '../src/lib/charts/chartResize.ts';
 
 assert.equal(
   mobileStackedMarketChartHeight(300),
@@ -43,5 +52,52 @@ assert.equal(
   900 - MARKET_CHART_MOBILE_SLOT_HEADER,
   'body should consume the full viewport minus only the slot header',
 );
+
+assert.ok(
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT >= 420,
+  'desktop floor stays usable on tiny windows',
+);
+assert.ok(
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT < 700,
+  'desktop floor must not exceed a typical leftover viewport (that was the squeeze)',
+);
+assert.ok(
+  MARKET_CHART_HEIGHT >= MARKET_CHART_DESKTOP_BODY_HEIGHT + MARKET_CHART_DESKTOP_CHROME - 16,
+  'desktop panel must leave room for pulse+search without shrinking candles',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(700),
+  700 - 56,
+  'short desktops fill the remaining window instead of forcing 860px past the fold',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(1080),
+  1080 - 56,
+  '1080px desktop → window minus default nav reserve',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(1080, 240),
+  1080 - 240,
+  'measured header offset is subtracted so candles fill the leftover hole',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(400),
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
+  'tiny windows still hit the 420px floor',
+);
+assert.equal(
+  desktopMarketPanelHeight(900),
+  900 + MARKET_CHART_DESKTOP_CHROME,
+  'panel height is candle body plus pulse/search chrome',
+);
+assert.equal(nextChartPixelSize(0, 800), null, 'skip resize while width is 0');
+assert.equal(nextChartPixelSize(1200, 0), null, 'skip resize while height is 0 — never lock a stale px fallback');
+assert.deepEqual(nextChartPixelSize(1200.9, 640.2), { width: 1200, height: 640 });
+
+assert.equal(normalizeMarketSlotY(0, 0), 0);
+assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY, 1), MARKET_CHART_HEIGHT);
+assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY * 2, 2), MARKET_CHART_HEIGHT * 2);
+assert.equal(normalizeMarketSlotY(520, 1), MARKET_CHART_HEIGHT);
+assert.equal(normalizeMarketSlotY(640, 1), MARKET_CHART_HEIGHT);
 
 console.log('chart-layout.selftest: ok');

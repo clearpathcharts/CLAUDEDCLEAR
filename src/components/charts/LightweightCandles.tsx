@@ -21,7 +21,7 @@ import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
-import { Crosshair, Scan, Radio, Focus } from "lucide-react";
+import { Crosshair, Scan, Radio, Focus, Maximize2, Minimize2 } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
 import {
@@ -31,9 +31,11 @@ import {
   CHART_PRICE_SCALE_GESTURE,
   CHART_TIME_SCALE_GESTURE,
 } from "../../lib/charts/chartInteraction";
+import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
+import { nextChartPixelSize } from "../../lib/charts/chartResize";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-19-AXIS";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FIT";
 
 type Candle = {
   time: number;
@@ -121,7 +123,7 @@ export function LightweightCandles({
   data,
   symbol = "UNKNOWN",
   profileId,
-  height = 520,
+  height = MARKET_CHART_DESKTOP_CANDLE_HEIGHT,
   isExpanded = false,
   fillParent = false,
   timeframe = "1h",
@@ -141,6 +143,8 @@ export function LightweightCandles({
   useDedicatedPatternPanel = false,
   /** Publish drawing controls to the Pattern Scanner column toolbox (Charts tab). */
   publishDrawingSession = false,
+  hideChartToolbar = false,
+  onExpandToggle,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -169,10 +173,16 @@ export function LightweightCandles({
   useDedicatedPatternPanel?: boolean;
   /** When true, this chart owns the left-column Drawing Tools panel. */
   publishDrawingSession?: boolean;
+  /** Hide the in-plot CROSSHAIR/zoom bar so candles fill the empty-slot box. */
+  hideChartToolbar?: boolean;
+  /** Full-window expand for this slot — not zoom-reset. */
+  onExpandToggle?: () => void;
 }) {
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const layoutRef = useRef({ isExpanded, fillParent });
+  layoutRef.current = { isExpanded, fillParent };
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const [chartReadyKey, setChartReadyKey] = useState(0);
   const barCountRef = useRef(0);
@@ -293,6 +303,9 @@ export function LightweightCandles({
     const initialHeight = containerRef.current.clientHeight || height || 450;
 
     const chart = createChart(containerRef.current, {
+      // Library ResizeObserver fills the flex parent. Explicit width/height
+      // are fallbacks only if that observer is missing.
+      autoSize: true,
       width: initialWidth,
       height: initialHeight,
       layout: {
@@ -324,7 +337,7 @@ export function LightweightCandles({
       // snap to the next full-screen slot. Expanded / desktop / tablet keep
       // vertical pan. Time stretch = drag the bottom axis; price lift/squish =
       // drag the right axis (or the axis buttons / Shift+wheel).
-      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+      handleScroll: chartHandleScroll(Boolean(layoutRef.current.isExpanded || !layoutRef.current.fillParent)),
       handleScale: CHART_HANDLE_SCALE,
     });
 
@@ -925,13 +938,11 @@ export function LightweightCandles({
 
     const resizeObserver = new ResizeObserver((entries) => {
       if (!active || !entries || entries.length === 0) return;
+      if (chart.autoSizeActive()) return;
       const { width, height: rectHeight } = entries[0].contentRect;
-      if (width > 0) {
-        chart.applyOptions({
-          width,
-          height: rectHeight > 0 ? rectHeight : initialHeight
-        });
-      }
+      const next = nextChartPixelSize(width, rectHeight);
+      if (!next) return;
+      chart.applyOptions(next);
     });
 
     resizeObserver.observe(containerRef.current);
@@ -957,7 +968,26 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, height, isExpanded, fillParent, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, crosshairEnabled, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+    });
+  }, [isExpanded, fillParent, chartReadyKey]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
+      crosshair: {
+        ...defaultTheme.crosshair,
+        mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
+      },
+    });
+  }, [crosshairEnabled, defaultTheme.crosshair, chartReadyKey]);
 
   const handleFocusRecent = () => {
     const chart = chartRef.current;
@@ -986,10 +1016,10 @@ export function LightweightCandles({
       }}
     >
       {/* Chrome ABOVE the canvas only — drawing toolbox lives under Pattern Scanner */}
-      {!embedMode && (
+      {!embedMode && !hideChartToolbar && (
         <>
         <div
-          className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"
+          className="flex shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/10 bg-black/95 px-2 py-1"
           aria-label="Chart controls"
         >
           <button
@@ -1018,12 +1048,25 @@ export function LightweightCandles({
             >
               <Focus size={13} strokeWidth={2.5} />
             </button>
+            {onExpandToggle ? (
+              <button
+                type="button"
+                onClick={onExpandToggle}
+                aria-label={isExpanded ? "Exit full size" : "Expand chart to fill the window"}
+                title={isExpanded ? "Exit full size (Esc)" : "Expand chart to fill the window"}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-emerald-400/40 text-emerald-300 transition-all hover:border-emerald-300/70 hover:bg-emerald-400/10 active:scale-95"
+              >
+                {isExpanded ? <Minimize2 size={13} strokeWidth={2.5} /> : <Maximize2 size={13} strokeWidth={2.5} />}
+              </button>
+            ) : null}
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
+        {useDedicatedPatternPanel ? null : (
         <p className="px-2 pb-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">
           Drag the right axis to lift/squish · drag the bottom axis to stretch time · Shift+wheel = price
         </p>
+        )}
         </>
       )}
 
@@ -1037,6 +1080,25 @@ export function LightweightCandles({
             : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
         }}
       >
+        {embedMode || hideChartToolbar ? (
+          <span
+            className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            title="If you do not see this stamp on live, Cloud Run is still serving an old image"
+          >
+            {CHART_UI_BUILD_STAMP}
+          </span>
+        ) : null}
+        {!embedMode && hideChartToolbar && onExpandToggle ? (
+          <button
+            type="button"
+            onClick={onExpandToggle}
+            aria-label={isExpanded ? "Exit full size" : "Expand chart to fill the window"}
+            title={isExpanded ? "Exit full size (Esc)" : "Expand chart to fill the window"}
+            className="absolute top-2 right-2 z-[60] flex h-8 w-8 items-center justify-center rounded-md border border-emerald-400/40 bg-black/75 text-emerald-300 shadow-lg backdrop-blur-md transition-all hover:border-emerald-300/70 hover:bg-emerald-400/10"
+          >
+            {isExpanded ? <Minimize2 size={14} strokeWidth={2.5} /> : <Maximize2 size={14} strokeWidth={2.5} />}
+          </button>
+        ) : null}
         {isLoading && !error && (
           <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
             <span className="animate-pulse">Loading {sym} chart…</span>
@@ -1137,7 +1199,7 @@ function series_priceScaleMargins(chart: any, hasOscillator: boolean) {
       ...CHART_PRICE_SCALE_GESTURE,
       scaleMargins: hasOscillator
         ? { top: 0.08, bottom: 0.28 }   // leave room for the oscillator sub-pane
-        : { top: 0.08, bottom: 0.08 },  // no oscillator: candles fill the chart
+        : { top: 0.04, bottom: 0.04 },  // no oscillator: candles fill the chart
     });
   } catch (e) {
     console.warn("Could not apply candle price-scale margins:", e);

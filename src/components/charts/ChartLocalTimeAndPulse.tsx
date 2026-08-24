@@ -142,10 +142,13 @@ export function ChartLocalTimeAndPulse({
   slotId,
   symbol,
   compact = false,
+  onInteract,
 }: {
   slotId: string;
   symbol: string | null;
   compact?: boolean;
+  /** Fired when this slot's 5/10/15/30m buttons are used — bind tools to this chart. */
+  onInteract?: () => void;
 }) {
   const [now, setNow] = useState(() => new Date());
   const [contact, setContact] = useState<ContactPrefs>(() =>
@@ -224,9 +227,10 @@ export function ChartLocalTimeAndPulse({
   }, [armed, symbol, armLocalTimer, clearLocalTimer]);
 
   const toggleInterval = async (interval: ChartPulseInterval) => {
+    onInteract?.();
     const sym = (symbol || "").trim().toUpperCase();
     if (!sym) {
-      setHint("Load a symbol on this chart first.");
+      setHint("This slot is empty. Tap 5m on a chart that already has candles.");
       return;
     }
     const turningOff = armed.includes(interval);
@@ -287,121 +291,119 @@ export function ChartLocalTimeAndPulse({
   };
 
   const tzId = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const deliveryNote = status
+    ? contact.channel === "email"
+      ? status.emailConfigured
+        ? "Email ready"
+        : "SMTP unset — browser alert while this tab is open"
+      : status.smsConfigured
+        ? "Text ready"
+        : "Twilio unset — browser alert while this tab is open"
+    : "Educational snapshot · not a trade signal";
 
   return (
     <div
-      className="flex flex-col gap-1.5 min-w-0 w-full"
+      className="flex items-center gap-1.5 min-w-0 w-full overflow-x-auto no-scrollbar flex-nowrap"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-        <div
-          className={`flex items-center gap-1.5 rounded-md border border-[#D4AF37]/70 bg-[#D4AF37]/10 px-2 py-1 shrink-0 ${
-            compact ? "min-w-[118px]" : "min-w-[148px]"
+      <div
+        className={`flex items-center gap-1.5 rounded-md border border-[#D4AF37]/70 bg-[#D4AF37]/10 px-2 py-1 shrink-0 ${
+          compact ? "min-w-[118px]" : "min-w-[148px]"
+        }`}
+        title={`Your local time (${tzId})`}
+        aria-live="polite"
+      >
+        <span className="text-[8px] font-black uppercase tracking-widest text-[#D4AF37]/80">
+          Local
+        </span>
+        <time
+          className={`font-mono font-bold tabular-nums text-[#F5D76E] ${
+            compact ? "text-[10px]" : "text-[11px]"
           }`}
-          title={`Your local time (${tzId})`}
-          aria-live="polite"
+          dateTime={now.toISOString()}
         >
-          <span className="text-[8px] font-black uppercase tracking-widest text-[#D4AF37]/80">
-            Local
-          </span>
-          <time
-            className={`font-mono font-bold tabular-nums text-[#F5D76E] ${
-              compact ? "text-[10px]" : "text-[11px]"
-            }`}
-            dateTime={now.toISOString()}
-          >
-            {clock.time}
-          </time>
-          <span className="text-[8px] font-mono uppercase tracking-wider text-[#D4AF37]/70">
-            {clock.zone}
-          </span>
-        </div>
-
-        {CHART_PULSE_INTERVALS.map((interval) => {
-          const on = armed.includes(interval);
-          return (
-            <button
-              key={interval}
-              type="button"
-              disabled={busy === interval}
-              onClick={() => void toggleInterval(interval)}
-              title={
-                symbol
-                  ? `Push a ${contact.channel === "sms" ? "text" : "email"} snapshot every ${interval} minutes`
-                  : "Load a symbol first"
-              }
-              className={`rounded-md border px-2 py-1 font-mono font-black uppercase tracking-wider transition-colors ${
-                compact ? "text-[9px] min-w-[36px]" : "text-[10px] min-w-[42px]"
-              } ${
-                on
-                  ? "border-rose-400 bg-rose-600/80 text-white shadow-[0_0_10px_rgba(244,63,94,0.45)]"
-                  : "border-rose-500/70 bg-rose-950/40 text-rose-200 hover:bg-rose-900/50"
-              } disabled:opacity-50`}
-              aria-pressed={on}
-            >
-              {interval}m
-            </button>
-          );
-        })}
-
-        <div className="flex items-center rounded-md overflow-hidden border border-white/15 shrink-0">
-          {(["email", "sms"] as const).map((ch) => (
-            <button
-              key={ch}
-              type="button"
-              onClick={() => setContact((prev) => ({ ...prev, channel: ch }))}
-              className={`px-2 py-1 font-black uppercase tracking-wider ${
-                compact ? "text-[8px]" : "text-[9px]"
-              } ${
-                contact.channel === ch
-                  ? "bg-rose-600 text-white"
-                  : "bg-black/40 text-zinc-400 hover:text-zinc-200"
-              }`}
-              aria-pressed={contact.channel === ch}
-            >
-              {ch === "email" ? "Email" : "Text"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-        {contact.channel === "email" ? (
-          <input
-            type="email"
-            value={contact.email}
-            onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
-            placeholder={status?.sessionEmail || "email for pulses"}
-            aria-label="Email for chart pulses"
-            className="min-w-[140px] flex-1 bg-black/60 border border-rose-500/30 rounded-md px-2 py-0.5 font-mono text-[10px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-rose-400/40"
-          />
-        ) : (
-          <input
-            type="tel"
-            value={contact.phone}
-            onChange={(e) => setContact((prev) => ({ ...prev, phone: e.target.value }))}
-            placeholder="+1 phone for texts"
-            aria-label="Phone for chart text pulses"
-            className="min-w-[140px] flex-1 bg-black/60 border border-rose-500/30 rounded-md px-2 py-0.5 font-mono text-[10px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-rose-400/40"
-          />
-        )}
-        <span className="text-[8px] font-mono text-zinc-500 leading-tight">
-          {status
-            ? contact.channel === "email"
-              ? status.emailConfigured
-                ? "Email ready"
-                : "SMTP unset — browser alert while this tab is open"
-              : status.smsConfigured
-                ? "Text ready"
-                : "Twilio unset — browser alert while this tab is open"
-            : "Educational snapshot · not a trade signal"}
+          {clock.time}
+        </time>
+        <span className="text-[8px] font-mono uppercase tracking-wider text-[#D4AF37]/70">
+          {clock.zone}
         </span>
       </div>
-      {hint && (
-        <p className="text-[8px] font-mono text-rose-300/90 leading-tight" role="status">
-          {hint}
-        </p>
+
+      {CHART_PULSE_INTERVALS.map((interval) => {
+        const on = armed.includes(interval);
+        return (
+          <button
+            key={interval}
+            type="button"
+            disabled={busy === interval}
+            onClick={() => void toggleInterval(interval)}
+            title={
+              symbol
+                ? `Push a ${contact.channel === "sms" ? "text" : "email"} snapshot of this loaded chart every ${interval} minutes`
+                : "This slot is empty — use 5m on a chart that already has candles"
+            }
+            className={`rounded-md border px-2 py-1 font-mono font-black uppercase tracking-wider transition-colors shrink-0 ${
+              compact ? "text-[9px] min-w-[36px]" : "text-[10px] min-w-[42px]"
+            } ${
+              on
+                ? "border-rose-400 bg-rose-600/80 text-white shadow-[0_0_10px_rgba(244,63,94,0.45)]"
+                : "border-rose-500/70 bg-rose-950/40 text-rose-200 hover:bg-rose-900/50"
+            } disabled:opacity-50`}
+            aria-pressed={on}
+          >
+            {interval}m
+          </button>
+        );
+      })}
+
+      <div className="flex items-center rounded-md overflow-hidden border border-white/15 shrink-0">
+        {(["email", "sms"] as const).map((ch) => (
+          <button
+            key={ch}
+            type="button"
+            onClick={() => setContact((prev) => ({ ...prev, channel: ch }))}
+            className={`px-2 py-1 font-black uppercase tracking-wider ${
+              compact ? "text-[8px]" : "text-[9px]"
+            } ${
+              contact.channel === ch
+                ? "bg-rose-600 text-white"
+                : "bg-black/40 text-zinc-400 hover:text-zinc-200"
+            }`}
+            aria-pressed={contact.channel === ch}
+          >
+            {ch === "email" ? "Email" : "Text"}
+          </button>
+        ))}
+      </div>
+
+      {contact.channel === "email" ? (
+        <input
+          type="email"
+          value={contact.email}
+          onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
+          placeholder={status?.sessionEmail || "email for pulses"}
+          aria-label="Email for chart pulses"
+          className="w-[160px] shrink-0 bg-black/60 border border-rose-500/30 rounded-md px-2 py-0.5 font-mono text-[10px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-rose-400/40"
+        />
+      ) : (
+        <input
+          type="tel"
+          value={contact.phone}
+          onChange={(e) => setContact((prev) => ({ ...prev, phone: e.target.value }))}
+          placeholder="+1 phone for texts"
+          aria-label="Phone for chart text pulses"
+          className="w-[160px] shrink-0 bg-black/60 border border-rose-500/30 rounded-md px-2 py-0.5 font-mono text-[10px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-rose-400/40"
+        />
       )}
+      <span
+        className={`text-[8px] font-mono leading-none whitespace-nowrap shrink-0 ${
+          hint ? "text-rose-300" : "text-zinc-500"
+        }`}
+        role="status"
+        title={hint || deliveryNote}
+      >
+        {hint || deliveryNote}
+      </span>
     </div>
   );
 }

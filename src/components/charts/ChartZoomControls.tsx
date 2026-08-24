@@ -3,9 +3,9 @@ import type { IChartApi } from 'lightweight-charts';
 import {
   FoldHorizontal,
   FoldVertical,
-  Maximize2,
   Minus,
   Plus,
+  RotateCcw,
   UnfoldHorizontal,
   UnfoldVertical,
 } from 'lucide-react';
@@ -54,7 +54,7 @@ export function ChartZoomControls({ chartRef, className = 'flex-col' }: ChartZoo
 
   return (
     <div
-      className={`pointer-events-auto flex flex-wrap gap-1 rounded-lg border border-white/15 bg-black/85 p-1 shadow-lg backdrop-blur-md ${className}`}
+      className={`pointer-events-auto flex flex-nowrap gap-1 rounded-lg border border-white/15 bg-black/85 p-1 shadow-lg backdrop-blur-md ${className}`}
       aria-label="Chart zoom and axis scale controls"
     >
       <AxisButton
@@ -95,10 +95,10 @@ export function ChartZoomControls({ chartRef, className = 'flex-col' }: ChartZoo
         type="button"
         onClick={() => invoke(resetChartZoom)}
         aria-label="Reset zoom"
-        title="Reset zoom (fit all candles)"
+        title="Reset zoom (fit all candles) — does not change panel size"
         className="flex h-8 w-8 items-center justify-center rounded-md border border-[#BF00FF]/25 text-[#BF00FF] transition-all hover:border-[#BF00FF]/60 hover:bg-[#BF00FF]/10 active:scale-95"
       >
-        <Maximize2 size={13} strokeWidth={2.5} />
+        <RotateCcw size={13} strokeWidth={2.5} />
       </button>
     </div>
   );

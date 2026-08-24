@@ -258,6 +258,8 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
                 profileId={profileId} 
                 height={420}
                 isExpanded={isExpanded}
+                fillParent
+                onExpandToggle={() => setIsExpanded(!isExpanded)}
                 timeframe={timeframe} 
                 theme={theme}
                 userTier={userTier}
