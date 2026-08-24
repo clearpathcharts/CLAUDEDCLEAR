@@ -1541,7 +1541,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         <ClearNav activeTab={activeTab} onNavigate={handleTabChange} isAdmin={isAdmin()} isFounder={isFounder()} onLogout={handleLogout} lean={isAppShell} />
 
         {/* TOP MARKET TICKER */}
-        {showTicker && !isAppShell && (
+        {showTicker && !isAppShell && activeTab !== 'StrictlyCharts' && (
           <div className="z-40">
             <Suspense fallback={<div className="h-10 bg-black/40  border-b border-white/5" />}>
               <MarketTicker profile={profile} />

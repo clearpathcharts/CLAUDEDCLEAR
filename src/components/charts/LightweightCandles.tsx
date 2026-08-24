@@ -142,6 +142,7 @@ export function LightweightCandles({
   useDedicatedPatternPanel = false,
   /** Publish drawing controls to the Pattern Scanner column toolbox (Charts tab). */
   publishDrawingSession = false,
+  hideChartToolbar = false,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -170,6 +171,8 @@ export function LightweightCandles({
   useDedicatedPatternPanel?: boolean;
   /** When true, this chart owns the left-column Drawing Tools panel. */
   publishDrawingSession?: boolean;
+  /** Hide the in-plot CROSSHAIR/zoom bar so candles fill the empty-slot box. */
+  hideChartToolbar?: boolean;
 }) {
   const hidePatternChrome = embedMode || useDedicatedPatternPanel;
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -987,7 +990,7 @@ export function LightweightCandles({
       }}
     >
       {/* Chrome ABOVE the canvas only — drawing toolbox lives under Pattern Scanner */}
-      {!embedMode && (
+      {!embedMode && !hideChartToolbar && (
         <>
         <div
           className="flex shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/10 bg-black/95 px-2 py-1"
@@ -1040,6 +1043,14 @@ export function LightweightCandles({
             : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
         }}
       >
+        {embedMode || hideChartToolbar ? (
+          <span
+            className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            title="If you do not see this stamp on live, Cloud Run is still serving an old image"
+          >
+            {CHART_UI_BUILD_STAMP}
+          </span>
+        ) : null}
         {isLoading && !error && (
           <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
             <span className="animate-pulse">Loading {sym} chart…</span>
