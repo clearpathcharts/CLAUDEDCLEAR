@@ -1584,6 +1584,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           className={`flex-1 overflow-visible ${
             activeTab === 'Insights' 
               ? 'p-0 pb-32 md:pb-5' 
+              : activeTab === 'StrictlyCharts'
+                ? 'p-0 pb-20 md:pb-0'
               : layoutDensity === 'compact'
                 ? 'p-1.5 md:p-2.5 pb-20'
                 : layoutDensity === 'cozy'
@@ -1610,7 +1612,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   key={`${activeTab}:${selectedLightweightSymbol}`}
                   className="flex flex-col flex-1 h-full w-full min-h-[400px]"
                 >
-                  <div className="px-6 lg:px-12 pb-16 pt-8 flex-1 flex flex-col min-h-[50vh]">
+                  <div className={`flex-1 flex flex-col ${
+                    activeTab === 'StrictlyCharts'
+                      ? 'p-0 min-h-0'
+                      : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
+                  }`}>
                     {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
@@ -1823,7 +1829,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             transition={{ type: 'spring', damping: 22, stiffness: 220 }}
-            className="fixed bottom-4 right-4 z-[90] w-[min(100vw-1.5rem,360px)] h-[min(70vh,480px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
+            className="fixed bottom-3 right-3 z-[90] w-[min(100vw-1rem,min(42rem,92vw))] h-[min(92dvh,900px)] flex flex-col rounded-2xl overflow-hidden border-2 border-[#ff4500] shadow-[0_0_40px_rgba(255,69,0,0.45)]"
           >
             <Suspense fallback={<TabLoading />}>
               <ClearPathChatroom

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import {
   getActivePatternScan,
   getPatternScan,
@@ -61,6 +61,7 @@ interface PatternScannerPanelProps {
 export function PatternScannerPanel({ symbol, timeframe, compact = false }: PatternScannerPanelProps) {
   const [scan, setScan] = useState<PatternScanResult | null>(() => resolvePanelScan(symbol, timeframe));
   const [forming, setForming] = useState(() => getFormingBrief(symbol, timeframe));
+  const hitsRef = useRef<HTMLDivElement>(null);
   const hasSymbol = Boolean(symbol && symbol !== '—');
 
   useEffect(() => {
@@ -85,10 +86,14 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
     items: chartPatterns.filter((p) => p.patternGroup === group),
   })).filter((g) => g.items.length > 0);
 
+  const scrollHits = (dir: -1 | 1) => {
+    hitsRef.current?.scrollBy({ top: dir * 120, behavior: "smooth" });
+  };
+
   return (
     <div
       className={`flex flex-col rounded-2xl border border-[#FF1493]/30 bg-black/80 backdrop-blur-md font-mono shadow-[0_0_24px_rgba(255,20,147,0.12)] ${
-        compact ? "h-full min-h-0" : "min-h-[520px]"
+        compact ? "h-full min-h-0" : "h-[min(86dvh,960px)] min-h-[560px]"
       }`}
     >
       <div className="shrink-0 p-4 border-b border-[#BF00FF]/25">
@@ -129,7 +134,12 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
         </p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
+      <div className="flex-1 min-h-0 flex">
+        <div
+          ref={hitsRef}
+          className="pattern-scanner-scroll flex-1 min-h-0 overflow-y-scroll p-4 space-y-4"
+          data-testid="pattern-scanner-hits"
+        >
         {!hasSymbol && (
           <p className="text-xs text-center py-8 text-zinc-500 leading-relaxed">
             Search your chart in any slot — pattern readouts show up here for the symbol you choose.
@@ -158,9 +168,10 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           </div>
         ))}
 
-        {hasSymbol && candlePatterns.length > 0 && (
+        {hasSymbol && (
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-widest text-white/40">Candlesticks</p>
+            {candlePatterns.length > 0 ? (
             <div className="space-y-1.5">
               {candlePatterns.map((p, i) => {
                 const Icon = DIRECTION_ICON[p.direction];
@@ -184,6 +195,9 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
                 );
               })}
             </div>
+            ) : (
+              <p className="text-xs text-white/35 py-6 text-center">No candlestick hits yet — this list scrolls when they appear.</p>
+            )}
           </div>
         )}
 
@@ -192,6 +206,31 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
             No patterns detected yet. Lines appear on the chart when structures are found.
           </p>
         )}
+        </div>
+
+        <div
+          className="shrink-0 flex flex-col items-center justify-between border-l border-[#FF1493]/45 bg-[#14000a] py-1 w-8"
+          data-testid="pattern-scanner-scroll-rail"
+          title="Scroll pattern hits"
+        >
+          <button
+            type="button"
+            onClick={() => scrollHits(-1)}
+            aria-label="Scroll pattern list up"
+            className="rounded-md border border-[#FF1493]/50 p-1 text-[#FF1493] hover:bg-[#FF1493]/20"
+          >
+            <ChevronUp size={16} />
+          </button>
+          <span className="flex-1 w-1 my-1 rounded-full bg-gradient-to-b from-[#FF1493] to-[#BF00FF]" aria-hidden />
+          <button
+            type="button"
+            onClick={() => scrollHits(1)}
+            aria-label="Scroll pattern list down"
+            className="rounded-md border border-[#FF1493]/50 p-1 text-[#FF1493] hover:bg-[#FF1493]/20"
+          >
+            <ChevronDown size={16} />
+          </button>
+        </div>
       </div>
 
       {hasSymbol && forming && (
@@ -224,7 +263,7 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
           {forming.possibilities.length === 0 ? (
             <p className="text-xs text-white/45">Scanning structure for early setups…</p>
           ) : (
-            <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
+            <div className="space-y-1.5">
               {forming.possibilities.map((p) => (
                 <div key={p.id} className={`rounded-lg border px-3 py-2 text-xs ${FORMING_STATUS[p.status]}`}>
                   <div className="flex items-center gap-1.5">

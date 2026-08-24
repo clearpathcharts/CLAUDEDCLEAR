@@ -1,16 +1,20 @@
 /**
- * Guards Market Terminal phone chart sizing — stacked slots must be full-size,
- * not ~300px thumbnails.
+ * Guards Market Terminal chart sizing — stacked slots must be full-size,
+ * not ~300px / 520px thumbnails.
  *
  * Run: npx tsx scripts/chart-layout.selftest.ts
  */
 import assert from 'node:assert/strict';
 import {
   MARKET_CHART_DESKTOP_BODY_HEIGHT,
+  MARKET_CHART_DESKTOP_CHROME,
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
   MARKET_CHART_HEIGHT,
   MARKET_CHART_HEIGHT_LEGACY,
   MARKET_CHART_MOBILE_MIN_BODY_HEIGHT,
   MARKET_CHART_MOBILE_SLOT_HEADER,
+  desktopMarketPanelHeight,
+  desktopStackedMarketChartHeight,
   mobileStackedMarketChartHeight,
   normalizeMarketSlotY,
 } from '../src/constants/chartLayout.ts';
@@ -49,15 +53,32 @@ assert.equal(
 );
 
 assert.ok(
-  MARKET_CHART_HEIGHT >= MARKET_CHART_DESKTOP_BODY_HEIGHT + 80,
-  'desktop panel must leave room for pulse+search without shrinking candles',
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT >= 860,
+  'desktop candle body must be a full window, not a 520/640 thumbnail',
 );
 assert.ok(
-  MARKET_CHART_DESKTOP_BODY_HEIGHT >= 500,
-  'desktop candle body must stay readable (not a thumbnail)',
+  MARKET_CHART_HEIGHT >= MARKET_CHART_DESKTOP_BODY_HEIGHT + MARKET_CHART_DESKTOP_CHROME - 16,
+  'desktop panel must leave room for pulse+search without shrinking candles',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(700),
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
+  'short desktops still get the 860px floor (larger than the viewport)',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(1080),
+  1080 - 56,
+  '1080px desktop → full window minus only the top nav',
+);
+assert.equal(
+  desktopMarketPanelHeight(900),
+  900 + MARKET_CHART_DESKTOP_CHROME,
+  'panel height is candle body plus pulse/search chrome',
 );
 assert.equal(normalizeMarketSlotY(0, 0), 0);
 assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY, 1), MARKET_CHART_HEIGHT);
 assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY * 2, 2), MARKET_CHART_HEIGHT * 2);
+assert.equal(normalizeMarketSlotY(520, 1), MARKET_CHART_HEIGHT);
+assert.equal(normalizeMarketSlotY(640, 1), MARKET_CHART_HEIGHT);
 
 console.log('chart-layout.selftest: ok');

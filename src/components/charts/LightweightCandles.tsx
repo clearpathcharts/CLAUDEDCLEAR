@@ -31,9 +31,10 @@ import {
   CHART_PRICE_SCALE_GESTURE,
   CHART_TIME_SCALE_GESTURE,
 } from "../../lib/charts/chartInteraction";
+import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-PULSE-HEIGHT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FULLSCREEN";
 
 type Candle = {
   time: number;
@@ -121,7 +122,7 @@ export function LightweightCandles({
   data,
   symbol = "UNKNOWN",
   profileId,
-  height = 520,
+  height = MARKET_CHART_DESKTOP_CANDLE_HEIGHT,
   isExpanded = false,
   fillParent = false,
   timeframe = "1h",

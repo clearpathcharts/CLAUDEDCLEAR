@@ -5,7 +5,10 @@ import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { TradingHaltController } from '../../truth/TradingHaltController';
-import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT, MARKET_CHART_HEIGHT } from '../../constants/chartLayout';
+import {
+  desktopMarketPanelHeight,
+  desktopStackedMarketChartHeight,
+} from '../../constants/chartLayout';
 
 import { setClearState, getClearState } from '../../lib/trading/clearState';
 import { describeTimeframe } from '../../services/marketData';
@@ -31,13 +34,24 @@ function toDataSymbol(raw: string): string {
   return upper.replace('/', '');
 }
 
-const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof ASSETS[0], profile: ThemeProfile, activeTimeframe?: string }) => {
+const ChartWidget = ({
+  asset,
+  profile,
+  activeTimeframe = '1H',
+  chartBodyH,
+}: {
+  asset: typeof ASSETS[0];
+  profile: ThemeProfile;
+  activeTimeframe?: string;
+  chartBodyH: number;
+}) => {
   const dataSymbol = toDataSymbol(asset.value);
+  const panelH = desktopMarketPanelHeight(chartBodyH);
 
   return (
     <div
       className="individual-chart-wrapper flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6"
-      style={{ height: MARKET_CHART_HEIGHT }}
+      style={{ height: panelH, minHeight: panelH }}
       id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}
     >
       <div className="px-3 py-1 border-b bg-black/40 backdrop-blur-md border-white/5 shrink-0">
@@ -57,10 +71,11 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
           <span>{activeTimeframe} STREAM</span>
         </div>
       </div>
-      <div className="w-full shrink-0 relative" style={{ height: MARKET_CHART_DESKTOP_CANDLE_HEIGHT, minHeight: MARKET_CHART_DESKTOP_CANDLE_HEIGHT }}>
+      <div className="w-full shrink-0 relative" style={{ height: chartBodyH, minHeight: chartBodyH }}>
         <LightweightCandles
           profileId={profile.id}
-          height={MARKET_CHART_DESKTOP_CANDLE_HEIGHT}
+          height={chartBodyH}
+          fillParent
           timeframe={timeframesMapping[activeTimeframe] || '1h'}
           symbol={dataSymbol}
         />
@@ -80,12 +95,24 @@ interface StandardMarketUIProps {
 export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, profile }) => {
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
+  const [chartBodyH, setChartBodyH] = useState(() => desktopStackedMarketChartHeight());
 
   useEffect(() => {
     return TradingHaltController.subscribe((isHalted, reason) => {
       setHalted(isHalted);
       setHaltReason(reason);
     });
+  }, []);
+
+  useEffect(() => {
+    const syncHeight = () => setChartBodyH(desktopStackedMarketChartHeight());
+    syncHeight();
+    window.addEventListener('resize', syncHeight);
+    window.visualViewport?.addEventListener('resize', syncHeight);
+    return () => {
+      window.removeEventListener('resize', syncHeight);
+      window.visualViewport?.removeEventListener('resize', syncHeight);
+    };
   }, []);
 
   const [searchSymbol, setSearchSymbol] = useState('');
@@ -186,8 +213,8 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
         </form>
       </div>
 
-      <div className="flex-1 p-8" style={{ background: '#000000' }}>
-        <div className="max-w-7xl mx-auto w-full space-y-8">
+      <div className="flex-1 p-3 sm:p-4" style={{ background: '#000000' }}>
+        <div className="w-full max-w-none space-y-6">
           <div className="flex items-center justify-between border-b border-indigo-500/20 pb-6">
             <h1 className="text-3xl font-black tracking-tighter uppercase italic" style={{ color: profile.text }}>
               EXCHANGE <span style={{ color: profile.borderA }}>COMMAND CENTER</span>
@@ -227,9 +254,9 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
           </div>
           
           <div id="master-chart-stack-std" className="multi-chart-container">
-            <ChartWidget key={`${mainAsset.value}-${activeTimeframe}`} asset={mainAsset} profile={profile} activeTimeframe={activeTimeframe} />
+            <ChartWidget key={`${mainAsset.value}-${activeTimeframe}`} asset={mainAsset} profile={profile} activeTimeframe={activeTimeframe} chartBodyH={chartBodyH} />
             {ASSETS.filter(a => a.value !== mainAsset.value).map((asset) => (
-              <ChartWidget key={`${asset.value}-${activeTimeframe}`} asset={asset} profile={profile} activeTimeframe={activeTimeframe} />
+              <ChartWidget key={`${asset.value}-${activeTimeframe}`} asset={asset} profile={profile} activeTimeframe={activeTimeframe} chartBodyH={chartBodyH} />
             ))}
           </div>
         </div>

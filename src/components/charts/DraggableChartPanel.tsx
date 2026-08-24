@@ -50,7 +50,7 @@ export function DraggableChartPanel({
   if (isStatic) {
     return (
       <div
-        style={{ width }}
+        style={{ width, height: panelHeight, minHeight: panelHeight }}
         className={`rounded-2xl border border-white/10 bg-black/90 shadow-2xl backdrop-blur-md overflow-hidden flex flex-col ${className}`}
       >
         {preHeader ? <PreHeaderRow>{preHeader}</PreHeaderRow> : null}

@@ -117,7 +117,7 @@ export default function ClearPathChatroom({
       ? 'h-full'
       : variant === 'fullscreen'
         ? 'min-h-[70vh]'
-        : 'h-[520px] md:h-[560px]');
+        : 'min-h-[70vh] h-[min(82dvh,820px)]');
 
   return (
     <div
