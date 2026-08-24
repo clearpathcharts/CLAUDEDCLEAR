@@ -13,7 +13,7 @@
 // ============================================================================
 
 import { useState } from "react";
-import { getQuiz, type Quiz } from "./quizData";
+import { getQuiz, isQuizPassed, type Quiz } from "./quizData";
 
 const BODY = "#E8EDF5";
 const SUBTLE = "#9FB3C8";
@@ -66,7 +66,7 @@ export function QuizEngine({
       setSelected(null);
       setLocked(false);
     } else {
-      const passed = score >= quiz.passingScore;
+      const passed = isQuizPassed(score, quiz);
       setFinished(true);
       onComplete?.(passed, score, total);
     }
@@ -82,7 +82,7 @@ export function QuizEngine({
 
   // --- Results screen -------------------------------------------------------
   if (finished) {
-    const passed = score >= quiz.passingScore;
+    const passed = isQuizPassed(score, quiz);
     return (
       <Panel accent={accent}>
         <h3 style={{ margin: 0, color: passed ? GOOD : BAD, fontSize: 20 }}>

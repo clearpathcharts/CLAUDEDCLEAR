@@ -142,7 +142,7 @@ export const OPEN_SITE_WORK: Array<{ id: string; title: string; why: string }> =
   {
     id: "github_token",
     title: "Optional GITHUB_TOKEN for Actions auto-check",
-    why: "Public repo can be polled without a token; authenticated checks are more reliable",
+    why: "CLAUDEDCLEAR is private — without GITHUB_TOKEN the Actions probe skips cleanly; set a fine-scoped token (actions:read) on Cloud Run to monitor CI failures",
   },
   {
     id: "google_flow_ads",

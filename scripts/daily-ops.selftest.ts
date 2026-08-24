@@ -17,6 +17,12 @@ import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
 import { themeProfiles } from "../src/lib/theme/profiles";
+import {
+  LEGAL_NON_ADVISORY_CLAUSE,
+  LEGAL_POSITIONING_BLURB,
+  legalNonAdvisoryClausePresent,
+} from "../src/legal/nonAdvisoryCopy";
+import { QUIZZES, isQuizPassed } from "../src/education/quizData";
 
 const ids = CATALOG.map((c) => c.id);
 assert.equal(ids.length, new Set(ids).size, "catalog ids must be unique");
@@ -70,6 +76,20 @@ assert.equal(/buy\.stripe\.com/.test(tab), false);
 assert.equal(PAYMENTS_ENABLED, false, "billing must stay hard-off");
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(membership), false);
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(tab), false);
+
+assert.ok(legalNonAdvisoryClausePresent(LEGAL_NON_ADVISORY_CLAUSE));
+assert.ok(legalNonAdvisoryClausePresent(LEGAL_POSITIONING_BLURB));
+const footerSrc = fs.readFileSync(path.join(process.cwd(), "src/components/LegalFooter.tsx"), "utf8");
+assert.ok(footerSrc.includes("LEGAL_POSITIONING_BLURB"), "LegalFooter must use bundled legal constant");
+
+const quizzes = Object.values(QUIZZES);
+assert.ok(quizzes.length >= 1, "need at least one education quiz");
+assert.ok(quizzes.every((q) => q.passingScore >= 1));
+const sample = quizzes[0]!;
+assert.equal(isQuizPassed(sample.passingScore, sample), true);
+assert.equal(isQuizPassed(Math.max(0, sample.passingScore - 1), sample), false);
+const quizEngine = fs.readFileSync(path.join(process.cwd(), "src/education/QuizEngine.tsx"), "utf8");
+assert.ok(quizEngine.includes("isQuizPassed"), "QuizEngine must use shared isQuizPassed helper");
 
 const rules = fs.readFileSync(path.join(process.cwd(), "firestore.rules"), "utf8");
 assert.ok(rules.includes("vipStatus"));

@@ -1,6 +1,7 @@
 import React from 'react';
 import { InterfaceProfile } from '../types';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
+import { LEGAL_POSITIONING_BLURB } from '../legal/nonAdvisoryCopy';
 
 interface LegalFooterProps {
   profile?: InterfaceProfile;
@@ -14,7 +15,7 @@ export default function LegalFooter({ profile, onShowTerms }: LegalFooterProps) 
       <div className="flex flex-col space-y-3 opacity-70">
         <div className="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff3333] via-[#ff6633] to-[#ff9933]" style={{ fontFamily: "'Cinzel', serif" }}>
           <span className="mr-2" style={{ color: profile?.borderA }}>⚖</span>
-          <span style={{ color: profile?.borderA }}>Legal Positioning</span> — “Provides financial data visualization with optional user-controlled presentation adjustments for accessibility and visual clarity. The system does not evaluate, alter, or advise on financial decisions.”
+          <span style={{ color: profile?.borderA }}>Legal Positioning</span> — “{LEGAL_POSITIONING_BLURB}”
         </div>
         <nav
           className="flex justify-center items-center space-x-6 text-sm font-bold pt-2 flex-wrap gap-y-2"
