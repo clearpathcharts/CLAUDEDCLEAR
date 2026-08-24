@@ -19,11 +19,13 @@ interface DraggableChartPanelProps {
   className?: string;
   /** When false, panel is in-flow only (no drag transform). */
   draggable?: boolean;
+  /** Desktop stacking pitch — locks chrome+candles so pulse UI cannot squash the plot. */
+  panelHeight?: number;
 }
 
 function PreHeaderRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="shrink-0 px-3 py-2 border-b border-white/10 bg-black/70">
+    <div className="shrink-0 px-3 py-1 border-b border-white/10 bg-black/70">
       {children}
     </div>
   );
@@ -40,6 +42,7 @@ export function DraggableChartPanel({
   preHeader,
   className = "",
   draggable = true,
+  panelHeight,
 }: DraggableChartPanelProps) {
   const dragControls = useDragControls();
   const isStatic = mode === "static" || !draggable;
@@ -75,6 +78,8 @@ export function DraggableChartPanel({
         top: 0,
         width,
         zIndex,
+        height: panelHeight,
+        overflow: "hidden",
       }}
       onDragEnd={(_, info) => {
         onPositionChange({
@@ -95,7 +100,7 @@ export function DraggableChartPanel({
         </span>
         <div className="flex-1 min-w-0">{header}</div>
       </div>
-      <div className="flex-1 min-h-0">{children}</div>
+      <div className="shrink-0">{children}</div>
     </motion.div>
   );
 }

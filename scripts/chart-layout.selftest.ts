@@ -6,9 +6,13 @@
  */
 import assert from 'node:assert/strict';
 import {
+  MARKET_CHART_DESKTOP_BODY_HEIGHT,
+  MARKET_CHART_HEIGHT,
+  MARKET_CHART_HEIGHT_LEGACY,
   MARKET_CHART_MOBILE_MIN_BODY_HEIGHT,
   MARKET_CHART_MOBILE_SLOT_HEADER,
   mobileStackedMarketChartHeight,
+  normalizeMarketSlotY,
 } from '../src/constants/chartLayout.ts';
 
 assert.equal(
@@ -43,5 +47,17 @@ assert.equal(
   900 - MARKET_CHART_MOBILE_SLOT_HEADER,
   'body should consume the full viewport minus only the slot header',
 );
+
+assert.ok(
+  MARKET_CHART_HEIGHT >= MARKET_CHART_DESKTOP_BODY_HEIGHT + 80,
+  'desktop panel must leave room for pulse+search without shrinking candles',
+);
+assert.ok(
+  MARKET_CHART_DESKTOP_BODY_HEIGHT >= 500,
+  'desktop candle body must stay readable (not a thumbnail)',
+);
+assert.equal(normalizeMarketSlotY(0, 0), 0);
+assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY, 1), MARKET_CHART_HEIGHT);
+assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY * 2, 2), MARKET_CHART_HEIGHT * 2);
 
 console.log('chart-layout.selftest: ok');

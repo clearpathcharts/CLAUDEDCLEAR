@@ -25,8 +25,8 @@ export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean 
         </div>
         <p className="mt-1 text-[10px] leading-snug text-zinc-500">
           {session
-            ? `Target ${session.symbol} · ${session.timeframe.toUpperCase()} — click the chart to place`
-            : "Load a chart symbol — tools bind to the active scanner chart"}
+            ? `Target ${session.symbol} · ${session.timeframe.toUpperCase()} — click that loaded chart to place`
+            : "Click a loaded chart (or its 5m / 10m / 15m / 30m buttons) so tools attach to that symbol"}
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean 
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center text-[11px] text-zinc-500">
             <Ruler size={18} className="text-zinc-600" />
-            <span>Search a symbol in any chart slot to enable trendlines, fibs, and shapes.</span>
+            <span>Search a symbol in any chart slot, then click that chart so trendlines, fibs, and shapes attach to it.</span>
           </div>
         )}
       </div>

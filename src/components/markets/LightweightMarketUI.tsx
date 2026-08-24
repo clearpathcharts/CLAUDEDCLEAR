@@ -23,6 +23,7 @@ import {
   MARKET_CHART_HEIGHT,
   MARKET_CHART_SLOT_COUNT,
   mobileStackedMarketChartHeight,
+  normalizeMarketSlotY,
   type ChartLayoutSlot,
 } from '../../constants/chartLayout';
 import { usePersistedLayout } from '../../hooks/useDraggablePosition';
@@ -47,7 +48,10 @@ function loadMarketSlots(): ChartLayoutSlot[] {
           // Horizontal drag offsets shoved charts into the right third of the page —
           // always dock full-width; only vertical stacking uses y.
           x: 0,
-          y: typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
+          y: normalizeMarketSlotY(
+            typeof slot.y === 'number' ? slot.y : i * MARKET_CHART_HEIGHT,
+            i,
+          ),
         }));
         return ensureMarketSlotsHaveSymbols(slots);
       }
@@ -96,6 +100,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   );
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
+  const [activeSlot, setActiveSlot] = useState(0);
   /** Phones: stack charts in document flow — absolute drag panels crush Chrome mobile. */
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
@@ -138,7 +143,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
       return prev.map((s, i) => ({
         symbol: s?.symbol ?? null,
         x: 0,
-        y: typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+        y: normalizeMarketSlotY(
+          typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+          i,
+        ),
       }));
     });
   }, [saveChartSlots]);
@@ -151,7 +159,9 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   const primarySymbol = chartSlots[0]?.symbol ?? null;
   const compareSymbol = chartSlots[1]?.symbol ?? null;
-  const patternPanelSymbol = chartSlots.find((s) => s.symbol)?.symbol ?? primarySymbol ?? '';
+  const focusedSymbol = chartSlots[activeSlot]?.symbol ?? null;
+  const patternPanelSymbol =
+    focusedSymbol || chartSlots.find((s) => s.symbol)?.symbol || primarySymbol || '';
   const patternTimeframe = timeframesMapping[activeTimeframe] || '1h';
 
   const canvasMinHeight = useMemo(() => {
@@ -411,17 +421,19 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     draggable={!isNarrowViewport}
                     width="100%"
                     zIndex={10 + idx}
+                    panelHeight={isNarrowViewport ? undefined : MARKET_CHART_HEIGHT}
                     position={{ x: 0, y: isNarrowViewport ? 0 : slot.y }}
                     onPositionChange={(pos) => updateSlot(idx, { x: 0, y: Math.max(0, pos.y) })}
                     className={`glass shadow-2xl ${
                       isNarrowViewport
                         ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
-                        : '!h-[576px]'
+                        : ''
                     }`}
                     preHeader={
                       <ChartLocalTimeAndPulse
                         slotId={`market-${idx}`}
                         symbol={slot.symbol}
+                        onInteract={() => setActiveSlot(idx)}
                       />
                     }
                     header={
@@ -430,7 +442,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           compact
                           placeholder="Search your chart…"
                           activeSymbol={slot.symbol}
-                          onSubmit={(sym) => updateSlot(idx, { symbol: resolveMarketAsset(sym).value })}
+                          onSubmit={(sym) => {
+                            setActiveSlot(idx);
+                            updateSlot(idx, { symbol: resolveMarketAsset(sym).value });
+                          }}
                         />
                         {slot.symbol && (
                           <button
@@ -450,11 +465,12 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   >
                     {slot.symbol ? (
                       <div
-                        className="relative flex-1 min-h-0"
+                        className="relative shrink-0"
+                        onPointerDown={() => setActiveSlot(idx)}
                         style={
                           isNarrowViewport
                             ? { minHeight: chartBodyH, height: '100%' }
-                            : { height: chartBodyH, minHeight: chartBodyH }
+                            : { height: chartBodyH, minHeight: chartBodyH, flexShrink: 0 }
                         }
                       >
                         <LightweightCandles
