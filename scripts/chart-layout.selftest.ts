@@ -27,7 +27,7 @@ assert.equal(
   'short phones still hit the 640px floor',
 );
 assert.ok(
-  mobileStackedMarketChartHeight(844) >= 790,
+  mobileStackedMarketChartHeight(844) >= 844 - MARKET_CHART_MOBILE_SLOT_HEADER,
   'modern phone height should leave a near-fullscreen candle area',
 );
 assert.ok(

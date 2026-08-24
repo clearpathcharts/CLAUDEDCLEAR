@@ -1,0 +1,30 @@
+{
+  "tool": "google-flow",
+  "aspect": "16:9",
+  "recommended": {
+    "size": "1280x720 or 1920x1080",
+    "lengthSeconds": "5-8",
+    "format": "H.264 MP4",
+    "audio": "optional; keep captions in a matching .vtt",
+    "onScreenText": "plain how-it-works only — never buy/sell/guaranteed"
+  },
+  "drop": "public/explain-videos/{id}.mp4",
+  "poster": "public/explain-videos/{id}.jpg",
+  "captions": "public/explain-videos/{id}.vtt",
+  "slots": [
+    "home",
+    "ywc",
+    "indacreator",
+    "charts",
+    "news",
+    "memberships",
+    "profile",
+    "affiliate",
+    "ceo",
+    "cinema",
+    "education",
+    "literacy",
+    "encyclopedia",
+    "indicators"
+  ]
+}

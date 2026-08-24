@@ -21,7 +21,17 @@ secrets/
 /data/timeframe-verify/
 /data/site-doctor/
 /data/daily-ops/
+/data/chart-pulse/
 /data/*.log
+
+# Google Flow explain clips — keep manifest, skip large binaries
+public/explain-videos/*.mp4
+public/explain-videos/*.webm
+public/explain-videos/*.jpg
+public/explain-videos/*.jpeg
+public/explain-videos/*.png
+public/explain-videos/*.webp
+public/explain-videos/*.vtt
 
 # Generated at server startup by the SEO asset node -- never commit
 public/logo.png

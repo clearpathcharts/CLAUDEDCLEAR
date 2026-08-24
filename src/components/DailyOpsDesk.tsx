@@ -37,6 +37,8 @@ type InvestorResearch = {
     name: string;
     kind: string;
     website: string;
+    linkedin?: string;
+    outreachHint?: string;
     stage: string;
     thesis: string;
     whyClearPath: string;
@@ -60,6 +62,7 @@ export type DailyOpsReport = {
   items: CatalogItem[];
   human: Record<string, HumanState>;
   investor: InvestorResearch | null;
+  investorCatalog?: Array<{ id: string; name: string; kind: string; stage: string }>;
   pipeline: Array<{ investorId: string; status: string; notes?: string }>;
   shipped: Array<{ id: string; title: string; evidence: string }>;
   openWork: Array<{ id: string; title: string; why: string }>;
@@ -95,6 +98,7 @@ export default function DailyOpsDesk({
   const [copied, setCopied] = useState(false);
   const [investorNotes, setInvestorNotes] = useState("");
   const [showShipped, setShowShipped] = useState(false);
+  const [pinId, setPinId] = useState("baird_augustine");
 
   const load = async () => {
     setLoading(true);
@@ -176,6 +180,29 @@ export default function DailyOpsDesk({
       setReport(body as DailyOpsReport);
     } catch (e: any) {
       setError(e?.message || "Could not update investor pipeline");
+    }
+  };
+
+  const pinInvestor = async () => {
+    const query = pinId.trim();
+    if (!query) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch("/api/admin/daily-ops/investor/research", {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({ investorId: query }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || "Research failed");
+      setReport(body as DailyOpsReport);
+    } catch (e: any) {
+      setError(e?.message || "Could not research that name");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -313,16 +340,39 @@ export default function DailyOpsDesk({
         </div>
       )}
 
-      {report?.investor && (
+      {report && (
         <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#FF00FF]/25">
           <h3 className="text-[#FF00FF] font-black uppercase tracking-widest text-sm mb-1 flex items-center gap-2">
             <Building2 size={16} />
-            Today’s investor — {report.investor.investor.name}
+            Today’s investor — {report.investor?.investor.name || "none yet"}
           </h3>
-          <p className="text-white/50 text-xs font-mono mb-4">
-            {report.investor.investor.kind} · {report.investor.investor.stage} · sources:{" "}
-            {report.investor.sources.join(", ")}
+          <p className="text-white/50 text-xs font-mono mb-3">
+            {report.investor
+              ? `${report.investor.investor.kind} · ${report.investor.investor.stage} · sources: ${report.investor.sources.join(", ")}`
+              : "Pin a name from the catalog, or run today’s sweep."}
           </p>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <select
+              value={pinId}
+              onChange={(e) => setPinId(e.target.value)}
+              className="flex-1 min-w-[220px] bg-black/50 border border-white/15 rounded-md px-3 py-2 text-xs text-white"
+            >
+              {(report.investorCatalog || []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.kind})
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void pinInvestor()}
+              disabled={busy || !pinId}
+              className="px-3 py-2 rounded-md border border-[#FF00FF]/40 text-[#FF00FF] text-xs font-bold uppercase disabled:opacity-50"
+            >
+              Research this name
+            </button>
+          </div>
+          {report.investor ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3 text-sm text-white/80">
               <p>
@@ -331,6 +381,20 @@ export default function DailyOpsDesk({
                   {report.investor.investor.website}
                 </a>
               </p>
+              {report.investor.investor.linkedin && (
+                <p>
+                  <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block">LinkedIn</span>
+                  <a className="text-[#00FFFF] underline" href={report.investor.investor.linkedin} target="_blank" rel="noreferrer">
+                    {report.investor.investor.linkedin}
+                  </a>
+                </p>
+              )}
+              {report.investor.investor.outreachHint && (
+                <p>
+                  <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block">How to reach (do not auto-send)</span>
+                  {report.investor.investor.outreachHint}
+                </p>
+              )}
               <p>
                 <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block">Our seed thesis</span>
                 {report.investor.investor.thesis}
@@ -424,6 +488,11 @@ export default function DailyOpsDesk({
               </div>
             </div>
           </div>
+          ) : (
+            <p className="text-white/45 text-xs">
+              No researched note yet — pick a name and tap Research this name. Nothing auto-emails.
+            </p>
+          )}
         </div>
       )}
 

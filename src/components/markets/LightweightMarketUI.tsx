@@ -6,6 +6,7 @@ import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
+import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { PatternScannerPanel } from '../charts/PatternScannerPanel';
@@ -244,6 +245,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               return (
                 <div key={slotIndex} className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-zinc-900 bg-black flex flex-col">
                   <div className="shrink-0 px-3 py-2 border-b border-zinc-900 space-y-2">
+                    <ChartLocalTimeAndPulse
+                      slotId={`blackout-${slotIndex}`}
+                      symbol={sym}
+                    />
                     <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{label} · {activeTimeframe}</span>
                     <ChartSymbolSearch
                       compact
@@ -411,8 +416,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     className={`glass shadow-2xl ${
                       isNarrowViewport
                         ? '!h-[100dvh] max-h-[100dvh] snap-start snap-always rounded-none border-x-0'
-                        : '!h-[500px]'
+                        : '!h-[576px]'
                     }`}
+                    preHeader={
+                      <ChartLocalTimeAndPulse
+                        slotId={`market-${idx}`}
+                        symbol={slot.symbol}
+                      />
+                    }
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">
                         <ChartSymbolSearch

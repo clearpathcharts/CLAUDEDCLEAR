@@ -2697,7 +2697,7 @@ of this software and associated documentation files (the "The Software")...`;
                 { file: 'encyclopedia/markets/forex.html', label: 'FOREX', desc: 'Global Currency Systems', icon: DollarSign, highlight: false },
                 { file: 'encyclopedia/markets/crypto.html', label: 'CRYPTO', desc: 'Digital Asset Ecosystems', icon: Coins, highlight: false },
                 { file: 'encyclopedia/markets/commodities.html', label: 'COMMODITIES', desc: 'Energy, Metals, Agriculture', icon: Boxes, highlight: false },
-                { file: 'encyclopedia/global/world-map.html', label: 'BONDS', desc: 'Global Sovereign Debt Markets', icon: Landmark, highlight: false },
+                { file: 'encyclopedia/markets/bonds.html', label: 'BONDS', desc: 'Global Sovereign Debt Markets', icon: Landmark, highlight: false },
                 { file: 'economy.html', label: 'ECONOMY', desc: 'Macroeconomic Intelligence', icon: Landmark, highlight: false },
                 { file: 'encyclopedia/economy/federal-reserve.html', label: 'FEDERAL RESERVE', desc: 'Monetary Policy Systems', icon: Settings, highlight: false },
                 { file: 'civilization-engine.html', label: 'TREASURY SYSTEM', desc: 'Debt Issuance & Yield Curves', icon: Layers, highlight: false },
@@ -3448,7 +3448,10 @@ of this software and associated documentation files (the "The Software")...`;
 
                   {/* 2. markets.html (MARKETS HUB WITH STOCKS, FOREX, COMMODITIES OVERVIEWS) */}
                   {activeFile === 'markets.html' && (
-                    <MarketsDirectory onSelectFile={selectFileNode} />
+                    <div className="flex flex-col gap-6">
+                      <MarketsDirectory onSelectFile={selectFileNode} />
+                      <OrderBookSimulator />
+                    </div>
                   )}
 
                   {/* 3. economy.html (CINEMATIC HISTORICAL CORE & CENTRAL BANK SIMULATOR) */}
@@ -3718,6 +3721,9 @@ of this software and associated documentation files (the "The Software")...`;
 
                       {/* INTEREST REGIME INVITATION GATEWAY */}
                       <div className="mt-4">
+                        <CentralBankDashboard />
+                      </div>
+                      <div className="mt-4">
                         <ClearPathTraderPortal variant="interactive" />
                       </div>
                     </div>
@@ -3768,7 +3774,37 @@ of this software and associated documentation files (the "The Software")...`;
                               </div>
                             </div>
                           )}
+
+                          {activeArticle.vocabulary && activeArticle.vocabulary.length > 0 && (
+                            <div className="mt-6 border-t border-white/5 pt-4">
+                              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block font-bold mb-3">Key vocabulary</span>
+                              <div className="flex flex-col gap-2">
+                                {activeArticle.vocabulary.map((v) => (
+                                  <div key={v.term} className="p-3 rounded-lg bg-black/40 border border-white/10">
+                                    <div className="text-[11px] font-bold text-white uppercase tracking-wide">{v.term}</div>
+                                    <p className="text-[11px] text-zinc-400 mt-1 leading-relaxed">{v.definition}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
+
+                        {activeArticle.category === 'Microstructure' && (
+                          <div className="mt-2">
+                            <OrderBookSimulator />
+                          </div>
+                        )}
+                        {(activeArticle.category === 'Technical Science' || activeArticle.category === 'Founders Perspective') && (
+                          <div className="mt-2">
+                            <PatternVisualizer />
+                          </div>
+                        )}
+                        {activeArticle.category === 'Central Banking' && (
+                          <div className="mt-2">
+                            <CentralBankDashboard />
+                          </div>
+                        )}
 
                         {/* Interactive testing block */}
                         {activeArticle.quiz && (

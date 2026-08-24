@@ -14,6 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -83,7 +84,13 @@ const LEARN_ITEMS: NavItem[] = [
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
-  // Encyclopedia of Indicators — hidden while videos are broken (component kept).
+  {
+    id: "EncyclopediaOfIndicators",
+    icon: BarChart3,
+    label: "ENCYCLOPEDIA OF INDICATORS",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
+  },
 ];
 
 const TOOLS_ITEMS: NavItem[] = [
@@ -189,10 +196,11 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           sticky top-0 z-[100] w-full
           border-b border-white/5
           bg-black/95 backdrop-blur-3xl
-          flex items-center justify-around
           px-3 py-3
         "
       >
+        <div className="flex items-center justify-around gap-1">
+        <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={() => handleItemTap("StrictlyCharts")}
@@ -210,8 +218,11 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           <BarChart3 className="w-4 h-4" />
           <span>CHARTS</span>
         </button>
+        <ExplainTrigger contentId="StrictlyCharts" color={explainColorForNavTab("StrictlyCharts")} />
+        </div>
 
         {lean ? (
+          <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => handleItemTap("TheRiver")}
@@ -229,8 +240,11 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             <Cpu className="w-4 h-4" />
             <span>INDACREATOR</span>
           </button>
+          <ExplainTrigger contentId="TheRiver" color={explainColorForNavTab("TheRiver")} />
+          </div>
         ) : (
           <>
+            <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => handleItemTap("Discovery")}
@@ -248,7 +262,10 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               <Home className="w-4 h-4" />
               <span>HOME</span>
             </button>
+            <ExplainTrigger contentId="Discovery" color={explainColorForNavTab("Discovery")} />
+            </div>
 
+            <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setIsOpen((prev) => !prev)}
@@ -266,6 +283,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               <Users className="w-4 h-4" />
               <span>Y.W.C.</span>
             </button>
+            <ExplainTrigger contentId="Yours" color={explainColorForNavTab("Yours")} />
+            </div>
           </>
         )}
 
@@ -288,6 +307,10 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             <span>MENU</span>
           </button>
         )}
+        </div>
+        <div className="flex justify-center pt-2">
+          <ExplainModeToggle compact />
+        </div>
       </div>
 
       {/* ================= DRAWER ================= */}
@@ -317,6 +340,9 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
                 Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
+              <div className="mt-3 flex justify-center">
+                <ExplainModeToggle compact />
+              </div>
               <button
                 type="button"
                 aria-label="Close menu"
@@ -360,6 +386,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
                       <span className="flex-1 text-left text-xs font-black tracking-wider">
                         {item.label}
                       </span>
+                      <ExplainTrigger contentId={item.id} color={explainColorForNavTab(item.id)} />
                     </button>
                   );
                 })}

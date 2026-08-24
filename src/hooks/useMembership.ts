@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { tierRankOf, hasFeatureForRank, type FeatureKey } from '../lib/entitlements';
+import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
 
 export type MembershipInfo = {
   active: boolean;
@@ -25,11 +26,19 @@ const OFFLINE_BASIC: MembershipInfo = {
   tierRank: 0,
 };
 
+const PAYMENTS_OFF: MembershipInfo = {
+  active: true,
+  tier: 'free',
+  status: 'payments_disabled',
+  tierRank: 4,
+};
+
 let cache: MembershipInfo | null = null;
 let inflight: Promise<MembershipInfo> | null = null;
 const listeners = new Set<(m: MembershipInfo) => void>();
 
 async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
+  if (!PAYMENTS_ENABLED) return PAYMENTS_OFF;
   if (cache && !force) return cache;
   if (inflight && !force) return inflight;
   inflight = (async () => {
@@ -79,9 +88,9 @@ export function useMembership(_legacyProfile?: { vipStatus?: string; subscriptio
     };
   }, []);
 
-  // Paid rank comes only from /api/membership/me (Stripe / launch trial).
-  // Client vipStatus / subscriptionActive must never grant Ultimate.
-  const tierRank = membership?.tierRank ?? 0;
+  // Paid rank comes only from /api/membership/me. When billing is off, every
+  // desk feature is open. Client vipStatus must never grant Ultimate.
+  const tierRank = PAYMENTS_ENABLED ? membership?.tierRank ?? 0 : 4;
 
   return {
     membership,

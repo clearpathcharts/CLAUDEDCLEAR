@@ -451,6 +451,16 @@ function renderIndicatorDetail(slug: string): string | null {
   const ind = lookupIndicator(slug);
   if (!ind) return null;
   const stars = '★'.repeat(ind.complexity) + '☆'.repeat(Math.max(0, 5 - ind.complexity));
+  const guide = ind.guide;
+  const overlay = ind.chartAbbr
+    ? `<p><strong>Live chart overlay:</strong> ${escapeHtml(String(ind.chartAbbr))}</p>`
+    : '<p><strong>Study card</strong> — educational illustration only (no live overlay in Charts).</p>';
+  const guideHtml = guide
+    ? `<h2>Formula</h2><p>${escapeHtml(guide.formula)}</p>
+<h2>How to read</h2><p>${escapeHtml(guide.howToRead)}</p>
+<h2>Limitations</h2><p>${escapeHtml(guide.limitations)}</p>
+<h2>Typical settings</h2><p>${escapeHtml(guide.typicalSettings)}</p>`
+    : '';
   return `${breadcrumbHtml([
     { name: 'Home', url: '/' },
     { name: 'Indicators', url: '/indicators' },
@@ -461,8 +471,10 @@ function renderIndicatorDetail(slug: string): string | null {
 <article>
 <p><strong>Category:</strong> ${escapeHtml(ind.category)} · <strong>Complexity:</strong> ${stars} (${ind.complexity}/5)</p>
 <p><strong>Tags:</strong> ${ind.tags.map((t: string) => escapeHtml(t)).join(', ')}</p>
+${overlay}
 <p><img src="${escapeHtml(ind.img)}" alt="${escapeHtml(ind.name)} chart illustration" width="640" height="360" style="max-width:100%;height:auto;border:1px solid rgba(255,255,255,0.12);border-radius:12px;margin:1rem 0;background:#0a0a0a" /></p>
-<p>${escapeHtml(ind.name)} is part of the ClearPath Encyclopedia of Indicators — ${buildIndicators().length}+ technical and fundamental models explained with visuals, so you can study an indicator before you put it on a live chart.</p>
+${guideHtml}
+<p>${escapeHtml(ind.name)} is part of the ClearPath Encyclopedia of Indicators — ${buildIndicators().length} models explained with standard SVG illustrations, so you can study an indicator before you put it on a live chart.</p>
 <p><a href="/indicators">Browse the full indicator directory →</a></p>
 </article>`;
 }
@@ -745,7 +757,7 @@ function renderIndicatorsHub(): string {
 <p class="lead">Every indicator has its own crawlable page with category, complexity, and a visual explainer — RSI, MACD, Bollinger, Ichimoku, order-flow tools, and more.</p>
 ${liveDeskCta('/indicators', 'Open interactive indicator desk')}
 <article>
-<p>Use the interactive desk to filter by complexity and video demos. Use the A–Z index below when you want a stable permalink for study or sharing.</p>
+<p>Use the interactive desk to filter by category, complexity, and live chart overlays. Each card uses a standard SVG chart illustration — no video players. Use the A–Z index below when you want a stable permalink for study or sharing.</p>
 ${blocks}
 <p><a href="/education">ClearPath Education</a> · <a href="/guides">Guides</a> · <a href="/tools/position-size">Position size calculator</a></p>
 </article>`;

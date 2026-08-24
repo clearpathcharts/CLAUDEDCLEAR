@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
+import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { TradingHaltController } from '../../truth/TradingHaltController';
 
@@ -33,7 +34,10 @@ const ChartWidget = ({ asset, profile, activeTimeframe = '1H' }: { asset: typeof
   const dataSymbol = toDataSymbol(asset.value);
 
   return (
-    <div className="individual-chart-wrapper !h-[500px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6" id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
+    <div className="individual-chart-wrapper !h-[576px] flex flex-col relative overflow-hidden rounded-2xl border border-white/5 shadow-2xl glass mb-6" id={`wrapper_std_${dataSymbol.replace(/[^a-zA-Z0-9_-]/g, '_')}`}>
+      <div className="px-4 pt-3 border-b bg-black/40 backdrop-blur-md border-white/5 shrink-0">
+        <ChartLocalTimeAndPulse slotId={`std-${dataSymbol}`} symbol={dataSymbol} />
+      </div>
       <div className="flex items-center justify-between px-6 py-3 border-b bg-black/40 backdrop-blur-md border-white/5 select-none shrink-0">
         <div className="flex items-center space-x-3">
           <span className="text-xs font-black tracking-widest text-[#00FFFF] uppercase font-mono bg-indigo-500/10 px-2.5 py-1 rounded border border-indigo-500/20 shadow-[0_0_10px_rgba(0,255,255,0.15)]">

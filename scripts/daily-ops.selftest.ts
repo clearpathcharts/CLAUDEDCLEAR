@@ -12,7 +12,9 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED } from "../src/server/investorDesk";
+import { INVESTOR_SEED, findInvestorSeed } from "../src/server/investorDesk";
+import { featuredStocks } from "../src/server/crawlCatalog";
+import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
 import { themeProfiles } from "../src/lib/theme/profiles";
 
@@ -42,6 +44,20 @@ for (const s of INVESTOR_SEED) {
   assert.ok(s.whyClearPath.length > 20, `${s.id} needs a real why`);
 }
 
+const baird = INVESTOR_SEED.find((s) => s.id === "baird_augustine");
+assert.ok(baird, "Ryan Baird / Baird Augustine must be in the catalog");
+assert.equal(baird?.kind, "ib");
+assert.ok(baird?.linkedin?.includes("ryandbaird"));
+assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`));
+
+assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
+assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
+
+const featured = featuredStocks(8);
+const jpm = featured.find((s: { ticker?: string }) => String(s.ticker).toUpperCase() === "JPM");
+assert.ok(jpm, "featured stocks should include JPM");
+assert.match(String(jpm.company), /JPMorgan/i, "JPM must not be a procedural fake issuer");
+
 assert.ok(SUPPORTED_CHART_INDICATORS.length >= 20);
 assert.equal(Object.keys(themeProfiles).length, 13);
 
@@ -49,6 +65,9 @@ const membership = fs.readFileSync(path.join(process.cwd(), "src/hooks/useMember
 const tab = fs.readFileSync(path.join(process.cwd(), "src/components/MembershipTab.tsx"), "utf8");
 assert.equal(/legacyPaid\s*=/.test(membership), false);
 assert.equal(/handleSelfUpgrade/.test(tab), false);
+assert.equal(/create-checkout-session/.test(tab), false);
+assert.equal(/buy\.stripe\.com/.test(tab), false);
+assert.equal(PAYMENTS_ENABLED, false, "billing must stay hard-off");
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(membership), false);
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(tab), false);
 

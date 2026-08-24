@@ -34,6 +34,11 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
+/** Generic transactional send — used by registration mail and chart pulses. */
+export async function sendTransactionalEmail(payload: EmailPayload): Promise<boolean> {
+  return sendEmail(payload);
+}
+
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const mailer = getTransporter();
   const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';

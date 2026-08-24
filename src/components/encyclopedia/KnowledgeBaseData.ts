@@ -396,5 +396,31 @@ export const ENCYCLOPEDIA_KNOWLEDGE_BASE: Record<string, KnowledgeItem> = {
     detailsDisclosures: [
       { q: 'What is a Fab?', a: 'A multi-billion dollar cleanroom factory where silicon wafers are printed under clean rooms with zero dust particles.' }
     ]
+  },
+  'encyclopedia/markets/bonds.html': {
+    title: 'How Sovereign Bonds Work',
+    tagline: 'DURATION, YIELDS & THE RISK-FREE ANCHOR',
+    conceptColor: 'purple',
+    definition: 'A sovereign bond is a loan to a government: the issuer pays coupons and returns face value at maturity. The yield is the market’s required return; bond prices move inversely with yields.',
+    simplifiedExplanation: 'A government IOU. You lend money, they pay you interest, and later they give the original amount back. If new bonds start paying higher interest, older bonds become less attractive and their market price falls.',
+    academicDeconstruction: 'Bond prices are the discounted present value of coupons plus principal. Duration estimates percent price change for a 1% yield move. The Treasury curve (2s, 10s, 30s) is the risk-free reference that prices credit spreads, mortgages, and equity discount rates.',
+    relationshipDiagram: [
+      { label: 'Treasury Auction', explanation: 'Sovereign desks issue bills, notes, and bonds to fund deficits.' },
+      { label: 'Secondary Curve Pricing', explanation: 'Dealers quote yields across maturities; the curve is the policy-and-growth thermometer.' },
+      { label: 'Duration Shock', explanation: 'A rate hike lifts yields and marks down existing bond prices.' },
+      { label: 'Portfolio Rebalancing', explanation: 'Pension and bank books reweight duration versus equities and credit.' },
+      { label: 'Risk-Asset Transmission', explanation: 'Higher real yields raise equity discount rates and tighten financial conditions.' }
+    ],
+    timeline: [
+      { year: '1694', title: 'Bank of England Debt', desc: 'Perpetual government debt markets form around wartime finance.' },
+      { year: '1790', title: 'Hamilton Assumption', desc: 'U.S. federal assumption of state debts seeds a national Treasury market.' },
+      { year: '1971', title: 'Fiat Curve Era', desc: 'After gold convertibility ends, nominal yields become a pure policy-and-inflation instrument.' },
+      { year: '2022', title: 'Duration Massacre', desc: 'Fastest hiking cycle in decades produces historic mark-to-market losses on long bonds.' }
+    ],
+    keyTakeaway: 'Bond yields are the gravity of modern markets: they set the discount rate for almost every other asset.',
+    detailsDisclosures: [
+      { q: 'What is duration?', a: 'A weighted average time-to-cash-flows. Roughly, a 7-year duration bond loses about 7% of price if yields rise 1%, all else equal.' },
+      { q: 'What is an inverted curve?', a: 'When short-term yields exceed long-term yields. Historically associated with tighter policy and elevated recession odds — not a guarantee.' }
+    ]
   }
 };

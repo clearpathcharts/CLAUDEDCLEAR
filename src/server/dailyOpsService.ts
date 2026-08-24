@@ -25,7 +25,9 @@ import {
   researchInvestorForDate,
   readPipeline,
   updatePipeline,
+  INVESTOR_SEED,
   type InvestorResearch,
+  type InvestorSeed,
   type PipelineRow,
   type PipelineStatus,
 } from "./investorDesk";
@@ -53,6 +55,8 @@ export type DailyOpsReport = {
   items: CatalogItem[];
   human: Record<string, HumanState>;
   investor: InvestorResearch | null;
+  /** Live catalog for the pin-by-name picker. Filled on read; not used as research source. */
+  investorCatalog?: Array<Pick<InvestorSeed, "id" | "name" | "kind" | "stage">>;
   pipeline: PipelineRow[];
   shipped: typeof SHIPPED_AS_OF_2026_08_18;
   openWork: typeof OPEN_SITE_WORK;
@@ -89,19 +93,33 @@ function loadFromDisk(date: string): DailyOpsReport | null {
   }
 }
 
-function persist(report: DailyOpsReport) {
+function withCatalog(report: DailyOpsReport): DailyOpsReport {
+  return {
+    ...report,
+    investorCatalog: INVESTOR_SEED.map((s) => ({
+      id: s.id,
+      name: s.name,
+      kind: s.kind,
+      stage: s.stage,
+    })),
+  };
+}
+
+function persist(report: DailyOpsReport): DailyOpsReport {
+  const next = withCatalog(report);
   ensureDir();
-  fs.writeFileSync(fileFor(report.date), JSON.stringify(report, null, 2), "utf8");
-  fs.writeFileSync(path.join(DIR, "latest.json"), JSON.stringify(report, null, 2), "utf8");
-  latest = report;
+  fs.writeFileSync(fileFor(next.date), JSON.stringify(next, null, 2), "utf8");
+  fs.writeFileSync(path.join(DIR, "latest.json"), JSON.stringify(next, null, 2), "utf8");
+  latest = next;
+  return next;
 }
 
 export function getLatestDailyOpsReport(): DailyOpsReport | null {
   const today = pacificDateKey();
   const disk = loadFromDisk(today);
   if (disk) {
-    latest = disk;
-    return disk;
+    latest = withCatalog(disk);
+    return latest;
   }
   return null;
 }
@@ -325,15 +343,11 @@ async function checkTwilio(): Promise<AutoCheck> {
 }
 
 function checkStripe(): AutoCheck {
-  const rep = getSecretPresenceReport();
-  const ok = Boolean(rep.STRIPE_SECRET_KEY);
   return {
     id: "auto_stripe",
-    ok,
-    severity: ok ? "info" : "warn",
-    detail: ok
-      ? "STRIPE_SECRET_KEY present — checkout can run; MRR stays N/A until first charge"
-      : "STRIPE_SECRET_KEY missing — catalog CTAs cannot start Checkout",
+    ok: true,
+    severity: "info",
+    detail: "Payments removed — Stripe checkout, webhooks, and cash payouts are disabled",
   };
 }
 
@@ -487,21 +501,21 @@ function overallOf(auto: AutoCheck[]): DailyOpsReport["overall"] {
   return "green";
 }
 
-export async function runDailyOpsSweep(force = false): Promise<DailyOpsReport> {
+export async function runDailyOpsSweep(force = false, investorId?: string): Promise<DailyOpsReport> {
   const date = pacificDateKey();
   const existing = loadFromDisk(date);
-  if (!force && existing?.auto?.length && existing.investor) {
+  if (!force && !investorId && existing?.auto?.length && existing.investor) {
     existing.items = itemsForDay();
-    latest = existing;
-    return existing;
+    latest = withCatalog(existing);
+    return latest;
   }
-  if (running && existing) return existing;
+  if (running && existing) return withCatalog(existing);
   running = true;
   try {
     const auto = await runAutoChecks();
     let investor: InvestorResearch | null = existing?.investor || null;
     try {
-      investor = await researchInvestorForDate();
+      investor = await researchInvestorForDate(new Date(), investorId);
     } catch (e: any) {
       auto.push({
         id: "auto_investor",
@@ -535,7 +549,7 @@ export async function runDailyOpsSweep(force = false): Promise<DailyOpsReport> {
     };
     persist(report);
     console.log(`[DailyOps] ${date} ${report.overall.toUpperCase()} auto=${auto.length}`);
-    return report;
+    return latest || report;
   } finally {
     running = false;
   }
@@ -562,8 +576,7 @@ export function completeDailyOpsItem(
     },
   };
   const next = { ...report, human: nextHuman, items: itemsForDay() };
-  persist(next);
-  return next;
+  return persist(next);
 }
 
 export function recordInvestorAction(input: {
@@ -582,8 +595,36 @@ export function recordInvestorAction(input: {
   const report = loadFromDisk(date) || latest;
   if (!report) throw new Error("No daily ops report yet — run the sweep first.");
   const next = { ...report, pipeline: readPipeline(), items: itemsForDay() };
-  persist(next);
-  return next;
+  return persist(next);
+}
+
+/** Replace today's researched investor without re-running site pings. */
+export async function pinInvestorResearch(investorId: string): Promise<DailyOpsReport> {
+  const date = pacificDateKey();
+  const report = loadFromDisk(date) || latest;
+  const investor = await researchInvestorForDate(new Date(), investorId);
+  const auto = (report?.auto || []).filter((c) => c.id !== "auto_investor");
+  auto.push({
+    id: "auto_investor",
+    ok: investor.warnings.length === 0 || Boolean(investor.wikiExtract || investor.siteTitle),
+    severity: investor.sources.length > 1 ? "info" : "warn",
+    detail: `${investor.investor.name} · sources: ${investor.sources.join(", ")}`,
+  });
+  const next: DailyOpsReport = {
+    date,
+    ranAt: new Date().toISOString(),
+    timezone: "America/Los_Angeles",
+    overall: report?.overall || overallOf(auto),
+    auto,
+    items: itemsForDay(),
+    human: report?.human || {},
+    investor,
+    pipeline: readPipeline(),
+    shipped: SHIPPED_AS_OF_2026_08_18,
+    openWork: OPEN_SITE_WORK,
+    nextDueHint: report?.nextDueHint || "Pinned named investor for today — copy the draft, do not auto-mail.",
+  };
+  return persist(next);
 }
 
 export function startDailyOpsScheduler() {
