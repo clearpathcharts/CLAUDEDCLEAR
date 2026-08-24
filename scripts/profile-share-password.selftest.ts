@@ -139,6 +139,9 @@ async function main() {
   const hub = read('src/components/ProfileHub.tsx');
   assert.match(hub, /Copy link/);
   assert.match(hub, /ChangePasswordCard/);
+  assert.match(hub, /Save Profile Settings/);
+  assert.doesNotMatch(hub, /COMMUNITY INCENTIVES/);
+  assert.doesNotMatch(hub, /Coffees Earned/);
 
   console.log('profile-share-password.selftest: ok');
 }

@@ -849,47 +849,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </div>
 
           <ChangePasswordCard />
-        </div>
-
-        {/* INTEGRATED SOCIAL LINKS FORM (Replacing old OAuth Login Hub) */}
-        {socials && uid && (
-          <SocialLinksForm
-            uid={uid}
-            currentSocials={socials}
-            onSaveSuccess={() => {
-              getProfile(uid).then((d) => d && setSocials(d.socials || {}));
-            }}
-          />
-        )}
-
-        {/* COMMUNITY INCENTIVES */}
-        <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
-          <div className="text-[20px] md:text-[28px] mb-6 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
-            COMMUNITY INCENTIVES
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">☕</div>
-              <div className="text-[#999] text-sm">Coffees Earned</div>
-              <h2 className="text-2xl font-bold mt-1">12</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🍦</div>
-              <div className="text-[#999] text-sm">Ice Cream Rewards</div>
-              <h2 className="text-2xl font-bold mt-1">4</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🥧</div>
-              <div className="text-[#999] text-sm">Pie Rewards</div>
-              <h2 className="text-2xl font-bold mt-1">1</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🥇</div>
-              <div className="text-[#999] text-sm">Gold Trophies</div>
-              <h2 className="text-2xl font-bold mt-1">2</h2>
-            </div>
-          </div>
 
           <button
             type="button"
@@ -912,6 +871,17 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
             <p className="mt-3 text-xs font-mono text-rose-400 text-center">{saveError}</p>
           )}
         </div>
+
+        {/* INTEGRATED SOCIAL LINKS FORM (Replacing old OAuth Login Hub) */}
+        {socials && uid && (
+          <SocialLinksForm
+            uid={uid}
+            currentSocials={socials}
+            onSaveSuccess={() => {
+              getProfile(uid).then((d) => d && setSocials(d.socials || {}));
+            }}
+          />
+        )}
 
         {/* COMPLIANCE & RISK STATUS PANEL */}
         <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden text-left" id="regulatory-compliance-section">
