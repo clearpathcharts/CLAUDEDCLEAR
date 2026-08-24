@@ -5,6 +5,7 @@ import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
 import { clearClientAuthArtifacts, clearPrivateSession, fetchPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
 import { FOUNDER_EMAIL } from '../lib/founder';
+import { clearComplianceLoginFlag } from '../lib/complianceLoginFlag';
 
 interface FirebaseContextType {
   user: User | null;
@@ -342,6 +343,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
         }
         if (typeof window !== 'undefined') {
           try {
+            clearComplianceLoginFlag();
             window.location.href = '/';
           } catch (e) {
             window.location.reload();

@@ -14,6 +14,7 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+import { RegulatoryComplianceLoginPopup } from './components/compliance/RegulatoryComplianceLoginPopup';
 import {
   ExplainOverlay,
   getExplainContent,
@@ -365,6 +366,7 @@ export default function App() {
     <>
       {content}
       <ExplainDeepLink />
+      <RegulatoryComplianceLoginPopup />
       {/* Consent-first web/APK update prompt — never silent install */}
       <AppUpdateBanner />
     </>

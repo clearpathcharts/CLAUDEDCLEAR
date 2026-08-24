@@ -10,6 +10,7 @@ import {
   requestPasswordReset,
   PrivateAuthClientError,
 } from '../api/privateAuth';
+import { markCompliancePopupForNextLoad } from '../lib/complianceLoginFlag';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 
 type Step =
@@ -143,6 +144,7 @@ export default function PrivateLoginDesk({
         setBusy(false);
         return;
       }
+      markCompliancePopupForNextLoad();
       window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Login failed.');
@@ -173,6 +175,7 @@ export default function PrivateLoginDesk({
         setBusy(false);
         return;
       }
+      markCompliancePopupForNextLoad();
       window.location.reload();
     } catch (err: any) {
       setError(err.message || 'Could not create private account.');
@@ -192,6 +195,7 @@ export default function PrivateLoginDesk({
         newDisplayName: displayName,
       });
       if (!result.quarantined) {
+        markCompliancePopupForNextLoad();
         window.location.reload();
         return;
       }

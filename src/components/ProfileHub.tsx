@@ -5,6 +5,7 @@ import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
 import { saveProfileToServer, loadProfileFromServer } from "../api/profileApi";
 import ChangePasswordCard from "./profile/ChangePasswordCard";
+import { RegulatoryComplianceCard } from "./compliance/RegulatoryComplianceCard";
 import {
   isReservedProfileUsername,
   isValidProfileUsername,
@@ -885,31 +886,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
 
         {/* COMPLIANCE & RISK STATUS PANEL */}
         <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden text-left" id="regulatory-compliance-section">
-          <div className="text-[20px] md:text-[28px] mb-4 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
-            REGULATORY COMPLIANCE
-          </div>
-          <div className="space-y-4">
-            <p className="text-xs text-zinc-400 font-mono leading-relaxed uppercase">
-              Financial Industry Regulatory Authority (FINRA), Securities and Exchange Commission (SEC), Commodity Futures Trading Commission (CFTC), and Federal Trade Commission (FTC) Frameworks.
-            </p>
-            <div className="p-4 bg-zinc-950/90 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
-              <div className="w-2 rounded-full h-8 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-              <div>
-                <h4 className="text-xs font-mono font-black text-emerald-400 uppercase tracking-widest">
-                  ✓ SEC & CFTC SANDBOX STATUS: AGREEMENTS LOGGED
-                </h4>
-                <p className="text-[10px] text-zinc-500 font-semibold font-mono uppercase mt-0.5">
-                  Platform Consent Database Synchronized and Secure.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsComplianceModalOpen(true)}
-              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-black font-mono text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_25px_rgba(245,158,11,0.4)]"
-            >
-              Update Compliance Status
-            </button>
-          </div>
+          <RegulatoryComplianceCard onUpdate={() => setIsComplianceModalOpen(true)} />
         </div>
 
         {/* MODAL OVERLAY FOR COMPLIANCE SETUP */}
