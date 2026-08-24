@@ -14,6 +14,7 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+import { ExplainOverlay, getExplainContent } from './components/explain';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -33,6 +34,29 @@ function AuthenticatedShell({
       <Dashboard profile={profile} onProfileChange={onProfileChange} />
       {!isAppShell && <CptBuddyWidget />}
     </div>
+  );
+}
+
+function ExplainDeepLink() {
+  const [id, setId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('explain');
+  });
+  if (!id || !getExplainContent(id)) return null;
+  return (
+    <ExplainOverlay
+      contentId={id}
+      onClose={() => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('explain');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        } catch {
+          /* ignore */
+        }
+        setId(null);
+      }}
+    />
   );
 }
 
@@ -294,6 +318,7 @@ export default function App() {
   return (
     <>
       {content}
+      <ExplainDeepLink />
       {/* Consent-first web/APK update prompt — never silent install */}
       <AppUpdateBanner />
     </>
