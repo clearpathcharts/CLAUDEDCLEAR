@@ -30,6 +30,11 @@ export type Quiz = {
   questions: QuizQuestion[];
 };
 
+/** Shared pass rule — used by QuizEngine and Daily Ops (no /src read required in prod). */
+export function isQuizPassed(score: number, quiz: Pick<Quiz, "passingScore">): boolean {
+  return score >= quiz.passingScore;
+}
+
 export const QUIZZES: Record<string, Quiz> = {
   // ==========================================================================
   // CRYPTO — Unit 1: Before You Touch Crypto

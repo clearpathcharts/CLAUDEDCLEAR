@@ -238,8 +238,9 @@ function checkTimeframeVerifyFreshness(): SiteDoctorCheck {
       id: "timeframe_verify",
       label: "Daily swap-hour TF verify",
       ok: true,
-      severity: "warn",
-      detail: "No report yet (runs 02:00–02:59 America/New_York)",
+      // Pending first scheduled run is expected — not a yellow desk alarm.
+      severity: "info",
+      detail: "No report yet (runs 02:00–02:59 America/New_York) — pending first sweep",
     };
   }
   const ageH =
