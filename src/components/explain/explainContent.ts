@@ -363,3 +363,25 @@ export function getExplainContent(id: string): ExplainContent | undefined {
 export function explainColorForNavTab(tabId: string): string {
   return getExplainContent(tabId)?.color || '#00E5FF';
 }
+
+/** Reverse of NAV_TAB_EXPLAIN_IDS — so ?explain=charts opens the Charts desk. */
+export function tabIdForExplainQuery(explain: string | null | undefined): string | null {
+  const content = getExplainContent(String(explain || ''));
+  if (!content) return null;
+  const found = Object.entries(NAV_TAB_EXPLAIN_IDS).find(([, id]) => id === content.id);
+  return found?.[0] || null;
+}
+
+const LOGIN_GATED_NAV_TABS = new Set([
+  'CeoDashboard',
+  'Membership',
+  'AffiliateNetwork',
+  'Biography',
+  'CpmsApk',
+]);
+
+/** Desks we mount without Private Login so ?explain= sits on the real page, not Auth. */
+export function isPublicExplainDeskTab(tabId: string | null | undefined): boolean {
+  if (!tabId || !NAV_TAB_EXPLAIN_IDS[tabId]) return false;
+  return !LOGIN_GATED_NAV_TABS.has(tabId);
+}

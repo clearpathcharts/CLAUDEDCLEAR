@@ -7,6 +7,8 @@ import {
   NAV_TAB_EXPLAIN_IDS,
   explainContentLibrary,
   getExplainContent,
+  isPublicExplainDeskTab,
+  tabIdForExplainQuery,
 } from '../src/components/explain/explainContent.ts';
 import {
   EXPLAIN_FLOW_SLOT_IDS,
@@ -47,6 +49,11 @@ for (const id of NAV_IDS) {
 
 assert.equal(getExplainContent('river_genie')?.id, 'indacreator');
 assert.equal(getExplainContent('charts')?.title, 'Charts');
+assert.equal(tabIdForExplainQuery('charts'), 'StrictlyCharts');
+assert.equal(tabIdForExplainQuery('strictlycharts'), 'StrictlyCharts');
+assert.equal(tabIdForExplainQuery('home'), 'Discovery');
+assert.equal(isPublicExplainDeskTab('StrictlyCharts'), true);
+assert.equal(isPublicExplainDeskTab('CeoDashboard'), false);
 assert.ok(Object.keys(explainContentLibrary).length >= NAV_IDS.length);
 
 assert.equal(explainVideoSrc('charts'), '/explain-videos/charts.mp4');

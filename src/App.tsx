@@ -14,7 +14,12 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
-import { ExplainOverlay, getExplainContent } from './components/explain';
+import {
+  ExplainOverlay,
+  getExplainContent,
+  isPublicExplainDeskTab,
+  tabIdForExplainQuery,
+} from './components/explain';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -42,6 +47,23 @@ function ExplainDeepLink() {
     if (typeof window === 'undefined') return null;
     return new URLSearchParams(window.location.search).get('explain');
   });
+
+  useEffect(() => {
+    if (!id || typeof window === 'undefined') return;
+    const tab = tabIdForExplainQuery(id);
+    if (!tab) return;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('tab') !== tab) {
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      }
+    } catch {
+      /* ignore */
+    }
+    window.dispatchEvent(new CustomEvent('clearpath-set-tab', { detail: tab }));
+  }, [id]);
+
   if (!id || !getExplainContent(id)) return null;
   return (
     <ExplainOverlay
@@ -58,6 +80,18 @@ function ExplainDeepLink() {
       }}
     />
   );
+}
+
+function deskPreviewTabFromSearch(search: string): string | null {
+  try {
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+    const fromExplain = tabIdForExplainQuery(params.get('explain'));
+    const fromTab = params.get('tab');
+    const tab = fromExplain || fromTab;
+    return isPublicExplainDeskTab(tab) ? tab : null;
+  } catch {
+    return null;
+  }
 }
 
 function isEncyclopediaPath(path: string): boolean {
@@ -148,6 +182,9 @@ export default function App() {
     }
     return '/';
   });
+  const [locationSearch, setLocationSearch] = useState(() =>
+    typeof window !== 'undefined' ? window.location.search : '',
+  );
   const [currentProfileId, setCurrentProfileId] = useState(() => {
     // 1. Check URL query parameters
     if (typeof window !== 'undefined') {
@@ -206,6 +243,7 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
         setCurrentPath(window.location.pathname);
+        setLocationSearch(window.location.search);
       };
       window.addEventListener('popstate', handleLocationChange);
       window.addEventListener('clearpath-location', handleLocationChange);
@@ -265,6 +303,7 @@ export default function App() {
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
   } else if (!user) {
+    const previewTab = deskPreviewTabFromSearch(locationSearch);
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
       content = (
@@ -302,6 +341,13 @@ export default function App() {
             }}
           />
         </PublicLearnShell>
+      );
+    } else if (previewTab) {
+      const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+      content = (
+        <AppShellProvider>
+          <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+        </AppShellProvider>
       );
     } else {
       content = <Auth />;

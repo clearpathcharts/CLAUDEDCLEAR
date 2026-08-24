@@ -70,6 +70,7 @@ import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
 
 import { ClearNav } from './nav/ClearNav';
+import { tabIdForExplainQuery } from './explain/explainContent';
 import { getDefaultDashboardTab } from '../lib/platform/defaultTab';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
@@ -624,24 +625,26 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
     }
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const fromExplain = tabIdForExplainQuery(params.get('explain'));
+        if (fromExplain) return fromExplain;
+        const urlTab = params.get('tab');
+        if (urlTab) return normalizeTabId(urlTab);
+
+        const hash = window.location.hash.replace('#', '');
+        if (hash) return normalizeTabId(hash);
+      } catch (e) {
+        console.error('Failed to parse activeTab initial URL:', e);
+      }
+    }
     if (typeof localStorage !== 'undefined') {
       try {
         const savedTab = localStorage.getItem('clearpath_active_tab');
         if (savedTab) return normalizeTabId(savedTab);
       } catch (e) {
         console.error('Failed to load activeTab from localStorage:', e);
-      }
-    }
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const urlTab = params.get('tab');
-        if (urlTab) return normalizeTabId(urlTab);
-        
-        const hash = window.location.hash.replace('#', '');
-        if (hash) return normalizeTabId(hash);
-      } catch (e) {
-        console.error('Failed to parse activeTab initial URL:', e);
       }
     }
     return getDefaultDashboardTab();
@@ -1145,12 +1148,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(nextTabId);
       } else {
         const params = new URLSearchParams(window.location.search);
-        const urlTab = params.get('tab');
-        if (urlTab) {
-          setActiveTab(normalizeTabId(urlTab));
+        const fromExplain = tabIdForExplainQuery(params.get('explain'));
+        if (fromExplain) {
+          setActiveTab(fromExplain);
         } else {
-          const hash = window.location.hash.replace('#', '');
-          if (hash) setActiveTab(normalizeTabId(hash));
+          const urlTab = params.get('tab');
+          if (urlTab) {
+            setActiveTab(normalizeTabId(urlTab));
+          } else {
+            const hash = window.location.hash.replace('#', '');
+            if (hash) setActiveTab(normalizeTabId(hash));
+          }
         }
       }
     };
@@ -1184,43 +1192,48 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       setActiveTab('ClearPathEducation');
     } else {
       const params = new URLSearchParams(window.location.search);
-      const urlTab = params.get('tab');
-      if (urlTab) {
-        setActiveTab(normalizeTabId(urlTab));
+      const fromExplain = tabIdForExplainQuery(params.get('explain'));
+      if (fromExplain) {
+        setActiveTab(fromExplain);
       } else {
-        const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders']);
-        if (retiredTabs.has(hash)) {
-          setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
+        const urlTab = params.get('tab');
+        if (urlTab) {
+          setActiveTab(normalizeTabId(urlTab));
         } else {
-        const validHash = menuItems.find(m => m.id === hash) || 
-          hash === 'TheRiver' || 
-          hash === 'CeoDashboard' || 
-          hash === 'ThemeTerminal' || 
-          hash === 'Market' || 
-          hash === 'StrictlyCharts' || 
-          hash === 'Fundamentals' || 
-          hash === 'Portfolio' || 
-          hash === 'News' || 
-          hash === 'Calendar' ||
-          hash === 'Biography' || 
-          hash === 'MeetTheBoard' || 
-          hash === 'Yours' || 
-          hash === 'CpmsApk' || 
-          hash === 'AffiliateNetwork' || 
-          hash === 'Encyclopedia' || 
-          hash === 'EncyclopediaOfIndicators' || 
-          hash === 'ClearPathEducation' ||
-          hash === 'LiteracyOS' ||
-          hash === 'ApiMonitor';
-        if (validHash) {
-          const next = normalizeTabId(hash);
-          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
-            setActiveTab('StrictlyCharts');
+          const hash = window.location.hash.replace('#', '');
+          const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders']);
+          if (retiredTabs.has(hash)) {
+            setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
           } else {
-            setActiveTab(next);
+            const validHash = menuItems.find(m => m.id === hash) || 
+              hash === 'TheRiver' || 
+              hash === 'CeoDashboard' || 
+              hash === 'ThemeTerminal' || 
+              hash === 'Market' || 
+              hash === 'StrictlyCharts' || 
+              hash === 'Fundamentals' || 
+              hash === 'Portfolio' || 
+              hash === 'News' || 
+              hash === 'Calendar' ||
+              hash === 'Biography' || 
+              hash === 'MeetTheBoard' || 
+              hash === 'Yours' || 
+              hash === 'CpmsApk' || 
+              hash === 'AffiliateNetwork' || 
+              hash === 'Encyclopedia' || 
+              hash === 'EncyclopediaOfIndicators' || 
+              hash === 'ClearPathEducation' ||
+              hash === 'LiteracyOS' ||
+              hash === 'ApiMonitor';
+            if (validHash) {
+              const next = normalizeTabId(hash);
+              if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
+                setActiveTab('StrictlyCharts');
+              } else {
+                setActiveTab(next);
+              }
+            }
           }
-        }
         }
       }
     }

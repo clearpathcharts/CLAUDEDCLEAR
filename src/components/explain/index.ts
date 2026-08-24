@@ -10,6 +10,8 @@ export {
   getExplainContent,
   NAV_TAB_EXPLAIN_IDS,
   explainColorForNavTab,
+  tabIdForExplainQuery,
+  isPublicExplainDeskTab,
 } from './explainContent';
 export {
   EXPLAIN_FLOW_SLOT_IDS,
