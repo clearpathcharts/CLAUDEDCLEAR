@@ -8,7 +8,17 @@ import type { AudienceAge, OrientationDesk, PoliticsDesk } from './magazineTypes
 import { parseFavoriteHomepage, type PublicationFavorite } from './publicationHub';
 
 export type AgeBandId = '19-22' | '23-29' | '30-38' | '39-48' | '49-57' | '58-80';
-export type InterestDeskId = 'everyone' | 'gay-men' | 'queer-women';
+export type InterestDeskId =
+  | 'everyone'
+  | 'gay-men'
+  | 'queer-women'
+  | 'republican-men'
+  | 'republican-women'
+  | 'democrat-men'
+  | 'democrat-women'
+  | 'sports-men'
+  | 'sports-women'
+  | 'weird';
 export type InterestSourceKind = 'publication' | 'official' | 'app' | 'social' | 'organization';
 
 export type InterestSource = {
@@ -34,10 +44,17 @@ export const AGE_BANDS: Array<{ id: AgeBandId; label: string; note: string }> = 
   { id: '58-80', label: '58–80', note: 'Later-life map — 35 interests' },
 ];
 
-export const INTEREST_DESKS: Array<{ id: InterestDeskId; label: string }> = [
-  { id: 'everyone', label: 'Everyone' },
-  { id: 'gay-men', label: 'Gay men — 15 desks' },
-  { id: 'queer-women', label: 'Lesbian / queer women — 15 desks' },
+export const INTEREST_DESKS: Array<{ id: InterestDeskId; label: string; optIn: boolean }> = [
+  { id: 'everyone', label: 'Everyone', optIn: false },
+  { id: 'gay-men', label: 'Gay men — 15 (opt-in)', optIn: true },
+  { id: 'queer-women', label: 'Lesbian / queer women — 15 (opt-in)', optIn: true },
+  { id: 'republican-men', label: 'Republican-leaning men — 15 (opt-in)', optIn: true },
+  { id: 'republican-women', label: 'Republican-leaning women — 15 (opt-in)', optIn: true },
+  { id: 'democrat-men', label: 'Democrat-leaning men — 15 (opt-in)', optIn: true },
+  { id: 'democrat-women', label: 'Democrat-leaning women — 15 (opt-in)', optIn: true },
+  { id: 'sports-men', label: 'Sports — men — 15 (opt-in)', optIn: true },
+  { id: 'sports-women', label: 'Sports — women — 15 (opt-in)', optIn: true },
+  { id: 'weird', label: 'Weird / off-the-wall — 21 (opt-in)', optIn: true },
 ];
 
 export const SOURCE_KIND_LABEL: Record<InterestSourceKind, string> = {
@@ -412,6 +429,380 @@ export const QUEER_WOMEN_AGENTS: InterestAgent[] = [
   ]),
 ];
 
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const REPUBLICAN_MEN_AGENTS: InterestAgent[] = [
+  agent('rm-news', 'Conservative News & Politics', 'Breaking news, commentary, policy', [
+    s('foxnews', 'Fox News', 'https://www.foxnews.com/'),
+  ]),
+  agent('rm-commentary', 'Political Commentary & Opinion', 'Long-form conservative analysis', [
+    s('national-review', 'National Review', 'https://www.nationalreview.com/'),
+  ]),
+  agent('rm-youth', 'Youth/Culture Conservative Commentary', 'Podcasts, culture commentary', [
+    s('dailywire', 'The Daily Wire', 'https://www.dailywire.com/'),
+  ]),
+  agent('rm-talk', 'Talk Radio & Politics', 'News, opinion, talk radio', [
+    s('newsmax', 'Newsmax', 'https://www.newsmax.com/'),
+  ]),
+  agent('rm-populist', 'Grassroots/Populist Political News', 'Politics, immigration, culture', [
+    s('breitbart', 'Breitbart', 'https://www.breitbart.com/'),
+  ]),
+  agent('rm-civics', 'Constitution & Founding History', 'Civics, history, founding principles', [
+    s('hillsdale', 'Hillsdale College', 'https://www.hillsdale.edu/', 'organization'),
+  ]),
+  agent('rm-faith', 'Faith & Christian Living', 'Family, faith-based content', [
+    s('fotf', 'Focus on the Family', 'https://www.focusonthefamily.com/', 'organization'),
+  ]),
+  agent('rm-2a', 'Guns, Hunting & 2nd Amendment', 'Firearms news, hunting, gear', [
+    s('nra', 'NRA', 'https://home.nra.org/', 'organization'),
+  ]),
+  agent('rm-outdoors', 'Outdoors & Hunting', 'Hunting, fishing, gear reviews', [
+    s('fieldstream', 'Field & Stream', 'https://www.fieldandstream.com/'),
+  ]),
+  agent('rm-military', 'Military & Veterans', 'Veteran news, military culture', [
+    s('military', 'Military.com', 'https://www.military.com/'),
+  ]),
+  agent('rm-business', 'Business & Entrepreneurship', 'Small business, free-market commentary', [
+    s('entrepreneur', 'Entrepreneur', 'https://www.entrepreneur.com/'),
+  ]),
+  agent('rm-money', 'Money, Investing & Taxes', 'Personal finance, tax policy', [
+    s('kiplinger', 'Kiplinger', 'https://www.kiplinger.com/'),
+  ]),
+  agent('rm-cars', 'Trucks, Cars & Automotive', 'Vehicles, gear, reviews', [
+    s('motortrend', 'MotorTrend', 'https://www.motortrend.com/'),
+  ]),
+  agent('rm-sports', 'Sports', 'Mainstream sports coverage', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('rm-country', 'Country Music & Americana', 'Country music news, culture', [
+    s('tasteofcountry', 'Taste of Country', 'https://tasteofcountry.com/'),
+  ]),
+];
+
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const REPUBLICAN_WOMEN_AGENTS: InterestAgent[] = [
+  agent('rw-news', 'Conservative News & Politics', 'Breaking news, commentary', [
+    s('foxnews', 'Fox News', 'https://www.foxnews.com/'),
+  ]),
+  agent('rw-commentary', "Women's Conservative Commentary", 'Culture, politics, opinion', [
+    s('iwf', "Independent Women's Forum", 'https://www.iwf.org/', 'organization'),
+  ]),
+  agent('rw-lifestyle', 'Conservative Lifestyle & Culture', 'Faith-forward lifestyle', [
+    s('evie', 'Evie Magazine', 'https://www.eviemagazine.com/'),
+  ]),
+  agent('rw-faith', 'Faith & Christian Living', 'Marriage, family, faith', [
+    s('fotf', 'Focus on the Family', 'https://www.focusonthefamily.com/', 'organization'),
+  ]),
+  agent('rw-parenting', 'Motherhood & Parenting', 'Parenting, family values', [
+    s('cwfa', 'Concerned Women for America', 'https://www.cwfa.org/', 'organization'),
+  ]),
+  agent('rw-homeschool', 'Homeschooling & Education', 'Curriculum, homeschool resources', [
+    s('homeschool', 'Homeschool.com', 'https://www.homeschool.com/', 'organization'),
+  ]),
+  agent('rw-home', 'Home, Family & Domestic Life', 'Home management, family life', [
+    s('goodhousekeeping', 'Good Housekeeping', 'https://www.goodhousekeeping.com/'),
+  ]),
+  agent('rw-prolife', 'Pro-Life Advocacy', 'Policy, advocacy, resources', [
+    s('sba', 'Susan B. Anthony Pro-Life America', 'https://sbaprolife.org/', 'organization'),
+  ]),
+  agent('rw-health', 'Health & Wellness', 'Nutrition, fitness, wellness — not medical advice', [
+    s('prevention', 'Prevention', 'https://www.prevention.com/'),
+  ]),
+  agent('rw-cooking', 'Cooking & Homesteading', 'Recipes, home cooking, self-sufficiency', [
+    s('tasteofhome', 'Taste of Home', 'https://www.tasteofhome.com/'),
+  ]),
+  agent('rw-style', 'Fashion & Modest Style', 'Style, fashion trends', [
+    s('southernliving', 'Southern Living', 'https://www.southernliving.com/'),
+  ]),
+  agent('rw-money', 'Money, Budgeting & Family Finance', 'Household finance, budgeting', [
+    s('daveramsey', 'Dave Ramsey', 'https://www.daveramsey.com/', 'organization'),
+  ]),
+  agent('rw-business', 'Small Business & Entrepreneurship', 'Women-owned business, entrepreneurship', [
+    s('score', 'SCORE', 'https://www.score.org/', 'organization'),
+  ]),
+  agent('rw-travel', 'Travel & Family Vacations', 'Family-friendly travel', [
+    s('familyvac', 'Family Vacation Critic', 'https://www.familyvacationcritic.com/'),
+  ]),
+  agent('rw-country', 'Country Music & Americana', 'Country music, culture', [
+    s('tasteofcountry', 'Taste of Country', 'https://tasteofcountry.com/'),
+  ]),
+];
+
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const DEMOCRAT_MEN_AGENTS: InterestAgent[] = [
+  agent('dm-news', 'Progressive News & Politics', 'Breaking news, commentary, policy', [
+    s('msnbc', 'MSNBC', 'https://www.msnbc.com/'),
+  ]),
+  agent('dm-commentary', 'Political Commentary & Opinion', 'Long-form progressive analysis', [
+    s('motherjones', 'Mother Jones', 'https://www.motherjones.com/'),
+  ]),
+  agent('dm-youth', 'Youth/Culture Progressive Commentary', 'Podcasts, culture commentary', [
+    s('vox', 'Vox', 'https://www.vox.com/'),
+  ]),
+  agent('dm-investigative', 'Investigative & Policy Journalism', 'In-depth reporting, accountability journalism', [
+    s('propublica', 'ProPublica', 'https://www.propublica.org/'),
+  ]),
+  agent('dm-labor', "Labor & Workers' Rights", 'Unions, labor news, workplace policy', [
+    s('aflcio', 'AFL-CIO', 'https://aflcio.org/', 'organization'),
+  ]),
+  agent('dm-climate', 'Climate & Environment', 'Climate policy, environmental news', [
+    s('grist', 'Grist', 'https://grist.org/'),
+  ]),
+  agent('dm-civil', 'Civil Rights & Social Justice', 'Civil liberties, advocacy', [
+    s('aclu', 'ACLU', 'https://www.aclu.org/', 'organization'),
+  ]),
+  agent('dm-science', 'Science & Technology Policy', 'Science news, tech policy', [
+    s('arstechnica', 'Ars Technica', 'https://arstechnica.com/'),
+  ]),
+  agent('dm-urban', 'Urban Life & City Living', 'Urban planning, city culture', [
+    s('citylab', 'Bloomberg CityLab', 'https://www.bloomberg.com/citylab'),
+  ]),
+  agent('dm-business', 'Business & Entrepreneurship', 'Startups, innovation, business news', [
+    s('fastcompany', 'Fast Company', 'https://www.fastcompany.com/'),
+  ]),
+  agent('dm-money', 'Money, Investing & Taxes', 'Personal finance, economic policy', [
+    s('nerdwallet', 'NerdWallet', 'https://www.nerdwallet.com/'),
+  ]),
+  agent('dm-ev', 'Cars, EVs & Sustainable Tech', 'EVs, sustainable transportation', [
+    s('electrek', 'Electrek', 'https://electrek.co/'),
+  ]),
+  agent('dm-sports', 'Sports', 'Mainstream sports coverage', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('dm-music', 'Hip-Hop & Indie Music', 'Music news, culture', [
+    s('pitchfork', 'Pitchfork', 'https://pitchfork.com/'),
+  ]),
+  agent('dm-gaming', 'Gaming & Esports', 'Games, esports, culture', [
+    s('polygon', 'Polygon', 'https://www.polygon.com/'),
+  ]),
+];
+
+/** Opt-in only. ClearPath does not infer political affiliation. */
+export const DEMOCRAT_WOMEN_AGENTS: InterestAgent[] = [
+  agent('dw-news', 'Progressive News & Politics', 'Breaking news, commentary', [
+    s('msnbc', 'MSNBC', 'https://www.msnbc.com/'),
+  ]),
+  agent('dw-commentary', "Women's Progressive Commentary", 'Culture, politics, opinion', [
+    s('thecut', 'The Cut', 'https://www.thecut.com/'),
+  ]),
+  agent('dw-repro', 'Reproductive Rights & Health Policy', 'Advocacy, policy, resources — not medical advice', [
+    s('pp', 'Planned Parenthood', 'https://www.plannedparenthood.org/', 'organization'),
+  ]),
+  agent('dw-feminism', 'Feminism & Gender Equity', 'Feminist commentary, culture', [
+    s('jezebel', 'Jezebel', 'https://www.jezebel.com/'),
+  ]),
+  agent('dw-parenting', 'Motherhood & Parenting', 'Modern parenting, family life', [
+    s('romper', 'Romper', 'https://www.romper.com/'),
+  ]),
+  agent('dw-ed', 'Public Education & Education Policy', 'Public school advocacy, policy', [
+    s('edweek', 'Education Week', 'https://www.edweek.org/'),
+  ]),
+  agent('dw-home', 'Home & Sustainable Living', 'Home life, sustainability', [
+    s('apttherapy', 'Apartment Therapy', 'https://www.apartmenttherapy.com/'),
+  ]),
+  agent('dw-civil', 'Civil Rights & Social Justice', 'Civil liberties, advocacy', [
+    s('aclu', 'ACLU', 'https://www.aclu.org/', 'organization'),
+  ]),
+  agent('dw-health', 'Health & Wellness', 'Nutrition, fitness, wellness — not medical advice', [
+    s('self', 'SELF', 'https://www.self.com/'),
+  ]),
+  agent('dw-food', 'Cooking & Food Culture', 'Recipes, food trends', [
+    s('bonappetit', 'Bon Appétit', 'https://www.bonappetit.com/'),
+  ]),
+  agent('dw-fashion', 'Fashion & Style', 'Style, fashion trends', [
+    s('refinery29', 'Refinery29', 'https://www.refinery29.com/'),
+  ]),
+  agent('dw-money', 'Money, Budgeting & Family Finance', 'Household finance, budgeting', [
+    s('hf100k', 'Her First 100K', 'https://herfirst100k.com/', 'organization'),
+  ]),
+  agent('dw-business', 'Small Business & Entrepreneurship', 'Women-owned business, entrepreneurship', [
+    s('score', 'SCORE', 'https://www.score.org/', 'organization'),
+  ]),
+  agent('dw-travel', 'Travel & Adventure', 'Travel, culture, experiences', [
+    s('afar', 'AFAR', 'https://www.afar.com/'),
+  ]),
+  agent('dw-books', 'Books & Literature', 'Book culture, recommendations', [
+    s('bookriot', 'Book Riot', 'https://bookriot.com/'),
+  ]),
+];
+
+/**
+ * Opt-in only. Not a gender-assigned default — anyone can open either sports desk.
+ * League/org/shop homepages are bookmarks, not live RSS.
+ */
+export const SPORTS_MEN_AGENTS: InterestAgent[] = [
+  agent('sm-general', 'General Sports News', 'Cross-sport news and scores', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('sm-nfl', 'NFL / Football', 'Football news, scores, analysis', [
+    s('nfl', 'NFL', 'https://www.nfl.com/', 'official'),
+  ]),
+  agent('sm-nba', 'NBA / Basketball', 'Basketball news, scores, analysis', [
+    s('nba', 'NBA', 'https://www.nba.com/', 'official'),
+  ]),
+  agent('sm-mlb', 'MLB / Baseball', 'Baseball news, scores, analysis', [
+    s('mlb', 'MLB', 'https://www.mlb.com/', 'official'),
+  ]),
+  agent('sm-nhl', 'NHL / Hockey', 'Hockey news, scores, analysis', [
+    s('nhl', 'NHL', 'https://www.nhl.com/', 'official'),
+  ]),
+  agent('sm-ncaa', 'College Football & Basketball', 'NCAA sports coverage', [
+    s('espn-cfb', 'ESPN College Football', 'https://www.espn.com/college-football'),
+  ]),
+  agent('sm-soccer', 'Soccer / Football (Global)', 'Soccer news, leagues, transfers', [
+    s('espn-soccer', 'ESPN Soccer', 'https://www.espn.com/soccer'),
+  ]),
+  agent('sm-mma', 'MMA & Boxing', 'Fight news, results, analysis', [
+    s('mmafighting', 'MMA Fighting', 'https://www.mmafighting.com/'),
+  ]),
+  agent('sm-golf', 'Golf', 'Tour news, scores, equipment', [
+    s('golfdigest', 'Golf Digest', 'https://www.golfdigest.com/'),
+  ]),
+  agent('sm-motor', 'Motorsports (F1, NASCAR)', 'Racing news, results', [
+    s('nascar', 'NASCAR', 'https://www.nascar.com/', 'official'),
+  ]),
+  agent('sm-fantasy', 'Fantasy Sports', 'Fantasy football/basketball/baseball tools', [
+    s('fantasypros', 'FantasyPros', 'https://www.fantasypros.com/'),
+  ]),
+  agent('sm-odds', 'Sports Betting & Odds', 'Odds, lines, analysis', [
+    s('actionnetwork', 'Action Network', 'https://www.actionnetwork.com/'),
+  ]),
+  agent('sm-biz', 'Sports Business & Finance', 'Contracts, deals, league business', [
+    s('sportico', 'Sportico', 'https://www.sportico.com/'),
+  ]),
+  agent('sm-fitness', 'Fitness & Athletic Training', 'Training, performance, recovery — not medical advice', [
+    s('menshealth', "Men's Health", 'https://www.menshealth.com/'),
+  ]),
+  agent('sm-sneakers', 'Sneakers & Athletic Gear', 'Sneaker releases, sports gear', [
+    s('sneakernews', 'Sneaker News', 'https://sneakernews.com/'),
+  ]),
+];
+
+/**
+ * Opt-in only. Not a gender-assigned default — anyone can open either sports desk.
+ * League/org/shop homepages are bookmarks, not live RSS.
+ */
+export const SPORTS_WOMEN_AGENTS: InterestAgent[] = [
+  agent('sw-general', 'General Sports News', 'Cross-sport news and scores', [
+    s('espn', 'ESPN', 'https://www.espn.com/'),
+  ]),
+  agent('sw-wnba', "WNBA / Women's Basketball", 'League news, scores, analysis', [
+    s('wnba', 'WNBA', 'https://www.wnba.com/', 'official'),
+  ]),
+  agent('sw-nwsl', "NWSL / Women's Soccer", 'League news, scores, analysis', [
+    s('nwsl', 'NWSL', 'https://www.nwslsoccer.com/', 'official'),
+  ]),
+  agent('sw-ncaa', "Women's College Sports (NCAA)", "NCAA women's sports coverage", [
+    s('espn-wcb', "ESPN Women's College Basketball", 'https://www.espn.com/womens-college-basketball'),
+  ]),
+  agent('sw-tennis', 'Tennis', 'Tour news, scores, rankings', [
+    s('wta', 'WTA Tennis', 'https://www.wtatennis.com/', 'official'),
+  ]),
+  agent('sw-gym', 'Gymnastics', 'Competition news, athletes', [
+    s('usagym', 'USA Gymnastics', 'https://usagym.org/', 'organization'),
+  ]),
+  agent('sw-usa', 'Olympic & Team USA Sports', 'Team USA news, athlete profiles', [
+    s('teamusa', 'Team USA', 'https://www.teamusa.org/', 'organization'),
+  ]),
+  agent('sw-golf', 'Golf (LPGA)', 'Tour news, scores, equipment', [
+    s('lpga', 'LPGA', 'https://www.lpga.com/', 'official'),
+  ]),
+  agent('sw-running', 'Running & Track and Field', 'Race news, training, results', [
+    s('runnersworld', "Runner's World", 'https://www.runnersworld.com/'),
+  ]),
+  agent('sw-volley', 'Volleyball', 'League and college volleyball news', [
+    s('volleyballmag', 'Volleyball Magazine', 'https://www.volleyballmag.com/'),
+  ]),
+  agent('sw-fantasy', 'Fantasy Sports', 'Fantasy sports tools and leagues', [
+    s('fantasypros', 'FantasyPros', 'https://www.fantasypros.com/'),
+  ]),
+  agent('sw-biz', 'Sports Business & Finance', 'Contracts, deals, league business', [
+    s('sportico', 'Sportico', 'https://www.sportico.com/'),
+  ]),
+  agent('sw-fitness', 'Fitness & Athletic Training', 'Training, performance, recovery — not medical advice', [
+    s('womenshealth', "Women's Health", 'https://www.womenshealthmag.com/'),
+  ]),
+  agent('sw-athleisure', 'Sports Fashion & Athleisure', 'Athletic wear, gear', [
+    s('athleta', 'Athleta', 'https://athleta.gap.com/', 'official'),
+  ]),
+  agent('sw-media', "Women's Sports Media & Advocacy", "Coverage and advocacy for women's sports", [
+    s('jws', "Just Women's Sports", 'https://justwomenssports.com/'),
+  ]),
+];
+
+/**
+ * Opt-in niche / oddball desk — one unified list, not split by gender.
+ * Robb Report sits here as a luxury cross-read for yachting, charters, and horology.
+ * Homepages are bookmarks; forums and orgs are not live-fetched.
+ */
+export const WEIRD_AGENTS: InterestAgent[] = [
+  agent('w-yachting', 'Nautical & Yachting', 'Boats, sailing, marine lifestyle', [
+    s('yachting', 'Yachting Magazine', 'https://www.yachtingmagazine.com/'),
+  ]),
+  agent('w-superyacht', 'Charter & Superyacht Industry', 'Yacht charters, crewing, industry news', [
+    s('superyachtnews', 'SuperYacht News', 'https://www.superyachtnews.com/'),
+  ]),
+  agent('w-watches', 'Vintage Watches & Horology', 'Watch collecting, repair, auctions', [
+    s('hodinkee', 'Hodinkee', 'https://www.hodinkee.com/'),
+  ]),
+  agent('w-bees', 'Beekeeping & Apiculture', 'Hive management, honey, pollinators', [
+    s('beeculture', 'Bee Culture', 'https://www.beeculture.com/'),
+  ]),
+  agent('w-ham', 'Ham Radio & Amateur Radio', 'Radio operation, gear, licensing', [
+    s('arrl', 'ARRL', 'https://www.arrl.org/', 'organization'),
+  ]),
+  agent('w-flags', 'Vexillology (Flags)', 'Flag design, history, symbolism', [
+    s('nava', 'NAVA', 'https://nava.org/', 'organization'),
+  ]),
+  agent('w-mycology', 'Mycology & Foraging', 'Mushroom ID, foraging, fungi culture', [
+    s('mushroomexpert', 'MushroomExpert', 'https://www.mushroomexpert.com/'),
+  ]),
+  agent('w-astro', 'Amateur Astronomy', 'Telescopes, stargazing, celestial events', [
+    s('skyandtelescope', 'Sky & Telescope', 'https://skyandtelescope.org/'),
+  ]),
+  agent('w-trains', 'Model Trains & Railroading', 'Model railroads, real rail history', [
+    s('trains', 'Trains', 'https://www.trains.com/'),
+  ]),
+  agent('w-geo', 'Geocaching & Treasure Hunting', 'GPS treasure hunting, caching culture', [
+    s('geocaching', 'Geocaching', 'https://www.geocaching.com/', 'official'),
+  ]),
+  agent('w-urbex', 'Urban Exploration & Abandoned Places', 'Ruins, abandoned buildings, history', [
+    s('abandonedspaces', 'Abandoned Spaces', 'https://abandonedspaces.com/'),
+  ]),
+  agent('w-paranormal', 'Paranormal & Ghost Hunting', 'Investigations, hauntings, folklore', [
+    s('ghostinmyhouse', 'The Ghost in My House', 'https://theghostinmyhouse.com/'),
+  ]),
+  agent('w-offgrid', 'Off-Grid Living & Homesteading', 'Self-sufficiency, land, sustainability', [
+    s('homesteadingtoday', 'Homesteading Today', 'https://www.homesteadingtoday.com/', 'social'),
+  ]),
+  agent('w-blades', 'Bladesmithing & Knife Making', 'Forging, custom knives, craftsmanship', [
+    s('bladeforums', 'BladeForums', 'https://www.bladeforums.com/', 'social'),
+  ]),
+  agent('w-pinball', 'Vintage Arcade & Pinball Collecting', 'Machine restoration, collecting', [
+    s('pinballnews', 'Pinball News', 'https://pinballnews.com/'),
+  ]),
+  agent('w-reptiles', 'Exotic Reptile & Amphibian Keeping', 'Husbandry, breeding, species care', [
+    s('reptilesmag', 'Reptiles Magazine', 'https://www.reptilesmagazine.com/'),
+  ]),
+  agent('w-eating', 'Competitive Eating', 'Events, records, circuit news', [
+    s('mle', 'Major League Eating', 'https://majorleagueeating.com/', 'official'),
+  ]),
+  agent('w-maps', 'Cartography & Map Collecting', 'Antique maps, mapmaking, GIS hobbyists', [
+    s('ica-proj', 'ICA Map Projections', 'https://ica-proj.org/', 'organization'),
+  ]),
+  agent('w-escape', 'Escape Rooms & Puzzle Hunts', 'Room reviews, puzzle design', [
+    s('roomescape', 'Room Escape Artist', 'https://roomescapeartist.com/'),
+  ]),
+  agent('w-taxidermy', 'Taxidermy & Natural Curiosities', 'Taxidermy craft, oddities collecting', [
+    s('taxidermynet', 'Taxidermy.net', 'https://www.taxidermy.net/', 'social'),
+  ]),
+  agent(
+    'w-robb',
+    'Luxury Lifestyle & Robb Report',
+    'Yachts, watches, cars, real estate, luxury goods — cross-read for nautical, charters, and horology',
+    [s('robbreport', 'Robb Report', 'https://robbreport.com/')],
+  ),
+];
+
 export function audienceAgeForBand(band: AgeBandId): AudienceAge {
   if (band === '19-22' || band === '23-29') return 'young-adult';
   if (band === '58-80' || band === '49-57') return 'fifty-plus';
@@ -419,13 +810,41 @@ export function audienceAgeForBand(band: AgeBandId): AudienceAge {
 }
 
 export function orientationForDesk(desk: InterestDeskId): OrientationDesk {
-  return desk === 'everyone' ? 'general' : 'lgbtq';
+  if (desk === 'gay-men' || desk === 'queer-women') return 'lgbtq';
+  return 'general';
+}
+
+export function politicsForDesk(desk: InterestDeskId): PoliticsDesk {
+  if (desk === 'republican-men' || desk === 'republican-women') return 'right';
+  if (desk === 'democrat-men' || desk === 'democrat-women') return 'left';
+  return 'nonpartisan';
+}
+
+export function isOptInDesk(desk: InterestDeskId): boolean {
+  return desk !== 'everyone';
 }
 
 export function agentsFor(band: AgeBandId, desk: InterestDeskId): InterestAgent[] {
   if (desk === 'gay-men') return GAY_MEN_AGENTS;
   if (desk === 'queer-women') return QUEER_WOMEN_AGENTS;
+  if (desk === 'republican-men') return REPUBLICAN_MEN_AGENTS;
+  if (desk === 'republican-women') return REPUBLICAN_WOMEN_AGENTS;
+  if (desk === 'democrat-men') return DEMOCRAT_MEN_AGENTS;
+  if (desk === 'democrat-women') return DEMOCRAT_WOMEN_AGENTS;
+  if (desk === 'sports-men') return SPORTS_MEN_AGENTS;
+  if (desk === 'sports-women') return SPORTS_WOMEN_AGENTS;
+  if (desk === 'weird') return WEIRD_AGENTS;
   return band === '58-80' ? LATER_LIFE_AGENTS : EARLY_ADULT_AGENTS;
+}
+
+export type InterestFeedRow = {
+  n: number;
+  agent: InterestAgent;
+};
+
+/** Numbered feed-list rows for Hub 2 — one row per interest, not a headline grid. */
+export function feedRowsFor(band: AgeBandId, desk: InterestDeskId): InterestFeedRow[] {
+  return agentsFor(band, desk).map((agentRow, i) => ({ n: i + 1, agent: agentRow }));
 }
 
 export function sourceHost(homepage: string): string {
@@ -437,7 +856,19 @@ export function sourceHost(homepage: string): string {
 }
 
 export function allCatalogSources(): InterestSource[] {
-  const lists = [EARLY_ADULT_AGENTS, LATER_LIFE_AGENTS, GAY_MEN_AGENTS, QUEER_WOMEN_AGENTS];
+  const lists = [
+    EARLY_ADULT_AGENTS,
+    LATER_LIFE_AGENTS,
+    GAY_MEN_AGENTS,
+    QUEER_WOMEN_AGENTS,
+    REPUBLICAN_MEN_AGENTS,
+    REPUBLICAN_WOMEN_AGENTS,
+    DEMOCRAT_MEN_AGENTS,
+    DEMOCRAT_WOMEN_AGENTS,
+    SPORTS_MEN_AGENTS,
+    SPORTS_WOMEN_AGENTS,
+    WEIRD_AGENTS,
+  ];
   const out: InterestSource[] = [];
   const seen = new Set<string>();
   for (const agents of lists) {
@@ -466,7 +897,7 @@ export function favoriteFromInterestSource(
     homepage,
     audienceAge: audienceAgeForBand(band),
     orientation: orientationForDesk(desk),
-    politics: 'nonpartisan' as PoliticsDesk,
+    politics: politicsForDesk(desk),
     sourceId: src.id,
     addedAt: new Date().toISOString(),
   };

@@ -19,9 +19,21 @@ import {
   GAY_MEN_AGENTS,
   LATER_LIFE_AGENTS,
   QUEER_WOMEN_AGENTS,
+  REPUBLICAN_MEN_AGENTS,
+  REPUBLICAN_WOMEN_AGENTS,
+  DEMOCRAT_MEN_AGENTS,
+  DEMOCRAT_WOMEN_AGENTS,
+  SPORTS_MEN_AGENTS,
+  SPORTS_WOMEN_AGENTS,
+  WEIRD_AGENTS,
+  INTEREST_DESKS,
   agentsFor,
   allCatalogSources,
+  feedRowsFor,
   isFetchableKind,
+  isOptInDesk,
+  orientationForDesk,
+  politicsForDesk,
 } from '../src/lib/ywc/interestCatalog.ts';
 
 assert.equal(parseFavoriteHomepage('https://www.out.com/'), 'https://www.out.com/');
@@ -116,10 +128,185 @@ assert.equal(EARLY_ADULT_AGENTS.length, 35);
 assert.equal(LATER_LIFE_AGENTS.length, 35);
 assert.equal(GAY_MEN_AGENTS.length, 15);
 assert.equal(QUEER_WOMEN_AGENTS.length, 15);
+assert.equal(REPUBLICAN_MEN_AGENTS.length, 15);
+assert.equal(REPUBLICAN_WOMEN_AGENTS.length, 15);
+assert.equal(DEMOCRAT_MEN_AGENTS.length, 15);
+assert.equal(DEMOCRAT_WOMEN_AGENTS.length, 15);
+assert.equal(SPORTS_MEN_AGENTS.length, 15);
+assert.equal(SPORTS_WOMEN_AGENTS.length, 15);
 assert.equal(agentsFor('19-22', 'everyone').length, 35);
 assert.equal(agentsFor('58-80', 'everyone').length, 35);
 assert.equal(agentsFor('19-22', 'gay-men').length, 15);
 assert.equal(agentsFor('58-80', 'queer-women').length, 15);
+assert.equal(agentsFor('30-38', 'republican-men').length, 15);
+assert.equal(agentsFor('58-80', 'republican-women').length, 15);
+assert.equal(agentsFor('23-29', 'democrat-men').length, 15);
+assert.equal(agentsFor('49-57', 'democrat-women').length, 15);
+assert.equal(agentsFor('19-22', 'sports-men').length, 15);
+assert.equal(agentsFor('58-80', 'sports-women').length, 15);
+assert.equal(isOptInDesk('everyone'), false);
+assert.equal(isOptInDesk('republican-men'), true);
+assert.equal(isOptInDesk('democrat-women'), true);
+assert.equal(isOptInDesk('sports-men'), true);
+assert.equal(isOptInDesk('sports-women'), true);
+assert.equal(isOptInDesk('gay-men'), true);
+assert.equal(orientationForDesk('republican-men'), 'general');
+assert.equal(orientationForDesk('democrat-men'), 'general');
+assert.equal(orientationForDesk('queer-women'), 'lgbtq');
+assert.equal(politicsForDesk('republican-women'), 'right');
+assert.equal(politicsForDesk('democrat-men'), 'left');
+assert.equal(politicsForDesk('everyone'), 'nonpartisan');
+assert.ok(REPUBLICAN_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('foxnews.com'))));
+assert.ok(REPUBLICAN_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('eviemagazine.com'))));
+assert.ok(DEMOCRAT_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('msnbc.com'))));
+assert.ok(DEMOCRAT_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('thecut.com'))));
+assert.deepEqual(
+  DEMOCRAT_MEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.msnbc.com/',
+    'https://www.motherjones.com/',
+    'https://www.vox.com/',
+    'https://www.propublica.org/',
+    'https://aflcio.org/',
+    'https://grist.org/',
+    'https://www.aclu.org/',
+    'https://arstechnica.com/',
+    'https://www.bloomberg.com/citylab',
+    'https://www.fastcompany.com/',
+    'https://www.nerdwallet.com/',
+    'https://electrek.co/',
+    'https://www.espn.com/',
+    'https://pitchfork.com/',
+    'https://www.polygon.com/',
+  ],
+);
+assert.deepEqual(
+  DEMOCRAT_WOMEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.msnbc.com/',
+    'https://www.thecut.com/',
+    'https://www.plannedparenthood.org/',
+    'https://www.jezebel.com/',
+    'https://www.romper.com/',
+    'https://www.edweek.org/',
+    'https://www.apartmenttherapy.com/',
+    'https://www.aclu.org/',
+    'https://www.self.com/',
+    'https://www.bonappetit.com/',
+    'https://www.refinery29.com/',
+    'https://herfirst100k.com/',
+    'https://www.score.org/',
+    'https://www.afar.com/',
+    'https://bookriot.com/',
+  ],
+);
+assert.equal(DEMOCRAT_WOMEN_AGENTS[2].sources[0].kind, 'organization');
+assert.ok(DEMOCRAT_WOMEN_AGENTS[2].watches.includes('not medical advice'));
+assert.equal(INTEREST_DESKS[0].id, 'everyone');
+assert.equal(politicsForDesk('democrat-women'), 'left');
+assert.equal(orientationForDesk('democrat-women'), 'general');
+assert.equal(orientationForDesk('sports-men'), 'general');
+assert.equal(orientationForDesk('sports-women'), 'general');
+assert.equal(politicsForDesk('sports-men'), 'nonpartisan');
+assert.equal(politicsForDesk('sports-women'), 'nonpartisan');
+assert.deepEqual(
+  SPORTS_MEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.espn.com/',
+    'https://www.nfl.com/',
+    'https://www.nba.com/',
+    'https://www.mlb.com/',
+    'https://www.nhl.com/',
+    'https://www.espn.com/college-football',
+    'https://www.espn.com/soccer',
+    'https://www.mmafighting.com/',
+    'https://www.golfdigest.com/',
+    'https://www.nascar.com/',
+    'https://www.fantasypros.com/',
+    'https://www.actionnetwork.com/',
+    'https://www.sportico.com/',
+    'https://www.menshealth.com/',
+    'https://sneakernews.com/',
+  ],
+);
+assert.deepEqual(
+  SPORTS_WOMEN_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.espn.com/',
+    'https://www.wnba.com/',
+    'https://www.nwslsoccer.com/',
+    'https://www.espn.com/womens-college-basketball',
+    'https://www.wtatennis.com/',
+    'https://usagym.org/',
+    'https://www.teamusa.org/',
+    'https://www.lpga.com/',
+    'https://www.runnersworld.com/',
+    'https://www.volleyballmag.com/',
+    'https://www.fantasypros.com/',
+    'https://www.sportico.com/',
+    'https://www.womenshealthmag.com/',
+    'https://athleta.gap.com/',
+    'https://justwomenssports.com/',
+  ],
+);
+assert.equal(SPORTS_MEN_AGENTS[1].sources[0].kind, 'official');
+assert.equal(SPORTS_WOMEN_AGENTS[1].sources[0].kind, 'official');
+assert.equal(SPORTS_WOMEN_AGENTS[5].sources[0].kind, 'organization');
+assert.equal(SPORTS_WOMEN_AGENTS[13].sources[0].kind, 'official');
+assert.ok(SPORTS_MEN_AGENTS[13].watches.includes('not medical advice'));
+assert.ok(SPORTS_WOMEN_AGENTS[12].watches.includes('not medical advice'));
+assert.ok(!isFetchableKind(SPORTS_MEN_AGENTS[1].sources[0].kind), 'league sites are not RSS-fetched');
+assert.ok(SPORTS_MEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('nfl.com'))));
+assert.ok(SPORTS_WOMEN_AGENTS.some((a) => a.sources.some((s) => s.homepage.includes('wnba.com'))));
+assert.ok(
+  SPORTS_MEN_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'sports-men homepages are https bookmarks',
+);
+assert.ok(
+  SPORTS_WOMEN_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'sports-women homepages are https bookmarks',
+);
+assert.equal(WEIRD_AGENTS.length, 21);
+assert.equal(agentsFor('19-22', 'weird').length, 21);
+assert.equal(feedRowsFor('19-22', 'weird').length, 21);
+assert.equal(feedRowsFor('19-22', 'everyone').length, 35);
+assert.equal(isOptInDesk('weird'), true);
+assert.equal(orientationForDesk('weird'), 'general');
+assert.equal(politicsForDesk('weird'), 'nonpartisan');
+assert.deepEqual(
+  WEIRD_AGENTS.map((a) => a.sources[0].homepage),
+  [
+    'https://www.yachtingmagazine.com/',
+    'https://www.superyachtnews.com/',
+    'https://www.hodinkee.com/',
+    'https://www.beeculture.com/',
+    'https://www.arrl.org/',
+    'https://nava.org/',
+    'https://www.mushroomexpert.com/',
+    'https://skyandtelescope.org/',
+    'https://www.trains.com/',
+    'https://www.geocaching.com/',
+    'https://abandonedspaces.com/',
+    'https://theghostinmyhouse.com/',
+    'https://www.homesteadingtoday.com/',
+    'https://www.bladeforums.com/',
+    'https://pinballnews.com/',
+    'https://www.reptilesmagazine.com/',
+    'https://majorleagueeating.com/',
+    'https://ica-proj.org/',
+    'https://roomescapeartist.com/',
+    'https://www.taxidermy.net/',
+    'https://robbreport.com/',
+  ],
+);
+assert.ok(WEIRD_AGENTS[20].name.includes('Robb Report'));
+assert.ok(WEIRD_AGENTS[20].watches.toLowerCase().includes('horology'));
+assert.equal(WEIRD_AGENTS[4].sources[0].kind, 'organization');
+assert.ok(
+  WEIRD_AGENTS.every((a) => parseFavoriteHomepage(a.sources[0].homepage)),
+  'weird-desk homepages are https bookmarks',
+);
+assert.ok(INTEREST_DESKS.some((d) => d.id === 'weird'));
 
 const catalog = allCatalogSources();
 assert.ok(catalog.length > 40);

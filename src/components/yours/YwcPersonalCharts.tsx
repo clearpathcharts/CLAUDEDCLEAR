@@ -123,18 +123,20 @@ export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPerso
             </div>
             <Suspense
               fallback={
-                <div className="h-[180px] flex items-center justify-center text-[10px] text-zinc-500 font-mono">
+                <div className={`${compact ? 'h-[320px]' : 'h-[560px]'} flex items-center justify-center text-[10px] text-zinc-500 font-mono`}>
                   Loading chart…
                 </div>
               }
             >
+            <div className={compact ? 'h-[320px]' : 'h-[560px]'}>
               <LightweightCandles
                 profileId="calm_focus"
                 symbol={slot.symbol}
-                height={compact ? 160 : 200}
+                height={compact ? 320 : 560}
                 timeframe="1h"
                 embedMode
               />
+            </div>
             </Suspense>
           </div>
         ))}
