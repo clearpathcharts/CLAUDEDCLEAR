@@ -6,6 +6,7 @@ interface ChartIndicatorPickerProps {
   activeIndicators: string[];
   onToggle: (abbr: string) => void;
   onClear: () => void;
+  compact?: boolean;
 }
 
 /** Compact indicator toggles for the Charts / Market Terminal tab. */
@@ -13,9 +14,10 @@ export function ChartIndicatorPicker({
   activeIndicators,
   onToggle,
   onClear,
+  compact = false,
 }: ChartIndicatorPickerProps) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md p-4 space-y-3">
+    <div className={`rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md ${compact ? "px-3 py-2 space-y-2" : "p-4 space-y-3"}`}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[#00D9FF]">
           <Sliders size={14} />
@@ -59,9 +61,11 @@ export function ChartIndicatorPicker({
         })}
       </div>
 
-      <p className="text-xs text-zinc-500 font-mono">
-        Computed locally from live candle data — no extra API calls.
-      </p>
+      {compact ? null : (
+        <p className="text-xs text-zinc-500 font-mono">
+          Computed locally from live candle data — no extra API calls.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 /**
- * Guards Market Terminal chart sizing — stacked slots must be full-size,
- * not ~300px / 520px thumbnails.
+ * Guards Market Terminal chart sizing — stacked slots must fill the
+ * remaining window, not sit as 520px thumbnails under a tall header stack.
  *
  * Run: npx tsx scripts/chart-layout.selftest.ts
  */
@@ -53,8 +53,12 @@ assert.equal(
 );
 
 assert.ok(
-  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT >= 860,
-  'desktop candle body must be a full window, not a 520/640 thumbnail',
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT >= 420,
+  'desktop floor stays usable on tiny windows',
+);
+assert.ok(
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT < 700,
+  'desktop floor must not exceed a typical leftover viewport (that was the squeeze)',
 );
 assert.ok(
   MARKET_CHART_HEIGHT >= MARKET_CHART_DESKTOP_BODY_HEIGHT + MARKET_CHART_DESKTOP_CHROME - 16,
@@ -62,13 +66,23 @@ assert.ok(
 );
 assert.equal(
   desktopStackedMarketChartHeight(700),
-  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
-  'short desktops still get the 860px floor (larger than the viewport)',
+  700 - 56,
+  'short desktops fill the remaining window instead of forcing 860px past the fold',
 );
 assert.equal(
   desktopStackedMarketChartHeight(1080),
   1080 - 56,
-  '1080px desktop → full window minus only the top nav',
+  '1080px desktop → window minus default nav reserve',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(1080, 240),
+  1080 - 240,
+  'measured header offset is subtracted so candles fill the leftover hole',
+);
+assert.equal(
+  desktopStackedMarketChartHeight(400),
+  MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT,
+  'tiny windows still hit the 420px floor',
 );
 assert.equal(
   desktopMarketPanelHeight(900),

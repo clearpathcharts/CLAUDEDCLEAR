@@ -31,10 +31,14 @@ export const MARKET_CHART_HEIGHT = 1000;
 export const MARKET_CHART_HEIGHT_LEGACY = 576;
 /** Pulse + search chrome above the candle plot. */
 export const MARKET_CHART_DESKTOP_CHROME = 96;
-/** Desktop candle body — a full window of candles, never a 520px thumbnail. */
-export const MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT = 860;
+/**
+ * Absolute floor for a tiny window. Must stay BELOW a typical leftover
+ * viewport — a 860px floor made the panel taller than the visible hole,
+ * so candles looked like a thumbnail until you scrolled.
+ */
+export const MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT = 420;
 export const MARKET_CHART_DESKTOP_BODY_HEIGHT = MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT;
-export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT - 12;
+export const MARKET_CHART_DESKTOP_CANDLE_HEIGHT = MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT;
 /** LOAD / search row plus compact local-time + pulse bar on a stacked phone panel. */
 export const MARKET_CHART_MOBILE_SLOT_HEADER = 72;
 /** Floor so short phones still get a usable plot, not a thumbnail. */
@@ -58,15 +62,20 @@ export function mobileStackedMarketChartHeight(
   );
 }
 
-/** Desktop Market Terminal: each slot is a full window of candles (or larger). */
+/**
+ * Desktop Market Terminal candle body.
+ * `reservedTop` is pixels already used above the plot (nav + page chrome +
+ * in-panel pulse/search). The plot fills whatever is left in the window.
+ */
 export function desktopStackedMarketChartHeight(
   viewportHeight =
     (typeof window !== "undefined" && window.visualViewport?.height) ||
     (typeof window !== "undefined" ? window.innerHeight : 900),
+  reservedTop = 56,
 ): number {
   const h = Number.isFinite(viewportHeight) && viewportHeight > 0 ? viewportHeight : 900;
-  // Subtract only the persistent top nav; panel chrome sits above this body.
-  return Math.round(Math.max(MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT, h - 56));
+  const reserved = Number.isFinite(reservedTop) && reservedTop > 0 ? reservedTop : 56;
+  return Math.round(Math.max(MARKET_CHART_DESKTOP_MIN_BODY_HEIGHT, h - reserved));
 }
 
 export function desktopMarketPanelHeight(bodyHeight = desktopStackedMarketChartHeight()): number {
