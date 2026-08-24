@@ -3,6 +3,9 @@
  * Run: npx tsx scripts/publication-hub.selftest.ts
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   favoriteFromForm,
   favoriteFromPublication,
@@ -318,5 +321,25 @@ assert.ok(
   catalog.filter((s) => s.kind === 'app').every((s) => !isFetchableKind(s.kind)),
   'dating apps are never RSS-fetched',
 );
+
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const yoursPage = readFileSync(path.join(repoRoot, 'src/components/yours/YoursPage.tsx'), 'utf8');
+assert.ok(!yoursPage.includes('PUBLICATION HUB'), 'Hub 2 must not be a newspaper SECTIONS label');
+assert.ok(yoursPage.includes('hubOpen'), 'Hub 2 is a separate RSS feed-list view');
+assert.ok(yoursPage.includes("ywc === 'hub'"), 'Hub 2 opens from ?tab=Yours&ywc=hub');
+assert.ok(yoursPage.includes('Hub 2 of 2'), 'Hub 2 is labeled as a second hub, not a section');
+
+const personalCharts = readFileSync(
+  path.join(repoRoot, 'src/components/yours/YwcPersonalCharts.tsx'),
+  'utf8',
+);
+assert.ok(personalCharts.includes("compact ? 'h-[320px]' : 'h-[560px]'"));
+assert.ok(personalCharts.includes('height={compact ? 320 : 560}'));
+
+const candles = readFileSync(
+  path.join(repoRoot, 'src/components/charts/LightweightCandles.tsx'),
+  'utf8',
+);
+assert.ok(candles.includes('CHART-BUILD-2026-08-24-FIT'));
 
 console.log('publication-hub.selftest: ok');
