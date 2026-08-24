@@ -123,25 +123,25 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     return () => mq.removeEventListener('change', apply);
   }, []);
 
+  const remeasureDesktopCharts = useCallback(() => {
+    const vh = window.visualViewport?.height || window.innerHeight;
+    const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
+    const reserved = Math.max(56, top + MARKET_CHART_DESKTOP_CHROME);
+    setDesktopChartBodyH(desktopStackedMarketChartHeight(vh, reserved));
+  }, []);
+
   useEffect(() => {
     if (isNarrowViewport) return;
-    const syncHeight = () => {
-      const vh = window.visualViewport?.height || window.innerHeight;
-      const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
-      // Fill the hole from the first chart to the bottom of the window.
-      const reserved = Math.max(56, top + MARKET_CHART_DESKTOP_CHROME);
-      setDesktopChartBodyH(desktopStackedMarketChartHeight(vh, reserved));
-    };
-    syncHeight();
-    const raf = window.requestAnimationFrame(syncHeight);
-    window.addEventListener('resize', syncHeight);
-    window.visualViewport?.addEventListener('resize', syncHeight);
+    remeasureDesktopCharts();
+    const raf = window.requestAnimationFrame(remeasureDesktopCharts);
+    window.addEventListener('resize', remeasureDesktopCharts);
+    window.visualViewport?.addEventListener('resize', remeasureDesktopCharts);
     return () => {
       window.cancelAnimationFrame(raf);
-      window.removeEventListener('resize', syncHeight);
-      window.visualViewport?.removeEventListener('resize', syncHeight);
+      window.removeEventListener('resize', remeasureDesktopCharts);
+      window.visualViewport?.removeEventListener('resize', remeasureDesktopCharts);
     };
-  }, [isNarrowViewport]);
+  }, [isNarrowViewport, remeasureDesktopCharts]);
 
   useEffect(() => {
     if (!isNarrowViewport) return;
@@ -355,11 +355,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
             <details
               className="rounded-xl border border-[#FF1493]/40 bg-black/70"
               onToggle={() => {
-                const vh = window.visualViewport?.height || window.innerHeight;
-                const top = chartStageRef.current?.getBoundingClientRect().top ?? 56;
-                setDesktopChartBodyH(
-                  desktopStackedMarketChartHeight(vh, Math.max(56, top + MARKET_CHART_DESKTOP_CHROME)),
-                );
+                window.requestAnimationFrame(remeasureDesktopCharts);
               }}
             >
               <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
@@ -411,12 +407,22 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 </div>
               </div>
 
-              <ChartIndicatorPicker
-                compact
-                activeIndicators={activeIndicators}
-                onToggle={toggleIndicator}
-                onClear={() => setActiveIndicators([])}
-              />
+              <details
+                className="rounded-xl border border-white/10 bg-black/60"
+                onToggle={() => window.requestAnimationFrame(remeasureDesktopCharts)}
+              >
+                <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#00D9FF]">
+                  Indicators ({activeIndicators.length} on) — tap to open
+                </summary>
+                <div className="px-2 pb-2">
+                  <ChartIndicatorPicker
+                    compact
+                    activeIndicators={activeIndicators}
+                    onToggle={toggleIndicator}
+                    onClear={() => setActiveIndicators([])}
+                  />
+                </div>
+              </details>
 
               <div
                 id="master-chart-stack"
@@ -482,13 +488,9 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   >
                     {slot.symbol ? (
                       <div
-                        className="relative shrink-0"
+                        className="relative flex-1 min-h-0"
                         onPointerDown={() => setActiveSlot(idx)}
-                        style={
-                          isNarrowViewport
-                            ? { minHeight: chartBodyH, height: '100%' }
-                            : { height: chartBodyH, minHeight: chartBodyH, flexShrink: 0 }
-                        }
+                        style={{ minHeight: chartBodyH }}
                       >
                         <LightweightCandles
                           profileId={profile.id}
@@ -505,11 +507,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     ) : (
                       <div
                         className="flex flex-1 min-h-0 flex-col items-center justify-center gap-3 px-6 text-center border-t border-dashed border-white/10 bg-black/40 sm:px-8"
-                        style={
-                          isNarrowViewport
-                            ? { minHeight: chartBodyH, height: '100%' }
-                            : { height: chartBodyH, minHeight: chartBodyH }
-                        }
+                        style={{ minHeight: chartBodyH }}
                       >
                         <span className="text-sm font-mono text-zinc-400 uppercase tracking-wider">
                           Chart slot {idx + 1} — empty

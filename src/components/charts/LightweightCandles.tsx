@@ -34,7 +34,7 @@ import {
 import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-VIEWPORT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-SLOT";
 
 type Candle = {
   time: number;
@@ -990,7 +990,7 @@ export function LightweightCandles({
       {!embedMode && (
         <>
         <div
-          className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/95 px-2 py-1.5"
+          className="flex shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/10 bg-black/95 px-2 py-1"
           aria-label="Chart controls"
         >
           <button
@@ -1022,9 +1022,11 @@ export function LightweightCandles({
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
+        {useDedicatedPatternPanel ? null : (
         <p className="px-2 pb-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">
           Drag the right axis to lift/squish · drag the bottom axis to stretch time · Shift+wheel = price
         </p>
+        )}
         </>
       )}
 
@@ -1138,7 +1140,7 @@ function series_priceScaleMargins(chart: any, hasOscillator: boolean) {
       ...CHART_PRICE_SCALE_GESTURE,
       scaleMargins: hasOscillator
         ? { top: 0.08, bottom: 0.28 }   // leave room for the oscillator sub-pane
-        : { top: 0.08, bottom: 0.08 },  // no oscillator: candles fill the chart
+        : { top: 0.04, bottom: 0.04 },  // no oscillator: candles fill the chart
     });
   } catch (e) {
     console.warn("Could not apply candle price-scale margins:", e);
