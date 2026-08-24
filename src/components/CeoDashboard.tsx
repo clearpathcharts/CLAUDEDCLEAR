@@ -1005,7 +1005,10 @@ export default function CeoDashboard() {
             <p className="mt-2 mb-0">
               Cloud Run disk is temporary. Download disaster backup stores private members, waitlist,
               invites, and Stripe customer emails as a JSON file on your machine. Do this after every
-              member change. No agent is allowed to tell you backups are unnecessary.
+              member change. For a full front + back source archive, run{' '}
+              <span className="font-mono">npm run backup:system</span> from a git checkout (Cloud Run
+              images do not include <span className="font-mono">src/</span>). No agent is allowed to
+              tell you backups are unnecessary.
             </p>
           </div>
 

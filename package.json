@@ -25,6 +25,7 @@
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
+    "backup:system": "tsx scripts/build-system-backup.ts",
     "test:founder-privacy": "tsx scripts/founder-privacy.selftest.ts",
     "test:profile-share": "tsx scripts/profile-share-password.selftest.ts",
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
