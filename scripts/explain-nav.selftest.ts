@@ -8,6 +8,12 @@ import {
   explainContentLibrary,
   getExplainContent,
 } from '../src/components/explain/explainContent.ts';
+import {
+  EXPLAIN_FLOW_SLOT_IDS,
+  explainVideoSrc,
+  hexToRgba,
+  isExplainFlowSlotId,
+} from '../src/components/explain/explainMedia.ts';
 
 const NAV_IDS = [
   'Discovery',
@@ -42,5 +48,12 @@ for (const id of NAV_IDS) {
 assert.equal(getExplainContent('river_genie')?.id, 'indacreator');
 assert.equal(getExplainContent('charts')?.title, 'Charts');
 assert.ok(Object.keys(explainContentLibrary).length >= NAV_IDS.length);
+
+assert.equal(explainVideoSrc('charts'), '/explain-videos/charts.mp4');
+assert.equal(explainVideoSrc('charts', 'https://cdn.example/x.mp4'), 'https://cdn.example/x.mp4');
+assert.equal(EXPLAIN_FLOW_SLOT_IDS.length, 14);
+assert.equal(isExplainFlowSlotId('charts'), true);
+assert.equal(isExplainFlowSlotId('nope'), false);
+assert.match(hexToRgba('#FF7B00', 0.2), /^rgba\(255,123,0,0\.2\)$/);
 
 console.log('explain-nav.selftest: ok');

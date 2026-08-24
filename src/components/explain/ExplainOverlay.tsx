@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getExplainContent } from './explainContent';
+import { hexToRgba } from './explainMedia';
+import { ExplainVideoStage } from './ExplainVideoStage';
 import { QuizCheck } from './QuizCheck';
 
 interface ExplainOverlayProps {
@@ -29,7 +31,11 @@ export function ExplainOverlay({ contentId, onClose }: ExplainOverlayProps) {
   const node = (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[400] flex items-center justify-center p-5 bg-black/75"
+      className="fixed inset-0 z-[400] flex items-center justify-center p-3 sm:p-6"
+      style={{
+        background: 'rgba(0,0,0,0.82)',
+        backdropFilter: 'blur(10px)',
+      }}
       role="presentation"
     >
       <div
@@ -37,43 +43,50 @@ export function ExplainOverlay({ contentId, onClose }: ExplainOverlayProps) {
         aria-modal="true"
         aria-labelledby={`explain-title-${content.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[520px] max-h-[85vh] overflow-y-auto rounded-2xl p-6"
+        className="w-full max-w-[760px] max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-6"
         style={{
-          background: '#0A0A10',
-          border: `1px solid ${content.color}`,
+          background: 'linear-gradient(180deg, #0c0c14 0%, #07070c 100%)',
+          border: `1px solid ${hexToRgba(content.color, 0.55)}`,
+          boxShadow: `0 0 48px ${hexToRgba(content.color, 0.18)}`,
         }}
       >
-        <div className="flex justify-between items-center mb-3.5 gap-3">
-          <h2
-            id={`explain-title-${content.id}`}
-            className="m-0 text-lg font-medium"
-            style={{ color: content.color }}
-          >
-            {content.title}
-          </h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p
+              className="m-0 mb-1 text-[9px] font-black uppercase tracking-[0.22em]"
+              style={{ color: hexToRgba(content.color, 0.9) }}
+            >
+              Need extra understanding
+            </p>
+            <h2
+              id={`explain-title-${content.id}`}
+              className="m-0 text-xl font-medium sm:text-2xl"
+              style={{ color: content.color, fontFamily: "'Cinzel', serif" }}
+            >
+              {content.title}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close explanation"
-            className="bg-transparent border-0 text-zinc-400 text-[22px] leading-none cursor-pointer px-1"
+            className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-lg leading-none text-zinc-400 hover:text-white"
           >
             ×
           </button>
         </div>
 
-        {content.videoUrl ? (
-          <div className="mb-4 rounded-xl overflow-hidden">
-            <video src={content.videoUrl} controls className="w-full block" />
-          </div>
-        ) : (
-          <div className="mb-4 rounded-xl bg-[#111116] px-7 py-7 text-center text-[13px] text-zinc-500">
-            No video for this tab yet. The words below are the extra explanation.
-          </div>
-        )}
+        <ExplainVideoStage
+          id={content.id}
+          title={content.title}
+          color={content.color}
+          videoUrl={content.videoUrl}
+          posterUrl={content.posterUrl}
+        />
 
         <p className="m-0 text-[15px] leading-relaxed text-zinc-200">{content.text}</p>
 
-        <QuizCheck questions={content.quiz} />
+        <QuizCheck questions={content.quiz} accent={content.color} />
       </div>
     </div>
   );

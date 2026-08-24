@@ -17,6 +17,7 @@ export interface ExplainContent {
   color: string;
   text: string;
   videoUrl?: string;
+  posterUrl?: string;
   quiz: QuizQuestion[];
 }
 
@@ -27,6 +28,9 @@ export interface ExplainContent {
  *
  * Colors match the nav-tab video-badge mock (Home purple, Y.W.C. pink,
  * Charts orange, Memberships gold, learn desks cyan).
+ *
+ * Google Flow: drop 16:9 MP4s at public/explain-videos/{id}.mp4
+ * (see explainMedia.ts). Leave videoUrl empty unless the clip lives elsewhere.
  */
 export const explainContentLibrary: Record<string, ExplainContent> = {
   home: {
