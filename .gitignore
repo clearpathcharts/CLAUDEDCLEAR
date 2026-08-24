@@ -23,6 +23,7 @@ secrets/
 /data/daily-ops/
 /data/chart-pulse/
 /data/*.log
+/data/*.result.json
 
 # Google Flow explain clips — keep manifest, skip large binaries
 public/explain-videos/*.mp4
