@@ -11,6 +11,7 @@ import { surpriseVsConsensus, yoyGrowth, cagr, formatCompactUsd } from '../src/f
 import { parseDeskPath, symbolFromDeskPath } from '../src/lib/traderDesks.ts';
 import { FMP_ALLOWED_ENDPOINTS, FMP_LOOKUP_KINDS } from '../src/server/secrets.ts';
 import { searchIdentityCatalog } from '../src/fundamental/searchCatalog.ts';
+import { coverageExposure, concentrationBand, asPercent } from '../src/fundamental/viz.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -24,7 +25,8 @@ const files = [
   'src/components/fundamental/FundamentalContext.tsx',
   'src/fundamental/service.ts',
   'src/fundamental/format.ts',
-  'src/components/desks/FundamentalTraderDesk.tsx',
+  'src/components/fundamental/BentoWorkspace.tsx',
+  'src/components/fundamental/BentoPrimitives.tsx',
 ];
 const joined = files.map((rel) => fs.readFileSync(path.join(root, rel), 'utf8')).join('\n');
 
@@ -43,9 +45,19 @@ assert.ok(FMP_ALLOWED_ENDPOINTS.has('income-statement'));
 assert.ok(FMP_LOOKUP_KINDS.has('search'));
 
 const dash = fs.readFileSync(path.join(root, 'src/components/fundamental/FundamentalDashboard.tsx'), 'utf8');
-assert.match(dash, /Fundamental Market Intelligence/);
+assert.match(dash, /ClearPath Fundamental|Equity research workstation/);
 assert.match(dash, /AssetSearchBox/);
-assert.match(dash, /ResearchNav/);
+assert.match(dash, /ResearchRail/);
+assert.match(dash, /BentoWorkspace/);
+
+const bento = fs.readFileSync(path.join(root, 'src/components/fundamental/BentoWorkspace.tsx'), 'utf8');
+assert.match(bento, /Business model/);
+assert.match(bento, /Revenue engine/);
+assert.match(bento, /Capital allocation/);
+assert.match(bento, /Geographic exposure/);
+assert.match(bento, /Macro exposure/);
+assert.doesNotMatch(bento, /Company Health/);
+assert.doesNotMatch(bento, /UNDERVALUED|OVERVALUED/);
 
 const svc = fs.readFileSync(path.join(root, 'src/fundamental/service.ts'), 'utf8');
 assert.match(svc, /\/api\/fmp\//);
@@ -73,6 +85,11 @@ assert.equal(yoyGrowth(120, 100), 20);
 assert.ok(Math.abs((cagr(100, 121, 2) ?? 0) - 10) < 0.01);
 assert.equal(formatCompactUsd(null), 'DATA UNAVAILABLE');
 assert.match(formatCompactUsd(2.5e12), /T/);
+
+assert.ok(Math.abs((asPercent(0.55) ?? 0) - 55) < 1e-9);
+assert.equal(coverageExposure(2)?.band, 'HIGH');
+assert.equal(coverageExposure(10)?.band, 'LOW');
+assert.equal(concentrationBand(80)?.band, 'HIGH');
 
 const nvda = searchIdentityCatalog('NVDA', 8);
 assert.ok(nvda.some((h) => h.ticker === 'NVDA'));

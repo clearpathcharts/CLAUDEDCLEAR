@@ -30,45 +30,14 @@ import {
 import { ASSISTANT_REFUSAL, definitionFor } from '../../fundamental/metricDefinitions';
 import { runScenario, SCENARIO_DISCLAIMER } from '../../fundamental/scenario';
 import { CHART_LAYOUTS } from '../../fundamental/localStore';
-import type { PeerRow, SegmentRow } from '../../fundamental/types';
+import { parseSegments, seriesFrom } from '../../fundamental/viz';
+import { usePeerRows } from '../../fundamental/usePeerRows';
+import type { PeerRow } from '../../fundamental/types';
 
 const chartTip = {
   contentStyle: { background: '#05070a', border: '1px solid #1f2937', fontSize: 11 },
 };
 
-function seriesFrom(
-  rows: Record<string, unknown>[] | null | undefined,
-  key: string,
-  period: 'annual' | 'quarter',
-) {
-  if (!rows?.length) return [];
-  return [...rows].reverse().map((row) => ({
-    label: statementLabel(row, period),
-    value: num(row, key),
-  }));
-}
-
-function parseSegments(raw: unknown): SegmentRow[] {
-  if (!raw) return [];
-  const rows = Array.isArray(raw) ? raw : [raw];
-  const latest = rows[0];
-  if (!latest || typeof latest !== 'object') return [];
-  const obj = latest as Record<string, unknown>;
-  const nested = obj.data && typeof obj.data === 'object' ? (obj.data as Record<string, unknown>) : obj;
-  const skip = new Set(['date', 'symbol', 'calendarYear', 'period', 'reportedCurrency', 'cik', 'fillingDate', 'acceptedDate', 'link', 'finalLink']);
-  const entries = Object.entries(nested).filter(([k, v]) => !skip.has(k) && typeof v !== 'object');
-  const total = entries.reduce((s, [, v]) => s + (typeof v === 'number' ? v : 0), 0);
-  return entries.map(([segment, v]) => {
-    const revenue = typeof v === 'number' ? v : Number(v);
-    return {
-      segment,
-      revenue: Number.isFinite(revenue) ? revenue : null,
-      growth: null,
-      operatingMargin: null,
-      contribution: Number.isFinite(revenue) && total ? (revenue / total) * 100 : null,
-    };
-  });
-}
 
 function Spark({ data, color = '#22d3ee' }: { data: { label: string; value: number | null }[]; color?: string }) {
   const clean = data.filter((d) => d.value != null);
@@ -578,47 +547,8 @@ export function ValuationPanels() {
 
 export function IndustryPanels() {
   const { bundle, selectedPeers, setSelectedPeers, symbol } = useFundamental();
-  const [peerMetrics, setPeerMetrics] = useState<PeerRow[]>([]);
+  const peerMetrics = usePeerRows(symbol, selectedPeers);
   const [extra, setExtra] = useState('');
-
-  React.useEffect(() => {
-    let cancelled = false;
-    const tickers = Array.from(new Set([symbol, ...selectedPeers])).slice(0, 8);
-    void (async () => {
-      const rows: PeerRow[] = [];
-      for (const t of tickers) {
-        try {
-          const [qRes, mRes] = await Promise.all([
-            fetch(`/api/fmp/quote/${encodeURIComponent(t)}`),
-            fetch(`/api/fmp/key-metrics-ttm/${encodeURIComponent(t)}`),
-          ]);
-          if (!qRes.ok) continue;
-          const q = await qRes.json();
-          const m = mRes.ok ? await mRes.json() : [];
-          const quote = Array.isArray(q) ? q[0] : q;
-          const met = Array.isArray(m) ? m[0] : m;
-          if (quote?.error) continue;
-          rows.push({
-            company: String(quote?.name || t),
-            ticker: t,
-            pe: num(quote, 'pe'),
-            evEbitda: num(met, 'enterpriseValueOverEBITDATTM'),
-            revenueGrowth: null,
-            epsGrowth: null,
-            roic: num(met, 'roicTTM') ?? num(met, 'roic'),
-            fcfMargin: num(met, 'freeCashFlowYieldTTM'),
-            debtEbitda: num(met, 'netDebtToEBITDATTM'),
-          });
-        } catch {
-          /* skip */
-        }
-      }
-      if (!cancelled) setPeerMetrics(rows);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedPeers, symbol]);
 
   const [sortKey, setSortKey] = useState<keyof PeerRow>('ticker');
   const sorted = [...peerMetrics].sort((a, b) => {
