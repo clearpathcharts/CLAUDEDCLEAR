@@ -22,17 +22,17 @@ export const DESK_SEO: Record<
     lead: 'Bento equity-research workstation: company, business model, revenue, profitability, cash flow, balance sheet, capital allocation, valuation, earnings, peers, geography, macro, filings, and news. Research only — no trade execution.',
   },
   retail: {
-    title: 'Retail Trader Desk | ClearPathTrader',
+    title: 'Retail Market Workspace | ClearPathTrader',
     description:
-      'Retail trader UI that keeps the chart large and the language plain. Search a market, pick a timeframe, and open education when you want it.',
-    h1: 'Retail Trader Desk',
-    lead: 'One chart, one search box, plain-language study links. Made to be understandable.',
+      'Retail market workspace: watchlist, chart, price snapshot, market context, news, and education. Analytics and education only — not a brokerage.',
+    h1: 'Retail Market',
+    lead: 'See the market clearly. Chart first; education is a supporting module, not the whole desk.',
   },
   neurodivergent: {
     title: 'Neurodivergent Trader Desk | ClearPathTrader',
     description:
-      'Neurodivergent trader UI with calm, predictable chrome and links into ClearPath accessible UI modes (calm focus, ADHD, autism-predictable, and more).',
+      'Neurodivergent trader desk: pick a sensory profile and keep the trading chart on this desk (calm focus, ADHD, autism-predictable, and more). Information only — no trade execution.',
     h1: 'Neurodivergent Trader Desk',
-    lead: 'Built for different minds. Pick a sensory profile, keep motion low, and open the chart when you are ready.',
+    lead: 'Built for different minds. Pick a sensory profile; the trading chart stays on this desk with that look.',
   },
 };

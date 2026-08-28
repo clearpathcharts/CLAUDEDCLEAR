@@ -78,6 +78,7 @@ const srcFiles = [
   'src/components/desks/institutional/useInstitutionalIntelligence.ts',
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
+  'src/components/desks/WhatAmILookingAt.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
@@ -136,6 +137,36 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
   }
+  if (rel.endsWith('WhatAmILookingAt.tsx')) {
+    assert.match(text, /InstitutionalRegistry/);
+    assert.match(text, /What am I looking at/);
+    assert.match(text, /item\.name/);
+    assert.match(text, /item\.abbr/);
+    assert.match(text, /item\.description/);
+  }
+  if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /NeuroProfilePicker/);
+    assert.match(text, /data-neurodivergent-door/);
+    assert.match(text, /clearpath_current_profile_id/);
+    assert.doesNotMatch(text, /href=\{`\/\?profile=/);
+    assert.match(text, /No order ticket/);
+    assert.doesNotMatch(text, /Place order/i);
+  }
+  if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
+    assert.match(text, /WhatAmILookingAt/);
+    assert.match(text, /My Watchlist/);
+    assert.match(text, /Market Snapshot/);
+    assert.match(text, /Market Context/);
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /Education/);
+    assert.match(text, /Simulation Lab/);
+    assert.match(text, /Focus mode/);
+    assert.match(text, /Blackout/);
+    assert.match(text, /DATA UNAVAILABLE/);
+    assert.doesNotMatch(text, /Place order|order ticket/i);
+    assert.doesNotMatch(text, /\bBUY\b|\bSELL\b/);
+  }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
@@ -159,6 +190,10 @@ for (const rel of srcFiles) {
   }
 }
 
+const uiPages = fs.readFileSync(path.join(root, 'src/server/contentPages.ts'), 'utf8');
+assert.match(uiPages, /\/desk\/neurodivergent\?profile=/);
+assert.doesNotMatch(uiPages, /href="\/\?profile=/);
+
 const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);
 
@@ -169,5 +204,15 @@ const tape = reconstructBarTape([
 ]);
 assert.equal(tape[0].side, 'BUY-SIDE');
 assert.equal(tape[0].reconstructed, true);
+
+const glossary = fs.readFileSync(path.join(root, 'src/core/registry/InstitutionalRegistry.ts'), 'utf8');
+assert.match(glossary, /Break of Structure/);
+assert.match(glossary, /Change of Character/);
+assert.match(glossary, /Fair Value Gap/);
+assert.match(glossary, /Institutional Order Block/);
+assert.match(glossary, /Liquidity Sweep Indicator/);
+assert.match(glossary, /Volume Profile Range/);
+assert.match(glossary, /Cumulative Volume Delta/);
+assert.match(glossary, /Confirms trend continuation when prior swing highs or lows are broken with high volume/);
 
 console.log('trader-desks.selftest: ok');

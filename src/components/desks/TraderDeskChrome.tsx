@@ -50,13 +50,15 @@ export default function TraderDeskChrome({ active }: Props) {
                 ? 'ClearPath Institutional'
                 : active === 'fundamental'
                   ? 'ClearPath Fundamental'
-                  : meta.title}
+                  : active === 'retail'
+                    ? 'Retail Market'
+                    : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
               {active === 'institutional'
-                ? 'Market Intelligence Platform'
+                ? 'See the market system'
                 : active === 'fundamental'
-                  ? 'Equity Research Workstation'
+                  ? 'Understand the business'
                   : meta.tagline}
             </p>
           </div>

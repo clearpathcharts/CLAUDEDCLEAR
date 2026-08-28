@@ -17,7 +17,7 @@ export const PATH_CARDS: PathCard[] = [
   {
     id: 'institutional',
     title: 'Institutional Trader',
-    tagline: 'Give me the information',
+    tagline: 'See the market system',
     cta: 'Enter Institutional UI',
     profileId: 'focus_mode',
     png: '/paths/institutional-trader.png',
@@ -29,7 +29,7 @@ export const PATH_CARDS: PathCard[] = [
   {
     id: 'fundamental',
     title: 'Fundamental Trader',
-    tagline: 'Tell me what the asset is worth',
+    tagline: 'Understand the business',
     cta: 'Enter Fundamental UI',
     profileId: 'calm_focus',
     png: '/paths/fundamental-trader.png',
@@ -41,7 +41,7 @@ export const PATH_CARDS: PathCard[] = [
   {
     id: 'retail',
     title: 'Retail Trader',
-    tagline: 'Make trading understandable',
+    tagline: 'See the market clearly',
     cta: 'Enter Retail UI',
     profileId: 'standard_red_green',
     png: '/paths/retail-trader.png',
