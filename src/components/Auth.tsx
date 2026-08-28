@@ -630,7 +630,7 @@ export default function Auth() {
         fallback={
           <section
             id="public-chart"
-            className="relative w-full min-h-[70vh] px-2 sm:px-4 pb-10 z-20"
+            className="relative w-full min-h-[85vh] px-2 sm:px-4 pb-10 z-20"
             aria-label="Loading live chart"
           />
         }

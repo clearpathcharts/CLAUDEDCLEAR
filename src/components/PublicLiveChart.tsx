@@ -73,8 +73,8 @@ export default function PublicLiveChart() {
         </div>
 
         <div
-          className="relative w-full min-h-[70vh]"
-          style={{ height: `max(70vh, ${bodyHeight}px)` }}
+          className="relative w-full min-h-[85vh]"
+          style={{ height: `max(85vh, ${bodyHeight}px)` }}
         >
           <LightweightCandles
             symbol={symbol}

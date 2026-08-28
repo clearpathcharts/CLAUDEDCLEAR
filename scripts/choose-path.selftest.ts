@@ -55,7 +55,7 @@ const publicChart = fs.readFileSync(path.join(root, 'src/components/PublicLiveCh
 assert.match(publicChart, /id=["']public-chart["']/);
 assert.match(publicChart, /ChartSymbolSearch/);
 assert.match(publicChart, /LightweightCandles/);
-assert.match(publicChart, /min-h-\[70vh\]/);
+assert.match(publicChart, /min-h-\[85vh\]/);
 
 for (const card of PATH_CARDS) {
   await assertNativeImage(card.png, card.width, card.height);
