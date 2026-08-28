@@ -58,5 +58,6 @@ export const NEURODIVERGENT_BANNER = {
   width: 1536,
   height: 1024,
   href: '/ui',
-  alt: 'Built for different minds. Made for real traders. Neurodivergent, focused, empowered. Open accessible UI modes.',
+  profileId: 'autism_predictable' as AdvancedProfileId,
+  alt: 'Built for different minds. Made for real traders. Neurodivergent, focused, empowered.',
 };

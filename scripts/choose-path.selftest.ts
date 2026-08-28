@@ -1,5 +1,6 @@
 /**
- * Login "choose your path" images stay at native pixel size (no upscale).
+ * Login choose-your-path: heading, Enter/Login above each image,
+ * manifesto copy must not remain on the login page.
  *
  * Run: npx tsx scripts/choose-path.selftest.ts
  */
@@ -23,12 +24,20 @@ const auth = fs.readFileSync(path.join(root, 'src/components/Auth.tsx'), 'utf8')
 assert.match(auth, /ChooseYourPath/);
 assert.match(auth, /#choose-path/);
 assert.match(auth, /enterChosenPath/);
+assert.match(auth, /loginChosenPath/);
+assert.doesNotMatch(auth, /Some people see patterns/);
+assert.doesNotMatch(auth, /KNOWLEDGE BEFORE EXECUTION/);
+assert.doesNotMatch(auth, /Charts should adapt to people/);
 
 const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'), 'utf8');
-assert.match(ui, /Welcome to ClearPathTrader\.com/i);
-assert.match(ui, /Please choose your path/i);
+assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
+assert.match(ui, />\s*Enter\s*</);
+assert.match(ui, />\s*Login\s*</);
 assert.doesNotMatch(ui, /hover:scale/);
 assert.match(ui, /maxWidth/);
+
+const about = fs.readFileSync(path.join(root, 'src/components/ExternalAboutPage.tsx'), 'utf8');
+assert.match(about, /ABOUT_MANIFESTO_LEAD/);
 
 for (const card of PATH_CARDS) {
   await assertNativeImage(card.png, card.width, card.height);
