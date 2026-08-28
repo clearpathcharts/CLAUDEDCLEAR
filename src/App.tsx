@@ -20,6 +20,7 @@ const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/Encyclop
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
+const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
 
 function AuthenticatedShell({
   profile,
@@ -99,6 +100,11 @@ function isEducationPath(path: string): boolean {
 function isLiteracyPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return p === '/literacy' || p === '/literacy-os';
+}
+
+function isFundamentalDeskPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
 }
 
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
@@ -302,6 +308,28 @@ export default function App() {
             }}
           />
         </PublicLearnShell>
+      );
+    } else if (isFundamentalDeskPath(currentPath)) {
+      content = (
+        <div className="min-h-screen w-full bg-[#0c0b0a] text-[#f3ece2]">
+          <a href="#learn-main" className="cp-skip-link">Skip to research</a>
+          <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
+            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
+              ← ClearPath Home
+            </a>
+          </header>
+          <main id="learn-main" tabIndex={-1} className="outline-none">
+            <Suspense
+              fallback={
+                <div className="min-h-[50vh] flex items-center justify-center text-[#9a9186] font-mono text-xs uppercase tracking-widest">
+                  Opening research desk...
+                </div>
+              }
+            >
+              <FundamentalResearchDesk />
+            </Suspense>
+          </main>
+        </div>
       );
     } else {
       content = <Auth />;

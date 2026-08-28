@@ -618,6 +618,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
         }
+        if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
+          return 'Fundamentals';
+        }
         if (path === '/literacy' || path === '/literacy-os') {
           return 'LiteracyOS';
         }
@@ -1074,10 +1077,13 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             path.startsWith('/companies') ||
             path.startsWith('/economy');
           window.history.pushState({ tabId: nextTab }, '', keep ? window.location.pathname : '/encyclopedia');
+        } else if (nextTab === 'Fundamentals') {
+          window.history.pushState({ tabId: nextTab }, '', '/desk/fundamental');
         } else {
           const params = new URLSearchParams(window.location.search);
           params.set('tab', nextTab);
-          const newUrl = `${window.location.pathname}?${params.toString()}#${nextTab}`;
+          const path = window.location.pathname.toLowerCase() === '/desk/fundamental' ? '/' : window.location.pathname;
+          const newUrl = `${path}?${params.toString()}#${nextTab}`;
           window.history.pushState({ tabId: nextTab }, '', newUrl);
         }
       } catch (e) {
@@ -1139,6 +1145,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('ClearPathEducation');
           return;
         }
+        if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
+          setActiveTab('Fundamentals');
+          return;
+        }
       }
 
       if (event.state && event.state.tabId) {
@@ -1181,6 +1191,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       path.startsWith('/indicators/')
     ) {
       setActiveTab('EncyclopediaOfIndicators');
+    } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
+      setActiveTab('Fundamentals');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
@@ -1585,7 +1597,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           className={`flex-1 overflow-visible ${
             activeTab === 'Insights' 
               ? 'p-0 pb-32 md:pb-5' 
-              : activeTab === 'StrictlyCharts'
+              : activeTab === 'StrictlyCharts' || activeTab === 'Fundamentals'
                 ? 'p-0 pb-20 md:pb-0'
               : layoutDensity === 'compact'
                 ? 'p-1.5 md:p-2.5 pb-20'
@@ -1601,6 +1613,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           {isFounder() &&
             activeTab !== 'Insights' &&
             activeTab !== 'StrictlyCharts' &&
+            activeTab !== 'Fundamentals' &&
             activeTab !== 'ThemeTerminal' &&
             activeTab !== 'Encyclopedia' &&
             activeTab !== 'EncyclopediaOfIndicators' &&
@@ -1614,16 +1627,16 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   className="flex flex-col flex-1 h-full w-full min-h-[400px]"
                 >
                   <div className={`flex-1 flex flex-col ${
-                    activeTab === 'StrictlyCharts'
+                    activeTab === 'StrictlyCharts' || activeTab === 'Fundamentals'
                       ? 'p-0 min-h-0'
                       : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
                   }`}>
-                    {activeTab !== 'CeoDashboard' && (
+                    {activeTab !== 'CeoDashboard' && activeTab !== 'Fundamentals' && (
                       <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
                         <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
                       </div>
                     )}
-                    {activeTab !== 'StrictlyCharts' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
+                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>
