@@ -28,11 +28,21 @@ assert.match(auth, /loginChosenPath/);
 assert.doesNotMatch(auth, /Some people see patterns/);
 assert.doesNotMatch(auth, /KNOWLEDGE BEFORE EXECUTION/);
 assert.doesNotMatch(auth, /Charts should adapt to people/);
+assert.doesNotMatch(auth, /CONNECTED REALM/);
+assert.doesNotMatch(auth, /THE CLEARPATH GLOBAL NETWORK/);
+assert.doesNotMatch(auth, /SOFT LAUNCH STARTS IN/);
+assert.doesNotMatch(auth, /Your Private Login Desk/);
+assert.doesNotMatch(auth, /id=["']ecosystem["']/);
+assert.doesNotMatch(auth, /id=["']soft-launch["']/);
+assert.doesNotMatch(auth, /The Ecosystem/);
+assert.doesNotMatch(auth, /Soft Launch/);
 
 const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'), 'utf8');
 assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
 assert.match(ui, />\s*Enter\s*</);
 assert.match(ui, />\s*Login\s*</);
+assert.match(ui, /grid-cols-3/);
+assert.match(ui, /justify-center/);
 assert.doesNotMatch(ui, /hover:scale/);
 assert.match(ui, /maxWidth/);
 
