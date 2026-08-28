@@ -64,6 +64,7 @@ const srcFiles = [
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/DeskRoute.tsx',
+  'src/components/desks/TraderDeskChrome.tsx',
   'src/App.tsx',
   'src/components/Auth.tsx',
   'src/components/ChooseYourPath.tsx',
@@ -91,6 +92,9 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.doesNotMatch(text, /2382/);
     assert.doesNotMatch(text, /104\.82/);
+  }
+  if (rel.endsWith('TraderDeskChrome.tsx')) {
+    assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

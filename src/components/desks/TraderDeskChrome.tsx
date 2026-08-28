@@ -74,7 +74,7 @@ export default function TraderDeskChrome({ active }: Props) {
                 background: on ? `${desk.accent}33` : 'transparent',
               }}
             >
-              {desk.title.replace(' Trader', '').replace(' Traders', '')}
+              {desk.title.replace(' Traders', '').replace(' Trader', '')}
             </button>
           );
         })}
