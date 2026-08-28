@@ -334,11 +334,11 @@ export default function InstitutionalTraderDesk() {
                   <button
                     type="button"
                     onClick={() => setUniverse(u.id)}
-                    className="flex w-full items-center justify-between px-1 py-1 text-left text-sm font-extrabold uppercase"
+                    className="flex w-full items-center justify-between gap-3 px-1 py-1 text-left text-sm font-extrabold uppercase"
                     style={{ color: universe === u.id ? '#FF1493' : undefined }}
                   >
                     {u.label}
-                    <span className="font-mono text-sm text-zinc-500">
+                    <span className="font-mono text-sm font-bold text-zinc-500">
                       {ASSET_REGISTRY.filter((a) => a.enabled && a.category === u.id).length}
                     </span>
                   </button>
