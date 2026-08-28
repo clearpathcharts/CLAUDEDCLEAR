@@ -416,8 +416,13 @@ export function LightweightCandles({
 
         const allowedLimit = getCandleLimit(userTier);
 
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           if (!active) return;
+          if (data.length === 0) {
+            setError('CHART DATA UNAVAILABLE');
+            setIsLoading(false);
+            return;
+          }
           displayData = data;
         } else {
           let fetched: Candle[] | null = null;

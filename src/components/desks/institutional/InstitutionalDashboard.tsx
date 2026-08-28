@@ -134,7 +134,7 @@ export default function InstitutionalDashboard() {
   return (
     <div
       data-institutional-door
-      className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-2"
+      className="flex flex-col gap-2 p-2"
     >
       <Bento title="Global Markets" status="environment" className="shrink-0">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
@@ -260,7 +260,7 @@ export default function InstitutionalDashboard() {
                     {s}
                   </p>
                   <LightweightCandles
-                    data={data.length ? data : undefined}
+                    data={data}
                     symbol={s}
                     profileId="focus_mode"
                     timeframe={timeframe}
