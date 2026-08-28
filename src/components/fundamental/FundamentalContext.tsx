@@ -131,7 +131,7 @@ export function FundamentalProvider({
     setLoading(false);
   }, [symbol]);
 
-  const { refresh, lastUpdatedAt } = usePageAutoUpdate(load, { intervalMs: 120_000, immediate: true });
+  const { refresh, lastUpdatedAt } = usePageAutoUpdate(load, { intervalMs: 300_000, immediate: true });
 
   useEffect(() => {
     let cancelled = false;

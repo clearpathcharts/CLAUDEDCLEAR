@@ -61,7 +61,6 @@ const MACRO_SERIES: { id: string; label: string; unit: string; seriesId: string 
   { id: 'pmi', label: 'ISM-equivalent activity (INDPRO)', unit: 'index', seriesId: 'INDPRO' },
   { id: 'confidence', label: 'Consumer sentiment', unit: 'index', seriesId: 'UMCSENT' },
   { id: 'retail', label: 'Retail sales', unit: 'USD mn', seriesId: 'RSAFS' },
-  { id: 'ip', label: 'Industrial production', unit: 'index', seriesId: 'INDPRO' },
 ];
 
 const RATE_SERIES: { id: string; label: string; unit: string; seriesId: string }[] = [
@@ -103,6 +102,32 @@ async function fetchFredPoint(seriesId: string, label: string, unit: string, id:
     source: 'ECONOMIC DATA PROVIDER (FRED)',
     seriesId,
   };
+}
+
+async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))));
+  }
+  return out;
+}
+
+let macroCache: { at: number; macro: MacroPoint[]; rates: MacroPoint[]; commodities: MacroPoint[] } | null = null;
+
+async function loadMacroFamily() {
+  if (macroCache && Date.now() - macroCache.at < 10 * 60 * 1000) {
+    return { macro: macroCache.macro, rates: macroCache.rates, commodities: macroCache.commodities };
+  }
+  const specs = [...MACRO_SERIES, ...RATE_SERIES, ...COMMODITY_SERIES];
+  const points = await pool(specs, 3, (s) => fetchFredPoint(s.seriesId, s.label, s.unit, s.id));
+  const packed = {
+    at: Date.now(),
+    macro: points.slice(0, MACRO_SERIES.length),
+    rates: points.slice(MACRO_SERIES.length, MACRO_SERIES.length + RATE_SERIES.length),
+    commodities: points.slice(MACRO_SERIES.length + RATE_SERIES.length),
+  };
+  macroCache = packed;
+  return packed;
 }
 
 function mapNews(raw: unknown, symbol: string): NewsItem[] {
@@ -181,6 +206,33 @@ export async function searchFundamentalAssets(query: string): Promise<SearchHit[
 
 export async function loadFundamentalBundle(symbol: string): Promise<FundamentalBundle> {
   const ticker = symbol.trim().toUpperCase();
+  const jobs: Array<() => Promise<FetchResult<unknown>>> = [
+    () => fmpSymbol('profile', ticker),
+    () => fmpSymbol('quote', ticker),
+    () => fmpSymbol('income-statement', ticker, 'limit=12&period=annual'),
+    () => fmpSymbol('income-statement', ticker, 'limit=16&period=quarter'),
+    () => fmpSymbol('balance-sheet-statement', ticker, 'limit=12&period=annual'),
+    () => fmpSymbol('balance-sheet-statement', ticker, 'limit=16&period=quarter'),
+    () => fmpSymbol('cash-flow-statement', ticker, 'limit=12&period=annual'),
+    () => fmpSymbol('cash-flow-statement', ticker, 'limit=16&period=quarter'),
+    () => fmpSymbol('key-metrics', ticker, 'limit=12&period=annual'),
+    () => fmpSymbol('key-metrics', ticker, 'limit=16&period=quarter'),
+    () => fmpSymbol('ratios', ticker, 'limit=12&period=annual'),
+    () => fmpSymbol('key-metrics-ttm', ticker),
+    () => fmpSymbol('ratios-ttm', ticker),
+    () => fmpSymbol('enterprise-values', ticker, 'limit=12'),
+    () => fmpSymbol('analyst-estimates', ticker, 'limit=12'),
+    () => fmpSymbol('earnings-surprises', ticker),
+    () => fmpSymbol('financial-growth', ticker, 'limit=12'),
+    () => fmpSymbol('historical-market-capitalization', ticker, 'limit=12'),
+    () => fmpSymbol('sec_filings', ticker, 'limit=20'),
+    () => fmpLookup('news', { symbol: ticker }),
+    () => fmpLookup('insider', { symbol: ticker }),
+    () => fmpLookup('peers', { symbol: ticker }),
+    () => fmpSymbol('revenue-product-segmentation', ticker),
+    () => fmpSymbol('revenue-geographic-segmentation', ticker),
+    () => fmpSymbol('shares_float', ticker),
+  ];
   const [
     profileRes,
     quoteRes,
@@ -207,37 +259,8 @@ export async function loadFundamentalBundle(symbol: string): Promise<Fundamental
     prodSeg,
     geoSeg,
     flt,
-    ...macroAll
-  ] = await Promise.all([
-    fmpSymbol('profile', ticker),
-    fmpSymbol('quote', ticker),
-    fmpSymbol('income-statement', ticker, 'limit=12&period=annual'),
-    fmpSymbol('income-statement', ticker, 'limit=16&period=quarter'),
-    fmpSymbol('balance-sheet-statement', ticker, 'limit=12&period=annual'),
-    fmpSymbol('balance-sheet-statement', ticker, 'limit=16&period=quarter'),
-    fmpSymbol('cash-flow-statement', ticker, 'limit=12&period=annual'),
-    fmpSymbol('cash-flow-statement', ticker, 'limit=16&period=quarter'),
-    fmpSymbol('key-metrics', ticker, 'limit=12&period=annual'),
-    fmpSymbol('key-metrics', ticker, 'limit=16&period=quarter'),
-    fmpSymbol('ratios', ticker, 'limit=12&period=annual'),
-    fmpSymbol('key-metrics-ttm', ticker),
-    fmpSymbol('ratios-ttm', ticker),
-    fmpSymbol('enterprise-values', ticker, 'limit=12'),
-    fmpSymbol('analyst-estimates', ticker, 'limit=12'),
-    fmpSymbol('earnings-surprises', ticker),
-    fmpSymbol('financial-growth', ticker, 'limit=12'),
-    fmpSymbol('historical-market-capitalization', ticker, 'limit=12'),
-    fmpSymbol('sec_filings', ticker, 'limit=20'),
-    fmpLookup('news', { symbol: ticker }),
-    fmpLookup('insider', { symbol: ticker }),
-    fmpLookup('peers', { symbol: ticker }),
-    fmpSymbol('revenue-product-segmentation', ticker),
-    fmpSymbol('revenue-geographic-segmentation', ticker),
-    fmpSymbol('shares_float', ticker),
-    ...[...MACRO_SERIES, ...RATE_SERIES, ...COMMODITY_SERIES].map((s) =>
-      fetchFredPoint(s.seriesId, s.label, s.unit, s.id),
-    ),
-  ]);
+  ] = await pool(jobs, 4, (job) => job());
+  const macroPack = await loadMacroFamily();
 
   let fmpAvail: DataAvailability = 'unavailable';
   if (profileRes.ok || quoteRes.ok || incA.ok || incQ.ok) {
@@ -246,8 +269,9 @@ export async function loadFundamentalBundle(symbol: string): Promise<Fundamental
     fmpAvail = profileRes.availability;
   }
 
-  const macroPoints = macroAll as MacroPoint[];
-  const fredAvail: DataAvailability = macroPoints.some((p) => p.value != null)
+  const fredAvail: DataAvailability = [...macroPack.macro, ...macroPack.rates, ...macroPack.commodities].some(
+    (p) => p.value != null,
+  )
     ? 'live'
     : 'unavailable';
 
@@ -330,9 +354,9 @@ export async function loadFundamentalBundle(symbol: string): Promise<Fundamental
     productSegments: prodSeg.ok ? prodSeg.data : null,
     geoSegments: geoSeg.ok ? geoSeg.data : null,
     sharesFloat: floatRec,
-    macro: macroPoints.slice(0, MACRO_SERIES.length),
-    rates: macroPoints.slice(MACRO_SERIES.length, MACRO_SERIES.length + RATE_SERIES.length),
-    commodities: macroPoints.slice(MACRO_SERIES.length + RATE_SERIES.length),
+    macro: macroPack.macro,
+    rates: macroPack.rates,
+    commodities: macroPack.commodities,
   };
 }
 
