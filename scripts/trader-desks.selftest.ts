@@ -18,6 +18,7 @@ import {
   parseDeskPath,
 } from '../src/lib/traderDesks.ts';
 import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeStructure.ts';
+import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
 
@@ -73,6 +74,8 @@ assert.equal(analyzeInstitutionalStructure(withVol).volumeMode, 'vendor');
 
 const srcFiles = [
   'src/components/desks/InstitutionalTraderDesk.tsx',
+  'src/components/desks/institutional/InstitutionalDashboard.tsx',
+  'src/components/desks/institutional/useInstitutionalIntelligence.ts',
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
@@ -98,13 +101,40 @@ for (const rel of srcFiles) {
     assert.match(text, /onEnter\('neurodivergent'\)/);
   }
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
-    assert.match(text, /Watchlist/);
-    assert.match(text, /Market structure/);
+    assert.match(text, /InstitutionalDashboard/);
+    assert.doesNotMatch(text, /Pattern Scanner/);
+  }
+  if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
+    assert.match(text, /data-institutional-door/);
+    assert.match(text, /Market Universe/);
+    assert.match(text, /Global Markets/);
+    assert.match(text, /Primary Market Workspace/);
+    assert.match(text, /Market Flow/);
+    assert.match(text, /Liquidity/);
+    assert.match(text, /Time & Sales/);
+    assert.match(text, /Market Structure \/ Technical Analytics/);
+    assert.match(text, /Volume Analytics/);
+    assert.match(text, /Volatility/);
+    assert.match(text, /Options Intelligence/);
+    assert.match(text, /Cross-Asset Correlation/);
+    assert.match(text, /Macro Intelligence/);
+    assert.match(text, /News Intelligence/);
+    assert.match(text, /Economic Calendar/);
+    assert.match(text, /Positioning/);
+    assert.match(text, /Risk Environment/);
+    assert.match(text, /Earnings/);
+    assert.match(text, /embedMode/);
     assert.match(text, /analyzeInstitutionalStructure/);
-    assert.match(text, /\/api\/quotes/);
-    assert.match(text, /\/api\/newsdata\/latest/);
+    assert.match(text, /Information & analytics only/);
+    assert.doesNotMatch(text, /Pattern Scanner/);
+    assert.doesNotMatch(text, /order ticket|Place order|broker routing/i);
     assert.doesNotMatch(text, /2382/);
     assert.doesNotMatch(text, /104\.82/);
+  }
+  if (rel === 'src/components/desks/institutional/useInstitutionalIntelligence.ts') {
+    assert.match(text, /\/api\/quotes/);
+    assert.match(text, /\/api\/newsdata\/latest/);
+    assert.match(text, /\/api\/fred\/observations/);
   }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
@@ -129,7 +159,15 @@ for (const rel of srcFiles) {
   }
 }
 
-const inst = fs.readFileSync(path.join(root, 'src/components/desks/InstitutionalTraderDesk.tsx'), 'utf8');
+const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);
+
+const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+assert.ok(r != null && Math.abs(r - 1) < 1e-9);
+const tape = reconstructBarTape([
+  { time: Date.parse('2026-01-01T08:42:01Z') / 1000, open: 10, high: 12, low: 9, close: 11.5, volume: 450 },
+]);
+assert.equal(tape[0].side, 'BUY-SIDE');
+assert.equal(tape[0].reconstructed, true);
 
 console.log('trader-desks.selftest: ok');
