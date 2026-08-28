@@ -19,7 +19,7 @@ import { isEducationFamilyTab } from "../../education/educationDesks";
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
    Drop-in replacement for the mobile view of ClearNav.tsx.
-   Top bar: HOME · CHARTS · Y.W.C. (opens this drawer)
+   Top bar: HOME · NEURODIVERGENT UI · Y.W.C. (opens this drawer)
    Uses the exact same nav ids as ClearNav so onNavigate()
    keeps working with zero changes to your routing.
    ============================================================ */
@@ -32,7 +32,7 @@ interface MobileCommandCenterProps {
   /** Founder-only: CEO Dashboard */
   isFounder?: boolean;
   onLogout?: () => void;
-  /** Lean APK / installed PWA — CHARTS | INDACREATOR | MENU */
+  /** Lean APK / installed PWA — NEURODIVERGENT UI | INDACREATOR | MENU */
   lean?: boolean;
 }
 
@@ -195,7 +195,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           style={{ fontFamily: "'Cinzel', serif" }}
         >
           <BarChart3 className="w-4 h-4" />
-          <span>CHARTS</span>
+          <span>NEURODIVERGENT UI</span>
         </button>
         <ExplainTrigger contentId="StrictlyCharts" color={explainColorForNavTab("StrictlyCharts")} />
         </div>

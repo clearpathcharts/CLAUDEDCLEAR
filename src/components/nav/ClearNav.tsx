@@ -62,7 +62,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     {
       id: "StrictlyCharts",
       icon: BarChart3,
-      label: "CHARTS",
+      label: "NEURODIVERGENT UI",
     },
     {
       id: "News",

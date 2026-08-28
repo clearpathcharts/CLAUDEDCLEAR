@@ -18,7 +18,7 @@ Main bar items (left to right style):
 1. HOME — Discovery feed / terminal desktop. Hub tiles for Board, encyclopedias, education, and opening C.P.T.
 2. Y.W.C. — "Yours / World / Community" hub (community and yours content).
 3. INDACREATOR — Pine Script workstation: upload or paste indicator code, compile it, apply it to charts. (Formerly called The River; if someone says "The River," guide them to INDACREATOR.)
-4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
+4. NEURODIVERGENT UI — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
 4b. TRADER DESKS — Four distinct UIs at /desk. Choose Your Path on the public home enters them:
    - Institutional (/desk/institutional): bento market command center — global ribbon, market universe, multi-chart workspace, flow, liquidity, time & sales, volatility, options, correlation, macro, calendar, news, positioning, earnings, risk. Market structure (BOS/CHoCH/FVG) lives in a collapsible technical module. Information-first; no order tickets.
    - Fundamental (/desk/fundamental or /fundamental): research workstation — company search, financial statements, earnings, valuation, peers, industry, FRED macro, filings, notes. Information only; no buy/sell or order tickets.
@@ -39,7 +39,7 @@ Also available (more / secondary / mobile command center):
 
 Direct URLs the user can open:
 - Home / terminal: /
-- Charts: open CHARTS from the nav (Strictly Charts tab)
+- Charts: open NEURODIVERGENT UI from the nav (Strictly Charts tab)
 - INDACREATOR: open INDACREATOR from the nav
 - Encyclopedia of Finance: /encyclopedia
 - Encyclopedia of Indicators: /indicators
@@ -53,7 +53,7 @@ C.P.T. Buddy: floating personal buddy icon (or "Ask C.P.T." tile on Home). Opens
 Section guide videos: on most main tabs a small offer asks "Would you like to watch a video?" — optional walkthroughs of seven short clips (~10 seconds each, about 70 seconds total) for that part of the site. Members can dismiss or snooze. If a beat is not uploaded yet, the player says that clip is coming soon.
 
 --- CHARTS + NEURODIVERGENT CHART UI ---
-Charts are under CHARTS in the top nav. ClearPath charts support Neuro-Adaptive Chart Profiles — visual themes that change colors, glow, spacing, density, and motion so different brains can read the same market data more comfortably.
+Charts are under NEURODIVERGENT UI in the top nav. ClearPath charts support Neuro-Adaptive Chart Profiles — visual themes that change colors, glow, spacing, density, and motion so different brains can read the same market data more comfortably.
 
 Where to switch profiles:
 - On the Charts page, look for the panel labeled "Neuro-Adaptive Chart Profiles."
@@ -101,7 +101,7 @@ Typical steps to teach:
 3. Wait for compile. If it fails, read the error line — fix the script and try again.
 4. When compiled successfully, review / adjust inputs if shown.
 5. Apply / activate the indicator so it becomes the active INDACREATOR indicator for charts.
-6. Go to CHARTS to see it in the chart workspace.
+6. Go to NEURODIVERGENT UI to see it in the chart workspace.
 7. To remove it, use the clear / remove active indicator control in INDACREATOR.
 
 If compile fails: stay calm, show the error message idea, suggest checking //@version=5, indicator() vs strategy() expectations, and syntax. Do not invent fake Pine APIs. If unsure whether a Pine feature is supported yet, say INDACREATOR's compiler is growing and some advanced Pine features may not compile yet.
@@ -163,7 +163,7 @@ export function offlineSiteGuideAnswer(question: string): string | null {
       "2. Upload a Pine Script file, or paste your //@version=5 indicator code.",
       "3. Wait for it to compile. If there's an error, fix that line and try again.",
       "4. Adjust inputs if shown, then apply/activate the indicator.",
-      "5. Open CHARTS to see it on your chart workspace.",
+      "5. Open NEURODIVERGENT UI to see it on your chart workspace.",
       "",
       "You can also try the built-in Gold Bar example first. Want steps for Charts or neuro chart profiles next?",
     ].join("\n");
@@ -172,7 +172,7 @@ export function offlineSiteGuideAnswer(question: string): string | null {
   if (/neuro|adhd|dyslexia|autism|tourette|stim|profile|chart ui|chart theme/.test(q)) {
     return [
       "Neuro-Adaptive Chart Profiles change how charts look so they're easier to read — they don't change the market data.",
-      "1. Open CHARTS in the top nav.",
+      "1. Open NEURODIVERGENT UI in the top nav.",
       "2. Find the panel titled Neuro-Adaptive Chart Profiles.",
       "3. Tap a profile. It updates the charts live.",
       "",
@@ -230,7 +230,7 @@ export function offlineSiteGuideAnswer(question: string): string | null {
     "Here's how to get around ClearPath:",
     "• HOME — main hub / discovery",
     "• INDACREATOR — upload or paste Pine Script indicators",
-    "• CHARTS — live charts + Neuro-Adaptive Chart Profiles",
+    "• NEURODIVERGENT UI — live charts + Neuro-Adaptive Chart Profiles",
     "• NEWS — updates feed",
     "• MEMBERSHIPS — plans",
     "• CLEARPATH EDUCATION — lessons & quizzes (/education)",

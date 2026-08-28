@@ -488,7 +488,7 @@ const TabContent = ({
               Clear Path Trader: Training Board
             </h1>
             <p className="text-center text-white/40 text-sm font-mono">
-              Open <strong className="text-[#00D9FF]">MARKETS</strong> or <strong className="text-[#00D9FF]">CHARTS</strong> from the nav bar — the Pattern Scanner panel appears on live charts.
+              Open <strong className="text-[#00D9FF]">MARKETS</strong> or <strong className="text-[#00D9FF]">NEURODIVERGENT UI</strong> from the nav bar — the Pattern Scanner panel appears on live charts.
             </p>
           </div>
         </div>

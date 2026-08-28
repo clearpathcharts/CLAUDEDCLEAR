@@ -1085,7 +1085,7 @@ export function PatternLiteracyPanel({ api }: { api: StoreApi }) {
         })}
         {scans.length === 0 && (
           <p className="text-xs text-white/35">
-            No active pattern scans yet. Open CHARTS, let the scanner run, then return here for teaching moments.
+            No active pattern scans yet. Open NEURODIVERGENT UI, let the scanner run, then return here for teaching moments.
           </p>
         )}
       </ul>
