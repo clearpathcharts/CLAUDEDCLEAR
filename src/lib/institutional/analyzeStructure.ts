@@ -124,6 +124,30 @@ export function analyzeInstitutionalStructure(raw: Candle[]): InstitutionalStruc
   };
 }
 
+export function closeLocationFlow(
+  candles: Candle[],
+  lookback = 20,
+): { buyPct: number; sellPct: number; bars: number } | null {
+  const slice = candles.slice(-Math.max(5, lookback));
+  if (slice.length < 5) return null;
+  let buy = 0;
+  let sell = 0;
+  for (const c of slice) {
+    const range = c.high - c.low;
+    if (range <= 0) continue;
+    const buyer = (c.close - c.low) / range;
+    buy += buyer;
+    sell += 1 - buyer;
+  }
+  const tot = buy + sell;
+  if (tot <= 0) return null;
+  return {
+    buyPct: (buy / tot) * 100,
+    sellPct: (sell / tot) * 100,
+    bars: slice.length,
+  };
+}
+
 export function formatStructurePrice(price: number): string {
   if (!Number.isFinite(price)) return '—';
   const abs = Math.abs(price);

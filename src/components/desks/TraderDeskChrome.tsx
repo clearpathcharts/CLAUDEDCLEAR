@@ -46,10 +46,10 @@ export default function TraderDeskChrome({ active }: Props) {
               className="truncate text-base font-black uppercase tracking-widest"
               style={{ color: meta.accent }}
             >
-              {meta.title}
+              {active === 'institutional' ? 'ClearPath Institutional' : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
-              {meta.tagline}
+              {active === 'institutional' ? 'Market Intelligence Platform' : meta.tagline}
             </p>
           </div>
         </div>
@@ -124,6 +124,11 @@ export default function TraderDeskChrome({ active }: Props) {
             </span>
           );
         })}
+        {active === 'institutional' && (
+          <span className="ml-auto font-mono text-sm font-extrabold uppercase tracking-widest text-emerald-300">
+            Global market status · live quotes when the vendor key is set
+          </span>
+        )}
       </div>
       <p className="px-3 pb-2 font-mono text-sm font-bold uppercase tracking-wider text-zinc-600">
         {DESK_DISCLAIMER}
