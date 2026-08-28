@@ -1429,7 +1429,7 @@ async function startServer() {
         return { ...p, limits: jsonSafeLimits(p.limits) };
       }),
       accuracy: FEATURE_ACCURACY,
-      note: 'Historical year claims are vendor-capped at Twelve Data outputsize 5000.',
+      note: 'Feature catalog only — no list prices. Historical year claims are vendor-capped at Twelve Data outputsize 5000.',
     });
   });
 

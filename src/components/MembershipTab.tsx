@@ -14,7 +14,7 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
         <h2 className="text-xl font-black text-white uppercase tracking-widest">Membership sheet</h2>
         <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto">{PAYMENTS_DISABLED_MESSAGE}</p>
         <p className="text-zinc-500 text-xs font-mono">
-          Limits below are the product spec — not a storefront. Preview a tier with{' '}
+          Limits below are the feature spec — no list prices. Preview a tier with{' '}
           {CANONICAL_PLANS.map((id) => (
             <a
               key={id}

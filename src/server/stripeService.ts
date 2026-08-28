@@ -1,11 +1,9 @@
 /**
  * Stripe membership billing — server-side only.
  *
- * Pricing model (founder sheet):
- *   Basic      $0
- *   Silver     $8.99/mo
- *   Gold       $49.99/mo
- *   Platinum   $89.99/mo
+ * Pricing is not part of the feature catalog. Until a new ladder is chosen,
+ * checkout ids alias the existing Stripe amounts (Pro / Pro+ / Premium / Ultimate).
+ * Silver / Gold / Platinum checkout keys map onto that ladder for entitlements.
  *
  * Legacy Stripe ids (pro / proplus / premium / ultimate) remain valid checkout
  * keys and canonicalize onto Silver / Gold / Platinum for entitlements.
@@ -58,25 +56,25 @@ type TierDef = {
 const TIER_DEFS: Record<MembershipTierId, TierDef> = {
   silver: {
     name: 'ClearPath Silver',
-    monthlyCents: 899,
-    yearlyCents: 8990,
-    yearlyPerMonthCents: 749,
+    monthlyCents: 995,
+    yearlyCents: 9540,
+    yearlyPerMonthCents: 795,
     priceEnvMonthly: 'STRIPE_PRICE_SILVER_MONTHLY',
     priceEnvYearly: 'STRIPE_PRICE_SILVER_YEARLY',
   },
   gold: {
     name: 'ClearPath Gold',
-    monthlyCents: 4999,
-    yearlyCents: 49990,
-    yearlyPerMonthCents: 4166,
+    monthlyCents: 3095,
+    yearlyCents: 31140,
+    yearlyPerMonthCents: 2595,
     priceEnvMonthly: 'STRIPE_PRICE_GOLD_MONTHLY',
     priceEnvYearly: 'STRIPE_PRICE_GOLD_YEARLY',
   },
   platinum: {
     name: 'ClearPath Platinum',
-    monthlyCents: 8999,
-    yearlyCents: 89990,
-    yearlyPerMonthCents: 7499,
+    monthlyCents: 6995,
+    yearlyCents: 77940,
+    yearlyPerMonthCents: 6495,
     priceEnvMonthly: 'STRIPE_PRICE_PLATINUM_MONTHLY',
     priceEnvYearly: 'STRIPE_PRICE_PLATINUM_YEARLY',
   },

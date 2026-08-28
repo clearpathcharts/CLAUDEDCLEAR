@@ -2,7 +2,8 @@
  * Membership entitlements — single source of truth for what each plan unlocks.
  * Shared by the server (/api/membership/me) and the client (FeatureGate UI).
  *
- * Canonical plans (founder sheet): Basic (free) → Silver ($8.99) → Gold ($49.99) → Platinum ($89.99).
+ * Canonical plans (founder sheet, features only — no list prices):
+ * Basic → Silver → Gold → Platinum.
  * Legacy Stripe ids (pro / proplus / premium / ultimate) still canonicalize onto this ladder.
  */
 

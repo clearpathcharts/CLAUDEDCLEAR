@@ -10,7 +10,6 @@ import {
 } from '../lib/planCatalog';
 
 const ROWS: { label: string; accuracy: FeatureAccuracy; value: (id: CanonicalPlanId) => string }[] = [
-  { label: 'Price', accuracy: 'enforced', value: (id) => PLAN_CATALOG[id].priceLabel },
   { label: 'Charts per window', accuracy: FEATURE_ACCURACY.chartsPerWindow, value: (id) => formatLimit(PLAN_CATALOG[id].limits.chartsPerWindow) },
   { label: 'Indicators', accuracy: FEATURE_ACCURACY.indicators, value: (id) => formatLimit(PLAN_CATALOG[id].limits.indicators) },
   { label: 'Drawing tools', accuracy: FEATURE_ACCURACY.drawingTools, value: (id) => PLAN_CATALOG[id].limits.drawingTools === 'all' ? 'All' : 'Basic' },
@@ -71,10 +70,6 @@ export function PlanComparisonTable() {
               {CANONICAL_PLANS.map((id) => (
                 <th key={id} className={`p-3 font-black uppercase tracking-widest ${ACCENT[id]}`}>
                   {PLAN_CATALOG[id].label}
-                  <div className="text-[10px] font-mono text-zinc-500 normal-case tracking-normal mt-1">
-                    {PLAN_CATALOG[id].priceLabel}
-                    {id !== 'basic' ? '/mo' : ''}
-                  </div>
                 </th>
               ))}
             </tr>

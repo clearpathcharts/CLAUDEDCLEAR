@@ -1,14 +1,8 @@
 import React from 'react';
 import { Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { TIER_LABEL, type PlanTier } from '../lib/entitlements';
-import { PLAN_CATALOG, readPlanPreview } from '../lib/planCatalog';
+import { readPlanPreview } from '../lib/planCatalog';
 import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
-
-const TIER_PRICE_LABEL: Record<Exclude<PlanTier, 'basic'>, string> = {
-  silver: PLAN_CATALOG.silver.priceLabel + '/mo',
-  gold: PLAN_CATALOG.gold.priceLabel + '/mo',
-  platinum: PLAN_CATALOG.platinum.priceLabel + '/mo',
-};
 
 const TIER_ACCENT: Record<Exclude<PlanTier, 'basic'>, string> = {
   silver: 'text-zinc-200 border-zinc-400/30 bg-zinc-400/10',
@@ -60,8 +54,7 @@ export default function FeatureGate({
           </span>
           <h2 className="text-xl font-black font-mono tracking-tight text-white">{featureTitle}</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            This is included with the <strong className="text-white">{tierName}</strong> plan
-            ({TIER_PRICE_LABEL[requiredTier]}) and above.
+            This is included with the <strong className="text-white">{tierName}</strong> plan and above.
           </p>
         </div>
 

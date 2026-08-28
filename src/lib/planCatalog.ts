@@ -1,9 +1,10 @@
 /**
  * Founder sheet → machine source of truth.
  *
- * The handwritten Basic / Silver / Gold / Platinum matrix is the product.
+ * The handwritten Basic / Silver / Gold / Platinum feature matrix is the product.
  * Every limit and feature flag here is what the app is allowed to claim.
- * `accuracy` says whether we can enforce it today, or only advertise it.
+ * Pricing is intentionally omitted — list prices are not part of this catalog.
+ * `accuracy` says whether we can enforce a feature today, or only advertise it.
  *
  * Twelve Data `time_series` outputsize max is 5000. "7 year" and "unlimited"
  * history are sheet claims — candles are still vendor-capped.
@@ -96,8 +97,6 @@ export type PlanDefinition = {
   id: CanonicalPlanId;
   rank: number;
   label: string;
-  priceMonthlyCents: number;
-  priceLabel: string;
   limits: PlanLimits;
   flags: PlanFlags;
   sheetLines: string[];
@@ -169,8 +168,6 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
     id: 'basic',
     rank: 0,
     label: 'Basic',
-    priceMonthlyCents: 0,
-    priceLabel: 'Free',
     limits: {
       chartsPerWindow: 1,
       indicators: 5,
@@ -202,8 +199,6 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
     id: 'silver',
     rank: 1,
     label: 'Silver',
-    priceMonthlyCents: 899,
-    priceLabel: '$8.99',
     limits: {
       chartsPerWindow: 4,
       indicators: 15,
@@ -241,8 +236,6 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
     id: 'gold',
     rank: 2,
     label: 'Gold',
-    priceMonthlyCents: 4999,
-    priceLabel: '$49.99',
     limits: {
       chartsPerWindow: 10,
       indicators: SUPPORTED_CHART_INDICATORS.length,
@@ -267,8 +260,6 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
     id: 'platinum',
     rank: 3,
     label: 'Platinum',
-    priceMonthlyCents: 8999,
-    priceLabel: '$89.99',
     limits: {
       chartsPerWindow: UNLIMITED,
       indicators: SUPPORTED_CHART_INDICATORS.length,

@@ -3,6 +3,7 @@
  * Run: npx tsx scripts/plan-catalog.selftest.ts
  */
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { SUPPORTED_CHART_INDICATORS } from '../src/config/tradingViewIndicators.ts';
 import {
   BASIC_DRAWING_TOOLS,
@@ -36,10 +37,11 @@ import {
 
 assert.deepEqual([...CANONICAL_PLANS], ['basic', 'silver', 'gold', 'platinum']);
 
-assert.equal(PLAN_CATALOG.basic.priceMonthlyCents, 0);
-assert.equal(PLAN_CATALOG.silver.priceMonthlyCents, 899);
-assert.equal(PLAN_CATALOG.gold.priceMonthlyCents, 4999);
-assert.equal(PLAN_CATALOG.platinum.priceMonthlyCents, 8999);
+for (const id of CANONICAL_PLANS) {
+  const plan = PLAN_CATALOG[id] as Record<string, unknown>;
+  assert.equal('priceMonthlyCents' in plan, false, `${id} must not publish a list price`);
+  assert.equal('priceLabel' in plan, false, `${id} must not publish a price label`);
+}
 
 assert.equal(PLAN_CATALOG.basic.limits.chartsPerWindow, 1);
 assert.equal(PLAN_CATALOG.silver.limits.chartsPerWindow, 4);
@@ -126,5 +128,13 @@ const goldSheet = PLAN_CATALOG.gold.sheetLines.join(' ').toLowerCase();
 assert.match(goldSheet, /pattern overlay/);
 assert.match(goldSheet, /indacreator/);
 assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
+
+{
+  const src = fs.readFileSync(new URL('../src/lib/planCatalog.ts', import.meta.url), 'utf8');
+  const table = fs.readFileSync(new URL('../src/components/PlanComparisonTable.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /8\.99|49\.99|89\.99/);
+  assert.doesNotMatch(table, /8\.99|49\.99|89\.99/);
+  assert.doesNotMatch(table, /label: 'Price'/);
+}
 
 console.log('plan-catalog.selftest: ok');

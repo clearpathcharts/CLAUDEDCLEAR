@@ -295,7 +295,7 @@ export default function App() {
           <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
             <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
             <p className="text-zinc-400 text-sm">
-              Basic / Silver / Gold / Platinum as enforced in the product. Billing is off — this is the spec, not a store.
+              Basic / Silver / Gold / Platinum feature unlocks as enforced in the product. List prices are not published here.
             </p>
             <PlanComparisonTable />
           </div>
