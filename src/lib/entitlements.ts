@@ -2,65 +2,86 @@
  * Membership entitlements — single source of truth for what each plan unlocks.
  * Shared by the server (/api/membership/me) and the client (FeatureGate UI).
  *
- * Plans: Basic (free) → Pro → Pro+ → Premium → Ultimate.
- * Higher plans include everything below them.
+ * Canonical plans (founder sheet): Basic (free) → Silver ($8.99) → Gold ($49.99) → Platinum ($89.99).
+ * Legacy Stripe ids (pro / proplus / premium / ultimate) still canonicalize onto this ladder.
  */
 
-export type PlanTier = 'basic' | 'pro' | 'proplus' | 'premium' | 'ultimate';
+import {
+  canonicalizePlanId,
+  planOf,
+  type CanonicalPlanId,
+  type PlanDefinition,
+  type PlanFlags,
+  type PlanLimits,
+} from './planCatalog';
+
+export type PlanTier = CanonicalPlanId;
 
 export const TIER_RANK: Record<PlanTier, number> = {
   basic: 0,
-  pro: 1,
-  proplus: 2,
-  premium: 3,
-  ultimate: 4,
+  silver: 1,
+  gold: 2,
+  platinum: 3,
 };
 
 export const TIER_LABEL: Record<PlanTier, string> = {
   basic: 'Basic',
-  pro: 'Pro',
-  proplus: 'Pro+',
-  premium: 'Premium',
-  ultimate: 'Ultimate',
+  silver: 'Silver',
+  gold: 'Gold',
+  platinum: 'Platinum',
 };
 
 export type FeatureKey =
-  // Pro
   | 'advancedWatchlists'
   | 'aiAnalysis'
   | 'premiumDashboards'
   | 'alerts'
-  // Pro+
   | 'multiChart'
   | 'expandedAi'
   | 'priorityRefresh'
-  // Premium
   | 'institutional'
   | 'advancedIndicators'
   | 'aiScanner'
   | 'premiumResearch'
-  // Ultimate
   | 'tierTwoAi'
-  | 'workspace';
+  | 'workspace'
+  | 'blackoutMode'
+  | 'encyclopedia'
+  | 'education'
+  | 'affiliate'
+  | 'goldBar'
+  | 'indaCreator'
+  | 'patternOverlay'
+  | 'intradayCharts'
+  | 'bots';
 
 export const FEATURE_MIN_TIER: Record<FeatureKey, PlanTier> = {
-  advancedWatchlists: 'pro',
-  aiAnalysis: 'pro',
-  premiumDashboards: 'pro',
-  alerts: 'pro',
-  multiChart: 'proplus',
-  expandedAi: 'proplus',
-  priorityRefresh: 'proplus',
-  institutional: 'premium',
-  advancedIndicators: 'premium',
-  aiScanner: 'premium',
-  premiumResearch: 'premium',
-  tierTwoAi: 'ultimate',
-  workspace: 'ultimate',
+  alerts: 'basic',
+  advancedWatchlists: 'silver',
+  aiAnalysis: 'gold',
+  premiumDashboards: 'silver',
+  multiChart: 'silver',
+  expandedAi: 'gold',
+  priorityRefresh: 'silver',
+  institutional: 'gold',
+  advancedIndicators: 'gold',
+  aiScanner: 'platinum',
+  premiumResearch: 'gold',
+  tierTwoAi: 'platinum',
+  workspace: 'platinum',
+  blackoutMode: 'silver',
+  encyclopedia: 'silver',
+  education: 'silver',
+  affiliate: 'silver',
+  goldBar: 'silver',
+  indaCreator: 'gold',
+  patternOverlay: 'gold',
+  intradayCharts: 'silver',
+  bots: 'platinum',
 };
 
 export function tierRankOf(tier: string | null | undefined): number {
-  return TIER_RANK[(tier || 'basic') as PlanTier] ?? 0;
+  return planOf(tier).rank;
 }
 
 export function hasFeatureForRank(rank: number, feature: FeatureKey): boolean {
@@ -73,3 +94,21 @@ export function unlockedFeatures(tier: string | null | undefined): FeatureKey[] 
     hasFeatureForRank(rank, f)
   );
 }
+
+export function entitlementsFor(tier: string | null | undefined): {
+  plan: PlanDefinition;
+  limits: PlanLimits;
+  flags: PlanFlags;
+  features: FeatureKey[];
+} {
+  const plan = planOf(tier);
+  return {
+    plan,
+    limits: plan.limits,
+    flags: plan.flags,
+    features: unlockedFeatures(plan.id),
+  };
+}
+
+export { canonicalizePlanId, planOf };
+export type { CanonicalPlanId, PlanDefinition, PlanFlags, PlanLimits };

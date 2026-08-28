@@ -2,11 +2,13 @@
  * Stripe membership billing — server-side only.
  *
  * Pricing model (founder sheet):
- *   Basic     $0
- *   Pro       $9.95/mo   or $7.95/mo billed yearly
- *   Pro+      $19.95/mo  or $15.95/mo billed yearly
- *   Premium   $30.95/mo  or $25.95/mo billed yearly
- *   Ultimate  $69.95/mo  or $64.95/mo billed yearly
+ *   Basic      $0
+ *   Silver     $8.99/mo
+ *   Gold       $49.99/mo
+ *   Platinum   $89.99/mo
+ *
+ * Legacy Stripe ids (pro / proplus / premium / ultimate) remain valid checkout
+ * keys and canonicalize onto Silver / Gold / Platinum for entitlements.
  *
  * Free structure:
  *   1. Launch gift — every account gets ULTIMATE features free for its first
@@ -29,7 +31,14 @@ import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
 
-export type MembershipTierId = 'pro' | 'proplus' | 'premium' | 'ultimate';
+export type MembershipTierId =
+  | 'silver'
+  | 'gold'
+  | 'platinum'
+  | 'pro'
+  | 'proplus'
+  | 'premium'
+  | 'ultimate';
 export type BillingInterval = 'month' | 'year';
 
 export const PLAN_TRIAL_DAYS = 15;
@@ -47,8 +56,32 @@ type TierDef = {
 };
 
 const TIER_DEFS: Record<MembershipTierId, TierDef> = {
+  silver: {
+    name: 'ClearPath Silver',
+    monthlyCents: 899,
+    yearlyCents: 8990,
+    yearlyPerMonthCents: 749,
+    priceEnvMonthly: 'STRIPE_PRICE_SILVER_MONTHLY',
+    priceEnvYearly: 'STRIPE_PRICE_SILVER_YEARLY',
+  },
+  gold: {
+    name: 'ClearPath Gold',
+    monthlyCents: 4999,
+    yearlyCents: 49990,
+    yearlyPerMonthCents: 4166,
+    priceEnvMonthly: 'STRIPE_PRICE_GOLD_MONTHLY',
+    priceEnvYearly: 'STRIPE_PRICE_GOLD_YEARLY',
+  },
+  platinum: {
+    name: 'ClearPath Platinum',
+    monthlyCents: 8999,
+    yearlyCents: 89990,
+    yearlyPerMonthCents: 7499,
+    priceEnvMonthly: 'STRIPE_PRICE_PLATINUM_MONTHLY',
+    priceEnvYearly: 'STRIPE_PRICE_PLATINUM_YEARLY',
+  },
   pro: {
-    name: 'ClearPath Pro',
+    name: 'ClearPath Pro (legacy → Silver)',
     monthlyCents: 995,
     yearlyCents: 9540,
     yearlyPerMonthCents: 795,
@@ -56,7 +89,7 @@ const TIER_DEFS: Record<MembershipTierId, TierDef> = {
     priceEnvYearly: 'STRIPE_PRICE_PRO_YEARLY',
   },
   proplus: {
-    name: 'ClearPath Pro+',
+    name: 'ClearPath Pro+ (legacy → Gold)',
     monthlyCents: 1995,
     yearlyCents: 19140,
     yearlyPerMonthCents: 1595,
@@ -64,7 +97,7 @@ const TIER_DEFS: Record<MembershipTierId, TierDef> = {
     priceEnvYearly: 'STRIPE_PRICE_PROPLUS_YEARLY',
   },
   premium: {
-    name: 'ClearPath Premium',
+    name: 'ClearPath Premium (legacy → Gold)',
     monthlyCents: 3095,
     yearlyCents: 31140,
     yearlyPerMonthCents: 2595,
@@ -72,7 +105,7 @@ const TIER_DEFS: Record<MembershipTierId, TierDef> = {
     priceEnvYearly: 'STRIPE_PRICE_PREMIUM_YEARLY',
   },
   ultimate: {
-    name: 'ClearPath Ultimate',
+    name: 'ClearPath Ultimate (legacy → Platinum)',
     monthlyCents: 6995,
     yearlyCents: 77940,
     yearlyPerMonthCents: 6495,
@@ -420,7 +453,7 @@ export function getMembershipStatus(uid: string): MembershipStatusReport {
   if (msLeft > 0) {
     return {
       active: true,
-      tier: 'ultimate',
+      tier: 'platinum',
       status: 'launch_trial',
       launchTrialEndsAt: new Date(endsAt).toISOString(),
       launchTrialDaysLeft: Math.max(1, Math.ceil(msLeft / (24 * 60 * 60 * 1000))),

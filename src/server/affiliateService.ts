@@ -38,6 +38,9 @@ export const AFFILIATE_RESIDUAL_RATE = 0.25;
 
 /** First-month prices in cents (matches MembershipTab marketing tiers). */
 export const TIER_PRICE_CENTS: Record<string, number> = {
+  silver: 899,
+  gold: 4999,
+  platinum: 8999,
   pro: 995,
   proplus: 1995,
   premium: 3095,

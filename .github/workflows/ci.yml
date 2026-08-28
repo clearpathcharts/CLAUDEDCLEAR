@@ -60,6 +60,9 @@ jobs:
       - name: Profile share URL + password reset self-test
         run: npm run test:profile-share
 
+      - name: Founder-sheet plan catalog self-test
+        run: npm run test:plan-catalog
+
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 

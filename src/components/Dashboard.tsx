@@ -160,7 +160,7 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
       const saved = localStorage.getItem('clearpath_user_tier');
       if (saved) return saved;
     } catch (e) {}
-    return "VIP";
+    return "PLATINUM";
   });
 
   const handleSetUserTier = (tier: string) => {
@@ -230,10 +230,10 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
           <div className="absolute inset-0 bg-gradient-to-r from-[#00D9FF]/5 to-[#FF00C8]/5 pointer-events-none opacity-40 blur-lg" />
           
           {[
-            { id: "BRONZE", label: "BRONZE CORE", count: "5,000 Candles", color: "#FFaa00", desc: "Standard Retails Pool" },
-            { id: "SILVER", label: "SILVER EXPANDED", count: "10,000 Candles", color: "#C0C0C0", desc: "Advanced Signal Loop" },
-            { id: "GOLD", label: "GOLD INSTITUTIONAL", count: "20,000 Candles", color: "#FFD700", desc: "Depth Analytical Cluster" },
-            { id: "VIP", label: "VIP COMMANDER (40K)", count: "40,000 Candles", color: "#FF00C8", desc: "Full Sovereign Latency" }
+            { id: "BASIC", label: "BASIC", count: "Vendor max 5,000 candles", color: "#FFaa00", desc: "Sheet: 7 year history" },
+            { id: "SILVER", label: "SILVER", count: "Vendor max 5,000 candles", color: "#C0C0C0", desc: "Sheet: unlimited history" },
+            { id: "GOLD", label: "GOLD", count: "Vendor max 5,000 candles", color: "#FFD700", desc: "Same Twelve Data cap" },
+            { id: "PLATINUM", label: "PLATINUM", count: "Vendor max 5,000 candles", color: "#00D9FF", desc: "Same Twelve Data cap" }
           ].map((item) => {
             const isSelected = userTier === item.id;
             return (
@@ -367,7 +367,7 @@ const TabContent = ({
   const { tierRank, loading: membershipLoading, hasFeature } = useMembership(profile);
   const gate = (
     feature: Parameters<typeof hasFeature>[0],
-    requiredTier: 'pro' | 'proplus' | 'premium' | 'ultimate',
+    requiredTier: 'silver' | 'gold' | 'platinum',
     featureTitle: string,
     perks: string[],
     node: React.ReactNode
@@ -410,35 +410,39 @@ const TabContent = ({
         />
       );
       case 'ThemeTerminal': return gate(
-        'multiChart', 'proplus', 'Multi-Chart Theme Terminal',
-        ['4-chart synced layouts', 'Theme-matched terminals', 'Deeper candle history'],
+        'multiChart', 'silver', 'Multi-Chart Theme Terminal',
+        ['4-chart synced layouts', 'Theme-matched terminals', 'Vendor-capped candle history'],
         <ThemeTerminalTab chartTheme={chartTheme} setChartTheme={setChartTheme} profile={profile} onProfileChange={onProfileChange} />
       );
       case 'Macro': return gate(
-        'premiumDashboards', 'pro', 'Macro Dashboard',
+        'premiumDashboards', 'silver', 'Macro Dashboard',
         ['Global macro indicators', 'Rates, inflation & growth', 'Premium dashboards'],
         <MacroDashboard />
       );
       case 'Fundamentals': return gate(
-        'premiumDashboards', 'pro', 'Fundamentals Panel',
+        'premiumDashboards', 'silver', 'Fundamentals Panel',
         ['Company fundamentals', 'Financial statements', 'Valuation metrics'],
         <FundamentalsPanel />
       );
       case 'News': return <NewsPanel />;
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
-      case 'AffiliateNetwork': return <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />;
+      case 'AffiliateNetwork': return gate(
+        'affiliate', 'silver', 'Affiliate Network',
+        ['Share codes', 'Silver sheet affiliate links', 'Honest residual credits'],
+        <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />
+      );
       case 'Yours': return <YoursPage />;
       case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
       case 'Workspace': return gate(
-        'workspace', 'ultimate', 'Workspace Desk',
-        ['Integrated workspace tools', 'Tier Two ecosystem access', 'Future features first'],
+        'workspace', 'platinum', 'Workspace Desk',
+        ['Bots / automation desk', 'Platinum sheet tools', 'Future features first'],
         <Suspense fallback={<TabLoading />}>
           <GoogleDesk />
         </Suspense>
       );
       case 'TheRiver': return gate(
-        'expandedAi', 'proplus', 'INDACREATOR Studio',
-        ['Build custom indicators', 'AI-assisted scripting', 'Expanded AI tooling'],
+        'indaCreator', 'gold', 'INDACREATOR Studio',
+        ['Build custom indicators', 'Gold-sheet IndaCreator', 'River scripting'],
         <Suspense fallback={<TabLoading />}>
           <RiverWorkstation />
         </Suspense>
@@ -446,44 +450,44 @@ const TabContent = ({
       case 'CpmsApk': return <CpmsApk />;
       // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
 
-      case 'EncyclopediaOfIndicators': return (
+      case 'EncyclopediaOfIndicators': return gate(
+        'encyclopedia', 'silver', 'Encyclopedia of Indicators',
+        ['Indicator reference', 'Silver sheet encyclopedia', 'Study tools, not advice'],
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaOfIndicators />
         </Suspense>
       );
-      case 'Encyclopedia': return (
+      case 'Encyclopedia': return gate(
+        'encyclopedia', 'silver', 'Encyclopedia of Finance',
+        ['Finance encyclopedia', 'Silver sheet research', 'Educational only'],
         <Suspense fallback={<TabLoading />}>
           <EncyclopediaLayout />
         </Suspense>
       );
       case 'Portfolio': return gate(
-        'premiumDashboards', 'pro', 'Portfolio Tracker',
-        ['Track positions & P/L', 'Performance analytics', 'Premium dashboards'],
+        'premiumDashboards', 'silver', 'Portfolio Tracker',
+        ['Track positions & P/L', 'Performance analytics', 'Custom dashboard'],
         <PortfolioTracker />
       );
       case 'Calendar': return <EconomicCalendar />;
       case 'Geomap': return gate(
-        'institutional', 'premium', 'Geographic Intelligence Map',
-        ['Global market heat map', 'Institutional-style views', 'Regional session intel'],
+        'institutional', 'gold', 'Geographic Intelligence Map',
+        ['Global market heat map', 'Gold-sheet views', 'Regional session intel'],
         <GeographicMap />
       );
       case 'StrategyMarket': return gate(
-        'expandedAi', 'proplus', 'Strategy Market',
-        ['Community strategies', 'Expanded AI tooling', 'Advanced setups'],
+        'expandedAi', 'gold', 'Strategy Market',
+        ['Community strategies', 'Gold-sheet tooling', 'Advanced setups'],
         <StrategyMarket />
       );
-      case 'Alerts': return gate(
-        'alerts', 'pro', 'Alerts Center',
-        ['Price & event alerts', 'Faster updates', 'Never miss a move'],
-        <AlertsCenter />
-      );
+      case 'Alerts': return <AlertsCenter />;
       case 'Tasks': return <TodoList profile={profile} />;
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
       case 'CeoDashboard': return isFounder ? <CeoDashboard /> : <YoursPage />;
       case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return gate(
-        'institutional', 'premium', 'Global Trading Sessions',
+        'institutional', 'gold', 'Global Trading Sessions',
         ['Session kill zones', 'Institutional timing windows', 'Liquidity maps'],
         <div className="max-w-4xl mx-auto" id="view_global_trading_sessions">
           <h1 className="text-white text-2xl font-black uppercase tracking-wide mb-6">
@@ -492,7 +496,9 @@ const TabContent = ({
           <KillZones />
         </div>
       );
-      case 'ClearPathEducation': return (
+      case 'ClearPathEducation': return gate(
+        'education', 'silver', 'Education',
+        ['ClearPath education path', 'Silver sheet education', 'Not financial advice'],
         <Suspense fallback={<TabLoading />}>
           <ClearPathEducationPage onNavigate={setActiveTab} />
         </Suspense>

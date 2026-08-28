@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, Plus, Trash2, Zap, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
+import { useMembership } from '../hooks/useMembership';
+import { formatLimit, isUnlimited } from '../lib/planCatalog';
 
 export default function AlertsCenter() {
   const { alerts, addAlert, deleteAlert } = useAuth();
+  const { limits } = useMembership();
   const [showAdd, setShowAdd] = useState(false);
   const [symbol, setSymbol] = useState('');
   const [price, setPrice] = useState('');
@@ -13,6 +16,7 @@ export default function AlertsCenter() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!symbol || !price) return;
+    if (!isUnlimited(limits.alerts) && alerts.length >= limits.alerts) return;
     
     await addAlert({
       symbol: symbol.toUpperCase(),
@@ -34,12 +38,18 @@ export default function AlertsCenter() {
           </div>
           <div>
             <h2 className="text-sm font-black uppercase tracking-widest text-white">Alert Hub</h2>
-            <p className="text-[10px] text-orange-400/60 font-mono uppercase">Alerts v2.0</p>
+            <p className="text-[10px] text-orange-400/60 font-mono uppercase">
+              {alerts.length}/{formatLimit(limits.alerts)} on this plan
+            </p>
           </div>
         </div>
         <button 
-          onClick={() => setShowAdd(true)}
-          className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 transition-colors"
+          onClick={() => {
+            if (!isUnlimited(limits.alerts) && alerts.length >= limits.alerts) return;
+            setShowAdd(true);
+          }}
+          disabled={!isUnlimited(limits.alerts) && alerts.length >= limits.alerts}
+          className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10 transition-colors disabled:opacity-30"
         >
           <Plus className="w-5 h-5 text-white" />
         </button>

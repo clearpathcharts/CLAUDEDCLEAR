@@ -52,13 +52,15 @@ interface PatternScannerPanelProps {
   symbol: string;
   timeframe: string;
   compact?: boolean;
+  locked?: boolean;
+  aiMode?: boolean;
 }
 
 /**
  * Dedicated left-column pattern readout for the Charts terminal.
  * Replaces floating HUD overlays on the chart canvas.
  */
-export function PatternScannerPanel({ symbol, timeframe, compact = false }: PatternScannerPanelProps) {
+export function PatternScannerPanel({ symbol, timeframe, compact = false, locked = false, aiMode = false }: PatternScannerPanelProps) {
   const [scan, setScan] = useState<PatternScanResult | null>(() => resolvePanelScan(symbol, timeframe));
   const [forming, setForming] = useState(() => getFormingBrief(symbol, timeframe));
   const hitsRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,23 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
     hitsRef.current?.scrollBy({ top: dir * 120, behavior: "smooth" });
   };
 
+  if (locked) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#FF1493]/20 bg-black/80 p-6 text-center ${
+          compact ? "min-h-[180px]" : "h-[min(40dvh,420px)]"
+        }`}
+        data-testid="pattern-scanner-locked"
+      >
+        <Scan size={18} className="text-zinc-600" />
+        <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Pattern Overlay · Gold</p>
+        <p className="text-[10px] font-mono text-zinc-600 max-w-[16rem]">
+          Chart pattern overlay starts on Gold. AI Pattern Scanner is Platinum.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`flex flex-col rounded-2xl border border-[#FF1493]/30 bg-black/80 backdrop-blur-md font-mono shadow-[0_0_24px_rgba(255,20,147,0.12)] ${
@@ -99,7 +118,9 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false }: Patt
       <div className="shrink-0 p-4 border-b border-[#BF00FF]/25">
         <div className="flex items-center gap-2 mb-2">
           <Scan size={18} className="text-[#FF1493]" />
-          <span className="text-sm font-black uppercase tracking-wider text-white">Pattern Scanner</span>
+          <span className="text-sm font-black uppercase tracking-wider text-white">
+            {aiMode ? 'AI Pattern Scanner' : 'Pattern Overlay'}
+          </span>
         </div>
         <div className="flex items-center justify-between text-xs text-zinc-400 gap-2 flex-wrap">
           <span className="text-[#BF00FF] font-bold">{symbol}</span>

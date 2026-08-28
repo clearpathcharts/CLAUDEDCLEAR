@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Plus, Trash2, TrendingUp, TrendingDown, RefreshCw, Layers, ExternalLink, Shield } from 'lucide-react';
 import { TradingHaltController } from '../../truth/TradingHaltController';
+import { useMembership } from '../../hooks/useMembership';
+import { formatLimit, isUnlimited } from '../../lib/planCatalog';
 
 interface WatchlistItem {
   symbol: string;
@@ -15,6 +17,7 @@ interface WatchlistItem {
 }
 
 export default function WatchlistView({ selectFileNode }: { selectFileNode: (f: string) => void }) {
+  const { limits } = useMembership();
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
 
@@ -86,6 +89,7 @@ export default function WatchlistView({ selectFileNode }: { selectFileNode: (f: 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSymbol) return;
+    if (!isUnlimited(limits.watchlists) && watchlist.length >= limits.watchlists) return;
 
     const priceNum = parseFloat(newPrice) || 100.00;
     const addedItem: WatchlistItem = {
@@ -174,11 +178,15 @@ export default function WatchlistView({ selectFileNode }: { selectFileNode: (f: 
         </div>
 
         <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="w-full sm:w-auto px-4 py-2 bg-[#00D9FF] hover:bg-cyan-400 text-black font-black text-[10.5px] tracking-wider uppercase rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+          onClick={() => {
+            if (!isUnlimited(limits.watchlists) && watchlist.length >= limits.watchlists) return;
+            setIsAdding(!isAdding);
+          }}
+          disabled={!isUnlimited(limits.watchlists) && watchlist.length >= limits.watchlists}
+          className="w-full sm:w-auto px-4 py-2 bg-[#00D9FF] hover:bg-cyan-400 text-black font-black text-[10.5px] tracking-wider uppercase rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
         >
           <Plus className="w-4 h-4 text-black" />
-          <span>Track New Asset</span>
+          <span>Track New Asset ({watchlist.length}/{formatLimit(limits.watchlists)})</span>
         </button>
       </div>
 

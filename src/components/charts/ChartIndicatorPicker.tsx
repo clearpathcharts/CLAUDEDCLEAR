@@ -7,6 +7,8 @@ interface ChartIndicatorPickerProps {
   onToggle: (abbr: string) => void;
   onClear: () => void;
   compact?: boolean;
+  allowedAbbrs?: readonly string[] | 'all';
+  maxActive?: number;
 }
 
 /** Compact indicator toggles for the Charts / Market Terminal tab. */
@@ -15,6 +17,8 @@ export function ChartIndicatorPicker({
   onToggle,
   onClear,
   compact = false,
+  allowedAbbrs = 'all',
+  maxActive,
 }: ChartIndicatorPickerProps) {
   return (
     <div className={`rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md ${compact ? "px-3 py-2 space-y-2" : "p-4 space-y-3"}`}>
@@ -42,16 +46,26 @@ export function ChartIndicatorPicker({
       <div className="flex flex-wrap gap-2">
         {SUPPORTED_CHART_INDICATORS.map((ind) => {
           const isActive = activeIndicators.includes(ind.abbr);
+          const locked = allowedAbbrs !== 'all' && !allowedAbbrs.includes(ind.abbr);
+          const atCap =
+            !isActive &&
+            typeof maxActive === 'number' &&
+            Number.isFinite(maxActive) &&
+            activeIndicators.length >= maxActive;
           return (
             <button
               key={ind.abbr}
               type="button"
+              disabled={locked || atCap}
               onClick={() => onToggle(ind.abbr)}
               className={`px-3 py-1.5 rounded-lg border text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                isActive
+                locked || atCap
+                  ? 'border-zinc-900 bg-black/20 text-zinc-700 cursor-not-allowed'
+                  : isActive
                   ? "border-[#00D9FF]/50 bg-[#00D9FF]/10 text-[#00D9FF] shadow-[0_0_10px_rgba(0,217,255,0.2)]"
                   : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
               }`}
+              title={locked ? 'Locked on this plan' : atCap ? `Max ${maxActive} indicators on this plan` : ind.name}
               style={isActive ? { borderLeftColor: ind.activeColor, borderLeftWidth: 3 } : undefined}
             >
               {isActive && <Check size={12} className="stroke-[3px]" />}

@@ -8,6 +8,15 @@
 import { useEffect, useState } from 'react';
 import { tierRankOf, hasFeatureForRank, type FeatureKey } from '../lib/entitlements';
 import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
+import {
+  canonicalizePlanId,
+  planOf,
+  practicalChartSlots,
+  readPlanPreview,
+  type CanonicalPlanId,
+  type PlanLimits,
+  type PlanFlags,
+} from '../lib/planCatalog';
 
 export type MembershipInfo = {
   active: boolean;
@@ -28,9 +37,9 @@ const OFFLINE_BASIC: MembershipInfo = {
 
 const PAYMENTS_OFF: MembershipInfo = {
   active: true,
-  tier: 'free',
+  tier: 'platinum',
   status: 'payments_disabled',
-  tierRank: 4,
+  tierRank: 3,
 };
 
 let cache: MembershipInfo | null = null;
@@ -38,6 +47,16 @@ let inflight: Promise<MembershipInfo> | null = null;
 const listeners = new Set<(m: MembershipInfo) => void>();
 
 async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
+  const preview = readPlanPreview();
+  if (preview) {
+    const plan = planOf(preview);
+    return {
+      active: true,
+      tier: plan.id,
+      status: 'plan_preview',
+      tierRank: plan.rank,
+    };
+  }
   if (!PAYMENTS_ENABLED) return PAYMENTS_OFF;
   if (cache && !force) return cache;
   if (inflight && !force) return inflight;
@@ -48,11 +67,12 @@ async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
       const data = await res.json();
       const m = data?.membership;
       if (!m) return OFFLINE_BASIC;
+      const canonical = canonicalizePlanId(m.tier);
       return {
         active: Boolean(m.active),
         tier: m.tier ?? null,
         status: m.status ?? null,
-        tierRank: typeof m.tierRank === 'number' ? m.tierRank : m.active ? tierRankOf(m.tier) : 0,
+        tierRank: typeof m.tierRank === 'number' ? m.tierRank : m.active ? tierRankOf(canonical) : 0,
         currentPeriodEnd: m.currentPeriodEnd,
         launchTrialEndsAt: m.launchTrialEndsAt,
         launchTrialDaysLeft: m.launchTrialDaysLeft,
@@ -69,6 +89,7 @@ async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
 
 /** Call after a checkout redirect to refresh everyone's gates. */
 export function refreshMembership(): Promise<MembershipInfo> {
+  cache = null;
   return fetchMembershipOnce(true);
 }
 
@@ -88,14 +109,23 @@ export function useMembership(_legacyProfile?: { vipStatus?: string; subscriptio
     };
   }, []);
 
-  // Paid rank comes only from /api/membership/me. When billing is off, every
-  // desk feature is open. Client vipStatus must never grant Ultimate.
-  const tierRank = PAYMENTS_ENABLED ? membership?.tierRank ?? 0 : 4;
+  const preview = readPlanPreview();
+  const effectiveTier: CanonicalPlanId = preview
+    ? preview
+    : PAYMENTS_ENABLED
+      ? canonicalizePlanId(membership?.active ? membership.tier : 'basic')
+      : 'platinum';
+  const plan = planOf(effectiveTier);
+  const tierRank = plan.rank;
 
   return {
     membership,
-    loading: membership === null,
+    loading: membership === null && !preview && PAYMENTS_ENABLED,
     tierRank,
+    planId: plan.id,
+    limits: plan.limits as PlanLimits,
+    flags: plan.flags as PlanFlags,
+    chartSlots: practicalChartSlots(plan.id),
     hasFeature: (feature: FeatureKey) => hasFeatureForRank(tierRank, feature),
   };
 }
