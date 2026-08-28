@@ -138,6 +138,8 @@ export const FMP_ALLOWED_ENDPOINTS = new Set([
   'key-metrics',
   'ratios',
   'enterprise-values',
+  'rating',
+  'key-executives',
   'analyst-estimates',
   'earnings-surprises',
   'key-metrics-ttm',

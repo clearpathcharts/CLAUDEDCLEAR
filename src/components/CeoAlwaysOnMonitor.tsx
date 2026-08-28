@@ -76,6 +76,12 @@ export default function CeoAlwaysOnMonitor() {
         <p className="text-[10px] font-mono text-zinc-600 mt-3">
           Cloud Run: {MONTHLY_BUDGET.cloudRun.map((s) => `${s.service}@${s.region}`).join(" · ")}
         </p>
+        <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
+          Snapshot ({MONTHLY_BUDGET.source}). Not a live P&amp;L. Website deploy path:{" "}
+          <span className="font-mono text-zinc-300">clear-path-markets-science / europe-west1</span>
+          . Never Edit &amp; deploy <span className="font-mono">clearpath-voice-os</span> unless you mean Ava.
+          Traffic must stay LATEST.
+        </p>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ export const PANEL_META: Array<{ id: LiteracyPanelId; label: string; blurb: stri
   { id: "pins", label: "Idea Pins", blurb: "Notes that decay until re-verified" },
   { id: "patterns", label: "Pattern Studio", blurb: "Chart structures as lessons" },
   { id: "encyclopedia", label: "Encyclopedia", blurb: "Cinematic conceptual world" },
+  { id: "appealing", label: "Appealing Additions", blurb: "Sandboxes, certificates, self-hosted tools" },
 ];
 
 export function PanelShell({

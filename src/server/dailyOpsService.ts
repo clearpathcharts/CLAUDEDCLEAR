@@ -8,7 +8,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { getGroqApiKey, getSecretPresenceReport } from "./secrets";
+import { getGroqApiKey, getSecretPresenceReport, getStripeSecretKey } from "./secrets";
+import { PAYMENTS_ENABLED } from "../lib/paymentsEnabled";
 import { getLatestSiteDoctorReport, runSiteDoctorSweep } from "./siteDoctor";
 import { SUPPORTED_CHART_INDICATORS } from "../config/tradingViewIndicators";
 import { themeProfiles } from "../lib/theme/profiles";
@@ -66,6 +67,9 @@ export type DailyOpsReport = {
   shipped: typeof SHIPPED_AS_OF_2026_08_18;
   openWork: typeof OPEN_SITE_WORK;
   nextDueHint: string;
+  /** Human-readable site status independent of the personal todo list. */
+  siteStatus: "green" | "yellow" | "red";
+  failingAuto: string[];
 };
 
 const DIR = path.join(process.cwd(), "data", "daily-ops");
@@ -99,8 +103,11 @@ function loadFromDisk(date: string): DailyOpsReport | null {
 }
 
 function withCatalog(report: DailyOpsReport): DailyOpsReport {
+  const auto = report.auto || [];
   return {
     ...report,
+    siteStatus: report.siteStatus || overallOf(auto),
+    failingAuto: report.failingAuto || failingAutoNames(auto),
     investorCatalog: INVESTOR_SEED.map((s) => ({
       id: s.id,
       name: s.name,
@@ -143,29 +150,9 @@ async function timed<T>(fn: () => Promise<T>, ms: number): Promise<T> {
   }
 }
 
-function readSrc(rel: string): string {
-  try {
-    return fs.readFileSync(path.join(process.cwd(), rel), "utf8");
-  } catch {
-    return "";
-  }
-}
-
-function walkSrcFiles(dir: string, acc: string[] = []): string[] {
-  if (!fs.existsSync(dir)) return acc;
-  for (const name of fs.readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name.startsWith(".")) continue;
-    const full = path.join(dir, name);
-    let st: fs.Stats;
-    try {
-      st = fs.statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) walkSrcFiles(full, acc);
-    else if (/\.(ts|tsx|js|jsx)$/.test(name)) acc.push(full);
-  }
-  return acc;
+/** Names of auto checks that failed. Used on the CEO banner so red is never a mystery count. */
+export function failingAutoNames(auto: AutoCheck[]): string[] {
+  return auto.filter((c) => !c.ok).map((c) => `${c.id}${c.severity === "critical" ? " (outage)" : ""}`);
 }
 
 async function checkPublicPages(): Promise<AutoCheck> {
@@ -309,56 +296,81 @@ async function checkGroq(): Promise<AutoCheck> {
   }
 }
 
-async function checkTwilio(): Promise<AutoCheck> {
-  const t0 = Date.now();
-  const sid = (process.env.TWILIO_ACCOUNT_SID || "").trim();
-  const token = (process.env.TWILIO_AUTH_TOKEN || "").trim();
-  // Ava voice receptionist is still open work — do not paint the CEO desk yellow for it.
-  if (!sid || !token) {
+function checkServiceIdentity(): AutoCheck {
+  const service = (process.env.K_SERVICE || "").trim();
+  const revision = (process.env.K_REVISION || "").trim();
+  const region = (process.env.CLOUD_RUN_REGION || process.env.GOOGLE_CLOUD_REGION || "").trim();
+  if (service === "clearpath-voice-os") {
     return {
-      id: "auto_twilio_ava",
-      ok: true,
-      severity: "info",
+      id: "auto_deploy_path",
+      ok: false,
+      severity: "critical",
       detail:
-        "Ava voice receptionist not shipped yet — Twilio optional. Check skipped until Ava lands in-repo.",
-      latencyMs: Date.now() - t0,
+        "This process is clearpath-voice-os (Ava). The public trader is clear-path-markets-science in europe-west1. Do not Edit & deploy voice-os to update the website.",
     };
   }
+  const trader = !service || service === "clear-path-markets-science";
+  return {
+    id: "auto_deploy_path",
+    ok: true,
+    severity: "info",
+    detail: trader
+      ? `Trader service ${service || "local"} · revision ${revision || "n/a"} · europe-west1. Never Edit & deploy clearpath-voice-os unless you mean Ava. Traffic must stay LATEST.`
+      : `Unexpected K_SERVICE=${service} revision=${revision} region=${region}`,
+  };
+}
+
+async function scanLiveJs(needles: string[]): Promise<{ hits: string[]; scanned: number; error?: string }> {
   try {
-    const auth = Buffer.from(`${sid}:${token}`).toString("base64");
-    const res = await timed(
-      () =>
-        fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}.json`, {
-          headers: { Authorization: `Basic ${auth}` },
-        }),
-      7000
-    );
-    return {
-      id: "auto_twilio_ava",
-      ok: res.ok,
-      severity: res.ok ? "info" : "warn",
-      detail: res.ok
-        ? "Twilio account authenticated. Ava voice route still not present in this codebase."
-        : `Twilio HTTP ${res.status}`,
-      latencyMs: Date.now() - t0,
-    };
+    const html = await timed(() => fetch(PUBLIC_ORIGIN, { headers: { "User-Agent": "ClearPathTraderDailyOps/1.0" } }).then((r) => r.text()), 8000);
+    const scripts = [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]);
+    const prefer = scripts.filter((s) => /Membership|useMembership|main-|index-|CeoDashboard|ChangePassword/i.test(s));
+    const list = (prefer.length ? prefer : scripts).slice(0, 6);
+    const hits: string[] = [];
+    for (const src of list) {
+      const js = await timed(
+        () => fetch(`${PUBLIC_ORIGIN}${src}`, { headers: { "User-Agent": "ClearPathTraderDailyOps/1.0" } }).then((r) => r.text()),
+        8000
+      );
+      for (const n of needles) {
+        if (js.includes(n) && !hits.includes(n)) hits.push(n);
+      }
+    }
+    return { hits, scanned: list.length };
   } catch (e: any) {
-    return {
-      id: "auto_twilio_ava",
-      ok: false,
-      severity: "warn",
-      detail: e?.message || String(e),
-      latencyMs: Date.now() - t0,
-    };
+    return { hits: [], scanned: 0, error: e?.message || String(e) };
   }
 }
 
-function checkStripe(): AutoCheck {
+async function checkTwilio(): Promise<AutoCheck> {
+  const t0 = Date.now();
   return {
-    id: "auto_stripe",
+    id: "auto_twilio_ava",
     ok: true,
     severity: "info",
-    detail: "Payments removed — Stripe checkout, webhooks, and cash payouts are disabled",
+    detail:
+      "Ava / voice OS is a separate Cloud Run service (clearpath-voice-os, us-central1). This trader repo does not ping it. Missing Twilio here is not a trader-site outage.",
+    latencyMs: Date.now() - t0,
+  };
+}
+
+function checkStripe(): AutoCheck {
+  if (!PAYMENTS_ENABLED) {
+    return {
+      id: "auto_stripe",
+      ok: true,
+      severity: "info",
+      detail: "Billing is hard-off (PAYMENTS_ENABLED=false). No Stripe checkout. Rank is a launch gift, not a self-upgrade button.",
+    };
+  }
+  const present = Boolean(getStripeSecretKey());
+  return {
+    id: "auto_stripe",
+    ok: present,
+    severity: present ? "info" : "warn",
+    detail: present
+      ? "STRIPE_SECRET_KEY present — checkout can run"
+      : "Billing is on but STRIPE_SECRET_KEY is missing",
   };
 }
 
@@ -369,9 +381,9 @@ function checkIndicatorBank(): AutoCheck {
   return {
     id: "auto_indicator_bank",
     ok,
-    severity: ok ? "info" : "critical",
+    severity: ok ? "info" : "warn",
     detail: ok
-      ? `${n} live-math indicators in tradingViewIndicators.ts`
+      ? `${n} live-math indicators bundled`
       : `Suspicious bank size ${n} (placeholder risk)`,
   };
 }
@@ -383,100 +395,101 @@ function checkA11yProfiles(): AutoCheck {
     id: "auto_a11y_profiles",
     ok,
     severity: ok ? "info" : "warn",
-    detail: ok ? "13 ThemeProfileId values" : `Found ${n} profiles — catalog expects 13`,
+    detail: ok ? "13 ThemeProfileId values bundled" : `Found ${n} profiles — catalog expects 13`,
   };
 }
 
-function checkLegacyVip(): AutoCheck {
-  const membership = readSrc("src/hooks/useMembership.ts");
-  const tab = readSrc("src/components/MembershipTab.tsx");
-  const stillGrants =
-    /legacyPaid\s*=/.test(membership) ||
-    /vipStatus\s*===\s*['"]vip_pro['"]/.test(membership) ||
-    /vipStatus\s*===\s*['"]vip_pro['"]/.test(tab) ||
-    /handleSelfUpgrade/.test(tab);
-  const ok = !stillGrants;
+async function checkLegacyVip(): Promise<AutoCheck> {
+  const t0 = Date.now();
+  const live = await scanLiveJs(["handleSelfUpgrade"]);
+  if (live.error) {
+    return {
+      id: "auto_legacy_vip",
+      ok: false,
+      severity: "warn",
+      detail: `Could not fetch live JS to confirm handleSelfUpgrade is gone: ${live.error}`,
+      latencyMs: Date.now() - t0,
+    };
+  }
+  const ok = !live.hits.includes("handleSelfUpgrade");
   return {
     id: "auto_legacy_vip",
     ok,
     severity: ok ? "info" : "critical",
     detail: ok
-      ? "No client vip_pro / handleSelfUpgrade grant in MembershipTab or useMembership"
-      : "Client still treats vipStatus/subscriptionActive as paid — patch immediately",
+      ? `Live JS (${live.scanned} files) has no handleSelfUpgrade. Client rank is not a self-upgrade hole.`
+      : "Live bundle still contains handleSelfUpgrade — paid rank without Stripe",
+    latencyMs: Date.now() - t0,
   };
 }
 
 function checkLegal(): AutoCheck {
-  // Prefer the bundled constant (works in Cloud Run where /src is not copied).
-  const constantOk =
+  const ok =
     legalNonAdvisoryClausePresent(LEGAL_NON_ADVISORY_CLAUSE) &&
     legalNonAdvisoryClausePresent(LEGAL_POSITIONING_BLURB);
-  const footer = readSrc("src/components/LegalFooter.tsx");
-  const footerOk =
-    !footer ||
-    footer.includes("LEGAL_POSITIONING_BLURB") ||
-    legalNonAdvisoryClausePresent(footer);
-  const ok = constantOk && footerOk;
   return {
     id: "auto_legal",
     ok,
     severity: ok ? "info" : "critical",
     detail: ok
-      ? "LegalFooter educational-only sentence present (bundled constant)"
-      : "LegalFooter missing the non-advisory sentence",
+      ? "Bundled legal copy still has the non-advisory sentence"
+      : "Bundled legal copy missing the non-advisory sentence",
   };
 }
 
 function checkQuiz(): AutoCheck {
   const quizzes = Object.values(QUIZZES);
   const allHavePass = quizzes.length > 0 && quizzes.every((q) => q.passingScore >= 1);
-  // Prove pass logic without reading QuizEngine.tsx from disk (absent in Docker runtime).
   const sample = quizzes[0];
   const logicOk = Boolean(
     sample &&
       isQuizPassed(sample.passingScore, sample) &&
       !isQuizPassed(Math.max(0, sample.passingScore - 1), sample)
   );
-  const engine = readSrc("src/education/QuizEngine.tsx");
-  const engineWired =
-    !engine ||
-    engine.includes("isQuizPassed") ||
-    /score\s*>=\s*quiz\.passingScore/.test(engine);
-  const ok = allHavePass && logicOk && engineWired;
+  const ok = allHavePass && logicOk;
   return {
     id: "auto_quiz",
     ok,
     severity: ok ? "info" : "warn",
     detail: ok
-      ? `QuizEngine uses passingScore · ${quizzes.length} quizzes loaded`
-      : "Quiz pass logic missing or quizzes have passingScore < 1",
+      ? `Quiz pass rule bundled · ${quizzes.length} quizzes`
+      : "Quiz pass logic missing or passingScore < 1",
   };
 }
 
 function checkSecretsScan(): AutoCheck {
-  const root = path.join(process.cwd(), "src");
-  const files = walkSrcFiles(root);
-  const hits: string[] = [];
-  const live = /sk_live_[0-9a-zA-Z]{8,}|rk_live_[0-9a-zA-Z]{8,}|gsk_[0-9a-zA-Z]{8,}|AIza[0-9A-Za-z\-_]{20,}/;
-  for (const file of files) {
-    let text = "";
-    try {
-      text = fs.readFileSync(file, "utf8");
-    } catch {
-      continue;
-    }
-    if (live.test(text)) {
-      hits.push(path.relative(process.cwd(), file).replace(/\\/g, "/"));
-    }
-  }
-  const ok = hits.length === 0;
+  const presence = getSecretPresenceReport();
+  const groq = presence.GROQ_API_KEY;
+  const twelve = presence.TWELVEDATA_API_KEY;
   return {
     id: "auto_secrets_scan",
+    ok: true,
+    severity: "info",
+    detail: `Runtime secrets via env (src/ is not in the Cloud Run image). Groq=${groq ? "yes" : "no"} Twelve Data=${twelve ? "yes" : "no"} Stripe=${presence.STRIPE_SECRET_KEY ? "yes" : "no"}. Literal-key scan is CI-only.`,
+  };
+}
+
+async function checkPasswordBox(): Promise<AutoCheck> {
+  const t0 = Date.now();
+  const live = await scanLiveJs(["change-password", "ChangePassword", "changeOwnPassword"]);
+  if (live.error) {
+    return {
+      id: "auto_password_box",
+      ok: false,
+      severity: "warn",
+      detail: `Could not confirm live password box: ${live.error}`,
+      latencyMs: Date.now() - t0,
+    };
+  }
+  const ok = live.hits.length > 0;
+  return {
+    id: "auto_password_box",
     ok,
-    severity: ok ? "info" : "critical",
+    severity: ok ? "info" : "warn",
     detail: ok
-      ? `Scanned ${files.length} src files — no live Stripe/Groq/Google key literals`
-      : `Possible live key literals in: ${hits.slice(0, 5).join(", ")}`,
+      ? `Live JS exposes in-profile password change (${live.hits.join(", ")})`
+      : "Live JS did not mention change-password — yellow box may be missing on production",
+    latencyMs: Date.now() - t0,
   };
 }
 
@@ -510,14 +523,16 @@ async function runAutoChecks(): Promise<AutoCheck[]> {
     checkGithubActions(),
     checkGroq(),
     checkTwilio(),
+    checkLegacyVip(),
+    checkPasswordBox(),
   ]);
   return [
+    checkServiceIdentity(),
     checkSiteDoctor(),
     ...parallel,
     checkStripe(),
     checkIndicatorBank(),
     checkA11yProfiles(),
-    checkLegacyVip(),
     checkLegal(),
     checkQuiz(),
     checkSecretsScan(),
@@ -575,6 +590,8 @@ export async function runDailyOpsSweep(force = false, investorId?: string): Prom
       shipped: SHIPPED_AS_OF_2026_08_18,
       openWork: OPEN_SITE_WORK,
       nextDueHint: "Automatic sweep once per Pacific day (re-runs after midnight LA, or Run now)",
+      siteStatus: overallOf(auto),
+      failingAuto: failingAutoNames(auto),
     };
     persist(report);
     console.log(`[DailyOps] ${date} ${report.overall.toUpperCase()} auto=${auto.length}`);
@@ -643,7 +660,7 @@ export async function pinInvestorResearch(investorId: string): Promise<DailyOpsR
     date,
     ranAt: new Date().toISOString(),
     timezone: "America/Los_Angeles",
-    overall: report?.overall || overallOf(auto),
+    overall: overallOf(auto),
     auto,
     items: itemsForDay(),
     human: report?.human || {},
@@ -652,6 +669,8 @@ export async function pinInvestorResearch(investorId: string): Promise<DailyOpsR
     shipped: SHIPPED_AS_OF_2026_08_18,
     openWork: OPEN_SITE_WORK,
     nextDueHint: report?.nextDueHint || "Pinned named investor for today — copy the draft, do not auto-mail.",
+    siteStatus: overallOf(auto),
+    failingAuto: failingAutoNames(auto),
   };
   return persist(next);
 }
