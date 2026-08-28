@@ -33,6 +33,9 @@ jobs:
       - name: Firebase mock safety (no black-screen regressions)
         run: npm run test:firebase-mock
 
+      - name: About manifesto copy
+        run: npm run test:about-manifesto
+
       - name: Affiliate rewards self-test
         run: npm run test:affiliate
 

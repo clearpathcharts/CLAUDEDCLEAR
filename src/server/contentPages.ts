@@ -133,6 +133,7 @@ export function markdownToHtml(md: string): string {
 
 const NAV_LINKS = [
   { href: '/', label: 'Terminal' },
+  { href: '/about', label: 'About' },
   { href: '/accessibility', label: 'Accessibility · WCAG' },
   { href: '/ui', label: 'Accessible UI' },
   { href: '/learn', label: 'Learn' },
