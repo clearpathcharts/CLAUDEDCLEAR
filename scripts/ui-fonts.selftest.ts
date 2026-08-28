@@ -61,7 +61,7 @@ assert.doesNotMatch(
 );
 assert.match(
   indexCss,
-  /\.font-mono \{[\s\S]*font-family:\s*var\(--font-mono\)/,
+  /\.font-mono[\s\S]{0,80}font-family:\s*var\(--font-mono\)/,
   'Tailwind font-mono (CHART-BUILD, tickers, timestamps) must resolve to IBM Plex Mono',
 );
 
@@ -86,6 +86,20 @@ assert.match(
   liveChart,
   /fontFamily:\s*'"IBM Plex Mono"/,
   'public LiveChart axis text must use IBM Plex Mono',
+);
+assert.match(
+  fs.readFileSync(path.resolve('src/components/Auth.tsx'), 'utf8'),
+  /font-mono text-zinc-500 text-\[9px\][\s\S]*DXY INDEX/,
+  'public header tickers (DXY / BTC / USDJPY) must use IBM Plex Mono',
+);
+assert.match(
+  candles,
+  /data-chart-build/,
+  'CHART-BUILD stamp must be targetable as a mono data readout',
+);
+assert.match(
+  indexCss,
+  /\[data-chart-build\][\s\S]{0,80}font-family:\s*var\(--font-mono\)/,
 );
 assert.match(
   fs.readFileSync(path.resolve('src/server/semanticDatabase.ts'), 'utf8'),

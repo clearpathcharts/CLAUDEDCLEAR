@@ -1035,6 +1035,7 @@ export function LightweightCandles({
           </button>
           <span
             className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            data-chart-build=""
             title="If you do not see this stamp on live, Cloud Run is still serving an old image"
           >
             {CHART_UI_BUILD_STAMP}
@@ -1084,6 +1085,7 @@ export function LightweightCandles({
         {embedMode || hideChartToolbar ? (
           <span
             className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            data-chart-build=""
             title="If you do not see this stamp on live, Cloud Run is still serving an old image"
           >
             {CHART_UI_BUILD_STAMP}

@@ -20,7 +20,9 @@ code,
 pre,
 kbd,
 samp,
-.font-mono {
+.font-mono,
+.market-ticker,
+[data-chart-build] {
   font-family: var(--font-mono);
 }
 
