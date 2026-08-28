@@ -12,9 +12,9 @@ import PrivateLoginDesk from './PrivateLoginDesk';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
+import type { AdvancedProfileId } from '../lib/advanced/profiles';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
-import type { AdvancedProfileId } from '../lib/advanced/profiles';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
