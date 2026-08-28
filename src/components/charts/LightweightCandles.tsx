@@ -20,6 +20,7 @@ import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
+import { ChartBackgroundToggle } from "./ChartBackgroundToggle";
 import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
 import { Crosshair, Scan, Radio, Focus, Maximize2, Minimize2 } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
@@ -33,9 +34,11 @@ import {
 } from "../../lib/charts/chartInteraction";
 import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
+import { chartBackgroundColors } from "../../lib/charts/chartBackground";
+import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FIT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-BG";
 
 type Candle = {
   time: number;
@@ -273,6 +276,16 @@ export function LightweightCandles({
   // We should prioritize the active profile's specialized styling instead of let a generic saved custom theme override it.
   // When returning to 'calm_focus', we restore the user's custom-selected chart theme safely.
   const activeCustomTheme = (safeProfileId === "calm_focus") ? (customTheme || savedTheme) : null;
+  const [backgroundMode] = useChartBackgroundMode();
+  const paint = useMemo(
+    () =>
+      chartBackgroundColors(backgroundMode, {
+        background: activeCustomTheme?.background || profile.bgBottom,
+        text: activeCustomTheme?.text || profile.text,
+        grid: activeCustomTheme?.grid || profile.grid,
+      }),
+    [backgroundMode, activeCustomTheme, profile],
+  );
 
   // Use custom theme if provided, otherwise fallback to profile-based theme
   const theme = useMemo(() => {
@@ -311,16 +324,16 @@ export function LightweightCandles({
       layout: {
         background: {
           type: ColorType.Solid,
-          color: activeCustomTheme ? activeCustomTheme.background : theme.layout.background.bottomColor,
+          color: paint.background,
         },
-        textColor: activeCustomTheme ? activeCustomTheme.text : theme.layout.textColor,
+        textColor: paint.text,
         fontSize: 13,
         attributionLogo: false,
       },
-      grid: activeCustomTheme ? {
-        vertLines: { color: activeCustomTheme.grid },
-        horzLines: { color: activeCustomTheme.grid },
-      } : theme.grid,
+      grid: {
+        vertLines: { color: paint.grid },
+        horzLines: { color: paint.grid },
+      },
       crosshair: {
         ...defaultTheme.crosshair,
         mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
@@ -982,6 +995,21 @@ export function LightweightCandles({
     const chart = chartRef.current;
     if (!chart) return;
     chart.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: paint.background },
+        textColor: paint.text,
+      },
+      grid: {
+        vertLines: { color: paint.grid },
+        horzLines: { color: paint.grid },
+      },
+    });
+  }, [paint, chartReadyKey]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    chart.applyOptions({
       crosshair: {
         ...defaultTheme.crosshair,
         mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
@@ -1032,6 +1060,7 @@ export function LightweightCandles({
             <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
             <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
+          <ChartBackgroundToggle compact />
           <span
             className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
             title="If you do not see this stamp on live, Cloud Run is still serving an old image"
@@ -1075,9 +1104,7 @@ export function LightweightCandles({
         className="relative min-h-0 w-full flex-1 overflow-hidden"
         style={{
           touchAction: fillParent && !isExpanded ? 'pan-y' : 'none',
-          background: activeCustomTheme
-            ? activeCustomTheme.background
-            : `linear-gradient(180deg, ${profile.bgTop}, ${profile.bgBottom})`,
+          background: paint.background,
         }}
       >
         {embedMode || hideChartToolbar ? (
@@ -1100,17 +1127,28 @@ export function LightweightCandles({
           </button>
         ) : null}
         {isLoading && !error && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
+          <div
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 p-4 text-center font-mono text-xs"
+            style={{ backgroundColor: paint.background, color: paint.text }}
+          >
             <span className="animate-pulse">Loading {sym} chart…</span>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center font-mono text-sm text-red-400">
+          <div
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center font-mono text-sm"
+            style={{ backgroundColor: paint.background, color: paint.text }}
+          >
             <span className="text-xs font-bold uppercase tracking-wider text-red-500">Chart data unavailable</span>
             <span>{error}</span>
             <button
               type="button"
-              className="mt-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
+              className="mt-1 rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-wide hover:opacity-90"
+              style={{
+                borderColor: backgroundMode === "white" ? "#111827" : "rgba(34,211,238,0.4)",
+                backgroundColor: backgroundMode === "white" ? "rgba(17,24,39,0.06)" : "rgba(6,182,212,0.1)",
+                color: backgroundMode === "white" ? "#111827" : "#67e8f9",
+              }}
               onClick={() => {
                 setError(null);
                 setIsLoading(true);
