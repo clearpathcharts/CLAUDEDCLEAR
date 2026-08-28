@@ -11,6 +11,8 @@ import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
+import { EducationDeskBar } from './education/EducationDeskBar';
+import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
@@ -23,6 +25,7 @@ const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/Encyclop
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
+const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
 
 function AuthenticatedShell({
   profile,
@@ -109,7 +112,18 @@ function isPlansPath(path: string): boolean {
   return p === '/plans' || p === '/membership' || p === '/pricing';
 }
 
-function PublicLearnShell({ children }: { children: React.ReactNode }) {
+function isFundamentalDeskPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
+}
+
+function PublicLearnShell({
+  children,
+  deskTab = EDUCATION_TAB_ID,
+}: {
+  children: React.ReactNode;
+  deskTab?: string;
+}) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
       <a href="#learn-main" className="cp-skip-link">
@@ -126,6 +140,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
+            <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
             <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
@@ -135,6 +150,15 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       <main id="learn-main" tabIndex={-1} className="outline-none">
+        <div className="px-4 pt-4 max-w-6xl mx-auto">
+          <EducationDeskBar
+            activeTab={deskTab}
+            onNavigate={(tabId) => {
+              if (tabId === EDUCATION_TAB_ID) window.location.assign('/education');
+              else openEducationDesk(tabId);
+            }}
+          />
+        </div>
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
@@ -325,6 +349,28 @@ export default function App() {
             }}
           />
         </PublicLearnShell>
+      );
+    } else if (isFundamentalDeskPath(currentPath)) {
+      content = (
+        <div className="min-h-screen w-full bg-[#0c0b0a] text-[#f3ece2]">
+          <a href="#learn-main" className="cp-skip-link">Skip to research</a>
+          <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
+            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
+              ← ClearPath Home
+            </a>
+          </header>
+          <main id="learn-main" tabIndex={-1} className="outline-none">
+            <Suspense
+              fallback={
+                <div className="min-h-[50vh] flex items-center justify-center text-[#9a9186] font-mono text-xs uppercase tracking-widest">
+                  Opening research desk...
+                </div>
+              }
+            >
+              <FundamentalResearchDesk />
+            </Suspense>
+          </main>
+        </div>
       );
     } else {
       content = <Auth />;

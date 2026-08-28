@@ -37,7 +37,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import {
   resolveIndexNowKey,
@@ -393,9 +393,9 @@ async function startServer() {
           directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-            fontSrc: ["'self'", 'data:', 'https:', "https://fonts.gstatic.com"],
+            fontSrc: ["'self'", 'data:', 'https:', 'https://fonts.gstatic.com'],
             connectSrc: [
               "'self'",
               'https:',
@@ -4253,6 +4253,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.send(enriched);
+      }
+      if (!wantLiveSpa && pathClean === '/about' && isSearchEngineBot(req.get('user-agent'))) {
+        const enriched = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.send(enriched);

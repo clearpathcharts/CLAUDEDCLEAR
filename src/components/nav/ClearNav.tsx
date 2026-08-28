@@ -4,7 +4,6 @@ import {
   Cpu,
   Crown,
   BookOpen,
-  GraduationCap,
   Home,
   LogOut,
   Network,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { MobileCommandCenter } from "./MobileCommandCenter";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
+import { isEducationFamilyTab } from "../../education/educationDesks";
 
 interface ClearNavProps {
   activeTab: string;
@@ -111,24 +111,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       label: "CLEARPATH EDUCATION",
     },
 
-    {
-      id: "LiteracyOS",
-      icon: BookOpen,
-      label: "LITERACY OS",
-    },
-
-    {
-      id: "Encyclopedia",
-      icon: GraduationCap,
-      label: "ENCYCLOPEDIA OF FINANCE",
-    },
-
-    {
-      id: "EncyclopediaOfIndicators",
-      icon: BarChart3,
-      label: "ENCYCLOPEDIA OF INDICATORS",
-    },
-
   ];
   const renderNavButton = (
     item: NavItem,
@@ -137,7 +119,9 @@ export const ClearNav: React.FC<ClearNavProps> = ({
   ) => {
     const Icon = item.icon;
 
-    const isActive = activeTab === item.id;
+    const isActive =
+      activeTab === item.id ||
+      (item.id === "ClearPathEducation" && isEducationFamilyTab(activeTab));
 
     const isGold = item.id === "Membership";
 

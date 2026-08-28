@@ -10,16 +10,16 @@ export const DESK_SEO: Record<
   institutional: {
     title: 'Institutional Trader Desk | ClearPathTrader',
     description:
-      'Dense institutional trader UI: live chart, watchlist, FX sessions, market structure (BOS, CHoCH, FVG, order blocks, liquidity sweeps), volume profile, and CVD. Analytics only — not a brokerage.',
+      'Institutional market-intelligence terminal: global ribbon, market universe, multi-chart workspace, flow, liquidity, volatility, options, cross-asset correlation, macro, news, positioning, and risk. Analytics only — not a brokerage.',
     h1: 'Institutional Trader Desk',
-    lead: 'Information-first terminal: live candles, session clock, structure readouts, and a compact news wire. Study tools only — not execution or advice.',
+    lead: 'Market command center: global context, flow, liquidity, cross-asset, macro, and news around a multi-chart workspace. Study tools only — not execution or advice.',
   },
   fundamental: {
     title: 'Fundamental Market Intelligence | ClearPathTrader',
     description:
       'Fundamental research workstation: financial statements, earnings, valuation, peers, industry, macro, filings, and risk. Educational analysis only — not a brokerage and not investment advice.',
     h1: 'Fundamental Market Intelligence',
-    lead: 'Investigate the economic, corporate, and financial condition of an asset: business, financials, earnings, cash flow, valuation, peers, industry, macro, and risk. Research only — no trade execution.',
+    lead: 'Bento equity-research workstation: company, business model, revenue, profitability, cash flow, balance sheet, capital allocation, valuation, earnings, peers, geography, macro, filings, and news. Research only — no trade execution.',
   },
   retail: {
     title: 'Retail Trader Desk | ClearPathTrader',

@@ -2,7 +2,6 @@ import React from 'react';
 import {
   BarChart3,
   Shield,
-  GraduationCap,
   Book,
   MessageSquare,
   ArrowRight,
@@ -11,7 +10,6 @@ import {
   Globe2,
   Newspaper,
   Crown,
-  Layers,
   Wallet,
   LineChart,
   PiggyBank,
@@ -132,48 +130,16 @@ const CARDS: HomeCard[] = [
     border: 'border-[#FFD700]',
   },
   {
-    id: 'encyclopedia-finance',
-    title: 'Encyclopedia of Finance',
-    blurb:
-      'Deep finance library — concepts, labs, and structured knowledge when you want the “why,” not just a chart.',
-    tabId: 'Encyclopedia',
-    icon: GraduationCap,
-    accent: '#00E5FF',
-    glow: 'rgba(0,229,255,0.4)',
-    border: 'border-[#00E5FF]',
-  },
-  {
-    id: 'encyclopedia-indicators',
-    title: 'Encyclopedia of Indicators',
-    blurb:
-      'Browse technical and fundamental indicators with plain explanations, then add tools you want on charts.',
-    tabId: 'EncyclopediaOfIndicators',
-    icon: Layers,
-    accent: '#39FF14',
-    glow: 'rgba(57,255,20,0.4)',
-    border: 'border-[#39FF14]',
-  },
-  {
     id: 'education',
     title: 'ClearPath Education',
     blurb:
-      'Lesson schools, unit quizzes, and a paced path through ClearPath methodology — unlock as you pass.',
+      'Schools and quizzes, plus the Encyclopedia of Finance, Encyclopedia of Indicators, and Literacy OS — all in one learning desk.',
     tabId: 'ClearPathEducation',
     icon: Book,
     accent: '#BF00FF',
     glow: 'rgba(191,0,255,0.45)',
     border: 'border-[#BF00FF]',
-  },
-  {
-    id: 'literacy',
-    title: 'Literacy OS',
-    blurb:
-      'Personal literacy workspace — vault, study tools, and sandboxes for budgets and journals you run yourself.',
-    tabId: 'LiteracyOS',
-    icon: Book,
-    accent: '#FFD700',
-    glow: 'rgba(255,215,0,0.4)',
-    border: 'border-[#FFD700]',
+    wide: true,
   },
   {
     id: 'memberships',

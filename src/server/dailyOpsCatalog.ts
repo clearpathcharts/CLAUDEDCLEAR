@@ -133,8 +133,8 @@ export const OPEN_SITE_WORK: Array<{ id: string; title: string; why: string }> =
   },
   {
     id: "ava_voice",
-    title: "Ava voice receptionist — not built yet",
-    why: "Intentionally open product work. Daily Ops no longer paints WARN for missing Twilio; build Ava or drop the claim from marketing copy.",
+    title: "Ava lives on clearpath-voice-os (us-central1) — not this repo",
+    why: "Trader site is clear-path-markets-science in europe-west1. Never Edit & deploy voice-os to ship trader changes.",
   },
   {
     id: "google_flow_section_guides",
@@ -143,13 +143,22 @@ export const OPEN_SITE_WORK: Array<{ id: string; title: string; why: string }> =
   },
   {
     id: "cloud_run_after_merge",
-    title: "Redeploy Cloud Run after merging main",
-    why: "GitHub merge ≠ live site. This host has no auto-deploy-on-merge. Build/push the new image and update the Cloud Run service, then tap Run today’s sweep.",
+    title: "After main lands, confirm traffic is LATEST (then Run today’s sweep)",
+    why: "Cloud Build can mint a new revision while the public site stays pinned to an old named revision. Website service is clear-path-markets-science in europe-west1. Never Edit & deploy clearpath-voice-os unless you mean Ava.",
   },
 ];
 
 export const CATALOG: CatalogItem[] = [
   // —— Automated site (every day) ——
+  {
+    id: "auto_deploy_path",
+    title: "This process is the Belgium trader (not Ava)",
+    why: "K_SERVICE must be clear-path-markets-science. Hitting Edit & deploy on clearpath-voice-os does not update the website.",
+    kind: "auto",
+    cadence: "daily",
+    survival: true,
+    section: "site",
+  },
   {
     id: "auto_site_doctor",
     title: "Site Doctor pulse (auth, feed, secrets, private storage)",
@@ -187,8 +196,8 @@ export const CATALOG: CatalogItem[] = [
   },
   {
     id: "auto_twilio_ava",
-    title: "Twilio account (Ava voice is not in-repo — this is the stand-in)",
-    why: "Confirms the SMS/voice vendor is authenticated; does not invent an Ava URL",
+    title: "Ava voice OS is a separate Cloud Run service — not this trader",
+    why: "clearpath-voice-os (us-central1) is Ava. Do not Edit & deploy it to update the website. Missing Twilio here is not a trader outage.",
     kind: "auto",
     cadence: "daily",
     section: "site",
@@ -243,9 +252,18 @@ export const CATALOG: CatalogItem[] = [
     section: "site",
   },
   {
+    id: "auto_password_box",
+    title: "Live JS still ships the in-profile password change box",
+    why: "Invite users must be able to replace the temp password without a founder reset",
+    kind: "auto",
+    cadence: "daily",
+    survival: true,
+    section: "site",
+  },
+  {
     id: "auto_secrets_scan",
-    title: "No hardcoded live API keys in src/",
-    why: "Keys belong in Cloud Run secrets, never in the bundle",
+    title: "Runtime secrets via env (Groq / Stripe / Twelve Data) — not a src/ file walk",
+    why: "Docker images do not include src/. Scoring missing files there is a fake outage. Ping live env + HTTP instead.",
     kind: "auto",
     cadence: "daily",
     section: "site",
@@ -270,6 +288,24 @@ export const CATALOG: CatalogItem[] = [
     section: "site",
   },
   {
+    id: "human_money",
+    title: "Glance at the monthly budget + member count (does the floor still hold?)",
+    why: "Survival money check — not a full bookkeeping session",
+    kind: "human",
+    cadence: "daily",
+    survival: true,
+    section: "business",
+  },
+  {
+    id: "human_outreach_one",
+    title: "One outreach (demo follow-up, affiliate, or community — pick one)",
+    why: "One real send beats a spray of empty boxes",
+    kind: "human",
+    cadence: "daily",
+    survival: true,
+    section: "outreach",
+  },
+  {
     id: "human_mobile",
     title: "Phone check: charts, scroll, touch (or skip if user-flow was on phone)",
     why: "Viewport work shipped; regression is still the #1 user-facing risk",
@@ -284,7 +320,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Unverified features are how fake data ships",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "site",
   },
   {
@@ -408,9 +443,10 @@ export const CATALOG: CatalogItem[] = [
   {
     id: "human_investor_send",
     title: "Send (or skip) today’s researched investor note — copy from the desk, do not auto-mail",
-    why: "Writes need a human. The desk researches; you send.",
+    why: "Writes need a human. The desk researches; you send. Nothing auto-emails.",
     kind: "human",
     cadence: "daily",
+    survival: true,
     section: "outreach",
   },
   {
@@ -502,7 +538,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Sustainability is a ship criterion",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "personal",
   },
   {
@@ -511,7 +546,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Listed as non-negotiable",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "personal",
   },
   {
@@ -520,7 +554,6 @@ export const CATALOG: CatalogItem[] = [
     why: "If this fails, stop the list",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "personal",
   },
   {
@@ -529,7 +562,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Closes the day honestly",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "personal",
     input: "text",
   },
@@ -539,7 +571,6 @@ export const CATALOG: CatalogItem[] = [
     why: "The old 75-item list violated this",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "personal",
   },
   {
@@ -576,7 +607,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Replaces re-reading a 75-item scroll",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "eod",
     input: "text",
   },
@@ -586,7 +616,6 @@ export const CATALOG: CatalogItem[] = [
     why: "Closes the honesty loop",
     kind: "human",
     cadence: "daily",
-    survival: true,
     section: "eod",
   },
 ];

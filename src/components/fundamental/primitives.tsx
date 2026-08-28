@@ -88,7 +88,16 @@ export function Metric({
 
 export function Unavailable({ message = 'DATA UNAVAILABLE' }: { message?: string }) {
   return (
-    <p className="py-6 text-center font-mono text-[10px] uppercase tracking-widest text-zinc-500">{message}</p>
+    <div className="fund-empty py-2" role="status">
+      <div className="fund-empty-bars" aria-hidden="true">
+        <i style={{ height: '34%' }} />
+        <i style={{ height: '58%' }} />
+        <i style={{ height: '42%' }} />
+        <i style={{ height: '70%' }} />
+        <i style={{ height: '48%' }} />
+      </div>
+      <p>{message}</p>
+    </div>
   );
 }
 

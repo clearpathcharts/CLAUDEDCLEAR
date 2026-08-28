@@ -45,8 +45,14 @@ assert.equal(
 
 const today = itemsForDay();
 assert.ok(today.some((i) => i.id === "auto_site_doctor"));
-assert.ok(today.some((i) => i.id === "human_body"));
+assert.ok(today.some((i) => i.id === "human_user_flow"));
+assert.ok(today.some((i) => i.id === "human_money"));
+assert.ok(today.some((i) => i.id === "human_outreach_one"));
 assert.ok(today.some((i) => i.id === "human_investor_send"));
+assert.equal(
+  CATALOG.filter((c) => c.kind === "human" && c.survival).map((c) => c.id).sort().join(","),
+  ["human_investor_send", "human_money", "human_outreach_one", "human_user_flow"].join(",")
+);
 assert.ok(
   today.filter((i) => i.section === "marketing" && i.kind === "human" && i.id.startsWith("human_post_")).length <= 2,
   "should not schedule four native posts on one day"

@@ -19,6 +19,22 @@ import {
 } from "./panels";
 import type { LiteracyPanelId } from "./types";
 import { PANEL_META } from "./ui";
+import { AppealingAdditionsPanel } from "./AppealingAdditionsPanel";
+
+const LITERACY_PANEL_IDS = new Set(PANEL_META.map((p) => p.id));
+
+function readInitialPanel(): LiteracyPanelId {
+  try {
+    const raw = sessionStorage.getItem("clearpath_literacy_open_panel");
+    if (raw && LITERACY_PANEL_IDS.has(raw as LiteracyPanelId)) {
+      sessionStorage.removeItem("clearpath_literacy_open_panel");
+      return raw as LiteracyPanelId;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "brief";
+}
 
 export default function LiteracyOSPage({
   onNavigate,
@@ -28,7 +44,7 @@ export default function LiteracyOSPage({
   onProfileChange?: (profileId: string) => void;
 }) {
   const api = useLiteracyStore();
-  const [panel, setPanel] = useState<LiteracyPanelId>("brief");
+  const [panel, setPanel] = useState<LiteracyPanelId>(readInitialPanel);
 
   let body: React.ReactNode = null;
   switch (panel) {
@@ -71,6 +87,14 @@ export default function LiteracyOSPage({
     case "encyclopedia":
       body = <EncyclopediaWorldPanel onNavigate={onNavigate} />;
       break;
+    case "appealing":
+      body = (
+        <AppealingAdditionsPanel
+          onOpenRoom={(id) => setPanel(id)}
+          onNavigate={onNavigate}
+        />
+      );
+      break;
     default:
       body = null;
   }
@@ -103,7 +127,7 @@ export default function LiteracyOSPage({
         </h1>
         <p className="mt-2 text-sm md:text-base text-white/55 max-w-2xl">
           Archive evidence, watch primary pages, build a concept wiki, and study with a neuro-adaptive desk.
-          No securities brokerage. No financial advice.
+          Appealing Additions lives here too — sandboxes and discovery shelves. No securities brokerage. No financial advice.
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-[10px] uppercase tracking-wider">
           <StatPill label="Vault" value={String(vaultCount)} />

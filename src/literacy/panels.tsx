@@ -71,6 +71,16 @@ export function MorningBriefPanel({ api, onOpen }: { api: StoreApi; onOpen: (id:
             </li>
           ))}
         </BriefCard>
+        <BriefCard title="Appealing Additions" empty="">
+          <li className="text-sm text-white/80">
+            <button type="button" className="text-left hover:text-[#FFD700]" onClick={() => onOpen("appealing")}>
+              <span className="font-bold text-white/90">Open sandboxes &amp; discovery shelves</span>
+              <span className="block text-xs text-white/45">
+                Budget notebook, certificates, self-hosted tools, academic research — literacy only.
+              </span>
+            </button>
+          </li>
+        </BriefCard>
       </div>
     </PanelShell>
   );

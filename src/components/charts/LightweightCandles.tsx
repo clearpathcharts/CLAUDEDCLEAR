@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, BarSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
@@ -39,6 +39,8 @@ import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
 export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-FONTS";
+
+export type PriceSeriesType = "candlestick" | "line" | "area" | "ohlc";
 
 type Candle = {
   time: number;
@@ -122,6 +124,38 @@ const OSCILLATOR_INDICATORS = new Set([
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
+function toPriceSeriesData(
+  candles: Array<{ time: number; open: number; high: number; low: number; close: number }>,
+  type: PriceSeriesType,
+) {
+  if (type === "line" || type === "area") {
+    return candles.map((c) => ({ time: c.time as Time, value: c.close }));
+  }
+  return candles.map((c) => ({
+    time: c.time as Time,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+  }));
+}
+
+function toPriceSeriesUpdate(
+  bar: { time: number; open: number; high: number; low: number; close: number },
+  type: PriceSeriesType,
+) {
+  if (type === "line" || type === "area") {
+    return { time: bar.time as Time, value: bar.close };
+  }
+  return {
+    time: bar.time as Time,
+    open: bar.open,
+    high: bar.high,
+    low: bar.low,
+    close: bar.close,
+  };
+}
+
 export function LightweightCandles({
   data,
   symbol = "UNKNOWN",
@@ -147,6 +181,8 @@ export function LightweightCandles({
   /** Publish drawing controls to the Pattern Scanner column toolbox (Charts tab). */
   publishDrawingSession = false,
   hideChartToolbar = false,
+  hidePatternOverlays = false,
+  priceSeriesType = "candlestick",
   onExpandToggle,
 }: {
   data?: Candle[];
@@ -178,10 +214,14 @@ export function LightweightCandles({
   publishDrawingSession?: boolean;
   /** Hide the in-plot CROSSHAIR/zoom bar so candles fill the empty-slot box. */
   hideChartToolbar?: boolean;
+  /** Hide forming/pattern HUD (Retail Door keeps the chart visually quiet). */
+  hidePatternOverlays?: boolean;
+  /** Price series style. Default remains candlestick for existing desks. */
+  priceSeriesType?: PriceSeriesType;
   /** Full-window expand for this slot — not zoom-reset. */
   onExpandToggle?: () => void;
 }) {
-  const hidePatternChrome = embedMode || useDedicatedPatternPanel;
+  const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const layoutRef = useRef({ isExpanded, fillParent });
@@ -390,7 +430,28 @@ export function LightweightCandles({
       ? intensifyCandleColors(rawCandleColors, 1.1)
       : rawCandleColors;
 
-    const series = chart.addSeries(CandlestickSeries, vividCandles);
+    const series =
+      priceSeriesType === "line"
+        ? chart.addSeries(LineSeries, {
+            color: vividCandles.upColor,
+            lineWidth: 2,
+            title: "Close",
+          })
+        : priceSeriesType === "area"
+          ? chart.addSeries(AreaSeries, {
+              lineColor: vividCandles.upColor,
+              topColor: `${vividCandles.upColor}99`,
+              bottomColor: `${vividCandles.upColor}08`,
+              lineWidth: 2,
+              title: "Close",
+            })
+          : priceSeriesType === "ohlc"
+            ? chart.addSeries(BarSeries, {
+                upColor: vividCandles.upColor,
+                downColor: vividCandles.downColor,
+                thinBars: false,
+              })
+            : chart.addSeries(CandlestickSeries, vividCandles);
     candleSeriesRef.current = series;
     setChartReadyKey((k) => k + 1);
 
@@ -430,8 +491,13 @@ export function LightweightCandles({
 
         const allowedLimit = getCandleLimit(userTier);
 
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           if (!active) return;
+          if (data.length === 0) {
+            setError('CHART DATA UNAVAILABLE');
+            setIsLoading(false);
+            return;
+          }
           displayData = data;
         } else {
           let fetched: Candle[] | null = null;
@@ -496,7 +562,7 @@ export function LightweightCandles({
           }
         }
 
-        series.setData(chartCandles);
+        series.setData(toPriceSeriesData(tierOptimizedData, priceSeriesType) as any);
 
         scheduleChartVisionImmediate(
           { candles: tierOptimizedData, symbol: sym, timeframe },
@@ -902,7 +968,7 @@ export function LightweightCandles({
               close: newClose,
             };
             if (!active) return;
-            series.update(updateObj);
+            series.update(toPriceSeriesUpdate(updateObj, priceSeriesType) as any);
             lastCandle = { ...updateObj, time: currentTime };
             return;
           }
@@ -928,7 +994,7 @@ export function LightweightCandles({
             close: newClose,
           };
 
-          series.update(updateObj);
+          series.update(toPriceSeriesUpdate(updateObj, priceSeriesType) as any);
           lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
 
@@ -982,7 +1048,7 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings)]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), priceSeriesType]);
 
   useEffect(() => {
     const chart = chartRef.current;

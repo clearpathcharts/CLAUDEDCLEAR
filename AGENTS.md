@@ -5,6 +5,14 @@
 ### What this project is
 `clear-path-markets-science` (a.k.a. "ClearPath Trader") is a single-page **React 19 + Vite** financial/market-intelligence terminal served by a custom **Express** backend (`server.ts`). There is **one combined service**: in dev, `server.ts` runs the Express API and mounts Vite in middleware mode on the same port, so the frontend and backend are served together.
 
+### One live founder screen / one deploy path
+- **Website:** Cloud Run service `clear-path-markets-science` in **europe-west1** (Belgium). Console: `https://console.cloud.google.com/run/detail/europe-west1/clear-path-markets-science?project=gen-lang-client-0282858983`
+- **Ava voice:** `clearpath-voice-os` in **us-central1**. Never hit **Edit & deploy** on voice-os unless you mean Ava.
+- Keep Cloud Run traffic on **LATEST**. A named-revision pin is how GitHub “deploys” while the public site stays old.
+- Trader work belongs in `clearpath-COMPLETE-tonight`. Do not fetch dead Cursor workspace branches from ALL EYES OS.
+- After every `main` push, confirm the live Cloud Run revision SHA (or live CEO JS) before telling the founder it is on the site.
+- CEO Dashboard is ops-only: Daily Ops + budget + members/alerts. Chart patterns stay on MARKETS/CHARTS.
+
 ### Running the app (dev)
 - Start with `npm run dev` (runs `tsx server.ts`). It serves at `http://localhost:3000` (override with `PORT`).
 - **Credential-less boot (no Firebase Admin creds):** with no `FIREBASE_SERVICE_ACCOUNT` / ADC (the default in this VM and in CI), `hasFirebaseAdminCredentials()` in `src/server/firebaseAdmin.ts` short-circuits so `applicationDefault()` is never called and `getAdminFirestore()` returns `null`. The server boots and serves normally — you'll see `[Firebase Admin] No credentials configured (…). Using local file fallback.` and Firestore write-through is skipped (local-file fallback only). No `NODE_OPTIONS` flag is needed. Credentials are only used when explicitly provided (`FIREBASE_SERVICE_ACCOUNT` / a real `GOOGLE_APPLICATION_CREDENTIALS` file) or on GCP runtimes (Cloud Run/Functions/App Engine, detected via `K_SERVICE`/`GAE_*`). Self-tests/CI can force local-only mode with `CLEARPATH_DISABLE_FIRESTORE_ADMIN=1`.

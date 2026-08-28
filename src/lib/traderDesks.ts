@@ -26,7 +26,7 @@ export const TRADER_DESKS: Record<TraderDeskId, TraderDeskMeta> = {
   fundamental: {
     id: 'fundamental',
     title: 'Fundamental Trader',
-    tagline: 'Tell me what the asset is worth',
+    tagline: 'What is this business doing financially?',
     accent: '#FF7A00',
     href: '/desk/fundamental',
   },

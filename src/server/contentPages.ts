@@ -1,4 +1,10 @@
 import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
+import {
+  PRODUCT_DISAMBIGUATION,
+  PRODUCT_FEATURE_LIST,
+  PRODUCT_NOT_LIST,
+  PRODUCT_WHAT_IT_IS,
+} from '../content/productIdentity';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
@@ -1323,16 +1329,43 @@ export function isSearchEngineBot(userAgent: string | undefined | null): boolean
 }
 
 function renderHomeForBots(): string {
+  const features = PRODUCT_FEATURE_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
+  const nots = PRODUCT_NOT_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
   return `${breadcrumbHtml([{ name: 'Home' }])}
 <h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
-<p class="lead">Free market intelligence terminal with live charts, unlimited indicators, automatic pattern context, and plain-language trading education. Analytics and learning only — not a brokerage.</p>
+<p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
+<h2>What is in the terminal</h2>
+<ul>${features}</ul>
+<h2>What this is not</h2>
+<p>${escapeHtml(PRODUCT_DISAMBIGUATION)}</p>
+<ul>${nots}</ul>
 <p>Explore the <a href="/encyclopedia">Financial Encyclopedia</a>, <a href="/indicators">Indicator Encyclopedia</a>, <a href="/education">ClearPath Education</a>, <a href="/learn">Learn</a>, <a href="/guides">Guides</a>, and <a href="/regions">regional hubs</a> for Russia, China, Japan, and the Philippines.</p>
 <p><a href="/?live=1">Open the interactive ClearPath Trader terminal</a> · <a href="/about">About</a> · <a href="/faq">FAQ</a></p>`;
+}
+
+function renderAboutPage(): string {
+  const features = PRODUCT_FEATURE_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
+  const nots = PRODUCT_NOT_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'About' }])}
+<h1>About ClearPath Trader</h1>
+<p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
+<h2>Not a website chatbot</h2>
+<p>${escapeHtml(PRODUCT_DISAMBIGUATION)}</p>
+<h2>What ships in the product</h2>
+<ul>${features}</ul>
+<h2>What we do not do</h2>
+<ul>${nots}</ul>
+<p><a href="/?live=1">Open the terminal</a> · <a href="/faq">FAQ</a> · <a href="/platform-scope.html">Platform scope</a></p>`;
 }
 
 /** Crawlable homepage HTML for search bots (humans still get the SPA shell). */
 export function renderStaticHomeForBots(): string {
   return renderShell('/', renderHomeForBots(), 'en');
+}
+
+/** Crawlable /about for search bots only — humans keep the designed SPA About page. */
+export function renderStaticAboutForBots(): string {
+  return renderShell('/about', renderAboutPage(), 'en');
 }
 
 export function renderStaticContentPage(reqPath: string): string | null {

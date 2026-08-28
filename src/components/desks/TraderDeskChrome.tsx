@@ -46,10 +46,18 @@ export default function TraderDeskChrome({ active }: Props) {
               className="truncate text-base font-black uppercase tracking-widest"
               style={{ color: meta.accent }}
             >
-              {meta.title}
+              {active === 'institutional'
+                ? 'ClearPath Institutional'
+                : active === 'fundamental'
+                  ? 'ClearPath Fundamental'
+                  : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
-              {meta.tagline}
+              {active === 'institutional'
+                ? 'Market Intelligence Platform'
+                : active === 'fundamental'
+                  ? 'Equity Research Workstation'
+                  : meta.tagline}
             </p>
           </div>
         </div>

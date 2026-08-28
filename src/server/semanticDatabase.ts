@@ -7,6 +7,14 @@ import {
   TRADING_REIMAGINED_SEO,
   SPEED_COPY,
 } from '../content/tradingReimaginedLanding';
+import {
+  IDENTITY_FAQS,
+  PRODUCT_DISAMBIGUATION,
+  PRODUCT_FEATURE_LIST,
+  PRODUCT_KNOWS_ABOUT,
+  PRODUCT_META_DESCRIPTION,
+  PRODUCT_WHAT_IT_IS,
+} from '../content/productIdentity';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
 import {
@@ -248,6 +256,7 @@ export function semanticLinkContent(text: string): string {
 // 12. GENERAL FINANCIAL SYSTEM SITE FAQS (EEAT COMPACT)
 // ==========================================
 export const GENERAL_FAQS = [
+  ...IDENTITY_FAQS,
   {
     question: "What is macroeconomic analysis?",
     answer: "Macroeconomic analysis studies the big forces that move markets: inflation, interest rates, credit growth, central bank balance sheets, and currency differentials. ClearPathTrader teaches these concepts in plain language with charts and structured lessons."
@@ -313,7 +322,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
   let title = "ClearPath Trader | Market Intelligence & Education Terminal";
-  let description = "Free market intelligence terminal with live charts, unlimited indicators, pattern context, and plain-language trading education. Analytics only — not a brokerage.";
+  let description = PRODUCT_META_DESCRIPTION;
   let keywords = "ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks";
   let robotsMeta =
     'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
@@ -327,10 +336,13 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     "@type": "Organization",
     "@id": `${baseUrl}/#organization`,
     "name": "ClearPathTrader",
-    "alternateName": ["Clear Path Markets Science", "ClearPath Trader"],
+    "legalName": "Clear Path Markets Science",
+    "alternateName": ["Clear Path Markets Science", "ClearPath Trader", "ClearPathTrader.com"],
     "url": baseUrl,
     "logo": `${baseUrl}/logo.png`,
-    "description": "Market intelligence, charting, and financial education platform. Analytics and learning — not a brokerage.",
+    "description": PRODUCT_WHAT_IT_IS,
+    "disambiguatingDescription": PRODUCT_DISAMBIGUATION,
+    "knowsAbout": PRODUCT_KNOWS_ABOUT,
     "sameAs": [] as string[],
   };
 
@@ -361,8 +373,21 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
     title = "ClearPath Trader | Market Intelligence & Education Terminal";
-    description = "Free market intelligence terminal: live charts, unlimited indicators, automatic pattern context, and plain-language trading education. Not a brokerage.";
-    keywords = "ClearPath Trader, trading terminal, market charts, financial education, technical indicators, Clear Path Markets Science";
+    description = PRODUCT_META_DESCRIPTION;
+    keywords = "ClearPath Trader, market intelligence terminal, trading charts, financial encyclopedia, chart patterns, neurodivergent trading UI, not a chatbot, Clear Path Markets Science";
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "ClearPath Trader",
+      "applicationCategory": "FinanceApplication",
+      "applicationSubCategory": "Market intelligence and education terminal",
+      "operatingSystem": "Web",
+      "url": baseUrl,
+      "description": PRODUCT_WHAT_IT_IS,
+      "disambiguatingDescription": PRODUCT_DISAMBIGUATION,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "featureList": PRODUCT_FEATURE_LIST,
+    });
     
     // Homepage structured FAQ
     schemas.push({
@@ -378,9 +403,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       }))
     });
   } else if (pathClean === '/about') {
-    title = "About ClearPath Trader | Market Intelligence Platform";
-    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader adapts financial education to people — not the other way around. Analytics and education — not a brokerage.";
-    keywords = "about ClearPath Trader, market intelligence platform, trading education, financial analytics";
+    title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
+    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.";
+    keywords = "about ClearPath Trader, market intelligence terminal, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "About", url: "/about" }
@@ -442,14 +467,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "url": baseUrl,
       "description": description,
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "featureList": [
-        "Unlimited trading indicators",
-        "Automatic chart pattern detection",
-        "Customizable layouts and color profiles",
-        "Indicator encyclopedia",
-        "Beginner to advanced education path",
-        "Integrated news and social feeds"
-      ]
+      "featureList": PRODUCT_FEATURE_LIST,
+      "disambiguatingDescription": PRODUCT_DISAMBIGUATION,
     });
 
     schemas.push({
@@ -1198,6 +1217,7 @@ ${hreflangTags}
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
         <p><strong>ClearPath Trader — Market Intelligence &amp; Education Terminal</strong></p>
         <p>${safeHomeDesc}</p>
+        <p>Not a website chatbot. Not aiclearpath.com. Live charts, unlimited indicators, automatic pattern scans, financial and indicator encyclopedias, Literacy OS, a macro desk, INDACREATOR, and 13 accessibility chart profiles. C.P.T. Buddy is an in-terminal mentor — it does not greet visitors, capture leads, or book appointments.</p>
         <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
