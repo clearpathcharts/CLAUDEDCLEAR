@@ -20,13 +20,13 @@ export default function NeurodivergentTraderDesk() {
         <h2 className="text-xl font-black uppercase tracking-tight text-white">
           Built for different minds
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+        <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed text-zinc-400">
           Pick a sensory profile. We save it on this device and open the chart with that look.
           Full catalog of modes lives on the accessible UI page.
         </p>
         <a
           href="/ui"
-          className="mt-3 inline-block text-sm font-semibold text-[#B026FF] underline-offset-2 hover:underline"
+          className="mt-3 inline-block text-base font-extrabold text-[#B026FF] underline-offset-2 hover:underline"
         >
           All accessible UI modes
         </a>
@@ -47,10 +47,10 @@ export default function NeurodivergentTraderDesk() {
                 }
               }}
             >
-              <p className="text-sm font-black uppercase tracking-widest" style={{ color: profile.borderA }}>
+              <p className="text-base font-black uppercase tracking-widest" style={{ color: profile.borderA }}>
                 {profile.name}
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              <p className="mt-2 text-base font-bold leading-relaxed text-zinc-400">
                 {MODE_BLURBS[profile.id] || 'A dedicated visual profile for this terminal.'}
               </p>
             </a>

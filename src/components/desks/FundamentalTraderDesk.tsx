@@ -12,7 +12,7 @@ function Pane({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-[#FF7A00]/25 bg-black/50 p-2">
       <Suspense
         fallback={
-          <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">Loading panel…</p>
+          <p className="font-mono text-sm font-bold uppercase tracking-widest text-zinc-500">Loading panel…</p>
         }
       >
         <div className="h-full w-full overflow-auto">{children}</div>
@@ -29,10 +29,10 @@ export default function FundamentalTraderDesk() {
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <section className="flex min-h-[380px] flex-col overflow-hidden rounded-xl border border-[#FF7A00]/40 bg-black/80">
         <div className="space-y-2 border-b border-white/10 px-3 py-2">
-          <h2 className="text-sm font-black uppercase tracking-widest text-[#FF7A00]">
+          <h2 className="text-base font-black uppercase tracking-widest text-[#FF7A00]">
             Valuation chart
           </h2>
-          <p className="font-mono text-[9px] uppercase text-zinc-500">
+          <p className="font-mono text-sm font-bold uppercase text-zinc-500">
             What is the asset? Load a ticker, then read the fundamental pane.
           </p>
           <ChartSymbolSearch
@@ -67,7 +67,7 @@ export default function FundamentalTraderDesk() {
               role="tab"
               aria-selected={pane === id}
               onClick={() => setPane(id)}
-              className="rounded-md border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest"
+              className="rounded-md border px-3 py-1.5 text-sm font-extrabold uppercase tracking-widest"
               style={{
                 color: pane === id ? '#fff' : '#FF7A00',
                 borderColor: pane === id ? '#FF7A00' : 'rgba(255,122,0,0.35)',
