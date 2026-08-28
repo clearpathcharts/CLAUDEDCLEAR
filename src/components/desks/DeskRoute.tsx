@@ -8,6 +8,7 @@ import {
   parseDeskPath,
   readRememberedTraderDesk,
   rememberTraderDesk,
+  symbolFromDeskPath,
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_SEO } from '../../content/traderDesksCopy';
@@ -33,7 +34,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
       body = <InstitutionalTraderDesk />;
       break;
     case 'fundamental':
-      body = <FundamentalTraderDesk />;
+      body = <FundamentalTraderDesk initialSymbol={symbolFromDeskPath(pathname)} />;
       break;
     case 'retail':
       body = <RetailTraderDesk />;

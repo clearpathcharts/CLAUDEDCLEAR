@@ -124,6 +124,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
             <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
             <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
+            <a href="/desk/fundamental" className="text-[10px] font-black uppercase tracking-wider text-[#22d3ee]/80 hover:text-[#22d3ee]">Fundamental</a>
           </div>
         </nav>
       </header>

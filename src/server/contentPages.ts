@@ -1366,6 +1366,9 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/ui') body = renderUiIndex();
   else if (pathClean === '/desk') body = renderTraderDesksIndex();
   else if (parts[0] === 'desk' && parts.length === 2) body = renderTraderDesk(parts[1]);
+  else if (pathClean === '/fundamental' || (parts[0] === 'fundamental' && parts.length <= 2)) {
+    body = renderTraderDesk('fundamental');
+  }
   else if (parts[0] === 'ui' && parts.length === 2) body = renderUiProfile(parts[1]);
   else if (pathClean === '/tools' || pathClean === '/tools/position-size') {
     body = pathClean === '/tools' ? renderToolsIndex() : renderPositionSizeTool();

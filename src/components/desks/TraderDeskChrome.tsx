@@ -86,6 +86,7 @@ export default function TraderDeskChrome({ active }: Props) {
         </a>
       </nav>
 
+      {active === 'institutional' ? (
       <div
         className="flex flex-wrap items-center gap-2 border-t border-white/5 px-3 py-1.5"
         aria-label="FX sessions"
@@ -108,6 +109,7 @@ export default function TraderDeskChrome({ active }: Props) {
           );
         })}
       </div>
+      ) : null}
       <p className="px-3 pb-2 font-mono text-[8px] uppercase tracking-wider text-zinc-600">
         {DESK_DISCLAIMER}
       </p>

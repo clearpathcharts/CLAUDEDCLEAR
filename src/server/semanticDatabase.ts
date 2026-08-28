@@ -1071,8 +1071,10 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: 'Home', url: '' },
       { name: 'Trader desks', url: '/desk' },
     ]));
-  } else if (pathClean.startsWith('/desk/')) {
-    const id = pathClean.slice('/desk/'.length);
+  } else if (pathClean === '/fundamental' || pathClean.startsWith('/fundamental/') || pathClean.startsWith('/desk/')) {
+    const id = pathClean.includes('fundamental')
+      ? 'fundamental'
+      : pathClean.slice('/desk/'.length).split('/')[0];
     if (isTraderDeskId(id)) {
       const seo = DESK_SEO[id];
       title = seo.title;

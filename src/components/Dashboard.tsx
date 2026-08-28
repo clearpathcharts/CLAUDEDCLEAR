@@ -75,6 +75,7 @@ import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 import { isFounderEmail } from '../lib/founder';
 import { auth } from '../firebase';
+import { navigateToDesk } from '../lib/traderDesks';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
@@ -1004,6 +1005,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
+      { id: 'Fundamentals', icon: Landmark, label: 'FUNDAMENTAL' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
@@ -1047,6 +1049,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     if (nextTab === 'Diagnostics') {
       setActiveTab('StrictlyCharts');
+      return;
+    }
+    if (nextTab === 'Fundamentals') {
+      navigateToDesk('fundamental');
       return;
     }
     setActiveTab(nextTab);

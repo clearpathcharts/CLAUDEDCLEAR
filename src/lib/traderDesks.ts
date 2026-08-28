@@ -54,6 +54,7 @@ export function isTraderDeskId(value: string | null | undefined): value is Trade
 
 export function parseDeskPath(pathname: string): TraderDeskId | null {
   const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  if (p === '/fundamental' || p.startsWith('/fundamental/')) return 'fundamental';
   if (p === '/desk') return null;
   if (!p.startsWith('/desk/')) return null;
   const id = p.slice('/desk/'.length).split('/')[0];
@@ -62,7 +63,13 @@ export function parseDeskPath(pathname: string): TraderDeskId | null {
 
 export function isDeskPath(pathname: string): boolean {
   const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
-  return p === '/desk' || p.startsWith('/desk/');
+  return p === '/desk' || p.startsWith('/desk/') || p === '/fundamental' || p.startsWith('/fundamental/');
+}
+
+export function symbolFromDeskPath(pathname: string): string | undefined {
+  const p = pathname.split('?')[0].replace(/\/$/, '');
+  const m = p.match(/\/(?:desk\/)?fundamental\/([A-Za-z0-9.^-]{1,16})$/i);
+  return m?.[1]?.toUpperCase();
 }
 
 export function rememberTraderDesk(id: TraderDeskId): void {

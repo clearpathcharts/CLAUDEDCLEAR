@@ -21,6 +21,7 @@
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "test:choose-path": "tsx scripts/choose-path.selftest.ts",
     "test:trader-desks": "tsx scripts/trader-desks.selftest.ts",
+    "test:fundamental-door": "tsx scripts/fundamental-door.selftest.ts",
     "test:about-manifesto": "tsx scripts/about-manifesto.selftest.ts",
     "test:regional-hubs": "tsx scripts/regional-hubs.selftest.ts",
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
