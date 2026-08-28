@@ -1,0 +1,49 @@
+/**
+ * Login choose-your-path: heading, Enter/Login above each image,
+ * manifesto copy must not remain on the login page.
+ *
+ * Run: npx tsx scripts/choose-path.selftest.ts
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import sharp from 'sharp';
+import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../src/content/chooseYourPath.ts';
+
+const root = path.resolve('.');
+
+async function assertNativeImage(rel: string, width: number, height: number) {
+  const abs = path.join(root, 'public', rel.replace(/^\//, ''));
+  assert.ok(fs.existsSync(abs), `missing ${rel}`);
+  const meta = await sharp(abs).metadata();
+  assert.equal(meta.width, width, `${rel} width`);
+  assert.equal(meta.height, height, `${rel} height`);
+}
+
+const auth = fs.readFileSync(path.join(root, 'src/components/Auth.tsx'), 'utf8');
+assert.match(auth, /ChooseYourPath/);
+assert.match(auth, /#choose-path/);
+assert.match(auth, /enterChosenPath/);
+assert.match(auth, /loginChosenPath/);
+assert.doesNotMatch(auth, /Some people see patterns/);
+assert.doesNotMatch(auth, /KNOWLEDGE BEFORE EXECUTION/);
+assert.doesNotMatch(auth, /Charts should adapt to people/);
+
+const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'), 'utf8');
+assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
+assert.match(ui, />\s*Enter\s*</);
+assert.match(ui, />\s*Login\s*</);
+assert.doesNotMatch(ui, /hover:scale/);
+assert.match(ui, /maxWidth/);
+
+const about = fs.readFileSync(path.join(root, 'src/components/ExternalAboutPage.tsx'), 'utf8');
+assert.match(about, /ABOUT_MANIFESTO_LEAD/);
+
+for (const card of PATH_CARDS) {
+  await assertNativeImage(card.png, card.width, card.height);
+  await assertNativeImage(card.webp, card.width, card.height);
+}
+await assertNativeImage(NEURODIVERGENT_BANNER.png, NEURODIVERGENT_BANNER.width, NEURODIVERGENT_BANNER.height);
+await assertNativeImage(NEURODIVERGENT_BANNER.webp, NEURODIVERGENT_BANNER.width, NEURODIVERGENT_BANNER.height);
+
+console.log('choose-path.selftest: ok');

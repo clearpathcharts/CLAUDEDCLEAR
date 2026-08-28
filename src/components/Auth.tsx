@@ -23,7 +23,9 @@ const scrollToSection = (id: string) => {
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
+import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
+import type { AdvancedProfileId } from '../lib/advanced/profiles';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -176,6 +178,24 @@ export default function Auth() {
   const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
     setPrivateLoginMode(mode);
     setPrivateLoginOpen(true);
+  };
+
+  const rememberPath = (profileId: AdvancedProfileId) => {
+    try {
+      localStorage.setItem('clearpath_current_profile_id', profileId);
+    } catch {
+      /* ignore quota / private mode */
+    }
+  };
+
+  const enterChosenPath = (profileId: AdvancedProfileId) => {
+    rememberPath(profileId);
+    openPrivateLogin('register');
+  };
+
+  const loginChosenPath = (profileId: AdvancedProfileId) => {
+    rememberPath(profileId);
+    openPrivateLogin('login');
   };
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,
@@ -720,7 +740,8 @@ export default function Auth() {
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
-          <a href="#why-clearpath" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
+          <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
+          <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
           <a href="#ecosystem" className="auth-nav-tab-label auth-nav-lava-text shrink-0">The Ecosystem</a>
           <a href="#soft-launch" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Soft Launch</a>
           <a
@@ -789,6 +810,8 @@ export default function Auth() {
         </div>
       </div>
 
+      <ChooseYourPath onEnter={enterChosenPath} onLogin={loginChosenPath} />
+
       {/* ==========================================
           5. HERO SECTION
           ========================================== */}
@@ -813,40 +836,6 @@ export default function Auth() {
         <h2 className="hero-subtitle text-lg sm:text-2xl text-[#00FFFF] font-mono tracking-widest uppercase mt-6 mb-4 max-w-3xl text-neon-glow leading-normal font-bold">
           THERE IS NO SUCH THING AS ONE CHART FOR EVERY MIND.
         </h2>
-
-        {/* Glassmorphic Paragraph Overlay */}
-        <p className="hero-description text-zinc-200 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-4xl mx-auto mt-6 whitespace-pre-line font-cinzel font-bold">
-{`YOUR BRAIN IS NOT THE PROBLEM.
-
-People process information differently.
-
-Some people see patterns.
-Some people need structure.
-Some people learn visually.
-Some people become overwhelmed by cluttered screens, endless indicators, and information overload.
-
-ClearPath Markets Science was built around a different idea:
-
-Financial education should adapt to people — not the other way around.
-
-Before risking capital, understand the system.
-
-Before following signals, understand the logic.
-
-Before chasing markets, understand the relationships.
-
-Explore thousands of indicators, stocks, companies, currencies, commodities, economic events, and market relationships through a visual learning environment designed for every type of learner.
-
-Whether you're a beginner, trader, analyst, economist, student, veteran, engineer, entrepreneur, or independent researcher, ClearPath provides a structured path through the world's financial systems.
-
-A safer place to learn.
-A clearer place to think.
-A smarter way to understand markets.
-
-KNOWLEDGE BEFORE EXECUTION.
-UNDERSTANDING BEFORE RISK.
-CLARITY BEFORE DECISIONS.`}
-        </p>
 
         {/* Interactive Buttons Container */}
         <div className="flex flex-col md:flex-row items-center gap-4 mt-10 w-full max-w-3xl mx-auto justify-center z-30">
@@ -929,45 +918,6 @@ CLARITY BEFORE DECISIONS.`}
           </div>
         </motion.div>
 
-      </section>
-
-      {/* ==========================================
-          6. WHY CLEARPATH EXISTS SECTION
-          ========================================== */}
-      <section id="why-clearpath" className="relative py-24 border-y border-zinc-900/60 bg-transparent z-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-8 text-center space-y-8">
-          
-          <span className="font-mono text-[10px] text-[#FF1493] font-black uppercase tracking-[0.25em] bg-[#FF1493]/10 px-4 py-1.5 rounded-full border border-[#FF1493]/35 shadow-[0_0_15px_rgba(255,20,147,0.2)]">
-            PLATFORM MISSION STATEMENT
-          </span>
-
-          <h2 className="text-[32px] sm:text-[44px] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#00B7FF] via-[#36E6FF] to-[#00FF88] uppercase max-w-3xl mx-auto leading-tight font-sans">
-            WHY CLEARPATH TRADER EXISTS
-          </h2>
-
-          {/* Majestic Glow Divider Accent */}
-          <div className="w-24 h-[3px] mx-auto bg-[#FF1493] rounded-full shadow-[0_0_10px_rgba(255,20,147,0.5)]" />
-
-          <p className="text-xl sm:text-2xl md:text-3xl text-zinc-300 leading-relaxed max-w-4xl mx-auto whitespace-pre-line font-cinzel font-bold">
-{`For decades, trading platforms have expected everyone to learn the same way.
-
-But people don't process information the same way.
-
-Some people see patterns.
-Some people need structure.
-Some people learn visually.
-
-The problem isn't the person.
-
-The problem is that most trading platforms were never designed around different ways of learning.
-
-ClearPath Trader is being built around a different belief:
-
-Charts should adapt to people.
-
-Not the other way around.`}
-          </p>
-        </div>
       </section>
 
       {/* ==========================================
