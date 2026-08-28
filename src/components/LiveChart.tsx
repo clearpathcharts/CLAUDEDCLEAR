@@ -56,6 +56,7 @@ export default function LiveChart({
       layout: {
         background: { type: ColorType.Solid, color: background === 'transparent' ? '#000000' : (background || '#000000') },
         textColor: textColor || '#888888',
+        fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
       },
       grid: {
         vertLines: { color: 'rgba(255, 255, 255, 0.05)' },

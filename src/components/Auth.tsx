@@ -518,7 +518,7 @@ export default function Auth() {
               </motion.span>
             </AnimatePresence>
           </div>
-          <div className="hidden md:flex items-center gap-6 shrink-0 text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
+          <div className="hidden md:flex items-center gap-6 shrink-0 font-mono text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
             <span>DXY INDEX: <strong className="text-zinc-300">104.82</strong></span>
             <span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>
             <span>USD/JPY: <strong className="text-zinc-300">156.42</strong></span>

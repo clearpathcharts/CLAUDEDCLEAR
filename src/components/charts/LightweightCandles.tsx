@@ -38,7 +38,7 @@ import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-BG";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-FONTS";
 
 type Candle = {
   time: number;
@@ -327,6 +327,7 @@ export function LightweightCandles({
           color: paint.background,
         },
         textColor: paint.text,
+        fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
         fontSize: 13,
         attributionLogo: false,
       },
@@ -998,6 +999,7 @@ export function LightweightCandles({
       layout: {
         background: { type: ColorType.Solid, color: paint.background },
         textColor: paint.text,
+        fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
       },
       grid: {
         vertLines: { color: paint.grid },
@@ -1063,6 +1065,7 @@ export function LightweightCandles({
           <ChartBackgroundToggle compact />
           <span
             className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            data-chart-build=""
             title="If you do not see this stamp on live, Cloud Run is still serving an old image"
           >
             {CHART_UI_BUILD_STAMP}
@@ -1110,6 +1113,7 @@ export function LightweightCandles({
         {embedMode || hideChartToolbar ? (
           <span
             className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
+            data-chart-build=""
             title="If you do not see this stamp on live, Cloud Run is still serving an old image"
           >
             {CHART_UI_BUILD_STAMP}

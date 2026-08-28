@@ -1182,7 +1182,7 @@ ${hreflangTags}
     // Prefer existing H1 (index.html #seo-document-h1 or bot static page). Never add a second.
     if (!/<h1[\s>]/i.test(html)) {
       const homeHeader =
-        '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
+        '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;text-align:center">' +
         '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
         '</header>';
       if (html.includes('<div id="root">')) {
