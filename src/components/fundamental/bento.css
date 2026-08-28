@@ -1,0 +1,250 @@
+/* Fundamental door — research-workstation grammar (not the institutional command board). */
+
+.desk-shell[data-trader-desk='fundamental'] {
+  font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 450;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.desk-shell[data-trader-desk='fundamental'] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, td, th) {
+  font-weight: inherit;
+}
+
+.desk-shell[data-trader-desk='fundamental'] .text-\[8px\],
+.desk-shell[data-trader-desk='fundamental'] .text-\[9px\],
+.desk-shell[data-trader-desk='fundamental'] .text-\[10px\],
+.desk-shell[data-trader-desk='fundamental'] .text-xs,
+.desk-shell[data-trader-desk='fundamental'] .text-\[11px\],
+.desk-shell[data-trader-desk='fundamental'] .text-sm,
+.desk-shell[data-trader-desk='fundamental'] .text-base,
+.desk-shell[data-trader-desk='fundamental'] .text-lg {
+  font-size: unset !important;
+  font-weight: unset !important;
+}
+
+.fund-serif {
+  font-family: 'Source Serif 4', 'Iowan Old Style', Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.fund-sans {
+  font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+}
+
+.fund-mono {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.fund-shell {
+  background:
+    radial-gradient(1200px 400px at 12% -10%, rgba(196, 149, 88, 0.07), transparent 55%),
+    #07080a;
+  color: #e8e4db;
+}
+
+.desk-shell[data-trader-desk='fundamental'][data-desk-paper='black'] .fund-shell {
+  background:
+    radial-gradient(1200px 400px at 12% -10%, rgba(196, 149, 88, 0.07), transparent 55%),
+    #07080a !important;
+  color: #e8e4db !important;
+}
+
+.desk-shell[data-trader-desk='fundamental'][data-desk-paper='white'] .fund-shell {
+  background: #f6f3ec !important;
+  color: #1c1914 !important;
+}
+
+.fund-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(232, 228, 219, 0.08);
+  background: rgba(7, 8, 10, 0.92);
+}
+
+.fund-rail button {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: #9a9588;
+  background: transparent;
+}
+
+.fund-rail button[data-on='true'] {
+  color: #f3ead8;
+  border-color: rgba(196, 149, 88, 0.45);
+  background: rgba(196, 149, 88, 0.12);
+}
+
+.fund-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+  align-items: stretch;
+}
+
+.fund-span-12 { grid-column: span 12; }
+.fund-span-8 { grid-column: span 8; }
+.fund-span-7 { grid-column: span 7; }
+.fund-span-6 { grid-column: span 6; }
+.fund-span-5 { grid-column: span 5; }
+.fund-span-4 { grid-column: span 4; }
+.fund-span-3 { grid-column: span 3; }
+
+@media (max-width: 1100px) {
+  .fund-span-3,
+  .fund-span-4,
+  .fund-span-5,
+  .fund-span-6,
+  .fund-span-7,
+  .fund-span-8,
+  .fund-span-12 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1480px) {
+  .fund-span-3,
+  .fund-span-4 { grid-column: span 6; }
+  .fund-span-5,
+  .fund-span-7,
+  .fund-span-8 { grid-column: span 12; }
+}
+
+.fund-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 168px;
+  padding: 14px 16px 12px;
+  border: 1px solid rgba(232, 228, 219, 0.1);
+  background: linear-gradient(180deg, rgba(18, 19, 22, 0.96), rgba(11, 12, 14, 0.96));
+  border-radius: 2px;
+}
+
+.fund-card h3 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #f4efe4;
+  margin: 0;
+}
+
+.fund-kicker {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c49558;
+  margin-bottom: 4px;
+}
+
+.fund-primary {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: #f7f3ea;
+}
+
+.fund-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fund-empty-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 52px;
+  opacity: 0.28;
+}
+
+.fund-empty-bars i {
+  display: block;
+  flex: 1;
+  background: #c49558;
+  border-radius: 1px 1px 0 0;
+}
+
+.fund-empty p {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f6a60;
+  margin: 0;
+}
+
+.fund-meter {
+  display: grid;
+  grid-template-columns: 110px 1fr 52px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  font-size: 11px;
+}
+
+.fund-meter-track {
+  height: 8px;
+  background: rgba(232, 228, 219, 0.08);
+  overflow: hidden;
+}
+
+.fund-meter-fill {
+  height: 100%;
+  background: #c49558;
+}
+
+.fund-range {
+  position: relative;
+  height: 8px;
+  margin: 14px 0 8px;
+  background: rgba(232, 228, 219, 0.12);
+}
+
+.fund-range-mark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  background: #f4efe4;
+}
+
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-shell {
+  background: #f6f3ec;
+  color: #1c1914;
+}
+
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-card {
+  background: #fffcf7;
+  border-color: rgba(28, 25, 20, 0.12);
+}
+
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-card h3,
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-primary,
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-serif {
+  color: #1c1914;
+}
+
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-card .fund-mono.text-\[\#f4efe4\] {
+  color: #1c1914;
+}
+
+.desk-shell[data-desk-paper='white'][data-trader-desk='fundamental'] .fund-rail {
+  background: #efe9dd;
+  border-bottom-color: rgba(28, 25, 20, 0.1);
+}

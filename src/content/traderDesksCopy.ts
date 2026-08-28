@@ -19,7 +19,7 @@ export const DESK_SEO: Record<
     description:
       'Fundamental research workstation: financial statements, earnings, valuation, peers, industry, macro, filings, and risk. Educational analysis only — not a brokerage and not investment advice.',
     h1: 'Fundamental Market Intelligence',
-    lead: 'Investigate the economic, corporate, and financial condition of an asset: business, financials, earnings, cash flow, valuation, peers, industry, macro, and risk. Research only — no trade execution.',
+    lead: 'Bento equity-research workstation: company, business model, revenue, profitability, cash flow, balance sheet, capital allocation, valuation, earnings, peers, geography, macro, filings, and news. Research only — no trade execution.',
   },
   retail: {
     title: 'Retail Trader Desk | ClearPathTrader',
