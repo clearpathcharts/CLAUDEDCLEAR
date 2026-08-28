@@ -60,6 +60,7 @@ interface ChartDrawingToolbarProps {
   variant?: "rail" | "panel";
   /** @deprecated use variant="panel" */
   forceExpanded?: boolean;
+  allowedTools?: "basic" | "all";
 }
 
 function ToolButton({
@@ -104,8 +105,12 @@ export function ChartDrawingToolbar({
   className = "",
   variant = "rail",
   forceExpanded = false,
+  allowedTools = "all",
 }: ChartDrawingToolbarProps) {
   const panel = variant === "panel" || forceExpanded;
+  const tools = allowedTools === "all"
+    ? TOOLS
+    : TOOLS.filter((t) => t.group === "nav" || t.id === "trend" || t.id === "horizontal" || t.id === "vertical");
 
   if (panel) {
     return (
@@ -116,13 +121,16 @@ export function ChartDrawingToolbar({
           </div>
         ) : null}
 
-        {(["nav", "lines", "shapes", "advanced"] as const).map((group) => (
+        {(["nav", "lines", "shapes", "advanced"] as const).map((group) => {
+          const groupTools = tools.filter((t) => t.group === group);
+          if (groupTools.length === 0) return null;
+          return (
           <div key={group}>
             <p className="mb-1 text-[8px] font-black uppercase tracking-widest text-zinc-500">
               {group === "nav" ? "Cursor" : group}
             </p>
             <div className="flex flex-wrap gap-1">
-              {TOOLS.filter((t) => t.group === group).map((t) => (
+              {groupTools.map((t) => (
                 <ToolButton
                   key={t.id}
                   active={activeTool === t.id}
@@ -134,7 +142,8 @@ export function ChartDrawingToolbar({
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
           <div className="flex items-center gap-1.5" aria-label="Drawing color">
@@ -171,7 +180,7 @@ export function ChartDrawingToolbar({
       className={`pointer-events-auto flex max-h-full flex-col items-center gap-1 overflow-y-auto overscroll-contain rounded-lg border border-white/15 bg-black/90 p-1 ${className}`}
       aria-label="Chart drawing tools"
     >
-      {TOOLS.map((t) => (
+      {tools.map((t) => (
         <ToolButton
           key={t.id}
           active={activeTool === t.id}

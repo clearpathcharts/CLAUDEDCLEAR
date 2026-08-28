@@ -1,20 +1,13 @@
 import React from 'react';
 import { Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { TIER_LABEL, type PlanTier } from '../lib/entitlements';
+import { readPlanPreview } from '../lib/planCatalog';
 import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
 
-const TIER_PRICE_LABEL: Record<Exclude<PlanTier, 'basic'>, string> = {
-  pro: '$9.95/mo',
-  proplus: '$19.95/mo',
-  premium: '$30.95/mo',
-  ultimate: '$69.95/mo',
-};
-
 const TIER_ACCENT: Record<Exclude<PlanTier, 'basic'>, string> = {
-  pro: 'text-[#06b6d4] border-[#06b6d4]/30 bg-[#06b6d4]/10',
-  proplus: 'text-[#a78bfa] border-[#8b5cf6]/30 bg-[#8b5cf6]/10',
-  premium: 'text-teal-300 border-teal-400/30 bg-teal-400/10',
-  ultimate: 'text-[#ec4899] border-[#ec4899]/30 bg-[#ec4899]/10',
+  silver: 'text-zinc-200 border-zinc-400/30 bg-zinc-400/10',
+  gold: 'text-amber-300 border-amber-400/30 bg-amber-400/10',
+  platinum: 'text-cyan-300 border-cyan-400/30 bg-cyan-400/10',
 };
 
 export default function FeatureGate({
@@ -34,7 +27,8 @@ export default function FeatureGate({
   onUpgrade: () => void;
   children: React.ReactNode;
 }) {
-  if (PAYMENTS_ENABLED === false || allowed) return <>{children}</>;
+  const previewing = Boolean(readPlanPreview());
+  if ((PAYMENTS_ENABLED === false && !previewing) || allowed) return <>{children}</>;
 
   if (loading) {
     return (
@@ -60,8 +54,7 @@ export default function FeatureGate({
           </span>
           <h2 className="text-xl font-black font-mono tracking-tight text-white">{featureTitle}</h2>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            This is included with the <strong className="text-white">{tierName}</strong> plan
-            ({TIER_PRICE_LABEL[requiredTier]}) and above — free for your first 15 days.
+            This is included with the <strong className="text-white">{tierName}</strong> plan and above.
           </p>
         </div>
 
@@ -83,13 +76,9 @@ export default function FeatureGate({
           onClick={onUpgrade}
           className="w-full max-w-xs mx-auto flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-zinc-950 text-xs font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.03] cursor-pointer"
         >
-          Unlock with {tierName} — 15 days free
+          See {tierName} on the membership sheet
           <ArrowRight className="w-4 h-4" />
         </button>
-
-        <p className="text-[10px] font-mono text-zinc-600">
-          Cancel anytime · Secure checkout by Stripe
-        </p>
       </div>
     </div>
   );

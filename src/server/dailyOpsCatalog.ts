@@ -42,8 +42,8 @@ export const SHIPPED_AS_OF_2026_08_18: Array<{ id: string; title: string; eviden
   },
   {
     id: "stripe_catalog",
-    title: "Live membership catalog is Basic → Pro → Pro+ → Premium → Ultimate",
-    evidence: "src/lib/entitlements.ts + MembershipTab Stripe checkout",
+    title: "Live membership catalog is Basic → Silver → Gold → Platinum (founder sheet)",
+    evidence: "src/lib/planCatalog.ts + src/lib/entitlements.ts + MembershipTab comparison table",
   },
   {
     id: "founder_email",

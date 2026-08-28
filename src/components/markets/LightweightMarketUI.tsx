@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Maximize2, Minimize2, X } from 'lucide-react';
+import { Maximize2, Minimize2, Plus, X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
@@ -17,10 +17,11 @@ import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
 import { resolveMarketAsset } from '../../constants/marketAssets';
 import {
+  capMarketSlots,
   createEmptyMarketSlots,
   ensureMarketSlotsHaveSymbols,
   MARKET_CHART_HEIGHT,
-  MARKET_CHART_SLOT_COUNT,
+  MARKET_CHART_SLOT_COUNT_MAX,
   MARKET_CHART_DESKTOP_CHROME,
   desktopMarketPanelHeight,
   desktopStackedMarketChartHeight,
@@ -30,6 +31,12 @@ import {
 } from '../../constants/chartLayout';
 import { usePersistedLayout } from '../../hooks/useDraggablePosition';
 import { describeTimeframe } from '../../services/marketData';
+import { useMembership } from '../../hooks/useMembership';
+import {
+  isIntradayTimeframe,
+  isIndicatorAllowed,
+  isUnlimited,
+} from '../../lib/planCatalog';
 
 const timeframesMapping: Record<string, string> = {
   '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
@@ -43,7 +50,9 @@ const EXPANDED_SLOT_STORAGE_KEY = 'cpt-market-terminal-expanded-slot';
 function readExpandedSlot(): number | null {
   try {
     const raw = sessionStorage.getItem(EXPANDED_SLOT_STORAGE_KEY);
-    if (raw === '0' || raw === '1' || raw === '2') return Number(raw);
+    if (raw === null) return null;
+    const n = Number(raw);
+    if (Number.isInteger(n) && n >= 0 && n < MARKET_CHART_SLOT_COUNT_MAX) return n;
   } catch {
     /* ignore */
   }
@@ -55,7 +64,7 @@ function loadMarketSlots(): ChartLayoutSlot[] {
     const raw = localStorage.getItem(CHART_LAYOUT_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length === MARKET_CHART_SLOT_COUNT) {
+      if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= MARKET_CHART_SLOT_COUNT_MAX) {
         const slots = parsed.map((slot: ChartLayoutSlot, i: number) => ({
           symbol: slot.symbol ?? null,
           // Horizontal drag offsets shoved charts into the right third of the page —
@@ -104,6 +113,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   onSelectMarketSymbol,
   onProfileChange,
 }) => {
+  const { chartSlots: maxCharts, flags, limits, hasFeature, planId } = useMembership();
   const [halted, setHalted] = useState(TradingHaltController.isHalted());
   const [haltReason, setHaltReason] = useState(TradingHaltController.getHaltReason());
   const [isBlackoutMode, setIsBlackoutMode] = useState(false);
@@ -174,26 +184,38 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   // zero any saved horizontal drift so charts stay full-width (not mid-page).
   useEffect(() => {
     saveChartSlots((prev) => {
-      if (!Array.isArray(prev) || prev.length !== MARKET_CHART_SLOT_COUNT) {
-        return loadMarketSlots();
-      }
-      if (prev.every((s) => (s?.x ?? 0) === 0)) return prev;
-      return prev.map((s, i) => ({
-        symbol: s?.symbol ?? null,
-        x: 0,
-        y: normalizeMarketSlotY(
-          typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
-          i,
-        ),
-      }));
+      const base = Array.isArray(prev) && prev.length >= 1
+        ? prev
+        : loadMarketSlots();
+      const capped = capMarketSlots(
+        base.map((s, i) => ({
+          symbol: s?.symbol ?? null,
+          x: 0,
+          y: normalizeMarketSlotY(
+            typeof s?.y === 'number' ? s.y : i * MARKET_CHART_HEIGHT,
+            i,
+          ),
+        })),
+        maxCharts,
+      );
+      return ensureMarketSlotsHaveSymbols(capped);
     });
-  }, [saveChartSlots]);
+  }, [saveChartSlots, maxCharts]);
 
   const toggleIndicator = useCallback((abbr: string) => {
-    setActiveIndicators((prev) =>
-      prev.includes(abbr) ? prev.filter((i) => i !== abbr) : [...prev, abbr]
-    );
-  }, []);
+    setActiveIndicators((prev) => {
+      if (prev.includes(abbr)) return prev.filter((i) => i !== abbr);
+      if (!isIndicatorAllowed(planId, abbr)) return prev;
+      if (!isUnlimited(limits.indicators) && prev.length >= limits.indicators) return prev;
+      return [...prev, abbr];
+    });
+  }, [planId, limits.indicators]);
+
+  useEffect(() => {
+    if (!limits.intradayCharts && isIntradayTimeframe(activeTimeframe)) {
+      setActiveTimeframe('1H');
+    }
+  }, [limits.intradayCharts, activeTimeframe]);
 
   const primarySymbol = chartSlots[0]?.symbol ?? null;
   const compareSymbol = chartSlots[1]?.symbol ?? null;
@@ -305,12 +327,14 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   symbol={patternPanelSymbol || '—'}
                   timeframe={patternTimeframe}
                   compact
+                  locked={!hasFeature('patternOverlay')}
+                  aiMode={hasFeature('aiScanner')}
                 />
               </div>
-              <ChartDrawingToolsPanel compact />
+              <ChartDrawingToolsPanel compact allowedTools={limits.drawingTools} />
             </div>
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-2">
-            {[0, 1].map((slotIndex) => {
+            {[0, 1].slice(0, Math.min(2, chartSlots.length)).map((slotIndex) => {
               const sym = chartSlots[slotIndex]?.symbol ?? null;
               const label = slotIndex === 0 ? 'Primary' : 'Compare';
               return (
@@ -380,6 +404,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
             MARKET <span style={{ color: profile.borderA }}>TERMINAL</span>
           </h1>
         </div>
+        {flags.blackoutMode ? (
         <button
           type="button"
           onClick={() => setIsBlackoutMode(true)}
@@ -388,6 +413,11 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
           <span className="w-2 h-2 rounded-full bg-zinc-600 group-hover:bg-black transition-colors" />
           BLACKOUT
         </button>
+        ) : (
+          <span className="shrink-0 px-3 py-1 rounded-full border border-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-600">
+            Blackout · Silver
+          </span>
+        )}
       </div>
 
       <div className="flex-1 p-2" style={{ background: '#000000' }}>
@@ -418,8 +448,10 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
               <PatternScannerPanel
                 symbol={patternPanelSymbol || '—'}
                 timeframe={patternTimeframe}
+                locked={!hasFeature('patternOverlay')}
+                aiMode={hasFeature('aiScanner')}
               />
-              <ChartDrawingToolsPanel />
+              <ChartDrawingToolsPanel allowedTools={limits.drawingTools} />
             </div>
 
             <div className="min-w-0 space-y-2">
@@ -429,22 +461,31 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   symbol={patternPanelSymbol || '—'}
                   timeframe={patternTimeframe}
                   compact
+                  locked={!hasFeature('patternOverlay')}
+                  aiMode={hasFeature('aiScanner')}
                 />
-                <ChartDrawingToolsPanel compact />
+                <ChartDrawingToolsPanel compact allowedTools={limits.drawingTools} />
               </div>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
                 <div>
-                  {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
+                  {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => {
+                    const locked = isIntradayTimeframe(tf) && !limits.intradayCharts;
+                    return (
                     <button
                       key={`${tf}-${idx}`}
                       type="button"
-                      title={describeTimeframe(timeframesMapping[tf] || tf)}
-                      onClick={() => setActiveTimeframe(tf)}
-                      className={`time-unit !py-1 !px-2 text-[10px] md:text-xs outline-none ${tf === activeTimeframe ? 'active' : ''}`}
+                      disabled={locked}
+                      title={locked ? 'Intraday charts start at Silver' : describeTimeframe(timeframesMapping[tf] || tf)}
+                      onClick={() => {
+                        if (locked) return;
+                        setActiveTimeframe(tf);
+                      }}
+                      className={`time-unit !py-1 !px-2 text-[10px] md:text-xs outline-none ${tf === activeTimeframe ? 'active' : ''} ${locked ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       {tf}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -461,6 +502,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     activeIndicators={activeIndicators}
                     onToggle={toggleIndicator}
                     onClear={() => setActiveIndicators([])}
+                    allowedAbbrs={limits.indicatorAbbrs}
+                    maxActive={limits.indicators}
                   />
                 </div>
               </details>
@@ -592,6 +635,16 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                   </DraggableChartPanel>
                   );
                 })}
+                {chartSlots.length < maxCharts && (
+                  <button
+                    type="button"
+                    onClick={() => saveChartSlots((prev) => capMarketSlots(prev, Math.min(maxCharts, prev.length + 1)))}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-cyan-500/40 bg-black/40 py-6 text-[10px] font-black uppercase tracking-widest text-cyan-300"
+                  >
+                    <Plus size={14} />
+                    Add chart ({chartSlots.length}/{isUnlimited(limits.chartsPerWindow) ? '∞' : maxCharts})
+                  </button>
+                )}
               </div>
             </div>
           </div>

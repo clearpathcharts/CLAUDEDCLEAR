@@ -13,6 +13,9 @@ import {
   MARKET_CHART_HEIGHT_LEGACY,
   MARKET_CHART_MOBILE_MIN_BODY_HEIGHT,
   MARKET_CHART_MOBILE_SLOT_HEADER,
+  MARKET_CHART_SLOT_COUNT_MAX,
+  capMarketSlots,
+  createEmptyMarketSlots,
   desktopMarketPanelHeight,
   desktopStackedMarketChartHeight,
   mobileStackedMarketChartHeight,
@@ -99,5 +102,8 @@ assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY, 1), MARKET_CHART_H
 assert.equal(normalizeMarketSlotY(MARKET_CHART_HEIGHT_LEGACY * 2, 2), MARKET_CHART_HEIGHT * 2);
 assert.equal(normalizeMarketSlotY(520, 1), MARKET_CHART_HEIGHT);
 assert.equal(normalizeMarketSlotY(640, 1), MARKET_CHART_HEIGHT);
+assert.equal(capMarketSlots(createEmptyMarketSlots(3), 1).length, 1);
+assert.equal(capMarketSlots(createEmptyMarketSlots(1), 4).length, 4);
+assert.equal(MARKET_CHART_SLOT_COUNT_MAX, 16);
 
 console.log('chart-layout.selftest: ok');

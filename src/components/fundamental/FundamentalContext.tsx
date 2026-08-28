@@ -20,6 +20,8 @@ import {
   type Watchlist,
 } from '../../fundamental/localStore';
 import { asFinite } from '../../fundamental/format';
+import { useMembership } from '../../hooks/useMembership';
+import { isUnlimited } from '../../lib/planCatalog';
 
 type Ctx = {
   symbol: string;
@@ -63,6 +65,7 @@ export function FundamentalProvider({
   initialSymbol?: string;
   children: React.ReactNode;
 }) {
+  const { limits } = useMembership();
   const [symbol, setSymbolState] = useState(initialSymbol.toUpperCase());
   const [period, setPeriod] = useState<StatementPeriod>('annual');
   const [section, setSection] = useState<ResearchSection>('overview');
@@ -163,9 +166,10 @@ export function FundamentalProvider({
   );
 
   const setWatchlists = useCallback((w: Watchlist[]) => {
-    setWatchlistsState(w);
-    saveWatchlists(w);
-  }, []);
+    const next = isUnlimited(limits.watchlists) ? w : w.slice(0, limits.watchlists);
+    setWatchlistsState(next);
+    saveWatchlists(next);
+  }, [limits.watchlists]);
 
   const value = useMemo(
     () => ({

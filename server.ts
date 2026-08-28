@@ -104,7 +104,8 @@ import {
   StripeServiceError,
   verifyStripeWebhook,
 } from './src/server/stripeService';
-import { tierRankOf, unlockedFeatures } from './src/lib/entitlements';
+import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
+import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
 import { PAYMENTS_DISABLED_MESSAGE, PAYMENTS_ENABLED } from './src/lib/paymentsEnabled';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
@@ -1381,14 +1382,18 @@ async function startServer() {
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
     if (!PAYMENTS_ENABLED) {
+      const pack = entitlementsFor('platinum');
       return res.json({
         ok: true,
         membership: {
           active: true,
-          tier: 'free',
+          tier: 'platinum',
           status: 'payments_disabled',
-          tierRank: 4,
-          features: unlockedFeatures('ultimate'),
+          tierRank: pack.plan.rank,
+          features: pack.features,
+          limits: jsonSafeLimits(pack.limits),
+          flags: pack.flags,
+          plan: pack.plan.id,
         },
       });
     }
@@ -1401,13 +1406,30 @@ async function startServer() {
     await refreshProfileFromDurable(sessionUser.uid);
     const status = getMembershipStatus(sessionUser.uid);
     const effectiveTier = status.active ? status.tier : 'basic';
+    const pack = entitlementsFor(effectiveTier);
     res.json({
       ok: true,
       membership: {
         ...status,
         tierRank: tierRankOf(effectiveTier),
-        features: unlockedFeatures(effectiveTier),
+        features: pack.features,
+        limits: jsonSafeLimits(pack.limits),
+        flags: pack.flags,
+        plan: pack.plan.id,
       },
+    });
+  });
+
+  /** Public founder-sheet catalog (no secrets). */
+  app.get('/api/membership/catalog', (_req, res) => {
+    res.json({
+      ok: true,
+      plans: CANONICAL_PLANS.map((id) => {
+        const p = PLAN_CATALOG[id];
+        return { ...p, limits: jsonSafeLimits(p.limits) };
+      }),
+      accuracy: FEATURE_ACCURACY,
+      note: 'Feature catalog only — no list prices. Historical year claims are vendor-capped at Twelve Data outputsize 5000.',
     });
   });
 
@@ -1422,7 +1444,7 @@ async function startServer() {
     }
     const tier = req.body?.tier;
     if (!isMembershipTier(tier)) {
-      return res.status(400).json({ error: 'Invalid membership tier. Use pro, proplus, premium, or ultimate.' });
+      return res.status(400).json({ error: 'Invalid membership tier. Use silver, gold, or platinum (legacy: pro, proplus, premium, ultimate).' });
     }
     const interval = isBillingInterval(req.body?.interval) ? req.body.interval : 'month';
     const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');

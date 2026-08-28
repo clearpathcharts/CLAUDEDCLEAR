@@ -22,6 +22,8 @@ export type YwcChartSlot = {
 };
 
 export const MARKET_CHART_SLOT_COUNT = 3;
+/** Practical max when the sheet says unlimited charts (Platinum). */
+export const MARKET_CHART_SLOT_COUNT_MAX = 16;
 export const YWC_CHART_SLOT_COUNT = 4;
 export const YWC_LAYOUT_STORAGE_VERSION = 3;
 
@@ -89,12 +91,21 @@ export const YWC_CHART_ANCHORS: { id: YwcChartAnchor; label: string }[] = [
   { id: "sidebar", label: "Sidebar" },
 ];
 
-export function createEmptyMarketSlots(): ChartLayoutSlot[] {
-  return Array.from({ length: MARKET_CHART_SLOT_COUNT }, (_, i) => ({
+export function createEmptyMarketSlots(count: number = MARKET_CHART_SLOT_COUNT): ChartLayoutSlot[] {
+  const n = Math.max(1, Math.min(MARKET_CHART_SLOT_COUNT_MAX, Math.floor(count)));
+  return Array.from({ length: n }, (_, i) => ({
     symbol: DEFAULT_MARKET_SYMBOLS[i] ?? null,
     x: 0,
     y: i * MARKET_CHART_HEIGHT,
   }));
+}
+
+export function capMarketSlots(slots: ChartLayoutSlot[], max: number): ChartLayoutSlot[] {
+  const n = Math.max(1, Math.min(MARKET_CHART_SLOT_COUNT_MAX, Math.floor(max)));
+  if (slots.length === n) return slots;
+  if (slots.length > n) return slots.slice(0, n);
+  const extra = createEmptyMarketSlots(n).slice(slots.length);
+  return [...slots, ...extra];
 }
 
 /** Snap saved y from the old 576px grid onto the current stacking pitch. */
@@ -113,7 +124,7 @@ export function normalizeMarketSlotY(
 /** If a saved layout wiped every symbol, restore defaults so the scanner can run. */
 export function ensureMarketSlotsHaveSymbols(slots: ChartLayoutSlot[]): ChartLayoutSlot[] {
   if (slots.some((s) => s.symbol)) return slots;
-  return createEmptyMarketSlots();
+  return createEmptyMarketSlots(slots.length || MARKET_CHART_SLOT_COUNT);
 }
 
 export function createEmptyYwcSlots(): YwcChartSlot[] {

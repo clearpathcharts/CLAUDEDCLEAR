@@ -36,8 +36,11 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 /** Residual rate: 25% of every membership payment, single-level, lifetime while active. */
 export const AFFILIATE_RESIDUAL_RATE = 0.25;
 
-/** First-month prices in cents (matches MembershipTab marketing tiers). */
+/** Residual credits use actual charged cents when known. These are fallbacks for the existing Stripe ladder only — not a public catalog. */
 export const TIER_PRICE_CENTS: Record<string, number> = {
+  silver: 995,
+  gold: 3095,
+  platinum: 6995,
   pro: 995,
   proplus: 1995,
   premium: 3095,
