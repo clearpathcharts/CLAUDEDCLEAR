@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, Lock, Eye, EyeOff, UserCheck, 
@@ -12,6 +12,8 @@ import PrivateLoginDesk from './PrivateLoginDesk';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
+
+const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 import type { AdvancedProfileId } from '../lib/advanced/profiles';
 
 // ==========================================
@@ -178,11 +180,6 @@ export default function Auth() {
   const enterChosenPath = (profileId: AdvancedProfileId) => {
     rememberPath(profileId);
     openPrivateLogin('register');
-  };
-
-  const loginChosenPath = (profileId: AdvancedProfileId) => {
-    rememberPath(profileId);
-    openPrivateLogin('login');
   };
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,
@@ -559,6 +556,7 @@ export default function Auth() {
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
           <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
+          <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
           <a
             href="/encyclopedia"
@@ -626,7 +624,19 @@ export default function Auth() {
         </div>
       </div>
 
-      <ChooseYourPath onEnter={enterChosenPath} onLogin={loginChosenPath} />
+      <ChooseYourPath onEnter={enterChosenPath} />
+
+      <Suspense
+        fallback={
+          <section
+            id="public-chart"
+            className="relative w-full min-h-[70vh] px-2 sm:px-4 pb-10 z-20"
+            aria-label="Loading live chart"
+          />
+        }
+      >
+        <PublicLiveChart />
+      </Suspense>
 
       {/* ==========================================
           5. HERO SECTION
