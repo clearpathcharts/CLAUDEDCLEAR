@@ -961,7 +961,7 @@ export function LightweightCandles({
             }
             // Meaningful gap/move (e.g. Monday open) → open a real new bar.
             const updateObj = {
-              time: currentTime as Time,
+              time: currentTime,
               open: lastCandle.close,
               high: Math.max(lastCandle.close, newClose),
               low: Math.min(lastCandle.close, newClose),
@@ -987,7 +987,7 @@ export function LightweightCandles({
           if (!active) return;
 
           const updateObj = {
-            time: lastCandle.time as Time,
+            time: lastCandle.time,
             open: lastCandle.open,
             high: newHigh,
             low: newLow,
