@@ -618,8 +618,8 @@ function renderUiProfile(slug: string): string | null {
 <p>${escapeHtml(profile.summary)}</p>
 <h2>What this mode optimizes for</h2>
 <ul>${benefits}</ul>
-<p>Open the ClearPath terminal with this interface pre-selected:</p>
-<p><a href="/?profile=${encodeURIComponent(profile.id)}" style="display:inline-block;background:#00E5FF;color:#000;font-weight:900;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.65rem 1.2rem;border-radius:8px;text-decoration:none;margin-top:0.5rem">Launch ${escapeHtml(profile.name)}</a></p>
+<p>Open the neurodivergent desk with this chart profile pre-selected:</p>
+<p><a href="/desk/neurodivergent?profile=${encodeURIComponent(profile.id)}" style="display:inline-block;background:#00E5FF;color:#000;font-weight:900;font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.65rem 1.2rem;border-radius:8px;text-decoration:none;margin-top:0.5rem">Launch ${escapeHtml(profile.name)}</a></p>
 <p style="margin-top:1.5rem"><a href="/ui">← All UI modes</a></p>
 </article>`;
 }
