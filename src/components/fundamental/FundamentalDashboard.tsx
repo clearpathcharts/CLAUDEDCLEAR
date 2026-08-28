@@ -176,12 +176,12 @@ function CompanyIdentity() {
               className="fund-mono text-[12px]"
               style={{ color: chg == null ? '#6f6a60' : chg >= 0 ? '#7d9a6e' : '#c45c4a' }}
             >
-              {chg == null ? 'DATA UNAVAILABLE' : formatPercent(chg)}
+              {chg == null ? '—' : formatPercent(chg)}
             </p>
           </div>
           <div>
             <p className="fund-kicker">Market cap</p>
-            <p className="fund-mono text-xl tabular-nums">{formatCompactUsd(q?.marketCap ?? null)}</p>
+            <p className="fund-mono text-xl tabular-nums">{q?.marketCap != null ? formatCompactUsd(q.marketCap) : '—'}</p>
           </div>
           <div>
             <p className="fund-kicker">Fiscal year</p>

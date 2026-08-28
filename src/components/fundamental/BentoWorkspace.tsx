@@ -34,6 +34,10 @@ import {
   yoyGrowth,
 } from '../../fundamental/format';
 
+function dash(value: string): string {
+  return value === 'DATA UNAVAILABLE' ? '—' : value;
+}
+
 function latestForm(filings: { type: string; date: string; url?: string }[], type: string) {
   const hit = filings.find((f) => f.type.toUpperCase().includes(type));
   return hit || null;
@@ -112,10 +116,10 @@ export default function BentoWorkspace({
         onExpand={() => toggle('overview')}
         expanded={expandedId === 'overview'}
       >
-        <StatRow label="Revenue" value={formatCompactUsd(num(inc0, 'revenue'))} />
-        <StatRow label="Earnings" value={formatCompactUsd(num(inc0, 'netIncome'))} />
-        <StatRow label="Net margin" value={formatPercent(npm)} />
-        <StatRow label="CEO" value={id?.ceo || 'DATA UNAVAILABLE'} />
+        <StatRow label="Revenue" value={dash(formatCompactUsd(num(inc0, 'revenue')))} />
+        <StatRow label="Earnings" value={dash(formatCompactUsd(num(inc0, 'netIncome')))} />
+        <StatRow label="Net margin" value={dash(formatPercent(npm))} />
+        <StatRow label="CEO" value={id?.ceo || '—'} />
       </Bento>
 
       <Bento
@@ -143,20 +147,20 @@ export default function BentoWorkspace({
         kicker="Valuation"
         title="Market multiples"
         span={4}
-        primary={formatMultiple(peNow)}
+        primary={dash(formatMultiple(peNow))}
         primaryLabel="P/E"
         source={src}
         period={stamp}
         onExpand={() => toggle('valuation')}
         expanded={expandedId === 'valuation'}
       >
-        <StatRow label="Forward P/E" value={formatMultiple(num(ttm, 'forwardPE') ?? num(met0, 'forwardPE'))} />
-        <StatRow label="EV / EBITDA" value={formatMultiple(num(ttm, 'enterpriseValueOverEBITDATTM') ?? num(met0, 'enterpriseValueOverEBITDA'))} />
-        <StatRow label="P/S" value={formatMultiple(num(ttm, 'priceToSalesRatioTTM') ?? num(met0, 'priceToSalesRatio'))} />
-        <StatRow label="P/B" value={formatMultiple(num(ttm, 'pbRatioTTM') ?? num(met0, 'pbRatio'))} />
+        <StatRow label="Forward P/E" value={dash(formatMultiple(num(ttm, 'forwardPE') ?? num(met0, 'forwardPE')))} />
+        <StatRow label="EV / EBITDA" value={dash(formatMultiple(num(ttm, 'enterpriseValueOverEBITDATTM') ?? num(met0, 'enterpriseValueOverEBITDA')))} />
+        <StatRow label="P/S" value={dash(formatMultiple(num(ttm, 'priceToSalesRatioTTM') ?? num(met0, 'priceToSalesRatio')))} />
+        <StatRow label="P/B" value={dash(formatMultiple(num(ttm, 'pbRatioTTM') ?? num(met0, 'pbRatio')))} />
         <StatRow
           label="FCF yield"
-          value={formatPercent(num(ttm, 'freeCashFlowYieldTTM') ?? num(met0, 'freeCashFlowYield'), true)}
+          value={dash(formatPercent(num(ttm, 'freeCashFlowYieldTTM') ?? num(met0, 'freeCashFlowYield'), true))}
         />
         <div className="mt-2">
           <HistRange low={low} high={high} current={peNow} />
@@ -171,7 +175,7 @@ export default function BentoWorkspace({
         kicker="Financials"
         title="Revenue engine"
         span={5}
-        primary={formatCompactUsd(num(inc0, 'revenue'))}
+        primary={dash(formatCompactUsd(num(inc0, 'revenue')))}
         primaryLabel="Latest revenue"
         source="Income statement"
         period={`${period.toUpperCase()} · ${stamp}`}
@@ -180,8 +184,8 @@ export default function BentoWorkspace({
       >
         <SparkBars data={revSeries} />
         <div className="mt-2 grid grid-cols-3 gap-2">
-          <StatRow label="YoY" value={formatPercent(yoy)} />
-          <StatRow label="CAGR" value={formatPercent(cagr3)} />
+          <StatRow label="YoY" value={dash(formatPercent(yoy))} />
+          <StatRow label="CAGR" value={dash(formatPercent(cagr3))} />
           <StatRow label="Periods" value={String(revSeries.filter((d) => d.value != null).length || '—')} />
         </div>
       </Bento>
@@ -208,16 +212,16 @@ export default function BentoWorkspace({
         kicker="Financials"
         title="Cash flow"
         span={4}
-        primary={formatCompactUsd(fcf)}
+        primary={dash(formatCompactUsd(fcf))}
         primaryLabel="Free cash flow"
         source="Cash flow statement"
         period={stamp}
         onExpand={() => toggle('financials')}
         expanded={expandedId === 'financials'}
       >
-        <StatRow label="Operating CF" value={formatCompactUsd(ocf)} />
-        <StatRow label="CapEx" value={formatCompactUsd(capex)} />
-        <StatRow label="FCF margin" value={formatPercent(fcfM)} />
+        <StatRow label="Operating CF" value={dash(formatCompactUsd(ocf))} />
+        <StatRow label="CapEx" value={dash(formatCompactUsd(capex))} />
+        <StatRow label="FCF margin" value={dash(formatPercent(fcfM))} />
         <SparkLine data={fcfSeries} color="#7d9a6e" />
       </Bento>
 
@@ -226,25 +230,25 @@ export default function BentoWorkspace({
         kicker="Financials"
         title="Balance sheet"
         span={4}
-        primary={formatCompactUsd(num(bs0, 'netDebt'))}
+        primary={dash(formatCompactUsd(num(bs0, 'netDebt')))}
         primaryLabel="Net debt"
         source="Balance sheet"
         period={stamp}
         onExpand={() => toggle('financials')}
         expanded={expandedId === 'financials'}
       >
-        <StatRow label="Cash" value={formatCompactUsd(num(bs0, 'cashAndCashEquivalents'))} />
-        <StatRow label="Total debt" value={formatCompactUsd(num(bs0, 'totalDebt'))} />
-        <StatRow label="Current assets" value={formatCompactUsd(num(bs0, 'totalCurrentAssets'))} />
-        <StatRow label="Current liabilities" value={formatCompactUsd(num(bs0, 'totalCurrentLiabilities'))} />
-        <StatRow label="Debt / EBITDA" value={formatMultiple(num(met0, 'debtToEBITDA') ?? num(met0, 'netDebtToEBITDA'))} />
+        <StatRow label="Cash" value={dash(formatCompactUsd(num(bs0, 'cashAndCashEquivalents')))} />
+        <StatRow label="Total debt" value={dash(formatCompactUsd(num(bs0, 'totalDebt')))} />
+        <StatRow label="Current assets" value={dash(formatCompactUsd(num(bs0, 'totalCurrentAssets')))} />
+        <StatRow label="Current liabilities" value={dash(formatCompactUsd(num(bs0, 'totalCurrentLiabilities')))} />
+        <StatRow label="Debt / EBITDA" value={dash(formatMultiple(num(met0, 'debtToEBITDA') ?? num(met0, 'netDebtToEBITDA')))} />
         <StatRow
           label="Current ratio"
-          value={formatMultiple(
+          value={dash(formatMultiple(
             num(bs0, 'totalCurrentAssets') != null && num(bs0, 'totalCurrentLiabilities')
               ? num(bs0, 'totalCurrentAssets')! / num(bs0, 'totalCurrentLiabilities')!
               : null,
-          )}
+          ))}
         />
         <SparkLine data={debtSeries} color="#c45c4a" />
       </Bento>
@@ -254,7 +258,7 @@ export default function BentoWorkspace({
         kicker="Earnings"
         title="Earnings"
         span={4}
-        primary={formatUsdPerShare(bundle?.quote?.eps ?? num(inc0, 'epsdiluted'))}
+        primary={dash(formatUsdPerShare(bundle?.quote?.eps ?? num(inc0, 'epsdiluted')))}
         primaryLabel="EPS"
         source="Surprise feed"
         period={stamp}
@@ -262,10 +266,10 @@ export default function BentoWorkspace({
         expanded={expandedId === 'earnings'}
       >
         <DualDotChart data={earnChart} />
-        <StatRow label="Next date" value={bundle?.quote?.earningsAnnouncement || 'DATA UNAVAILABLE'} />
+        <StatRow label="Next date" value={bundle?.quote?.earningsAnnouncement || '—'} />
         <StatRow
           label="Consensus EPS"
-          value={formatUsdPerShare(num(bundle?.estimates?.[0], 'estimatedEpsAvg'))}
+          value={dash(formatUsdPerShare(num(bundle?.estimates?.[0], 'estimatedEpsAvg')))}
         />
         <p className="fund-mono mt-1 text-[9px] uppercase text-[#6f6a60]">Solid = actual · dashed = estimate</p>
       </Bento>
@@ -275,17 +279,17 @@ export default function BentoWorkspace({
         kicker="Financials"
         title="Capital allocation"
         span={4}
-        primary={formatCompactUsd(num(cf0, 'commonStockRepurchased'))}
+        primary={dash(formatCompactUsd(num(cf0, 'commonStockRepurchased')))}
         primaryLabel="Buybacks (reported)"
         source="Cash flow statement"
         period={stamp}
         onExpand={() => toggle('financials')}
         expanded={expandedId === 'financials'}
       >
-        <StatRow label="Dividends" value={formatCompactUsd(num(cf0, 'dividendsPaid'))} />
-        <StatRow label="CapEx" value={formatCompactUsd(capex)} />
-        <StatRow label="Acquisitions" value={formatCompactUsd(num(cf0, 'acquisitionsNet'))} />
-        <StatRow label="Debt issuance" value={formatCompactUsd(num(cf0, 'debtIssuance'))} />
+        <StatRow label="Dividends" value={dash(formatCompactUsd(num(cf0, 'dividendsPaid')))} />
+        <StatRow label="CapEx" value={dash(formatCompactUsd(capex))} />
+        <StatRow label="Acquisitions" value={dash(formatCompactUsd(num(cf0, 'acquisitionsNet')))} />
+        <StatRow label="Debt issuance" value={dash(formatCompactUsd(num(cf0, 'debtIssuance')))} />
         <SparkLine data={capexSeries} />
       </Bento>
 
@@ -405,18 +409,18 @@ export default function BentoWorkspace({
         onExpand={() => toggle('risk')}
         expanded={expandedId === 'risk'}
       >
-        <StatRow label="Debt" value={formatCompactUsd(num(bs0, 'totalDebt'))} />
-        <StatRow label="Customer concentration" value="DATA UNAVAILABLE" />
+        <StatRow label="Debt" value={dash(formatCompactUsd(num(bs0, 'totalDebt')))} />
+        <StatRow label="Customer concentration" value="—" />
         <StatRow
           label="Geographic concentration"
-          value={geoMax != null ? `${geoMax.toFixed(1)}%` : 'DATA UNAVAILABLE'}
+          value={geoMax != null ? `${geoMax.toFixed(1)}%` : '—'}
         />
         <StatRow
           label="Segment concentration"
-          value={prodBand ? `${product.reduce((m, g) => Math.max(m, g.contribution ?? 0), 0).toFixed(1)}%` : 'DATA UNAVAILABLE'}
+          value={prodBand ? `${product.reduce((m, g) => Math.max(m, g.contribution ?? 0), 0).toFixed(1)}%` : '—'}
         />
-        <StatRow label="Cyclical revenue" value="DATA UNAVAILABLE" />
-        <StatRow label="Regulatory" value={filings.some((f) => /8-K|10-K/i.test(f.type)) ? 'See filings' : 'DATA UNAVAILABLE'} />
+        <StatRow label="Cyclical revenue" value="—" />
+        <StatRow label="Regulatory" value={filings.some((f) => /8-K|10-K/i.test(f.type)) ? 'See filings' : '—'} />
         <p className="fund-mono mt-2 text-[9px] uppercase text-[#6f6a60]">Measurements only — no composite risk score</p>
       </Bento>
 
@@ -491,8 +495,8 @@ export default function BentoWorkspace({
         onExpand={() => toggle('workspace')}
         expanded={expandedId === 'workspace'}
       >
-        <StatRow label="CEO" value={id?.ceo || 'DATA UNAVAILABLE'} />
-        <StatRow label="CFO" value="DATA UNAVAILABLE" />
+        <StatRow label="CEO" value={id?.ceo || '—'} />
+        <StatRow label="CFO" value="—" />
         <p className="fund-kicker mt-3">Latest sourced commentary</p>
         <p className="fund-sans text-[13px] leading-relaxed text-[#9a9588]">
           No unsourced quotation. Open the latest 10-Q / 10-K / earnings call from Filings.
