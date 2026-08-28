@@ -58,7 +58,10 @@
 }
 
 .desk-shell[data-desk-paper='white'] [class*='bg-black'],
-.desk-shell[data-desk-paper='white'] [class*='bg-[#050505]'] {
+.desk-shell[data-desk-paper='white'] [class*='bg-[#050505]'],
+.desk-shell[data-desk-paper='white'] section,
+.desk-shell[data-desk-paper='white'] aside,
+.desk-shell[data-desk-paper='white'] footer {
   background-color: #ffffff !important;
 }
 
