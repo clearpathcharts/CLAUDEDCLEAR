@@ -33,6 +33,8 @@ const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'),
 assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
 assert.match(ui, />\s*Enter\s*</);
 assert.match(ui, />\s*Login\s*</);
+assert.match(ui, /grid-cols-3/);
+assert.match(ui, /justify-center/);
 assert.doesNotMatch(ui, /hover:scale/);
 assert.match(ui, /maxWidth/);
 
