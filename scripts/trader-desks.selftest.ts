@@ -32,9 +32,12 @@ for (const id of TRADER_DESK_IDS) {
 
 assert.equal(parseDeskPath('/desk/institutional'), 'institutional');
 assert.equal(parseDeskPath('/desk/INSTITUTIONAL?x=1'), 'institutional');
+assert.equal(parseDeskPath('/fundamental'), 'fundamental');
+assert.equal(parseDeskPath('/fundamental/NVDA'), 'fundamental');
 assert.equal(parseDeskPath('/desk'), null);
 assert.equal(parseDeskPath('/desk/unknown'), null);
 assert.equal(isDeskPath('/desk/retail'), true);
+assert.equal(isDeskPath('/fundamental'), true);
 assert.equal(isTraderDeskId('retail'), true);
 assert.equal(isTraderDeskId('ceo'), false);
 
@@ -103,6 +106,12 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /2382/);
     assert.doesNotMatch(text, /104\.82/);
   }
+  if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
+    assert.match(text, /FundamentalDashboard/);
+    assert.match(text, /data-fundamental-door/);
+    assert.doesNotMatch(text, /FundamentalsPanel/);
+    assert.doesNotMatch(text, /LightweightCandles/);
+  }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);
     assert.match(text, /data-desk-paper/);
@@ -116,6 +125,7 @@ for (const rel of srcFiles) {
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
     assert.match(text, /isDeskRoute/);
+    assert.match(text, /\/api\/fmp\/lookup/);
   }
 }
 

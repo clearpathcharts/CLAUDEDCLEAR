@@ -9,6 +9,7 @@ import {
   parseDeskPath,
   readRememberedTraderDesk,
   rememberTraderDesk,
+  symbolFromDeskPath,
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_SEO } from '../../content/traderDesksCopy';
@@ -38,7 +39,7 @@ function DeskShell({
       body = <InstitutionalTraderDesk />;
       break;
     case 'fundamental':
-      body = <FundamentalTraderDesk />;
+      body = <FundamentalTraderDesk initialSymbol={symbolFromDeskPath(pathname)} />;
       break;
     case 'retail':
       body = <RetailTraderDesk />;
