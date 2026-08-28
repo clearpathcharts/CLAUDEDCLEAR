@@ -1,4 +1,11 @@
 .desk-shell {
+  --desk-border: rgba(255, 255, 255, 0.12);
+  --desk-panel: rgba(8, 8, 10, 0.88);
+  --desk-cyan: #00ffff;
+  --desk-indigo: #818cf8;
+  --desk-pink: #ff1493;
+  --desk-muted: #71717a;
+  --desk-text: #f4f4f5;
   font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.45;
@@ -48,6 +55,13 @@
 }
 
 .desk-shell[data-desk-paper='white'] {
+  --desk-border: rgba(17, 17, 17, 0.16);
+  --desk-panel: #f4f4f5;
+  --desk-cyan: #0e7490;
+  --desk-indigo: #4338ca;
+  --desk-pink: #be185d;
+  --desk-muted: #3f3f46;
+  --desk-text: #111111;
   background: #ffffff !important;
   color: #111111;
 }
