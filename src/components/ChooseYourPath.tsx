@@ -1,9 +1,9 @@
 import React from 'react';
 import { PATH_CARDS, NEURODIVERGENT_BANNER } from '../content/chooseYourPath';
-import type { AdvancedProfileId } from '../lib/advanced/profiles';
+import type { TraderDeskId } from '../lib/traderDesks';
 
 type Props = {
-  onEnter: (profileId: AdvancedProfileId) => void;
+  onEnter: (deskId: TraderDeskId) => void;
 };
 
 /** Native-pixel images — never CSS-upscale past width/height. */
@@ -83,7 +83,7 @@ export default function ChooseYourPath({ onEnter }: Props) {
             <li key={card.id} className="min-w-0 w-full flex flex-col items-center">
               <PathEnter
                 accent={card.accent}
-                onEnter={() => onEnter(card.profileId)}
+                onEnter={() => onEnter(card.id)}
               />
               <div
                 className="w-full rounded-2xl overflow-hidden border bg-black/80"
@@ -108,7 +108,7 @@ export default function ChooseYourPath({ onEnter }: Props) {
           <div className="w-[min(100%,42rem)] md:w-[min(100%,48rem)] flex flex-col items-center">
             <PathEnter
               accent="#FF1493"
-              onEnter={() => onEnter(NEURODIVERGENT_BANNER.profileId)}
+              onEnter={() => onEnter('neurodivergent')}
             />
             <div className="w-full rounded-2xl overflow-hidden border border-[#FF1493]/40">
               <SharpPathImage

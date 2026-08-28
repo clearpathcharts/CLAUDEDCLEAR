@@ -12,6 +12,8 @@ import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import type { AdvancedProfileId } from '../lib/advanced/profiles';
+import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../content/chooseYourPath';
+import { navigateToDesk, type TraderDeskId } from '../lib/traderDesks';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 
@@ -176,9 +178,10 @@ export default function Auth() {
     }
   };
 
-  const enterChosenPath = (profileId: AdvancedProfileId) => {
-    rememberPath(profileId);
-    openPrivateLogin('register');
+  const enterChosenPath = (deskId: TraderDeskId) => {
+    const card = PATH_CARDS.find((c) => c.id === deskId);
+    rememberPath(card?.profileId ?? NEURODIVERGENT_BANNER.profileId);
+    navigateToDesk(deskId);
   };
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,

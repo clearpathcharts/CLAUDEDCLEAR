@@ -19,6 +19,12 @@ Main bar items (left to right style):
 2. Y.W.C. — "Yours / World / Community" hub (community and yours content).
 3. INDACREATOR — Pine Script workstation: upload or paste indicator code, compile it, apply it to charts. (Formerly called The River; if someone says "The River," guide them to INDACREATOR.)
 4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
+4b. TRADER DESKS — Four distinct UIs at /desk. Choose Your Path on the public home enters them:
+   - Institutional (/desk/institutional): dense terminal — watchlist, live chart, FX sessions, BOS/CHoCH/FVG/order blocks/sweeps, volume profile, CVD, news wire. Information-first.
+   - Fundamental (/desk/fundamental): valuation layout — daily chart plus fundamentals / macro / economic news panes.
+   - Retail (/desk/retail): large chart, plain-language structure glossary, education links.
+   - Neurodivergent (/desk/neurodivergent): sensory profile picker linking into /ui modes.
+   These are study desks, not brokerage. They do not place trades or give advice.
 5. NEWS — Market / platform news feed.
 6. MEMBERSHIPS — Plans and membership options.
 Also available (more / secondary / mobile command center):

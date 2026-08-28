@@ -4029,6 +4029,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
       { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
+      { path: '/desk', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/desk/institutional', lastmod, changefreq: 'weekly', priority: '0.9' },
+      { path: '/desk/fundamental', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/desk/retail', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/desk/neurodivergent', lastmod, changefreq: 'weekly', priority: '0.8' },
       ...encyclopediaHubEntries(),
       ...regionalHubEntries(),
     ]));
@@ -4192,7 +4197,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.send(enriched);
       }
-      const staticContentHtml = wantLiveSpa ? null : renderStaticContentPage(req.path);
+      const isDeskRoute = pathClean === '/desk' || pathClean.startsWith('/desk/');
+      const staticContentHtml =
+        wantLiveSpa || (isDeskRoute && !isSearchEngineBot(req.get('user-agent')))
+          ? null
+          : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
         res.setHeader('Content-Type', 'text/html');
@@ -4295,6 +4304,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
+    '/desk',
+    '/desk/:deskId',
     '/tools',
     '/tools/position-size',
     '/u/:username',
