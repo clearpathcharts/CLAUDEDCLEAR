@@ -31,6 +31,7 @@ const candles = fs.readFileSync(path.join(root, 'src/components/charts/Lightweig
 assert.match(candles, /ChartBackgroundToggle/);
 assert.match(candles, /paint\.background/);
 assert.match(candles, /useChartBackgroundMode/);
+assert.match(candles, /backgroundColor: paint\.background/);
 
 const toggle = fs.readFileSync(path.join(root, 'src/components/charts/ChartBackgroundToggle.tsx'), 'utf8');
 assert.match(toggle, /White/);

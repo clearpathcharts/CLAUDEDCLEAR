@@ -1127,17 +1127,28 @@ export function LightweightCandles({
           </button>
         ) : null}
         {isLoading && !error && (
-          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-black/70 p-4 text-center font-mono text-xs text-cyan-400">
+          <div
+            className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 p-4 text-center font-mono text-xs"
+            style={{ backgroundColor: paint.background, color: paint.text }}
+          >
             <span className="animate-pulse">Loading {sym} chart…</span>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/85 p-6 text-center font-mono text-sm text-red-400">
+          <div
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center font-mono text-sm"
+            style={{ backgroundColor: paint.background, color: paint.text }}
+          >
             <span className="text-xs font-bold uppercase tracking-wider text-red-500">Chart data unavailable</span>
             <span>{error}</span>
             <button
               type="button"
-              className="mt-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
+              className="mt-1 rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-wide hover:opacity-90"
+              style={{
+                borderColor: backgroundMode === "white" ? "#111827" : "rgba(34,211,238,0.4)",
+                backgroundColor: backgroundMode === "white" ? "rgba(17,24,39,0.06)" : "rgba(6,182,212,0.1)",
+                color: backgroundMode === "white" ? "#111827" : "#67e8f9",
+              }}
               onClick={() => {
                 setError(null);
                 setIsLoading(true);
