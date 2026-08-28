@@ -14,6 +14,7 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
+import { PlanComparisonTable } from './components/PlanComparisonTable';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
@@ -103,6 +104,11 @@ function isLiteracyPath(path: string): boolean {
   return p === '/literacy' || p === '/literacy-os';
 }
 
+function isPlansPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/plans' || p === '/membership' || p === '/pricing';
+}
+
 function PublicLearnShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
@@ -119,7 +125,7 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
             ← ClearPath Home
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
-            <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+            <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
             <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
@@ -281,6 +287,18 @@ export default function App() {
       content = (
         <PublicLearnShell>
           <EncyclopediaOfIndicators />
+        </PublicLearnShell>
+      );
+    } else if (isPlansPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
+            <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
+            <p className="text-zinc-400 text-sm">
+              Basic / Silver / Gold / Platinum as enforced in the product. Billing is off — this is the spec, not a store.
+            </p>
+            <PlanComparisonTable />
+          </div>
         </PublicLearnShell>
       );
     } else if (isEducationPath(currentPath)) {
