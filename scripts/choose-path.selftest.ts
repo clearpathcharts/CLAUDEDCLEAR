@@ -1,6 +1,6 @@
 /**
- * Login choose-your-path: heading, Enter/Login above each image,
- * manifesto copy must not remain on the login page.
+ * Login choose-your-path: heading, Enter above each image (no white Login),
+ * public full-size chart with search, manifesto copy must not remain on login.
  *
  * Run: npx tsx scripts/choose-path.selftest.ts
  */
@@ -24,7 +24,9 @@ const auth = fs.readFileSync(path.join(root, 'src/components/Auth.tsx'), 'utf8')
 assert.match(auth, /ChooseYourPath/);
 assert.match(auth, /#choose-path/);
 assert.match(auth, /enterChosenPath/);
-assert.match(auth, /loginChosenPath/);
+assert.doesNotMatch(auth, /loginChosenPath/);
+assert.match(auth, /PublicLiveChart/);
+assert.match(auth, /#public-chart/);
 assert.doesNotMatch(auth, /Some people see patterns/);
 assert.doesNotMatch(auth, /KNOWLEDGE BEFORE EXECUTION/);
 assert.doesNotMatch(auth, /Charts should adapt to people/);
@@ -40,7 +42,7 @@ assert.doesNotMatch(auth, /Soft Launch/);
 const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'), 'utf8');
 assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
 assert.match(ui, />\s*Enter\s*</);
-assert.match(ui, />\s*Login\s*</);
+assert.doesNotMatch(ui, />\s*Login\s*</);
 assert.match(ui, /grid-cols-3/);
 assert.match(ui, /justify-center/);
 assert.doesNotMatch(ui, /hover:scale/);
@@ -48,6 +50,12 @@ assert.match(ui, /maxWidth/);
 
 const about = fs.readFileSync(path.join(root, 'src/components/ExternalAboutPage.tsx'), 'utf8');
 assert.match(about, /ABOUT_MANIFESTO_LEAD/);
+
+const publicChart = fs.readFileSync(path.join(root, 'src/components/PublicLiveChart.tsx'), 'utf8');
+assert.match(publicChart, /id=["']public-chart["']/);
+assert.match(publicChart, /ChartSymbolSearch/);
+assert.match(publicChart, /LightweightCandles/);
+assert.match(publicChart, /min-h-\[85vh\]/);
 
 for (const card of PATH_CARDS) {
   await assertNativeImage(card.png, card.width, card.height);
