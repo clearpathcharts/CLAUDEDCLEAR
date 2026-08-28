@@ -1,6 +1,8 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
+import DeskRoute from './components/desks/DeskRoute';
+import { isDeskPath } from './lib/traderDesks';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
@@ -133,6 +135,7 @@ function PublicLearnShell({
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
+            <a href="/desk/fundamental" className="text-[10px] font-black uppercase tracking-wider text-[#22d3ee]/80 hover:text-[#22d3ee]">Fundamental</a>
           </div>
         </nav>
       </header>
@@ -269,6 +272,8 @@ export default function App() {
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
     );
+  } else if (isDeskPath(currentPath)) {
+    content = <DeskRoute pathname={currentPath} />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/affiliate-terms') {

@@ -37,6 +37,8 @@ import { ENCYCLOPEDIA_KNOWLEDGE_BASE } from '../components/encyclopedia/Knowledg
 import { CURRICULUM } from '../education/curriculumData';
 import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
+import { DESK_SEO } from '../content/traderDesksCopy';
+import { TRADER_DESK_IDS, TRADER_DESKS, isTraderDeskId } from '../lib/traderDesks';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -139,6 +141,7 @@ export function markdownToHtml(md: string): string {
 
 const NAV_LINKS = [
   { href: '/', label: 'Terminal' },
+  { href: '/about', label: 'About' },
   { href: '/accessibility', label: 'Accessibility · WCAG' },
   { href: '/ui', label: 'Accessible UI' },
   { href: '/learn', label: 'Learn' },
@@ -552,6 +555,40 @@ ${sections}
 <h2>Key takeaways</h2>
 <ul>${takeaways}</ul>
 <p><a href="/education/${school.id}/${unit.id}">← Back to ${escapeHtml(unit.title)}</a> · <a href="/education">All schools</a></p>
+</article>`;
+}
+
+function renderTraderDesksIndex(): string {
+  const cards = TRADER_DESK_IDS.map((id) => {
+    const desk = TRADER_DESKS[id];
+    const seo = DESK_SEO[id];
+    return `<li><a class="card" href="${desk.href}"><h2>${escapeHtml(desk.title)}</h2><p>${escapeHtml(seo.lead)}</p></a></li>`;
+  }).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Trader desks' }])}
+<h1>ClearPath Trader desks</h1>
+<p class="lead">Four distinct interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Study tools and data visualization only — not a brokerage and not financial advice.</p>
+<article><ul class="card-list">${cards}</ul></article>`;
+}
+
+function renderTraderDesk(id: string): string | null {
+  if (!isTraderDeskId(id)) return null;
+  const desk = TRADER_DESKS[id];
+  const seo = DESK_SEO[id];
+  const others = TRADER_DESK_IDS.filter((d) => d !== id)
+    .map((d) => `<li><a href="${TRADER_DESKS[d].href}">${escapeHtml(TRADER_DESKS[d].title)}</a></li>`)
+    .join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Trader desks', url: '/desk' },
+    { name: desk.title },
+  ])}
+<h1>${escapeHtml(seo.h1)}</h1>
+<p class="lead">${escapeHtml(seo.lead)}</p>
+<article>
+<p>${escapeHtml(seo.description)}</p>
+<p><a href="${desk.href}?live=1">Open the interactive ${escapeHtml(desk.title)} desk</a> · <a href="/">Home</a></p>
+<h2>Other desks</h2>
+<ul>${others}</ul>
 </article>`;
 }
 
@@ -1360,6 +1397,11 @@ export function renderStaticContentPage(reqPath: string): string | null {
     body = renderEducationLesson(parts[1], parts[2], parts[3]);
   } else if (pathClean === '/literacy' || pathClean === '/literacy-os') body = renderLiteracyHub();
   else if (pathClean === '/ui') body = renderUiIndex();
+  else if (pathClean === '/desk') body = renderTraderDesksIndex();
+  else if (parts[0] === 'desk' && parts.length === 2) body = renderTraderDesk(parts[1]);
+  else if (pathClean === '/fundamental' || (parts[0] === 'fundamental' && parts.length <= 2)) {
+    body = renderTraderDesk('fundamental');
+  }
   else if (parts[0] === 'ui' && parts.length === 2) body = renderUiProfile(parts[1]);
   else if (pathClean === '/tools' || pathClean === '/tools/position-size') {
     body = pathClean === '/tools' ? renderToolsIndex() : renderPositionSizeTool();

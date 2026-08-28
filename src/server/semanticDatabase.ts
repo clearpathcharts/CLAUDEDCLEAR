@@ -30,6 +30,8 @@ import {
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
+import { DESK_SEO } from '../content/traderDesksCopy';
+import { isTraderDeskId, TRADER_DESKS } from '../lib/traderDesks';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -402,8 +404,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
-    description = "ClearPath Trader is a market intelligence terminal: charts, pattern scans, encyclopedias, education, Literacy OS, and accessibility profiles. Not aiclearpath.com. Not a website chatbot.";
-    keywords = "about ClearPath Trader, market intelligence terminal, not a chatbot, not ClearPath AI, trading education, financial encyclopedia";
+    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.";
+    keywords = "about ClearPath Trader, market intelligence terminal, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "About", url: "/about" }
@@ -1080,6 +1082,29 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       });
     }
+  } else if (pathClean === '/desk') {
+    title = 'Trader Desks | ClearPathTrader';
+    description =
+      'Four ClearPathTrader interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Educational market desks — not a brokerage.';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Trader desks', url: '/desk' },
+    ]));
+  } else if (pathClean === '/fundamental' || pathClean.startsWith('/fundamental/') || pathClean.startsWith('/desk/')) {
+    const id = pathClean.includes('fundamental')
+      ? 'fundamental'
+      : pathClean.slice('/desk/'.length).split('/')[0];
+    if (isTraderDeskId(id)) {
+      const seo = DESK_SEO[id];
+      title = seo.title;
+      description = seo.description;
+      keywords = [TRADER_DESKS[id].title, 'ClearPath Trader desk', 'market intelligence'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Trader desks', url: '/desk' },
+        { name: TRADER_DESKS[id].title, url: pathClean },
+      ]));
+    }
   }
 
   // Normalize length for SERP/social previews (entity pages may still be long; clamp soft)
@@ -1176,7 +1201,7 @@ ${hreflangTags}
     // Prefer existing H1 (index.html #seo-document-h1 or bot static page). Never add a second.
     if (!/<h1[\s>]/i.test(html)) {
       const homeHeader =
-        '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
+        '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;text-align:center">' +
         '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
         '</header>';
       if (html.includes('<div id="root">')) {

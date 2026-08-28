@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ArrowLeft, Cpu, ShieldCheck, Zap, Activity, Users, LineChart, Building2 } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
+import { ABOUT_MANIFESTO_CLOSER, ABOUT_MANIFESTO_LEAD } from '../content/aboutManifesto';
 
 export default function ExternalAboutPage() {
   const handleBack = () => {
@@ -11,9 +12,10 @@ export default function ExternalAboutPage() {
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
-      <SEO 
-        title="About ClearPath Trader | Market Intelligence Terminal" 
-        description="ClearPath Trader is a market intelligence terminal: live charts, pattern scans, encyclopedias, education, and accessibility profiles. Not a brokerage. Not a website chatbot. Not aiclearpath.com." 
+      <SEO
+        title="About ClearPath Trader | Market Intelligence Terminal"
+        description="Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com."
+        canonical="https://clearpathtrader.com/about"
       />
       <SurfBackground />
       
@@ -54,6 +56,24 @@ export default function ExternalAboutPage() {
               ClearPath Trader is a <strong className="text-indigo-400 font-normal">full market intelligence and education terminal</strong> — live charts, pattern scans, encyclopedias, Literacy OS, a macro desk, custom indicators, and 13 accessibility profiles. It is <strong className="text-white font-normal">not</strong> a website chatbot, not a receptionist bot, and not aiclearpath.com.
             </p>
           </header>
+
+          <section
+            id="about-manifesto"
+            aria-labelledby="about-manifesto-heading"
+            className="glass p-8 md:p-12 rounded-3xl border border-[#00FFFF]/20 shadow-2xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00FFFF]/10 rounded-full blur-[100px] pointer-events-none" />
+            <h2 id="about-manifesto-heading" className="sr-only">
+              Some people see patterns
+            </h2>
+            <p className="relative text-zinc-200 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-4xl mx-auto whitespace-pre-line font-cinzel font-bold">
+              {ABOUT_MANIFESTO_LEAD}
+            </p>
+            <div className="w-24 h-[3px] mx-auto my-10 bg-[#FF1493] rounded-full shadow-[0_0_10px_rgba(255,20,147,0.5)]" />
+            <p className="relative text-zinc-300 text-lg sm:text-xl md:text-2xl leading-relaxed max-w-4xl mx-auto whitespace-pre-line font-cinzel font-bold">
+              {ABOUT_MANIFESTO_CLOSER}
+            </p>
+          </section>
 
           <section className="glass p-8 md:p-10 rounded-3xl border border-amber-500/20 shadow-2xl relative overflow-hidden">
             <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-4">

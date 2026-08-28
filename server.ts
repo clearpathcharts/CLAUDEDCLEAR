@@ -243,6 +243,7 @@ import {
   getStripeSecretKey,
   getBoardAccessCode,
   FMP_ALLOWED_ENDPOINTS,
+  FMP_LOOKUP_KINDS,
 } from './src/server/secrets';
 import {
   resolveAuthenticatedUid,
@@ -391,9 +392,9 @@ async function startServer() {
           directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-            fontSrc: ["'self'", 'data:', 'https:'],
+            fontSrc: ["'self'", 'data:', 'https:', 'https://fonts.gstatic.com'],
             connectSrc: [
               "'self'",
               'https:',
@@ -3666,10 +3667,49 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
+  // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
+  app.get('/api/fmp/lookup', ...marketLimiter, async (req, res) => {
+    const kind = String(req.query.kind || '');
+    if (!FMP_LOOKUP_KINDS.has(kind)) {
+      return res.status(400).json({ error: 'Lookup kind not allowed' });
+    }
+    const apiKey = getFmpApiKey();
+    if (!apiKey) {
+      return res.status(503).json({ error: 'FMP unavailable', message: 'Configure FMP_API_KEY on the server.' });
+    }
+    const symbol = String(req.query.symbol || '');
+    const q = String(req.query.q || '');
+    if (kind !== 'search' && !/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
+      return res.status(400).json({ error: 'Invalid symbol' });
+    }
+    if (kind === 'search' && (!q || q.length > 64)) {
+      return res.status(400).json({ error: 'query required' });
+    }
+    const key = encodeURIComponent(apiKey);
+    let url = '';
+    if (kind === 'search') {
+      url = `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(q)}&limit=20&apikey=${key}`;
+    } else if (kind === 'news') {
+      url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${encodeURIComponent(symbol)}&limit=30&apikey=${key}`;
+    } else if (kind === 'insider') {
+      url = `https://financialmodelingprep.com/api/v3/insider-trading?symbol=${encodeURIComponent(symbol)}&limit=30&apikey=${key}`;
+    } else {
+      url = `https://financialmodelingprep.com/api/v3/stock_peers?symbol=${encodeURIComponent(symbol)}&apikey=${key}`;
+    }
+    try {
+      const fmpRes = await fetch(url, { redirect: 'error' });
+      if (!fmpRes.ok) throw new Error(`FMP returned ${fmpRes.status}`);
+      res.json(await fmpRes.json());
+    } catch (error: any) {
+      console.error('[FMP Lookup Error]', error?.message || error);
+      res.status(502).json({ error: 'FMP API node timed out or failed' });
+    }
+  });
+
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
   app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
-    const { limit } = req.query;
+    const { limit, period } = req.query;
     if (!symbol || !endpoint) {
       return res.status(400).json({ error: 'symbol and endpoint required' });
     }
@@ -3679,6 +3719,9 @@ ${CPT_SITE_GUIDE}`;
     if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
       return res.status(400).json({ error: 'Invalid symbol' });
     }
+    if (period != null && period !== 'annual' && period !== 'quarter') {
+      return res.status(400).json({ error: 'Invalid period' });
+    }
     const apiKey = getFmpApiKey();
     if (!apiKey) {
       return res.status(503).json({ error: 'FMP unavailable', message: 'Configure FMP_API_KEY on the server.' });
@@ -3686,7 +3729,10 @@ ${CPT_SITE_GUIDE}`;
     const safeLimit = limit ? Math.min(Math.max(parseInt(String(limit), 10) || 1, 1), 40) : undefined;
 
     try {
-      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${encodeURIComponent(symbol)}?apikey=${encodeURIComponent(apiKey)}${safeLimit ? `&limit=${safeLimit}` : ''}`;
+      const params = new URLSearchParams({ apikey: apiKey });
+      if (safeLimit) params.set('limit', String(safeLimit));
+      if (period === 'annual' || period === 'quarter') params.set('period', period);
+      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${encodeURIComponent(symbol)}?${params.toString()}`;
       const fmpRes = await fetch(url, { redirect: 'error' });
       if (!fmpRes.ok) {
          throw new Error(`FMP returned ${fmpRes.status}`);
@@ -4029,6 +4075,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
       { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
       { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
+      { path: '/desk', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/desk/institutional', lastmod, changefreq: 'weekly', priority: '0.9' },
+      { path: '/desk/fundamental', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/desk/retail', lastmod, changefreq: 'weekly', priority: '0.8' },
+      { path: '/desk/neurodivergent', lastmod, changefreq: 'weekly', priority: '0.8' },
       ...encyclopediaHubEntries(),
       ...regionalHubEntries(),
     ]));
@@ -4198,7 +4249,15 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         return res.send(enriched);
       }
-      const staticContentHtml = wantLiveSpa ? null : renderStaticContentPage(req.path);
+      const isDeskRoute =
+        pathClean === '/desk' ||
+        pathClean.startsWith('/desk/') ||
+        pathClean === '/fundamental' ||
+        pathClean.startsWith('/fundamental/');
+      const staticContentHtml =
+        wantLiveSpa || (isDeskRoute && !isSearchEngineBot(req.get('user-agent')))
+          ? null
+          : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
         res.setHeader('Content-Type', 'text/html');
@@ -4301,6 +4360,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
+    '/desk',
+    '/desk/:deskId',
+    '/fundamental',
+    '/fundamental/:symbol',
     '/tools',
     '/tools/position-size',
     '/u/:username',

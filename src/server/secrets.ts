@@ -140,6 +140,17 @@ export const FMP_ALLOWED_ENDPOINTS = new Set([
   'enterprise-values',
   'rating',
   'key-executives',
+  'analyst-estimates',
   'earnings-surprises',
+  'key-metrics-ttm',
+  'ratios-ttm',
+  'financial-growth',
+  'historical-market-capitalization',
   'sec_filings',
+  'shares_float',
+  'revenue-product-segmentation',
+  'revenue-geographic-segmentation',
 ]);
+
+/** Query-style FMP v3 resources (not /:endpoint/:symbol). */
+export const FMP_LOOKUP_KINDS = new Set(['search', 'news', 'insider', 'peers']);
