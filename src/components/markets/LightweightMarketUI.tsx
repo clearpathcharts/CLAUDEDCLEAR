@@ -5,6 +5,7 @@ import { Maximize2, Minimize2, X } from 'lucide-react';
 import { themeProfiles, type ThemeProfile } from '../../lib/theme/profiles';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
+import { ChartBackgroundToggle } from '../charts/ChartBackgroundToggle';
 import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
 import { ChartLocalTimeAndPulse } from '../charts/ChartLocalTimeAndPulse';
 import { DraggableChartPanel } from '../charts/DraggableChartPanel';
@@ -522,6 +523,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                             updateSlot(idx, { symbol: resolveMarketAsset(sym).value });
                           }}
                         />
+                        <ChartBackgroundToggle compact />
                         {slot.symbol && (
                           <button
                             type="button"

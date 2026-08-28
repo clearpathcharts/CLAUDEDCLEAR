@@ -10,9 +10,9 @@ export const DESK_SEO: Record<
   institutional: {
     title: 'Institutional Trader Desk | ClearPathTrader',
     description:
-      'Dense institutional trader UI: live chart, watchlist, FX sessions, market structure (BOS, CHoCH, FVG, order blocks, liquidity sweeps), volume profile, and CVD. Analytics only — not a brokerage.',
+      'Institutional market-intelligence terminal: global ribbon, market universe, multi-chart workspace, flow, liquidity, volatility, options, cross-asset correlation, macro, news, positioning, and risk. Analytics only — not a brokerage.',
     h1: 'Institutional Trader Desk',
-    lead: 'Information-first terminal: live candles, session clock, structure readouts, and a compact news wire. Study tools only — not execution or advice.',
+    lead: 'Market command center: global context, flow, liquidity, cross-asset, macro, and news around a multi-chart workspace. Study tools only — not execution or advice.',
   },
   fundamental: {
     title: 'Fundamental Market Intelligence | ClearPathTrader',

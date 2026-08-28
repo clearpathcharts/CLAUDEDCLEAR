@@ -20,7 +20,7 @@ Main bar items (left to right style):
 3. INDACREATOR — Pine Script workstation: upload or paste indicator code, compile it, apply it to charts. (Formerly called The River; if someone says "The River," guide them to INDACREATOR.)
 4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
 4b. TRADER DESKS — Four distinct UIs at /desk. Choose Your Path on the public home enters them:
-   - Institutional (/desk/institutional): dense terminal — watchlist, live chart, FX sessions, BOS/CHoCH/FVG/order blocks/sweeps, volume profile, CVD, news wire. Information-first.
+   - Institutional (/desk/institutional): bento market command center — global ribbon, market universe, multi-chart workspace, flow, liquidity, time & sales, volatility, options, correlation, macro, calendar, news, positioning, earnings, risk. Market structure (BOS/CHoCH/FVG) lives in a collapsible technical module. Information-first; no order tickets.
    - Fundamental (/desk/fundamental or /fundamental): research workstation — company search, financial statements, earnings, valuation, peers, industry, FRED macro, filings, notes. Information only; no buy/sell or order tickets.
    - Retail (/desk/retail): large chart, plain-language structure glossary, education links.
    - Neurodivergent (/desk/neurodivergent): sensory profile picker linking into /ui modes.
