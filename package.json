@@ -19,6 +19,7 @@
     "test:app-update": "tsx scripts/app-update.selftest.ts",
     "test:firebase-mock": "tsx scripts/firebase-mock.selftest.ts",
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
+    "test:choose-path": "tsx scripts/choose-path.selftest.ts",
     "test:regional-hubs": "tsx scripts/regional-hubs.selftest.ts",
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",

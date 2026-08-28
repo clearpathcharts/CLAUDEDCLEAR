@@ -23,7 +23,9 @@ const scrollToSection = (id: string) => {
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
 import PrivateLoginDesk from './PrivateLoginDesk';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
+import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
+import type { AdvancedProfileId } from '../lib/advanced/profiles';
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -176,6 +178,15 @@ export default function Auth() {
   const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
     setPrivateLoginMode(mode);
     setPrivateLoginOpen(true);
+  };
+
+  const enterChosenPath = (profileId: AdvancedProfileId) => {
+    try {
+      localStorage.setItem('clearpath_current_profile_id', profileId);
+    } catch {
+      /* ignore quota / private mode */
+    }
+    openPrivateLogin('register');
   };
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,
@@ -720,6 +731,7 @@ export default function Auth() {
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
+          <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
           <a href="#why-clearpath" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
           <a href="#ecosystem" className="auth-nav-tab-label auth-nav-lava-text shrink-0">The Ecosystem</a>
           <a href="#soft-launch" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Soft Launch</a>
@@ -930,6 +942,8 @@ CLARITY BEFORE DECISIONS.`}
         </motion.div>
 
       </section>
+
+      <ChooseYourPath onEnterUi={enterChosenPath} />
 
       {/* ==========================================
           6. WHY CLEARPATH EXISTS SECTION
