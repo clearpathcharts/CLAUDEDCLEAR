@@ -1,0 +1,120 @@
+.desk-shell {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.desk-shell :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, input) {
+  font-weight: 700;
+}
+
+.desk-shell :is(h1, h2, h3) {
+  font-weight: 800;
+}
+
+.desk-shell .text-\[8px\],
+.desk-shell .text-\[9px\],
+.desk-shell .text-\[10px\],
+.desk-shell .text-xs {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-\[11px\],
+.desk-shell .text-sm {
+  font-size: 1.0625rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-base {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-lg {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell .text-xl,
+.desk-shell .text-2xl {
+  font-weight: 800 !important;
+}
+
+.desk-shell input,
+.desk-shell button {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.desk-shell[data-desk-paper='white'] {
+  background: #ffffff !important;
+  color: #111111;
+}
+
+.desk-shell[data-desk-paper='white'] header {
+  background: #ffffff !important;
+  border-color: rgba(17, 17, 17, 0.14) !important;
+}
+
+.desk-shell[data-desk-paper='white'] [class*='bg-black'],
+.desk-shell[data-desk-paper='white'] [class*='bg-[#050505]'] {
+  background-color: #ffffff !important;
+}
+
+.desk-shell[data-desk-paper='white'] [class*='border-white'] {
+  border-color: rgba(17, 17, 17, 0.16) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-white,
+.desk-shell[data-desk-paper='white'] .text-zinc-100,
+.desk-shell[data-desk-paper='white'] .text-zinc-200,
+.desk-shell[data-desk-paper='white'] .text-zinc-300 {
+  color: #111111 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-zinc-400,
+.desk-shell[data-desk-paper='white'] .text-zinc-500,
+.desk-shell[data-desk-paper='white'] .text-zinc-600 {
+  color: #3f3f46 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .hover\:text-white:hover {
+  color: #111111 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-emerald-300,
+.desk-shell[data-desk-paper='white'] .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-cyan-300,
+.desk-shell[data-desk-paper='white'] .text-cyan-400 {
+  color: #0e7490 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-fuchsia-300 {
+  color: #a21caf !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-amber-300 {
+  color: #b45309 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .bg-zinc-600 {
+  background-color: #a1a1aa !important;
+}
+
+.desk-shell[data-desk-paper='white'] input {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(17, 17, 17, 0.22) !important;
+}

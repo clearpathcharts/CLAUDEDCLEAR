@@ -7,9 +7,11 @@ import fs from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import {
+  DESK_PAPER_STORAGE_KEY,
   FX_SESSIONS,
   TRADER_DESK_IDS,
   TRADER_DESKS,
+  isDeskPaper,
   isDeskPath,
   isSessionOpen,
   isTraderDeskId,
@@ -44,6 +46,14 @@ assert.equal(isSessionOpen(16, 7, 16), false);
 assert.equal(isSessionOpen(22, 21, 6), true);
 assert.equal(isSessionOpen(10, 21, 6), false);
 assert.ok(FX_SESSIONS.length === 4);
+assert.equal(isDeskPaper('white'), true);
+assert.equal(isDeskPaper('black'), true);
+assert.equal(isDeskPaper('blue'), false);
+assert.equal(DESK_PAPER_STORAGE_KEY, 'clearpath_desk_paper');
+
+const themeCss = fs.readFileSync(path.join(root, 'src/components/desks/deskTheme.css'), 'utf8');
+assert.match(themeCss, /font-weight: 700/);
+assert.match(themeCss, /data-desk-paper='white'/);
 
 function candle(time: number, o: number, h: number, l: number, c: number, volume = 0): Candle {
   return { time, open: o, high: h, low: l, close: c, volume };
@@ -67,6 +77,7 @@ const srcFiles = [
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/DeskRoute.tsx',
+  'src/components/desks/TraderDeskChrome.tsx',
   'src/App.tsx',
   'src/components/Auth.tsx',
   'src/components/ChooseYourPath.tsx',
@@ -100,6 +111,16 @@ for (const rel of srcFiles) {
     assert.match(text, /data-fundamental-door/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
+  }
+  if (rel === 'src/components/desks/DeskRoute.tsx') {
+    assert.match(text, /desk-shell/);
+    assert.match(text, /data-desk-paper/);
+    assert.match(text, /DeskAppearanceProvider/);
+  }
+  if (rel.endsWith('TraderDeskChrome.tsx')) {
+    assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
+    assert.match(text, /White screen/);
+    assert.match(text, /togglePaper/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

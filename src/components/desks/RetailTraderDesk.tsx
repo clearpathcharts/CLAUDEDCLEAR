@@ -17,7 +17,7 @@ export default function RetailTraderDesk() {
       <section className="overflow-hidden rounded-2xl border border-[#00FFFF]/35 bg-black/80">
         <div className="space-y-3 border-b border-white/10 px-4 py-3">
           <h2 className="text-lg font-black uppercase tracking-tight text-white">Your chart</h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-zinc-400">
+          <p className="max-w-2xl text-base font-bold leading-relaxed text-zinc-400">
             Search a market. Watch the candles. When a word on the right is new, tap it — we explain
             it in plain language. This is a study desk, not a place that tells you to buy or sell.
           </p>
@@ -33,7 +33,7 @@ export default function RetailTraderDesk() {
                 type="button"
                 onClick={() => setTimeframe(tf)}
                 aria-pressed={timeframe === tf}
-                className="rounded-lg border px-3 py-1.5 text-xs font-bold uppercase"
+                className="rounded-lg border px-3 py-1.5 text-sm font-extrabold uppercase"
                 style={{
                   color: timeframe === tf ? '#050505' : '#00FFFF',
                   borderColor: '#00FFFF66',
@@ -57,7 +57,7 @@ export default function RetailTraderDesk() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-black/60 p-4">
-        <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-[#00FFFF]">
+        <h2 className="mb-2 text-lg font-black uppercase tracking-widest text-[#00FFFF]">
           What am I looking at?
         </h2>
         <ul className="space-y-2">
@@ -69,13 +69,13 @@ export default function RetailTraderDesk() {
                   type="button"
                   onClick={() => setOpenId(open ? null : item.id)}
                   aria-expanded={open}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-white"
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-base font-extrabold text-white"
                 >
                   {item.name}
-                  <span className="font-mono text-[10px] text-zinc-500">{item.abbr}</span>
+                  <span className="font-mono text-sm font-bold text-zinc-500">{item.abbr}</span>
                 </button>
                 {open && (
-                  <p className="border-t border-white/10 px-3 py-2 text-sm leading-relaxed text-zinc-400">
+                  <p className="border-t border-white/10 px-3 py-2 text-base font-bold leading-relaxed text-zinc-400">
                     {item.description}
                   </p>
                 )}
@@ -83,7 +83,7 @@ export default function RetailTraderDesk() {
             );
           })}
         </ul>
-        <div className="mt-4 flex flex-wrap gap-3 text-sm">
+        <div className="mt-4 flex flex-wrap gap-3 text-base font-bold">
           <a href="/education" className="text-[#00FFFF] underline-offset-2 hover:underline">
             Education
           </a>

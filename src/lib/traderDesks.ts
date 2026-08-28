@@ -110,3 +110,27 @@ export function isSessionOpen(utcHour: number, utcStart: number, utcEnd: number)
   if (utcStart < utcEnd) return utcHour >= utcStart && utcHour < utcEnd;
   return utcHour >= utcStart || utcHour < utcEnd;
 }
+
+export const DESK_PAPER_STORAGE_KEY = 'clearpath_desk_paper';
+export type DeskPaper = 'black' | 'white';
+
+export function isDeskPaper(value: string | null | undefined): value is DeskPaper {
+  return value === 'black' || value === 'white';
+}
+
+export function readDeskPaper(): DeskPaper {
+  try {
+    const saved = localStorage.getItem(DESK_PAPER_STORAGE_KEY);
+    return isDeskPaper(saved) ? saved : 'black';
+  } catch {
+    return 'black';
+  }
+}
+
+export function rememberDeskPaper(paper: DeskPaper): void {
+  try {
+    localStorage.setItem(DESK_PAPER_STORAGE_KEY, paper);
+  } catch {
+    /* quota / private mode */
+  }
+}
