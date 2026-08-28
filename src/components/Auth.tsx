@@ -543,7 +543,7 @@ export default function Auth() {
   const faqs = [
     {
       q: "What is ClearPath Trader?",
-      a: "ClearPath Trader is an elite macroeconomic intelligence system built specifically to help ordinary retail users understand and navigate complex market environments. It pairs academic-level training structured on inflation, liquidity, and asset values with premium visual interfaces and autonomous tools."
+      a: "ClearPath Trader is a full market intelligence and education terminal — live charts, unlimited indicators, automatic pattern context, financial and indicator encyclopedias, Literacy OS, a macro desk, and accessibility / neurodivergent UI profiles. The in-app C.P.T. Buddy is a mentor inside that terminal, not a website chatbot that greets visitors or books appointments. Not a brokerage.",
     },
     {
       q: "How do I get access?",

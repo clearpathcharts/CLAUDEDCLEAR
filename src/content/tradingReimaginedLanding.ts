@@ -31,6 +31,11 @@ export const TRADING_REIMAGINED_SEO = {
 
 export const TRADING_REIMAGINED_FAQS = [
   {
+    question: 'Is ClearPath Trader a ChatGPT-style website chatbot?',
+    answer:
+      'No. The “if trading and ChatGPT had a baby” line is a metaphor for a full market terminal with AI-assisted study tools. ClearPath Trader is live charts, indicators, pattern scans, encyclopedias, and education — not a widget that greets website visitors, captures leads, or books appointments. It is not ClearPath AI (aiclearpath.com).',
+  },
+  {
     question: 'What makes ClearPath Trader different from other trading platforms?',
     answer:
       'ClearPath combines live charts, unlimited indicators, automatic pattern detection, AI-assisted tools, customizable layouts, social and news feeds, and a full beginner-to-advanced education path — in one terminal without tab-switching.',

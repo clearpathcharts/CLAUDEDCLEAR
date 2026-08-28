@@ -9,6 +9,7 @@ export type BudgetLine = {
 
 export const MONTHLY_BUDGET = {
   month: "August 2026",
+  source: "src/data/monthlyBudget.ts — edit this file; a sheet/API import can replace it later",
   named: 1282,
   missingLiveTotal: 113,
   operatingFloor: 1395,

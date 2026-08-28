@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, Suspense, lazy, useMemo } from 'react';
 import { 
   Home, 
   Newspaper, 
@@ -11,7 +11,6 @@ import {
   Mail, 
   Plus, 
   Heart, 
-  Share2, 
   MoreHorizontal,
   ChevronDown,
   ArrowLeft,
@@ -83,6 +82,8 @@ import SectionGuideOffer from './sectionGuides/SectionGuideOffer';
 import { useMembership } from '../hooks/useMembership';
 import { useAppShell } from '../contexts/AppShellContext';
 import { isAppShell as detectAppShell } from '../lib/appShell';
+import { EducationDeskBar } from '../education/EducationDeskBar';
+import { isEducationFamilyTab } from '../education/educationDesks';
 
 // Lazy load heavy tabs / panels to keep the main Dashboard chunk smaller
 const InteractiveChart = lazy(() =>
@@ -290,24 +291,6 @@ const ThemeTerminalTab = ({ chartTheme, setChartTheme, profile, onProfileChange 
   );
 };
 
-const DATA_ONLY_MARKETS = [
-  { label: 'EUR/USD', value: 'EURUSD' },
-  { label: 'GBP/USD', value: 'GBPUSD' },
-  { label: 'USD/JPY', value: 'USDJPY' },
-  { label: 'AUD/USD', value: 'AUDUSD' },
-  { label: 'USD/CAD', value: 'USDCAD' },
-  { label: 'NZD/USD', value: 'NZDUSD' },
-  { label: 'XAU/USD', value: 'XAUUSD' },
-  { label: 'XAG/USD', value: 'XAGUSD' },
-  { label: 'BTC/USD', value: 'BTCUSD' },
-  { label: 'ETH/USD', value: 'ETHUSD' },
-  { label: 'SOL/USD', value: 'SOLUSD' },
-  { label: 'SPX', value: 'SPX' },
-  { label: 'DXY', value: 'DXY' },
-  { label: 'AAPL', value: 'AAPL' },
-  { label: 'NVDA', value: 'NVDA' },
-];
-
 // Helper Component for Tab Switching Optimization
 const TabContent = ({ 
   activeTab, 
@@ -321,8 +304,6 @@ const TabContent = ({
   isFounder,
   selectedLightweightSymbol,
   setSelectedLightweightSymbol,
-  leftSide,
-  setLeftSide,
   rightSide,
   setRightSide,
   showTicker,
@@ -347,8 +328,6 @@ const TabContent = ({
   isFounder: boolean,
   selectedLightweightSymbol: string,
   setSelectedLightweightSymbol: (s: string) => void,
-  leftSide: boolean,
-  setLeftSide: (v: boolean) => void,
   rightSide: boolean,
   setRightSide: (v: boolean) => void,
   showTicker: boolean,
@@ -527,8 +506,6 @@ const TabContent = ({
     isFounder,
     selectedLightweightSymbol,
     setSelectedLightweightSymbol,
-    leftSide, 
-    setLeftSide, 
     rightSide, 
     setRightSide, 
     showTicker, 
@@ -578,7 +555,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     logout,
     purgeAuthCache
   } = useAuth();
-  const [leftSide, setLeftSide] = useState(false);
   // Contacts rail stays closed on login — no auto-open faces/conversations.
   const [rightSide, setRightSide] = useState(false);
   const [chatDockOpen, setChatDockOpen] = useState(false);
@@ -617,9 +593,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         }
         if (path === '/education' || path === '/clearpath-education') {
           return 'ClearPathEducation';
-        }
-        if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
-          return 'Fundamentals';
         }
         if (path === '/literacy' || path === '/literacy-os') {
           return 'LiteracyOS';
@@ -708,10 +681,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const [selectedLightweightSymbol, setSelectedLightweightSymbol] = useState<string>('XAUUSD');
-  const [isMarketsDropdownOpen, setIsMarketsDropdownOpen] = useState(false);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showMarketPulse, setShowMarketPulse] = useState(true);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [activeMarketAssets, setActiveMarketAssets] = useState([
     'GOLD', 'OIL', 'US10Y', 'BTCUSDT'
@@ -1006,7 +976,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'TheRiver', icon: Cpu, label: 'INDACREATOR' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
-      { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
+      { id: 'ClearPathEducation', icon: Book, label: 'CLEARPATH EDUCATION' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
       { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
@@ -1250,7 +1220,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   return (
     <div 
-      className="relative min-h-[100dvh] flex flex-col lg:flex-row w-full text-[#ccc8db] font-sans selection:bg-indigo-500 transition-colors duration-1000 overflow-visible"
+      className="relative min-h-[100dvh] flex flex-col w-full text-[#ccc8db] font-sans selection:bg-indigo-500 transition-colors duration-1000 overflow-visible"
       style={{ background: profile.bgTop }}
     >
       {showAvatarPicker && (
@@ -1295,240 +1265,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
 
       <SEO title={seoData.title} description={seoData.description} />
-      {/* Mobile Sidebar Backdrop */}
-      {leftSide && !isAppShell && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden cursor-pointer"
-          onClick={() => setLeftSide(false)}
-        />
-      )}
-
-      {/* Left Sidebar — hidden in lean app shell (nav lives in command center) */}
-      {!isAppShell && (
-      <motion.div 
-        initial={false}
-        animate={{ width: leftSide ? 280 : 84 }}
-        className={`
-          fixed inset-y-0 left-0 z-50 border-r flex flex-col transition-all duration-300 glass overflow-hidden
-          lg:sticky lg:top-0 lg:h-dvh lg:translate-x-0
-          ${leftSide ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-        style={{ borderColor: `${profile.borderA}22` }}
-      >
-        <div 
-          className="flex items-center px-6 h-[80px] border-b border-[#ffffff08] sticky top-0 z-10 cursor-pointer hover:bg-white/5 transition-all justify-between" 
-          onClick={() => setLeftSide(!leftSide)}
-        >
-          <div className="flex items-center space-x-3 overflow-hidden">
-            <div className="w-8 h-8 min-w-[32px] rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30 overflow-hidden">
-              <Activity size={16} className="text-white" />
-            </div>
-            {leftSide && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="whitespace-nowrap">
-                <div className="font-black tracking-tighter text-[18px] leading-tight uppercase italic bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(180deg, #ff0000 0%, #ff4500 50%, #FFA500 100%)', WebkitBackgroundClip: 'text', color: 'transparent', filter: 'drop-shadow(0 0 5px rgba(255,0,0,0.5))' }}>
-                  C P M S
-                </div>
-                <div className="text-[7px] font-bold tracking-[0.3em] text-[#5c5e6e] uppercase mt-0.5">
-                  MARKET SCIENCE
-                </div>
-              </motion.div>
-            )}
-          </div>
-          {leftSide && <MoreHorizontal size={14} className="text-gray-500" />}
-        </div>
-
-        {/* Sidebar Toggle button removed per user request to avoid covering other buttons */}
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pt-8 pb-32">
-          <div className="text-[8px] font-black mb-6 uppercase tracking-[0.3em] px-4" style={{ color: '#E0115F' }}>
-            Market Navigation
-          </div>
-          <nav className="flex flex-col space-y-2">
-            {menuItems.map((item) => {
-              const isTraining = item.id === 'TrainingBoard';
-              const isDiscovery = item.id === 'Discovery';
-              const isRiver = item.id === 'TheRiver';
-              const isIndigo = item.id === 'MeetTheBoard' || isDiscovery;
-              const isLogout = item.id === 'Logout';
-              const baseColor = isTraining ? '#00FFFF' : (isRiver ? '#00e5ff' : (isIndigo ? '#4D00FF' : (isLogout ? '#ef4444' : '#FF5277'))); 
-              const isActive = activeTab === item.id;
-              
-              const isLavaText = isDiscovery && isActive;
-              const lavaClasses = isLavaText ? 'bg-clip-text text-transparent bg-gradient-to-br from-[#ff0000] via-[#ff4500] to-[#ff8c00] drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]' : '';
-
-              if (item.id === 'StrictlyCharts') {
-                return (
-                  <div key={item.id} className="flex flex-col">
-                    <button 
-                      onClick={() => { 
-                        handleTabChange(item.id); 
-                        setIsMarketsDropdownOpen(!isMarketsDropdownOpen);
-                      }}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group relative overflow-hidden ${
-                        isActive 
-                          ? 'bg-white/10 text-white' 
-                          : 'hover:bg-white/5 hover:brightness-125 text-[#FF5277]'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        {isActive && (
-                          <motion.div 
-                            layoutId="sidebar-accent"
-                            className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full"
-                            style={{ backgroundColor: baseColor, boxShadow: `0 0 10px ${baseColor}` }}
-                          />
-                        )}
-                        <item.icon size={16} className={`mr-4 transition-transform duration-300 group-hover:scale-110`} style={{ color: isActive ? baseColor : 'currentColor' }} />
-                        <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{item.label}</span>
-                      </div>
-                      <ChevronDown size={14} className={`transition-transform duration-300 ${isMarketsDropdownOpen ? 'rotate-180' : ''}`} style={{ color: isActive ? baseColor : 'currentColor' }} />
-                    </button>
-                    {(isMarketsDropdownOpen || isActive) && (
-                      <div className="pl-8 pr-2 flex flex-col space-y-1 mt-1 border-l border-white/5 ml-6">
-                        {DATA_ONLY_MARKETS.map((market) => (
-                          <button
-                            key={market.value}
-                            onClick={() => {
-                              setSelectedLightweightSymbol(market.value);
-                              handleTabChange('StrictlyCharts');
-                              setLeftSide(false);
-                            }}
-                            className={`text-left py-1.5 px-3 text-[9px] font-black tracking-widest uppercase rounded transition-all leading-tight ${
-                              selectedLightweightSymbol === market.value
-                                ? 'bg-indigo-500/20 text-white border-l border-indigo-500'
-                                : 'text-zinc-500 hover:text-white hover:bg-white/5'
-                            }`}
-                          >
-                            {market.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              return (
-              <button 
-                key={item.id} 
-                onClick={() => { 
-                  if (item.id === 'Logout') {
-                    handleLogout();
-                  } else {
-                    handleTabChange(item.id); 
-                    setLeftSide(false); 
-                  }
-                }}
-                className={`flex items-center px-4 py-3 rounded-xl transition-all group relative overflow-hidden ${
-                  isActive 
-                    ? 'bg-white/10' 
-                    : 'hover:bg-white/5 hover:brightness-125'
-                }`}
-                style={{ color: isActive && !isLavaText ? '#ffffff' : (!isLavaText ? baseColor : undefined) }}
-              >
-                {isActive && (
-                  <motion.div 
-                    layoutId="sidebar-accent"
-                    className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full"
-                    style={{ backgroundColor: baseColor, boxShadow: `0 0 10px ${baseColor}` }}
-                  />
-                )}
-                <item.icon size={16} className={`mr-4 transition-transform duration-300 group-hover:scale-110`} style={{ color: isActive ? baseColor : 'currentColor' }} />
-                <span className={`text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${lavaClasses}`}>{item.label}</span>
-              </button>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto pt-10">
-            <div className="space-y-3">
-              <button 
-                onClick={() => setShowMarketPulse(!showMarketPulse)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-[#ffffff10] bg-[#ffffff05] hover:bg-[#ffffff08] group transition-all"
-              >
-                <div className="flex items-center">
-                  <Activity size={12} className="mr-3 text-indigo-500" />
-                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#5c5e6e]">Refresh Rate</span>
-                </div>
-                <div className={`w-8 h-4 rounded-full border border-[#ffffff20] relative transition-colors duration-300 ${showMarketPulse ? 'bg-indigo-500/20' : 'bg-black'}`}>
-                  <motion.div 
-                    animate={{ x: showMarketPulse ? 16 : 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    className={`absolute left-1 top-1 w-2 h-2 rounded-full shadow-lg ${showMarketPulse ? 'bg-indigo-400 shadow-indigo-500/50' : 'bg-gray-600'}`} 
-                  />
-                </div>
-              </button>
-
-              <div className="px-4 py-6 space-y-2">
-                <div className="flex justify-between items-center text-[7px] font-black uppercase tracking-[0.3em] text-[#5c5e6e]">
-                  <span>Data Usage</span>
-                  <span className="text-orange-500">67%</span>
-                </div>
-                <div className="h-1 bg-black rounded-full overflow-hidden border border-[#ffffff10]">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: '67%' }}
-                    className="h-full bg-gradient-to-r from-orange-500 to-red-600 shadow-[0_0_10px_rgba(249,115,22,0.3)]"
-                  />
-                </div>
-              </div>
-
-              <div className="px-4 pb-4 space-y-3">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center space-x-2 text-[6px] font-black uppercase tracking-[0.4em]">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'bg-rose-500 shadow-[0_0_5px_rgba(244,63,94,0.8)]'}`} />
-                    <span className={isOnline ? 'text-emerald-500/70' : 'text-rose-500/70'}>
-                      {isOnline ? 'System Network Online' : 'System Offline (Using Local Cache)'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-[6px] font-black uppercase tracking-[0.4em] text-indigo-500/50">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_5px_rgba(99,102,241,0.8)]" />
-                    <span>Cloud DB Offline Safe Mode</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (confirm('Hard reset client cache and return to the main Home screen? You will stay logged in.')) {
-                      try {
-                        localStorage.setItem('clearpath_active_tab', 'Discovery');
-                      } catch {
-                        /* ignore */
-                      }
-                      setActiveTab('Discovery');
-                      purgeAuthCache();
-                    }
-                  }}
-                  className="w-full text-[7px] font-black uppercase tracking-[0.2em] border border-white/5 hover:border-white/20 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white px-2 py-1.5 rounded-lg transition-all"
-                >
-                  Hard Reset → Home (Stay Logged In)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <a href="#" className="flex items-center h-[52px] px-5 border-t border-[#ffffff08] text-[#9c9cab] text-sm relative group overflow-hidden">
-          <div className="flex items-center transition-transform duration-300 group-hover:translate-y-full">
-            <Share2 size={16} className="mr-2" />
-            Clear Path Markets Science Protocol Access
-          </div>
-          <div className="absolute inset-0 bg-[#ffffff05] flex items-center px-5 translate-y-[-100%] group-hover:translate-y-0 transition-transform duration-300" style={{ color: profile.borderA }}>
-            {userProfile?.photoURL || authUser?.photoURL ? (
-              <img src={userProfile?.photoURL || authUser?.photoURL} referrerPolicy="no-referrer" className="w-[26px] h-[26px] rounded-full mr-2 object-cover border border-[#ffffff20]" />
-            ) : (
-              <div className="w-[26px] h-[26px] rounded-full mr-2 border border-[#ffffff20] bg-[#111] flex items-center justify-center shrink-0">
-                <span className="text-[10px] text-white/40 font-bold">CP</span>
-              </div>
-            )}
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#FF00FF] shadow-[0_0_10px_rgba(255,0,255,0.4)]">
-              {userProfile?.displayName || authUser?.displayName || 'Clear Path Markets Science Agent'}
-            </span>
-          </div>
-        </a>
-      </motion.div>
-      )}
-
       {/* Main Content */}
       <div 
         className="flex-1 flex flex-col w-full relative transition-all duration-300" 
@@ -1636,7 +1372,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
                       </div>
                     )}
-                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && (
+                    {isEducationFamilyTab(activeTab) && (
+                      <EducationDeskBar activeTab={activeTab} onNavigate={handleTabChange} />
+                    )}
+                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && !isEducationFamilyTab(activeTab) && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>
@@ -1654,8 +1393,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         isFounder={isFounder()}
                         selectedLightweightSymbol={selectedLightweightSymbol}
                         setSelectedLightweightSymbol={setSelectedLightweightSymbol}
-                        leftSide={leftSide}
-                        setLeftSide={setLeftSide}
                         rightSide={rightSide}
                         setRightSide={handleSetRightSide}
                         showTicker={showTicker}
@@ -1821,12 +1558,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
       {/* Overlay */}
       <AnimatePresence>
-        {(leftSide || rightSide) && !isAppShell && (
+        {rightSide && !isAppShell && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => { setLeftSide(false); handleSetRightSide(false); }}
+            onClick={() => { handleSetRightSide(false); }}
             className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           />
         )}

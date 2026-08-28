@@ -9,6 +9,8 @@ import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
+import { EducationDeskBar } from './education/EducationDeskBar';
+import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
@@ -107,7 +109,13 @@ function isFundamentalDeskPath(path: string): boolean {
   return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
 }
 
-function PublicLearnShell({ children }: { children: React.ReactNode }) {
+function PublicLearnShell({
+  children,
+  deskTab = EDUCATION_TAB_ID,
+}: {
+  children: React.ReactNode;
+  deskTab?: string;
+}) {
   return (
     <div className="min-h-screen w-full bg-[#050505] text-white">
       <a href="#learn-main" className="cp-skip-link">
@@ -124,14 +132,20 @@ function PublicLearnShell({ children }: { children: React.ReactNode }) {
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
-            <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
-            <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
-            <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
             <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
           </div>
         </nav>
       </header>
       <main id="learn-main" tabIndex={-1} className="outline-none">
+        <div className="px-4 pt-4 max-w-6xl mx-auto">
+          <EducationDeskBar
+            activeTab={deskTab}
+            onNavigate={(tabId) => {
+              if (tabId === EDUCATION_TAB_ID) window.location.assign('/education');
+              else openEducationDesk(tabId);
+            }}
+          />
+        </div>
         <Suspense
           fallback={
             <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">

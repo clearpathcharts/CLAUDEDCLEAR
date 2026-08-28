@@ -26,6 +26,7 @@ import { getLessonBody } from "./lessonContent";
 import { hasQuiz } from "./quizData";
 import { QuizEngine } from "./QuizEngine";
 import { useEducationProgress } from "./useEducationProgress";
+import { EDUCATION_LIBRARY_DESKS, openEducationDesk } from "./educationDesks";
 
 const PAGE_BG = "#0A0E14";
 const BODY = "#E8EDF5";
@@ -63,7 +64,10 @@ export function ClearPathEducation({
       <Header view={view} setView={setView} />
 
       {view.kind === "schools" && (
-        <SchoolGrid onOpen={(schoolId) => setView({ kind: "units", schoolId })} />
+        <>
+          <LibraryDesks onNavigate={onNavigate} />
+          <SchoolGrid onOpen={(schoolId) => setView({ kind: "units", schoolId })} />
+        </>
       )}
 
       {view.kind === "units" && (
@@ -188,11 +192,58 @@ function Header({ view, setView }: { view: View; setView: (v: View) => void }) {
           </h1>
           <p style={{ color: SUBTLE, marginTop: 6, maxWidth: 640 }}>
             A free, plain-language school for every market — written by humans,
-            built to be read calmly. Pick a school to begin.
+            built to be read calmly. Open a library desk, or pick a school to begin.
           </p>
         </>
       )}
     </div>
+  );
+}
+
+function LibraryDesks({ onNavigate }: { onNavigate?: (tabId: string) => void }) {
+  return (
+    <section aria-label="Education libraries" style={{ marginBottom: 28 }}>
+      <h2
+        style={{
+          fontSize: 12,
+          letterSpacing: 2,
+          textTransform: "uppercase",
+          color: SUBTLE,
+          margin: "0 0 12px",
+        }}
+      >
+        Libraries inside Education
+      </h2>
+      <div
+        style={{
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+        }}
+      >
+        {EDUCATION_LIBRARY_DESKS.map((desk) => (
+          <button
+            key={desk.tabId}
+            type="button"
+            onClick={() => openEducationDesk(desk.tabId, onNavigate)}
+            style={{
+              textAlign: "left",
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${desk.accent}55`,
+              borderRadius: 16,
+              padding: 18,
+              cursor: "pointer",
+              color: BODY,
+            }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 800, color: desk.accent, marginBottom: 6 }}>
+              {desk.label}
+            </div>
+            <div style={{ fontSize: 13, color: SUBTLE, lineHeight: 1.5 }}>{desk.blurb}</div>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -362,24 +413,16 @@ function UnitList({
           For a deeper dive into how the financial world works, click one of these links below.
         </p>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button
-            onClick={() => onNavigate?.("Encyclopedia")}
-            style={resourceLinkStyle("#00E5FF")}
-          >
-            Encyclopedia of Finance
-          </button>
-          <button
-            onClick={() => onNavigate?.("EncyclopediaOfIndicators")}
-            style={resourceLinkStyle("#39FF14")}
-          >
-            Encyclopedia of Indicators
-          </button>
-          <button
-            onClick={() => onNavigate?.("LiteracyOS")}
-            style={resourceLinkStyle("#FFD700")}
-          >
-            Literacy OS
-          </button>
+          {EDUCATION_LIBRARY_DESKS.map((desk) => (
+            <button
+              key={desk.tabId}
+              type="button"
+              onClick={() => openEducationDesk(desk.tabId, onNavigate)}
+              style={resourceLinkStyle(desk.accent)}
+            >
+              {desk.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

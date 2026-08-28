@@ -12,8 +12,8 @@ export default function ExternalAboutPage() {
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
       <SEO 
-        title="About ClearPath Trader | Market Intelligence Platform" 
-        description="ClearPath Trader is a board-governed market intelligence platform built for clarity, adjustable chart layouts, and real-time analysis. Education and analytics — not brokerage." 
+        title="About ClearPath Trader | Market Intelligence Terminal" 
+        description="ClearPath Trader is a market intelligence terminal: live charts, pattern scans, encyclopedias, education, and accessibility profiles. Not a brokerage. Not a website chatbot. Not aiclearpath.com." 
       />
       <SurfBackground />
       
@@ -51,9 +51,25 @@ export default function ExternalAboutPage() {
               About <span className="lava-hot-text">ClearPath Trader</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-400 font-sans max-w-3xl mx-auto leading-relaxed">
-              ClearPath Trader is a <strong className="text-indigo-400 font-normal">market intelligence and education platform</strong> — charts, patterns, macro context, and learning tools in one place. The product is built for <strong className="text-white font-normal">clarity and control</strong>: you choose symbols, layouts, and how much data is on screen.
+              ClearPath Trader is a <strong className="text-indigo-400 font-normal">full market intelligence and education terminal</strong> — live charts, pattern scans, encyclopedias, Literacy OS, a macro desk, custom indicators, and 13 accessibility profiles. It is <strong className="text-white font-normal">not</strong> a website chatbot, not a receptionist bot, and not aiclearpath.com.
             </p>
           </header>
+
+          <section className="glass p-8 md:p-10 rounded-3xl border border-amber-500/20 shadow-2xl relative overflow-hidden">
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-4">
+              Not a website chatbot
+            </h2>
+            <p className="text-gray-400 leading-relaxed text-base md:text-lg mb-4">
+              Search engines sometimes mix us up with unrelated “ClearPath” products that greet website visitors, capture leads, and book appointments. That is a different company. ClearPath Trader is a <strong className="text-white">trading terminal</strong>: charts, indicators, education, and research. C.P.T. Buddy lives <em>inside</em> that terminal to teach markets — it does not sit on someone else’s homepage as a sales widget.
+            </p>
+            <ul className="text-gray-400 text-sm md:text-base space-y-2 list-disc pl-5">
+              <li>Live multi-asset charts + unlimited indicators + automatic pattern context</li>
+              <li>Financial encyclopedia + indicator encyclopedia + beginner-to-advanced education</li>
+              <li>Literacy OS, macro desk, INDACREATOR / River Genie</li>
+              <li>13 neurodivergent / accessibility UI profiles</li>
+              <li>Not a broker. Not lead-gen. Not appointment booking.</li>
+            </ul>
+          </section>
 
           <section className="glass p-8 md:p-10 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />

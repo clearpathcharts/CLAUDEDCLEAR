@@ -11,7 +11,8 @@ export type LiteracyPanelId =
   | "coach"
   | "pins"
   | "patterns"
-  | "encyclopedia";
+  | "encyclopedia"
+  | "appealing";
 
 export interface VaultItem {
   id: string;

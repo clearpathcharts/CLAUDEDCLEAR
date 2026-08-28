@@ -533,6 +533,29 @@ export function getEnabledAssets(): RegistryAsset[] {
   return ASSET_REGISTRY.filter((a) => a.enabled);
 }
 
+/** Retail / search: match symbol, display, description, or searchable aliases. */
+export function searchEnabledAssets(query: string, limit = 12): RegistryAsset[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const hits: RegistryAsset[] = [];
+  for (const asset of ASSET_REGISTRY) {
+    if (!asset.enabled) continue;
+    const blob = [
+      asset.symbol,
+      asset.display,
+      asset.description,
+      asset.category,
+      asset.exchange ?? "",
+      ...(asset.searchable ?? []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    if (blob.includes(q)) hits.push(asset);
+    if (hits.length >= limit) break;
+  }
+  return hits;
+}
+
 export function getDeckCriticalAssets(): RegistryAsset[] {
   return ASSET_REGISTRY.filter((a) => a.enabled && a.deckCritical);
 }

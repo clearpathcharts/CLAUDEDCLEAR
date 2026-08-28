@@ -67,6 +67,8 @@ export type DailyOpsReport = {
   shipped: Array<{ id: string; title: string; evidence: string }>;
   openWork: Array<{ id: string; title: string; why: string }>;
   nextDueHint: string;
+  siteStatus?: "green" | "yellow" | "red";
+  failingAuto?: string[];
 };
 
 const SECTION_LABEL: Record<string, string> = {
@@ -93,7 +95,7 @@ export default function DailyOpsDesk({
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [survivalOnly, setSurvivalOnly] = useState(false);
+  const [survivalOnly, setSurvivalOnly] = useState(true);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [investorNotes, setInvestorNotes] = useState("");
@@ -239,10 +241,10 @@ export default function DailyOpsDesk({
               Daily Ops — {report?.date || "today (Pacific)"}
             </h2>
             <p className="text-white/55 text-sm max-w-2xl">
-              Once a day the server pings the live site, GitHub Actions, Groq, and related probes,
-              then researches one investor from public sources. You check the human boxes. Nothing
-              auto-posts or auto-emails. Merging GitHub is not the same as updating Cloud Run —
-              after a fix lands on main, redeploy the service, then tap Run today’s sweep.
+              Site health is automatic (live HTTP, secrets, Groq, Stripe, GitHub). Your boxes are a
+              separate todo list — they never turn the banner red. Investor research is copy-draft
+              only. Nothing auto-emails. Website service: clear-path-markets-science in europe-west1
+              (Belgium). Do not Edit & deploy clearpath-voice-os unless you mean Ava.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -255,7 +257,7 @@ export default function DailyOpsDesk({
                   : "border-white/20 text-white/80 hover:bg-white/5"
               }`}
             >
-              {survivalOnly ? "Low-energy on" : "Low-energy day"}
+              {survivalOnly ? "Low-energy day" : "Back to survival set"}
             </button>
             <button
               type="button"
@@ -285,20 +287,26 @@ export default function DailyOpsDesk({
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span
               className={`px-3 py-1 rounded font-black uppercase tracking-widest text-xs border ${
-                report.overall === "green"
+                (report.siteStatus || report.overall) === "green"
                   ? "text-emerald-300 bg-emerald-500/15 border-emerald-500/40"
-                  : report.overall === "yellow"
+                  : (report.siteStatus || report.overall) === "yellow"
                     ? "text-amber-300 bg-amber-500/15 border-amber-500/40"
                     : "text-red-300 bg-red-500/15 border-red-500/40"
               }`}
             >
-              {report.overall}
+              site {report.siteStatus || report.overall}
             </span>
             <span className="text-white/70 font-mono text-xs flex items-center gap-1">
-              <Activity size={12} /> auto critical={autoFail} warn={autoWarn}
+              <Activity size={12} />
+              {(report.failingAuto && report.failingAuto.length
+                ? report.failingAuto.join(" · ")
+                : autoFail + autoWarn === 0
+                  ? "all auto checks ok"
+                  : `auto critical=${autoFail} warn=${autoWarn}`) as string}
             </span>
             <span className="text-white/70 font-mono text-xs flex items-center gap-1">
-              <Check size={12} /> human {doneCount}/{humanItems.length}
+              <Check size={12} /> todo {doneCount}/{humanItems.length}
+              {survivalOnly ? " survival" : " full"}
             </span>
             <span className="text-white/45 font-mono text-xs">{report.nextDueHint}</span>
           </div>
@@ -312,10 +320,10 @@ export default function DailyOpsDesk({
             Automated site checks
           </h3>
           <p className="text-zinc-500 text-xs mb-4 max-w-3xl">
-            Live probes from the Cloud Run process that is serving right now. A merged PR only
-            appears here after that service is rebuilt/redeployed — then tap{" "}
-            <span className="text-zinc-300">Run today’s sweep</span>. Stale CRITICAL/WARN text
-            usually means production is still on an older revision.
+            Live HTTP / secrets / Groq / Stripe / GitHub from the process serving right now.
+            A GitHub “deploy” can mint a named revision while traffic stays pinned — keep{" "}
+            <span className="text-zinc-300">LATEST</span>, then tap Run today’s sweep. Ava
+            (clearpath-voice-os) is not this repo; missing Twilio is not a trader outage.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-white/80 text-sm">
@@ -510,8 +518,8 @@ export default function DailyOpsDesk({
             Human list for today
           </h3>
           <p className="text-white/45 text-xs mb-5">
-            Low-energy day keeps body, deploy health, one user flow, unverified-claim check, and tomorrow’s 3.
-            Marketing is one platform, not four. Outreach is today’s investor plus one extra.
+            Survival set (default): site walk, money glance, one outreach, one investor note.
+            The rest is parked behind “Low-energy day”. Unchecked todos never mean the site is down.
           </p>
           {[...grouped.entries()].map(([section, items]) => (
             <div key={section} className="mb-6">

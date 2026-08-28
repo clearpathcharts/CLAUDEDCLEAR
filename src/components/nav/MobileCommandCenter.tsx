@@ -4,7 +4,6 @@ import {
   BookOpen,
   Cpu,
   Crown,
-  GraduationCap,
   Home,
   LogOut,
   Network,
@@ -15,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
+import { isEducationFamilyTab } from "../../education/educationDesks";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -67,27 +67,6 @@ const LEARN_ITEMS: NavItem[] = [
     id: "ClearPathEducation",
     icon: BookOpen,
     label: "CLEARPATH EDUCATION",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-  {
-    id: "LiteracyOS",
-    icon: BookOpen,
-    label: "LITERACY OS",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-  {
-    id: "Encyclopedia",
-    icon: GraduationCap,
-    label: "ENCYCLOPEDIA OF FINANCE",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
-  {
-    id: "EncyclopediaOfIndicators",
-    icon: BarChart3,
-    label: "ENCYCLOPEDIA OF INDICATORS",
     colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
     glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
   },
@@ -369,7 +348,9 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
                 {section.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = activeTab === item.id;
+                  const isActive =
+                    activeTab === item.id ||
+                    (item.id === "ClearPathEducation" && isEducationFamilyTab(activeTab));
                   return (
                     <button
                       key={item.id}
