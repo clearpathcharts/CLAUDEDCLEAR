@@ -1,6 +1,8 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
+import DeskRoute from './components/desks/DeskRoute';
+import { isDeskPath } from './lib/traderDesks';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
@@ -249,6 +251,8 @@ export default function App() {
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
     );
+  } else if (isDeskPath(currentPath)) {
+    content = <DeskRoute pathname={currentPath} />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/affiliate-terms') {

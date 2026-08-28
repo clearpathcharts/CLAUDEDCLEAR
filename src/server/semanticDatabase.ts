@@ -22,6 +22,8 @@ import {
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
+import { DESK_SEO } from '../content/traderDesksCopy';
+import { isTraderDeskId, TRADER_DESKS } from '../lib/traderDesks';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -1060,6 +1062,27 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         url: canonicalUrl,
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       });
+    }
+  } else if (pathClean === '/desk') {
+    title = 'Trader Desks | ClearPathTrader';
+    description =
+      'Four ClearPathTrader interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Educational market desks — not a brokerage.';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Trader desks', url: '/desk' },
+    ]));
+  } else if (pathClean.startsWith('/desk/')) {
+    const id = pathClean.slice('/desk/'.length);
+    if (isTraderDeskId(id)) {
+      const seo = DESK_SEO[id];
+      title = seo.title;
+      description = seo.description;
+      keywords = [TRADER_DESKS[id].title, 'ClearPath Trader desk', 'market intelligence'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Trader desks', url: '/desk' },
+        { name: TRADER_DESKS[id].title, url: pathClean },
+      ]));
     }
   }
 
