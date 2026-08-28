@@ -377,7 +377,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Platform";
-    description = "Learn what ClearPath Trader is: live charts, pattern context, macro education, and clarity-first design. Analytics and education — not a brokerage.";
+    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader adapts financial education to people — not the other way around. Analytics and education — not a brokerage.";
     keywords = "about ClearPath Trader, market intelligence platform, trading education, financial analytics";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },

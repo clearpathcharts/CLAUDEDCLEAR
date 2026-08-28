@@ -36,6 +36,9 @@ jobs:
       - name: Login choose-your-path images
         run: npm run test:choose-path
 
+      - name: About manifesto copy
+        run: npm run test:about-manifesto
+
       - name: Affiliate rewards self-test
         run: npm run test:affiliate
 
