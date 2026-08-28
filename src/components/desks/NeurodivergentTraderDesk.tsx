@@ -1,62 +1,130 @@
-import React from 'react';
-import { advancedProfiles, type AdvancedProfileId } from '../../lib/advanced/profiles';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
+import { LightweightCandles } from '../charts/LightweightCandles';
+import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
+import { ChartDrawingSessionProvider } from '../charts/drawings';
+import { themeProfiles, type ThemeProfileId } from '../../lib/theme/profiles';
 
-const MODE_BLURBS: Partial<Record<AdvancedProfileId, string>> = {
-  calm_focus: 'Softer contrast, slower chrome, room to think.',
-  low_stim_emergency: 'Lowest visual load when the screen is too much.',
-  dyslexia_readable: 'Reading support for long labels and news.',
-  adhd_dopamine_balanced: 'Clear targets without casino motion.',
-  adhd_hyperfocus: 'One job on screen at a time.',
-  autism_predictable: 'Stable layout. Same places. No surprise animation.',
-  standard_red_green: 'Classic red/green candles if that is what you already know.',
-};
+const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
+const DEFAULT_SYMBOL = 'EURUSD';
+
+function isThemeProfileId(value: string | null | undefined): value is ThemeProfileId {
+  return !!value && value in themeProfiles;
+}
+
+function readSavedProfile(): ThemeProfileId {
+  if (typeof window === 'undefined') return 'calm_focus';
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get('profile');
+    if (isThemeProfileId(fromQuery)) return fromQuery;
+    const saved = localStorage.getItem('clearpath_current_profile_id');
+    if (isThemeProfileId(saved)) return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'calm_focus';
+}
+
+function persistProfile(id: ThemeProfileId) {
+  try {
+    localStorage.setItem('clearpath_current_profile_id', id);
+  } catch {
+    /* ignore */
+  }
+  if (typeof window === 'undefined') return;
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('profile', id);
+    window.history.replaceState({ ...window.history.state }, '', `${url.pathname}?${url.searchParams.toString()}${url.hash}`);
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function NeurodivergentTraderDesk() {
-  const modes = Object.values(advancedProfiles);
+  const [profileId, setProfileId] = useState<ThemeProfileId>(readSavedProfile);
+  const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
+  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>('1h');
+
+  const theme = themeProfiles[profileId];
+
+  const applyProfile = useCallback((id: ThemeProfileId) => {
+    setProfileId(id);
+    persistProfile(id);
+  }, []);
+
+  const shellStyle = useMemo(
+    () => ({
+      background: `linear-gradient(180deg, ${theme.bgTop}, ${theme.bgBottom})`,
+      color: theme.text,
+    }),
+    [theme],
+  );
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-4 p-4">
-      <section className="rounded-2xl border border-[#B026FF]/40 bg-black/70 p-5">
-        <h2 className="text-xl font-black uppercase tracking-tight text-white">
-          Built for different minds
-        </h2>
-        <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed text-zinc-400">
-          Pick a sensory profile. We save it on this device and open the chart with that look.
-          Full catalog of modes lives on the accessible UI page.
-        </p>
-        <a
-          href="/ui"
-          className="mt-3 inline-block text-base font-extrabold text-[#B026FF] underline-offset-2 hover:underline"
-        >
-          All accessible UI modes
-        </a>
-      </section>
+    <ChartDrawingSessionProvider>
+      <div
+        className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3 p-3 md:p-4"
+        data-neurodivergent-door=""
+        style={shellStyle}
+      >
+        <section className="rounded-2xl border p-4" style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}>
+          <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: theme.text }}>
+            Built for different minds
+          </h2>
+          <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed opacity-80">
+            Pick a sensory profile. The chart stays on this desk — we do not send you to login.
+            One chart. Low motion. No order ticket.
+          </p>
+        </section>
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {modes.map((profile) => (
-          <li key={profile.id}>
-            <a
-              href={`/?profile=${encodeURIComponent(profile.id)}`}
-              className="block h-full rounded-2xl border p-4 hover:bg-white/5"
-              style={{ borderColor: `${profile.borderA}66` }}
-              onClick={() => {
-                try {
-                  localStorage.setItem('clearpath_current_profile_id', profile.id);
-                } catch {
-                  /* ignore */
-                }
-              }}
-            >
-              <p className="text-base font-black uppercase tracking-widest" style={{ color: profile.borderA }}>
-                {profile.name}
-              </p>
-              <p className="mt-2 text-base font-bold leading-relaxed text-zinc-400">
-                {MODE_BLURBS[profile.id] || 'A dedicated visual profile for this terminal.'}
-              </p>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
+        <NeuroProfilePicker activeProfileId={profileId} onProfileChange={applyProfile} compact />
+
+        <section className="flex min-h-0 flex-1 flex-col gap-2 rounded-2xl border p-3" style={{ borderColor: `${theme.borderA}44`, background: 'rgba(0,0,0,0.35)' }}>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60">Chart</p>
+                <p className="text-lg font-black uppercase tracking-tight">{theme.label}</p>
+              </div>
+              <div className="min-w-[220px] flex-1">
+                <ChartSymbolSearch compact placeholder="Search asset…" activeSymbol={symbol} onSubmit={setSymbol} />
+              </div>
+            </div>
+            <div className="relative min-h-[360px] flex-1 overflow-hidden rounded-xl border border-white/10 bg-black" style={{ minHeight: 'min(62vh, 640px)' }}>
+              <LightweightCandles
+                symbol={symbol}
+                profileId={profileId}
+                timeframe={timeframe}
+                fillParent
+                height={560}
+                hidePatternOverlays
+                hideChartToolbar
+                publishDrawingSession
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Timeframe">
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf}
+                  type="button"
+                  onClick={() => setTimeframe(tf)}
+                  aria-pressed={timeframe === tf}
+                  className="rounded-md border px-2 py-1 text-[10px] font-black uppercase"
+                  style={{
+                    color: timeframe === tf ? theme.bgTop : theme.borderA,
+                    borderColor: `${theme.borderA}66`,
+                    background: timeframe === tf ? theme.borderA : 'transparent',
+                  }}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-wider opacity-50">
+              Information and analytics only — no trade execution — no personalized investment advice
+            </p>
+        </section>
+      </div>
+    </ChartDrawingSessionProvider>
   );
 }
