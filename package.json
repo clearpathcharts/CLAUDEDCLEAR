@@ -19,6 +19,7 @@
     "test:app-update": "tsx scripts/app-update.selftest.ts",
     "test:firebase-mock": "tsx scripts/firebase-mock.selftest.ts",
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
+    "test:ui-fonts": "tsx scripts/ui-fonts.selftest.ts",
     "test:choose-path": "tsx scripts/choose-path.selftest.ts",
     "test:trader-desks": "tsx scripts/trader-desks.selftest.ts",
     "test:fundamental-door": "tsx scripts/fundamental-door.selftest.ts",

@@ -35,7 +35,7 @@ import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout"
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-24-FIT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-FONTS";
 
 type Candle = {
   time: number;
@@ -314,6 +314,7 @@ export function LightweightCandles({
           color: activeCustomTheme ? activeCustomTheme.background : theme.layout.background.bottomColor,
         },
         textColor: activeCustomTheme ? activeCustomTheme.text : theme.layout.textColor,
+        fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
         fontSize: 13,
         attributionLogo: false,
       },
