@@ -73,8 +73,8 @@ export default function NeurodivergentTraderDesk() {
           Built for different minds
         </h2>
         <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed text-zinc-400">
-          Pick a sensory profile. The chart below uses that look on this desk so we can tune each
-          mode later. We also save it on this device.
+          The live chart is on this desk. Pick a sensory profile under it to restyle the candles.
+          We save the look on this device so we can tune each mode later.
         </p>
         <a
           href="/ui"
@@ -83,6 +83,15 @@ export default function NeurodivergentTraderDesk() {
           All accessible UI modes
         </a>
       </section>
+
+      <ChartPlatformPanel
+        variant="neurodivergent"
+        profileId={profileId}
+        accent={profile.borderA}
+        heading="Your chart"
+        description={`Live candles in ${profile.label}. Pick a sensory profile below to restyle this chart.`}
+        searchPlaceholder="Search AAPL, EURUSD, gold…"
+      />
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {PROFILE_ORDER.map((id) => {
@@ -111,15 +120,6 @@ export default function NeurodivergentTraderDesk() {
           );
         })}
       </ul>
-
-      <ChartPlatformPanel
-        variant="neurodivergent"
-        profileId={profileId}
-        accent={profile.borderA}
-        heading="Your chart"
-        description={`Live candles in ${profile.label}. Search a market, pick a timeframe, then switch profiles above to try another look.`}
-        searchPlaceholder="Search AAPL, EURUSD, gold…"
-      />
     </div>
   );
 }

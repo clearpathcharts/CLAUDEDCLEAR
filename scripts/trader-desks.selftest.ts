@@ -153,6 +153,8 @@ for (const rel of srcFiles) {
     assert.match(text, /data-chart-platform=\{variant\}/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /CHART_PLATFORM_VARIANTS/);
+    assert.match(text, /chart-platform-body/);
+    assert.doesNotMatch(text, /h-\[min\(/);
   }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);

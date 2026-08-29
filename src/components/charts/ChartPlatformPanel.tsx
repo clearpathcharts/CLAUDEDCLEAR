@@ -54,7 +54,7 @@ export function ChartPlatformPanel({
   return (
     <section
       data-chart-platform={variant}
-      className="overflow-hidden rounded-2xl border bg-black/80"
+      className="rounded-2xl border bg-black/80"
       style={{ borderColor: `${accent}59` }}
       aria-labelledby={labelId}
     >
@@ -97,7 +97,7 @@ export function ChartPlatformPanel({
           {showBackgroundToggle ? <ChartBackgroundToggle compact /> : null}
         </div>
       </div>
-      <div className="relative h-[min(70vh,640px)] min-h-[360px]">
+      <div className="chart-platform-body">
         <LightweightCandles
           symbol={symbol}
           profileId={profileId}
