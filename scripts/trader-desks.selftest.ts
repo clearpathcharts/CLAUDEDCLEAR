@@ -79,6 +79,7 @@ const srcFiles = [
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
+  'src/components/charts/ChartPlatformPanel.tsx',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
   'src/App.tsx',
@@ -136,11 +137,29 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
   }
+  if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
+    assert.match(text, /ChartPlatformPanel/);
+    assert.match(text, /variant="retail"/);
+    assert.doesNotMatch(text, /from '\.\.\/charts\/LightweightCandles'/);
+  }
+  if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
+    assert.match(text, /ChartPlatformPanel/);
+    assert.match(text, /variant="neurodivergent"/);
+    assert.match(text, /aria-pressed/);
+    assert.doesNotMatch(text, /href=\{\`\/\?profile=/);
+    assert.doesNotMatch(text, /from '\.\.\/charts\/LightweightCandles'/);
+  }
+  if (rel === 'src/components/charts/ChartPlatformPanel.tsx') {
+    assert.match(text, /data-chart-platform=\{variant\}/);
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /CHART_PLATFORM_VARIANTS/);
+  }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
+    assert.doesNotMatch(text, /ChartPlatformPanel/);
   }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);

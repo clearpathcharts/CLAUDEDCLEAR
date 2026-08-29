@@ -1,60 +1,25 @@
 import React, { useState } from 'react';
-import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
-import { LightweightCandles } from '../charts/LightweightCandles';
-import { resolveMarketAsset } from '../../constants/marketAssets';
-import { DEFAULT_MARKET_SYMBOLS } from '../../constants/chartLayout';
+import { ChartPlatformPanel } from '../charts/ChartPlatformPanel';
+import { PATH_CARDS } from '../../content/chooseYourPath';
 import { InstitutionalRegistry } from '../../core/registry/InstitutionalRegistry';
 
-const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
+const RETAIL_PATH = PATH_CARDS.find((card) => card.id === 'retail');
 
 export default function RetailTraderDesk() {
-  const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
-  const [timeframe, setTimeframe] = useState('1h');
   const [openId, setOpenId] = useState<string | null>(InstitutionalRegistry[0]?.id ?? null);
+  const profileId = RETAIL_PATH?.profileId ?? 'standard_red_green';
+  const accent = RETAIL_PATH?.accent ?? '#00FFFF';
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-3 p-3">
-      <section className="overflow-hidden rounded-2xl border border-[#00FFFF]/35 bg-black/80">
-        <div className="space-y-3 border-b border-white/10 px-4 py-3">
-          <h2 className="text-lg font-black uppercase tracking-tight text-white">Your chart</h2>
-          <p className="max-w-2xl text-base font-bold leading-relaxed text-zinc-400">
-            Search a market. Watch the candles. When a word on the right is new, tap it — we explain
-            it in plain language. This is a study desk, not a place that tells you to buy or sell.
-          </p>
-          <ChartSymbolSearch
-            placeholder="Search AAPL, EURUSD, gold…"
-            activeSymbol={symbol}
-            onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
-          />
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Timeframe">
-            {TIMEFRAMES.map((tf) => (
-              <button
-                key={tf}
-                type="button"
-                onClick={() => setTimeframe(tf)}
-                aria-pressed={timeframe === tf}
-                className="rounded-lg border px-3 py-1.5 text-sm font-extrabold uppercase"
-                style={{
-                  color: timeframe === tf ? '#050505' : '#00FFFF',
-                  borderColor: '#00FFFF66',
-                  background: timeframe === tf ? '#00FFFF' : 'transparent',
-                }}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="relative h-[min(70vh,640px)] min-h-[360px]">
-          <LightweightCandles
-            symbol={symbol}
-            profileId="standard_red_green"
-            timeframe={timeframe}
-            fillParent
-            height={480}
-          />
-        </div>
-      </section>
+      <ChartPlatformPanel
+        variant="retail"
+        profileId={profileId}
+        accent={accent}
+        heading="Your chart"
+        description="Search a market. Watch the candles. When a word on the right is new, tap it — we explain it in plain language. This is a study desk, not a place that tells you to buy or sell."
+        searchPlaceholder="Search AAPL, EURUSD, gold…"
+      />
 
       <section className="rounded-2xl border border-white/10 bg-black/60 p-4">
         <h2 className="mb-2 text-lg font-black uppercase tracking-widest text-[#00FFFF]">
