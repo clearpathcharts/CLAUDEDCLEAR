@@ -180,7 +180,13 @@ export default function Auth() {
 
   const enterChosenPath = (deskId: TraderDeskId) => {
     const card = PATH_CARDS.find((c) => c.id === deskId);
-    rememberPath(card?.profileId ?? NEURODIVERGENT_BANNER.profileId);
+    const profileId = card?.profileId ?? NEURODIVERGENT_BANNER.profileId;
+    rememberPath(profileId);
+    try {
+      window.dispatchEvent(new CustomEvent('clearpath-set-profile', { detail: profileId }));
+    } catch {
+      /* ignore */
+    }
     navigateToDesk(deskId);
   };
 

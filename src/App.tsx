@@ -217,6 +217,20 @@ export default function App() {
       }
     }
   };
+
+  // Path picker / neuro desk can set the chart profile without a full document reload
+  // (hard navigations to /?profile=… were remounting Auth and looking like a logout).
+  useEffect(() => {
+    const onSetProfile = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail === 'string' && (advancedProfiles as any)[detail]) {
+        handleProfileChange(detail);
+      }
+    };
+    window.addEventListener('clearpath-set-profile', onSetProfile as EventListener);
+    return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
+  }, []);
+
   // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
   useEffect(() => {
     if (typeof window === 'undefined') return;

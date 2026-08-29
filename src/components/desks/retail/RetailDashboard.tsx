@@ -9,6 +9,7 @@ import { atrValue, realizedVolPct } from '../../../lib/institutional/marketMath'
 import { analyzeInstitutionalStructure } from '../../../lib/institutional/analyzeStructure';
 import { navigateToDesk } from '../../../lib/traderDesks';
 import { FX_SESSIONS, isSessionOpen } from '../../../lib/traderDesks';
+import { advancedProfiles } from '../../../lib/advanced/profiles';
 import { Bento, Unavail, KV, Bar } from '../institutional/Bento';
 import { RetailEducationBento } from './RetailEducationBento';
 import {
@@ -51,6 +52,16 @@ const RETAIL_INDICATORS = [
   'STOCH',
   'ADX',
 ] as const;
+
+function readChartProfileId(): string {
+  try {
+    const saved = localStorage.getItem('clearpath_current_profile_id');
+    if (saved && (advancedProfiles as any)[saved]) return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'standard_red_green';
+}
 
 function pctClass(pct: number | null): string {
   if (pct == null) return 'text-[var(--desk-muted)]';
@@ -207,6 +218,7 @@ export default function RetailDashboard() {
   const [timeframe, setTimeframe] = useState('1h');
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [chartType, setChartType] = useState<PriceSeriesType>('candlestick');
+  const [chartProfileId, setChartProfileId] = useState(readChartProfileId);
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
   const [showIndicators, setShowIndicators] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -296,6 +308,17 @@ export default function RetailDashboard() {
     });
     return items;
   }, [prevSnap, symbol, displayPrice, snap.volume, rv, intel.news.length, intel.econ.length]);
+
+  useEffect(() => {
+    const onSetProfile = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail === 'string' && (advancedProfiles as any)[detail]) {
+        setChartProfileId(detail);
+      }
+    };
+    window.addEventListener('clearpath-set-profile', onSetProfile as EventListener);
+    return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
+  }, []);
 
   useEffect(() => {
     saveSessionSnapshot({
@@ -725,7 +748,7 @@ export default function RetailDashboard() {
                 ) : null}
                 <LightweightCandles
                   symbol={slot.symbol}
-                  profileId="standard_red_green"
+                  profileId={chartProfileId}
                   timeframe={slot.timeframe}
                   fillParent
                   height={layout === 1 ? 420 : 260}

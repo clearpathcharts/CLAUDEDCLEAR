@@ -30,7 +30,7 @@ function SharpPathImage({
         height={height}
         decoding="async"
         draggable={false}
-        className="block h-auto w-full"
+        className="pointer-events-none block h-auto w-full"
         style={{
           maxWidth: `${width}px`,
           imageRendering: 'auto',
@@ -42,16 +42,23 @@ function SharpPathImage({
 
 function PathEnter({
   accent,
+  deskId,
   onEnter,
 }: {
   accent: string;
+  deskId: TraderDeskId;
   onEnter: () => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onEnter}
-      className="mb-2 sm:mb-3 w-full max-w-[12rem] px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer border"
+      data-path-enter={deskId}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onEnter();
+      }}
+      className="relative z-10 mb-2 sm:mb-3 w-full max-w-[12rem] px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer border"
       style={{
         color: accent,
         borderColor: `${accent}99`,
@@ -78,19 +85,24 @@ export default function ChooseYourPath({ onEnter }: Props) {
           Welcome to ClearPath Trader Please choose your path
         </h2>
 
-        <ul className="grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-start">
+        <ul className="relative z-20 grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-start isolate">
           {PATH_CARDS.map((card) => (
-            <li key={card.id} className="min-w-0 w-full flex flex-col items-center">
+            <li key={card.id} className="relative z-10 min-w-0 w-full flex flex-col items-center">
               <PathEnter
                 accent={card.accent}
+                deskId={card.id}
                 onEnter={() => onEnter(card.id)}
               />
-              <div
-                className="w-full rounded-2xl overflow-hidden border bg-black/80"
+              <button
+                type="button"
+                data-path-card={card.id}
+                onClick={() => onEnter(card.id)}
+                className="w-full rounded-2xl overflow-hidden border bg-black/80 text-left cursor-pointer"
                 style={{
                   borderColor: `${card.accent}66`,
                   boxShadow: `0 0 24px ${card.accent}22`,
                 }}
+                aria-label={`Enter ${card.title}`}
               >
                 <SharpPathImage
                   webp={card.webp}
@@ -99,18 +111,25 @@ export default function ChooseYourPath({ onEnter }: Props) {
                   height={card.height}
                   alt={`${card.title}. ${card.tagline}.`}
                 />
-              </div>
+              </button>
             </li>
           ))}
         </ul>
 
-        <div className="mt-8 sm:mt-12 flex justify-center">
+        <div className="relative z-10 mt-8 sm:mt-12 flex justify-center isolate">
           <div className="w-[min(100%,42rem)] md:w-[min(100%,48rem)] flex flex-col items-center">
             <PathEnter
               accent="#FF1493"
+              deskId="neurodivergent"
               onEnter={() => onEnter('neurodivergent')}
             />
-            <div className="w-full rounded-2xl overflow-hidden border border-[#FF1493]/40">
+            <button
+              type="button"
+              data-path-card="neurodivergent"
+              onClick={() => onEnter('neurodivergent')}
+              className="w-full rounded-2xl overflow-hidden border border-[#FF1493]/40 text-left cursor-pointer"
+              aria-label="Enter Neurodivergent Traders"
+            >
               <SharpPathImage
                 webp={NEURODIVERGENT_BANNER.webp}
                 png={NEURODIVERGENT_BANNER.png}
@@ -118,7 +137,7 @@ export default function ChooseYourPath({ onEnter }: Props) {
                 height={NEURODIVERGENT_BANNER.height}
                 alt={NEURODIVERGENT_BANNER.alt}
               />
-            </div>
+            </button>
           </div>
         </div>
       </div>

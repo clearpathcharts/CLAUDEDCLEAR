@@ -181,6 +181,12 @@ for (const rel of srcFiles) {
     assert.match(text, /DEFAULT_WATCHLISTS/);
     assert.match(text, /clearpath_retail_watchlists_v1/);
   }
+  if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
+    assert.match(text, /data-neuro-door/);
+    assert.match(text, /clearpath-set-profile/);
+    assert.match(text, /navigateToDesk\('retail'\)/);
+    assert.doesNotMatch(text, /href=\{`\/\?profile=/);
+  }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
