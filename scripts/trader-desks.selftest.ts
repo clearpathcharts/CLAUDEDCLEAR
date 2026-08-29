@@ -168,9 +168,13 @@ for (const rel of srcFiles) {
     assert.match(text, /LightweightCandles/);
     assert.match(text, /Education/);
     assert.match(text, /Simulation Lab/);
+    assert.match(text, /Market Movers/);
+    assert.match(text, /What changed/);
+    assert.match(text, /Alerts \/ Events/);
     assert.match(text, /Focus mode/);
     assert.match(text, /Blackout/);
     assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /data-retail-cockpit/);
     assert.doesNotMatch(text, /Place order|order ticket/i);
     assert.doesNotMatch(text, /\bBUY\b|\bSELL\b/);
   }

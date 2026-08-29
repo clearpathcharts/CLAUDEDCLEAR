@@ -124,10 +124,29 @@ const OSCILLATOR_INDICATORS = new Set([
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
+function uniqueAscendingTimes<T extends { time: number }>(candles: T[]): T[] {
+  const out: T[] = [];
+  for (const c of candles) {
+    if (!Number.isFinite(c.time)) continue;
+    const prev = out[out.length - 1];
+    if (!prev) {
+      out.push(c);
+      continue;
+    }
+    if (c.time === prev.time) {
+      out[out.length - 1] = c;
+      continue;
+    }
+    if (c.time > prev.time) out.push(c);
+  }
+  return out;
+}
+
 function toPriceSeriesData(
   candles: Array<{ time: number; open: number; high: number; low: number; close: number }>,
   type: PriceSeriesType,
 ) {
+  candles = uniqueAscendingTimes(candles);
   if (type === "line" || type === "area") {
     return candles.map((c) => ({ time: c.time as Time, value: c.close }));
   }
@@ -552,7 +571,7 @@ export function LightweightCandles({
         if (!active) return;
 
         // SLICE DATA BOUND TO THE SUBSCRIPTION LEVEL RESTRICTIONS (Up to 40k)
-        const tierOptimizedData = trimTrailingStagnantBars(displayData.slice(-allowedLimit));
+        const tierOptimizedData = uniqueAscendingTimes(trimTrailingStagnantBars(displayData.slice(-allowedLimit)));
 
         let chartCandles = tierOptimizedData as CandlestickData<Time>[];
         if (getActiveRirProgram()) {

@@ -11,7 +11,7 @@ export default function WhatAmILookingAt({
 }: {
   compact?: boolean;
 }) {
-  const [openId, setOpenId] = useState<string | null>(InstitutionalRegistry[0]?.id ?? null);
+  const [openId, setOpenId] = useState<string | null>(compact ? null : InstitutionalRegistry[0]?.id ?? null);
   const [listOpen, setListOpen] = useState(!compact);
 
   return (

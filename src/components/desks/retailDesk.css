@@ -1,0 +1,133 @@
+/* Retail market cockpit — cyan on graphite. Distinct from institutional pink and fundamental brass. */
+.rt-desk {
+  --rt-line: rgba(255, 255, 255, 0.12);
+  color: var(--desk-text);
+}
+
+.rt-ribbon {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  min-width: 0;
+  padding-bottom: 0.15rem;
+}
+
+.rt-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--rt-line);
+  border-radius: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  text-align: left;
+  background: transparent;
+}
+
+.rt-stage {
+  display: grid;
+  grid-template-columns: 15.25rem minmax(0, 1fr) 15.25rem;
+  grid-template-rows: minmax(22rem, 48vh);
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.rt-chart-well {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.rt-chart-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  gap: 0.4rem;
+}
+
+.rt-chart-grid[data-layout='1'] {
+  grid-template-columns: 1fr;
+}
+
+.rt-chart-grid[data-layout='2'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.rt-chart-grid[data-layout='4'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.rt-bento-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.rt-bento-row--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.rt-bento-body {
+  max-height: 11.5rem;
+  overflow: auto;
+}
+
+.rt-bento-body--tall {
+  max-height: 16rem;
+}
+
+.rt-tool {
+  border: 1px solid var(--rt-line);
+  border-radius: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d4d4d8;
+}
+
+.rt-tool.is-on {
+  color: #050505;
+  background: #00ffff;
+  border-color: #00ffff;
+}
+
+.rt-empty {
+  color: rgba(251, 191, 36, 0.85);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1200px) {
+  .rt-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+  .rt-stage > .rt-watch {
+    order: 2;
+  }
+  .rt-stage > .rt-chart {
+    order: 1;
+    min-height: 42vh;
+  }
+  .rt-stage > .rt-snap {
+    order: 3;
+  }
+  .rt-chart-grid[data-layout='2'],
+  .rt-chart-grid[data-layout='4'] {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+  .rt-bento-row,
+  .rt-bento-row--4 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .rt-bento-row,
+  .rt-bento-row--4 {
+    grid-template-columns: 1fr;
+  }
+}
