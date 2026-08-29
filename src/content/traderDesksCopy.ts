@@ -22,11 +22,11 @@ export const DESK_SEO: Record<
     lead: 'Bento equity-research workstation: company, business model, revenue, profitability, cash flow, balance sheet, capital allocation, valuation, earnings, peers, geography, macro, filings, and news. Research only — no trade execution.',
   },
   retail: {
-    title: 'Retail Trader Desk | ClearPathTrader',
+    title: 'Retail Market Workstation | ClearPathTrader',
     description:
-      'Retail trader UI that keeps the chart large and the language plain. Search a market, pick a timeframe, and open education when you want it.',
-    h1: 'Retail Trader Desk',
-    lead: 'One chart, one search box, plain-language study links. Made to be understandable.',
+      'Retail market cockpit: watchlist, chart, snapshot, volume, movers, news, economic wire, alerts, education, and simulation entry. Analytics only — not a brokerage.',
+    h1: 'Retail Market',
+    lead: 'Everyday retail trader workstation: markets, chart, price, volume, context, news, calendar, and education in one screen. Information only — not execution or advice.',
   },
   neurodivergent: {
     title: 'Neurodivergent Trader Desk | ClearPathTrader',

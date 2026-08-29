@@ -78,6 +78,10 @@ const srcFiles = [
   'src/components/desks/institutional/useInstitutionalIntelligence.ts',
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
+  'src/components/desks/retail/RetailDashboard.tsx',
+  'src/components/desks/retail/RetailEducationBento.tsx',
+  'src/components/desks/retail/useRetailIntelligence.ts',
+  'src/components/desks/retail/retailStore.ts',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
@@ -135,6 +139,47 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/quotes/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
+  }
+  if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
+    assert.match(text, /RetailDashboard/);
+    assert.doesNotMatch(text, /study desk/);
+  }
+  if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
+    assert.match(text, /data-retail-door/);
+    assert.match(text, /Retail Market/);
+    assert.match(text, /Global Market Ribbon/);
+    assert.match(text, /My Watchlist/);
+    assert.match(text, /Primary Chart/);
+    assert.match(text, /Market Snapshot/);
+    assert.match(text, /Market Context/);
+    assert.match(text, /Volume \/ Price/);
+    assert.match(text, /Market Movers/);
+    assert.match(text, /Economic Calendar/);
+    assert.match(text, /Alerts \/ Events/);
+    assert.match(text, /What Changed/);
+    assert.match(text, /Simulation Lab/);
+    assert.match(text, /Focus mode/);
+    assert.match(text, /Blackout/);
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /RetailEducationBento/);
+    assert.match(text, /Information & analytics only/);
+    assert.match(text, /DATA UNAVAILABLE/);
+    assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
+    assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
+  }
+  if (rel === 'src/components/desks/retail/RetailEducationBento.tsx') {
+    assert.match(text, /InstitutionalRegistry/);
+    assert.match(text, /What am I looking at/);
+    assert.match(text, /BOS|CHoCH|FVG/);
+  }
+  if (rel === 'src/components/desks/retail/useRetailIntelligence.ts') {
+    assert.match(text, /\/api\/quotes/);
+    assert.match(text, /\/api\/newsdata\/latest/);
+    assert.match(text, /fetchEconomicNews/);
+  }
+  if (rel === 'src/components/desks/retail/retailStore.ts') {
+    assert.match(text, /DEFAULT_WATCHLISTS/);
+    assert.match(text, /clearpath_retail_watchlists_v1/);
   }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
