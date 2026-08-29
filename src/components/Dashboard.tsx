@@ -141,6 +141,9 @@ const RETIRED_TABS: Record<string, string> = {
   Screener: 'StrictlyCharts',
   Heatmap: 'StrictlyCharts',
   Journal: 'StrictlyCharts',
+  Charts: 'StrictlyCharts',
+  NeurodivergentUI: 'StrictlyCharts',
+  neurodivergent: 'StrictlyCharts',
   // Copycat / fabricated market surfaces — retired; keep News + Economic News
   CapitalFlow: 'News',
   Scanner: 'News',
@@ -488,7 +491,7 @@ const TabContent = ({
               Clear Path Trader: Training Board
             </h1>
             <p className="text-center text-white/40 text-sm font-mono">
-              Open <strong className="text-[#00D9FF]">MARKETS</strong> or <strong className="text-[#00D9FF]">NEURODIVERGENT UI</strong> from the nav bar — the Pattern Scanner panel appears on live charts.
+              Open <strong className="text-[#00D9FF]">NEURODIVERGENT UI</strong> from the nav bar — the Pattern Scanner panel appears on live charts.
             </p>
           </div>
         </div>
@@ -766,7 +769,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'biography': 'Biography',
           'affiliate': 'AffiliateNetwork',
           'strictlycharts': 'StrictlyCharts',
-          'charts': 'StrictlyCharts'
+          'charts': 'StrictlyCharts',
+          'neurodivergent ui': 'StrictlyCharts',
+          'neurodivergent': 'StrictlyCharts',
+          'neuro': 'StrictlyCharts',
         };
         const mappedTarget = normalizeTabId(targetMap[target.toLowerCase()] || target);
         setActiveTab(mappedTarget);
@@ -976,7 +982,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'Yours', icon: User, label: 'YOURS' },
       { id: 'TheRiver', icon: Cpu, label: 'INDACREATOR' },
       { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
-      { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
+      { id: 'StrictlyCharts', icon: BarChart3, label: 'NEURODIVERGENT UI' },
       { id: 'ClearPathEducation', icon: Book, label: 'CLEARPATH EDUCATION' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'Fundamentals', icon: Landmark, label: 'FUNDAMENTAL' },

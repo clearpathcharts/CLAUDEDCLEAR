@@ -53,7 +53,7 @@ function DeskShell({
 
   return (
     <div
-      className={`desk-shell flex h-[100dvh] min-h-screen w-full flex-col ${
+      className={`desk-shell flex h-[100dvh] w-full flex-col overflow-hidden ${
         paper === 'white' ? 'bg-white text-zinc-900' : 'bg-[#050505] text-white'
       }`}
       data-trader-desk={deskId}

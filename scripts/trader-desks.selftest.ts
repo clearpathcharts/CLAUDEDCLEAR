@@ -7,6 +7,8 @@ import fs from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import {
+  DESK_CHARTS_ANCHOR,
+  DESK_DISCLAIMER_STORAGE_KEY,
   DESK_PAPER_STORAGE_KEY,
   FX_SESSIONS,
   TRADER_DESK_IDS,
@@ -51,6 +53,8 @@ assert.equal(isDeskPaper('white'), true);
 assert.equal(isDeskPaper('black'), true);
 assert.equal(isDeskPaper('blue'), false);
 assert.equal(DESK_PAPER_STORAGE_KEY, 'clearpath_desk_paper');
+assert.equal(DESK_DISCLAIMER_STORAGE_KEY, 'clearpath_desk_disclaimer_dismissed');
+assert.equal(DESK_CHARTS_ANCHOR, 'desk-charts');
 
 const themeCss = fs.readFileSync(path.join(root, 'src/components/desks/deskTheme.css'), 'utf8');
 assert.match(themeCss, /font-weight: 700/);
@@ -83,6 +87,7 @@ const srcFiles = [
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
   'src/App.tsx',
+  'src/components/Dashboard.tsx',
   'src/components/Auth.tsx',
   'src/components/ChooseYourPath.tsx',
   'server.ts',
@@ -149,6 +154,8 @@ for (const rel of srcFiles) {
     assert.match(text, /NeuroProfilePicker/);
     assert.match(text, /data-neurodivergent-door/);
     assert.match(text, /clearpath_current_profile_id/);
+    assert.match(text, /DESK_CHARTS_ANCHOR/);
+    assert.match(text, /Neurodivergent UI/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
     assert.match(text, /No order ticket/);
     assert.doesNotMatch(text, /Place order/i);
@@ -182,6 +189,14 @@ for (const rel of srcFiles) {
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
+    assert.match(text, /Dismiss educational disclaimer/);
+    assert.match(text, /rememberDeskDisclaimerDismissed/);
+    assert.match(text, /Neurodivergent UI/);
+    assert.match(text, /scrollToDeskCharts/);
+  }
+  if (rel === 'src/components/Dashboard.tsx') {
+    assert.match(text, /id: 'StrictlyCharts', icon: BarChart3, label: 'NEURODIVERGENT UI'/);
+    assert.doesNotMatch(text, /id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS'/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

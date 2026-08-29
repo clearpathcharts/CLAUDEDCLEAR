@@ -111,6 +111,25 @@ export function isSessionOpen(utcHour: number, utcStart: number, utcEnd: number)
   return utcHour >= utcStart || utcHour < utcEnd;
 }
 
+export const DESK_DISCLAIMER_STORAGE_KEY = 'clearpath_desk_disclaimer_dismissed';
+export const DESK_CHARTS_ANCHOR = 'desk-charts';
+
+export function readDeskDisclaimerDismissed(): boolean {
+  try {
+    return localStorage.getItem(DESK_DISCLAIMER_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function rememberDeskDisclaimerDismissed(): void {
+  try {
+    localStorage.setItem(DESK_DISCLAIMER_STORAGE_KEY, '1');
+  } catch {
+    /* quota / private mode */
+  }
+}
+
 export const DESK_PAPER_STORAGE_KEY = 'clearpath_desk_paper';
 export type DeskPaper = 'black' | 'white';
 

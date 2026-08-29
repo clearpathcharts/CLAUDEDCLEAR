@@ -3,6 +3,7 @@ import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
 import { ChartDrawingSessionProvider } from '../charts/drawings';
+import { DESK_CHARTS_ANCHOR } from '../../lib/traderDesks';
 import { themeProfiles, type ThemeProfileId } from '../../lib/theme/profiles';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
@@ -68,22 +69,14 @@ export default function NeurodivergentTraderDesk() {
         data-neurodivergent-door=""
         style={shellStyle}
       >
-        <section className="rounded-2xl border p-4" style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}>
-          <h2 className="text-xl font-black uppercase tracking-tight" style={{ color: theme.text }}>
-            Built for different minds
-          </h2>
-          <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed opacity-80">
-            Pick a sensory profile. The chart stays on this desk — we do not send you to login.
-            One chart. Low motion. No order ticket.
-          </p>
-        </section>
-
-        <NeuroProfilePicker activeProfileId={profileId} onProfileChange={applyProfile} compact />
-
-        <section className="flex min-h-0 flex-1 flex-col gap-2 rounded-2xl border p-3" style={{ borderColor: `${theme.borderA}44`, background: 'rgba(0,0,0,0.35)' }}>
+        <section
+          id={DESK_CHARTS_ANCHOR}
+          className="flex min-h-0 flex-1 flex-col gap-2 scroll-mt-2 rounded-2xl border p-3"
+          style={{ borderColor: `${theme.borderA}44`, background: 'rgba(0,0,0,0.35)' }}
+        >
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60">Chart</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60">Neurodivergent UI · Chart</p>
                 <p className="text-lg font-black uppercase tracking-tight">{theme.label}</p>
               </div>
               <div className="min-w-[220px] flex-1">
@@ -124,6 +117,19 @@ export default function NeurodivergentTraderDesk() {
               Information and analytics only — no trade execution — no personalized investment advice
             </p>
         </section>
+
+        <details className="rounded-2xl border p-3" style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}>
+          <summary className="cursor-pointer text-base font-black uppercase tracking-tight" style={{ color: theme.text }}>
+            Sensory profiles · {theme.label}
+          </summary>
+          <p className="mt-2 max-w-2xl text-base font-bold leading-relaxed opacity-80">
+            Pick a sensory profile. The chart stays on this desk — we do not send you to login.
+            One chart. Low motion. No order ticket.
+          </p>
+          <div className="mt-3">
+            <NeuroProfilePicker activeProfileId={profileId} onProfileChange={applyProfile} compact />
+          </div>
+        </details>
       </div>
     </ChartDrawingSessionProvider>
   );
