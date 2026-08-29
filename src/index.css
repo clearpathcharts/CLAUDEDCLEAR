@@ -26,6 +26,14 @@ samp,
   font-family: var(--font-mono);
 }
 
+/* Desk chart platform — do not use Tailwind min() arbitrary values (commas break the class). */
+.chart-platform-body {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  height: min(70vh, 640px);
+}
+
 /* Form controls do not inherit font-family in most browsers */
 button,
 input,

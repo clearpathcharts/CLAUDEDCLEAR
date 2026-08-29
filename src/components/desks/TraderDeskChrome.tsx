@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import {
   FX_SESSIONS,
   TRADER_DESKS,
@@ -63,19 +64,30 @@ export default function TraderDeskChrome({ active }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
-          <button
-            type="button"
-            onClick={togglePaper}
-            aria-pressed={paper === 'white'}
-            className="rounded-md border px-3 py-1.5 text-sm font-extrabold uppercase tracking-wide"
-            style={{
-              color: paper === 'white' ? '#111111' : '#ffffff',
-              borderColor: paper === 'white' ? 'rgba(17,17,17,0.35)' : 'rgba(255,255,255,0.35)',
-              background: paper === 'white' ? '#ffffff' : 'transparent',
-            }}
-          >
-            {paper === 'white' ? 'Dark screen' : 'White screen'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={togglePaper}
+              aria-pressed={paper === 'white'}
+              className="rounded-md border px-3 py-1.5 text-sm font-extrabold uppercase tracking-wide"
+              style={{
+                color: paper === 'white' ? '#111111' : '#ffffff',
+                borderColor: paper === 'white' ? 'rgba(17,17,17,0.35)' : 'rgba(255,255,255,0.35)',
+                background: paper === 'white' ? '#ffffff' : 'transparent',
+              }}
+            >
+              {paper === 'white' ? 'Dark screen' : 'White screen'}
+            </button>
+            <a
+              href="/"
+              data-desk-close=""
+              aria-label="Close desk"
+              title="Close desk"
+              className="desk-close-x inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-2 border-[#ff2d2d] bg-[#ff2d2d]/10 text-[#ff2d2d] md:hidden"
+            >
+              <X size={22} strokeWidth={3} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </div>
 

@@ -55,6 +55,8 @@ assert.equal(DESK_PAPER_STORAGE_KEY, 'clearpath_desk_paper');
 const themeCss = fs.readFileSync(path.join(root, 'src/components/desks/deskTheme.css'), 'utf8');
 assert.match(themeCss, /font-weight: 700/);
 assert.match(themeCss, /data-desk-paper='white'/);
+assert.match(themeCss, /desk-movable-sheet/);
+assert.match(themeCss, /desk-close-x/);
 
 function candle(time: number, o: number, h: number, l: number, c: number, volume = 0): Candle {
   return { time, open: o, high: h, low: l, close: c, volume };
@@ -79,6 +81,7 @@ const srcFiles = [
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
+  'src/components/charts/ChartPlatformPanel.tsx',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
   'src/App.tsx',
@@ -136,11 +139,32 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
   }
+  if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
+    assert.match(text, /ChartPlatformPanel/);
+    assert.match(text, /variant="retail"/);
+    assert.match(text, /data-desk-movable-sheet/);
+    assert.doesNotMatch(text, /from '\.\.\/charts\/LightweightCandles'/);
+  }
+  if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
+    assert.match(text, /ChartPlatformPanel/);
+    assert.match(text, /variant="neurodivergent"/);
+    assert.match(text, /aria-pressed/);
+    assert.doesNotMatch(text, /href=\{\`\/\?profile=/);
+    assert.doesNotMatch(text, /from '\.\.\/charts\/LightweightCandles'/);
+  }
+  if (rel === 'src/components/charts/ChartPlatformPanel.tsx') {
+    assert.match(text, /data-chart-platform=\{variant\}/);
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /CHART_PLATFORM_VARIANTS/);
+    assert.match(text, /chart-platform-body/);
+    assert.doesNotMatch(text, /h-\[min\(/);
+  }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
+    assert.doesNotMatch(text, /ChartPlatformPanel/);
   }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);
@@ -151,6 +175,8 @@ for (const rel of srcFiles) {
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
+    assert.match(text, /data-desk-close/);
+    assert.match(text, /aria-label="Close desk"/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

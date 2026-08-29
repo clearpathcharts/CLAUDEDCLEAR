@@ -31,8 +31,8 @@ export const DESK_SEO: Record<
   neurodivergent: {
     title: 'Neurodivergent Trader Desk | ClearPathTrader',
     description:
-      'Neurodivergent trader UI with calm, predictable chrome and links into ClearPath accessible UI modes (calm focus, ADHD, autism-predictable, and more).',
+      'Neurodivergent trader UI with a live chart platform, calm chrome, and ClearPath accessible UI modes (calm focus, ADHD, autism-predictable, and more).',
     h1: 'Neurodivergent Trader Desk',
-    lead: 'Built for different minds. Pick a sensory profile, keep motion low, and open the chart when you are ready.',
+    lead: 'Built for different minds. Pick a sensory profile and the live chart on this desk uses that look.',
   },
 };
