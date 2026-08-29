@@ -54,7 +54,7 @@ export function ChartPlatformPanel({
   return (
     <section
       data-chart-platform={variant}
-      className="rounded-2xl border bg-black/80"
+      className="chart-platform-panel rounded-2xl border bg-black/80"
       style={{ borderColor: `${accent}59` }}
       aria-labelledby={labelId}
     >

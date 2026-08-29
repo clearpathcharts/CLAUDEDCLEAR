@@ -11,7 +11,7 @@ export default function RetailTraderDesk() {
   const accent = RETAIL_PATH?.accent ?? '#00FFFF';
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-3 p-3">
+    <div className="desk-desk-body mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-3 p-3">
       <ChartPlatformPanel
         variant="retail"
         profileId={profileId}
@@ -21,7 +21,11 @@ export default function RetailTraderDesk() {
         searchPlaceholder="Search AAPL, EURUSD, gold…"
       />
 
-      <section className="rounded-2xl border border-white/10 bg-black/60 p-4">
+      <section
+        data-desk-movable-sheet=""
+        className="desk-movable-sheet rounded-2xl border border-white/10 bg-black/60 p-4"
+      >
+        <div className="desk-movable-sheet-handle mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/25" aria-hidden="true" />
         <h2 className="mb-2 text-lg font-black uppercase tracking-widest text-[#00FFFF]">
           What am I looking at?
         </h2>

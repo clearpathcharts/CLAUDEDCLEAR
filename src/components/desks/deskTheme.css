@@ -132,3 +132,71 @@
   color: #111111 !important;
   border-color: rgba(17, 17, 17, 0.22) !important;
 }
+
+.desk-shell .desk-close-x {
+  color: #ff2d2d !important;
+}
+
+.desk-movable-sheet-handle {
+  display: none;
+}
+
+/* Phone: lock the desk chrome. Only the bottom study sheet scrolls. */
+@media (max-width: 767px) {
+  html:has(.desk-shell[data-trader-desk='retail']),
+  html:has(.desk-shell[data-trader-desk='retail']) body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .desk-shell[data-trader-desk='retail'] {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .desk-shell[data-trader-desk='retail'] #desk-main {
+    overflow: hidden !important;
+    min-height: 0;
+  }
+
+  .desk-shell[data-trader-desk='retail'] .desk-desk-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  .desk-shell[data-trader-desk='retail'] .chart-platform-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .desk-shell[data-trader-desk='retail'] .chart-platform-body {
+    height: auto;
+    min-height: 140px;
+    flex: 1 1 auto;
+  }
+
+  .desk-shell[data-trader-desk='retail'] .desk-movable-sheet {
+    flex: 0 1 auto;
+    max-height: 38dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .desk-shell[data-trader-desk='retail'] .desk-movable-sheet-handle {
+    display: block;
+  }
+}
+
+.desk-movable-sheet-handle {
+  display: none;
+}
