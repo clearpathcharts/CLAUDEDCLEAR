@@ -44,7 +44,7 @@ export function ChartPlatformPanel({
   searchPlaceholder = 'Search AAPL, EURUSD, gold…',
   defaultSymbol = DEFAULT_MARKET_SYMBOLS[0],
   defaultTimeframe = '1h',
-  showBackgroundToggle = true,
+  showBackgroundToggle = false,
 }: ChartPlatformPanelProps) {
   const [symbol, setSymbol] = useState(defaultSymbol);
   const [timeframe, setTimeframe] = useState(defaultTimeframe);
