@@ -5,6 +5,8 @@ import type { Candle } from '../../types/indicators';
 type TwelveConfig = {
   ready?: boolean;
   keyInfo?: string;
+  activeSource?: string | null;
+  keyLength?: number;
 };
 
 /**
@@ -74,7 +76,9 @@ export function DeskTwelveDataChart({
           style={{ color: ready ? '#34d399' : '#fbbf24' }}
         >
           {ready
-            ? 'Twelve Data · live gateway'
+            ? `Twelve Data · live gateway${cfg?.activeSource ? ` · ${cfg.activeSource}` : ''}${
+                typeof cfg?.keyLength === 'number' && cfg.keyLength > 0 ? ` · len ${cfg.keyLength}` : ''
+              }`
             : cfg
               ? `Twelve Data · ${cfg.keyInfo || 'key not configured on server'}`
               : 'Twelve Data · checking…'}
