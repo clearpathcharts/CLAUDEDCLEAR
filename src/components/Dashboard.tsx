@@ -604,6 +604,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         if (path === '/literacy' || path === '/literacy-os') {
           return 'LiteracyOS';
         }
+        if (path === '/ceo' || path === '/ceo-dashboard') {
+          return 'CeoDashboard';
+        }
       } catch (e) {
         console.error('Failed to parse pathname for activeTab initial state:', e);
       }
@@ -1062,10 +1065,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           window.history.pushState({ tabId: nextTab }, '', keep ? window.location.pathname : '/encyclopedia');
         } else if (nextTab === 'Fundamentals') {
           window.history.pushState({ tabId: nextTab }, '', '/desk/fundamental');
+        } else if (nextTab === 'CeoDashboard') {
+          window.history.pushState({ tabId: nextTab }, '', '/ceo');
         } else {
           const params = new URLSearchParams(window.location.search);
           params.set('tab', nextTab);
-          const path = window.location.pathname.toLowerCase() === '/desk/fundamental' ? '/' : window.location.pathname;
+          const path =
+            window.location.pathname.toLowerCase() === '/desk/fundamental' ||
+            window.location.pathname.toLowerCase() === '/ceo' ||
+            window.location.pathname.toLowerCase() === '/ceo-dashboard'
+              ? '/'
+              : window.location.pathname;
           const newUrl = `${path}?${params.toString()}#${nextTab}`;
           window.history.pushState({ tabId: nextTab }, '', newUrl);
         }
@@ -1132,6 +1142,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           setActiveTab('Fundamentals');
           return;
         }
+        if (path === '/ceo' || path === '/ceo-dashboard') {
+          setActiveTab('CeoDashboard');
+          return;
+        }
       }
 
       if (event.state && event.state.tabId) {
@@ -1176,6 +1190,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       setActiveTab('EncyclopediaOfIndicators');
     } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
       setActiveTab('Fundamentals');
+    } else if (path === '/ceo' || path === '/ceo-dashboard') {
+      setActiveTab(isFounder() ? 'CeoDashboard' : 'StrictlyCharts');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
@@ -1211,7 +1227,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'ApiMonitor';
         if (validHash) {
           const next = normalizeTabId(hash);
-          if (next === 'CeoDashboard' && !isFounderEmail(authUser?.email)) {
+          if (next === 'CeoDashboard' && !isFounder()) {
             setActiveTab('StrictlyCharts');
           } else {
             setActiveTab(next);
