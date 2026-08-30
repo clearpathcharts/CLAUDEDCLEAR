@@ -17,7 +17,7 @@
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 import { resolveProviderSymbol } from "../constants/assetRegistry";
-import { getTwelveDataApiKey } from "./secrets";
+import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -88,6 +88,7 @@ const CACHE_TTL_CANDLES_WEEKLY = 120000 // 120s for week/month
 const MARKET_CACHE_MAX_ENTRIES = 400
 const MAX_UPSTREAM_IN_FLIGHT = 20
 const RATE_LIMIT_COOLDOWN_MS = 15_000
+const AUTH_FAIL_COOLDOWN_MS = 5 * 60_000
 
 const marketCache: Record<string, CacheEntry> = {}
 const pendingRequests: Record<string, Promise<any>> = {}
@@ -95,6 +96,17 @@ const pendingRequests: Record<string, Promise<any>> = {}
 let upstreamInFlight = 0
 const upstreamWaitQueue: Array<() => void> = []
 let rateLimitedUntil = 0
+let authFailedUntil = 0
+let pinnedWorkingKey: string | null = null
+
+/** Test-only: clear 401 pin + cooldown between self-tests. */
+export function resetTwelveDataAuthStateForTests(): void {
+  authFailedUntil = 0
+  pinnedWorkingKey = null
+  rateLimitedUntil = 0
+  twelvedataHealth.status = 'HEALTHY'
+  twelvedataHealth.lastError = null
+}
 
 function candleTtlMs(interval: string): number {
   const v = (interval || '').toLowerCase()
@@ -122,6 +134,12 @@ async function acquireUpstreamSlot(): Promise<void> {
     // Cooldown elapsed — allow traffic again; next success will mark HEALTHY.
     twelvedataHealth.status = 'HEALTHY';
   }
+  if (Date.now() < authFailedUntil) {
+    const waitMs = authFailedUntil - Date.now();
+    throw new Error(
+      `API fetch failed with status 401 for Twelve Data (invalid or stale key). Cooling down ${Math.ceil(waitMs / 1000)}s. On Cloud Run: paste the full paid key into TWELVEDATA_API_KEY, delete any stale TWELVE_DATA_API_KEY duplicate, Deploy, keep traffic on LATEST.`
+    );
+  }
   if (Date.now() < rateLimitedUntil) {
     const waitMs = rateLimitedUntil - Date.now();
     throw new Error(
@@ -143,121 +161,225 @@ function releaseUpstreamSlot() {
 }
 
 // Helper to execute fetch with custom timeout signal
-async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  durationMs = 5000,
+  headers?: HeadersInit,
+): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), durationMs);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { signal: controller.signal, headers });
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
+function twelveAuthHeaders(apiKey: string): HeadersInit {
+  return { Authorization: `apikey ${apiKey}` };
+}
+
+function withEncodedApiKey(url: string, apiKey: string): string {
+  const stripped = url
+    .replace(/[?&]apikey=[^&]*/g, '')
+    .replace(/\?&/, '?')
+    .replace(/[?&]$/, '');
+  const joiner = stripped.includes('?') ? '&' : '?';
+  return `${stripped}${joiner}apikey=${encodeURIComponent(apiKey)}`;
+}
+
+function isAuthFailure(status: number, data?: { code?: unknown; message?: unknown }): boolean {
+  if (status === 401) return true;
+  const code = Number(data?.code);
+  const msg = String(data?.message || '').toLowerCase();
+  return (
+    code === 401 ||
+    msg.includes('invalid api key') ||
+    msg.includes('apikey is invalid') ||
+    msg.includes('api key is invalid')
+  );
+}
+
+function authCandidates(preferredKey?: string): Array<{ source: string; key: string }> {
+  const fromEnv = listTwelveDataApiKeyCandidates();
+  const ordered: Array<{ source: string; key: string }> = [];
+  const seen = new Set<string>();
+  const push = (source: string, key: string) => {
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    ordered.push({ source, key });
+  };
+  if (pinnedWorkingKey) push('pinned', pinnedWorkingKey);
+  if (preferredKey) push('caller', preferredKey);
+  for (const c of fromEnv) push(c.source, c.key);
+  return ordered;
+}
+
 // Global generic tracker for checking status codes, JSON flags, and headers
-async function fetchAndTrack(url: string, type: string, symbol: string, timeoutMs = 5000): Promise<any> {
+async function fetchAndTrack(
+  url: string,
+  type: string,
+  symbol: string,
+  timeoutMs = 5000,
+  preferredKey?: string,
+): Promise<any> {
   await acquireUpstreamSlot()
-  twelvedataHealth.totalRequests++;
-  twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
   twelvedataHealth.lastChecked = new Date().toISOString();
 
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`\n==================================================`);
-  console.log(`[TwelveData Connection Request] Firing real HTTP fetch.`);
-  console.log(`-> Target Type:  ${type}`);
-  console.log(`-> Symbol:       ${symbol}`);
-  console.log(`-> Redacted URL: ${redactedUrl}`);
-  console.log(`==================================================\n`);
+  const candidates = authCandidates(preferredKey || getTwelveDataApiKey());
+  twelvedataHealth.apiKeyPresent = candidates.length > 0;
+  if (candidates.length === 0) {
+    releaseUpstreamSlot();
+    throw new Error('Twelve Data API Key not configured.');
+  }
 
   const startTime = Date.now();
+  let lastAuthError: Error | null = null;
+  let countedFailure = false;
+
   try {
-    const response = await fetchWithTimeout(url, timeoutMs);
-    twelvedataHealth.latencyMs = Date.now() - startTime;
+    for (let i = 0; i < candidates.length; i++) {
+      const { source, key } = candidates[i];
+      const keyedUrl = withEncodedApiKey(url, key);
+      const redactedUrl = keyedUrl.replace(/apikey=[^&]+/, 'apikey=REDACTED');
+      twelvedataHealth.totalRequests++;
 
-    console.log(`\n==================================================`);
-    console.log(`[TwelveData Connection Response] Received Answer.`);
-    console.log(`-> Symbol:      ${symbol}`);
-    console.log(`-> Status Code: ${response.status} (${response.statusText})`);
-    console.log(`-> Latency:     ${twelvedataHealth.latencyMs} ms`);
-    console.log(`==================================================\n`);
+      console.log(`\n==================================================`);
+      console.log(`[TwelveData Connection Request] Firing real HTTP fetch.`);
+      console.log(`-> Target Type:  ${type}`);
+      console.log(`-> Symbol:       ${symbol}`);
+      console.log(`-> Auth:         Authorization header + encoded query (${source}, len=${key.length})`);
+      console.log(`-> Redacted URL: ${redactedUrl}`);
+      console.log(`==================================================\n`);
 
-    // Retrieve Twelve Data rate-limit counters from Response Headers
-    const ratelimiterLimit = response.headers.get('x-rate-limit-limit');
-    const ratelimiterRemaining = response.headers.get('x-rate-limit-remaining');
-    const ratelimiterReset = response.headers.get('x-rate-limit-reset');
+      const response = await fetchWithTimeout(keyedUrl, timeoutMs, twelveAuthHeaders(key));
+      twelvedataHealth.latencyMs = Date.now() - startTime;
 
-    if (ratelimiterLimit) twelvedataHealth.rateLimitLimit = ratelimiterLimit;
-    if (ratelimiterRemaining) twelvedataHealth.rateLimitRemaining = ratelimiterRemaining;
-    if (ratelimiterReset) twelvedataHealth.rateLimitReset = ratelimiterReset;
+      console.log(`\n==================================================`);
+      console.log(`[TwelveData Connection Response] Received Answer.`);
+      console.log(`-> Symbol:      ${symbol}`);
+      console.log(`-> Status Code: ${response.status} (${response.statusText})`);
+      console.log(`-> Latency:     ${twelvedataHealth.latencyMs} ms`);
+      console.log(`==================================================\n`);
 
-    if (!response.ok) {
-      twelvedataHealth.failedRequests++;
-      console.error(`\n==================================================`);
-      console.error(`[TwelveData Ingest ERROR] HTTP Fetch Failed!`);
-      console.error(`-> Status Code:   ${response.status}`);
-      console.error(`-> Symbol:        ${symbol}`);
-      console.error(`-> Redacted URL:  ${redactedUrl}`);
-      console.error(`==================================================\n`);
+      const ratelimiterLimit = response.headers.get('x-rate-limit-limit');
+      const ratelimiterRemaining = response.headers.get('x-rate-limit-remaining');
+      const ratelimiterReset = response.headers.get('x-rate-limit-reset');
+      if (ratelimiterLimit) twelvedataHealth.rateLimitLimit = ratelimiterLimit;
+      if (ratelimiterRemaining) twelvedataHealth.rateLimitRemaining = ratelimiterRemaining;
+      if (ratelimiterReset) twelvedataHealth.rateLimitReset = ratelimiterReset;
 
-      if (response.status === 429) {
-        twelvedataHealth.status = 'RATE_LIMITED';
-        rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
-        twelvedataHealth.lastError = `HTTP 429 Rate Limited: speed quota limit exceeded for ${symbol}`;
-        logHealthEvent('WARNING', `429 Rate Limit Exceeded: ${symbol} ${type}`, 429);
+      if (isAuthFailure(response.status)) {
+        lastAuthError = new Error(`API fetch failed with status ${response.status} for ${symbol}`);
+        logHealthEvent(
+          'WARNING',
+          `HTTP ${response.status} auth using ${source} (len=${key.length})` +
+            (i < candidates.length - 1 ? ' — trying the other Cloud Run env spelling' : ''),
+          response.status,
+        );
+        continue;
+      }
+
+      if (!response.ok) {
+        twelvedataHealth.failedRequests++;
+        countedFailure = true;
+        console.error(`\n==================================================`);
+        console.error(`[TwelveData Ingest ERROR] HTTP Fetch Failed!`);
+        console.error(`-> Status Code:   ${response.status}`);
+        console.error(`-> Symbol:        ${symbol}`);
+        console.error(`-> Redacted URL:  ${redactedUrl}`);
+        console.error(`==================================================\n`);
+
+        if (response.status === 429) {
+          twelvedataHealth.status = 'RATE_LIMITED';
+          rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+          twelvedataHealth.lastError = `HTTP 429 Rate Limited: speed quota limit exceeded for ${symbol}`;
+          logHealthEvent('WARNING', `429 Rate Limit Exceeded: ${symbol} ${type}`, 429);
+        } else {
+          twelvedataHealth.status = 'ERROR';
+          twelvedataHealth.lastError = `HTTP ${response.status} failed for ${symbol}`;
+          logHealthEvent('ERROR', `HTTP ${response.status} failure during ${symbol} fetch`, response.status);
+        }
+        if (response.status === 404) {
+          throw new Error(`Symbol "${symbol}" was not found by the market data provider. Check the ticker and try again.`);
+        }
+        throw new Error(`API fetch failed with status ${response.status} for ${symbol}`);
+      }
+
+      const data = await response.json();
+      console.log(`\n==================================================`);
+      console.log(`[TwelveData Ingest DATA] Successfully parsed Response JSON.`);
+      console.log(`-> Symbol:       ${symbol}`);
+      console.log(`-> Data Keys:    ${Object.keys(data || {})}`);
+      if (data && data.status === 'error') {
+        console.warn(`-> API status:   ERROR (message: "${data.message}", code: ${data.code})`);
       } else {
-        twelvedataHealth.status = 'ERROR';
-        twelvedataHealth.lastError = `HTTP ${response.status} failed for ${symbol}`;
-        logHealthEvent('ERROR', `HTTP ${response.status} failure during ${symbol} fetch`, response.status);
+        console.log(`-> API status:   OK/SUCCESS`);
       }
-      // NEVER include the raw URL here: it contains the API key, and these
-      // messages are forwarded to the browser by the market proxy routes.
-      if (response.status === 404) {
-        throw new Error(`Symbol "${symbol}" was not found by the market data provider. Check the ticker and try again.`);
+      console.log(`==================================================\n`);
+
+      if (data && data.status === 'error' && isAuthFailure(200, data)) {
+        lastAuthError = new Error(`Twelve Data API Error: ${data.message} (Code: ${data.code})`);
+        logHealthEvent(
+          'WARNING',
+          `JSON auth error using ${source}: ${data.message}` +
+            (i < candidates.length - 1 ? ' — trying the other Cloud Run env spelling' : ''),
+          data.code || 401,
+        );
+        continue;
       }
-      throw new Error(`API fetch failed with status ${response.status} for ${symbol}`);
-    }
 
-    const data = await response.json();
-    console.log(`\n==================================================`);
-    console.log(`[TwelveData Ingest DATA] Successfully parsed Response JSON.`);
-    console.log(`-> Symbol:       ${symbol}`);
-    console.log(`-> Data Keys:    ${Object.keys(data || {})}`);
-    if (data && data.status === 'error') {
-      console.warn(`-> API status:   ERROR (message: "${data.message}", code: ${data.code})`);
-    } else {
-      console.log(`-> API status:   OK/SUCCESS`);
-    }
-    console.log(`==================================================\n`);
-
-    // Twelve Data REST endpoints return 200 OK containing {"status": "error"} on speed limits or bad symbol
-    if (data && data.status === 'error') {
-      twelvedataHealth.failedRequests++;
-      twelvedataHealth.lastError = data.message || `Twelve Data JSON error for ${symbol}`;
-      if (data.code === 429 || (data.message && data.message.toLowerCase().includes('speed limit')) || (data.message && data.message.toLowerCase().includes('plan limit'))) {
-        twelvedataHealth.status = 'RATE_LIMITED';
-        rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
-        twelvedataHealth.rateLimitRemaining = '0';
-        logHealthEvent('WARNING', `API Speed Plan Limit Tipped (JSON 429) for ${symbol}`, 429);
-      } else {
-        twelvedataHealth.status = 'ERROR';
-        logHealthEvent('ERROR', `Twelve Data JSON Error for ${symbol}: ${data.message}`, data.code || 'JSON_ERR');
+      if (data && data.status === 'error') {
+        twelvedataHealth.failedRequests++;
+        countedFailure = true;
+        twelvedataHealth.lastError = data.message || `Twelve Data JSON error for ${symbol}`;
+        if (
+          data.code === 429 ||
+          (data.message && String(data.message).toLowerCase().includes('speed limit')) ||
+          (data.message && String(data.message).toLowerCase().includes('plan limit'))
+        ) {
+          twelvedataHealth.status = 'RATE_LIMITED';
+          rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+          twelvedataHealth.rateLimitRemaining = '0';
+          logHealthEvent('WARNING', `API Speed Plan Limit Tipped (JSON 429) for ${symbol}`, 429);
+        } else {
+          twelvedataHealth.status = 'ERROR';
+          logHealthEvent('ERROR', `Twelve Data JSON Error for ${symbol}: ${data.message}`, data.code || 'JSON_ERR');
+        }
+        throw new Error(`Twelve Data API Error: ${data.message} (Code: ${data.code})`);
       }
-      throw new Error(`Twelve Data API Error: ${data.message} (Code: ${data.code})`);
+
+      pinnedWorkingKey = key;
+      authFailedUntil = 0;
+      twelvedataHealth.successfulRequests++;
+      if (twelvedataHealth.status !== 'HEALTHY') {
+        logHealthEvent('SUCCESS', `Connection recovered via ${source} for ${symbol} ${type}`, 200);
+      } else if (twelvedataHealth.successfulRequests % 10 === 1) {
+        logHealthEvent('SUCCESS', `Endpoint verification check successful for ${symbol} ${type}`, 200);
+      }
+      twelvedataHealth.status = 'HEALTHY';
+      rateLimitedUntil = 0;
+      twelvedataHealth.lastError = null;
+      return data;
     }
 
-    // Capture success
-    twelvedataHealth.successfulRequests++;
-    if (twelvedataHealth.status !== 'HEALTHY') {
-      logHealthEvent('SUCCESS', `Connection recovered. Operational response from ${symbol} ${type}`, 200);
-    } else if (twelvedataHealth.successfulRequests % 10 === 1) {
-      logHealthEvent('SUCCESS', `Endpoint verification check successful for ${symbol} ${type}`, 200);
-    }
-    twelvedataHealth.status = 'HEALTHY';
-    rateLimitedUntil = 0;
-    twelvedataHealth.lastError = null;
-    return data;
-
+    authFailedUntil = Date.now() + AUTH_FAIL_COOLDOWN_MS;
+    twelvedataHealth.status = 'ERROR';
+    twelvedataHealth.failedRequests++;
+    countedFailure = true;
+    twelvedataHealth.lastError = lastAuthError?.message || `HTTP 401 failed for ${symbol}`;
+    logHealthEvent(
+      'ERROR',
+      `Twelve Data rejected every configured key (401). Cooling down ${AUTH_FAIL_COOLDOWN_MS / 1000}s. Fix Cloud Run env, Deploy, traffic on LATEST.`,
+      401,
+    );
+    throw lastAuthError || new Error(`API fetch failed with status 401 for ${symbol}`);
   } catch (err: any) {
     twelvedataHealth.latencyMs = Date.now() - startTime;
+    const alreadyAuth = lastAuthError && err === lastAuthError;
+    if (alreadyAuth || String(err?.message || '').includes('status 401')) {
+      throw err;
+    }
     console.error(`\n==================================================`);
     console.error(`[TwelveData Exception Thrown]`);
     console.error(`-> Symbol:    ${symbol}`);
@@ -266,10 +388,10 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
 
     if (err.name === 'AbortError' || err.message?.includes('aborted') || err.message?.includes('timeout')) {
       twelvedataHealth.status = 'TIMEOUT';
-      twelvedataHealth.lastError = `Network Timeout of ${type} for ${symbol} (exceeded 5000ms threshold)`;
-      logHealthEvent('ERROR', `Network Timeout (exceeded 5000ms) for ${symbol} ${type}`, 'TIMEOUT');
+      twelvedataHealth.lastError = `Network Timeout of ${type} for ${symbol} (exceeded ${timeoutMs}ms threshold)`;
+      logHealthEvent('ERROR', `Network Timeout (exceeded ${timeoutMs}ms) for ${symbol} ${type}`, 'TIMEOUT');
     } else {
-      twelvedataHealth.failedRequests++;
+      if (!countedFailure) twelvedataHealth.failedRequests++;
       if (!twelvedataHealth.lastError) {
         twelvedataHealth.lastError = err.message || `Unknown error during ${type} fetching of ${symbol}`;
       }
@@ -432,8 +554,8 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY from live FX exchange rates via batch query.`);
-      const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${activeKey}`;
-      const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol);
+      const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}`;
+      const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol, 5000, activeKey);
 
       if (!batchData || batchData.status === 'error') {
         throw new Error(batchData?.message || 'Twelve Data batch query returned error');
@@ -589,8 +711,8 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
 
   const activeKey = apiKey || getCleanApiKey();
   const providers = [...new Set(needFetch.map((r) => r.provider))];
-  const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}&apikey=${activeKey}`;
-  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','));
+  const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}`;
+  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','), 5000, activeKey);
 
   const pick = (provider: string): any => {
     if (!batchData) return null;
@@ -650,8 +772,8 @@ export async function getMarketCandles(symbol: string, interval: string, request
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
-      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}&apikey=${activeKey}`;
-      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000);
+      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}`;
+      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000, activeKey);
 
       if (!batchData || batchData.status === 'error') {
         throw new Error(batchData?.message || 'Twelve Data batch query returned error');
@@ -791,27 +913,24 @@ export function getCleanApiKey(): string {
 async function fetchPrice(symbol: string) {
   const apiKey = getCleanApiKey();
   console.log(`[Gateway] Live Fetch PRICE: ${symbol}`)
-  const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
-  return fetchAndTrack(url, 'price', symbol);
+  const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header + encoded query)`);
+  return fetchAndTrack(url, 'price', symbol, 5000, apiKey);
 }
 
 async function fetchQuoteFromAPI(symbol: string, apiKey: string) {
   console.log(`[Gateway] Live Fetch QUOTE: ${symbol}`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
-  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${cleanKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
-  return fetchAndTrack(url, 'quote', symbol);
+  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header + encoded query)`);
+  return fetchAndTrack(url, 'quote', symbol, 5000, cleanKey);
 }
 
 async function fetchCandlesFromAPI(symbol: string, interval: string, limit: number, apiKey: string) {
   console.log(`[Gateway] Live Fetch CANDLES: ${symbol} (${interval})`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}&apikey=${cleanKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header + encoded query)`);
   // Historical pulls can be large (up to 5k candles); allow more time than quote/price calls.
-  return fetchAndTrack(url, 'candles', symbol, 20000);
+  return fetchAndTrack(url, 'candles', symbol, 20000, cleanKey);
 }

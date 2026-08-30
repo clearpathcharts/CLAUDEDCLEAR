@@ -4,9 +4,36 @@
  * Prefer non-VITE_* names — VITE_ vars can leak into the browser bundle if imported client-side.
  */
 
+function unwrapSecretEnvelope(trimmed: string): string {
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const obj = JSON.parse(trimmed) as Record<string, unknown>;
+      const nested =
+        obj.TWELVEDATA_API_KEY ||
+        obj.TWELVE_DATA_API_KEY ||
+        obj.apikey ||
+        obj.api_key ||
+        obj.apiKey ||
+        obj.key;
+      if (typeof nested === 'string' && nested.trim()) return nested.trim();
+    } catch {
+      /* not a JSON secret envelope */
+    }
+  }
+  return trimmed;
+}
+
 function clean(raw: string | undefined): string {
   if (!raw) return '';
-  const trimmed = raw.trim().replace(/^["']|["']$/g, '');
+  // Strip BOM / zero-width / quotes / whitespace that break Twelve Data auth (401).
+  let trimmed = raw
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
+  trimmed = unwrapSecretEnvelope(trimmed);
+  trimmed = trimmed.replace(/^(apikey|bearer)\s+/i, '').trim();
   if (!trimmed) return '';
   const lower = trimmed.toLowerCase();
   if (
@@ -14,7 +41,9 @@ function clean(raw: string | undefined): string {
     lower.includes('your_') ||
     lower === 'undefined' ||
     lower === 'null' ||
-    lower.startsWith('xxxx')
+    lower.startsWith('xxxx') ||
+    lower === 'secret' ||
+    lower === 'changeme'
   ) {
     return '';
   }
@@ -29,8 +58,99 @@ function first(...candidates: Array<string | undefined>): string {
   return '';
 }
 
+export type TwelveDataKeySource = 'TWELVEDATA_API_KEY' | 'TWELVE_DATA_API_KEY';
+
+let dualKeyWarned = false;
+
+/** Test-only: allow self-tests to re-arm the dual-key console warning. */
+export function resetTwelveDataSecretWarnForTests(): void {
+  dualKeyWarned = false;
+}
+
+export type TwelveDataKeyCandidate = {
+  source: TwelveDataKeySource;
+  key: string;
+};
+
+/**
+ * Twelve Data key. Accepts both Cloud Run spellings founders use:
+ * - TWELVEDATA_API_KEY (docs / .env.example)
+ * - TWELVE_DATA_API_KEY (common Cloud Run spelling)
+ * If both are set and differ, prefer the longer value. A stale short/old key in
+ * TWELVEDATA_API_KEY was causing live 401s while the new paid key sat unused
+ * under TWELVE_DATA_API_KEY. On equal length, prefer TWELVE_DATA_API_KEY.
+ */
 export function getTwelveDataApiKey(): string {
-  return first(process.env.TWELVEDATA_API_KEY, process.env.TWELVE_DATA_API_KEY);
+  return listTwelveDataApiKeyCandidates()[0]?.key || '';
+}
+
+/** Which env var name supplied the active Twelve Data key (diagnostics only). */
+export function getTwelveDataApiKeySource(): TwelveDataKeySource | null {
+  return listTwelveDataApiKeyCandidates()[0]?.source ?? null;
+}
+
+/**
+ * Unique cleaned keys, preferred first, then the unused duplicate spelling.
+ * The market gateway tries these in order on HTTP 401 so a stale Cloud Run
+ * duplicate does not brick the live site while local .env works.
+ */
+export function listTwelveDataApiKeyCandidates(): TwelveDataKeyCandidate[] {
+  const primary = clean(process.env.TWELVEDATA_API_KEY);
+  const alt = clean(process.env.TWELVE_DATA_API_KEY);
+  const ordered: TwelveDataKeyCandidate[] = [];
+
+  const pickPreferred = (): TwelveDataKeyCandidate | null => {
+    if (primary && alt && primary !== alt) {
+      if (alt.length >= primary.length) return { source: 'TWELVE_DATA_API_KEY', key: alt };
+      return { source: 'TWELVEDATA_API_KEY', key: primary };
+    }
+    if (primary) return { source: 'TWELVEDATA_API_KEY', key: primary };
+    if (alt) return { source: 'TWELVE_DATA_API_KEY', key: alt };
+    return null;
+  };
+
+  const preferred = pickPreferred();
+  if (preferred) ordered.push(preferred);
+  if (primary && !ordered.some((c) => c.key === primary)) {
+    ordered.push({ source: 'TWELVEDATA_API_KEY', key: primary });
+  }
+  if (alt && !ordered.some((c) => c.key === alt)) {
+    ordered.push({ source: 'TWELVE_DATA_API_KEY', key: alt });
+  }
+
+  if (primary && alt && primary !== alt && !dualKeyWarned) {
+    dualKeyWarned = true;
+    console.warn(
+      '[secrets] Both TWELVEDATA_API_KEY and TWELVE_DATA_API_KEY are set and differ. ' +
+        `Trying ${ordered.map((c) => `${c.source}(len=${c.key.length})`).join(' then ')}. ` +
+        'Delete the stale duplicate on Cloud Run, then Deploy.',
+    );
+  }
+
+  return ordered;
+}
+
+export function getTwelveDataKeyPresence(): {
+  TWELVEDATA_API_KEY: boolean;
+  TWELVE_DATA_API_KEY: boolean;
+  bothSetAndDiffer: boolean;
+  activeSource: TwelveDataKeySource | null;
+  keyLength: number;
+  candidateCount: number;
+} {
+  const primary = Boolean(clean(process.env.TWELVEDATA_API_KEY));
+  const alt = Boolean(clean(process.env.TWELVE_DATA_API_KEY));
+  const candidates = listTwelveDataApiKeyCandidates();
+  const primaryVal = clean(process.env.TWELVEDATA_API_KEY);
+  const altVal = clean(process.env.TWELVE_DATA_API_KEY);
+  return {
+    TWELVEDATA_API_KEY: primary,
+    TWELVE_DATA_API_KEY: alt,
+    bothSetAndDiffer: Boolean(primaryVal && altVal && primaryVal !== altVal),
+    activeSource: candidates[0]?.source ?? null,
+    keyLength: candidates[0]?.key.length ?? 0,
+    candidateCount: candidates.length,
+  };
 }
 
 export function getGeminiApiKey(): string {
@@ -97,6 +217,7 @@ export function getBoardAccessCode(): string {
 export function getSecretPresenceReport(): Record<string, boolean> {
   return {
     TWELVEDATA_API_KEY: Boolean(getTwelveDataApiKey()),
+    TWELVE_DATA_API_KEY: Boolean(clean(process.env.TWELVE_DATA_API_KEY)),
     GEMINI_API_KEY: Boolean(getGeminiApiKey()),
     GROQ_API_KEY: Boolean(getGroqApiKey()),
     FRED_API_KEY: Boolean(getFredApiKey()),
