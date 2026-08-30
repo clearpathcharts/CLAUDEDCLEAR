@@ -14,6 +14,7 @@ import {
   type RetailAlert,
   type RetailWatchlist,
 } from '../retail/retailStore';
+import { useOptionalDeskAppearance } from '../DeskAppearanceContext';
 import {
   NEURO_DEFAULT_SYMBOL,
   NEURO_DEFAULT_WATCHLISTS,
@@ -100,6 +101,7 @@ export default function NeurodivergentDashboard() {
   const [alerts, setAlerts] = useState(() => loadAlerts());
   const [addSymbol, setAddSymbol] = useState('');
 
+  const deskVisual = useOptionalDeskAppearance();
   const theme = themeProfiles[profileId] ?? themeProfiles.calm_focus;
   const activeWl = watchlists.find((w) => w.id === activeWlId) ?? watchlists[0];
   const watchSymbols = activeWl?.symbols ?? [];
@@ -167,7 +169,9 @@ export default function NeurodivergentDashboard() {
       data-neuro-workstation
       className="flex min-h-0 flex-1 flex-col gap-3 p-3"
       style={{
-        background: `linear-gradient(180deg, ${theme.bgTop}, ${theme.bgBottom})`,
+        background: deskVisual?.overrides.background
+          ? deskVisual.cssVars['--desk-user-bg']
+          : `linear-gradient(180deg, ${theme.bgTop}, ${theme.bgBottom})`,
         color: theme.text,
       }}
     >

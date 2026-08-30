@@ -7,7 +7,8 @@ import {
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
-import { useDeskAppearance } from './DeskAppearanceContext';
+import { deskOpacity, useDeskAppearance } from './DeskAppearanceContext';
+import ColorChartPicker from './ColorChartPicker';
 import { useAuth } from '../../contexts/FirebaseContext';
 import { isFounderEmail } from '../../lib/founder';
 import { auth } from '../../firebase';
@@ -22,7 +23,19 @@ function utcHourFrom(date: Date): number {
 
 export default function TraderDeskChrome({ active }: Props) {
   const meta = TRADER_DESKS[active];
-  const { paper, togglePaper } = useDeskAppearance();
+  const {
+    paper,
+    togglePaper,
+    pickerOpen,
+    setPickerOpen,
+    target,
+    setTarget,
+    overrides,
+    recents,
+    applyColor,
+    setOpacity,
+    resetVisual,
+  } = useDeskAppearance();
   const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
@@ -74,6 +87,20 @@ export default function TraderDeskChrome({ active }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(!pickerOpen)}
+            aria-pressed={pickerOpen}
+            data-color-chart-toggle
+            className="rounded-md border px-3 py-1.5 text-sm font-extrabold uppercase tracking-wide"
+            style={{
+              color: pickerOpen ? '#fff' : paper === 'white' ? '#111111' : '#ffffff',
+              borderColor: pickerOpen ? meta.accent : paper === 'white' ? 'rgba(17,17,17,0.35)' : 'rgba(255,255,255,0.35)',
+              background: pickerOpen ? `${meta.accent}44` : 'transparent',
+            }}
+          >
+            Colors
+          </button>
           <button
             type="button"
             onClick={togglePaper}
@@ -158,6 +185,20 @@ export default function TraderDeskChrome({ active }: Props) {
       <p className="px-3 pb-2 font-mono text-sm font-bold uppercase tracking-wider text-zinc-600">
         {DESK_DISCLAIMER}
       </p>
+      {pickerOpen ? (
+        <ColorChartPicker
+          target={target}
+          onTargetChange={setTarget}
+          selected={overrides[target]}
+          recents={recents}
+          opacity={deskOpacity(overrides)}
+          onPick={applyColor}
+          onOpacity={setOpacity}
+          onReset={resetVisual}
+          deskLabel={meta.title}
+          showPastels={active === 'neurodivergent'}
+        />
+      ) : null}
     </header>
   );
 }

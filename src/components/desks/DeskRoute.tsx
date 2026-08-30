@@ -15,6 +15,7 @@ import {
 import { DESK_SEO } from '../../content/traderDesksCopy';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import './deskTheme.css';
+import './colorChart.css';
 
 function resolveDesk(pathname: string): TraderDeskId {
   const fromPath = parseDeskPath(pathname);
@@ -31,7 +32,7 @@ function DeskShell({
   deskId: TraderDeskId;
   seoH1: string;
 }) {
-  const { paper } = useDeskAppearance();
+  const { paper, cssVars, overrides } = useDeskAppearance();
 
   let body: React.ReactNode;
   switch (deskId) {
@@ -58,6 +59,9 @@ function DeskShell({
       }`}
       data-trader-desk={deskId}
       data-desk-paper={paper}
+      data-desk-color-bg={overrides.background ? '1' : undefined}
+      data-desk-color-bento={overrides.bento ? '1' : undefined}
+      style={cssVars as React.CSSProperties}
     >
       <a href="#desk-main" className="cp-skip-link">
         Skip to desk
@@ -85,7 +89,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   }, [deskId]);
 
   return (
-    <DeskAppearanceProvider>
+    <DeskAppearanceProvider deskId={deskId}>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} />
     </DeskAppearanceProvider>
   );
