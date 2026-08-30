@@ -8,6 +8,9 @@ import {
 } from '../../lib/traderDesks';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import { useDeskAppearance } from './DeskAppearanceContext';
+import { useAuth } from '../../contexts/FirebaseContext';
+import { isFounderEmail } from '../../lib/founder';
+import { auth } from '../../firebase';
 
 type Props = {
   active: TraderDeskId;
@@ -20,6 +23,7 @@ function utcHourFrom(date: Date): number {
 export default function TraderDeskChrome({ active }: Props) {
   const meta = TRADER_DESKS[active];
   const { paper, togglePaper } = useDeskAppearance();
+  const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -29,6 +33,9 @@ export default function TraderDeskChrome({ active }: Props) {
 
   const hour = utcHourFrom(now);
   const utcStamp = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const founderOk =
+    isFounderEmail(user?.email) ||
+    isFounderEmail(auth.currentUser?.email);
 
   return (
     <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
@@ -50,14 +57,18 @@ export default function TraderDeskChrome({ active }: Props) {
                 ? 'ClearPath Institutional'
                 : active === 'fundamental'
                   ? 'ClearPath Fundamental'
-                  : meta.title}
+                  : active === 'neurodivergent'
+                    ? 'ClearPath Neurodivergent'
+                    : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
               {active === 'institutional'
                 ? 'Market Intelligence Platform'
                 : active === 'fundamental'
                   ? 'Equity Research Workstation'
-                  : meta.tagline}
+                  : active === 'neurodivergent'
+                    ? 'Calm retail + crypto · sensory UI'
+                    : meta.tagline}
             </p>
           </div>
         </div>
@@ -103,6 +114,15 @@ export default function TraderDeskChrome({ active }: Props) {
             </button>
           );
         })}
+        {founderOk ? (
+          <a
+            href="/ceo"
+            data-ceo-ops-link
+            className="rounded-md border border-amber-400/50 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-amber-300 hover:bg-amber-400/10"
+          >
+            CEO Ops
+          </a>
+        ) : null}
         <a
           href="/"
           className="ml-auto rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white"

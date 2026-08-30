@@ -145,6 +145,7 @@ export function useRetailIntelligence(
   watchlistSymbols: string[],
   layout: 1 | 2 | 4,
   slotOverrides: Partial<Record<number, { symbol: string; timeframe: string }>>,
+  ribbonMarkets: { symbol: string; label: string }[] = RETAIL_RIBBON,
 ) {
   const [candlesByKey, setCandlesByKey] = useState<Record<string, Candle[]>>({});
   const [candleError, setCandleError] = useState<string | null>(null);
@@ -166,6 +167,8 @@ export function useRetailIntelligence(
     fcf: null,
     status: 'unavailable',
   });
+
+  const ribbonSpec = ribbonMarkets.length ? ribbonMarkets : RETAIL_RIBBON;
 
   const slots = useMemo(
     () => retailWorkspaceSlots(primarySymbol, layout, slotOverrides, primaryTimeframe),
@@ -197,10 +200,10 @@ export function useRetailIntelligence(
   usePageAutoUpdate(
     async () => {
       try {
-        const map = await fetchQuoteMap(RETAIL_RIBBON.map((m) => m.symbol));
-        setRibbon(RETAIL_RIBBON.map((m) => map[m.symbol] ?? emptyQuote(m.symbol)));
+        const map = await fetchQuoteMap(ribbonSpec.map((m) => m.symbol));
+        setRibbon(ribbonSpec.map((m) => map[m.symbol] ?? emptyQuote(m.symbol)));
       } catch {
-        setRibbon(RETAIL_RIBBON.map((m) => emptyQuote(m.symbol)));
+        setRibbon(ribbonSpec.map((m) => emptyQuote(m.symbol)));
       }
     },
     { intervalMs: 20_000 },
