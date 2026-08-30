@@ -191,6 +191,7 @@ for (const rel of srcFiles) {
     assert.match(text, /RetailEducationBento/);
     assert.match(text, /RetailSlideStrip/);
     assert.match(text, /AssetColorControls/);
+    assert.match(text, /data-asset-colors-toggle/);
     assert.match(text, /PatternScannerPanel/);
     assert.match(text, /Pattern Scanner/);
     assert.match(text, /useDedicatedPatternPanel/);
