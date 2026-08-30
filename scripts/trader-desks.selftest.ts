@@ -101,8 +101,11 @@ const srcFiles = [
   'src/components/desks/retail/RetailDashboard.tsx',
   'src/components/desks/retail/RetailEducationBento.tsx',
   'src/components/desks/retail/RetailSlideStrip.tsx',
+  'src/components/desks/retail/AssetColorControls.tsx',
+  'src/lib/assetColorPrefs.ts',
   'src/components/desks/retail/useRetailIntelligence.ts',
   'src/components/desks/retail/retailStore.ts',
+  'src/components/CeoDashboard.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/neuro/NeurodivergentDashboard.tsx',
   'src/components/desks/neuro/neuroProfile.ts',
@@ -187,10 +190,32 @@ for (const rel of srcFiles) {
     assert.match(text, /LightweightCandles/);
     assert.match(text, /RetailEducationBento/);
     assert.match(text, /RetailSlideStrip/);
+    assert.match(text, /AssetColorControls/);
+    assert.match(text, /PatternScannerPanel/);
+    assert.match(text, /Pattern Scanner/);
+    assert.match(text, /useDedicatedPatternPanel/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
+  }
+  if (rel === 'src/components/desks/retail/AssetColorControls.tsx') {
+    assert.match(text, /data-asset-color-controls/);
+    assert.match(text, /Numerology/);
+    assert.match(text, /RAINBOW_PRESETS/);
+    assert.match(text, /type="color"/);
+  }
+  if (rel === 'src/lib/assetColorPrefs.ts') {
+    assert.match(text, /clearpath_asset_colors_v1/);
+    assert.match(text, /resolveAssetColors/);
+    assert.match(text, /RAINBOW_PRESETS/);
+  }
+  if (rel === 'src/components/CeoDashboard.tsx') {
+    assert.match(text, /DailyOpsDesk/);
+    assert.match(text, /CeoAlwaysOnMonitor/);
+    assert.match(text, /userProfile\?\.email/);
+    assert.match(text, /\/ceo/);
+    assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/retail/RetailSlideStrip.tsx') {
     assert.match(text, /data-retail-slide-strip/);
