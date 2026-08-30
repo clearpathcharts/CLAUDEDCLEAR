@@ -156,7 +156,10 @@ export default function CeoDashboard() {
   const [siteDoctorBusy, setSiteDoctorBusy] = useState(false);
 
   const { user, userProfile } = useAuth();
-  const founderOk = isFounderEmail(user?.email) || isFounderEmail(auth.currentUser?.email);
+  const founderOk =
+    isFounderEmail(user?.email) ||
+    isFounderEmail(userProfile?.email) ||
+    isFounderEmail(auth.currentUser?.email);
   const showsUnauthorized =
     /unauthorized|forbidden|founder auth|sign in|catalog admin/i.test(
       `${membersError || ''} ${convertMsg || ''}`
@@ -782,9 +785,14 @@ export default function CeoDashboard() {
   return (
     <div className="min-h-full p-6 md:p-12 font-sans overflow-y-auto custom-scrollbar pb-32" style={{ backgroundColor: '#09090b' }}>
       {/* Header Section */}
-      <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-6">
+      <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-2">
         CEO Dashboard — Founder Console
       </h1>
+      <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
+        Ops only · Daily Ops · Budget · Members · Alerts · Disaster backup · Site Doctor
+        <span className="mx-2 text-zinc-600">·</span>
+        Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
+      </p>
 
       <CeoAlwaysOnMonitor />
       <DailyOpsDesk getHeaders={founderApiHeaders} />

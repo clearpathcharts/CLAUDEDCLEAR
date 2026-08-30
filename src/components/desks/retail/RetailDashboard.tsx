@@ -13,6 +13,15 @@ import { advancedProfiles } from '../../../lib/advanced/profiles';
 import { Bento, Unavail, KV, Bar } from '../institutional/Bento';
 import { RetailEducationBento } from './RetailEducationBento';
 import { RetailSlideStrip } from './RetailSlideStrip';
+import { AssetColorControls } from './AssetColorControls';
+import { PatternScannerPanel } from '../../charts/PatternScannerPanel';
+import { useMembership } from '../../../hooks/useMembership';
+import {
+  loadAssetColorMap,
+  resolveAssetColors,
+  subscribeAssetColors,
+  type AssetColorMap,
+} from '../../../lib/assetColorPrefs';
 import {
   RETAIL_RIBBON,
   useRetailIntelligence,
@@ -163,34 +172,53 @@ function QuoteRowBtn({
   on,
   onPick,
   onRemove,
+  colors,
 }: {
   row: RetailQuote;
   on?: boolean;
   onPick: (s: string) => void;
   onRemove?: () => void;
+  colors?: { asset: string; font: string; number: string };
 }) {
+  const assetColor = colors?.asset;
+  const fontColor = colors?.font;
+  const numberColor = colors?.number;
   return (
     <div
       className="flex items-center gap-1 rounded px-1 py-0.5"
-      style={{ background: on ? 'rgba(0,255,255,0.08)' : undefined }}
+      style={{
+        background: on ? 'rgba(255,20,147,0.12)' : undefined,
+        borderLeft: assetColor ? `3px solid ${assetColor}` : undefined,
+      }}
     >
       <button type="button" onClick={() => onPick(row.symbol)} className="min-w-0 flex-1 text-left hover:bg-white/5">
         <span className="flex items-center justify-between gap-2">
           <span className="min-w-0">
-            <span className="block truncate font-mono text-sm font-extrabold text-[var(--desk-text)]">
+            <span
+              className="block truncate font-mono text-sm font-extrabold"
+              style={{ color: assetColor || 'var(--desk-text)' }}
+            >
               {row.symbol}
             </span>
             {row.volume != null ? (
-              <span className="block text-sm text-[var(--desk-muted)]">Vol {formatVol(row.volume)}</span>
+              <span className="block text-sm" style={{ color: fontColor || 'var(--desk-muted)' }}>
+                Vol {formatVol(row.volume)}
+              </span>
             ) : null}
           </span>
           <span className="shrink-0 text-right font-mono">
             {row.live && row.price != null ? (
               <>
-                <span className="block text-sm tabular-nums text-[var(--desk-text)]">
+                <span
+                  className="block text-sm tabular-nums"
+                  style={{ color: numberColor || 'var(--desk-text)' }}
+                >
                   {formatStructurePrice(row.price)}
                 </span>
-                <span className={`block text-sm ${pctClass(row.pct)}`}>
+                <span
+                  className={`block text-sm ${numberColor ? '' : pctClass(row.pct)}`}
+                  style={numberColor ? { color: numberColor } : undefined}
+                >
                   {row.pct == null ? '—' : `${row.pct >= 0 ? '+' : ''}${row.pct.toFixed(2)}%`}
                 </span>
               </>
@@ -215,6 +243,7 @@ function QuoteRowBtn({
 }
 
 export default function RetailDashboard() {
+  const { hasFeature } = useMembership();
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState('1h');
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
@@ -225,9 +254,12 @@ export default function RetailDashboard() {
   const [focusMode, setFocusMode] = useState(false);
   const [blackout, setBlackout] = useState(false);
   const [addSymbol, setAddSymbol] = useState('');
+  const [colorMap, setColorMap] = useState<AssetColorMap>(() => loadAssetColorMap());
+  const [showColorPane, setShowColorPane] = useState(false);
   const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({
     watchlist: true,
     snapshot: true,
+    patterns: true,
     context: true,
     volume: true,
     movers: true,
@@ -321,6 +353,9 @@ export default function RetailDashboard() {
     return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
   }, []);
 
+  useEffect(() => subscribeAssetColors(() => setColorMap(loadAssetColorMap())), []);
+
+  const activeColors = resolveAssetColors(colorMap, symbol);
   useEffect(() => {
     saveSessionSnapshot({
       at: Date.now(),
@@ -518,23 +553,43 @@ export default function RetailDashboard() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex items-baseline gap-2 font-mono">
-            <span className="text-base font-extrabold text-[var(--desk-text)]">{symbol}</span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowColorPane((v) => !v)}
+              className="rounded-lg border px-3 py-2 text-sm font-black uppercase tracking-wider"
+              style={{
+                borderColor: showColorPane ? 'var(--desk-pink)' : 'var(--desk-border)',
+                color: showColorPane ? 'var(--desk-pink)' : 'var(--desk-muted)',
+              }}
+            >
+              Asset colors
+            </button>
+            <div className="flex items-baseline gap-2 font-mono">
+            <span className="text-base font-extrabold" style={{ color: activeColors.asset }}>
+              {symbol}
+            </span>
             {displayPrice != null ? (
-              <span className="text-base font-extrabold text-[var(--desk-cyan)]">
+              <span className="text-base font-extrabold" style={{ color: activeColors.number }}>
                 {formatStructurePrice(displayPrice)}
               </span>
             ) : (
               <span className="text-sm uppercase text-amber-200/80">DATA UNAVAILABLE</span>
             )}
             {displayPct != null ? (
-              <span className={`text-base ${pctClass(displayPct)}`}>
+              <span className="text-base" style={{ color: activeColors.number }}>
                 {displayPct >= 0 ? '+' : ''}
                 {displayPct.toFixed(2)}%
               </span>
             ) : null}
+            </div>
           </div>
         </div>
+        {showColorPane ? (
+          <div className="border-t border-[var(--desk-border)] px-3 pb-3 pt-2">
+            <AssetColorControls symbol={symbol} map={colorMap} onChange={setColorMap} />
+          </div>
+        ) : null}
       </section>
 
       {/* Chart workspace grows when the analytics strip slides up */}
@@ -544,7 +599,7 @@ export default function RetailDashboard() {
         className={`grid min-h-[320px] flex-1 gap-3 ${
           hideSecondary
             ? 'grid-cols-1'
-            : 'grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_240px] xl:grid-cols-[260px_minmax(0,1.7fr)_270px]'
+            : 'grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_200px_220px] xl:grid-cols-[240px_minmax(0,1.5fr)_220px_240px]'
         }`}
       >
         {!hideSecondary && (
@@ -621,6 +676,7 @@ export default function RetailDashboard() {
                       on={sym === symbol}
                       onPick={setSymbol}
                       onRemove={() => removeFromWatchlist(sym)}
+                      colors={resolveAssetColors(colorMap, sym)}
                     />
                   </li>
                 );
@@ -766,7 +822,8 @@ export default function RetailDashboard() {
                   height={layout === 1 ? 420 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
-                  hidePatternOverlays
+                  useDedicatedPatternPanel={layout === 1 && i === 0}
+                  hidePatternOverlays={!(layout === 1 && i === 0)}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
               </div>
@@ -777,6 +834,24 @@ export default function RetailDashboard() {
             Default chart stays clean — indicators are opt-in.
           </p>
         </section>
+
+        {!hideSecondary && (
+          <Bento
+            title="Pattern Scanner"
+            status={hasFeature('patternOverlay') ? 'live scan' : 'locked'}
+            expanded={openPanels.patterns !== false}
+            onToggle={() => togglePanel('patterns')}
+            className="retail-bento min-h-[280px]"
+          >
+            <PatternScannerPanel
+              symbol={symbol}
+              timeframe={timeframe}
+              compact
+              locked={!hasFeature('patternOverlay')}
+              aiMode={hasFeature('aiScanner')}
+            />
+          </Bento>
+        )}
 
         {!hideSecondary && (
           <Bento
@@ -930,7 +1005,12 @@ export default function RetailDashboard() {
                       Top gainers
                     </p>
                     {gainers.map((r) => (
-                      <QuoteRowBtn key={`g-${r.symbol}`} row={r} onPick={setSymbol} />
+                      <QuoteRowBtn
+                        key={`g-${r.symbol}`}
+                        row={r}
+                        onPick={setSymbol}
+                        colors={resolveAssetColors(colorMap, r.symbol)}
+                      />
                     ))}
                   </div>
                   <div>
@@ -938,7 +1018,12 @@ export default function RetailDashboard() {
                       Top decliners
                     </p>
                     {decliners.map((r) => (
-                      <QuoteRowBtn key={`d-${r.symbol}`} row={r} onPick={setSymbol} />
+                      <QuoteRowBtn
+                        key={`d-${r.symbol}`}
+                        row={r}
+                        onPick={setSymbol}
+                        colors={resolveAssetColors(colorMap, r.symbol)}
+                      />
                     ))}
                   </div>
                   <div>
@@ -946,7 +1031,14 @@ export default function RetailDashboard() {
                       Most active
                     </p>
                     {mostActive.length ? (
-                      mostActive.map((r) => <QuoteRowBtn key={`a-${r.symbol}`} row={r} onPick={setSymbol} />)
+                      mostActive.map((r) => (
+                        <QuoteRowBtn
+                          key={`a-${r.symbol}`}
+                          row={r}
+                          onPick={setSymbol}
+                          colors={resolveAssetColors(colorMap, r.symbol)}
+                        />
+                      ))
                     ) : (
                       <Unavail label="VOLUME DATA UNAVAILABLE" />
                     )}
