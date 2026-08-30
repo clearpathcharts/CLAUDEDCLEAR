@@ -13,6 +13,19 @@
 - After every `main` push, confirm the live Cloud Run revision SHA (or live CEO JS) before telling the founder it is on the site.
 - CEO Dashboard is ops-only: Daily Ops + budget + members/alerts. Chart patterns stay on MARKETS/CHARTS.
 
+### Two Cloud Run buttons (do not invent a third trigger)
+The founder already has **one** Cloud Build trigger for **new website code**. Do **not** create another trigger for API keys. The two buttons do different jobs:
+
+| Want | Use | Do not |
+|------|-----|--------|
+| New visuals / merged `main` on the public site | Cloud Build → the **existing** trigger → Run. Then Cloud Run traffic **100% LATEST**. | Edit & deploy from an old revision (that clones the old fingerprint). |
+| New Twelve Data / Groq / Firebase **keys only** | Cloud Run → `clear-path-markets-science` → **Edit & deploy new revision** → **Variables & secrets** only. Leave the **container image unchanged** (same image the last trigger built). Deploy. Traffic **100% LATEST**. | Run the code trigger “to refresh keys.” That rebuilds from git; if the trigger’s env list is stale it can wipe the new key. |
+
+- Keys live on the **Cloud Run service**, not inside the trigger and not in GitHub. Changing a key without moving traffic still leaves visitors on the old revision (old key + old fingerprint).
+- After either button: `GET https://clearpathtrader.com/api/health` uptime must be minutes (process actually bounced) and `GET /api/twelvedata/config` must include `activeSource` / `keyLength` (proves the post-#213 image). Then `GET /api/quote?symbol=BTC/USD` must return a price, not 401.
+- Playbook: `docs/cloud-run-two-paths.md`. Shell: `scripts/cloud-run-force-latest.sh`.
+- Never **Edit & deploy** `clearpath-voice-os` (Ava) for trader keys or trader UI.
+
 ### Running the app (dev)
 - Start with `npm run dev` (runs `tsx server.ts`). It serves at `http://localhost:3000` (override with `PORT`).
 - **Credential-less boot (no Firebase Admin creds):** with no `FIREBASE_SERVICE_ACCOUNT` / ADC (the default in this VM and in CI), `hasFirebaseAdminCredentials()` in `src/server/firebaseAdmin.ts` short-circuits so `applicationDefault()` is never called and `getAdminFirestore()` returns `null`. The server boots and serves normally — you'll see `[Firebase Admin] No credentials configured (…). Using local file fallback.` and Firestore write-through is skipped (local-file fallback only). No `NODE_OPTIONS` flag is needed. Credentials are only used when explicitly provided (`FIREBASE_SERVICE_ACCOUNT` / a real `GOOGLE_APPLICATION_CREDENTIALS` file) or on GCP runtimes (Cloud Run/Functions/App Engine, detected via `K_SERVICE`/`GAE_*`). Self-tests/CI can force local-only mode with `CLEARPATH_DISABLE_FIRESTORE_ADMIN=1`.

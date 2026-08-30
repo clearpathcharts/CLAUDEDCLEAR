@@ -144,7 +144,7 @@ export const OPEN_SITE_WORK: Array<{ id: string; title: string; why: string }> =
   {
     id: "cloud_run_after_merge",
     title: "After main lands, confirm traffic is LATEST (then Run today’s sweep)",
-    why: "Cloud Build can mint a new revision while the public site stays pinned to an old named revision. Website service is clear-path-markets-science in europe-west1. Never Edit & deploy clearpath-voice-os unless you mean Ava.",
+    why: "Two buttons: Cloud Build trigger = new code from GitHub main; Cloud Run Edit & deploy = keys only (keep the trigger's image). Traffic must stay LATEST. Website is clear-path-markets-science in europe-west1. Never Edit & deploy clearpath-voice-os unless you mean Ava. See docs/cloud-run-two-paths.md.",
   },
 ];
 
@@ -595,8 +595,8 @@ export const CATALOG: CatalogItem[] = [
   // —— EOD ——
   {
     id: "human_deploy",
-    title: "If you pushed to main: confirm Cloud Build / Actions succeeded",
-    why: "Skip when you did not push",
+    title: "If you pushed to main: run the existing Cloud Build trigger, then traffic LATEST",
+    why: "CI does not ship the site. Keys-only changes use Edit & deploy (same image), not a new trigger. docs/cloud-run-two-paths.md",
     kind: "human",
     cadence: "daily",
     section: "eod",
