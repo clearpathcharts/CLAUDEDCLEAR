@@ -2,8 +2,8 @@ import React from 'react';
 import FundamentalDashboard from '../fundamental/FundamentalDashboard';
 
 /**
- * Fundamental Trader Door — research workstation.
- * Charts of price action are not the primary surface (see Institutional desk).
+ * Fundamental Trader Door — research workstation with Twelve Data price chart
+ * plus FMP/FRED fundamentals (see Institutional for multi-asset market command).
  */
 export default function FundamentalTraderDesk({ initialSymbol }: { initialSymbol?: string }) {
   return (

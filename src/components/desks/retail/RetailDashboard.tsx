@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
-import { LightweightCandles, type PriceSeriesType } from '../../charts/LightweightCandles';
+import { type PriceSeriesType } from '../../charts/LightweightCandles';
+import { DeskTwelveDataChart } from '../DeskTwelveDataChart';
 import { ChartIndicatorPicker } from '../../charts/ChartIndicatorPicker';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { DEFAULT_MARKET_SYMBOLS } from '../../../constants/chartLayout';
@@ -814,7 +815,7 @@ export default function RetailDashboard() {
                     </select>
                   </div>
                 ) : null}
-                <LightweightCandles
+                <DeskTwelveDataChart
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
@@ -825,6 +826,7 @@ export default function RetailDashboard() {
                   useDedicatedPatternPanel={layout === 1 && i === 0}
                   hidePatternOverlays={!(layout === 1 && i === 0)}
                   publishDrawingSession={layout === 1 && i === 0}
+                  showStatus={i === 0}
                 />
               </div>
             ))}

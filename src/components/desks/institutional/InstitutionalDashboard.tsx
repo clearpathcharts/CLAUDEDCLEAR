@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
-import { LightweightCandles } from '../../charts/LightweightCandles';
+import { DeskTwelveDataChart } from '../DeskTwelveDataChart';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { analyzeInstitutionalStructure, formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
 import { DEFAULT_MARKET_SYMBOLS } from '../../../constants/chartLayout';
@@ -259,8 +259,8 @@ export default function InstitutionalDashboard() {
                   <p className="absolute left-2 top-1 z-10 font-mono text-[10px] font-black uppercase tracking-wider text-[var(--desk-cyan)]">
                     {s}
                   </p>
-                  <LightweightCandles
-                    data={data}
+                  <DeskTwelveDataChart
+                    candles={data}
                     symbol={s}
                     profileId="focus_mode"
                     timeframe={timeframe}
@@ -268,6 +268,7 @@ export default function InstitutionalDashboard() {
                     height={layout === 1 ? 420 : 200}
                     embedMode
                     hideChartToolbar
+                    showStatus={false}
                   />
                 </div>
               );

@@ -97,6 +97,8 @@ const srcFiles = [
   'src/components/desks/institutional/InstitutionalDashboard.tsx',
   'src/components/desks/institutional/useInstitutionalIntelligence.ts',
   'src/components/desks/FundamentalTraderDesk.tsx',
+  'src/components/fundamental/FundamentalDashboard.tsx',
+  'src/components/desks/DeskTwelveDataChart.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/retail/RetailDashboard.tsx',
   'src/components/desks/retail/RetailEducationBento.tsx',
@@ -155,6 +157,7 @@ for (const rel of srcFiles) {
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
     assert.match(text, /embedMode/);
+    assert.match(text, /DeskTwelveDataChart/);
     assert.match(text, /analyzeInstitutionalStructure/);
     assert.match(text, /Information & analytics only/);
     assert.doesNotMatch(text, /Pattern Scanner/);
@@ -187,7 +190,7 @@ for (const rel of srcFiles) {
     assert.match(text, /Simulation Lab/);
     assert.match(text, /Focus mode/);
     assert.match(text, /Blackout/);
-    assert.match(text, /LightweightCandles/);
+    assert.match(text, /DeskTwelveDataChart/);
     assert.match(text, /RetailEducationBento/);
     assert.match(text, /RetailSlideStrip/);
     assert.match(text, /AssetColorControls/);
@@ -245,7 +248,7 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/neuro/NeurodivergentDashboard.tsx') {
     assert.match(text, /data-neuro-door/);
     assert.match(text, /data-neuro-workstation/);
-    assert.match(text, /LightweightCandles/);
+    assert.match(text, /DeskTwelveDataChart/);
     assert.match(text, /NEURO_DESK_PROFILES/);
     assert.match(text, /NEURO_RIBBON/);
     assert.match(text, /applyNeuroProfile/);
@@ -272,7 +275,16 @@ for (const rel of srcFiles) {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
-    assert.doesNotMatch(text, /LightweightCandles/);
+  }
+  if (rel === 'src/components/fundamental/FundamentalDashboard.tsx') {
+    assert.match(text, /DeskTwelveDataChart/);
+    assert.match(text, /Twelve Data/);
+  }
+  if (rel === 'src/components/desks/DeskTwelveDataChart.tsx') {
+    assert.match(text, /data-desk-twelvedata-chart/);
+    assert.match(text, /userTier="VIP"/);
+    assert.match(text, /\/api\/twelvedata\/config/);
+    assert.match(text, /LightweightCandles/);
   }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);
