@@ -17,7 +17,7 @@
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 import { resolveProviderSymbol } from "../constants/assetRegistry";
-import { getTwelveDataApiKey } from "./secrets";
+import { getTwelveDataApiKey, listTwelveDataApiKeys } from "./secrets";
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -143,21 +143,50 @@ function releaseUpstreamSlot() {
 }
 
 // Helper to execute fetch with custom timeout signal
-async function fetchWithTimeout(url: string, durationMs = 5000): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  durationMs = 5000,
+  headers?: HeadersInit,
+): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), durationMs);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { signal: controller.signal, headers });
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
+/** Prefer Authorization header (Twelve Data recommended) so keys aren't URL-encoded wrong. */
+function twelveAuthHeaders(apiKey: string): HeadersInit {
+  return { Authorization: `apikey ${apiKey}` };
+}
+
+function usedKeyFromHeaders(headers?: HeadersInit): string {
+  if (!headers) return '';
+  const rec = headers as Record<string, string>;
+  const auth = rec.Authorization || rec.authorization || '';
+  return auth.toLowerCase().startsWith('apikey ') ? auth.slice(auth.indexOf(' ') + 1).trim() : '';
+}
+
+function nextTwelveDataFallbackKey(used: string): string {
+  return listTwelveDataApiKeys().find((k) => k && k !== used) || '';
+}
+
 // Global generic tracker for checking status codes, JSON flags, and headers
-async function fetchAndTrack(url: string, type: string, symbol: string, timeoutMs = 5000): Promise<any> {
-  await acquireUpstreamSlot()
+async function fetchAndTrack(
+  url: string,
+  type: string,
+  symbol: string,
+  timeoutMs = 5000,
+  headers?: HeadersInit,
+  alreadySlotted = false,
+): Promise<any> {
+  if (!alreadySlotted) await acquireUpstreamSlot()
   twelvedataHealth.totalRequests++;
-  twelvedataHealth.apiKeyPresent = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
+  const hasQueryKey = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
+  const hasHeaderKey = Boolean(headers && String((headers as Record<string, string>).Authorization || '').startsWith('apikey '));
+  twelvedataHealth.apiKeyPresent = hasQueryKey || hasHeaderKey;
   twelvedataHealth.lastChecked = new Date().toISOString();
 
   const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
@@ -165,12 +194,13 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
   console.log(`[TwelveData Connection Request] Firing real HTTP fetch.`);
   console.log(`-> Target Type:  ${type}`);
   console.log(`-> Symbol:       ${symbol}`);
+  console.log(`-> Auth:         ${hasHeaderKey ? 'Authorization header' : hasQueryKey ? 'query apikey' : 'NONE'}`);
   console.log(`-> Redacted URL: ${redactedUrl}`);
   console.log(`==================================================\n`);
 
   const startTime = Date.now();
   try {
-    const response = await fetchWithTimeout(url, timeoutMs);
+    const response = await fetchWithTimeout(url, timeoutMs, headers);
     twelvedataHealth.latencyMs = Date.now() - startTime;
 
     console.log(`\n==================================================`);
@@ -213,6 +243,15 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
       if (response.status === 404) {
         throw new Error(`Symbol "${symbol}" was not found by the market data provider. Check the ticker and try again.`);
       }
+      if (response.status === 401) {
+        const alt = nextTwelveDataFallbackKey(usedKeyFromHeaders(headers));
+        if (alt) {
+          console.warn(
+            '[Gateway] Twelve Data HTTP 401 — retrying once with the other TWELVE*DATA* API_KEY env name (value not logged).',
+          );
+          return await fetchAndTrack(url, type, symbol, timeoutMs, twelveAuthHeaders(alt), true);
+        }
+      }
       throw new Error(`API fetch failed with status ${response.status} for ${symbol}`);
     }
 
@@ -240,6 +279,15 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
       } else {
         twelvedataHealth.status = 'ERROR';
         logHealthEvent('ERROR', `Twelve Data JSON Error for ${symbol}: ${data.message}`, data.code || 'JSON_ERR');
+      }
+      if (Number(data.code) === 401 || /invalid.*api.?key|incorrect.*api.?key/i.test(String(data.message || ''))) {
+        const alt = nextTwelveDataFallbackKey(usedKeyFromHeaders(headers));
+        if (alt) {
+          console.warn(
+            '[Gateway] Twelve Data JSON 401 — retrying once with the other TWELVE*DATA* API_KEY env name (value not logged).',
+          );
+          return await fetchAndTrack(url, type, symbol, timeoutMs, twelveAuthHeaders(alt), true);
+        }
       }
       throw new Error(`Twelve Data API Error: ${data.message} (Code: ${data.code})`);
     }
@@ -277,7 +325,7 @@ async function fetchAndTrack(url: string, type: string, symbol: string, timeoutM
     }
     throw err;
   } finally {
-    releaseUpstreamSlot();
+    if (!alreadySlotted) releaseUpstreamSlot();
   }
 }
 
@@ -432,8 +480,8 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY from live FX exchange rates via batch query.`);
-      const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}&apikey=${activeKey}`;
-      const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol);
+      const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbols.join(','))}`;
+      const batchData = await fetchAndTrack(batchUrl, 'quote_batch', symbol, 5000, twelveAuthHeaders(activeKey));
 
       if (!batchData || batchData.status === 'error') {
         throw new Error(batchData?.message || 'Twelve Data batch query returned error');
@@ -589,8 +637,8 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
 
   const activeKey = apiKey || getCleanApiKey();
   const providers = [...new Set(needFetch.map((r) => r.provider))];
-  const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}&apikey=${activeKey}`;
-  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','));
+  const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}`;
+  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','), 5000, twelveAuthHeaders(activeKey));
 
   const pick = (provider: string): any => {
     if (!batchData) return null;
@@ -650,8 +698,8 @@ export async function getMarketCandles(symbol: string, interval: string, request
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
-      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}&apikey=${activeKey}`;
-      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000);
+      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}`;
+      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000, twelveAuthHeaders(activeKey));
 
       if (!batchData || batchData.status === 'error') {
         throw new Error(batchData?.message || 'Twelve Data batch query returned error');
@@ -791,27 +839,24 @@ export function getCleanApiKey(): string {
 async function fetchPrice(symbol: string) {
   const apiKey = getCleanApiKey();
   console.log(`[Gateway] Live Fetch PRICE: ${symbol}`)
-  const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
-  return fetchAndTrack(url, 'price', symbol);
+  const url = `https://api.twelvedata.com/price?symbol=${encodeURIComponent(symbol)}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header)`);
+  return fetchAndTrack(url, 'price', symbol, 5000, twelveAuthHeaders(apiKey));
 }
 
 async function fetchQuoteFromAPI(symbol: string, apiKey: string) {
   console.log(`[Gateway] Live Fetch QUOTE: ${symbol}`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
-  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${cleanKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
-  return fetchAndTrack(url, 'quote', symbol);
+  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header)`);
+  return fetchAndTrack(url, 'quote', symbol, 5000, twelveAuthHeaders(cleanKey));
 }
 
 async function fetchCandlesFromAPI(symbol: string, interval: string, limit: number, apiKey: string) {
   console.log(`[Gateway] Live Fetch CANDLES: ${symbol} (${interval})`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}&apikey=${cleanKey}`
-  const redactedUrl = url.replace(/apikey=[^&]+/, 'apikey=REDACTED');
-  console.log(`[Gateway] DEBUG: Fetching URL: ${redactedUrl}`);
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}`
+  console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header)`);
   // Historical pulls can be large (up to 5k candles); allow more time than quote/price calls.
-  return fetchAndTrack(url, 'candles', symbol, 20000);
+  return fetchAndTrack(url, 'candles', symbol, 20000, twelveAuthHeaders(cleanKey));
 }

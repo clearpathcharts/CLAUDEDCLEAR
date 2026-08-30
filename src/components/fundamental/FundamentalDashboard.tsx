@@ -16,6 +16,7 @@ import BentoWorkspace from './BentoWorkspace';
 import { RESEARCH_NAV } from '../../fundamental/localStore';
 import { formatCompactUsd, formatPercent, formatUsdPerShare, marketSessionUtc } from '../../fundamental/format';
 import { DataRibbon } from './primitives';
+import { DeskTwelveDataChart } from '../desks/DeskTwelveDataChart';
 import './bento.css';
 import type { ResearchSection } from '../../fundamental/types';
 
@@ -68,7 +69,8 @@ function HeaderBar() {
       ) : null}
       {settingsOpen ? (
         <div className="fund-mono border-t border-white/5 px-4 py-2 text-[10px] uppercase text-[#9a9588]">
-          Research workstation · information only · vendor keys stay on the server · FMP {bundle?.fmp} · FRED {bundle?.fred}
+          Research workstation · information only · vendor keys stay on the server · FMP {bundle?.fmp} · FRED{' '}
+          {bundle?.fred} · price chart via Twelve Data
         </div>
       ) : null}
     </header>
@@ -209,6 +211,23 @@ function CompanyIdentity() {
             {label}
           </button>
         ))}
+      </div>
+      <div
+        id="price-chart"
+        className="mt-4 overflow-hidden rounded-sm border border-[rgba(232,228,219,0.12)] bg-black/40"
+        style={{ minHeight: 320 }}
+      >
+        <p className="fund-kicker border-b border-[rgba(232,228,219,0.08)] px-3 py-2">
+          Price chart · Twelve Data Venture
+        </p>
+        <DeskTwelveDataChart
+          symbol={bundle?.symbol || id?.ticker || 'NVDA'}
+          timeframe="1d"
+          profileId="standard_red_green"
+          height={300}
+          hidePatternOverlays
+          hideChartToolbar={false}
+        />
       </div>
     </section>
   );

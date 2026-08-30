@@ -6,7 +6,12 @@
 
 function clean(raw: string | undefined): string {
   if (!raw) return '';
-  const trimmed = raw.trim().replace(/^["']|["']$/g, '');
+  // Strip BOM / zero-width / quotes / whitespace that break Twelve Data auth (401).
+  const trimmed = raw
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .replace(/^["']|["']$/g, '');
   if (!trimmed) return '';
   const lower = trimmed.toLowerCase();
   if (
@@ -14,7 +19,9 @@ function clean(raw: string | undefined): string {
     lower.includes('your_') ||
     lower === 'undefined' ||
     lower === 'null' ||
-    lower.startsWith('xxxx')
+    lower.startsWith('xxxx') ||
+    lower === 'secret' ||
+    lower === 'changeme'
   ) {
     return '';
   }
@@ -29,8 +36,71 @@ function first(...candidates: Array<string | undefined>): string {
   return '';
 }
 
+/**
+ * Twelve Data key. Accepts both Cloud Run spellings founders use:
+ * - TWELVEDATA_API_KEY (docs / .env.example)
+ * - TWELVE_DATA_API_KEY (common Cloud Run typo/variant)
+ * If both are set and differ, prefer the longer value and warn — a stale short/old
+ * key in TWELVEDATA_API_KEY was causing live 401s while the new key sat unused.
+ */
 export function getTwelveDataApiKey(): string {
-  return first(process.env.TWELVEDATA_API_KEY, process.env.TWELVE_DATA_API_KEY);
+  const primary = clean(process.env.TWELVEDATA_API_KEY);
+  const alt = clean(process.env.TWELVE_DATA_API_KEY);
+  if (primary && alt && primary !== alt) {
+    // Prefer the longer token (truncated paste is a common 401 cause). On equal
+    // length, prefer TWELVE_DATA_API_KEY — that is the spelling founders set in
+    // the Cloud Run UI while an older TWELVEDATA_API_KEY often stays stale.
+    const chosen = alt.length >= primary.length ? alt : primary;
+    console.warn(
+      '[secrets] Both TWELVEDATA_API_KEY and TWELVE_DATA_API_KEY are set and differ. ' +
+        `Using ${alt.length >= primary.length ? 'TWELVE_DATA_API_KEY' : 'TWELVEDATA_API_KEY'} ` +
+        `(len=${chosen.length}). Delete the stale duplicate on Cloud Run, then Deploy.`,
+    );
+    return chosen;
+  }
+  return primary || alt || '';
+}
+
+/** Which env var name supplied the active Twelve Data key (for diagnostics only). */
+export function getTwelveDataApiKeySource(): 'TWELVEDATA_API_KEY' | 'TWELVE_DATA_API_KEY' | null {
+  const primary = clean(process.env.TWELVEDATA_API_KEY);
+  const alt = clean(process.env.TWELVE_DATA_API_KEY);
+  if (!primary && !alt) return null;
+  if (primary && alt && primary !== alt) {
+    return alt.length >= primary.length ? 'TWELVE_DATA_API_KEY' : 'TWELVEDATA_API_KEY';
+  }
+  if (primary) return 'TWELVEDATA_API_KEY';
+  return 'TWELVE_DATA_API_KEY';
+}
+
+export function getTwelveDataKeyPresence(): {
+  TWELVEDATA_API_KEY: boolean;
+  TWELVE_DATA_API_KEY: boolean;
+  activeSource: ReturnType<typeof getTwelveDataApiKeySource>;
+  keyLength: number;
+  keysDiffer: boolean;
+  candidateCount: number;
+} {
+  const primary = clean(process.env.TWELVEDATA_API_KEY);
+  const alt = clean(process.env.TWELVE_DATA_API_KEY);
+  const active = getTwelveDataApiKey();
+  return {
+    TWELVEDATA_API_KEY: Boolean(primary),
+    TWELVE_DATA_API_KEY: Boolean(alt),
+    activeSource: getTwelveDataApiKeySource(),
+    keyLength: active.length,
+    keysDiffer: Boolean(primary && alt && primary !== alt),
+    candidateCount: listTwelveDataApiKeys().length,
+  };
+}
+
+/** Unique cleaned keys from both Cloud Run spellings (never log the values). */
+export function listTwelveDataApiKeys(): string[] {
+  const out: string[] = [];
+  for (const v of [clean(process.env.TWELVEDATA_API_KEY), clean(process.env.TWELVE_DATA_API_KEY)]) {
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
 }
 
 export function getGeminiApiKey(): string {

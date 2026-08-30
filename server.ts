@@ -234,6 +234,7 @@ import {
 import { chatRiverGenie } from './src/server/riverGenieService';
 import {
   getTwelveDataApiKey,
+  getTwelveDataKeyPresence,
   getGeminiApiKey,
   getGroqApiKey,
   getFredApiKey,
@@ -2839,13 +2840,23 @@ ${CPT_SITE_GUIDE}`;
 
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
+    const presence = getTwelveDataKeyPresence();
     const hasKeys = Boolean(getCleanTwelveDataApiKey());
     res.json({
       ready: hasKeys,
       isApiExhaustedThisMonth: false,
       keyInfo: hasKeys
-        ? 'Server-side Twelve Data key configured.'
-        : 'None detected. Configure TWELVEDATA_API_KEY on the server.',
+        ? `Server-side Twelve Data key configured (${presence.activeSource}, len=${presence.keyLength}).`
+        : 'None detected. Set TWELVEDATA_API_KEY or TWELVE_DATA_API_KEY on Cloud Run, then Deploy.',
+      sources: {
+        TWELVEDATA_API_KEY: presence.TWELVEDATA_API_KEY,
+        TWELVE_DATA_API_KEY: presence.TWELVE_DATA_API_KEY,
+      },
+      activeSource: presence.activeSource,
+      // Never expose key material — length only helps spot truncated pastes.
+      keyLength: presence.keyLength,
+      keysDiffer: presence.keysDiffer,
+      candidateCount: presence.candidateCount,
     });
   });
 
@@ -2857,9 +2868,16 @@ ${CPT_SITE_GUIDE}`;
   app.get('/api/twelvedata/health', (req, res) => {
     const cleanKey = getCleanTwelveDataApiKey();
     const hasKeys = !!cleanKey;
+    const presence = getTwelveDataKeyPresence();
     res.json({
       ...twelvedataHealth,
       apiKeyPresent: hasKeys,
+      activeSource: presence.activeSource,
+      keyLength: presence.keyLength,
+      sources: {
+        TWELVEDATA_API_KEY: presence.TWELVEDATA_API_KEY,
+        TWELVE_DATA_API_KEY: presence.TWELVE_DATA_API_KEY,
+      },
       isApiExhaustedThisMonth: false,
       fallbackMode: !hasKeys,
       events: twelvedataEvents,
@@ -3018,6 +3036,27 @@ ${CPT_SITE_GUIDE}`;
   const scrubApiKey = (message: unknown): string =>
     String(message ?? '').replace(/apikey=[^&\s"']*/gi, 'apikey=REDACTED');
 
+  const twelveUpstreamMessage = (error: unknown): { status: number; body: Record<string, string> } => {
+    const raw = scrubApiKey((error as Error)?.message) || 'Twelve Data API Failure';
+    if (/rate limited|429/i.test(raw)) {
+      return { status: 429, body: { error: 'RATE_LIMITED', message: raw } };
+    }
+    if (/COMPLIANCE_VIOLATION/i.test(raw)) {
+      return { status: 403, body: { error: 'COMPLIANCE_VIOLATION', message: raw } };
+    }
+    if (/\b401\b|unauthorized|invalid.*(api)?\s*key/i.test(raw)) {
+      return {
+        status: 502,
+        body: {
+          error: 'UPSTREAM_AUTH',
+          message:
+            'Twelve Data rejected the API key (401). On Cloud Run: Reveal the Secret key at twelvedata.com/account/api-keys, paste the FULL token into TWELVEDATA_API_KEY (preferred) or TWELVE_DATA_API_KEY, delete any stale duplicate of the other name, Deploy, keep traffic on LATEST.',
+        },
+      };
+    }
+    return { status: 502, body: { error: 'UPSTREAM_ERROR', message: raw } };
+  };
+
   // Twelve Data Proxy for Quotes
   app.get('/api/quote', ...quoteLimiter, async (req, res) => {
     const { symbol } = req.query;
@@ -3048,14 +3087,8 @@ ${CPT_SITE_GUIDE}`;
       res.json(normalized);
     } catch (error: any) {
       console.error('[TwelveData Quote Error]', error);
-      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
-      if (String(error.message || '').includes('rate limited') || String(error.message || '').includes('429')) {
-        return res.status(429).json({ error: 'RATE_LIMITED', message: msg });
-      }
-      if (String(error.message || '').includes('COMPLIANCE_VIOLATION')) {
-        return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: msg });
-      }
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
+      const out = twelveUpstreamMessage(error);
+      return res.status(out.status).json(out.body);
     }
   });
 
@@ -3079,11 +3112,8 @@ ${CPT_SITE_GUIDE}`;
       res.json({ quotes, count: Object.keys(quotes).length });
     } catch (error: any) {
       console.error('[TwelveData Quotes Batch Error]', error);
-      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
-      if (String(error.message || '').includes('rate limited') || String(error.message || '').includes('429')) {
-        return res.status(429).json({ error: 'RATE_LIMITED', message: msg });
-      }
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
+      const out = twelveUpstreamMessage(error);
+      return res.status(out.status).json(out.body);
     }
   });
 
@@ -3113,11 +3143,8 @@ ${CPT_SITE_GUIDE}`;
       res.json(data);
     } catch (error: any) {
       console.error('[TwelveData Candles Error]', error);
-      const msg = scrubApiKey(error.message) || 'Twelve Data API Failure';
-      if (String(error.message || '').includes('COMPLIANCE_VIOLATION')) {
-        return res.status(403).json({ error: 'COMPLIANCE_VIOLATION', message: msg });
-      }
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: msg });
+      const out = twelveUpstreamMessage(error);
+      return res.status(out.status).json(out.body);
     }
   });
 
@@ -3162,7 +3189,8 @@ ${CPT_SITE_GUIDE}`;
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);
-      res.status(502).json({ error: 'UPSTREAM_ERROR', message: scrubApiKey(error.message) || 'Twelve Data API Failure' });
+      const out = twelveUpstreamMessage(error);
+      return res.status(out.status).json(out.body);
     }
   });
 

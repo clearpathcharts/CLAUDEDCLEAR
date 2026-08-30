@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
-import { LightweightCandles } from '../../charts/LightweightCandles';
+import { DeskTwelveDataChart } from '../DeskTwelveDataChart';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
 import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles';
@@ -451,7 +451,7 @@ export default function NeurodivergentDashboard() {
             ) : null}
           </header>
           <div className="relative min-h-[300px] flex-1">
-            <LightweightCandles
+            <DeskTwelveDataChart
               symbol={symbol}
               profileId={profileId}
               timeframe={timeframe}
