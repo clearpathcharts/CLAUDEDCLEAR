@@ -753,6 +753,10 @@ async function startServer() {
       version: '5.0.0-institutional',
       uptime: process.uptime(),
       timestamp: Date.now(),
+      cloudRun: {
+        service: process.env.K_SERVICE || null,
+        revision: process.env.K_REVISION || null,
+      },
       waitlist: {
         firestoreAdmin: Boolean(adminDb),
         appwriteConfigured: Boolean(

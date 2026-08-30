@@ -25,6 +25,8 @@ Cloud Run should run the **same** image/`dist/server.cjs` produced by that build
 | `SQL_*` | optional | Cloud SQL if used | Lazy connect |
 
 Diagnostics (boolean presence only): `GET /api/secrets/status`, `GET /api/twelvedata/config`.
+Live process identity: `GET /api/health` → `cloudRun.revision` (must change after a real deploy).
+Keys vs code: `docs/cloud-run-two-paths.md` — do not run the Cloud Build trigger only to rotate an API key, and do not Edit & deploy from an old revision (that restores the old fingerprint).
 
 ## Dual smoke
 
