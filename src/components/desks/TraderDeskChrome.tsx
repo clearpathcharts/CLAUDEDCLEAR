@@ -7,7 +7,8 @@ import {
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
-import { deskOpacity, useDeskAppearance } from './DeskAppearanceContext';
+import { useDeskAppearance } from './DeskAppearanceContext';
+import { clampOpacity } from '../../lib/deskColorChart';
 import ColorChartPicker from './ColorChartPicker';
 import { useAuth } from '../../contexts/FirebaseContext';
 import { isFounderEmail } from '../../lib/founder';
@@ -191,7 +192,7 @@ export default function TraderDeskChrome({ active }: Props) {
           onTargetChange={setTarget}
           selected={overrides[target]}
           recents={recents}
-          opacity={deskOpacity(overrides)}
+          opacity={clampOpacity(overrides.opacity ?? 100)}
           onPick={applyColor}
           onOpacity={setOpacity}
           onReset={resetVisual}

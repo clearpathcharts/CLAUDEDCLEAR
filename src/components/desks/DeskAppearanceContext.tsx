@@ -3,7 +3,6 @@ import { readDeskPaper, rememberDeskPaper, type DeskPaper, type TraderDeskId } f
 import {
   broadcastDeskColorChart,
   clearDeskColorOverrides,
-  clampOpacity,
   deskCssVars,
   loadDeskColorChartStore,
   resolveDeskOverrides,
@@ -138,8 +137,4 @@ export function useDeskAppearance(): DeskAppearanceValue {
 
 export function useOptionalDeskAppearance(): DeskAppearanceValue | null {
   return useContext(DeskAppearanceContext);
-}
-
-export function deskOpacity(overrides: DeskColorOverrides): number {
-  return clampOpacity(overrides.opacity ?? 100);
 }
