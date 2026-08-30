@@ -16,7 +16,7 @@ Cloud Run should run the **same** image/`dist/server.cjs` produced by that build
 
 | Variable | Local | Cloud Run | Notes |
 |----------|-------|-----------|--------|
-| `TWELVEDATA_API_KEY` | `.env` | Service env / Secret Manager | Venture key after flip |
+| `TWELVEDATA_API_KEY` | `.env` | Service env / Secret Manager | Venture key after flip. Also accepts `TWELVE_DATA_API_KEY`. If both exist and differ, the live site 401s until the stale duplicate is deleted. |
 | `SESSION_SECRET` | `.env` | Service env | Required in production |
 | `VITE_FIREBASE_*` / Firebase inject | `.env` | Service env | Injected at HTML serve time |
 | `PORT` | optional (3000) | Cloud Run sets `PORT` | App listens on `$PORT` |

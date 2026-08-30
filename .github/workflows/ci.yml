@@ -75,6 +75,12 @@ jobs:
       - name: YWC publication hub self-test
         run: npm run test:publication-hub
 
+      - name: Twelve Data secret resolution
+        run: npm run test:twelvedata-secrets
+
+      - name: Twelve Data 401 retry + circuit breaker
+        run: npm run test:twelvedata-gateway-auth
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

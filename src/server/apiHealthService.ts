@@ -114,7 +114,8 @@ export async function getLiveApiHealth(): Promise<HealthResult[]> {
     twelveDataKey
       ? timedProbe('TwelveData', 'Market Data', async () => {
           const { data } = await axios.get('https://api.twelvedata.com/price', {
-            params: { symbol: 'AAPL', apikey: twelveDataKey },
+            params: { symbol: 'AAPL' },
+            headers: { Authorization: `apikey ${twelveDataKey}` },
             timeout: 2500
           });
           if (data?.status === 'error' || data?.code) {
