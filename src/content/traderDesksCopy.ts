@@ -29,10 +29,10 @@ export const DESK_SEO: Record<
     lead: 'Everyday retail trader workstation: markets, chart, price, volume, context, news, calendar, and education in one screen. Information only — not execution or advice.',
   },
   neurodivergent: {
-    title: 'Neurodivergent Trader Desk | ClearPathTrader',
+    title: 'Neurodivergent Market Workstation | ClearPathTrader',
     description:
-      'Neurodivergent trader UI with calm, predictable chrome and links into ClearPath accessible UI modes (calm focus, ADHD, autism-predictable, and more).',
-    h1: 'Neurodivergent Trader Desk',
-    lead: 'Built for different minds. Pick a sensory profile, keep motion low, and open the chart when you are ready.',
+      'Neurodivergent retail + crypto cockpit with pre-built sensory UI profiles (calm focus, ADHD, autism-predictable, low-stim, and more): watchlist, chart, snapshot, news, alerts, and education. Analytics only — not a brokerage.',
+    h1: 'Neurodivergent Market',
+    lead: 'Built for different minds. Sensory profiles change the look; the market data stays the same. Calm retail + crypto workstation — information only.',
   },
 };

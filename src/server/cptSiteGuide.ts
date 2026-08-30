@@ -23,7 +23,7 @@ Main bar items (left to right style):
    - Institutional (/desk/institutional): bento market command center — global ribbon, market universe, multi-chart workspace, flow, liquidity, time & sales, volatility, options, correlation, macro, calendar, news, positioning, earnings, risk. Market structure (BOS/CHoCH/FVG) lives in a collapsible technical module. Information-first; no order tickets.
    - Fundamental (/desk/fundamental or /fundamental): research workstation — company search, financial statements, earnings, valuation, peers, industry, FRED macro, filings, notes. Information only; no buy/sell or order tickets.
    - Retail (/desk/retail): large chart, plain-language structure glossary, education links.
-   - Neurodivergent (/desk/neurodivergent): sensory profile picker linking into /ui modes.
+   - Neurodivergent (/desk/neurodivergent): calm retail + crypto workstation with pre-built sensory UI profiles (calm focus, ADHD, autism-predictable, low-stim, and more). Chart, watchlist, news, alerts — look changes, not market data. Full catalog also on /ui.
    These are study desks, not brokerage. They do not place trades or give advice.
 5. NEWS — Market / platform news feed.
 6. MEMBERSHIPS — Plans and membership options.

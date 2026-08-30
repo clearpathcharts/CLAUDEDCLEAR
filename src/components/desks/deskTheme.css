@@ -173,6 +173,114 @@
   background: rgba(14, 116, 144, 0.06);
 }
 
+/* Neurodivergent Market: same readability as retail, violet framing */
+.desk-shell [data-neuro-door] {
+  --desk-border: rgba(255, 255, 255, 0.22);
+  --desk-panel: rgba(12, 10, 18, 0.96);
+  font-family: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.5;
+  gap: 0.75rem;
+}
+
+.desk-shell [data-neuro-door] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, select, option, pre, code, td, th) {
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] :is(h1, h2, h3, h4) {
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[8px\],
+.desk-shell [data-neuro-door] .text-\[9px\] {
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[10px\],
+.desk-shell [data-neuro-door] .text-xs {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[11px\],
+.desk-shell [data-neuro-door] .text-\[12px\],
+.desk-shell [data-neuro-door] .text-sm {
+  font-size: 1.1875rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-base {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-lg {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] .text-xl,
+.desk-shell [data-neuro-door] .text-2xl {
+  font-size: 1.75rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] input,
+.desk-shell [data-neuro-door] button,
+.desk-shell [data-neuro-door] select {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] > section,
+.desk-shell [data-neuro-door] section.flex,
+.desk-shell [data-neuro-door] [data-retail-bento],
+.desk-shell [data-neuro-door] .retail-bento {
+  border: 1.5px solid rgba(176, 38, 255, 0.35) !important;
+  border-radius: 0.75rem !important;
+  background: rgba(12, 8, 20, 0.98) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.desk-shell [data-neuro-door] > section > header,
+.desk-shell [data-neuro-door] section.flex > header,
+.desk-shell [data-neuro-door] [data-retail-bento] > header,
+.desk-shell [data-neuro-door] .retail-bento > header {
+  border-bottom: 1.5px solid rgba(176, 38, 255, 0.25) !important;
+  background: rgba(176, 38, 255, 0.06);
+  padding: 0.65rem 0.85rem !important;
+}
+
+.desk-shell [data-neuro-door] section.flex > div:last-child,
+.desk-shell [data-neuro-door] [data-retail-bento] > .retail-bento-body,
+.desk-shell [data-neuro-door] .retail-bento > .retail-bento-body {
+  padding: 0.75rem !important;
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] {
+  --desk-border: rgba(17, 17, 17, 0.28);
+  --desk-panel: #f7f4fb;
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] > section,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] section.flex,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] [data-retail-bento],
+.desk-shell[data-desk-paper='white'] [data-neuro-door] .retail-bento {
+  border-color: rgba(126, 34, 206, 0.4) !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] > section > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] section.flex > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] [data-retail-bento] > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] .retail-bento > header {
+  border-bottom-color: rgba(126, 34, 206, 0.28) !important;
+  background: rgba(126, 34, 206, 0.06);
+}
+
 .desk-shell[data-desk-paper='white'] {
   --desk-border: rgba(17, 17, 17, 0.16);
   --desk-panel: #f4f4f5;

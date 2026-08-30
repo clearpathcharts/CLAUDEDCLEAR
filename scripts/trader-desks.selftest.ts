@@ -56,6 +56,7 @@ const themeCss = fs.readFileSync(path.join(root, 'src/components/desks/deskTheme
 assert.match(themeCss, /font-weight: 700/);
 assert.match(themeCss, /data-desk-paper='white'/);
 assert.match(themeCss, /\[data-retail-door\]/);
+assert.match(themeCss, /\[data-neuro-door\]/);
 assert.match(themeCss, /font-weight: 800/);
 assert.match(themeCss, /retail-bento/);
 assert.match(themeCss, /IBM Plex Mono/);
@@ -97,8 +98,11 @@ const srcFiles = [
   'src/components/desks/retail/useRetailIntelligence.ts',
   'src/components/desks/retail/retailStore.ts',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
+  'src/components/desks/neuro/NeurodivergentDashboard.tsx',
+  'src/components/desks/neuro/neuroProfile.ts',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
+  'src/components/Dashboard.tsx',
   'src/App.tsx',
   'src/components/Auth.tsx',
   'src/components/ChooseYourPath.tsx',
@@ -196,10 +200,35 @@ for (const rel of srcFiles) {
     assert.match(text, /clearpath_retail_watchlists_v1/);
   }
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
-    assert.match(text, /data-neuro-door/);
-    assert.match(text, /clearpath-set-profile/);
-    assert.match(text, /navigateToDesk\('retail'\)/);
+    assert.match(text, /NeurodivergentDashboard/);
+    assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
+  }
+  if (rel === 'src/components/desks/neuro/NeurodivergentDashboard.tsx') {
+    assert.match(text, /data-neuro-door/);
+    assert.match(text, /data-neuro-workstation/);
+    assert.match(text, /LightweightCandles/);
+    assert.match(text, /NEURO_DESK_PROFILES/);
+    assert.match(text, /NEURO_RIBBON/);
+    assert.match(text, /applyNeuroProfile/);
+    assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /RetailEducationBento/);
+    assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
+    assert.doesNotMatch(text, /href=\{`\/\?profile=/);
+  }
+  if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
+    assert.match(text, /calm_focus/);
+    assert.match(text, /adhd_hyperfocus/);
+    assert.match(text, /BTCUSD/);
+    assert.match(text, /clearpath-set-profile/);
+  }
+  if (rel === 'src/components/desks/TraderDeskChrome.tsx') {
+    assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
+    assert.match(text, /White screen/);
+    assert.match(text, /togglePaper/);
+    assert.match(text, /data-ceo-ops-link/);
+    assert.match(text, /\/ceo/);
+    assert.match(text, /isFounderEmail/);
   }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
@@ -212,10 +241,11 @@ for (const rel of srcFiles) {
     assert.match(text, /data-desk-paper/);
     assert.match(text, /DeskAppearanceProvider/);
   }
-  if (rel.endsWith('TraderDeskChrome.tsx')) {
-    assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
-    assert.match(text, /White screen/);
-    assert.match(text, /togglePaper/);
+  if (rel === 'src/components/Dashboard.tsx') {
+    assert.match(text, /CeoDashboard/);
+    assert.match(text, /path === '\/ceo'/);
+    assert.match(text, /next === 'CeoDashboard' && !isFounder\(\)/);
+    assert.doesNotMatch(text, /next === 'CeoDashboard' && !isFounderEmail\(authUser\?\.email\)/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
