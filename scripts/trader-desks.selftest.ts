@@ -58,6 +58,17 @@ assert.match(themeCss, /data-desk-paper='white'/);
 assert.match(themeCss, /\[data-retail-door\]/);
 assert.match(themeCss, /font-weight: 800/);
 assert.match(themeCss, /retail-bento/);
+assert.match(themeCss, /IBM Plex Mono/);
+assert.match(themeCss, /Inter/);
+
+const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+assert.match(indexHtml, /fonts\.googleapis\.com/);
+assert.match(indexHtml, /family=Inter/);
+assert.match(indexHtml, /family=IBM\+Plex\+Mono/);
+
+const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
+assert.match(indexCss, /--font-ui:\s*"Inter"/);
+assert.match(indexCss, /--font-mono:\s*"IBM Plex Mono"/);
 
 function candle(time: number, o: number, h: number, l: number, c: number, volume = 0): Candle {
   return { time, open: o, high: h, low: l, close: c, volume };

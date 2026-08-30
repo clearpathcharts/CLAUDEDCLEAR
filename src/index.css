@@ -12,7 +12,13 @@
 }
 
 html,
-body {
+body,
+#root,
+.clearpath-glass-root,
+.desk-shell,
+[data-retail-door],
+[data-institutional-door],
+[data-fundamental-door] {
   font-family: var(--font-ui);
 }
 
@@ -22,7 +28,12 @@ kbd,
 samp,
 .font-mono,
 .market-ticker,
-[data-chart-build] {
+.terminal,
+.institutional-dashboard,
+[data-institutional-door] .font-mono,
+[data-retail-door] .font-mono,
+[data-chart-build],
+[data-ticker] {
   font-family: var(--font-mono);
 }
 
