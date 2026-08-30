@@ -2855,6 +2855,8 @@ ${CPT_SITE_GUIDE}`;
       activeSource: presence.activeSource,
       // Never expose key material — length only helps spot truncated pastes.
       keyLength: presence.keyLength,
+      keysDiffer: presence.keysDiffer,
+      candidateCount: presence.candidateCount,
     });
   });
 

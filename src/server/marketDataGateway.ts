@@ -17,7 +17,7 @@
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 import { resolveProviderSymbol } from "../constants/assetRegistry";
-import { getTwelveDataApiKey } from "./secrets";
+import { getTwelveDataApiKey, listTwelveDataApiKeys } from "./secrets";
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -162,6 +162,17 @@ function twelveAuthHeaders(apiKey: string): HeadersInit {
   return { Authorization: `apikey ${apiKey}` };
 }
 
+function usedKeyFromHeaders(headers?: HeadersInit): string {
+  if (!headers) return '';
+  const rec = headers as Record<string, string>;
+  const auth = rec.Authorization || rec.authorization || '';
+  return auth.toLowerCase().startsWith('apikey ') ? auth.slice(auth.indexOf(' ') + 1).trim() : '';
+}
+
+function nextTwelveDataFallbackKey(used: string): string {
+  return listTwelveDataApiKeys().find((k) => k && k !== used) || '';
+}
+
 // Global generic tracker for checking status codes, JSON flags, and headers
 async function fetchAndTrack(
   url: string,
@@ -169,8 +180,9 @@ async function fetchAndTrack(
   symbol: string,
   timeoutMs = 5000,
   headers?: HeadersInit,
+  alreadySlotted = false,
 ): Promise<any> {
-  await acquireUpstreamSlot()
+  if (!alreadySlotted) await acquireUpstreamSlot()
   twelvedataHealth.totalRequests++;
   const hasQueryKey = url.indexOf('apikey=') !== -1 && !url.endsWith('apikey=') && !url.endsWith('apikey=undefined');
   const hasHeaderKey = Boolean(headers && String((headers as Record<string, string>).Authorization || '').startsWith('apikey '));
@@ -231,6 +243,15 @@ async function fetchAndTrack(
       if (response.status === 404) {
         throw new Error(`Symbol "${symbol}" was not found by the market data provider. Check the ticker and try again.`);
       }
+      if (response.status === 401) {
+        const alt = nextTwelveDataFallbackKey(usedKeyFromHeaders(headers));
+        if (alt) {
+          console.warn(
+            '[Gateway] Twelve Data HTTP 401 — retrying once with the other TWELVE*DATA* API_KEY env name (value not logged).',
+          );
+          return await fetchAndTrack(url, type, symbol, timeoutMs, twelveAuthHeaders(alt), true);
+        }
+      }
       throw new Error(`API fetch failed with status ${response.status} for ${symbol}`);
     }
 
@@ -258,6 +279,15 @@ async function fetchAndTrack(
       } else {
         twelvedataHealth.status = 'ERROR';
         logHealthEvent('ERROR', `Twelve Data JSON Error for ${symbol}: ${data.message}`, data.code || 'JSON_ERR');
+      }
+      if (Number(data.code) === 401 || /invalid.*api.?key|incorrect.*api.?key/i.test(String(data.message || ''))) {
+        const alt = nextTwelveDataFallbackKey(usedKeyFromHeaders(headers));
+        if (alt) {
+          console.warn(
+            '[Gateway] Twelve Data JSON 401 — retrying once with the other TWELVE*DATA* API_KEY env name (value not logged).',
+          );
+          return await fetchAndTrack(url, type, symbol, timeoutMs, twelveAuthHeaders(alt), true);
+        }
       }
       throw new Error(`Twelve Data API Error: ${data.message} (Code: ${data.code})`);
     }
@@ -295,7 +325,7 @@ async function fetchAndTrack(
     }
     throw err;
   } finally {
-    releaseUpstreamSlot();
+    if (!alreadySlotted) releaseUpstreamSlot();
   }
 }
 

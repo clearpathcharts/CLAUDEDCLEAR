@@ -78,6 +78,8 @@ export function getTwelveDataKeyPresence(): {
   TWELVE_DATA_API_KEY: boolean;
   activeSource: ReturnType<typeof getTwelveDataApiKeySource>;
   keyLength: number;
+  keysDiffer: boolean;
+  candidateCount: number;
 } {
   const primary = clean(process.env.TWELVEDATA_API_KEY);
   const alt = clean(process.env.TWELVE_DATA_API_KEY);
@@ -87,7 +89,18 @@ export function getTwelveDataKeyPresence(): {
     TWELVE_DATA_API_KEY: Boolean(alt),
     activeSource: getTwelveDataApiKeySource(),
     keyLength: active.length,
+    keysDiffer: Boolean(primary && alt && primary !== alt),
+    candidateCount: listTwelveDataApiKeys().length,
   };
+}
+
+/** Unique cleaned keys from both Cloud Run spellings (never log the values). */
+export function listTwelveDataApiKeys(): string[] {
+  const out: string[] = [];
+  for (const v of [clean(process.env.TWELVEDATA_API_KEY), clean(process.env.TWELVE_DATA_API_KEY)]) {
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
 }
 
 export function getGeminiApiKey(): string {

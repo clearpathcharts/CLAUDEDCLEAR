@@ -7,6 +7,7 @@ import {
   getTwelveDataApiKey,
   getTwelveDataApiKeySource,
   getTwelveDataKeyPresence,
+  listTwelveDataApiKeys,
 } from '../src/server/secrets.ts';
 
 function withEnv(vars: Record<string, string | undefined>, fn: () => void): void {
@@ -82,5 +83,25 @@ withEnv(
     assert.equal(getTwelveDataApiKeySource(), 'TWELVE_DATA_API_KEY');
   },
 );
+
+withEnv(
+  {
+    TWELVEDATA_API_KEY: 'stale-key-aaaaaaaa',
+    TWELVE_DATA_API_KEY: 'fresh-key-bbbbbbbb',
+  },
+  () => {
+    const listed = listTwelveDataApiKeys();
+    assert.deepEqual(listed, ['stale-key-aaaaaaaa', 'fresh-key-bbbbbbbb']);
+    const p = getTwelveDataKeyPresence();
+    assert.equal(p.keysDiffer, true);
+    assert.equal(p.candidateCount, 2);
+  },
+);
+
+withEnv({ TWELVEDATA_API_KEY: 'same-key', TWELVE_DATA_API_KEY: 'same-key' }, () => {
+  assert.deepEqual(listTwelveDataApiKeys(), ['same-key']);
+  assert.equal(getTwelveDataKeyPresence().keysDiffer, false);
+  assert.equal(getTwelveDataKeyPresence().candidateCount, 1);
+});
 
 console.log('twelvedata-secrets.selftest: ok');
