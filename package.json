@@ -27,6 +27,7 @@
     "test:regional-hubs": "tsx scripts/regional-hubs.selftest.ts",
     "test:twelvedata-secrets": "tsx scripts/twelvedata-secrets.selftest.ts",
     "test:twelvedata-gateway-auth": "tsx scripts/twelvedata-gateway-auth.selftest.ts",
+    "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
