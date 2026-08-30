@@ -55,6 +55,9 @@ assert.equal(DESK_PAPER_STORAGE_KEY, 'clearpath_desk_paper');
 const themeCss = fs.readFileSync(path.join(root, 'src/components/desks/deskTheme.css'), 'utf8');
 assert.match(themeCss, /font-weight: 700/);
 assert.match(themeCss, /data-desk-paper='white'/);
+assert.match(themeCss, /\[data-retail-door\]/);
+assert.match(themeCss, /font-weight: 800/);
+assert.match(themeCss, /retail-bento/);
 
 function candle(time: number, o: number, h: number, l: number, c: number, volume = 0): Candle {
   return { time, open: o, high: h, low: l, close: c, volume };

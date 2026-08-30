@@ -22,6 +22,7 @@ export function Bento({
   const open = expanded !== false;
   return (
     <section
+      data-retail-bento={className.includes('retail-bento') ? 'true' : undefined}
       className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] ${className}`}
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-[var(--desk-border)] px-2.5 py-1.5">
@@ -53,7 +54,7 @@ export function Bento({
         ) : null}
       </header>
       {open ? (
-        <div className="min-h-0 flex-1 overflow-auto p-2">{children}</div>
+        <div className="retail-bento-body min-h-0 flex-1 overflow-auto p-2">{children}</div>
       ) : (
         <div className="px-2.5 py-1.5 text-[10px] text-[var(--desk-muted)]">{collapsedSummary ?? 'Collapsed'}</div>
       )}

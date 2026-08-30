@@ -54,6 +54,113 @@
   font-weight: 700;
 }
 
+/* Retail Market: one size larger + extra-bold + clearer bento boxes */
+.desk-shell [data-retail-door] {
+  --desk-border: rgba(255, 255, 255, 0.22);
+  --desk-panel: rgba(12, 12, 16, 0.96);
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.5;
+  gap: 0.75rem;
+}
+
+.desk-shell [data-retail-door] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, select, option, pre, code, td, th) {
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] :is(h1, h2, h3, h4) {
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[8px\],
+.desk-shell [data-retail-door] .text-\[9px\] {
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[10px\],
+.desk-shell [data-retail-door] .text-xs {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[11px\],
+.desk-shell [data-retail-door] .text-\[12px\],
+.desk-shell [data-retail-door] .text-sm {
+  font-size: 1.1875rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-base {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-lg {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] .text-xl,
+.desk-shell [data-retail-door] .text-2xl {
+  font-size: 1.75rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] input,
+.desk-shell [data-retail-door] button,
+.desk-shell [data-retail-door] select {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] > section,
+.desk-shell [data-retail-door] section.flex,
+.desk-shell [data-retail-door] [data-retail-bento],
+.desk-shell [data-retail-door] .retail-bento {
+  border: 1.5px solid rgba(0, 255, 255, 0.28) !important;
+  border-radius: 0.75rem !important;
+  background: rgba(10, 12, 18, 0.98) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.desk-shell [data-retail-door] > section > header,
+.desk-shell [data-retail-door] section.flex > header,
+.desk-shell [data-retail-door] [data-retail-bento] > header,
+.desk-shell [data-retail-door] .retail-bento > header {
+  border-bottom: 1.5px solid rgba(0, 255, 255, 0.2) !important;
+  background: rgba(0, 255, 255, 0.04);
+  padding: 0.65rem 0.85rem !important;
+}
+
+.desk-shell [data-retail-door] section.flex > div:last-child,
+.desk-shell [data-retail-door] [data-retail-bento] > .retail-bento-body,
+.desk-shell [data-retail-door] .retail-bento > .retail-bento-body {
+  padding: 0.75rem !important;
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] {
+  --desk-border: rgba(17, 17, 17, 0.28);
+  --desk-panel: #f4f4f5;
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] > section,
+.desk-shell[data-desk-paper='white'] [data-retail-door] section.flex,
+.desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento],
+.desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento {
+  border-color: rgba(14, 116, 144, 0.45) !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] > section > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] section.flex > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento] > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento > header {
+  border-bottom-color: rgba(14, 116, 144, 0.28) !important;
+  background: rgba(14, 116, 144, 0.06);
+}
+
 .desk-shell[data-desk-paper='white'] {
   --desk-border: rgba(17, 17, 17, 0.16);
   --desk-panel: #f4f4f5;

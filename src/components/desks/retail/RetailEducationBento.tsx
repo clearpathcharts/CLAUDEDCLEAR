@@ -24,7 +24,7 @@ export function RetailEducationBento({
       expanded={expanded}
       onToggle={onToggle}
       collapsedSummary="BOS · CHoCH · FVG · OB · SWEEPS · VP · CVD"
-      className={maximized ? 'min-h-[280px]' : 'min-h-[160px]'}
+      className={maximized ? 'retail-bento min-h-[280px]' : 'retail-bento min-h-[160px]'}
     >
       <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--desk-muted)]">
         Plain-language structure terms. Supporting study only — not trade instructions.

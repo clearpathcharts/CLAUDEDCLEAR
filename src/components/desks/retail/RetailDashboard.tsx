@@ -176,25 +176,25 @@ function QuoteRowBtn({
       <button type="button" onClick={() => onPick(row.symbol)} className="min-w-0 flex-1 text-left hover:bg-white/5">
         <span className="flex items-center justify-between gap-2">
           <span className="min-w-0">
-            <span className="block truncate font-mono text-[11px] font-extrabold text-[var(--desk-text)]">
+            <span className="block truncate font-mono text-sm font-extrabold text-[var(--desk-text)]">
               {row.symbol}
             </span>
             {row.volume != null ? (
-              <span className="block text-[9px] text-[var(--desk-muted)]">Vol {formatVol(row.volume)}</span>
+              <span className="block text-sm text-[var(--desk-muted)]">Vol {formatVol(row.volume)}</span>
             ) : null}
           </span>
           <span className="shrink-0 text-right font-mono">
             {row.live && row.price != null ? (
               <>
-                <span className="block text-[11px] tabular-nums text-[var(--desk-text)]">
+                <span className="block text-sm tabular-nums text-[var(--desk-text)]">
                   {formatStructurePrice(row.price)}
                 </span>
-                <span className={`block text-[10px] ${pctClass(row.pct)}`}>
+                <span className={`block text-sm ${pctClass(row.pct)}`}>
                   {row.pct == null ? '—' : `${row.pct >= 0 ? '+' : ''}${row.pct.toFixed(2)}%`}
                 </span>
               </>
             ) : (
-              <span className="text-[9px] uppercase text-amber-200/80">DATA UNAVAILABLE</span>
+              <span className="text-sm uppercase text-amber-200/80">DATA UNAVAILABLE</span>
             )}
           </span>
         </span>
@@ -204,7 +204,7 @@ function QuoteRowBtn({
           type="button"
           onClick={onRemove}
           title="Remove"
-          className="shrink-0 px-1 text-[10px] text-[var(--desk-muted)] hover:text-rose-400"
+          className="shrink-0 px-1 text-sm text-[var(--desk-muted)] hover:text-rose-400"
         >
           ×
         </button>
@@ -397,61 +397,63 @@ export default function RetailDashboard() {
     candles.length >= 2 ? Math.min(...candles.slice(-Math.min(candles.length, 24), -1).map((c) => c.low)) : null;
 
   return (
-    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-3 p-3">
       {/* Header */}
       {!denseBlackout && (
-        <header className="flex flex-wrap items-end justify-between gap-2 rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] px-3 py-2">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--desk-cyan)]">
-              ClearPath Trader
-            </p>
-            <h1 className="text-lg font-black uppercase tracking-tight text-[var(--desk-text)]">
-              Retail Market
-            </h1>
-            <p className="text-[11px] font-bold text-[var(--desk-muted)]">See the market clearly</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setFocusMode((v) => !v);
-                if (!focusMode) setBlackout(false);
-              }}
-              className="rounded border px-2 py-1 text-[10px] font-black uppercase tracking-wider"
-              style={{
-                borderColor: focusMode ? 'var(--desk-indigo)' : 'var(--desk-border)',
-                color: focusMode ? 'var(--desk-indigo)' : 'var(--desk-muted)',
-              }}
-            >
-              Focus mode
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setBlackout((v) => !v);
-                if (!blackout) setFocusMode(false);
-              }}
-              className="rounded border px-2 py-1 text-[10px] font-black uppercase tracking-wider"
-              style={{
-                borderColor: blackout ? 'var(--desk-pink)' : 'var(--desk-border)',
-                color: blackout ? 'var(--desk-pink)' : 'var(--desk-muted)',
-              }}
-            >
-              Blackout
-            </button>
-            <a
-              href="/education"
-              className="rounded border border-[var(--desk-border)] px-2 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
-            >
-              Learn
-            </a>
-          </div>
-        </header>
+        <section data-retail-bento className="retail-bento flex flex-wrap items-end justify-between gap-3">
+          <header className="flex min-w-0 flex-1 flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-[var(--desk-cyan)]">
+                ClearPath Trader
+              </p>
+              <h1 className="text-xl font-black uppercase tracking-tight text-[var(--desk-text)]">
+                Retail Market
+              </h1>
+              <p className="text-base font-bold text-[var(--desk-muted)]">See the market clearly</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFocusMode((v) => !v);
+                  if (!focusMode) setBlackout(false);
+                }}
+                className="rounded-lg border px-3 py-2 text-sm font-black uppercase tracking-wider"
+                style={{
+                  borderColor: focusMode ? 'var(--desk-indigo)' : 'var(--desk-border)',
+                  color: focusMode ? 'var(--desk-indigo)' : 'var(--desk-muted)',
+                }}
+              >
+                Focus mode
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBlackout((v) => !v);
+                  if (!blackout) setFocusMode(false);
+                }}
+                className="rounded-lg border px-3 py-2 text-sm font-black uppercase tracking-wider"
+                style={{
+                  borderColor: blackout ? 'var(--desk-pink)' : 'var(--desk-border)',
+                  color: blackout ? 'var(--desk-pink)' : 'var(--desk-muted)',
+                }}
+              >
+                Blackout
+              </button>
+              <a
+                href="/education"
+                className="rounded-lg border border-[var(--desk-border)] px-3 py-2 text-sm font-black uppercase tracking-wider text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
+              >
+                Learn
+              </a>
+            </div>
+          </header>
+        </section>
       )}
 
       {/* Global market ribbon */}
       {!hideSecondary && (
-        <Bento title="Global Market Ribbon" status="context" className="shrink-0">
+        <Bento title="Global Market Ribbon" status="context" className="retail-bento shrink-0">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {RETAIL_RIBBON.map((m) => {
               const row = intel.ribbon.find((r) => r.symbol === m.symbol);
@@ -460,22 +462,22 @@ export default function RetailDashboard() {
                   key={m.symbol}
                   type="button"
                   onClick={() => setSymbol(m.symbol)}
-                  className="min-w-[108px] shrink-0 rounded border border-[var(--desk-border)] px-2 py-1.5 text-left hover:border-[var(--desk-cyan)]/40"
+                  className="min-w-[120px] shrink-0 rounded-lg border border-[var(--desk-border)] px-3 py-2 text-left hover:border-[var(--desk-cyan)]/40"
                 >
-                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--desk-muted)]">
+                  <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--desk-muted)]">
                     {m.label}
                   </p>
                   {row?.live && row.price != null ? (
                     <>
-                      <p className="font-mono text-[12px] font-extrabold tabular-nums text-[var(--desk-text)]">
+                      <p className="font-mono text-base font-extrabold tabular-nums text-[var(--desk-text)]">
                         {formatStructurePrice(row.price)}
                       </p>
-                      <p className={`font-mono text-[11px] ${pctClass(row.pct)}`}>
+                      <p className={`font-mono text-sm ${pctClass(row.pct)}`}>
                         {row.pct == null ? '—' : `${row.pct >= 0 ? '+' : ''}${row.pct.toFixed(2)}%`}
                       </p>
                     </>
                   ) : (
-                    <p className="text-[9px] font-bold uppercase text-amber-200/80">DATA UNAVAILABLE</p>
+                    <p className="text-sm font-bold uppercase text-amber-200/80">DATA UNAVAILABLE</p>
                   )}
                 </button>
               );
@@ -485,54 +487,61 @@ export default function RetailDashboard() {
       )}
 
       {/* Asset search + quick picks */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] px-2.5 py-2">
-        <div className="min-w-[200px] flex-1">
-          <ChartSymbolSearch
-            placeholder="Search stocks, ETFs, forex, indices, commodities, crypto…"
-            activeSymbol={symbol}
-            onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
-          />
+      <section data-retail-bento className="retail-bento flex min-w-0 flex-col overflow-hidden">
+        <header>
+          <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
+            Search Asset
+          </h2>
+        </header>
+        <div className="retail-bento-body flex flex-wrap items-center gap-3">
+          <div className="min-w-[220px] flex-1">
+            <ChartSymbolSearch
+              placeholder="Search stocks, ETFs, forex, indices, commodities, crypto…"
+              activeSymbol={symbol}
+              onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['EURUSD', 'SPX', 'NDX', 'XAUUSD', 'BTCUSD', 'DXY'].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSymbol(s)}
+                className="rounded-lg border px-3 py-2 font-mono text-sm font-black uppercase"
+                style={{
+                  borderColor: symbol === s ? 'var(--desk-cyan)' : 'var(--desk-border)',
+                  color: symbol === s ? 'var(--desk-cyan)' : 'var(--desk-muted)',
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-baseline gap-2 font-mono">
+            <span className="text-base font-extrabold text-[var(--desk-text)]">{symbol}</span>
+            {displayPrice != null ? (
+              <span className="text-base font-extrabold text-[var(--desk-cyan)]">
+                {formatStructurePrice(displayPrice)}
+              </span>
+            ) : (
+              <span className="text-sm uppercase text-amber-200/80">DATA UNAVAILABLE</span>
+            )}
+            {displayPct != null ? (
+              <span className={`text-base ${pctClass(displayPct)}`}>
+                {displayPct >= 0 ? '+' : ''}
+                {displayPct.toFixed(2)}%
+              </span>
+            ) : null}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {['EURUSD', 'SPX', 'NDX', 'XAUUSD', 'BTCUSD', 'DXY'].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSymbol(s)}
-              className="rounded border px-2 py-1 font-mono text-[10px] font-black uppercase"
-              style={{
-                borderColor: symbol === s ? 'var(--desk-cyan)' : 'var(--desk-border)',
-                color: symbol === s ? 'var(--desk-cyan)' : 'var(--desk-muted)',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <div className="ml-auto flex items-baseline gap-2 font-mono">
-          <span className="text-sm font-extrabold text-[var(--desk-text)]">{symbol}</span>
-          {displayPrice != null ? (
-            <span className="text-sm font-extrabold text-[var(--desk-cyan)]">
-              {formatStructurePrice(displayPrice)}
-            </span>
-          ) : (
-            <span className="text-[10px] uppercase text-amber-200/80">DATA UNAVAILABLE</span>
-          )}
-          {displayPct != null ? (
-            <span className={`text-[12px] ${pctClass(displayPct)}`}>
-              {displayPct >= 0 ? '+' : ''}
-              {displayPct.toFixed(2)}%
-            </span>
-          ) : null}
-        </div>
-      </div>
+      </section>
 
       {/* Primary row: watchlist | chart | snapshot */}
       <div
-        className={`grid min-h-[380px] gap-2 ${
+        className={`grid min-h-[380px] gap-3 ${
           hideSecondary
             ? 'grid-cols-1'
-            : 'grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_220px] xl:grid-cols-[240px_minmax(0,1.7fr)_250px]'
+            : 'grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_240px] xl:grid-cols-[260px_minmax(0,1.7fr)_270px]'
         }`}
       >
         {!hideSecondary && (
@@ -542,7 +551,7 @@ export default function RetailDashboard() {
             expanded={openPanels.watchlist !== false}
             onToggle={() => togglePanel('watchlist')}
             onExpand={() => setMaximized(maximized === 'watchlist' ? null : 'watchlist')}
-            className="min-h-[280px]"
+            className="retail-bento min-h-[280px]"
           >
             <div className="mb-2 flex flex-wrap gap-1">
               {watchlists.map((w) => (
@@ -617,10 +626,10 @@ export default function RetailDashboard() {
           </Bento>
         )}
 
-        <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)]">
-          <header className="shrink-0 space-y-1.5 border-b border-[var(--desk-border)] px-2.5 py-1.5">
+        <section data-retail-bento className="retail-bento flex min-h-[360px] min-w-0 flex-col overflow-hidden">
+          <header className="shrink-0 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
                 Primary Chart
               </h2>
               <div className="flex gap-1" role="group" aria-label="Chart layout">
@@ -629,7 +638,7 @@ export default function RetailDashboard() {
                     key={n}
                     type="button"
                     onClick={() => setLayout(n)}
-                    className="rounded border px-2 py-0.5 text-[9px] font-black uppercase"
+                    className="rounded-lg border px-2.5 py-1 text-sm font-black uppercase"
                     style={{
                       borderColor: layout === n ? 'var(--desk-pink)' : 'var(--desk-border)',
                       color: layout === n ? 'var(--desk-pink)' : 'var(--desk-muted)',
@@ -640,14 +649,14 @@ export default function RetailDashboard() {
                 ))}
               </div>
             </div>
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Timeframe">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Timeframe">
               {TIMEFRAMES.map((tf) => (
                 <button
                   key={tf}
                   type="button"
                   onClick={() => setTimeframe(tf)}
                   aria-pressed={timeframe === tf}
-                  className="rounded border px-1.5 py-0.5 text-[9px] font-black uppercase"
+                  className="rounded-lg border px-2.5 py-1 text-sm font-black uppercase"
                   style={{
                     borderColor: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-border)',
                     color: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-muted)',
@@ -658,8 +667,8 @@ export default function RetailDashboard() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="text-[9px] font-black uppercase tracking-wider text-[var(--desk-muted)]">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-black uppercase tracking-wider text-[var(--desk-muted)]">
                 Type
               </span>
               {CHART_TYPES.map((t) => (
@@ -667,7 +676,7 @@ export default function RetailDashboard() {
                   key={t.id}
                   type="button"
                   onClick={() => setChartType(t.id)}
-                  className="rounded border px-1.5 py-0.5 text-[9px] font-black uppercase"
+                  className="rounded-lg border px-2.5 py-1 text-sm font-black uppercase"
                   style={{
                     borderColor: chartType === t.id ? 'var(--desk-cyan)' : 'var(--desk-border)',
                     color: chartType === t.id ? 'var(--desk-cyan)' : 'var(--desk-muted)',
@@ -679,7 +688,7 @@ export default function RetailDashboard() {
               <button
                 type="button"
                 onClick={() => setShowIndicators((v) => !v)}
-                className="rounded border border-[var(--desk-border)] px-1.5 py-0.5 text-[9px] font-black uppercase text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
+                className="rounded-lg border border-[var(--desk-border)] px-2.5 py-1 text-sm font-black uppercase text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
               >
                 Indicators{activeIndicators.length ? ` (${activeIndicators.length})` : ''}
               </button>
@@ -760,7 +769,7 @@ export default function RetailDashboard() {
               </div>
             ))}
           </div>
-          <p className="shrink-0 border-t border-[var(--desk-border)] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-[var(--desk-muted)]">
+          <p className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-sm font-bold uppercase tracking-wider text-[var(--desk-muted)]">
             Chart tools: use the chart toolbar for crosshair, zoom, pan, reset, drawings, and fullscreen.
             Default chart stays clean — indicators are opt-in.
           </p>
@@ -772,7 +781,7 @@ export default function RetailDashboard() {
             status={symbol}
             expanded={openPanels.snapshot !== false}
             onToggle={() => togglePanel('snapshot')}
-            className="min-h-[280px]"
+            className="retail-bento min-h-[280px]"
           >
             {snap.close == null && displayPrice == null ? (
               <Unavail />
@@ -818,13 +827,13 @@ export default function RetailDashboard() {
       {/* Secondary bento grid */}
       {!hideSecondary && (
         <>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
               title="Market Context"
               status={sessionLabel()}
               expanded={openPanels.context !== false}
               onToggle={() => togglePanel('context')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               <KV k="Session" v={sessionLabel()} />
               <KV k="Trend context" v={trendContext(candles)} />
@@ -874,7 +883,7 @@ export default function RetailDashboard() {
               status={structure?.volumeMode === 'vendor' ? 'vendor volume' : 'range-proxy'}
               expanded={openPanels.volume !== false}
               onToggle={() => togglePanel('volume')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               <KV k="Current volume" v={snap.volume != null ? formatVol(snap.volume) : 'DATA UNAVAILABLE'} />
               <KV k="Average volume" v={snap.avgVolume != null ? formatVol(snap.avgVolume) : 'DATA UNAVAILABLE'} />
@@ -907,7 +916,7 @@ export default function RetailDashboard() {
               status={intel.moversStatus === 'ok' ? 'live quotes' : 'unavailable'}
               expanded={openPanels.movers !== false}
               onToggle={() => togglePanel('movers')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               {intel.moversStatus !== 'ok' ? (
                 <Unavail label="DATA UNAVAILABLE — no live mover quotes" />
@@ -944,13 +953,13 @@ export default function RetailDashboard() {
             </Bento>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
               title="News"
               status={intel.newsError ? 'offline' : `${intel.news.length} items`}
               expanded={openPanels.news !== false}
               onToggle={() => togglePanel('news')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               {intel.news.length === 0 ? (
                 <Unavail label={intel.newsError || 'DATA UNAVAILABLE'} />
@@ -990,7 +999,7 @@ export default function RetailDashboard() {
               status="informational"
               expanded={openPanels.calendar !== false}
               onToggle={() => togglePanel('calendar')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-[var(--desk-muted)]">
                 Timed CPI/NFP/FOMC calendar rows are not fabricated. Showing economic wire when available.
@@ -1017,7 +1026,7 @@ export default function RetailDashboard() {
               status={`${alerts.filter((a) => a.enabled).length} active`}
               expanded={openPanels.alerts !== false}
               onToggle={() => togglePanel('alerts')}
-              className="min-h-[180px]"
+              className="retail-bento min-h-[180px]"
             >
               <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-[var(--desk-muted)]">
                 User-controlled informational alerts — not trade recommendations.
@@ -1104,13 +1113,13 @@ export default function RetailDashboard() {
             </Bento>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Bento
               title="What Changed?"
               status="since last view"
               expanded={openPanels.changed !== false}
               onToggle={() => togglePanel('changed')}
-              className="min-h-[140px]"
+              className="retail-bento min-h-[140px]"
             >
               {whatChanged.map((c) => (
                 <KV key={c.label} k={c.label} v={c.value} accent={c.tone} />
@@ -1128,7 +1137,7 @@ export default function RetailDashboard() {
               status={intel.fundamentals.status}
               expanded={openPanels.fundamentals !== false}
               onToggle={() => togglePanel('fundamentals')}
-              className="min-h-[140px]"
+              className="retail-bento min-h-[140px]"
             >
               {intel.fundamentals.status === 'n/a' ? (
                 <p className="text-[10px] font-bold uppercase text-[var(--desk-muted)]">
@@ -1195,7 +1204,7 @@ export default function RetailDashboard() {
               status="hypothetical"
               expanded={openPanels.simulation !== false}
               onToggle={() => togglePanel('simulation')}
-              className="min-h-[140px]"
+              className="retail-bento min-h-[140px]"
             >
               <p className="mb-2 text-[11px] font-bold leading-relaxed text-[var(--desk-text)]">
                 Simulated trading only.
@@ -1216,7 +1225,7 @@ export default function RetailDashboard() {
         </>
       )}
 
-      <footer className="rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] px-3 py-2 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--desk-muted)]">
+      <footer data-retail-bento className="retail-bento px-3 py-3 text-center text-sm font-bold uppercase tracking-[0.14em] text-[var(--desk-muted)]">
         Information & analytics only — no live trade execution · Not personalized financial advice
       </footer>
     </div>
