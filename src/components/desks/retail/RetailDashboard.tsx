@@ -476,6 +476,18 @@ export default function RetailDashboard() {
               >
                 Blackout
               </button>
+              <button
+                type="button"
+                onClick={() => setShowColorPane((v) => !v)}
+                data-asset-colors-toggle
+                className="rounded-lg border px-3 py-2 text-sm font-black uppercase tracking-wider"
+                style={{
+                  borderColor: showColorPane ? 'var(--desk-pink)' : 'var(--desk-border)',
+                  color: showColorPane ? 'var(--desk-pink)' : 'var(--desk-muted)',
+                }}
+              >
+                Asset colors
+              </button>
               <a
                 href="/education"
                 className="rounded-lg border border-[var(--desk-border)] px-3 py-2 text-sm font-black uppercase tracking-wider text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
@@ -487,6 +499,11 @@ export default function RetailDashboard() {
         </section>
       )}
 
+      {showColorPane && !denseBlackout ? (
+        <section data-retail-bento className="retail-bento shrink-0 overflow-hidden">
+          <AssetColorControls symbol={symbol} map={colorMap} onChange={setColorMap} />
+        </section>
+      ) : null}
       {/* Global market ribbon */}
       {!hideSecondary && (
         <Bento title="Global Market Ribbon" status="context" className="retail-bento shrink-0">
@@ -554,17 +571,6 @@ export default function RetailDashboard() {
             ))}
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowColorPane((v) => !v)}
-              className="rounded-lg border px-3 py-2 text-sm font-black uppercase tracking-wider"
-              style={{
-                borderColor: showColorPane ? 'var(--desk-pink)' : 'var(--desk-border)',
-                color: showColorPane ? 'var(--desk-pink)' : 'var(--desk-muted)',
-              }}
-            >
-              Asset colors
-            </button>
             <div className="flex items-baseline gap-2 font-mono">
             <span className="text-base font-extrabold" style={{ color: activeColors.asset }}>
               {symbol}
@@ -585,11 +591,6 @@ export default function RetailDashboard() {
             </div>
           </div>
         </div>
-        {showColorPane ? (
-          <div className="border-t border-[var(--desk-border)] px-3 pb-3 pt-2">
-            <AssetColorControls symbol={symbol} map={colorMap} onChange={setColorMap} />
-          </div>
-        ) : null}
       </section>
 
       {/* Chart workspace grows when the analytics strip slides up */}
