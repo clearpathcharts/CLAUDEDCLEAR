@@ -12,6 +12,7 @@ import { FX_SESSIONS, isSessionOpen } from '../../../lib/traderDesks';
 import { advancedProfiles } from '../../../lib/advanced/profiles';
 import { Bento, Unavail, KV, Bar } from '../institutional/Bento';
 import { RetailEducationBento } from './RetailEducationBento';
+import { RetailSlideStrip } from './RetailSlideStrip';
 import {
   RETAIL_RIBBON,
   useRetailIntelligence,
@@ -397,7 +398,7 @@ export default function RetailDashboard() {
     candles.length >= 2 ? Math.min(...candles.slice(-Math.min(candles.length, 24), -1).map((c) => c.low)) : null;
 
   return (
-    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
       {/* Header */}
       {!denseBlackout && (
         <section data-retail-bento className="retail-bento flex flex-wrap items-end justify-between gap-3">
@@ -536,9 +537,11 @@ export default function RetailDashboard() {
         </div>
       </section>
 
+      {/* Chart workspace grows when the analytics strip slides up */}
+      <div className="flex min-h-[55vh] flex-1 flex-col gap-2">
       {/* Primary row: watchlist | chart | snapshot */}
       <div
-        className={`grid min-h-[380px] gap-3 ${
+        className={`grid min-h-[320px] flex-1 gap-3 ${
           hideSecondary
             ? 'grid-cols-1'
             : 'grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_240px] xl:grid-cols-[260px_minmax(0,1.7fr)_270px]'
@@ -626,7 +629,7 @@ export default function RetailDashboard() {
           </Bento>
         )}
 
-        <section data-retail-bento className="retail-bento flex min-h-[360px] min-w-0 flex-col overflow-hidden">
+        <section data-retail-bento className="retail-bento flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <header className="shrink-0 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
@@ -759,8 +762,8 @@ export default function RetailDashboard() {
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
-                  fillParent
-                  height={layout === 1 ? 420 : 260}
+                  fillParent={layout === 1}
+                  height={layout === 1 ? 420 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
                   hidePatternOverlays
@@ -824,16 +827,16 @@ export default function RetailDashboard() {
         )}
       </div>
 
-      {/* Secondary bento grid */}
+      {/* Sliding analytics under charts — drag up to free chart room */}
       {!hideSecondary && (
-        <>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <RetailSlideStrip title="Context · Volume · Movers">
+          <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
               title="Market Context"
               status={sessionLabel()}
               expanded={openPanels.context !== false}
               onToggle={() => togglePanel('context')}
-              className="retail-bento min-h-[180px]"
+              className="retail-bento min-h-0"
             >
               <KV k="Session" v={sessionLabel()} />
               <KV k="Trend context" v={trendContext(candles)} />
@@ -883,7 +886,7 @@ export default function RetailDashboard() {
               status={structure?.volumeMode === 'vendor' ? 'vendor volume' : 'range-proxy'}
               expanded={openPanels.volume !== false}
               onToggle={() => togglePanel('volume')}
-              className="retail-bento min-h-[180px]"
+              className="retail-bento min-h-0"
             >
               <KV k="Current volume" v={snap.volume != null ? formatVol(snap.volume) : 'DATA UNAVAILABLE'} />
               <KV k="Average volume" v={snap.avgVolume != null ? formatVol(snap.avgVolume) : 'DATA UNAVAILABLE'} />
@@ -891,7 +894,7 @@ export default function RetailDashboard() {
                 k="Relative volume"
                 v={snap.relVolume != null ? `${snap.relVolume.toFixed(2)}×` : 'DATA UNAVAILABLE'}
               />
-              {snap.relVolume != null ? <Bar pct={Math.min(100, snap.relVolume * 40)} color="bg-cyan-400" /> : null}
+                  {snap.relVolume != null ? <Bar pct={Math.min(100, snap.relVolume * 40)} color="bg-[var(--desk-pink)]" /> : null}
               <KV k="VWAP" v={snap.vwap != null ? formatStructurePrice(snap.vwap) : 'DATA UNAVAILABLE'} />
               <KV
                 k="POC"
@@ -916,7 +919,7 @@ export default function RetailDashboard() {
               status={intel.moversStatus === 'ok' ? 'live quotes' : 'unavailable'}
               expanded={openPanels.movers !== false}
               onToggle={() => togglePanel('movers')}
-              className="retail-bento min-h-[180px]"
+              className="retail-bento min-h-0"
             >
               {intel.moversStatus !== 'ok' ? (
                 <Unavail label="DATA UNAVAILABLE — no live mover quotes" />
@@ -952,7 +955,12 @@ export default function RetailDashboard() {
               )}
             </Bento>
           </div>
+        </RetailSlideStrip>
+      )}
+      </div>
 
+      {!hideSecondary && (
+        <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
               title="News"
