@@ -59,8 +59,13 @@ assert.match(themeCss, /\[data-retail-door\]/);
 assert.match(themeCss, /\[data-neuro-door\]/);
 assert.match(themeCss, /font-weight: 800/);
 assert.match(themeCss, /retail-bento/);
+assert.match(themeCss, /retail-slide-handle/);
+assert.match(themeCss, /#ff1493|#FF1493/);
+assert.match(themeCss, /#6366f1/);
 assert.match(themeCss, /IBM Plex Mono/);
 assert.match(themeCss, /Inter/);
+
+assert.equal(TRADER_DESKS.retail.accent.toLowerCase(), '#ff1493');
 
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 assert.match(indexHtml, /fonts\.googleapis\.com/);
@@ -95,6 +100,7 @@ const srcFiles = [
   'src/components/desks/RetailTraderDesk.tsx',
   'src/components/desks/retail/RetailDashboard.tsx',
   'src/components/desks/retail/RetailEducationBento.tsx',
+  'src/components/desks/retail/RetailSlideStrip.tsx',
   'src/components/desks/retail/useRetailIntelligence.ts',
   'src/components/desks/retail/retailStore.ts',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
@@ -180,10 +186,17 @@ for (const rel of srcFiles) {
     assert.match(text, /Blackout/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /RetailEducationBento/);
+    assert.match(text, /RetailSlideStrip/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
+  }
+  if (rel === 'src/components/desks/retail/RetailSlideStrip.tsx') {
+    assert.match(text, /data-retail-slide-strip/);
+    assert.match(text, /clearpath_retail_slide_strip_px/);
+    assert.match(text, /cursor-row-resize/);
+    assert.match(text, /aria-orientation="horizontal"/);
   }
   if (rel === 'src/components/desks/retail/RetailEducationBento.tsx') {
     assert.match(text, /InstitutionalRegistry/);

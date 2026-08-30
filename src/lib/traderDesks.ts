@@ -34,7 +34,7 @@ export const TRADER_DESKS: Record<TraderDeskId, TraderDeskMeta> = {
     id: 'retail',
     title: 'Retail Trader',
     tagline: 'Make trading understandable',
-    accent: '#00FFFF',
+    accent: '#FF1493',
     href: '/desk/retail',
   },
   neurodivergent: {

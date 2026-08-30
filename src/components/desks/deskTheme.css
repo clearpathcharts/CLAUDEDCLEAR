@@ -65,15 +65,24 @@
   font-weight: 700;
 }
 
-/* Retail Market: one size larger + extra-bold + clearer bento boxes */
+/* Retail Market: neon indigo → hot pink (replaces emerald/cyan chrome) */
 .desk-shell [data-retail-door] {
-  --desk-border: rgba(255, 255, 255, 0.22);
-  --desk-panel: rgba(12, 12, 16, 0.96);
+  --desk-border: rgba(255, 20, 147, 0.32);
+  --desk-panel: rgba(14, 8, 24, 0.96);
+  --desk-cyan: #818cf8;
+  --desk-indigo: #6366f1;
+  --desk-pink: #ff1493;
+  --desk-muted: #a1a1aa;
+  --desk-text: #f5f3ff;
   font-family: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-size: 1.1875rem;
   font-weight: 800;
   line-height: 1.5;
   gap: 0.75rem;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(99, 102, 241, 0.28), transparent 55%),
+    radial-gradient(100% 70% at 100% 10%, rgba(255, 20, 147, 0.22), transparent 50%),
+    linear-gradient(165deg, #07041a 0%, #12081f 45%, #1a0620 100%);
 }
 
 .desk-shell [data-retail-door] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, select, option, pre, code, td, th) {
@@ -130,18 +139,23 @@
 .desk-shell [data-retail-door] section.flex,
 .desk-shell [data-retail-door] [data-retail-bento],
 .desk-shell [data-retail-door] .retail-bento {
-  border: 1.5px solid rgba(0, 255, 255, 0.28) !important;
+  border: 1.5px solid transparent !important;
   border-radius: 0.75rem !important;
-  background: rgba(10, 12, 18, 0.98) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.35);
+  background:
+    linear-gradient(180deg, rgba(16, 10, 28, 0.98), rgba(10, 6, 18, 0.98)) padding-box,
+    linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(255, 20, 147, 0.95)) border-box !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 24px rgba(99, 102, 241, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
 .desk-shell [data-retail-door] > section > header,
 .desk-shell [data-retail-door] section.flex > header,
 .desk-shell [data-retail-door] [data-retail-bento] > header,
 .desk-shell [data-retail-door] .retail-bento > header {
-  border-bottom: 1.5px solid rgba(0, 255, 255, 0.2) !important;
-  background: rgba(0, 255, 255, 0.04);
+  border-bottom: 1.5px solid rgba(255, 20, 147, 0.28) !important;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.14), rgba(255, 20, 147, 0.1));
   padding: 0.65rem 0.85rem !important;
 }
 
@@ -151,26 +165,64 @@
   padding: 0.75rem !important;
 }
 
+.desk-shell [data-retail-door] [data-retail-slide-strip] {
+  border: 1.5px solid transparent;
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgba(14, 8, 24, 0.98), rgba(10, 6, 18, 0.98)) padding-box,
+    linear-gradient(90deg, #6366f1, #ff1493) border-box;
+}
+
+.desk-shell [data-retail-door] .retail-slide-handle {
+  border-color: rgba(255, 20, 147, 0.35) !important;
+  color: #e9d5ff;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.35), rgba(255, 20, 147, 0.28));
+}
+
+.desk-shell [data-retail-door] .retail-slide-handle button {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #f5f3ff;
+}
+
+.desk-shell [data-retail-door] .retail-slide-grip {
+  width: 2.75rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #ff1493);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.45);
+}
+
 .desk-shell[data-desk-paper='white'] [data-retail-door] {
-  --desk-border: rgba(17, 17, 17, 0.28);
-  --desk-panel: #f4f4f5;
+  --desk-border: rgba(99, 102, 241, 0.35);
+  --desk-panel: #faf8ff;
+  --desk-cyan: #4f46e5;
+  --desk-indigo: #4338ca;
+  --desk-pink: #db2777;
+  --desk-muted: #52525b;
+  --desk-text: #111827;
+  background:
+    radial-gradient(100% 80% at 0% 0%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(255, 20, 147, 0.1), transparent 50%),
+    #f8f7ff;
 }
 
 .desk-shell[data-desk-paper='white'] [data-retail-door] > section,
 .desk-shell[data-desk-paper='white'] [data-retail-door] section.flex,
 .desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento],
 .desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento {
-  border-color: rgba(14, 116, 144, 0.45) !important;
-  background: #ffffff !important;
-  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(135deg, #6366f1, #ff1493) border-box !important;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.04);
 }
 
 .desk-shell[data-desk-paper='white'] [data-retail-door] > section > header,
 .desk-shell[data-desk-paper='white'] [data-retail-door] section.flex > header,
 .desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento] > header,
 .desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento > header {
-  border-bottom-color: rgba(14, 116, 144, 0.28) !important;
-  background: rgba(14, 116, 144, 0.06);
+  border-bottom-color: rgba(219, 39, 119, 0.28) !important;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(255, 20, 147, 0.06));
 }
 
 /* Neurodivergent Market: same readability as retail, violet framing */
