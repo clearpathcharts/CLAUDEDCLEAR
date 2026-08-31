@@ -165,6 +165,7 @@ export function getFredApiKey(): string {
   return first(process.env.FRED_API_KEY);
 }
 
+/** Canonical env name is FMP_API_KEY. FINANCIAL_MODELING_PREP_API_KEY is a fallback alias only. */
 export function getFmpApiKey(): string {
   return first(process.env.FMP_API_KEY, process.env.FINANCIAL_MODELING_PREP_API_KEY);
 }
@@ -249,7 +250,9 @@ export function getSecretPresenceReport(): Record<string, boolean> {
   };
 }
 
-/** Allowed FMP v3 path segments — blocks open proxy path injection. */
+const FMP_STABLE_BASE = 'https://financialmodelingprep.com/stable';
+
+/** Internal proxy names — blocks open path injection. Maps to FMP /stable paths. */
 export const FMP_ALLOWED_ENDPOINTS = new Set([
   'income-statement',
   'balance-sheet-statement',
@@ -259,7 +262,6 @@ export const FMP_ALLOWED_ENDPOINTS = new Set([
   'key-metrics',
   'ratios',
   'enterprise-values',
-  'rating',
   'key-executives',
   'analyst-estimates',
   'earnings-surprises',
@@ -273,5 +275,81 @@ export const FMP_ALLOWED_ENDPOINTS = new Set([
   'revenue-geographic-segmentation',
 ]);
 
-/** Query-style FMP v3 resources (not /:endpoint/:symbol). */
+/** Query-style FMP resources (not /:endpoint/:symbol). */
 export const FMP_LOOKUP_KINDS = new Set(['search', 'news', 'insider', 'peers']);
+
+/** SPA still uses legacy names (sec_filings, shares_float, earnings-surprises). */
+const FMP_STABLE_SYMBOL_PATHS: Record<string, string> = {
+  'income-statement': 'income-statement',
+  'balance-sheet-statement': 'balance-sheet-statement',
+  'cash-flow-statement': 'cash-flow-statement',
+  quote: 'quote',
+  profile: 'profile',
+  'key-metrics': 'key-metrics',
+  ratios: 'ratios',
+  'enterprise-values': 'enterprise-values',
+  'key-executives': 'key-executives',
+  'analyst-estimates': 'analyst-estimates',
+  'earnings-surprises': 'earnings',
+  'key-metrics-ttm': 'key-metrics-ttm',
+  'ratios-ttm': 'ratios-ttm',
+  'financial-growth': 'financial-growth',
+  'historical-market-capitalization': 'historical-market-capitalization',
+  sec_filings: 'sec-filings-search/symbol',
+  shares_float: 'shares-float',
+  'revenue-product-segmentation': 'revenue-product-segmentation',
+  'revenue-geographic-segmentation': 'revenue-geographic-segmentation',
+};
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+export function buildFmpStableSymbolUrl(
+  endpoint: string,
+  symbol: string,
+  apiKey: string,
+  opts?: { limit?: number; period?: string },
+): string | null {
+  const path = FMP_STABLE_SYMBOL_PATHS[endpoint];
+  if (!path) return null;
+  const params = new URLSearchParams({ symbol, apikey: apiKey });
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  if (opts?.period === 'annual' || opts?.period === 'quarter') params.set('period', opts.period);
+  if (endpoint === 'sec_filings') {
+    const to = new Date();
+    const from = new Date(to);
+    from.setUTCFullYear(to.getUTCFullYear() - 2);
+    params.set('from', isoDate(from));
+    params.set('to', isoDate(to));
+  }
+  return `${FMP_STABLE_BASE}/${path}?${params.toString()}`;
+}
+
+export function buildFmpStableLookupUrl(
+  kind: string,
+  apiKey: string,
+  opts: { symbol?: string; q?: string },
+): string | null {
+  const params = new URLSearchParams({ apikey: apiKey });
+  if (kind === 'search') {
+    params.set('query', opts.q || '');
+    params.set('limit', '20');
+    return `${FMP_STABLE_BASE}/search-symbol?${params.toString()}`;
+  }
+  if (kind === 'news') {
+    params.set('symbols', opts.symbol || '');
+    params.set('limit', '30');
+    return `${FMP_STABLE_BASE}/news/stock?${params.toString()}`;
+  }
+  if (kind === 'insider') {
+    params.set('symbol', opts.symbol || '');
+    params.set('limit', '30');
+    return `${FMP_STABLE_BASE}/insider-trading/search?${params.toString()}`;
+  }
+  if (kind === 'peers') {
+    params.set('symbol', opts.symbol || '');
+    return `${FMP_STABLE_BASE}/stock-peers?${params.toString()}`;
+  }
+  return null;
+}
