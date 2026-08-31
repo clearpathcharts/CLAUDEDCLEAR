@@ -142,21 +142,37 @@ function uniqueAscendingTimes<T extends { time: number }>(candles: T[]): T[] {
   return out;
 }
 
-function toPriceSeriesData(
-  candles: Array<{ time: number; open: number; high: number; low: number; close: number }>,
-  type: PriceSeriesType,
-) {
+type PriceBar = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  color?: string;
+  wickColor?: string;
+  borderColor?: string;
+};
+
+function toPriceSeriesData(candles: PriceBar[], type: PriceSeriesType) {
   candles = uniqueAscendingTimes(candles);
   if (type === "line" || type === "area") {
     return candles.map((c) => ({ time: c.time as Time, value: c.close }));
   }
-  return candles.map((c) => ({
-    time: c.time as Time,
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close,
-  }));
+  return candles.map((c) => {
+    const bar: CandlestickData<Time> = {
+      time: c.time as Time,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    };
+    if (c.color) {
+      bar.color = c.color;
+      bar.wickColor = c.wickColor ?? c.color;
+      bar.borderColor = c.borderColor ?? c.color;
+    }
+    return bar;
+  });
 }
 
 function toPriceSeriesUpdate(
@@ -581,7 +597,7 @@ export function LightweightCandles({
           }
         }
 
-        series.setData(toPriceSeriesData(tierOptimizedData, priceSeriesType) as any);
+        series.setData(toPriceSeriesData(chartCandles as PriceBar[], priceSeriesType) as any);
 
         scheduleChartVisionImmediate(
           { candles: tierOptimizedData, symbol: sym, timeframe },

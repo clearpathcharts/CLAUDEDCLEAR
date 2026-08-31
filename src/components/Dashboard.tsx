@@ -74,7 +74,6 @@ import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 import { isFounderEmail } from '../lib/founder';
 import { auth } from '../firebase';
-import { navigateToDesk } from '../lib/traderDesks';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
@@ -1029,10 +1028,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     }
     if (nextTab === 'Diagnostics') {
       setActiveTab('StrictlyCharts');
-      return;
-    }
-    if (nextTab === 'Fundamentals') {
-      navigateToDesk('fundamental');
       return;
     }
     setActiveTab(nextTab);

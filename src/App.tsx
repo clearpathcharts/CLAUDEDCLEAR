@@ -111,6 +111,13 @@ function isFundamentalDeskPath(path: string): boolean {
   return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
 }
 
+function publicLearnDeskTab(path: string): string {
+  if (isEncyclopediaPath(path)) return 'Encyclopedia';
+  if (isIndicatorsPath(path)) return 'EncyclopediaOfIndicators';
+  if (isLiteracyPath(path)) return 'LiteracyOS';
+  return EDUCATION_TAB_ID;
+}
+
 function PublicLearnShell({
   children,
   deskTab = EDUCATION_TAB_ID,
@@ -272,7 +279,7 @@ export default function App() {
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
     );
-  } else if (isDeskPath(currentPath)) {
+  } else if (isDeskPath(currentPath) && !isFundamentalDeskPath(currentPath)) {
     content = <DeskRoute pathname={currentPath} />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
@@ -293,19 +300,19 @@ export default function App() {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
       content = (
-        <PublicLearnShell>
+        <PublicLearnShell deskTab={publicLearnDeskTab(currentPath)}>
           <EncyclopediaLayout />
         </PublicLearnShell>
       );
     } else if (isIndicatorsPath(currentPath)) {
       content = (
-        <PublicLearnShell>
+        <PublicLearnShell deskTab={publicLearnDeskTab(currentPath)}>
           <EncyclopediaOfIndicators />
         </PublicLearnShell>
       );
     } else if (isEducationPath(currentPath)) {
       content = (
-        <PublicLearnShell>
+        <PublicLearnShell deskTab={publicLearnDeskTab(currentPath)}>
           <ClearPathEducation
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
@@ -317,7 +324,7 @@ export default function App() {
       );
     } else if (isLiteracyPath(currentPath)) {
       content = (
-        <PublicLearnShell>
+        <PublicLearnShell deskTab={publicLearnDeskTab(currentPath)}>
           <LiteracyOSPage
             onNavigate={(tabId) => {
               if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');

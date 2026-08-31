@@ -113,4 +113,8 @@ const rules = fs.readFileSync(path.join(process.cwd(), "firestore.rules"), "utf8
 assert.ok(rules.includes("vipStatus"));
 assert.ok(rules.includes("noClientPrivilegeKeys"));
 
+const deskSrc = fs.readFileSync(path.join(process.cwd(), "src/components/DailyOpsDesk.tsx"), "utf8");
+assert.match(deskSrc, /survivalOnly \? "Show full list" : "Low-energy day"/);
+assert.doesNotMatch(deskSrc, /survivalOnly \? "Low-energy day"/);
+
 console.log(`daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} date=${date}`);

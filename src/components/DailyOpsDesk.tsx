@@ -257,7 +257,7 @@ export default function DailyOpsDesk({
                   : "border-white/20 text-white/80 hover:bg-white/5"
               }`}
             >
-              {survivalOnly ? "Low-energy day" : "Back to survival set"}
+              {survivalOnly ? "Show full list" : "Low-energy day"}
             </button>
             <button
               type="button"
@@ -519,7 +519,8 @@ export default function DailyOpsDesk({
           </h3>
           <p className="text-white/45 text-xs mb-5">
             Survival set (default): site walk, money glance, one outreach, one investor note.
-            The rest is parked behind “Low-energy day”. Unchecked todos never mean the site is down.
+            The rest is parked behind “Show full list”. “Low-energy day” returns to this survival set.
+            Unchecked todos never mean the site is down.
           </p>
           {[...grouped.entries()].map(([section, items]) => (
             <div key={section} className="mb-6">
