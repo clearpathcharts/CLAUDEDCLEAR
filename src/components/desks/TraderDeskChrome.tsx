@@ -36,6 +36,12 @@ export default function TraderDeskChrome({ active }: Props) {
     applyColor,
     setOpacity,
     resetVisual,
+    saveDesk,
+    saveAllDesks,
+    discardDraft,
+    isDirty,
+    savedAt,
+    lastSaveScope,
   } = useDeskAppearance();
   const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
@@ -196,8 +202,16 @@ export default function TraderDeskChrome({ active }: Props) {
           onPick={applyColor}
           onOpacity={setOpacity}
           onReset={resetVisual}
+          onSave={saveDesk}
+          onSaveAll={saveAllDesks}
+          onDiscard={discardDraft}
+          isDirty={isDirty}
+          savedAt={savedAt}
+          lastSaveScope={lastSaveScope}
+          overrides={overrides}
           deskLabel={meta.title}
           showPastels={active === 'neurodivergent'}
+          noPlotOnDesk={active === 'fundamental'}
         />
       ) : null}
     </header>

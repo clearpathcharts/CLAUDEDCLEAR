@@ -62,7 +62,68 @@ export type DeskColorOverrides = Partial<Record<DeskColorTarget, string>> & {
 export type DeskColorChartStore = {
   desks: Partial<Record<TraderDeskId, DeskColorOverrides>>;
   recents: string[];
+  savedAt?: Partial<Record<TraderDeskId, string>>;
 };
+
+export const PLOT_COLOR_TARGETS: readonly DeskColorTarget[] = [
+  'chart',
+  'candleUp',
+  'candleDown',
+  'indicator',
+];
+
+export function isPlotColorTarget(value: DeskColorTarget): boolean {
+  return (PLOT_COLOR_TARGETS as readonly string[]).includes(value);
+}
+
+export function normalizeOverrides(slots: DeskColorOverrides | undefined): DeskColorOverrides {
+  if (!slots) return {};
+  const out: DeskColorOverrides = {};
+  for (const key of DESK_COLOR_TARGETS) {
+    const hex = normalizeHex(slots[key]);
+    if (hex) out[key] = hex;
+  }
+  if (slots.opacity != null) out.opacity = clampOpacity(slots.opacity);
+  return out;
+}
+
+export function overridesEqual(a: DeskColorOverrides | undefined, b: DeskColorOverrides | undefined): boolean {
+  return JSON.stringify(normalizeOverrides(a)) === JSON.stringify(normalizeOverrides(b));
+}
+
+export function cloneStore(store: DeskColorChartStore): DeskColorChartStore {
+  return {
+    desks: { ...store.desks },
+    recents: [...store.recents],
+    savedAt: store.savedAt ? { ...store.savedAt } : {},
+  };
+}
+
+export function stampDeskSavedAt(
+  store: DeskColorChartStore,
+  deskId: TraderDeskId,
+  when: string = new Date().toISOString(),
+): DeskColorChartStore {
+  return {
+    ...store,
+    savedAt: { ...(store.savedAt || {}), [deskId]: when },
+  };
+}
+
+export function copyDeskColorsToAll(
+  store: DeskColorChartStore,
+  fromDesk: TraderDeskId,
+  when: string = new Date().toISOString(),
+): DeskColorChartStore {
+  const src = normalizeOverrides(store.desks[fromDesk]);
+  const desks: DeskColorChartStore['desks'] = { ...store.desks };
+  const savedAt: NonNullable<DeskColorChartStore['savedAt']> = { ...(store.savedAt || {}) };
+  for (const id of ['institutional', 'fundamental', 'retail', 'neurodivergent'] as const) {
+    desks[id] = { ...src };
+    savedAt[id] = when;
+  }
+  return { ...store, desks, savedAt };
+}
 
 /** 10-stop grayscale row — white → black, matching the chart screenshot. */
 export const COLOR_CHART_GRAYS: readonly string[] = [
@@ -162,13 +223,13 @@ export function isDeskColorTarget(value: unknown): value is DeskColorTarget {
 }
 
 export function emptyStore(): DeskColorChartStore {
-  return { desks: {}, recents: [] };
+  return { desks: {}, recents: [], savedAt: {} };
 }
 
 export function parseDeskColorChartStore(raw: unknown): DeskColorChartStore {
   const out = emptyStore();
   if (!raw || typeof raw !== 'object') return out;
-  const rec = raw as { desks?: unknown; recents?: unknown };
+  const rec = raw as { desks?: unknown; recents?: unknown; savedAt?: unknown };
   if (rec.desks && typeof rec.desks === 'object') {
     for (const [desk, slots] of Object.entries(rec.desks as Record<string, unknown>)) {
       if (!slots || typeof slots !== 'object') continue;
@@ -193,6 +254,12 @@ export function parseDeskColorChartStore(raw: unknown): DeskColorChartStore {
       seen.add(hex);
       out.recents.push(hex);
       if (out.recents.length >= 9) break;
+    }
+  }
+  if (rec.savedAt && typeof rec.savedAt === 'object') {
+    out.savedAt = {};
+    for (const [desk, stamp] of Object.entries(rec.savedAt as Record<string, unknown>)) {
+      if (typeof stamp === 'string' && stamp.trim()) out.savedAt[desk as TraderDeskId] = stamp;
     }
   }
   return out;
