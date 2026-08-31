@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
-import { LightweightCandles, type PriceSeriesType } from '../charts/LightweightCandles';
+import { LightweightCandles } from '../charts/LightweightCandles';
+import { ChartSeriesStylePicker } from '../charts/ChartSeriesStylePicker';
 import { ChartIndicatorPicker } from '../charts/ChartIndicatorPicker';
 import { ChartDrawingSessionProvider, ChartDrawingToolsPanel } from '../charts/drawings';
+import { useChartSeriesStyle } from '../../hooks/useChartSeriesStyle';
 import { resolveMarketAsset } from '../../constants/marketAssets';
 import { getRegistryAsset, searchEnabledAssets } from '../../constants/assetRegistry';
 import { resolveQuotePrice } from '../MarketTicker';
@@ -21,7 +23,7 @@ import {
 import { Bento, KV, Unavail } from './institutional/Bento';
 import WhatAmILookingAt from './WhatAmILookingAt';
 import RetailHeldFile from './RetailHeldFile';
-import { useRetailHeldPanels, type RetailPanelId } from './retailHeldPanels';
+import { useRetailHeldPanels, RETAIL_BELOW_CHART_IDS, type RetailPanelId } from './retailHeldPanels';
 import type { Candle } from '../../types/indicators';
 import './retailDesk.css';
 
@@ -183,7 +185,7 @@ export default function RetailTraderDesk() {
   const initialStore = useMemo(() => readWatchStore(), []);
   const [symbol, setSymbol] = useState('EURUSD');
   const [timeframe, setTimeframe] = useState('1h');
-  const [chartType, setChartType] = useState<PriceSeriesType>('candlestick');
+  const [chartType, setChartType] = useChartSeriesStyle();
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [extras, setExtras] = useState<ExtraSlot[]>([
     { id: 'b', symbol: '', timeframe: '15m' },
@@ -493,6 +495,13 @@ export default function RetailTraderDesk() {
   const showSnap = !quiet && !heldPanels.isHeld('snapshot');
   const stageSides: 'both' | 'watch' | 'snap' | 'none' =
     showWatch && showSnap ? 'both' : showWatch ? 'watch' : showSnap ? 'snap' : 'none';
+  const belowHeld = RETAIL_BELOW_CHART_IDS.filter((id) => heldPanels.isHeld(id)).length;
+  const chartRoom: 'default' | 'more' | 'max' =
+    belowHeld >= RETAIL_BELOW_CHART_IDS.length && !showWatch && !showSnap
+      ? 'max'
+      : belowHeld > 0 || !showWatch || !showSnap
+        ? 'more'
+        : 'default';
   const panel = (id: RetailPanelId) => ({
     onDismiss: () => heldPanels.hold(id),
   });
@@ -579,6 +588,7 @@ export default function RetailTraderDesk() {
             showMineIndicator={showMineIndicator}
             mineIndicatorName={mineIndicatorName}
             priceSeriesType={chartType}
+            onPriceSeriesTypeChange={setChartType}
           />
         </div>
         {visibleExtras.map((slot) => (
@@ -625,12 +635,7 @@ export default function RetailTraderDesk() {
         ))}
         {!blackout ? (
           <>
-            <button type="button" className={`rt-tool ${chartType === 'candlestick' ? 'is-on' : ''}`} onClick={() => setChartType('candlestick')}>
-              Candles
-            </button>
-            <button type="button" className={`rt-tool ${chartType === 'line' ? 'is-on' : ''}`} onClick={() => setChartType('line')}>
-              Line
-            </button>
+            <ChartSeriesStylePicker compact value={chartType} onChange={setChartType} />
             <button
               type="button"
               onClick={() => setShowIndicators((v) => !v)}
@@ -711,7 +716,7 @@ export default function RetailTraderDesk() {
 
   return (
     <ChartDrawingSessionProvider>
-      <div className="rt-desk mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-2 p-2 md:p-3" data-retail-door="" data-retail-workspace="" data-retail-cockpit="" data-held-count={heldPanels.held.length}>
+      <div className="rt-desk mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-2 p-2 md:p-3" data-retail-door="" data-retail-workspace="" data-retail-cockpit="" data-held-count={heldPanels.held.length} data-chart-room={chartRoom}>
         <div className="flex flex-wrap items-end justify-between gap-2 px-1">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--desk-muted)]">ClearPath Trader</p>

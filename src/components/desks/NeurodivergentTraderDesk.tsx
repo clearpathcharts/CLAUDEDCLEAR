@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../charts/LightweightCandles';
+import { ChartSeriesStylePicker } from '../charts/ChartSeriesStylePicker';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
-import { ChartDrawingSessionProvider } from '../charts/drawings';
+import { ChartDrawingSessionProvider, ChartDrawingToolsPanel } from '../charts/drawings';
 import { DESK_CHARTS_ANCHOR } from '../../lib/traderDesks';
 import { themeProfiles, type ThemeProfileId } from '../../lib/theme/profiles';
+import { useChartSeriesStyle } from '../../hooks/useChartSeriesStyle';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
 const DEFAULT_SYMBOL = 'EURUSD';
@@ -46,6 +48,7 @@ export default function NeurodivergentTraderDesk() {
   const [profileId, setProfileId] = useState<ThemeProfileId>(readSavedProfile);
   const [symbol, setSymbol] = useState(DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>('1h');
+  const [chartType, setChartType] = useChartSeriesStyle();
 
   const theme = themeProfiles[profileId];
 
@@ -93,6 +96,8 @@ export default function NeurodivergentTraderDesk() {
                 hidePatternOverlays
                 hideChartToolbar
                 publishDrawingSession
+                priceSeriesType={chartType}
+                onPriceSeriesTypeChange={setChartType}
               />
             </div>
             <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Timeframe">
@@ -112,7 +117,9 @@ export default function NeurodivergentTraderDesk() {
                   {tf}
                 </button>
               ))}
+              <ChartSeriesStylePicker compact value={chartType} onChange={setChartType} />
             </div>
+            <ChartDrawingToolsPanel compact />
             <p className="font-mono text-[10px] uppercase tracking-wider opacity-50">
               Information and analytics only — no trade execution — no personalized investment advice
             </p>

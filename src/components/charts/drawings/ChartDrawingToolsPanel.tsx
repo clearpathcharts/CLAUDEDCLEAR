@@ -25,12 +25,12 @@ export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean 
         </div>
         <p className="mt-1 text-[10px] leading-snug text-zinc-500">
           {session
-            ? `Target ${session.symbol} · ${session.timeframe.toUpperCase()} — click that loaded chart to place`
+            ? `Target ${session.symbol} · ${session.timeframe.toUpperCase()} — lines, fibs, Elliott, cycles, text, emojis`
             : "Click a loaded chart (or its 5m / 10m / 15m / 30m buttons) so tools attach to that symbol"}
         </p>
       </div>
 
-      <div className="p-2.5">
+      <div className="min-h-0 overflow-y-auto p-2.5">
         {session ? (
           <ChartDrawingToolbar
             variant="panel"
@@ -42,6 +42,10 @@ export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean 
             canUndo={session.canUndo}
             onUndo={session.undo}
             onClear={session.clearAll}
+            annotationText={session.annotationText}
+            onAnnotationText={session.setAnnotationText}
+            annotationGlyph={session.annotationGlyph}
+            onAnnotationGlyph={session.setAnnotationGlyph}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center text-[11px] text-zinc-500">

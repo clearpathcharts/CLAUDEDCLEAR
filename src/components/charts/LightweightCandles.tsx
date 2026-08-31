@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, BarSeries, CrosshairMode, LineSeries, LineStyle, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
+import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, BarSeries, BaselineSeries, CrosshairMode, LineSeries, LineStyle, LineType, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
@@ -21,7 +21,19 @@ import { ChartPatternHud } from "./ChartPatternHud";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { ChartBackgroundToggle } from "./ChartBackgroundToggle";
+import { ChartSeriesStylePicker } from "./ChartSeriesStylePicker";
 import { useChartDrawings, useRegisterChartDrawingSession } from "./drawings";
+import { useChartSeriesStyle } from "../../hooks/useChartSeriesStyle";
+import {
+  seriesFamily,
+  showsVolumeOverlay,
+  transformOhlc,
+  volumeAtPrice,
+  relativeVolumes,
+  isBrickTransform,
+  type PriceSeriesType,
+  type OhlcBar,
+} from "../../lib/charts/priceSeriesStyles";
 import { Crosshair, Scan, Radio, Focus, Maximize2, Minimize2 } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
@@ -38,9 +50,9 @@ import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-28-FONTS";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-31-TOOLS";
 
-export type PriceSeriesType = "candlestick" | "line" | "area" | "ohlc";
+export type { PriceSeriesType };
 
 type Candle = {
   time: number;
@@ -48,6 +60,7 @@ type Candle = {
   high: number;
   low: number;
   close: number;
+  volume?: number;
 };
 
 /** Seconds per bar for live updates. Keep `1M` (month) distinct from `1m` (minute). */
@@ -148,17 +161,47 @@ type PriceBar = {
   high: number;
   low: number;
   close: number;
+  volume?: number;
   color?: string;
   wickColor?: string;
   borderColor?: string;
 };
 
-function toPriceSeriesData(candles: PriceBar[], type: PriceSeriesType) {
+function hexAlpha(hex: string, a: number): string {
+  const raw = hex.trim().replace("#", "");
+  if (raw.length !== 6) return hex;
+  const r = parseInt(raw.slice(0, 2), 16);
+  const g = parseInt(raw.slice(2, 4), 16);
+  const b = parseInt(raw.slice(4, 6), 16);
+  if (![r, g, b].every(Number.isFinite)) return hex;
+  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, a))})`;
+}
+
+function applyVolumeTint(candles: PriceBar[], up: string, down: string): PriceBar[] {
+  const rel = relativeVolumes(candles);
+  return candles.map((c, i) => {
+    const bull = c.close >= c.open;
+    const tint = hexAlpha(bull ? up : down, 0.35 + rel[i] * 0.35);
+    return { ...c, color: tint, wickColor: bull ? up : down, borderColor: bull ? up : down };
+  });
+}
+
+function toPriceSeriesData(
+  candles: PriceBar[],
+  type: PriceSeriesType,
+  colors: { up: string; down: string },
+) {
   candles = uniqueAscendingTimes(candles);
-  if (type === "line" || type === "area") {
-    return candles.map((c) => ({ time: c.time as Time, value: c.close }));
+  const family = seriesFamily(type);
+  if (family === "line" || family === "area" || family === "baseline" || family === "histogram") {
+    return candles.map((c) => ({
+      time: c.time as Time,
+      value: c.close,
+      color: type === "columns" ? (c.close >= c.open ? colors.up : colors.down) : undefined,
+    }));
   }
-  return candles.map((c) => {
+  const painted = type === "volume_candles" ? applyVolumeTint(candles, colors.up, colors.down) : candles;
+  return painted.map((c) => {
     const bar: CandlestickData<Time> = {
       time: c.time as Time,
       open: c.open,
@@ -179,7 +222,8 @@ function toPriceSeriesUpdate(
   bar: { time: number; open: number; high: number; low: number; close: number },
   type: PriceSeriesType,
 ) {
-  if (type === "line" || type === "area") {
+  const family = seriesFamily(type);
+  if (family === "line" || family === "area" || family === "baseline" || family === "histogram") {
     return { time: bar.time as Time, value: bar.close };
   }
   return {
@@ -217,7 +261,8 @@ export function LightweightCandles({
   publishDrawingSession = false,
   hideChartToolbar = false,
   hidePatternOverlays = false,
-  priceSeriesType = "candlestick",
+  priceSeriesType,
+  onPriceSeriesTypeChange,
   onExpandToggle,
 }: {
   data?: Candle[];
@@ -251,12 +296,16 @@ export function LightweightCandles({
   hideChartToolbar?: boolean;
   /** Hide forming/pattern HUD (Retail Door keeps the chart visually quiet). */
   hidePatternOverlays?: boolean;
-  /** Price series style. Default remains candlestick for existing desks. */
+  /** Price series style. When omitted, the chart remembers the last style in this browser. */
   priceSeriesType?: PriceSeriesType;
+  onPriceSeriesTypeChange?: (type: PriceSeriesType) => void;
   /** Full-window expand for this slot — not zoom-reset. */
   onExpandToggle?: () => void;
 }) {
   const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
+  const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
+  const seriesStyle = priceSeriesType ?? storedSeriesStyle;
+  const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const layoutRef = useRef({ isExpanded, fillParent });
@@ -312,6 +361,10 @@ export function LightweightCandles({
       canUndo: drawings.canUndo,
       undo: drawings.undo,
       clearAll: drawings.clearAll,
+      annotationText: drawings.annotationText,
+      setAnnotationText: drawings.setAnnotationText,
+      annotationGlyph: drawings.annotationGlyph,
+      setAnnotationGlyph: drawings.setAnnotationGlyph,
     });
   }, [
     publishDrawingSession,
@@ -323,11 +376,24 @@ export function LightweightCandles({
     drawings.drawColor,
     drawings.hint,
     drawings.canUndo,
+    drawings.annotationText,
+    drawings.annotationGlyph,
     drawings.setActiveTool,
     drawings.setDrawColor,
     drawings.undo,
     drawings.clearAll,
+    drawings.setAnnotationText,
+    drawings.setAnnotationGlyph,
   ]);
+
+  const marketBarsRef = useRef<OhlcBar[]>([]);
+  useEffect(() => {
+    drawings.setMarketBars(marketBarsRef.current);
+    if (showsVolumeOverlay(seriesStyle) && marketBarsRef.current.length) {
+      const mode = seriesStyle === "tpo" ? "tpo" : seriesStyle === "volume_footprint" ? "footprint" : "profile";
+      drawings.setVolumeOverlay(volumeAtPrice(marketBarsRef.current), mode);
+    }
+  }, [chartReadyKey, drawings.setMarketBars, drawings.setVolumeOverlay, seriesStyle]);
 
   const normalizedProfileId = (profileId || "").toLowerCase();
   const safeProfileId = normalizedProfileId in themeProfiles ? (normalizedProfileId as ThemeProfileId) : "calm_focus";
@@ -465,28 +531,7 @@ export function LightweightCandles({
       ? intensifyCandleColors(rawCandleColors, 1.1)
       : rawCandleColors;
 
-    const series =
-      priceSeriesType === "line"
-        ? chart.addSeries(LineSeries, {
-            color: vividCandles.upColor,
-            lineWidth: 2,
-            title: "Close",
-          })
-        : priceSeriesType === "area"
-          ? chart.addSeries(AreaSeries, {
-              lineColor: vividCandles.upColor,
-              topColor: `${vividCandles.upColor}99`,
-              bottomColor: `${vividCandles.upColor}08`,
-              lineWidth: 2,
-              title: "Close",
-            })
-          : priceSeriesType === "ohlc"
-            ? chart.addSeries(BarSeries, {
-                upColor: vividCandles.upColor,
-                downColor: vividCandles.downColor,
-                thinBars: false,
-              })
-            : chart.addSeries(CandlestickSeries, vividCandles);
+    const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
     candleSeriesRef.current = series;
     setChartReadyKey((k) => k + 1);
 
@@ -597,7 +642,38 @@ export function LightweightCandles({
           }
         }
 
-        series.setData(toPriceSeriesData(chartCandles as PriceBar[], priceSeriesType) as any);
+        const rawBars = chartCandles as PriceBar[];
+        const plotBars = transformOhlc(rawBars, seriesStyle);
+        series.setData(toPriceSeriesData(plotBars, seriesStyle, {
+          up: vividCandles.upColor,
+          down: vividCandles.downColor,
+        }) as any);
+        drawings.setMarketBars(rawBars as OhlcBar[]);
+        marketBarsRef.current = rawBars as OhlcBar[];
+        if (showsVolumeOverlay(seriesStyle)) {
+          const mode = seriesStyle === "tpo" ? "tpo" : seriesStyle === "volume_footprint" ? "footprint" : "profile";
+          drawings.setVolumeOverlay(volumeAtPrice(rawBars as OhlcBar[]), mode);
+        } else {
+          drawings.setVolumeOverlay([], null);
+        }
+        if (seriesStyle === "hlc_area") {
+          const hi = chart.addSeries(LineSeries, {
+            color: hexAlpha(vividCandles.upColor, 0.55),
+            lineWidth: 1,
+            title: "High",
+            priceLineVisible: false,
+            lastValueVisible: false,
+          });
+          const lo = chart.addSeries(LineSeries, {
+            color: hexAlpha(vividCandles.downColor, 0.55),
+            lineWidth: 1,
+            title: "Low",
+            priceLineVisible: false,
+            lastValueVisible: false,
+          });
+          hi.setData(plotBars.map((c) => ({ time: c.time as Time, value: c.high })));
+          lo.setData(plotBars.map((c) => ({ time: c.time as Time, value: c.low })));
+        }
 
         scheduleChartVisionImmediate(
           { candles: tierOptimizedData, symbol: sym, timeframe },
@@ -1003,7 +1079,9 @@ export function LightweightCandles({
               close: newClose,
             };
             if (!active) return;
-            series.update(toPriceSeriesUpdate(updateObj, priceSeriesType) as any);
+            if (!isBrickTransform(seriesStyle)) {
+              series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+            }
             lastCandle = { ...updateObj, time: currentTime };
             return;
           }
@@ -1029,7 +1107,7 @@ export function LightweightCandles({
             close: newClose,
           };
 
-          series.update(toPriceSeriesUpdate(updateObj, priceSeriesType) as any);
+          series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
           lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
 
@@ -1083,7 +1161,7 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), priceSeriesType]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1163,6 +1241,7 @@ export function LightweightCandles({
             <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
             <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
+          <ChartSeriesStylePicker compact value={seriesStyle} onChange={setSeriesStyle} />
           <ChartBackgroundToggle compact />
           <span
             className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
@@ -1327,6 +1406,77 @@ export function LightweightCandles({
       </div>
     </div>
   );
+}
+
+function addStyledPriceSeries(
+  chart: IChartApi,
+  type: PriceSeriesType,
+  vividCandles: {
+    upColor: string;
+    downColor: string;
+    wickUpColor: string;
+    wickDownColor: string;
+    borderUpColor: string;
+    borderDownColor: string;
+  },
+) {
+  const family = seriesFamily(type);
+  if (family === "line") {
+    return chart.addSeries(LineSeries, {
+      color: vividCandles.upColor,
+      lineWidth: 2,
+      title: "Close",
+      lineType: type === "step_line" ? LineType.WithSteps : LineType.Simple,
+      pointMarkersVisible: type === "line_markers",
+    });
+  }
+  if (family === "area") {
+    return chart.addSeries(AreaSeries, {
+      lineColor: vividCandles.upColor,
+      topColor: `${vividCandles.upColor}99`,
+      bottomColor: `${vividCandles.upColor}08`,
+      lineWidth: 2,
+      title: "Close",
+    });
+  }
+  if (family === "baseline") {
+    return chart.addSeries(BaselineSeries, {
+      topLineColor: vividCandles.upColor,
+      bottomLineColor: vividCandles.downColor,
+      topFillColor1: hexAlpha(vividCandles.upColor, 0.28),
+      topFillColor2: hexAlpha(vividCandles.upColor, 0.05),
+      bottomFillColor1: hexAlpha(vividCandles.downColor, 0.05),
+      bottomFillColor2: hexAlpha(vividCandles.downColor, 0.28),
+      lineWidth: 2,
+      title: "Close",
+    });
+  }
+  if (family === "histogram") {
+    return chart.addSeries(HistogramSeries, {
+      color: vividCandles.upColor,
+      title: "Close",
+    });
+  }
+  if (family === "bar") {
+    return chart.addSeries(BarSeries, {
+      upColor: vividCandles.upColor,
+      downColor: vividCandles.downColor,
+      thinBars: false,
+    });
+  }
+  if (type === "hollow") {
+    return chart.addSeries(CandlestickSeries, {
+      ...vividCandles,
+      upColor: "rgba(0,0,0,0)",
+      downColor: vividCandles.downColor,
+      borderVisible: true,
+      wickUpColor: vividCandles.wickUpColor,
+      wickDownColor: vividCandles.wickDownColor,
+      borderUpColor: vividCandles.borderUpColor,
+      borderDownColor: vividCandles.borderDownColor,
+    });
+  }
+  return chart.addSeries(CandlestickSeries, vividCandles);
 }
 
 /**

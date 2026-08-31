@@ -20,6 +20,21 @@ export const RETAIL_PANEL_IDS = [
 
 export type RetailPanelId = (typeof RETAIL_PANEL_IDS)[number];
 
+/** Panels below the chart — holding these is what lets the candles grow. */
+export const RETAIL_BELOW_CHART_IDS = [
+  'context',
+  'volume',
+  'movers',
+  'news',
+  'calendar',
+  'alerts',
+  'changed',
+  'education',
+  'fundamental',
+  'simulation',
+  'workspace',
+] as const satisfies readonly RetailPanelId[];
+
 export const RETAIL_PANEL_META: Record<RetailPanelId, { title: string; blurb: string }> = {
   watchlist: { title: 'My Watchlist', blurb: 'Lists and add-asset search' },
   snapshot: { title: 'Market Snapshot', blurb: 'Price, change, OHLC, volume' },

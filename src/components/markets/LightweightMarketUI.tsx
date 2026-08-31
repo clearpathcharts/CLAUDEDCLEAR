@@ -12,7 +12,9 @@ import { DraggableChartPanel } from '../charts/DraggableChartPanel';
 import { BackToDashboard } from '../nav/BackToDashboard';
 import { PatternScannerPanel } from '../charts/PatternScannerPanel';
 import { ChartDrawingSessionProvider, ChartDrawingToolsPanel } from '../charts/drawings';
+import { ChartSeriesStylePicker } from '../charts/ChartSeriesStylePicker';
 import { NeuroProfilePicker } from '../charts/NeuroProfilePicker';
+import { useChartSeriesStyle } from '../../hooks/useChartSeriesStyle';
 import type { ThemeProfileId } from '../../lib/theme/profiles';
 import { TradingHaltController } from '../../truth/TradingHaltController';
 import { resolveMarketAsset } from '../../constants/marketAssets';
@@ -113,6 +115,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     loadMarketSlots
   );
   const [activeTimeframe, setActiveTimeframe] = useState('1H');
+  const [chartSeriesStyle, setChartSeriesStyle] = useChartSeriesStyle();
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
   const [activeSlot, setActiveSlot] = useState(0);
   /** Phones: stack charts in document flow — absolute drag panels crush Chrome mobile. */
@@ -342,6 +345,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                         useDedicatedPatternPanel
                         publishDrawingSession={Boolean(sym && sym === patternPanelSymbol)}
                         activeIndicators={activeIndicators}
+                        priceSeriesType={chartSeriesStyle}
+                        onPriceSeriesTypeChange={setChartSeriesStyle}
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-zinc-600 font-mono text-xs text-center px-6">
@@ -432,7 +437,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 />
                 <ChartDrawingToolsPanel compact />
               </div>
-              <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between">
+              <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between gap-2">
                 <div>
                   {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
                     <button
@@ -446,6 +451,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                     </button>
                   ))}
                 </div>
+                <ChartSeriesStylePicker compact value={chartSeriesStyle} onChange={setChartSeriesStyle} />
               </div>
 
               <details
@@ -574,6 +580,8 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           useDedicatedPatternPanel
                           publishDrawingSession={slot.symbol === patternPanelSymbol}
                           activeIndicators={activeIndicators}
+                          priceSeriesType={chartSeriesStyle}
+                          onPriceSeriesTypeChange={setChartSeriesStyle}
                         />
                       </div>
                     ) : (
