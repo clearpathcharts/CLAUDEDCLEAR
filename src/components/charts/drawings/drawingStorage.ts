@@ -1,20 +1,22 @@
-import type { ChartDrawing, DrawingColor } from "./types";
+import type { ChartDrawing, ChartPoint, DrawingColor } from "./types";
 import { DRAWING_COLORS } from "./types";
+import { DRAWING_TOOLS } from "./toolCatalog";
 
 const PREFIX = "cp_drawings:";
+const KIND_SET = new Set(DRAWING_TOOLS.map((t) => t.id).filter((id) => id !== "select"));
 
 export function drawingsStorageKey(symbol: string, timeframe: string): string {
   return `${PREFIX}${symbol.toUpperCase()}:${(timeframe || "1h").trim()}`;
 }
 
-function isPoint(v: unknown): v is { time: number; price: number } {
+function isPoint(v: unknown): v is ChartPoint {
   return (
     !!v &&
     typeof v === "object" &&
     typeof (v as { time: unknown }).time === "number" &&
     typeof (v as { price: unknown }).price === "number" &&
-    Number.isFinite((v as { time: number }).time) &&
-    Number.isFinite((v as { price: number }).price)
+    Number.isFinite((v as ChartPoint).time) &&
+    Number.isFinite((v as ChartPoint).price)
   );
 }
 
@@ -22,46 +24,51 @@ function isColor(v: unknown): v is DrawingColor {
   return typeof v === "string" && (DRAWING_COLORS as string[]).includes(v);
 }
 
+function collectPoints(d: Record<string, unknown>): ChartPoint[] {
+  if (Array.isArray(d.points)) {
+    return d.points.filter(isPoint);
+  }
+  const pts: ChartPoint[] = [];
+  if (isPoint(d.p1)) pts.push(d.p1);
+  if (isPoint(d.p2)) pts.push(d.p2);
+  if (isPoint(d.p3)) pts.push(d.p3);
+  if (isPoint(d.point)) pts.push(d.point);
+  if (pts.length === 0 && typeof d.price === "number" && Number.isFinite(d.price)) {
+    pts.push({ time: typeof d.time === "number" && Number.isFinite(d.time) ? d.time : 0, price: d.price });
+  } else if (pts.length === 0 && typeof d.time === "number" && Number.isFinite(d.time)) {
+    pts.push({ time: d.time, price: 0 });
+  }
+  return pts;
+}
+
+const LEGACY_KIND: Record<string, ChartDrawing["kind"]> = {
+  trend: "trend",
+  ray: "ray",
+  fib: "fib",
+  rectangle: "rectangle",
+  ellipse: "ellipse",
+  arrow: "arrow",
+  measure: "measure",
+  gann: "gann",
+  horizontal: "horizontal",
+  vertical: "vertical",
+  triangle: "triangle",
+  channel: "channel",
+  pitchfork: "pitchfork",
+  text: "text",
+};
+
 function sanitizeDrawing(raw: unknown): ChartDrawing | null {
   if (!raw || typeof raw !== "object") return null;
   const d = raw as Record<string, unknown>;
   if (typeof d.id !== "string" || typeof d.kind !== "string") return null;
+  const mapped = LEGACY_KIND[d.kind] ?? (KIND_SET.has(d.kind as ChartDrawing["kind"]) ? (d.kind as ChartDrawing["kind"]) : null);
+  if (!mapped) return null;
   const color: DrawingColor = isColor(d.color) ? d.color : "#00D9FF";
-
-  switch (d.kind) {
-    case "trend":
-    case "ray":
-    case "fib":
-    case "rectangle":
-    case "ellipse":
-    case "arrow":
-    case "measure":
-    case "gann":
-      if (!isPoint(d.p1) || !isPoint(d.p2)) return null;
-      return { id: d.id, kind: d.kind, p1: d.p1, p2: d.p2, color };
-    case "horizontal":
-      if (typeof d.price !== "number" || !Number.isFinite(d.price)) return null;
-      return { id: d.id, kind: "horizontal", price: d.price, color };
-    case "vertical":
-      if (typeof d.time !== "number" || !Number.isFinite(d.time)) return null;
-      return { id: d.id, kind: "vertical", time: d.time, color };
-    case "triangle":
-    case "channel":
-    case "pitchfork":
-      if (!isPoint(d.p1) || !isPoint(d.p2) || !isPoint(d.p3)) return null;
-      return { id: d.id, kind: d.kind, p1: d.p1, p2: d.p2, p3: d.p3, color };
-    case "text":
-      if (!isPoint(d.point) || typeof d.text !== "string") return null;
-      return {
-        id: d.id,
-        kind: "text",
-        point: d.point,
-        text: d.text.slice(0, 80),
-        color,
-      };
-    default:
-      return null;
-  }
+  const points = collectPoints(d);
+  if (points.length === 0) return null;
+  const text = typeof d.text === "string" ? d.text.slice(0, 160) : undefined;
+  return { id: d.id, kind: mapped, color, points, text };
 }
 
 export function loadDrawings(symbol: string, timeframe: string): ChartDrawing[] {
@@ -87,3 +94,5 @@ export function saveDrawings(
     /* quota / private mode */
   }
 }
+
+export { sanitizeDrawing };

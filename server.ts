@@ -3185,12 +3185,13 @@ ${CPT_SITE_GUIDE}`;
 
       // Gateway already validates — skip a second validateTick on history.
 
-      const formatted = data.values.map((v: any) => [
+                      const formatted = data.values.map((v: any) => [
         new Date(v.datetime).getTime(),
         parseFloat(v.open),
         parseFloat(v.high),
         parseFloat(v.low),
-        parseFloat(v.close)
+        parseFloat(v.close),
+        v.volume != null && v.volume !== "" ? parseFloat(v.volume) : undefined,
       ]);
       
       res.json(formatted);
