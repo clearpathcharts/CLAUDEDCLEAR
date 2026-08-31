@@ -23,6 +23,11 @@ import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeS
 import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
+import {
+  parseHeldPanels,
+  RETAIL_PANEL_IDS,
+  RETAIL_HELD_STORAGE_KEY,
+} from '../src/components/desks/retailHeldPanels.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -82,6 +87,7 @@ const srcFiles = [
   'src/components/desks/institutional/useInstitutionalIntelligence.ts',
   'src/components/desks/FundamentalTraderDesk.tsx',
   'src/components/desks/RetailTraderDesk.tsx',
+  'src/components/desks/RetailHeldFile.tsx',
   'src/components/desks/WhatAmILookingAt.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/DeskRoute.tsx',
@@ -97,6 +103,11 @@ for (const rel of srcFiles) {
   if (rel === 'src/App.tsx') {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
+    assert.match(text, /isFundamentalDeskPath/);
+    assert.match(text, /!isFundamentalDeskPath\(currentPath\)/);
+    assert.match(text, /publicLearnDeskTab/);
+    assert.match(text, /deskTab=\{publicLearnDeskTab\(currentPath\)\}/);
+    assert.match(text, /FundamentalResearchDesk/);
   }
   if (rel === 'src/components/Auth.tsx') {
     assert.match(text, /navigateToDesk/);
@@ -142,6 +153,11 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
   }
+  if (rel === 'src/components/desks/RetailHeldFile.tsx') {
+    assert.match(text, /data-retail-held-file/);
+    assert.match(text, /Held panels/);
+    assert.match(text, /onRestoreAll/);
+  }
   if (rel.endsWith('WhatAmILookingAt.tsx')) {
     assert.match(text, /InstitutionalRegistry/);
     assert.match(text, /What am I looking at/);
@@ -175,6 +191,9 @@ for (const rel of srcFiles) {
     assert.match(text, /Blackout/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /data-retail-cockpit/);
+    assert.match(text, /RetailHeldFile/);
+    assert.match(text, /useRetailHeldPanels/);
+    assert.match(text, /onDismiss/);
     assert.doesNotMatch(text, /Place order|order ticket/i);
     assert.doesNotMatch(text, /\bBUY\b|\bSELL\b/);
   }
@@ -201,6 +220,8 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /id: 'StrictlyCharts', icon: BarChart3, label: 'NEURODIVERGENT UI'/);
     assert.doesNotMatch(text, /id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS'/);
+    assert.doesNotMatch(text, /navigateToDesk\('fundamental'\)/);
+    assert.match(text, /FundamentalsPanel/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
@@ -215,6 +236,23 @@ assert.doesNotMatch(uiPages, /href="\/\?profile=/);
 
 const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);
+
+const bentoSrc = fs.readFileSync(path.join(root, 'src/components/desks/institutional/Bento.tsx'), 'utf8');
+assert.match(bentoSrc, /onDismiss/);
+assert.match(bentoSrc, /rt-bento-x/);
+assert.match(bentoSrc, /Move .* to the held file/);
+
+const heldFileSrc = fs.readFileSync(path.join(root, 'src/components/desks/RetailHeldFile.tsx'), 'utf8');
+assert.match(heldFileSrc, /data-retail-held-file/);
+assert.match(heldFileSrc, /Held panels/);
+assert.match(heldFileSrc, /Restore/);
+
+assert.equal(RETAIL_HELD_STORAGE_KEY, 'clearpath_retail_held_panels');
+assert.ok(RETAIL_PANEL_IDS.includes('watchlist'));
+assert.ok(RETAIL_PANEL_IDS.includes('education'));
+assert.deepEqual(parseHeldPanels('["news","alerts"]'), ['news', 'alerts']);
+assert.deepEqual(parseHeldPanels('["nope", "news", "news"]'), ['news']);
+assert.deepEqual(parseHeldPanels('not-json'), []);
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.ok(r != null && Math.abs(r - 1) < 1e-9);

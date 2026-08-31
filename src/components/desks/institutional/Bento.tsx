@@ -6,6 +6,7 @@ export function Bento({
   expanded,
   onToggle,
   onExpand,
+  onDismiss,
   children,
   className = '',
   collapsedSummary,
@@ -15,6 +16,7 @@ export function Bento({
   expanded?: boolean;
   onToggle?: () => void;
   onExpand?: () => void;
+  onDismiss?: () => void;
   children: React.ReactNode;
   className?: string;
   collapsedSummary?: React.ReactNode;
@@ -22,7 +24,7 @@ export function Bento({
   const open = expanded !== false;
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] ${className}`}
+      className={`relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] ${className}`}
     >
       <header className="flex shrink-0 items-center gap-2 border-b border-[var(--desk-border)] px-2.5 py-1.5">
         <h3 className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
@@ -49,6 +51,17 @@ export function Bento({
             className="shrink-0 text-[8px] font-black uppercase tracking-wider text-[var(--desk-muted)] hover:text-[var(--desk-text)]"
           >
             {open ? 'Collapse' : 'Open'}
+          </button>
+        ) : null}
+        {onDismiss ? (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={`Remove ${title} from the desk`}
+            title={`Move ${title} to the held file`}
+            className="rt-bento-x"
+          >
+            ×
           </button>
         ) : null}
       </header>

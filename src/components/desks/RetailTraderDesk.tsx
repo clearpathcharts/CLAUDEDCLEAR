@@ -20,6 +20,8 @@ import {
 } from '../../lib/traderDesks';
 import { Bento, KV, Unavail } from './institutional/Bento';
 import WhatAmILookingAt from './WhatAmILookingAt';
+import RetailHeldFile from './RetailHeldFile';
+import { useRetailHeldPanels, type RetailPanelId } from './retailHeldPanels';
 import type { Candle } from '../../types/indicators';
 import './retailDesk.css';
 
@@ -220,6 +222,7 @@ export default function RetailTraderDesk() {
   const [simDraft, setSimDraft] = useState('');
   const [lastView, setLastView] = useState<LastView | null>(() => readJson(LAST_VIEW_KEY, null));
   const [moverTab, setMoverTab] = useState<'gainers' | 'decliners' | 'active'>('gainers');
+  const heldPanels = useRetailHeldPanels();
 
   const pick = useCallback((raw: string) => {
     setSymbol(resolveMarketAsset(raw).value);
@@ -486,6 +489,13 @@ export default function RetailTraderDesk() {
   const utcHour = new Date().getUTCHours();
   const isFx = /USD|EUR|GBP|JPY|AUD|CAD|CHF|NZD/.test(symbol) && symbol.length <= 7;
   const quiet = focusMode || blackout;
+  const showWatch = !quiet && !heldPanels.isHeld('watchlist');
+  const showSnap = !quiet && !heldPanels.isHeld('snapshot');
+  const stageSides: 'both' | 'watch' | 'snap' | 'none' =
+    showWatch && showSnap ? 'both' : showWatch ? 'watch' : showSnap ? 'snap' : 'none';
+  const panel = (id: RetailPanelId) => ({
+    onDismiss: () => heldPanels.hold(id),
+  });
 
   const liveQuotes = Object.values(quotes).filter((q) => q.live && q.pct != null);
   const gainers = [...liveQuotes].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)).slice(0, 5);
@@ -701,7 +711,7 @@ export default function RetailTraderDesk() {
 
   return (
     <ChartDrawingSessionProvider>
-      <div className="rt-desk mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-2 p-2 md:p-3" data-retail-door="" data-retail-workspace="" data-retail-cockpit="">
+      <div className="rt-desk mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-2 p-2 md:p-3" data-retail-door="" data-retail-workspace="" data-retail-cockpit="" data-held-count={heldPanels.held.length}>
         <div className="flex flex-wrap items-end justify-between gap-2 px-1">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--desk-muted)]">ClearPath Trader</p>
@@ -744,10 +754,10 @@ export default function RetailTraderDesk() {
           </div>
         </div>
 
-        <div className={quiet ? 'grid grid-cols-1' : 'rt-stage'}>
-          {!quiet ? (
+        <div className={quiet ? 'grid grid-cols-1' : 'rt-stage'} data-sides={quiet ? undefined : stageSides}>
+          {showWatch ? (
             <div className="rt-watch min-h-0">
-              <Bento title="My Watchlist">
+              <Bento title="My Watchlist" {...panel('watchlist')}>
                 <div className="mb-2 flex flex-wrap gap-1">
                   {LIST_NAMES.map((name) => (
                     <button
@@ -826,9 +836,9 @@ export default function RetailTraderDesk() {
 
           <div className="rt-chart min-h-0">{chartBlock}</div>
 
-          {!quiet ? (
+          {showSnap ? (
             <div className="rt-snap min-h-0">
-              <Bento title="Market Snapshot" status={snap?.live ? (snap.delayed ? 'DELAYED' : 'LIVE') : 'UNAVAILABLE'}>
+              <Bento title="Market Snapshot" status={snap?.live ? (snap.delayed ? 'DELAYED' : 'LIVE') : 'UNAVAILABLE'} {...panel('snapshot')}>
                 <KV k="Price" v={snap?.live ? fmt(snap.price) : 'DATA UNAVAILABLE'} />
                 <KV
                   k="Change"
@@ -856,7 +866,8 @@ export default function RetailTraderDesk() {
         {!quiet ? (
           <>
             <div className="rt-bento-row">
-              <Bento title="Market Context">
+              {heldPanels.isHeld('context') ? null : (
+              <Bento title="Market Context" {...panel('context')}>
                 <div className="rt-bento-body">
                   <KV k="Trend" v={last && ema20 != null ? (last.close >= ema20 ? 'Price above 20 EMA' : 'Price below 20 EMA') : 'DATA UNAVAILABLE'} />
                   <KV k="Session" v={isFx ? openSessions(utcHour) : 'FX session windows only'} />
@@ -871,7 +882,9 @@ export default function RetailTraderDesk() {
                   </p>
                 </div>
               </Bento>
-              <Bento title="Volume / Price">
+              )}
+              {heldPanels.isHeld('volume') ? null : (
+              <Bento title="Volume / Price" {...panel('volume')}>
                 <div className="rt-bento-body">
                   <KV k="Quote volume" v={snap?.volume != null ? fmt(snap.volume, 0) : 'DATA UNAVAILABLE'} />
                   <KV k="Last bar volume" v={vol.last != null ? fmt(vol.last, 0) : 'DATA UNAVAILABLE'} />
@@ -884,7 +897,9 @@ export default function RetailTraderDesk() {
                   </p>
                 </div>
               </Bento>
-              <Bento title="Market Movers" status="loaded quotes only">
+              )}
+              {heldPanels.isHeld('movers') ? null : (
+              <Bento title="Market Movers" status="loaded quotes only" {...panel('movers')}>
                 <div className="mb-2 flex flex-wrap gap-1">
                   {(['gainers', 'decliners', 'active'] as const).map((tab) => (
                     <button key={tab} type="button" className={`rt-tool ${moverTab === tab ? 'is-on' : ''}`} onClick={() => setMoverTab(tab)}>
@@ -916,10 +931,12 @@ export default function RetailTraderDesk() {
                   </p>
                 </div>
               </Bento>
+              )}
             </div>
 
             <div className="rt-bento-row">
-              <Bento title="News">
+              {heldPanels.isHeld('news') ? null : (
+              <Bento title="News" {...panel('news')}>
                 <div className="rt-bento-body">
                   {newsErr ? <p className="text-[10px] text-rose-400">{newsErr}</p> : null}
                   {news.length === 0 && !newsErr ? <Unavail /> : null}
@@ -944,7 +961,9 @@ export default function RetailTraderDesk() {
                   </a>
                 </div>
               </Bento>
-              <Bento title="Economic Calendar" status="wire — not a timed calendar">
+              )}
+              {heldPanels.isHeld('calendar') ? null : (
+              <Bento title="Economic Calendar" status="wire — not a timed calendar" {...panel('calendar')}>
                 <div className="rt-bento-body">
                   <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
                     Timed country/importance rows DATA UNAVAILABLE. Economic wire headlines only.
@@ -962,7 +981,9 @@ export default function RetailTraderDesk() {
                   </ul>
                 </div>
               </Bento>
-              <Bento title="Alerts / Events">
+              )}
+              {heldPanels.isHeld('alerts') ? null : (
+              <Bento title="Alerts / Events" {...panel('alerts')}>
                 <div className="rt-bento-body">
                   <p className="mb-2 text-[9px] uppercase text-[var(--desk-muted)]">
                     You set the threshold. This is a reminder, not a recommendation.
@@ -1015,9 +1036,11 @@ export default function RetailTraderDesk() {
                   )}
                 </div>
               </Bento>
+              )}
             </div>
 
-            <Bento title="What changed?" collapsedSummary="Since last stored view">
+            {heldPanels.isHeld('changed') ? null : (
+            <Bento title="What changed?" collapsedSummary="Since last stored view" {...panel('changed')}>
               {lastView && lastView.symbol === symbol ? (
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                   <KV
@@ -1043,9 +1066,11 @@ export default function RetailTraderDesk() {
                 <p className="rt-empty">First view this session — a comparison stores after a few seconds on this asset.</p>
               )}
             </Bento>
+            )}
 
-            <div className="rt-bento-row--4 rt-bento-row">
-              <Bento title="Education" onExpand={() => setEduOpen(true)}>
+            <div className="rt-bento-row">
+              {heldPanels.isHeld('education') ? null : (
+              <Bento title="Education" onExpand={() => setEduOpen(true)} {...panel('education')}>
                 <div className={eduOpen ? '' : 'max-h-[140px] overflow-auto'}>
                   <WhatAmILookingAt compact={!eduOpen} />
                 </div>
@@ -1057,7 +1082,9 @@ export default function RetailTraderDesk() {
                   View education
                 </button>
               </Bento>
-              <Bento title="Fundamental Snapshot" status={fundStatus === 'live' ? 'LIVE' : 'UNAVAILABLE'}>
+              )}
+              {heldPanels.isHeld('fundamental') ? null : (
+              <Bento title="Fundamental Snapshot" status={fundStatus === 'live' ? 'LIVE' : 'UNAVAILABLE'} {...panel('fundamental')}>
                 {fundStatus !== 'live' || !fund ? (
                   <Unavail label="Fundamental snapshot DATA UNAVAILABLE for this asset or vendor" />
                 ) : (
@@ -1078,7 +1105,9 @@ export default function RetailTraderDesk() {
                   View fundamentals
                 </button>
               </Bento>
-              <Bento title="Simulation Lab">
+              )}
+              {heldPanels.isHeld('simulation') ? null : (
+              <Bento title="Simulation Lab" {...panel('simulation')}>
                 <p className="text-[11px] leading-relaxed text-[var(--desk-muted)]">
                   Simulated trading. No real money. No broker execution. Notes stay on this device.
                 </p>
@@ -1108,7 +1137,9 @@ export default function RetailTraderDesk() {
                   ))}
                 </ul>
               </Bento>
-              <Bento title="Workspace">
+              )}
+              {heldPanels.isHeld('workspace') ? null : (
+              <Bento title="Workspace" {...panel('workspace')}>
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
@@ -1130,6 +1161,7 @@ export default function RetailTraderDesk() {
                   market data may be delayed or subject to source availability
                 </p>
               </Bento>
+              )}
             </div>
           </>
         ) : (
@@ -1153,6 +1185,17 @@ export default function RetailTraderDesk() {
               <WhatAmILookingAt />
             </div>
           </div>
+        ) : null}
+
+        {!quiet ? (
+          <RetailHeldFile
+            held={heldPanels.held}
+            open={heldPanels.fileOpen}
+            justHeld={heldPanels.justHeld}
+            onOpenChange={heldPanels.setFileOpen}
+            onRestore={heldPanels.restore}
+            onRestoreAll={heldPanels.restoreAll}
+          />
         ) : null}
       </div>
     </ChartDrawingSessionProvider>
