@@ -244,6 +244,8 @@ import {
   getBoardAccessCode,
   FMP_ALLOWED_ENDPOINTS,
   FMP_LOOKUP_KINDS,
+  buildFmpStableLookupUrl,
+  buildFmpStableSymbolUrl,
 } from './src/server/secrets';
 import {
   resolveAuthenticatedUid,
@@ -3685,16 +3687,9 @@ ${CPT_SITE_GUIDE}`;
     if (kind === 'search' && (!q || q.length > 64)) {
       return res.status(400).json({ error: 'query required' });
     }
-    const key = encodeURIComponent(apiKey);
-    let url = '';
-    if (kind === 'search') {
-      url = `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(q)}&limit=20&apikey=${key}`;
-    } else if (kind === 'news') {
-      url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${encodeURIComponent(symbol)}&limit=30&apikey=${key}`;
-    } else if (kind === 'insider') {
-      url = `https://financialmodelingprep.com/api/v3/insider-trading?symbol=${encodeURIComponent(symbol)}&limit=30&apikey=${key}`;
-    } else {
-      url = `https://financialmodelingprep.com/api/v3/stock_peers?symbol=${encodeURIComponent(symbol)}&apikey=${key}`;
+    const url = buildFmpStableLookupUrl(kind, apiKey, { symbol, q });
+    if (!url) {
+      return res.status(400).json({ error: 'Lookup kind not allowed' });
     }
     try {
       const fmpRes = await fetch(url, { redirect: 'error' });
@@ -3729,10 +3724,13 @@ ${CPT_SITE_GUIDE}`;
     const safeLimit = limit ? Math.min(Math.max(parseInt(String(limit), 10) || 1, 1), 40) : undefined;
 
     try {
-      const params = new URLSearchParams({ apikey: apiKey });
-      if (safeLimit) params.set('limit', String(safeLimit));
-      if (period === 'annual' || period === 'quarter') params.set('period', period);
-      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${encodeURIComponent(symbol)}?${params.toString()}`;
+      const url = buildFmpStableSymbolUrl(endpoint, symbol, apiKey, {
+        limit: safeLimit,
+        period: typeof period === 'string' ? period : undefined,
+      });
+      if (!url) {
+        return res.status(400).json({ error: 'Endpoint not allowed' });
+      }
       const fmpRes = await fetch(url, { redirect: 'error' });
       if (!fmpRes.ok) {
          throw new Error(`FMP returned ${fmpRes.status}`);

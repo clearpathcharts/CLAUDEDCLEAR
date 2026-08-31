@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { runScenario } from '../src/fundamental/scenario.ts';
 import { surpriseVsConsensus, yoyGrowth, cagr, formatCompactUsd } from '../src/fundamental/format.ts';
 import { parseDeskPath, symbolFromDeskPath } from '../src/lib/traderDesks.ts';
-import { FMP_ALLOWED_ENDPOINTS, FMP_LOOKUP_KINDS } from '../src/server/secrets.ts';
+import { FMP_ALLOWED_ENDPOINTS, FMP_LOOKUP_KINDS, buildFmpStableLookupUrl, buildFmpStableSymbolUrl } from '../src/server/secrets.ts';
 import { searchIdentityCatalog } from '../src/fundamental/searchCatalog.ts';
 import { coverageExposure, concentrationBand, asPercent } from '../src/fundamental/viz.ts';
 
@@ -96,7 +96,18 @@ assert.ok(nvda.some((h) => h.ticker === 'NVDA'));
 assert.ok(nvda[0].assetType);
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
+const secrets = fs.readFileSync(path.join(root, 'src/server/secrets.ts'), 'utf8');
 assert.match(server, /\/api\/fmp\/lookup/);
-assert.match(server, /period === 'annual' \|\| period === 'quarter'/);
+assert.match(secrets, /opts\?\.period === 'annual' \|\| opts\?\.period === 'quarter'/);
+assert.match(server, /buildFmpStableSymbolUrl/);
+assert.match(server, /buildFmpStableLookupUrl/);
+assert.doesNotMatch(server, /financialmodelingprep\.com\/api\/v3/);
+
+const quoteUrl = buildFmpStableSymbolUrl('quote', 'AAPL', 'test-key');
+assert.match(String(quoteUrl), /financialmodelingprep\.com\/stable\/quote\?/);
+assert.match(String(quoteUrl), /symbol=AAPL/);
+assert.doesNotMatch(String(quoteUrl), /\/api\/v3\//);
+const searchUrl = buildFmpStableLookupUrl('search', 'test-key', { q: 'NVDA' });
+assert.match(String(searchUrl), /\/stable\/search-symbol\?/);
 
 console.log('fundamental-door.selftest: ok');
