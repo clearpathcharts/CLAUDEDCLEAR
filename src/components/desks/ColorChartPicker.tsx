@@ -5,9 +5,22 @@ import {
   COLOR_CHART_PRESETS,
   DESK_COLOR_TARGETS,
   DESK_COLOR_TARGET_META,
+  isPlotColorTarget,
   neuroPastelSwatches,
+  type DeskColorOverrides,
   type DeskColorTarget,
 } from '../../lib/deskColorChart';
+
+function formatSavedAt(iso: string): string {
+  if (iso === 'device-local') return 'already on this device';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+}
+
+function savedSlots(overrides: DeskColorOverrides): string[] {
+  return DESK_COLOR_TARGETS.filter((id) => overrides[id]).map((id) => DESK_COLOR_TARGET_META[id].label);
+}
 
 type Props = {
   target: DeskColorTarget;
@@ -18,8 +31,16 @@ type Props = {
   onPick: (hex: string) => void;
   onOpacity: (value: number) => void;
   onReset: () => void;
+  onSave: () => void;
+  onSaveAll: () => void;
+  onDiscard: () => void;
+  isDirty: boolean;
+  savedAt?: string | null;
+  lastSaveScope?: 'desk' | 'all' | null;
+  overrides?: DeskColorOverrides;
   deskLabel: string;
   showPastels?: boolean;
+  noPlotOnDesk?: boolean;
 };
 
 function Swatch({
@@ -58,8 +79,16 @@ export default function ColorChartPicker({
   onPick,
   onOpacity,
   onReset,
+  onSave,
+  onSaveAll,
+  onDiscard,
+  isDirty,
+  savedAt,
+  lastSaveScope,
+  overrides = {},
   deskLabel,
   showPastels = false,
+  noPlotOnDesk = false,
 }: Props) {
   const fileId = useId();
   const customRef = useRef<HTMLInputElement | null>(null);
@@ -102,6 +131,57 @@ export default function ColorChartPicker({
         {deskLabel} · {meta.hint}
         {selected ? ` · ${selected}` : ''}
       </p>
+
+      {noPlotOnDesk && isPlotColorTarget(target) ? (
+        <p className="color-chart-warn" data-color-chart-no-plot>
+          This desk has no price plot. Save still keeps the color. Use Save to all desks to paint
+          charts, candles, and indicators on Retail, Institutional, and Neurodivergent.
+        </p>
+      ) : null}
+
+      <div className="color-chart-savebar" data-color-chart-savebar>
+        <button
+          type="button"
+          data-color-chart-save
+          className="color-chart-save"
+          disabled={!isDirty}
+          onClick={onSave}
+        >
+          Save colors
+        </button>
+        <button
+          type="button"
+          data-color-chart-save-all
+          className="color-chart-save-all"
+          onClick={onSaveAll}
+        >
+          Save to all desks
+        </button>
+        <button
+          type="button"
+          data-color-chart-discard
+          className="color-chart-discard"
+          disabled={!isDirty}
+          onClick={onDiscard}
+        >
+          Discard
+        </button>
+        <p className="color-chart-save-status" data-color-chart-save-status>
+          {isDirty
+            ? 'Unsaved changes — preview only until you save'
+            : lastSaveScope === 'all'
+              ? 'Saved to all four desks on this device'
+              : savedAt
+                ? `Saved on this device · ${formatSavedAt(savedAt)}`
+                : 'No saved colors on this desk yet'}
+        </p>
+      </div>
+
+      {savedSlots(overrides).length ? (
+        <p className="color-chart-slots" data-color-chart-slots>
+          Saved slots: {savedSlots(overrides).join(' · ')}
+        </p>
+      ) : null}
 
       <div className="color-chart-panel">
         <div className="color-chart-row" role="listbox" aria-label="Grayscale">

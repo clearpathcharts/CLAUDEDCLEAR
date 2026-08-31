@@ -3,13 +3,18 @@ import { readDeskPaper, rememberDeskPaper, type DeskPaper, type TraderDeskId } f
 import {
   broadcastDeskColorChart,
   clearDeskColorOverrides,
+  cloneStore,
+  copyDeskColorsToAll,
   deskCssVars,
   loadDeskColorChartStore,
+  normalizeOverrides,
+  overridesEqual,
   resolveDeskOverrides,
   resolveDeskVisualPaint,
   saveDeskColorChartStore,
   setDeskColorOpacity,
   setDeskColorOverride,
+  stampDeskSavedAt,
   type DeskColorChartStore,
   type DeskColorOverrides,
   type DeskColorTarget,
@@ -30,6 +35,12 @@ type DeskAppearanceValue = {
   applyColor: (hex: string) => void;
   setOpacity: (value: number) => void;
   resetVisual: () => void;
+  saveDesk: () => void;
+  saveAllDesks: () => void;
+  discardDraft: () => void;
+  isDirty: boolean;
+  savedAt: string | null;
+  lastSaveScope: 'desk' | 'all' | null;
   visualPaint: DeskVisualPaint;
   cssVars: Record<string, string>;
 };
@@ -44,9 +55,11 @@ export function DeskAppearanceProvider({
   children: React.ReactNode;
 }) {
   const [paper, setPaperState] = useState<DeskPaper>(() => readDeskPaper());
-  const [store, setStore] = useState<DeskColorChartStore>(() => loadDeskColorChartStore());
+  const [saved, setSaved] = useState<DeskColorChartStore>(() => loadDeskColorChartStore());
+  const [draft, setDraft] = useState<DeskColorChartStore>(() => cloneStore(loadDeskColorChartStore()));
   const [pickerOpen, setPickerOpen] = useState(false);
   const [target, setTarget] = useState<DeskColorTarget>('background');
+  const [lastSaveScope, setLastSaveScope] = useState<'desk' | 'all' | null>(null);
 
   const setPaper = useCallback((next: DeskPaper) => {
     setPaperState(next);
@@ -61,33 +74,59 @@ export function DeskAppearanceProvider({
     });
   }, []);
 
-  const commit = useCallback((next: DeskColorChartStore) => {
-    setStore(next);
+  const persist = useCallback((next: DeskColorChartStore, scope: 'desk' | 'all' | null) => {
     saveDeskColorChartStore(next);
     broadcastDeskColorChart();
+    setSaved(cloneStore(next));
+    setDraft(cloneStore(next));
+    setLastSaveScope(scope);
   }, []);
 
   const applyColor = useCallback(
     (hex: string) => {
-      commit(setDeskColorOverride(store, deskId, target, hex));
+      setDraft((prev) => setDeskColorOverride(prev, deskId, target, hex));
+      setLastSaveScope(null);
     },
-    [commit, deskId, store, target],
+    [deskId, target],
   );
 
   const setOpacity = useCallback(
     (value: number) => {
-      commit(setDeskColorOpacity(store, deskId, value));
+      setDraft((prev) => setDeskColorOpacity(prev, deskId, value));
+      setLastSaveScope(null);
     },
-    [commit, deskId, store],
+    [deskId],
   );
 
-  const resetVisual = useCallback(() => {
-    commit(clearDeskColorOverrides(store, deskId));
-  }, [commit, deskId, store]);
+  const saveDesk = useCallback(() => {
+    persist(stampDeskSavedAt(draft, deskId), 'desk');
+  }, [draft, deskId, persist]);
 
-  const overrides = useMemo(() => resolveDeskOverrides(store, deskId), [store, deskId]);
+  const saveAllDesks = useCallback(() => {
+    persist(copyDeskColorsToAll(draft, deskId), 'all');
+  }, [draft, deskId, persist]);
+
+  const resetVisual = useCallback(() => {
+    const cleared = stampDeskSavedAt(clearDeskColorOverrides(draft, deskId), deskId);
+    persist(cleared, 'desk');
+  }, [draft, deskId, persist]);
+
+  const discardDraft = useCallback(() => {
+    setDraft(cloneStore(saved));
+    setLastSaveScope(null);
+  }, [saved]);
+
+  const overrides = useMemo(() => resolveDeskOverrides(draft, deskId), [draft, deskId]);
+  const savedOverrides = useMemo(() => resolveDeskOverrides(saved, deskId), [saved, deskId]);
+  const isDirty = useMemo(
+    () => !overridesEqual(overrides, savedOverrides) || draft.recents.join() !== saved.recents.join(),
+    [overrides, savedOverrides, draft.recents, saved.recents],
+  );
   const visualPaint = useMemo(() => resolveDeskVisualPaint(overrides), [overrides]);
   const cssVars = useMemo(() => deskCssVars(overrides), [overrides]);
+  const savedAt =
+    saved.savedAt?.[deskId] ??
+    (Object.keys(normalizeOverrides(savedOverrides)).length ? 'device-local' : null);
 
   const value = useMemo(
     () => ({
@@ -100,10 +139,16 @@ export function DeskAppearanceProvider({
       target,
       setTarget,
       overrides,
-      recents: store.recents,
+      recents: draft.recents,
       applyColor,
       setOpacity,
       resetVisual,
+      saveDesk,
+      saveAllDesks,
+      discardDraft,
+      isDirty,
+      savedAt,
+      lastSaveScope,
       visualPaint,
       cssVars,
     }),
@@ -115,10 +160,16 @@ export function DeskAppearanceProvider({
       pickerOpen,
       target,
       overrides,
-      store.recents,
+      draft.recents,
       applyColor,
       setOpacity,
       resetVisual,
+      saveDesk,
+      saveAllDesks,
+      discardDraft,
+      isDirty,
+      savedAt,
+      lastSaveScope,
       visualPaint,
       cssVars,
     ],
