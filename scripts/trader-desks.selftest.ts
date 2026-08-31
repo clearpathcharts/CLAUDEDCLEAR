@@ -111,6 +111,8 @@ const srcFiles = [
   'src/components/desks/neuro/neuroProfile.ts',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
+  'src/components/desks/ColorChartPicker.tsx',
+  'src/lib/deskColorChart.ts',
   'src/components/Dashboard.tsx',
   'src/App.tsx',
   'src/components/Auth.tsx',
@@ -268,6 +270,19 @@ for (const rel of srcFiles) {
     assert.match(text, /data-ceo-ops-link/);
     assert.match(text, /\/ceo/);
     assert.match(text, /isFounderEmail/);
+    assert.match(text, /ColorChartPicker/);
+    assert.match(text, /data-color-chart-toggle/);
+  }
+  if (rel === 'src/components/desks/ColorChartPicker.tsx') {
+    assert.match(text, /data-color-chart/);
+    assert.match(text, /COLOR_CHART_HUE_GRID/);
+    assert.match(text, /Opacity/);
+  }
+  if (rel === 'src/lib/deskColorChart.ts') {
+    assert.match(text, /clearpath_desk_color_chart_v1/);
+    assert.match(text, /candleUp/);
+    assert.match(text, /indicator/);
+    assert.match(text, /bento/);
   }
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
@@ -279,6 +294,8 @@ for (const rel of srcFiles) {
     assert.match(text, /desk-shell/);
     assert.match(text, /data-desk-paper/);
     assert.match(text, /DeskAppearanceProvider/);
+    assert.match(text, /deskId=\{deskId\}/);
+    assert.match(text, /data-desk-color-bg/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);

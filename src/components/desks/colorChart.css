@@ -1,0 +1,230 @@
+.color-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  background: #141416;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.color-chart-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.color-chart-tab,
+.color-chart-reset {
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.color-chart-reset {
+  margin-left: auto;
+  color: #a1a1aa;
+  background: transparent;
+}
+
+.color-chart-reset:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.color-chart-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.color-chart-panel {
+  width: min(100%, 22.5rem);
+  padding: 0.7rem 0.7rem 0.55rem;
+  border-radius: 0.65rem;
+  background: #1c1c1f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.color-chart-row {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.28rem;
+}
+
+.color-chart-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin-top: 0.28rem;
+}
+
+.color-chart-pastels {
+  margin: 0.35rem 0 0.15rem;
+}
+
+.color-chart-swatch {
+  aspect-ratio: 1;
+  width: 100%;
+  min-height: 1.35rem;
+  border: 0;
+  border-radius: 0.28rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-chart-divider {
+  height: 1px;
+  margin: 0.55rem 0 0.5rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.color-chart-presets {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+
+.color-chart-recents {
+  margin-top: 0.4rem;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.color-chart-add {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 0.28rem;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.color-chart-add input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+
+.color-chart-opacity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  color: #d4d4d8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.color-chart-opacity input[type='range'] {
+  flex: 1;
+  accent-color: #fff;
+  cursor: pointer;
+}
+
+.color-chart-opacity-val {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  min-width: 2.75rem;
+  text-align: right;
+}
+
+.color-chart-opacity-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart {
+  background: #f4f4f5;
+  border-top-color: rgba(17, 17, 17, 0.1);
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-panel {
+  background: #ffffff;
+  border-color: rgba(17, 17, 17, 0.12);
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-hint,
+.desk-shell[data-desk-paper='white'] .color-chart-opacity-note {
+  color: #52525b;
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-opacity {
+  color: #111111;
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-add {
+  color: #111111;
+  border-color: rgba(17, 17, 17, 0.35);
+}
+
+.desk-shell[data-desk-color-bg='1'] {
+  background: var(--desk-user-bg) !important;
+}
+
+.desk-shell[data-desk-color-bg='1'][data-desk-paper='white'] {
+  background: var(--desk-user-bg) !important;
+}
+
+.desk-shell[data-desk-color-bento='1'] [data-retail-bento],
+.desk-shell[data-desk-color-bento='1'] .retail-bento,
+.desk-shell[data-desk-color-bento='1'] [data-institutional-door] > section,
+.desk-shell[data-desk-color-bento='1'] [data-institutional-door] section.flex,
+.desk-shell[data-desk-color-bento='1'] [data-neuro-door] > section,
+.desk-shell[data-desk-color-bento='1'] [data-neuro-door] section.flex,
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] > section,
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] section.flex {
+  background: var(--desk-user-bento-fill) !important;
+  border-color: var(--desk-user-bento) !important;
+}
+
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] > section,
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] section.flex,
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] [data-retail-bento],
+.desk-shell[data-desk-color-bento='1'] [data-retail-door] .retail-bento {
+  background:
+    linear-gradient(var(--desk-user-bento-fill), var(--desk-user-bento-fill)) padding-box,
+    linear-gradient(135deg, var(--desk-user-bento), var(--desk-pink, #ff1493)) border-box !important;
+}
+
+.desk-shell[data-desk-color-bg='1'] [data-neuro-door] {
+  background: var(--desk-user-bg) !important;
+}
+
+.desk-shell[data-desk-color-bento='1'] .fund-card {
+  background: var(--desk-user-bento-fill) !important;
+  border-color: var(--desk-user-bento) !important;
+}
+
+.desk-shell[data-desk-color-bg='1'] .fund-shell {
+  background: var(--desk-user-bg) !important;
+}
+
+.desk-shell[data-desk-color-bento='1'] .fund-kicker,
+.desk-shell[data-desk-color-bento='1'] .fund-meter-fill,
+.desk-shell[data-desk-color-bento='1'] .fund-empty-bars i {
+  color: var(--desk-user-bento);
+}
+
+.desk-shell[data-desk-color-bento='1'] .fund-meter-fill,
+.desk-shell[data-desk-color-bento='1'] .fund-empty-bars i {
+  background: var(--desk-user-bento) !important;
+}
