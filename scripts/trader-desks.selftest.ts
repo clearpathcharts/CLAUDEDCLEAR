@@ -277,6 +277,8 @@ for (const rel of srcFiles) {
     assert.match(text, /data-color-chart/);
     assert.match(text, /COLOR_CHART_HUE_GRID/);
     assert.match(text, /Opacity/);
+    assert.match(text, /Save colors/);
+    assert.match(text, /data-color-chart-save/);
   }
   if (rel === 'src/lib/deskColorChart.ts') {
     assert.match(text, /clearpath_desk_color_chart_v1/);

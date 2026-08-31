@@ -31,6 +31,9 @@ import {
   resolveDeskVisualPaint,
   setDeskColorOpacity,
   setDeskColorOverride,
+  copyDeskColorsToAll,
+  overridesEqual,
+  stampDeskSavedAt,
 } from '../src/lib/deskColorChart.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -101,6 +104,19 @@ assert.equal(parsed.desks.neurodivergent?.background, '#F2F2F2');
 assert.equal(parsed.desks.neurodivergent?.opacity, 60);
 assert.deepEqual(parsed.recents, ['#FFFF00', '#00E5FF']);
 assert.equal(DESK_COLOR_CHART_STORAGE_KEY, 'clearpath_desk_color_chart_v1');
+assert.equal(overridesEqual({ candleUp: '#39ff14' }, { candleUp: '#39FF14' }), true);
+assert.equal(overridesEqual({ candleUp: '#39FF14' }, { candleUp: '#00E5FF' }), false);
+const stamped = stampDeskSavedAt(emptyStore(), 'fundamental', '2026-08-31T21:00:00.000Z');
+assert.equal(stamped.savedAt?.fundamental, '2026-08-31T21:00:00.000Z');
+const copied = copyDeskColorsToAll(
+  setDeskColorOverride(emptyStore(), 'fundamental', 'indicator', '#39FF14'),
+  'fundamental',
+  '2026-08-31T21:00:00.000Z',
+);
+assert.equal(copied.desks.retail?.indicator, '#39FF14');
+assert.equal(copied.desks.institutional?.indicator, '#39FF14');
+assert.equal(copied.desks.neurodivergent?.indicator, '#39FF14');
+assert.equal(copied.savedAt?.retail, '2026-08-31T21:00:00.000Z');
 
 const files = [
   'src/lib/deskColorChart.ts',
@@ -132,6 +148,10 @@ assert.match(picker, /COLOR_CHART_GRAYS/);
 assert.match(picker, /COLOR_CHART_HUE_GRID/);
 assert.match(picker, /COLOR_CHART_PRESETS/);
 assert.match(picker, /neuroPastelSwatches/);
+assert.match(picker, /data-color-chart-save/);
+assert.match(picker, /Save colors/);
+assert.match(picker, /Save to all desks/);
+assert.match(picker, /Unsaved changes/);
 
 const candles = fs.readFileSync(path.join(root, 'src/components/charts/LightweightCandles.tsx'), 'utf8');
 assert.match(candles, /visualPaint/);
@@ -157,5 +177,8 @@ const ctx = fs.readFileSync(path.join(root, 'src/components/desks/DeskAppearance
 assert.match(ctx, /applyColor/);
 assert.match(ctx, /resetVisual/);
 assert.match(ctx, /visualPaint/);
+assert.match(ctx, /saveDesk/);
+assert.match(ctx, /saveAllDesks/);
+assert.match(ctx, /isDirty/);
 
 console.log('desk-color-chart.selftest: ok');
