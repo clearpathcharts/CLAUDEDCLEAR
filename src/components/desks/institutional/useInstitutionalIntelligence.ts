@@ -7,6 +7,7 @@ import { fetchEconomicNews, type EconomicNewsItem } from '../../../services/econ
 import { classifyNewsCategory } from '../../../fundamental/format';
 import type { Candle } from '../../../types/indicators';
 import { closeSeries, pearsonCorrelation } from '../../../lib/institutional/marketMath';
+import type { CotAnalytics } from '../../../lib/cot/analytics';
 
 export const RIBBON_MARKETS: { symbol: string; label: string }[] = [
   { symbol: 'SPX', label: 'SPX' },
@@ -57,6 +58,14 @@ export type NewsIntel = {
 export type FredPoint = { id: string; label: string; value: number | null; date: string | null; unit: string };
 
 export type EarningsRow = { symbol: string; date: string; actual: number | null; estimated: number | null };
+
+export type DeskCot = {
+  status: 'ok' | 'unmapped' | 'unavailable';
+  note: string;
+  contract: string | null;
+  cftcCode: string | null;
+  analytics: CotAnalytics | null;
+};
 
 function toCandle(c: { time: number; open: number; high: number; low: number; close: number; volume?: number }): Candle {
   return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume };
@@ -198,6 +207,13 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
   const [corrSeries, setCorrSeries] = useState<Partial<Record<CorrKey, number[]>>>({});
   const [earnings, setEarnings] = useState<EarningsRow[] | null>(null);
   const [earningsAvail, setEarningsAvail] = useState<'ok' | 'unconfigured' | 'unavailable'>('unavailable');
+  const [cot, setCot] = useState<DeskCot>({
+    status: 'unavailable',
+    note: 'loading',
+    contract: null,
+    cftcCode: null,
+    analytics: null,
+  });
 
   const slots = useMemo(() => workspaceSymbols(symbol, layout), [symbol, layout]);
 
@@ -406,6 +422,62 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     };
   }, [symbol]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/cot/history?symbol=${encodeURIComponent(symbol)}`);
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+          contract?: string;
+          cftcCode?: string;
+          analytics?: CotAnalytics;
+        } | null;
+        if (cancelled) return;
+        if (res.status === 404) {
+          setCot({
+            status: 'unmapped',
+            note: body?.error || 'NO CFTC MAP',
+            contract: null,
+            cftcCode: null,
+            analytics: null,
+          });
+          return;
+        }
+        if (!res.ok || !body?.analytics) {
+          setCot({
+            status: 'unavailable',
+            note: body?.error || `COT HTTP ${res.status}`,
+            contract: null,
+            cftcCode: null,
+            analytics: null,
+          });
+          return;
+        }
+        setCot({
+          status: 'ok',
+          note: `CFTC.gov · ${body.contract || 'COT'}`,
+          contract: body.contract || null,
+          cftcCode: body.cftcCode || null,
+          analytics: body.analytics,
+        });
+      } catch {
+        if (!cancelled) {
+          setCot({
+            status: 'unavailable',
+            note: 'COT REQUEST FAILED',
+            contract: null,
+            cftcCode: null,
+            analytics: null,
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol]);
+
   const correlation = useMemo(() => {
     const matrix: Record<string, Record<string, number | null>> = {};
     for (const a of CORR_KEYS) {
@@ -437,5 +509,6 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     correlation,
     earnings,
     earningsAvail,
+    cot,
   };
 }
