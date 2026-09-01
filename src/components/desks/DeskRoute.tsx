@@ -16,6 +16,7 @@ import { DESK_SEO } from '../../content/traderDesksCopy';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import './deskTheme.css';
 import './colorChart.css';
+import './heldFile.css';
 
 function resolveDesk(pathname: string): TraderDeskId {
   const fromPath = parseDeskPath(pathname);

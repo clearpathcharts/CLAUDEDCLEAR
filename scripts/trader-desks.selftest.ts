@@ -19,6 +19,11 @@ import {
 } from '../src/lib/traderDesks.ts';
 import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeStructure.ts';
 import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
+import { parseHeldIds } from '../src/components/desks/deskHeldPanels.ts';
+import {
+  deskSectionOpen,
+  NEURO_CHART_FIRST_HELD,
+} from '../src/components/desks/heldMeta.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
 
@@ -135,6 +140,9 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
+    assert.match(text, /DeskHoldScope/);
+    assert.match(text, /clearpath_held_institutional_v2/);
+    assert.match(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
@@ -154,9 +162,18 @@ for (const rel of srcFiles) {
     assert.match(text, /News Intelligence/);
     assert.match(text, /Economic Calendar/);
     assert.match(text, /Positioning/);
+    assert.match(text, /cotFeedChip/);
+    assert.match(text, /NOT_CONFIGURED/);
+    assert.match(text, /Weekly CFTC print/);
+    assert.match(text, /newsFeedChip/);
+    assert.doesNotMatch(text, /k="Short interest" v="DATA UNAVAILABLE"/);
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
     assert.match(text, /embedMode/);
+    assert.match(text, /holdId=/);
+    assert.match(text, /data-desk-chart-room/);
+    assert.match(text, /showNewsRow/);
+    assert.match(text, /min-h-\[70vh\]/);
     assert.match(text, /analyzeInstitutionalStructure/);
     assert.match(text, /Information & analytics only/);
     assert.doesNotMatch(text, /Pattern Scanner/);
@@ -168,9 +185,14 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/quotes/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
+    assert.match(text, /\/api\/cot\/history/);
+    assert.match(text, /cached: Boolean\(body\.cached\)/);
   }
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
+    assert.match(text, /DeskHoldScope/);
+    assert.match(text, /clearpath_held_retail_v2/);
+    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /study desk/);
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
@@ -196,7 +218,11 @@ for (const rel of srcFiles) {
     assert.match(text, /data-asset-colors-toggle/);
     assert.match(text, /PatternScannerPanel/);
     assert.match(text, /Pattern Scanner/);
+    assert.match(text, /holdId=/);
     assert.match(text, /useDedicatedPatternPanel/);
+    assert.match(text, /showBelow/);
+    assert.match(text, /deskSectionOpen/);
+    assert.match(text, /min-h-\[70vh\]/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
@@ -242,6 +268,9 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
+    assert.match(text, /DeskHoldScope/);
+    assert.match(text, /clearpath_held_neuro_v2/);
+    assert.match(text, /NEURO_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -254,6 +283,9 @@ for (const rel of srcFiles) {
     assert.match(text, /applyNeuroProfile/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /RetailEducationBento/);
+    assert.match(text, /holdId=/);
+    assert.match(text, /showBelow/);
+    assert.match(text, /min-h-\[70vh\]/);
     assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -289,6 +321,7 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
+    assert.match(text, /DeskHoldScope/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
   }
@@ -298,6 +331,7 @@ for (const rel of srcFiles) {
     assert.match(text, /DeskAppearanceProvider/);
     assert.match(text, /deskId=\{deskId\}/);
     assert.match(text, /data-desk-color-bg/);
+    assert.match(text, /heldFile\.css/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
@@ -314,6 +348,29 @@ for (const rel of srcFiles) {
 
 const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);
+
+const heldCss = fs.readFileSync(path.join(root, 'src/components/desks/heldFile.css'), 'utf8');
+assert.match(heldCss, /rt-bento-x/);
+assert.match(heldCss, /rt-held-file/);
+assert.match(heldCss, /data-desk-chart-room/);
+assert.match(heldCss, /70vh/);
+
+const bento = fs.readFileSync(path.join(root, 'src/components/desks/institutional/Bento.tsx'), 'utf8');
+assert.match(bento, /holdId/);
+assert.match(bento, /rt-bento-x/);
+assert.match(bento, /useDeskHold/);
+
+const heldFile = fs.readFileSync(path.join(root, 'src/components/desks/DeskHeldFile.tsx'), 'utf8');
+assert.match(heldFile, /data-desk-held-file/);
+
+assert.deepEqual(parseHeldIds('["ribbon","nope"]', new Set(['ribbon', 'flow'])), ['ribbon']);
+assert.deepEqual(parseHeldIds(null, new Set(['ribbon'])), []);
+assert.equal(deskSectionOpen(undefined, ['news', 'education']), false);
+assert.equal(deskSectionOpen((id) => id === 'news', ['news', 'education']), true);
+assert.equal(
+  deskSectionOpen((id) => NEURO_CHART_FIRST_HELD.includes(id), ['news', 'calendar', 'alerts', 'education', 'simulation']),
+  false,
+);
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.ok(r != null && Math.abs(r - 1) < 1e-9);

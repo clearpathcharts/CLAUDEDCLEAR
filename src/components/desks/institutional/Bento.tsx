@@ -1,4 +1,6 @@
 import React from 'react';
+import { X } from 'lucide-react';
+import { useDeskHold } from '../DeskHoldScope';
 
 export function Bento({
   title,
@@ -9,6 +11,7 @@ export function Bento({
   children,
   className = '',
   collapsedSummary,
+  holdId,
 }: {
   title: string;
   status?: string;
@@ -18,14 +21,30 @@ export function Bento({
   children: React.ReactNode;
   className?: string;
   collapsedSummary?: React.ReactNode;
+  holdId?: string;
 }) {
+  const holdApi = useDeskHold();
+  if (holdId && holdApi?.isHeld(holdId)) return null;
+
   const open = expanded !== false;
   return (
     <section
       data-retail-bento={className.includes('retail-bento') ? 'true' : undefined}
-      className={`flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] ${className}`}
+      data-hold-id={holdId}
+      className={`relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)] ${className}`}
     >
-      <header className="flex shrink-0 items-center gap-2 border-b border-[var(--desk-border)] px-2.5 py-1.5">
+      {holdId && holdApi ? (
+        <button
+          type="button"
+          className="rt-bento-x"
+          aria-label={`Hold ${title} in the file`}
+          title="Hold in file — chart uses this space"
+          onClick={() => holdApi.hold(holdId)}
+        >
+          <X size={11} strokeWidth={2.75} aria-hidden="true" />
+        </button>
+      ) : null}
+      <header className={`flex shrink-0 items-center gap-2 border-b border-[var(--desk-border)] px-2.5 py-1.5 ${holdId ? 'pr-8' : ''}`}>
         <h3 className="min-w-0 flex-1 truncate text-[10px] font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
           {title}
         </h3>

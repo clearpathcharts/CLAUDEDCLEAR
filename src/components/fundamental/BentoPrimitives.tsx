@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -10,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useDeskHold } from '../desks/DeskHoldScope';
 
 const chartTip = {
   contentStyle: { background: '#121316', border: '1px solid #3a342c', fontSize: 11, color: '#e8e4db' },
@@ -55,9 +57,23 @@ export function Bento({
   onExpand?: () => void;
   expanded?: boolean;
 }) {
+  const holdApi = useDeskHold();
+  if (holdApi?.isHeld(id)) return null;
+
   return (
     <article id={id} className={`fund-card fund-span-${span}`}>
-      <div className="mb-2 flex items-start justify-between gap-2">
+      {holdApi ? (
+        <button
+          type="button"
+          className="rt-bento-x"
+          aria-label={`Hold ${title} in the file`}
+          title="Hold in file"
+          onClick={() => holdApi.hold(id)}
+        >
+          <X size={11} strokeWidth={2.75} aria-hidden="true" />
+        </button>
+      ) : null}
+      <div className={`mb-2 flex items-start justify-between gap-2 ${holdApi ? 'pr-6' : ''}`}>
         <div className="min-w-0">
           {kicker ? <p className="fund-kicker">{kicker}</p> : null}
           <h3>{title}</h3>
