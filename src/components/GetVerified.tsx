@@ -110,7 +110,7 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
 
   if (activationKey) {
     return (
-      <div className="w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
+      <div className="scrollbar-panel w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-8 text-center">
           <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto border border-indigo-500/30">
             <CheckCircle2 className="text-indigo-400" size={40} />
@@ -145,7 +145,7 @@ export default function GetVerified({ onBack, profile }: GetVerifiedProps) {
   }
 
   return (
-    <div className="w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
+    <div className="scrollbar-panel w-full h-full min-h-screen bg-[#050505] text-white p-6 md:p-12 overflow-y-auto">
       <div className="max-w-5xl mx-auto space-y-12">
         
         <div className="flex items-center space-x-6 border-b border-white/10 pb-6">

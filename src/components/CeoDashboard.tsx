@@ -783,7 +783,7 @@ export default function CeoDashboard() {
   }
 
   return (
-    <div className="min-h-full p-6 md:p-12 font-sans overflow-y-auto custom-scrollbar pb-32" style={{ backgroundColor: '#09090b' }}>
+    <div className="scrollbar-panel min-h-full p-6 md:p-12 font-sans overflow-y-auto custom-scrollbar pb-32" style={{ backgroundColor: '#09090b' }}>
       {/* Header Section */}
       <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-2">
         CEO Dashboard — Founder Console
