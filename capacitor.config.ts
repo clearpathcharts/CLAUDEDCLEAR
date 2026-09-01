@@ -7,6 +7,10 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
   },
+  ios: {
+    contentInset: 'automatic',
+    preferredContentMode: 'mobile',
+  },
 };
 
 export default config;

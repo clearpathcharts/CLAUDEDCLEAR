@@ -76,6 +76,8 @@ const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 assert.match(indexHtml, /fonts\.googleapis\.com/);
 assert.match(indexHtml, /family=Inter/);
 assert.match(indexHtml, /family=IBM\+Plex\+Mono/);
+assert.match(indexHtml, /interactive-widget=resizes-content/);
+assert.match(indexHtml, /viewport-fit=cover/);
 
 const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
 assert.match(indexCss, /--font-ui:\s*"Inter"/);
@@ -129,6 +131,8 @@ for (const rel of srcFiles) {
   if (rel === 'src/App.tsx') {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
+    assert.match(text, /<CptBuddyWidget \/>/);
+    assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
   }
   if (rel === 'src/components/Auth.tsx') {
     assert.match(text, /navigateToDesk/);
@@ -332,6 +336,7 @@ for (const rel of srcFiles) {
     assert.match(text, /deskId=\{deskId\}/);
     assert.match(text, /data-desk-color-bg/);
     assert.match(text, /heldFile\.css/);
+    assert.match(text, /CptBuddyWidget/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
@@ -354,6 +359,7 @@ assert.match(heldCss, /rt-bento-x/);
 assert.match(heldCss, /rt-held-file/);
 assert.match(heldCss, /data-desk-chart-room/);
 assert.match(heldCss, /70vh/);
+assert.match(heldCss, /safe-area-inset-bottom/);
 
 const bento = fs.readFileSync(path.join(root, 'src/components/desks/institutional/Bento.tsx'), 'utf8');
 assert.match(bento, /holdId/);
@@ -379,5 +385,15 @@ const tape = reconstructBarTape([
 ]);
 assert.equal(tape[0].side, 'BUY-SIDE');
 assert.equal(tape[0].reconstructed, true);
+
+const buddyWidget = fs.readFileSync(path.join(root, 'src/components/CptBuddyWidget.tsx'), 'utf8');
+assert.match(buddyWidget, /visualViewport/);
+assert.match(buddyWidget, /cpt-buddy-input/);
+assert.match(buddyWidget, /enterKeyHint/);
+const buddyCss = fs.readFileSync(path.join(root, 'src/components/CptBuddyWidget.css'), 'utf8');
+assert.match(buddyCss, /font-size:\s*16px/);
+assert.match(buddyCss, /min-height:\s*44px/);
+const androidManifest = fs.readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
+assert.match(androidManifest, /adjustResize/);
 
 console.log('trader-desks.selftest: ok');
