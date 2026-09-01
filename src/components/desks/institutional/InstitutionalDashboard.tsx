@@ -75,6 +75,14 @@ function flowStats(candles: Candle[]) {
   return { buy, sell, bars: candles.length, large: prints.slice(0, 3) };
 }
 
+function fmtSigned(n: number | null, digits = 0): string {
+  if (n == null || !Number.isFinite(n)) return 'DATA UNAVAILABLE';
+  const abs = Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: digits });
+  if (n > 0) return `+${abs}`;
+  if (n < 0) return `-${abs}`;
+  return '0';
+}
+
 function heatColor(r: number | null): string {
   if (r == null) return 'bg-white/5 text-[var(--desk-muted)]';
   if (r >= 0.5) return 'bg-cyan-500/35 text-cyan-100';
@@ -268,6 +276,7 @@ export default function InstitutionalDashboard() {
                     height={layout === 1 ? 420 : 200}
                     embedMode
                     hideChartToolbar
+                    activeIndicators={intel.cot.status === 'ok' ? ['COT'] : []}
                   />
                 </div>
               );
@@ -573,11 +582,38 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <Bento title="Positioning" status="no COT / SI feed">
-          {['COT', 'Futures positioning', 'Short interest', 'ETF flows', 'Fund flows', 'Options positioning', 'Open interest'].map(
-            (k) => (
-              <KV key={k} k={k} v="DATA UNAVAILABLE" />
-            ),
+        <Bento title="Positioning" status={intel.cot.note}>
+          {intel.cot.status === 'ok' && intel.cot.analytics ? (
+            <>
+              <KV k="CFTC contract" v={`${intel.cot.contract || '—'} · ${intel.cot.cftcCode || '—'}`} />
+              <KV k="Report date" v={intel.cot.analytics.reportDate || 'DATA UNAVAILABLE'} />
+              <KV k="Net commercials" v={fmtSigned(intel.cot.analytics.netCommercial)} />
+              <KV k="Net large specs" v={fmtSigned(intel.cot.analytics.netLarge)} />
+              <KV k="Managed money net" v={fmtSigned(intel.cot.analytics.netManagedMoney)} />
+              <KV k="OI" v={fmtSigned(intel.cot.analytics.openInterest)} />
+              <KV
+                k="COT index (52w)"
+                v={
+                  intel.cot.analytics.cotIndex52 != null
+                    ? intel.cot.analytics.cotIndex52.toFixed(0)
+                    : 'DATA UNAVAILABLE'
+                }
+              />
+              <KV k="Institutional flow" v={intel.cot.analytics.institutionalFlow} />
+              <KV k="Short interest" v="DATA UNAVAILABLE" />
+              <KV k="ETF / fund flows" v="DATA UNAVAILABLE" />
+              <KV k="Options positioning" v="DATA UNAVAILABLE" />
+            </>
+          ) : (
+            <>
+              <KV k="COT" v={intel.cot.note || 'DATA UNAVAILABLE'} />
+              <KV k="Futures positioning" v="DATA UNAVAILABLE" />
+              <KV k="Short interest" v="DATA UNAVAILABLE" />
+              <KV k="ETF flows" v="DATA UNAVAILABLE" />
+              <KV k="Fund flows" v="DATA UNAVAILABLE" />
+              <KV k="Options positioning" v="DATA UNAVAILABLE" />
+              <KV k="Open interest" v="DATA UNAVAILABLE" />
+            </>
           )}
         </Bento>
 

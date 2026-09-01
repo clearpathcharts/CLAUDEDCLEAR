@@ -45,6 +45,7 @@ export const SILVER_INDICATOR_ABBRS = [
   'BB',
   'VWAP',
   'VOL',
+  'COT',
 ] as const;
 
 export const BASIC_DRAWING_TOOLS: DrawingToolId[] = [
