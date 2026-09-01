@@ -3162,7 +3162,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
   app.get('/api/market/history', ...marketLimiter, async (req, res) => {
-    const { symbol, interval, limit } = req.query;
+    const { symbol, interval, limit, startDate, endDate } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
@@ -3176,12 +3176,21 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
+    const dateOpt = (v: unknown): string | undefined => {
+      if (typeof v !== 'string') return undefined;
+      const s = v.trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
+    };
+
     try {
       // Twelve Data rejects outputsize outside [1, 5000] with HTTP 400, which
       // used to blank every chart for tiers whose candle limit exceeds 5000.
       const requested = limit ? Number(limit) : 100;
       const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
-      const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey);
+      const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey, {
+        startDate: dateOpt(startDate),
+        endDate: dateOpt(endDate),
+      });
       
       if (!data.values || !Array.isArray(data.values)) {
         logHealthEvent('WARNING', `Twelve Data Ingestion error/warning: ${data.message || 'Error occurred'}.`, data.code || 502);

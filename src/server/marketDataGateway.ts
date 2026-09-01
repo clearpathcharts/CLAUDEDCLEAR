@@ -741,12 +741,26 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
 // ============================================
 // GET TIME SERIES CANDLES (Deduplicated & Cached)
 // ============================================
-export async function getMarketCandles(symbol: string, interval: string, requestedLimit: number, apiKey: string) {
+export type MarketCandleFetchOptions = {
+  /** YYYY-MM-DD — Twelve Data start_date (inclusive). */
+  startDate?: string;
+  /** YYYY-MM-DD — Twelve Data end_date (inclusive). */
+  endDate?: string;
+};
+
+export async function getMarketCandles(
+  symbol: string,
+  interval: string,
+  requestedLimit: number,
+  apiKey: string,
+  options?: MarketCandleFetchOptions,
+) {
   // Twelve Data only accepts outputsize in [1, 5000]; anything larger is
   // rejected with HTTP 400, which would blank the chart entirely.
   const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1), 5000);
   const canon = canonicalCacheSymbol(symbol)
-  const cacheKey = `candles:${canon}:${interval}:${limit}`
+  const windowKey = `${options?.startDate || ''}:${options?.endDate || ''}`
+  const cacheKey = `candles:${canon}:${interval}:${limit}:${windowKey}`
   const now = Date.now()
   const ttl = candleTtlMs(interval)
 
@@ -772,7 +786,14 @@ export async function getMarketCandles(symbol: string, interval: string, request
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
-      const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}`;
+      const batchParams = new URLSearchParams({
+        symbol: symbols.join(','),
+        interval,
+        outputsize: String(limit),
+      });
+      if (options?.startDate) batchParams.set('start_date', options.startDate);
+      if (options?.endDate) batchParams.set('end_date', options.endDate);
+      const batchUrl = `https://api.twelvedata.com/time_series?${batchParams.toString()}`;
       const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000, activeKey);
 
       if (!batchData || batchData.status === 'error') {
@@ -869,7 +890,7 @@ export async function getMarketCandles(symbol: string, interval: string, request
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
-    return await fetchCandlesFromAPI(formatted, interval, limit, apiKey);
+    return await fetchCandlesFromAPI(formatted, interval, limit, apiKey, options);
   }
 
   pendingRequests[cacheKey] = runFetch()
@@ -926,10 +947,25 @@ async function fetchQuoteFromAPI(symbol: string, apiKey: string) {
   return fetchAndTrack(url, 'quote', symbol, 5000, cleanKey);
 }
 
-async function fetchCandlesFromAPI(symbol: string, interval: string, limit: number, apiKey: string) {
+async function fetchCandlesFromAPI(
+  symbol: string,
+  interval: string,
+  limit: number,
+  apiKey: string,
+  options?: { startDate?: string; endDate?: string },
+) {
   console.log(`[Gateway] Live Fetch CANDLES: ${symbol} (${interval})`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=${interval}&outputsize=${limit}`
+  const params = new URLSearchParams({
+    symbol,
+    interval,
+    outputsize: String(limit),
+  });
+  // Twelve Data historical window — enables Market Replay date picking.
+  // Dates are YYYY-MM-DD (exchange calendar); never invent bars outside the response.
+  if (options?.startDate) params.set('start_date', options.startDate);
+  if (options?.endDate) params.set('end_date', options.endDate);
+  const url = `https://api.twelvedata.com/time_series?${params.toString()}`
   console.log(`[Gateway] DEBUG: Fetching URL: ${url} (auth header + encoded query)`);
   // Historical pulls can be large (up to 5k candles); allow more time than quote/price calls.
   return fetchAndTrack(url, 'candles', symbol, 20000, cleanKey);

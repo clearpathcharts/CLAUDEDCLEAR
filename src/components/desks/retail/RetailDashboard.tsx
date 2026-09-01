@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
 import { LightweightCandles, type PriceSeriesType } from '../../charts/LightweightCandles';
 import { ChartIndicatorPicker } from '../../charts/ChartIndicatorPicker';
+import { DeskReplayPanel } from '../../replay/DeskReplayPanel';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { DEFAULT_MARKET_SYMBOLS } from '../../../constants/chartLayout';
 import { formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
@@ -859,6 +860,12 @@ export default function RetailDashboard() {
             Default chart stays clean — indicators are opt-in.
           </p>
         </section>
+
+        <DeskReplayPanel
+          initialSymbol={symbol}
+          initialTimeframe={timeframe}
+          profileId={chartProfileId}
+        />
 
         {!hideSecondary && (
           <Bento

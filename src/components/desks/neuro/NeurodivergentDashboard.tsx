@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../../charts/LightweightCandles';
+import { DeskReplayPanel } from '../../replay/DeskReplayPanel';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
 import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles';
@@ -506,6 +507,12 @@ export default function NeurodivergentDashboard() {
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
           </p>
         </section>
+
+        <DeskReplayPanel
+          initialSymbol={symbol}
+          initialTimeframe={timeframe}
+          profileId={profileId}
+        />
 
         {!snapHeld && (
           <Bento holdId="snapshot" title="Market Snapshot" status={symbol} className="retail-bento min-h-[280px]">

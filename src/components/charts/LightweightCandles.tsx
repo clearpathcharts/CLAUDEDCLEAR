@@ -264,6 +264,8 @@ export function LightweightCandles({
   publishDrawingSession = false,
   hideChartToolbar = false,
   hidePatternOverlays = false,
+  /** Market Replay: chart is driven only by parent-sliced history (no live quotes). */
+  replayMode = false,
   priceSeriesType,
   onPriceSeriesTypeChange,
   onExpandToggle,
@@ -300,6 +302,11 @@ export function LightweightCandles({
   hideChartToolbar?: boolean;
   /** Hide forming/pattern HUD (Retail Door keeps the chart visually quiet). */
   hidePatternOverlays?: boolean;
+  /**
+   * Market Replay isolation: do not fetch live quotes or invent bars.
+   * Parent must pass look-ahead-safe `data` (candles[0..current] only).
+   */
+  replayMode?: boolean;
   /** Price series style. When omitted, the chart remembers the last style in this browser. */
   priceSeriesType?: PriceSeriesType;
   onPriceSeriesTypeChange?: (type: PriceSeriesType) => void;
@@ -1104,13 +1111,12 @@ export function LightweightCandles({
           }
         }
 
-        // Live tick — align with server quote cache (CACHE_TTL_QUOTE ≈ 5s).
-        // Sub-second polling burned the Express marketLimiter (was 300/15min) and
-        // blanked charts with a false "rate limit" while Twelve Data was fine.
+        // Live tick — disabled in Market Replay (look-ahead / live mix forbidden).
         let tickDelay = 5000;
         if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 5000;
         else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;
 
+        if (!replayMode) {
         interval = setInterval(async () => {
           if (!active || !lastCandle) return;
 
@@ -1179,6 +1185,7 @@ export function LightweightCandles({
           series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
           lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
+        } // end !replayMode live ticks
 
         if (active) setIsLoading(false);
       } catch (err) {
@@ -1230,7 +1237,29 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+  }, [replayMode ? null : data, replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+
+  // Market Replay: push newly revealed candles without rebuilding the chart (no look-ahead).
+  useEffect(() => {
+    if (!replayMode || !candleSeriesRef.current || !Array.isArray(data)) return;
+    const mapped = data.map((d) => ({
+      time: d.time as Time,
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+    }));
+    try {
+      candleSeriesRef.current.setData(mapped as any);
+      barCountRef.current = mapped.length;
+      const chart = chartRef.current;
+      if (chart && mapped.length) {
+        focusRecentBars(chart.timeScale(), mapped.length, Math.min(120, mapped.length));
+      }
+    } catch (err) {
+      console.warn('[LightweightCandles] replay setData skipped', err);
+    }
+  }, [replayMode, data, chartReadyKey]);
 
   useEffect(() => {
     const chart = chartRef.current;

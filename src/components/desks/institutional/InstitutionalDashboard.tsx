@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../../charts/LightweightCandles';
+import { DeskReplayPanel } from '../../replay/DeskReplayPanel';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { analyzeInstitutionalStructure, formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
 import { DEFAULT_MARKET_SYMBOLS } from '../../../constants/chartLayout';
@@ -316,6 +317,12 @@ export default function InstitutionalDashboard() {
             })}
           </div>
         </section>
+
+        <DeskReplayPanel
+          initialSymbol={symbol}
+          initialTimeframe={timeframe}
+          profileId="focus_mode"
+        />
 
         {sideHeld ? null : (
         <div className={`grid min-h-0 gap-2 ${flowHeld || liqHeld ? 'grid-rows-1' : 'grid-rows-2'}`}>

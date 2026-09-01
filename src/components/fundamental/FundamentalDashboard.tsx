@@ -16,6 +16,7 @@ import BentoWorkspace from './BentoWorkspace';
 import { RESEARCH_NAV } from '../../fundamental/localStore';
 import { formatCompactUsd, formatPercent, formatUsdPerShare, marketSessionUtc } from '../../fundamental/format';
 import { DataRibbon } from './primitives';
+import { DeskReplayPanel } from '../replay/DeskReplayPanel';
 import './bento.css';
 import type { ResearchSection } from '../../fundamental/types';
 
@@ -273,6 +274,7 @@ function FooterBar() {
 
 function FundamentalShell() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { symbol } = useFundamental();
   return (
     <div className="fund-shell flex min-h-0 flex-1 flex-col">
       <HeaderBar />
@@ -284,6 +286,9 @@ function FundamentalShell() {
           onExpand={(id) => setExpandedId(id ? id : null)}
         />
         <ExpandedLedger expandedId={expandedId} />
+        <div className="border-t border-[rgba(232,228,219,0.08)] p-3">
+          <DeskReplayPanel initialSymbol={symbol || 'NVDA'} initialTimeframe="1d" profileId="calm_focus" />
+        </div>
       </div>
       <FooterBar />
     </div>
