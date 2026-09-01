@@ -42,6 +42,7 @@
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:plan-catalog": "tsx scripts/plan-catalog.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
+    "test:clean-candles": "tsx scripts/clean-candles.selftest.ts",
     "test:chart-background": "tsx scripts/chart-background.selftest.ts",
     "test:chart-pulse": "tsx scripts/chart-pulse.selftest.ts",
     "test:explain-nav": "tsx scripts/explain-nav.selftest.ts",

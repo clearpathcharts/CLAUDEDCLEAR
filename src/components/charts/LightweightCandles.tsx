@@ -11,7 +11,7 @@ import {
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
-import { intensifyCandleColors } from "../../lib/charts/intensifyColor";
+import { cleanCandleSeriesOptions } from "../../lib/charts/cleanCandleSeries";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
@@ -53,7 +53,7 @@ import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
 import type { DeskVisualPaint } from "../../lib/deskColorChart";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-31-COT";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-01-CLEAN";
 
 export type { PriceSeriesType };
 
@@ -538,9 +538,11 @@ export function LightweightCandles({
       borderUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor),
       borderDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor),
     };
-    const vividCandles = activeCustomTheme
-      ? intensifyCandleColors(rawCandleColors, 1.1)
-      : rawCandleColors;
+    // TradingView-clean: body === wick === border, borders off (no muddy outlines).
+    const vividCandles = cleanCandleSeriesOptions(
+      rawCandleColors,
+      activeCustomTheme ? 1.05 : 0,
+    );
 
     const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
     candleSeriesRef.current = series;
@@ -1485,6 +1487,7 @@ function addStyledPriceSeries(
     wickDownColor: string;
     borderUpColor: string;
     borderDownColor: string;
+    borderVisible?: boolean;
   },
 ) {
   const family = seriesFamily(type);
@@ -1543,7 +1546,16 @@ function addStyledPriceSeries(
       borderDownColor: vividCandles.borderDownColor,
     });
   }
-  return chart.addSeries(CandlestickSeries, vividCandles);
+  // Solid candles: matched wick/border + no outline = TradingView-clean neon.
+  return chart.addSeries(CandlestickSeries, {
+    upColor: vividCandles.upColor,
+    downColor: vividCandles.downColor,
+    wickUpColor: vividCandles.wickUpColor,
+    wickDownColor: vividCandles.wickDownColor,
+    borderUpColor: vividCandles.borderUpColor,
+    borderDownColor: vividCandles.borderDownColor,
+    borderVisible: vividCandles.borderVisible ?? false,
+  });
 }
 
 /**
