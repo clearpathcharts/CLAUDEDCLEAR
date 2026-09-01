@@ -1,18 +1,18 @@
 export const chartThemes = {
-  // 🧠 ACCESSIBLE MODE (your current style)
+  // 🧠 ACCESSIBLE MODE — TradingView-clean neon (matched body/wick, no outline)
   theme: {
-    background: "#020617",
-    grid: "#0f172a",
+    background: "#0b0e14",
+    grid: "rgba(255,255,255,0.04)",
     text: "#94a3b8",
 
-    candleUp: "#00ffff",       // intense neon cyan
-    candleDown: "#ff00ff",     // intense magenta
+    candleUp: "#00E5FF",
+    candleDown: "#FF1493",
 
-    wickUp: "#7fffff",
-    wickDown: "#ff7dff",
+    wickUp: "#00E5FF",
+    wickDown: "#FF1493",
 
-    borderUp: "#00ffff",
-    borderDown: "#ff00ff",
+    borderUp: "#00E5FF",
+    borderDown: "#FF1493",
   },
 
   // 📊 CLASSIC (Professional default style)
@@ -95,19 +95,19 @@ export const chartThemes = {
     borderDown: "#ff2d20",
   },
 
-  // 🟣 PURPLE / CYAN (premium look)
+  // 🟣 PURPLE / CYAN (premium look) — clean matched wicks
   purpleCyan: {
     background: "#020617",
-    grid: "#1e1b4b",
+    grid: "rgba(196,181,253,0.08)",
     text: "#c4b5fd",
 
-    candleUp: "#00e5ff",
-    candleDown: "#d500f9",
+    candleUp: "#00E5FF",
+    candleDown: "#FF1493",
 
-    wickUp: "#80f0ff",
-    wickDown: "#ea80fc",
+    wickUp: "#00E5FF",
+    wickDown: "#FF1493",
 
-    borderUp: "#00e5ff",
-    borderDown: "#d500f9",
+    borderUp: "#00E5FF",
+    borderDown: "#FF1493",
   },
 };
