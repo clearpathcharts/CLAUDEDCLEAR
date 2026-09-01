@@ -31,6 +31,7 @@ import "./CptBuddyWidget.css";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  toolsUsed?: string[];
 }
 
 const STORAGE_KEY_NAME = "cpt_buddy_username";
@@ -46,7 +47,7 @@ const MAX_NAME_WORDS = 4;
 
 const SUGGESTED_PROMPTS = [
   "I'm having a rough day",
-  "I'm actually doing pretty well today",
+  "What's live gold doing?",
   "How do I get around the site?",
   "Explain neuro chart profiles",
 ] as const;
@@ -505,12 +506,19 @@ export const CptBuddyWidget: React.FC = () => {
           conversationBullets,
           bondProfile: bond,
           chartContext: mentorContext,
+          pagePath: typeof window !== "undefined" ? window.location.pathname : "/",
           conversationHistory: newMessages.slice(-30).map((m) => ({ role: m.role, content: m.content })),
         }),
       });
       const data = await res.json();
       const answer: string = data.answer || "I want to stay with you on this — try saying that again?";
-      const updatedMessages: ChatMessage[] = [...newMessages, { role: "assistant", content: answer }];
+      const toolsUsed = Array.isArray(data.toolsUsed)
+        ? data.toolsUsed.filter((t: unknown): t is string => typeof t === "string")
+        : [];
+      const updatedMessages: ChatMessage[] = [
+        ...newMessages,
+        { role: "assistant", content: answer, toolsUsed: toolsUsed.length ? toolsUsed : undefined },
+      ];
 
       let updatedFacts = facts;
       if (Array.isArray(data.newFacts) && data.newFacts.length > 0) {
@@ -815,6 +823,19 @@ export const CptBuddyWidget: React.FC = () => {
                   >
                     {m.content}
                   </div>
+                  {m.role === "assistant" && m.toolsUsed && m.toolsUsed.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontSize: 10,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "#7dd3c7",
+                      }}
+                    >
+                      Live look-up · {m.toolsUsed.join(" · ")}
+                    </div>
+                  )}
                 </div>
               ))}
 

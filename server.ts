@@ -121,6 +121,7 @@ import {
   offlineCompanionAnswer,
 } from './src/server/buddyMentorService';
 import { fallbackConversationBullet, normalizeConversationBullets } from './src/lib/buddyMemory';
+import { BUDDY_LIVE_TOOLS_PROMPT, runBuddyWithLiveTools } from './src/server/buddyLiveTools';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -2637,7 +2638,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
   app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile } =
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile, pagePath } =
       req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2750,11 +2751,13 @@ PHILOSOPHY: This is not chaos - it is calculated freedom. Structure gives the tr
 
 === END METHODOLOGY ===
 
-You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indicators, though you do not yet have their full text loaded - if asked something highly specific from those, answer from general financial knowledge and clearly note that deeper direct citation from the encyclopedia is coming in a future update. Do not pretend you have read specific encyclopedia entries you have not been given.
+You also represent ClearPath's Encyclopedia of Finance and Encyclopedia of Indicators. When they ask what a term or indicator means, call search_encyclopedia and teach from those hits. If the tool finds nothing, say so and use careful general knowledge — do not pretend you quoted a specific encyclopedia page you were not given.
 
 Never claim you have access to a user's account data, balances, or positions. You do not have that.
 
-${CPT_SITE_GUIDE}`;
+${CPT_SITE_GUIDE}
+
+${BUDDY_LIVE_TOOLS_PROMPT}`;
 
     const rememberedFacts = Array.isArray(memoryFacts)
       ? memoryFacts.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 60)
@@ -2770,45 +2773,32 @@ ${CPT_SITE_GUIDE}`;
     const bondBlock = `\n\n${formatBondForPrompt(displayName, bond)}`;
     const affectBlock = `\n\n${formatAffectForPrompt(affect)}`;
 
-    const chartBlock =
+    const chartHint =
       chartContext && typeof chartContext === 'string' && chartContext.trim()
-        ? `\n\n${chartContext.trim()}\nWhen the user asks about the chart, patterns, wedges, triangles, or what may be forming, use LIVE CHART VISION above — it contains ONLY geometry-measured patterns from the latest candles. Always say "possible" or "forming" — never claim a pattern is confirmed. If a pattern is not listed in LIVE CHART VISION, say it is not currently measured on this chart. Do not invent pattern names or percentages. Do not mention candle colors; use bullish/bearish bar structure only. No harmonic patterns (Gartley, Bat, Butterfly, etc.).`
-        : '';
+        ? `\n\nOpen-chart vision is available this turn. Call read_open_charts before talking about patterns on their screen.`
+        : `\n\nNo chart is open in this session. If they ask about the chart, tell them to open CHARTS or a trader desk first.`;
 
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock + conversationBlock + bondBlock + affectBlock + chartBlock },
+      { role: 'system' as const, content: systemPrompt + memoryBlock + conversationBlock + bondBlock + affectBlock + chartHint },
       ...history.map((m: any) => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
+        role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
         content: String(m.content || '').slice(0, 4000),
       })),
-      { role: 'user', content: question },
+      { role: 'user' as const, content: question },
     ];
 
     try {
       const warmTemp = affect.crisis || affect.intensity >= 4 ? 0.35 : 0.55;
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages,
-          temperature: warmTemp,
-          max_tokens: 1800,
-        }),
+      const livePath = typeof pagePath === 'string' ? pagePath.slice(0, 180) : '/';
+      const liveChart = chartContext && typeof chartContext === 'string' ? chartContext : '';
+      const { answer, toolsUsed } = await runBuddyWithLiveTools({
+        apiKey,
+        messages,
+        temperature: warmTemp,
+        maxTokens: 1800,
+        chartContext: liveChart,
+        pagePath: livePath,
       });
-
-      if (!groqRes.ok) {
-        const errText = await groqRes.text();
-        throw new Error(`Groq API returned ${groqRes.status}: ${errText}`);
-      }
-
-      const data = await groqRes.json();
-      const answer =
-        data?.choices?.[0]?.message?.content ||
-        'I want to answer you properly — try saying that again in your own words.';
 
       let newFacts: string[] = [];
       let conversationBulletsOut: string[] = [];
@@ -2836,7 +2826,7 @@ ${CPT_SITE_GUIDE}`;
         conversationBulletsOut = turnBullets;
       }
 
-      res.json({ answer, newFacts, conversationBullets: conversationBulletsOut, affect, bondPatch });
+      res.json({ answer, newFacts, conversationBullets: conversationBulletsOut, affect, bondPatch, toolsUsed });
     } catch (err: any) {
       console.error('[AI Mentor Error]', err);
       res.status(500).json({

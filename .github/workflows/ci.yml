@@ -51,6 +51,9 @@ jobs:
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
 
+      - name: C.P.T. Buddy live tools + encyclopedia search
+        run: npm run test:buddy-live-tools
+
       - name: Founder disaster-backup self-test
         run: npm run test:founder-backup
 
