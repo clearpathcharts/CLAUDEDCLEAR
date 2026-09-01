@@ -72,7 +72,7 @@ import { ClearNav } from './nav/ClearNav';
 import { getDefaultDashboardTab } from '../lib/platform/defaultTab';
 import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
-import { isFounderEmail } from '../lib/founder';
+import { isFounderSession } from '../lib/founder';
 import { auth } from '../firebase';
 import { navigateToDesk } from '../lib/traderDesks';
 
@@ -551,6 +551,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     user: authUser, 
     userProfile, 
     userRole,
+    loading: authLoading,
     requireVerified,
     updateUserImages, 
     updateIntro, 
@@ -969,15 +970,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const isAdmin = () =>
     userRole?.role === 'admin' ||
-    isFounderEmail(authUser?.email) ||
-    isFounderEmail(userProfile?.email) ||
-    isFounderEmail(auth.currentUser?.email) ||
+    isFounderSession(authUser?.email, userProfile?.email, auth.currentUser?.email) ||
     authUser?.email === 'creator@clearpatcharge.com';
   /** CEO Dashboard — private session, profile, or live Google founder email. */
   const isFounder = () =>
-    isFounderEmail(authUser?.email) ||
-    isFounderEmail(userProfile?.email) ||
-    isFounderEmail(auth.currentUser?.email);
+    isFounderSession(authUser?.email, userProfile?.email, auth.currentUser?.email);
   const isVerified = () => requireVerified();
 
   const menuItems = useMemo(() => {
@@ -1002,7 +999,24 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       if (item.verified) return isVerified() || isAdmin();
       return true;
     });
-  }, [userRole?.role, authUser?.email, profile?.vipStatus]);
+  }, [userRole?.role, authUser?.email, userProfile?.email, profile?.vipStatus]);
+
+  useEffect(() => {
+    if (authLoading || !isFounder()) return;
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace('#', '');
+    const otherTab = params.get('tab') || (hash && hash !== 'CeoDashboard' ? hash : '');
+    if (path === '/ceo' || path === '/ceo-dashboard' || (path === '/' && !otherTab)) {
+      setActiveTab('CeoDashboard');
+      try {
+        localStorage.setItem('clearpath_active_tab', 'CeoDashboard');
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [authLoading, authUser?.email, userProfile?.email]);
 
   /** Real stories/contacts only — no seeded fake people. */
   const stories: { id: number; name: string; time: string; img: string }[] = [];
@@ -1027,6 +1041,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
     if (nextTab === 'CeoDashboard' && !isFounder()) {
+      if (authLoading) return;
       setActiveTab('StrictlyCharts');
       return;
     }
@@ -1191,7 +1206,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
       setActiveTab('Fundamentals');
     } else if (path === '/ceo' || path === '/ceo-dashboard') {
-      setActiveTab(isFounder() ? 'CeoDashboard' : 'StrictlyCharts');
+      if (authLoading || isFounder()) setActiveTab('CeoDashboard');
+      else setActiveTab('StrictlyCharts');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
@@ -1228,7 +1244,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         if (validHash) {
           const next = normalizeTabId(hash);
           if (next === 'CeoDashboard' && !isFounder()) {
-            setActiveTab('StrictlyCharts');
+            if (!authLoading) setActiveTab('StrictlyCharts');
           } else {
             setActiveTab(next);
           }
@@ -1245,7 +1261,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       window.removeEventListener('popstate', handlePopState);
       unsubscribe();
     };
-  }, [menuItems, authUser]);
+  }, [menuItems, authUser, authLoading, userProfile?.email]);
 
   return (
     <div 
