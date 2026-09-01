@@ -3123,13 +3123,13 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
+  // Batch quotes — Twelve Data then FMP. Cap 80 covers the Venture registry + typed tickers.
   app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
-      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
+      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 80.' });
     }
-    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 80);
     if (symbols.length === 0) {
       return res.status(400).json({ error: 'symbols required' });
     }

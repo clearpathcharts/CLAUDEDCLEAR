@@ -1,13 +1,15 @@
 /**
  * Second-layer market data: Financial Modeling Prep after Twelve Data.
+ * Every desk / registry / typed ticker is proxied (safe charset only).
  * Never fabricates prices. Missing FMP cells stay unavailable.
  */
+import { getEnabledAssets, getRegistryAsset } from '../constants/assetRegistry';
 import { historySymbol } from '../lib/institutional/vendorMaps';
 import { getFmpApiKey } from './secrets';
 
 const FMP_STABLE = 'https://financialmodelingprep.com/stable';
 
-/** Desk / registry ids → FMP /stable quote symbols. */
+/** Special FMP ids. Everything else is derived from the asset registry. */
 export const FMP_QUOTE_SYMBOL: Record<string, string> = {
   SPX: 'SPY',
   NDX: 'QQQ',
@@ -22,24 +24,50 @@ export const FMP_QUOTE_SYMBOL: Record<string, string> = {
   DXY: 'DXUSD',
   NATGAS: 'NGUSD',
   COPPER: 'HGUSD',
-  BTCUSD: 'BTCUSD',
-  ETHUSD: 'ETHUSD',
-  SOLUSD: 'SOLUSD',
 };
+
+function isSafeTicker(raw: string): boolean {
+  return /^[A-Z0-9./^=-]{1,24}$/.test(raw) && !raw.includes('..');
+}
 
 export function fmpQuoteSymbol(deskSymbol: string): string | null {
   const key = deskSymbol.trim().toUpperCase().replace(/\s+/g, '');
-  if (!key || key.includes('..')) return null;
+  if (!key || !isSafeTicker(key)) return null;
   const compact = key.replace(/\//g, '');
+
   if (FMP_QUOTE_SYMBOL[key]) return FMP_QUOTE_SYMBOL[key];
   if (FMP_QUOTE_SYMBOL[compact]) return FMP_QUOTE_SYMBOL[compact];
+
   const aliased = historySymbol(compact).symbol.toUpperCase().replace(/\//g, '');
   if (FMP_QUOTE_SYMBOL[aliased]) return FMP_QUOTE_SYMBOL[aliased];
-  if (/^[A-Z]{6}$/.test(compact)) return compact;
-  if (/^[A-Z]{1,5}$/.test(compact)) return compact;
-  if (/^[A-Z]{2,6}USD[T]?$/.test(compact)) return compact;
-  if (/^[A-Z.^]{1,8}$/.test(aliased)) return aliased;
-  return null;
+
+  const asset = getRegistryAsset(compact) || getRegistryAsset(key);
+  if (asset) {
+    if (FMP_QUOTE_SYMBOL[asset.symbol]) return FMP_QUOTE_SYMBOL[asset.symbol];
+    if (asset.category === 'forex') return asset.symbol;
+    if (asset.category === 'crypto') {
+      return asset.symbol.endsWith('USDT') ? asset.symbol.replace(/USDT$/, 'USD') : asset.symbol;
+    }
+    if (asset.category === 'stocks') return asset.symbol;
+    if (asset.category === 'indices') return aliased || asset.symbol;
+    if (asset.category === 'bonds') return FMP_QUOTE_SYMBOL[asset.symbol] || aliased;
+    if (asset.category === 'metals' || asset.category === 'commodities') {
+      return FMP_QUOTE_SYMBOL[asset.symbol] || asset.symbol;
+    }
+  }
+
+  if (aliased && aliased !== compact && isSafeTicker(aliased)) return aliased;
+  return compact;
+}
+
+/** Every enabled registry row must have an FMP proxy id. */
+export function fmpSymbolsForRegistry(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const asset of getEnabledAssets()) {
+    const mapped = fmpQuoteSymbol(asset.symbol);
+    if (mapped) out[asset.symbol] = mapped;
+  }
+  return out;
 }
 
 export function fmpChartInterval(twelveInterval: string): { kind: 'intraday'; path: string } | { kind: 'eod' } {
@@ -121,18 +149,50 @@ async function fmpGet(url: string): Promise<unknown> {
 }
 
 export async function fetchFmpQuote(deskSymbol: string): Promise<Record<string, string> | null> {
+  const map = await fetchFmpQuotes([deskSymbol]);
+  return map[deskSymbol] ?? null;
+}
+
+export async function fetchFmpQuotes(deskSymbols: string[]): Promise<Record<string, Record<string, string>>> {
   const apiKey = getFmpApiKey();
-  const mapped = fmpQuoteSymbol(deskSymbol);
-  if (!apiKey || !mapped) return null;
-  const url = `${FMP_STABLE}/quote?symbol=${encodeURIComponent(mapped)}&apikey=${encodeURIComponent(apiKey)}`;
-  try {
-    const data = await fmpGet(url);
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row || typeof row !== 'object') return null;
-    return normalizeFmpQuote(row as Record<string, unknown>, deskSymbol);
-  } catch {
-    return null;
+  const out: Record<string, Record<string, string>> = {};
+  if (!apiKey || deskSymbols.length === 0) return out;
+
+  const rows = deskSymbols
+    .map((desk) => ({ desk, fmp: fmpQuoteSymbol(desk) }))
+    .filter((row): row is { desk: string; fmp: string } => Boolean(row.fmp));
+  if (!rows.length) return out;
+
+  const uniqueFmp = [...new Set(rows.map((r) => r.fmp))];
+  const byFmp = new Map<string, Record<string, unknown>>();
+
+  for (let i = 0; i < uniqueFmp.length; i += 20) {
+    const chunk = uniqueFmp.slice(i, i + 20);
+    const url = `${FMP_STABLE}/quote?symbol=${encodeURIComponent(chunk.join(','))}&apikey=${encodeURIComponent(apiKey)}`;
+    try {
+      const data = await fmpGet(url);
+      const list = Array.isArray(data) ? data : data && typeof data === 'object' ? [data] : [];
+      for (const item of list) {
+        if (!item || typeof item !== 'object') continue;
+        const rec = item as Record<string, unknown>;
+        const id = String(rec.symbol || '').toUpperCase();
+        if (!id) continue;
+        byFmp.set(id, rec);
+        byFmp.set(id.replace(/^\^/, ''), rec);
+      }
+    } catch {
+      /* try remaining chunks */
+    }
   }
+
+  for (const row of rows) {
+    const want = row.fmp.toUpperCase();
+    const rec = byFmp.get(want) || byFmp.get(want.replace(/^\^/, ''));
+    if (!rec) continue;
+    const normalized = normalizeFmpQuote(rec, row.desk);
+    if (normalized) out[row.desk] = normalized;
+  }
+  return out;
 }
 
 export async function fetchFmpCandles(

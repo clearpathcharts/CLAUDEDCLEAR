@@ -87,7 +87,7 @@ function toCandle(c: { time: number; open: number; high: number; low: number; cl
 }
 
 async function fetchQuoteMap(symbols: string[]): Promise<Record<string, QuoteRow>> {
-  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 12);
+  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 80);
   const out: Record<string, QuoteRow> = {};
   if (unique.length === 0) return out;
   const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(unique.join(','))}`);
@@ -379,7 +379,6 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     async () => {
       const next: Partial<Record<CorrKey, number[]>> = {};
       for (const key of CORR_KEYS) {
-        if (key === 'VIX') continue;
         try {
           const series = await loadHistory(key, '1d');
           next[key] = closeSeries(series);

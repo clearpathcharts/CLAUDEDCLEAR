@@ -18,7 +18,7 @@
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 import { resolveProviderSymbol } from "../constants/assetRegistry";
 import { historySymbol } from "../lib/institutional/vendorMaps";
-import { fetchFmpCandles, fetchFmpQuote } from "./fmpMarketFallback";
+import { fetchFmpCandles, fetchFmpQuote, fetchFmpQuotes } from "./fmpMarketFallback";
 import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
 
 export interface TwelveDataHealth {
@@ -528,7 +528,16 @@ export async function getMarketData(symbol: string) {
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
-    return await fetchPrice(formatted);
+    try {
+      return await fetchPrice(formatted);
+    } catch (err) {
+      const fmp = await fetchFmpQuote(symbol);
+      if (fmp?.price) {
+        logHealthEvent('FALLBACK', `Price ${symbol} served from FMP after Twelve Data miss`);
+        return { price: fmp.price, vendor: 'FMP' };
+      }
+      throw err;
+    }
   }
 
   pendingRequests[cacheKey] = runFetch()
@@ -589,6 +598,7 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
     const isDxy = cleanSym === 'DXY' || cleanSym === 'DX-Y.F' || cleanSym === 'USDX' || cleanSym === 'DXY INDEX';
 
     if (isDxy) {
+      try {
       // DXY is genuinely computed from six live FX pairs. This is REAL data —
       // a legitimate derivation, not a fabrication. If any component is missing
       // or the batch query fails, we throw instead of inventing a value.
@@ -661,6 +671,9 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
         // Missing components — fail honestly. Do NOT fabricate a DXY value.
         throw new Error('Could not resolve all 6 major dollar index components from live API response.');
       }
+      } catch (err) {
+        return quoteWithFmpFallback(symbol, err);
+      }
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
@@ -711,11 +724,12 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
 
 /**
  * Batch quotes for ticker / multi-symbol UI.
- * DXY stays on the single-quote path (derived basket). Other symbols use one
- * Twelve Data comma-batch request. Cap at 12 symbols to protect credit budget.
+ * DXY stays on the single-quote path (derived basket, then FMP DXUSD).
+ * Other symbols use one Twelve Data comma-batch request, then FMP for misses.
+ * Cap at 80 so a full registry tab or typed watchlist is proxied, not truncated.
  */
 export async function getMarketQuotes(symbols: string[], apiKey: string): Promise<Record<string, any>> {
-  const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))].slice(0, 12);
+  const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))].slice(0, 80);
   const out: Record<string, any> = {};
   if (unique.length === 0) return out;
 
@@ -771,26 +785,37 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
     return batchData[provider] || null;
   };
 
+  const missing: typeof needFetch = [];
   for (const row of needFetch) {
     const item = pick(row.provider);
     if (item && item.status !== 'error' && (item.close || item.price)) {
       const normalized = { ...item, price: item.price ?? item.close, symbol: row.original };
       marketCache[`quote:${row.provider}`] = { data: normalized, timestamp: Date.now() };
       out[row.original] = normalized;
-      continue;
+    } else {
+      missing.push(row);
     }
-    try {
-      const fmp = await quoteWithFmpFallback(row.original, batchErr || new Error(item?.message || `No quote for ${row.provider}`));
-      marketCache[`quote:${row.provider}`] = { data: fmp, timestamp: Date.now() };
-      out[row.original] = fmp;
-    } catch (err: any) {
+  }
+
+  if (missing.length) {
+    const fmpMap = await fetchFmpQuotes(missing.map((r) => r.original));
+    if (Object.keys(fmpMap).length) {
+      logHealthEvent('FALLBACK', `Quotes from FMP after Twelve Data miss: ${Object.keys(fmpMap).join(',')}`);
+    }
+    for (const row of missing) {
+      const fmp = fmpMap[row.original];
+      if (fmp) {
+        marketCache[`quote:${row.provider}`] = { data: fmp, timestamp: Date.now() };
+        out[row.original] = fmp;
+        continue;
+      }
       const stale = marketCache[`quote:${row.provider}`];
       if (stale) {
         out[row.original] = stale.data;
       } else {
         out[row.original] = {
           error: true,
-          message: err?.message || item?.message || `No quote for ${row.provider}`,
+          message: (batchErr as Error)?.message || `No quote for ${row.provider}`,
           symbol: row.original,
         };
       }

@@ -6,11 +6,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { getEnabledAssets } from '../src/constants/assetRegistry.ts';
 import { formatSymbolForTwelveData } from '../src/server/marketDataGateway.ts';
 import {
   FMP_QUOTE_SYMBOL,
   fmpChartInterval,
   fmpQuoteSymbol,
+  fmpSymbolsForRegistry,
   normalizeFmpCandles,
   normalizeFmpQuote,
 } from '../src/server/fmpMarketFallback.ts';
@@ -32,6 +34,18 @@ assert.equal(fmpQuoteSymbol('EURUSD'), 'EURUSD');
 assert.equal(fmpQuoteSymbol('AAPL'), 'AAPL');
 assert.equal(fmpQuoteSymbol('../etc'), null);
 assert.ok(FMP_QUOTE_SYMBOL.WTI);
+
+const registryMap = fmpSymbolsForRegistry();
+for (const asset of getEnabledAssets()) {
+  assert.ok(registryMap[asset.symbol], `registry ${asset.symbol} must have an FMP proxy id`);
+  assert.ok(fmpQuoteSymbol(asset.providerSymbol), `provider ${asset.providerSymbol} must proxy`);
+}
+assert.equal(Object.keys(registryMap).length, getEnabledAssets().length);
+assert.equal(fmpQuoteSymbol('NVDA'), 'NVDA');
+assert.equal(fmpQuoteSymbol('GBPUSD'), 'GBPUSD');
+assert.equal(fmpQuoteSymbol('BTCUSDT'), 'BTCUSD');
+assert.equal(fmpQuoteSymbol('DXY'), 'DXUSD');
+assert.equal(formatSymbolForTwelveData('VIX'), 'VIX');
 
 assert.equal(fmpChartInterval('5min').kind, 'intraday');
 assert.equal(fmpChartInterval('1day').kind, 'eod');
@@ -67,7 +81,9 @@ assert.match(serverTs, /intelLimiter/);
 assert.match(serverTs, /fetchFmpQuote|getFmpApiKey\(\)/);
 
 const gateway = fs.readFileSync(path.join(root, 'src/server/marketDataGateway.ts'), 'utf8');
+assert.match(serverTs, /slice\(0, 80\)/);
 assert.match(gateway, /fetchFmpQuote/);
+assert.match(gateway, /fetchFmpQuotes/);
 assert.match(gateway, /fetchFmpCandles/);
 assert.match(gateway, /historySymbol/);
 

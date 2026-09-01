@@ -13,6 +13,7 @@ export const HISTORY_ALIAS: Record<string, { provider: string; note: string }> =
   DJI: { provider: 'DIA', note: 'DIA ETF proxy for Dow Jones' },
   US10Y: { provider: 'TNX', note: 'CBOE 10-year yield index' },
   US30Y: { provider: 'TYX', note: 'CBOE 30-year yield index' },
+  VIX: { provider: 'VIX', note: 'CBOE volatility index' },
 };
 
 /**

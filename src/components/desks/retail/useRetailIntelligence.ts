@@ -58,7 +58,7 @@ function toCandle(c: {
 }
 
 async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQuote>> {
-  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 24);
+  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 80);
   const out: Record<string, RetailQuote> = {};
   if (unique.length === 0) return out;
   const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(unique.join(','))}`);
