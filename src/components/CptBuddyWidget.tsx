@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Send, RotateCcw } from "lucide-react";
+import { X, Send, RotateCcw, List } from "lucide-react";
 import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc, deleteDoc } from "../firebase";
 import type { BuddyBondProfile } from "../lib/buddyBond";
+import {
+  MAX_CONVERSATION_BULLETS,
+  fallbackConversationBullet,
+  mergeMemoryLines,
+  normalizeConversationBullets,
+} from "../lib/buddyMemory";
+import "./CptBuddyWidget.css";
 
 /* ============================================================
    C.P.T. - PERSONAL BUDDY (grows with you)
 
    HOW MEMORY WORKS NOW:
-   1. Name, skill, facts, chat, and a platonic "bond profile"
+   1. Name, skill, facts, conversation bullets, chat, and a platonic "bond profile"
       (mood, neuro self-disclosures, emotional themes, pace)
       save to Firestore: users/{uid}/buddy_memory/profile
    2. On open, C.P.T. greets by name and gently checks in on
@@ -31,6 +38,7 @@ const STORAGE_KEY_SKILL = "cpt_buddy_skill_level";
 const STORAGE_KEY_FACTS = "cpt_buddy_facts";
 const STORAGE_KEY_MSGS = "cpt_buddy_messages";
 const STORAGE_KEY_BOND = "cpt_buddy_bond";
+const STORAGE_KEY_BULLETS = "cpt_buddy_conversation_bullets";
 const MAX_SAVED_MESSAGES = 120;
 const MAX_FACTS = 80;
 const MAX_NAME_LENGTH = 40;
@@ -127,6 +135,7 @@ function clearLocalBuddyMemory() {
     localStorage.removeItem(STORAGE_KEY_FACTS);
     localStorage.removeItem(STORAGE_KEY_MSGS);
     localStorage.removeItem(STORAGE_KEY_BOND);
+    localStorage.removeItem(STORAGE_KEY_BULLETS);
   } catch {}
 }
 
@@ -135,6 +144,7 @@ export const CptBuddyWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [facts, setFacts] = useState<string[]>([]);
+  const [conversationBullets, setConversationBullets] = useState<string[]>([]);
   const [bond, setBond] = useState<BuddyBondProfile>(emptyBond);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -146,7 +156,10 @@ export const CptBuddyWidget: React.FC = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [shortViewport, setShortViewport] = useState(false);
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const [kbInset, setKbInset] = useState(0);
+  const [vvHeight, setVvHeight] = useState(0);
   const [showDayChips, setShowDayChips] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -160,6 +173,7 @@ export const CptBuddyWidget: React.FC = () => {
       rawFacts: unknown,
       rawMsgs: unknown,
       rawBond?: unknown,
+      rawBullets?: unknown,
     ) => {
       const cleanedName = typeof rawName === "string" ? sanitizeBuddyName(rawName) : null;
       const skill = typeof rawSkill === "string" && rawSkill.trim() ? rawSkill.trim() : null;
@@ -170,16 +184,34 @@ export const CptBuddyWidget: React.FC = () => {
               (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
             )
           : [];
+      let nextBullets = normalizeConversationBullets(rawBullets);
+      if (nextBullets.length === 0 && nextMsgs.length) {
+        nextBullets = mergeMemoryLines(
+          [],
+          nextMsgs
+            .filter((m) => m.role === "user")
+            .map((m) => fallbackConversationBullet(m.content))
+            .filter((b): b is string => !!b),
+          MAX_CONVERSATION_BULLETS
+        );
+      }
       const nextBond =
         rawBond && typeof rawBond === "object" ? { ...emptyBond(), ...(rawBond as BuddyBondProfile) } : emptyBond();
       if (cancelled) return;
       setUserName(cleanedName);
       setSkillLevel(skill);
       setFacts(nextFacts);
+      setConversationBullets(nextBullets);
       setBond(nextBond);
       setMessages(nextMsgs);
       setSetupStep(cleanedName && skill ? "done" : "name");
       setMemoryLoaded(true);
+
+      if (nextBullets.length && normalizeConversationBullets(rawBullets).length === 0) {
+        try {
+          localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(nextBullets));
+        } catch {}
+      }
 
       if (rawName && !cleanedName) {
         try {
@@ -187,6 +219,7 @@ export const CptBuddyWidget: React.FC = () => {
           localStorage.removeItem(STORAGE_KEY_MSGS);
           if (skill) localStorage.setItem(STORAGE_KEY_SKILL, skill);
           localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(nextFacts.slice(-MAX_FACTS)));
+          localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(nextBullets.slice(-MAX_CONVERSATION_BULLETS)));
           localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
         } catch {}
         if (user?.uid) {
@@ -196,6 +229,7 @@ export const CptBuddyWidget: React.FC = () => {
               userName: null,
               skillLevel: skill,
               facts: nextFacts.slice(-MAX_FACTS),
+              conversationBullets: nextBullets.slice(-MAX_CONVERSATION_BULLETS),
               messages: [],
               bond: nextBond,
               updatedAt: Date.now(),
@@ -212,10 +246,12 @@ export const CptBuddyWidget: React.FC = () => {
       let savedFacts: string[] = [];
       let savedMsgs: ChatMessage[] = [];
       let savedBond: BuddyBondProfile = emptyBond();
+      let savedBullets: string[] = [];
       try { savedFacts = JSON.parse(localStorage.getItem(STORAGE_KEY_FACTS) || "[]"); } catch {}
       try { savedMsgs = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS) || "[]"); } catch {}
       try { savedBond = { ...emptyBond(), ...JSON.parse(localStorage.getItem(STORAGE_KEY_BOND) || "{}") }; } catch {}
-      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs, savedBond);
+      try { savedBullets = JSON.parse(localStorage.getItem(STORAGE_KEY_BULLETS) || "[]"); } catch {}
+      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs, savedBond, savedBullets);
     };
 
     const loadMemory = async () => {
@@ -224,7 +260,7 @@ export const CptBuddyWidget: React.FC = () => {
           const snap: any = await getDoc(doc(getDb(), "users", user.uid, "buddy_memory", "profile"));
           if (!cancelled && snap && typeof snap.exists === "function" && snap.exists()) {
             const d = snap.data() || {};
-            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages, d.bond);
+            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages, d.bond, d.conversationBullets);
             return;
           }
         } catch (e) {
@@ -244,17 +280,20 @@ export const CptBuddyWidget: React.FC = () => {
     userName: string | null;
     skillLevel: string | null;
     facts: string[];
+    conversationBullets: string[];
     messages: ChatMessage[];
     bond: BuddyBondProfile;
   }) => {
     const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
     const trimmedFacts = next.facts.slice(-MAX_FACTS);
+    const trimmedBullets = normalizeConversationBullets(next.conversationBullets);
     const nextBond = next.bond || emptyBond();
 
     try {
       if (next.userName) localStorage.setItem(STORAGE_KEY_NAME, next.userName);
       if (next.skillLevel) localStorage.setItem(STORAGE_KEY_SKILL, next.skillLevel);
       localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(trimmedFacts));
+      localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(trimmedBullets));
       localStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(trimmedMsgs));
       localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
     } catch {}
@@ -267,6 +306,7 @@ export const CptBuddyWidget: React.FC = () => {
             userName: next.userName || null,
             skillLevel: next.skillLevel || null,
             facts: trimmedFacts,
+            conversationBullets: trimmedBullets,
             messages: trimmedMsgs,
             bond: nextBond,
             updatedAt: Date.now(),
@@ -317,6 +357,42 @@ export const CptBuddyWidget: React.FC = () => {
     };
   }, []);
 
+  /* iOS Safari + Android Chrome: lift the sheet with the visual viewport / keyboard */
+  useEffect(() => {
+    const apply = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        setKbInset(0);
+        setVvHeight(window.innerHeight);
+        return;
+      }
+      setVvHeight(Math.round(vv.height));
+      setKbInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    };
+    apply();
+    window.visualViewport?.addEventListener("resize", apply);
+    window.visualViewport?.addEventListener("scroll", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", apply);
+      window.visualViewport?.removeEventListener("scroll", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !narrowViewport) return;
+    const html = document.documentElement;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = html.style.overflow;
+    document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      html.style.overflow = prevHtml;
+    };
+  }, [isOpen, narrowViewport]);
+
   const handleNameSubmit = () => {
     const cleaned = sanitizeBuddyName(input);
     if (!cleaned) {
@@ -336,7 +412,7 @@ export const CptBuddyWidget: React.FC = () => {
       };
       setMessages([intro]);
       setShowDayChips(true);
-      void saveMemory({ userName: cleaned, skillLevel, facts, messages: [intro], bond });
+      void saveMemory({ userName: cleaned, skillLevel, facts, conversationBullets, messages: [intro], bond });
       return;
     }
 
@@ -352,7 +428,7 @@ export const CptBuddyWidget: React.FC = () => {
     };
     setMessages([intro]);
     setShowDayChips(true);
-    void saveMemory({ userName, skillLevel: level, facts, messages: [intro], bond });
+    void saveMemory({ userName, skillLevel: level, facts, conversationBullets, messages: [intro], bond });
   };
 
   /** Wipe name, facts, and chat so a bad memory (or mistaken name) can be fixed. */
@@ -370,9 +446,11 @@ export const CptBuddyWidget: React.FC = () => {
     setUserName(null);
     setSkillLevel(null);
     setFacts([]);
+    setConversationBullets([]);
     setBond(emptyBond());
     setMessages([]);
     setShowDayChips(false);
+    setShowMemory(false);
     setSetupStep("name");
     clearLocalBuddyMemory();
 
@@ -388,6 +466,7 @@ export const CptBuddyWidget: React.FC = () => {
               userName: null,
               skillLevel: null,
               facts: [],
+              conversationBullets: [],
               messages: [],
               bond: emptyBond(),
               updatedAt: Date.now(),
@@ -423,6 +502,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
+          conversationBullets,
           bondProfile: bond,
           chartContext: mentorContext,
           conversationHistory: newMessages.slice(-30).map((m) => ({ role: m.role, content: m.content })),
@@ -444,6 +524,11 @@ export const CptBuddyWidget: React.FC = () => {
         setFacts(updatedFacts);
       }
 
+      const fromApi = normalizeConversationBullets(data.conversationBullets, 4);
+      const localBullet = fromApi.length ? [] : [fallbackConversationBullet(question)].filter((b): b is string => !!b);
+      const updatedBullets = mergeMemoryLines(conversationBullets, [...fromApi, ...localBullet], MAX_CONVERSATION_BULLETS);
+      setConversationBullets(updatedBullets);
+
       const updatedBond = mergeBondLocal(bond, data.bondPatch || undefined);
       setBond(updatedBond);
       setMessages(updatedMessages);
@@ -451,6 +536,7 @@ export const CptBuddyWidget: React.FC = () => {
         userName,
         skillLevel,
         facts: updatedFacts,
+        conversationBullets: updatedBullets,
         messages: updatedMessages,
         bond: updatedBond,
       });
@@ -475,20 +561,30 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
+  const phoneSheet = isOpen && narrowViewport && !shortViewport;
+  const visibleH = vvHeight > 0 ? vvHeight : 640;
+  const panelMaxHeight = shortViewport
+    ? "min(260px, calc(100dvh - 24px))"
+    : narrowViewport
+      ? `min(${Math.max(220, visibleH - 12)}px, 100dvh)`
+      : "min(480px, calc(100dvh - 40px))";
+
   // Portal to <body>: full-screen overlays elsewhere in the app (e.g. chart
-  // blackout mode) also portal to <body>, and the buddy must stack above them
-  // (zIndex 200 vs the overlays' z-150) instead of being trapped inside the
-  // app root's stacking context.
+  // blackout mode) also portal to <body>. zIndex 280 sits above desk chrome
+  // and the chart drawing dock (250) so the buddy stays tappable on phones.
   return createPortal(
     <div
+      className="cpt-buddy-root"
+      data-cpt-buddy={isOpen ? "open" : "fab"}
       style={{
         position: "fixed",
-        bottom: "max(12px, env(safe-area-inset-bottom))",
-        right: "max(12px, env(safe-area-inset-right))",
-        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left))" : "auto",
-        zIndex: 200,
+        bottom: kbInset > 8 ? kbInset : "max(12px, env(safe-area-inset-bottom, 0px))",
+        right: "max(12px, env(safe-area-inset-right, 0px))",
+        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left, 0px))" : "auto",
+        zIndex: 280,
         display: "flex",
         justifyContent: "flex-end",
+        alignItems: "flex-end",
         pointerEvents: "none",
       }}
     >
@@ -496,48 +592,32 @@ export const CptBuddyWidget: React.FC = () => {
       {!isOpen && (
         <button
           type="button"
+          className="cpt-buddy-fab"
           onClick={handleOpen}
           aria-label="Open C.P.T. Personal Buddy"
-          style={{
-            width: narrowViewport ? 52 : 64,
-            height: narrowViewport ? 52 : 64,
-            borderRadius: "50%",
-            border: "2px solid #FF1493",
-            boxShadow: "0 0 20px rgba(255,20,147,0.6)",
-            overflow: "hidden",
-            cursor: "pointer",
-            background: "#030307",
-            padding: 0,
-            pointerEvents: "auto",
-          }}
         >
           <img
             src="/cpt-buddy-icon.png"
             alt="C.P.T. Personal Buddy"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            draggable={false}
+            decoding="async"
           />
         </button>
       )}
 
-      {/* Chat panel — shorter on phone landscape so charts stay usable */}
+      {/* Chat panel — phone sheet above the keyboard; compact in landscape */}
       {isOpen && (
         <div
+          className="cpt-buddy-panel"
+          data-phone-sheet={phoneSheet ? "1" : "0"}
+          role="dialog"
+          aria-modal="true"
+          aria-label="C.P.T. Personal Buddy"
           style={{
             width: narrowViewport ? "100%" : "min(320px, calc(100vw - 24px))",
             maxWidth: "100%",
-            maxHeight: shortViewport
-              ? "min(260px, calc(100dvh - 24px))"
-              : narrowViewport
-                ? "min(55dvh, 420px)"
-                : "min(480px, calc(100dvh - 40px))",
-            display: "flex",
-            flexDirection: "column",
-            background: "rgba(3,3,7,0.97)",
-            border: "1px solid rgba(255,20,147,0.4)",
-            borderRadius: 16,
-            boxShadow: "0 0 30px rgba(255,20,147,0.3)",
-            overflow: "hidden",
-            pointerEvents: "auto",
+            height: phoneSheet ? `min(92dvh, ${Math.max(240, visibleH - 12)}px)` : undefined,
+            maxHeight: panelMaxHeight,
           }}
         >
           {/* Header */}
@@ -546,13 +626,14 @@ export const CptBuddyWidget: React.FC = () => {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              padding: "12px 14px",
+              padding: "8px 8px 8px 14px",
               borderBottom: "1px solid rgba(255,255,255,0.08)",
             }}
           >
             <img
               src="/cpt-buddy-icon.png"
               alt=""
+              draggable={false}
               style={{ width: 32, height: 32, borderRadius: "50%" }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -567,39 +648,71 @@ export const CptBuddyWidget: React.FC = () => {
             </div>
             <button
               type="button"
+              className="cpt-buddy-icon-btn"
+              onClick={() => setShowMemory((v) => !v)}
+              aria-label="Conversation memory"
+              aria-pressed={showMemory}
+              title="Conversation memory"
+            >
+              <List size={18} />
+            </button>
+            <button
+              type="button"
+              className="cpt-buddy-icon-btn"
               onClick={() => { void handleResetBuddy(); }}
               disabled={isResetting || !memoryLoaded}
               aria-label="Reset C.P.T. memory"
               title="Reset chat & memory"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: isResetting ? "#666666" : "#AAAAAA",
-                cursor: isResetting || !memoryLoaded ? "default" : "pointer",
-                padding: 4,
-                display: "flex",
-                alignItems: "center",
-              }}
             >
-              <RotateCcw size={16} />
+              <RotateCcw size={18} />
             </button>
             <button
               type="button"
+              className="cpt-buddy-icon-btn"
               onClick={() => setIsOpen(false)}
               aria-label="Close"
-              style={{ background: "transparent", border: "none", color: "#AAAAAA", cursor: "pointer", padding: 4 }}
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
+
+          {showMemory && (
+            <div className="cpt-buddy-memory" aria-label="What C.P.T. remembers">
+              <div className="cpt-buddy-memory__title">Memory</div>
+              {conversationBullets.length === 0 && facts.length === 0 ? (
+                <p className="cpt-buddy-memory__empty">Nothing saved yet. Talk with C.P.T. and conversation bullets land here.</p>
+              ) : (
+                <>
+                  {conversationBullets.length > 0 && (
+                    <>
+                      <div className="cpt-buddy-memory__kicker">Conversation</div>
+                      <ul className="cpt-buddy-memory__list">
+                        {conversationBullets.slice(-MAX_CONVERSATION_BULLETS).reverse().map((bullet) => (
+                          <li key={bullet}>{bullet}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {facts.length > 0 && (
+                    <>
+                      <div className="cpt-buddy-memory__kicker">Lasting facts</div>
+                      <ul className="cpt-buddy-memory__list">
+                        {facts.slice(-24).reverse().map((fact) => (
+                          <li key={fact}>{fact}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Body */}
           <div
             ref={scrollRef}
+            className="cpt-buddy-log"
             style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: 12,
               minHeight: shortViewport ? 72 : narrowViewport ? 120 : 200,
             }}
           >
@@ -626,18 +739,17 @@ export const CptBuddyWidget: React.FC = () => {
                     <button
                       key={lvl}
                       type="button"
+                      className="cpt-buddy-skill"
                       onClick={() => handleSkillSelect(lvl)}
                       style={{
-                        textAlign: "left",
-                        padding: "8px 12px",
+                        padding: "10px 12px",
                         borderRadius: 8,
                         border: "1px solid rgba(255,20,147,0.3)",
                         background: "rgba(255,20,147,0.08)",
                         color: "#FF1493",
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: 700,
                         textTransform: "capitalize",
-                        cursor: "pointer",
                       }}
                     >
                       {lvl}
@@ -726,18 +838,17 @@ export const CptBuddyWidget: React.FC = () => {
                 <button
                   key={`day-${chip}`}
                   type="button"
+                  className="cpt-buddy-chip"
                   onClick={() => {
                     void handleSend(chip);
                   }}
                   style={{
-                    fontSize: 10,
-                    padding: "6px 10px",
+                    fontSize: 14,
+                    padding: "8px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(255,20,147,0.4)",
                     background: "rgba(255,20,147,0.1)",
                     color: "#FF9AD5",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   {chip}
@@ -761,16 +872,15 @@ export const CptBuddyWidget: React.FC = () => {
                 <button
                   key={`ask-${prompt}`}
                   type="button"
+                  className="cpt-buddy-chip"
                   onClick={() => { void handleSend(prompt); }}
                   style={{
-                    fontSize: 10,
-                    padding: "6px 10px",
+                    fontSize: 14,
+                    padding: "8px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(0,229,255,0.35)",
                     background: "rgba(0,229,255,0.08)",
                     color: "#00E5FF",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   {prompt}
@@ -784,6 +894,7 @@ export const CptBuddyWidget: React.FC = () => {
             <div style={{ display: "flex", gap: 6, padding: 10, borderTop: setupStep === "done" ? "none" : "1px solid rgba(255,255,255,0.08)" }}>
               <input
                 type="text"
+                className="cpt-buddy-input"
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
@@ -801,32 +912,21 @@ export const CptBuddyWidget: React.FC = () => {
                     : "Message C.P.T., your platonic ClearPath buddy"
                 }
                 maxLength={setupStep === "name" ? MAX_NAME_LENGTH : undefined}
-                style={{
-                  flex: 1,
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8,
-                  padding: "8px 10px",
-                  color: "#FFFFFF",
-                  fontSize: 13,
-                  outline: "none",
-                }}
+                enterKeyHint={setupStep === "name" ? "done" : "send"}
+                autoComplete={setupStep === "name" ? "given-name" : "off"}
+                autoCapitalize={setupStep === "name" ? "words" : "sentences"}
+                autoCorrect="on"
+                spellCheck={setupStep !== "name"}
+                inputMode="text"
               />
               <button
                 type="button"
+                className="cpt-buddy-send"
                 onClick={setupStep === "name" ? handleNameSubmit : () => { void handleSend(); }}
                 disabled={isLoading || isResetting}
                 aria-label="Send"
-                style={{
-                  background: "rgba(255,20,147,0.15)",
-                  border: "1px solid rgba(255,20,147,0.4)",
-                  borderRadius: 8,
-                  padding: "8px 10px",
-                  color: "#FF1493",
-                  cursor: "pointer",
-                }}
               >
-                <Send size={16} />
+                <Send size={18} />
               </button>
             </div>
           )}

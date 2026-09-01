@@ -18,7 +18,7 @@ import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import { PlanComparisonTable } from './components/PlanComparisonTable';
 import AppUpdateBanner from './components/AppUpdateBanner';
-import { AppShellProvider, useAppShell } from './contexts/AppShellContext';
+import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
@@ -34,11 +34,10 @@ function AuthenticatedShell({
   profile: (typeof advancedProfiles)[keyof typeof advancedProfiles];
   onProfileChange: (id: string) => void;
 }) {
-  const { isAppShell } = useAppShell();
   return (
     <div className="clearpath-glass-root">
       <Dashboard profile={profile} onProfileChange={onProfileChange} />
-      {!isAppShell && <CptBuddyWidget />}
+      <CptBuddyWidget />
     </div>
   );
 }
