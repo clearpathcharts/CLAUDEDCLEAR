@@ -307,7 +307,7 @@ export default function Auth() {
   ];
 
   return (
-    <div className="relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
+    <div className="scrollbar-panel relative min-h-[100dvh] w-full bg-transparent text-[#FFFFFF] font-sans selection:bg-[#FF1493] selection:text-white overflow-y-auto block">
       <a href="#main-content" className="cp-skip-link">
         Skip to main content
       </a>

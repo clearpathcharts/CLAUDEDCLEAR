@@ -1497,7 +1497,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
+        <div className="scrollbar-panel flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
           <div className="px-6 py-8 border-b" style={{ borderColor: `${profile.borderA}22` }}>
             <div className="text-[15px] font-black uppercase tracking-[0.2em] mb-6 text-[#ff8c00]">Stories</div>
             {stories.length === 0 ? (
@@ -1703,7 +1703,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-[#050314] overflow-y-auto"
+            className="scrollbar-panel fixed inset-0 z-[9999] bg-[#050314] overflow-y-auto"
           >
             <Suspense fallback={
               <div className="min-h-screen bg-[#050314] flex flex-col items-center justify-center space-y-4">

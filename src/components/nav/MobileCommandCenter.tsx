@@ -302,6 +302,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
 
           <div
             className="
+              scrollbar-panel
               fixed top-0 left-0 right-0 z-[100]
               max-h-[90vh] overflow-y-auto
               bg-black/95 backdrop-blur-3xl

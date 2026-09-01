@@ -278,7 +278,7 @@ function FundamentalShell() {
       <HeaderBar />
       <CompanyIdentity />
       <ResearchRail />
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="scrollbar-panel min-h-0 flex-1 overflow-auto">
         <BentoWorkspace
           expandedId={expandedId}
           onExpand={(id) => setExpandedId(id ? id : null)}

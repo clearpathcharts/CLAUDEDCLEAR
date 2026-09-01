@@ -944,7 +944,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
 
         {/* MODAL OVERLAY FOR COMPLIANCE SETUP */}
         {isComplianceModalOpen && (
-          <div className="fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
+          <div className="scrollbar-panel fixed inset-0 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 z-[9999] overflow-y-auto">
             <div className="bg-[#030303] border border-zinc-800 rounded-[2rem] w-full max-w-4xl p-6 md:p-10 relative shadow-[0_0_50px_rgba(0,255,255,0.15)] my-8">
               <button 
                 onClick={() => setIsComplianceModalOpen(false)}

@@ -640,7 +640,7 @@ export default function GoogleDesk() {
   }, [selectedFormId]);
 
   return (
-    <div className="relative min-h-screen bg-[#050505] p-6 text-white rounded-[2.5rem] border border-white/5 shadow-2xl overflow-y-auto">
+    <div className="scrollbar-panel relative min-h-screen bg-[#050505] p-6 text-white rounded-[2.5rem] border border-white/5 shadow-2xl overflow-y-auto">
       
       {/* Absolute floating cyber decorations */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[#00FFFF]/5 rounded-full blur-3xl pointer-events-none" />

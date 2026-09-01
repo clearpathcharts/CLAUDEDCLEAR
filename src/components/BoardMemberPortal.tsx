@@ -90,7 +90,7 @@ export default function BoardMemberPortal({ member, onClose }: { member: BoardMe
       </div>
 
       {/* Grid Content */}
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+      <div className="scrollbar-panel flex-1 overflow-y-auto p-8 custom-scrollbar">
         <div className="max-w-7xl mx-auto space-y-8">
           
           {/* Header Stats */}

@@ -357,9 +357,9 @@ canvas {
 }
 
 /* Nested scrollbars — three colors so stacked tracks are readable:
-   MAGENTA  = page (html)
-   CYAN     = large panel (#desk-main, encyclopedia columns, desk doors)
-   ORANGE   = inner list / held file / widget (keep lava) */
+   MAGENTA  = page (html) — also the only track on Home / Charts / Yours (one-scrollbar rule)
+   CYAN     = large first-level panel (desks, encyclopedia, CEO, auth/public shells, overlays)
+   ORANGE   = inner list / held file / widget (keep lava; body * default) */
 .custom-scrollbar,
 .custom-scrollbar-lava,
 .custom-scrollbar-ice,
@@ -373,16 +373,25 @@ html {
   scrollbar-color: var(--scroll-page) var(--lava-track);
 }
 
+/* :is() includes IDs so this beats body *:not(...) (0,2,1). Do not put
+   widget lists / max-h-* / .rt-held-file / .custom-scrollbar children here. */
 html:not(.no-scrollbar) :is(
   #desk-main,
   #main-scroll-viewport,
+  #cinema-modal-overlay,
   .main-container,
   .left-side,
   .scrollbar-panel,
+  main,
   [data-retail-door],
   [data-institutional-door],
   [data-fundamental-door],
-  [data-neuro-door]
+  [data-neuro-door],
+  .min-h-\[100dvh\].overflow-y-auto,
+  .h-\[100dvh\].overflow-y-auto,
+  .min-h-screen.overflow-y-auto,
+  .min-h-full.overflow-y-auto,
+  .fixed.inset-0.overflow-y-auto
 ) {
   scrollbar-width: thin;
   scrollbar-color: var(--scroll-panel) var(--lava-track);
@@ -467,13 +476,20 @@ html::-webkit-scrollbar-button {
 html:not(.no-scrollbar) :is(
   #desk-main,
   #main-scroll-viewport,
+  #cinema-modal-overlay,
   .main-container,
   .left-side,
   .scrollbar-panel,
+  main,
   [data-retail-door],
   [data-institutional-door],
   [data-fundamental-door],
-  [data-neuro-door]
+  [data-neuro-door],
+  .min-h-\[100dvh\].overflow-y-auto,
+  .h-\[100dvh\].overflow-y-auto,
+  .min-h-screen.overflow-y-auto,
+  .min-h-full.overflow-y-auto,
+  .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-thumb {
   background: var(--scroll-panel);
   background-image: var(--scroll-panel-gradient);
@@ -485,13 +501,20 @@ html:not(.no-scrollbar) :is(
 html:not(.no-scrollbar) :is(
   #desk-main,
   #main-scroll-viewport,
+  #cinema-modal-overlay,
   .main-container,
   .left-side,
   .scrollbar-panel,
+  main,
   [data-retail-door],
   [data-institutional-door],
   [data-fundamental-door],
-  [data-neuro-door]
+  [data-neuro-door],
+  .min-h-\[100dvh\].overflow-y-auto,
+  .h-\[100dvh\].overflow-y-auto,
+  .min-h-screen.overflow-y-auto,
+  .min-h-full.overflow-y-auto,
+  .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-thumb:hover {
   background-image: linear-gradient(180deg, #ffffff 0%, #00ffff 50%, #00e5ff 100%);
   box-shadow: inset 0 0 9px rgba(0, 255, 255, 1), 0 0 14px rgba(0, 255, 255, 0.85);
@@ -500,13 +523,20 @@ html:not(.no-scrollbar) :is(
 html:not(.no-scrollbar) :is(
   #desk-main,
   #main-scroll-viewport,
+  #cinema-modal-overlay,
   .main-container,
   .left-side,
   .scrollbar-panel,
+  main,
   [data-retail-door],
   [data-institutional-door],
   [data-fundamental-door],
-  [data-neuro-door]
+  [data-neuro-door],
+  .min-h-\[100dvh\].overflow-y-auto,
+  .h-\[100dvh\].overflow-y-auto,
+  .min-h-screen.overflow-y-auto,
+  .min-h-full.overflow-y-auto,
+  .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-button {
   background-color: var(--scroll-panel);
   border: 1px solid rgba(0, 255, 255, 0.5);
@@ -515,15 +545,43 @@ html:not(.no-scrollbar) :is(
 html:not(.no-scrollbar) :is(
   #desk-main,
   #main-scroll-viewport,
+  #cinema-modal-overlay,
   .main-container,
   .left-side,
   .scrollbar-panel,
+  main,
   [data-retail-door],
   [data-institutional-door],
   [data-fundamental-door],
-  [data-neuro-door]
+  [data-neuro-door],
+  .min-h-\[100dvh\].overflow-y-auto,
+  .h-\[100dvh\].overflow-y-auto,
+  .min-h-screen.overflow-y-auto,
+  .min-h-full.overflow-y-auto,
+  .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-track {
   box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.16);
+}
+
+/* Nested lists inside cyan panels stay lava orange */
+html:not(.no-scrollbar) :is(
+  .rt-held-file,
+  .retail-bento-body,
+  .retail-slide-body
+) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--lava-magma) var(--lava-track);
+}
+html:not(.no-scrollbar) :is(
+  .rt-held-file,
+  .retail-bento-body,
+  .retail-slide-body
+)::-webkit-scrollbar-thumb {
+  background: var(--lava-magma);
+  background-image: var(--lava-thumb-gradient);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
 }
 
 /* Intentionally hidden scrollbars (nav chips, tickers, etc.) */
