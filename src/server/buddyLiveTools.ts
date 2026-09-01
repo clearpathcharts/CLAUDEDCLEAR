@@ -103,6 +103,7 @@ export function sanitizeBuddySymbol(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const s = raw.trim();
   if (!SYMBOL_RE.test(s)) return null;
+  if (s.includes('..') || s.startsWith('/') || s.startsWith('.')) return null;
   return s;
 }
 
@@ -340,7 +341,7 @@ export async function runBuddyWithLiveTools(params: {
 
     messages.push({
       role: 'assistant',
-      content: text || null,
+      content: text || '',
       tool_calls: toolCalls.slice(0, MAX_TOOLS_PER_ROUND),
     });
 
