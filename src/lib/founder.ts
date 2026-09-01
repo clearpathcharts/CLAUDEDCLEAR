@@ -5,6 +5,11 @@ export function isFounderEmail(email: string | null | undefined): boolean {
   return (email || '').trim().toLowerCase() === FOUNDER_EMAIL;
 }
 
+/** True if any session/profile/Google email is the founder inbox. */
+export function isFounderSession(...emails: Array<string | null | undefined>): boolean {
+  return emails.some((email) => isFounderEmail(email));
+}
+
 /** Optional Firebase Auth uid for the founder Google account — set FOUNDER_FIREBASE_UID on Cloud Run. */
 export function getFounderFirebaseUid(): string {
   return (process.env.FOUNDER_FIREBASE_UID || '').trim();

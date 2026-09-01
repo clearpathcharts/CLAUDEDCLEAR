@@ -11,6 +11,7 @@ import {
   PrivateAuthClientError,
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
+import { isFounderEmail } from '../lib/founder';
 
 type Step =
   | 'identify'
@@ -143,7 +144,11 @@ export default function PrivateLoginDesk({
         setBusy(false);
         return;
       }
-      window.location.reload();
+      if (isFounderEmail(email) || isFounderEmail(result.user?.email)) {
+        window.location.assign('/ceo');
+      } else {
+        window.location.reload();
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed.');
       setBusy(false);

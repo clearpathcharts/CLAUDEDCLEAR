@@ -11,7 +11,7 @@ import { useDeskAppearance } from './DeskAppearanceContext';
 import { clampOpacity } from '../../lib/deskColorChart';
 import ColorChartPicker from './ColorChartPicker';
 import { useAuth } from '../../contexts/FirebaseContext';
-import { isFounderEmail } from '../../lib/founder';
+import { isFounderSession } from '../../lib/founder';
 import { auth } from '../../firebase';
 
 type Props = {
@@ -43,7 +43,7 @@ export default function TraderDeskChrome({ active }: Props) {
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -53,9 +53,7 @@ export default function TraderDeskChrome({ active }: Props) {
 
   const hour = utcHourFrom(now);
   const utcStamp = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const founderOk =
-    isFounderEmail(user?.email) ||
-    isFounderEmail(auth.currentUser?.email);
+  const founderOk = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
 
   return (
     <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">

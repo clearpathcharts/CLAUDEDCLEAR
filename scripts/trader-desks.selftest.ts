@@ -313,7 +313,7 @@ for (const rel of srcFiles) {
     assert.match(text, /togglePaper/);
     assert.match(text, /data-ceo-ops-link/);
     assert.match(text, /\/ceo/);
-    assert.match(text, /isFounderEmail/);
+    assert.match(text, /isFounderSession/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
   }
