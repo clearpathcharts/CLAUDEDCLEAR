@@ -14,6 +14,7 @@ import {
 } from '../../lib/traderDesks';
 import { DESK_SEO } from '../../content/traderDesksCopy';
 import { TRADER_DESKS } from '../../lib/traderDesks';
+import { CptBuddyWidget } from '../CptBuddyWidget';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -92,6 +93,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   return (
     <DeskAppearanceProvider deskId={deskId}>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} />
+      <CptBuddyWidget />
     </DeskAppearanceProvider>
   );
 }

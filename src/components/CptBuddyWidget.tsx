@@ -5,6 +5,7 @@ import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc, deleteDoc } from "../firebase";
 import type { BuddyBondProfile } from "../lib/buddyBond";
+import "./CptBuddyWidget.css";
 
 /* ============================================================
    C.P.T. - PERSONAL BUDDY (grows with you)
@@ -146,6 +147,8 @@ export const CptBuddyWidget: React.FC = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [shortViewport, setShortViewport] = useState(false);
   const [narrowViewport, setNarrowViewport] = useState(false);
+  const [kbInset, setKbInset] = useState(0);
+  const [vvHeight, setVvHeight] = useState(0);
   const [showDayChips, setShowDayChips] = useState(false);
   const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -317,6 +320,42 @@ export const CptBuddyWidget: React.FC = () => {
     };
   }, []);
 
+  /* iOS Safari + Android Chrome: lift the sheet with the visual viewport / keyboard */
+  useEffect(() => {
+    const apply = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        setKbInset(0);
+        setVvHeight(window.innerHeight);
+        return;
+      }
+      setVvHeight(Math.round(vv.height));
+      setKbInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    };
+    apply();
+    window.visualViewport?.addEventListener("resize", apply);
+    window.visualViewport?.addEventListener("scroll", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", apply);
+      window.visualViewport?.removeEventListener("scroll", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen || !narrowViewport) return;
+    const html = document.documentElement;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = html.style.overflow;
+    document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      html.style.overflow = prevHtml;
+    };
+  }, [isOpen, narrowViewport]);
+
   const handleNameSubmit = () => {
     const cleaned = sanitizeBuddyName(input);
     if (!cleaned) {
@@ -475,20 +514,30 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
+  const phoneSheet = isOpen && narrowViewport && !shortViewport;
+  const visibleH = vvHeight > 0 ? vvHeight : 640;
+  const panelMaxHeight = shortViewport
+    ? "min(260px, calc(100dvh - 24px))"
+    : narrowViewport
+      ? `min(${Math.max(220, visibleH - 12)}px, 100dvh)`
+      : "min(480px, calc(100dvh - 40px))";
+
   // Portal to <body>: full-screen overlays elsewhere in the app (e.g. chart
-  // blackout mode) also portal to <body>, and the buddy must stack above them
-  // (zIndex 200 vs the overlays' z-150) instead of being trapped inside the
-  // app root's stacking context.
+  // blackout mode) also portal to <body>. zIndex 280 sits above desk chrome
+  // and the chart drawing dock (250) so the buddy stays tappable on phones.
   return createPortal(
     <div
+      className="cpt-buddy-root"
+      data-cpt-buddy={isOpen ? "open" : "fab"}
       style={{
         position: "fixed",
-        bottom: "max(12px, env(safe-area-inset-bottom))",
-        right: "max(12px, env(safe-area-inset-right))",
-        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left))" : "auto",
-        zIndex: 200,
+        bottom: kbInset > 8 ? kbInset : "max(12px, env(safe-area-inset-bottom, 0px))",
+        right: "max(12px, env(safe-area-inset-right, 0px))",
+        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left, 0px))" : "auto",
+        zIndex: 280,
         display: "flex",
         justifyContent: "flex-end",
+        alignItems: "flex-end",
         pointerEvents: "none",
       }}
     >
@@ -496,48 +545,32 @@ export const CptBuddyWidget: React.FC = () => {
       {!isOpen && (
         <button
           type="button"
+          className="cpt-buddy-fab"
           onClick={handleOpen}
           aria-label="Open C.P.T. Personal Buddy"
-          style={{
-            width: narrowViewport ? 52 : 64,
-            height: narrowViewport ? 52 : 64,
-            borderRadius: "50%",
-            border: "2px solid #FF1493",
-            boxShadow: "0 0 20px rgba(255,20,147,0.6)",
-            overflow: "hidden",
-            cursor: "pointer",
-            background: "#030307",
-            padding: 0,
-            pointerEvents: "auto",
-          }}
         >
           <img
             src="/cpt-buddy-icon.png"
             alt="C.P.T. Personal Buddy"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            draggable={false}
+            decoding="async"
           />
         </button>
       )}
 
-      {/* Chat panel — shorter on phone landscape so charts stay usable */}
+      {/* Chat panel — phone sheet above the keyboard; compact in landscape */}
       {isOpen && (
         <div
+          className="cpt-buddy-panel"
+          data-phone-sheet={phoneSheet ? "1" : "0"}
+          role="dialog"
+          aria-modal="true"
+          aria-label="C.P.T. Personal Buddy"
           style={{
             width: narrowViewport ? "100%" : "min(320px, calc(100vw - 24px))",
             maxWidth: "100%",
-            maxHeight: shortViewport
-              ? "min(260px, calc(100dvh - 24px))"
-              : narrowViewport
-                ? "min(55dvh, 420px)"
-                : "min(480px, calc(100dvh - 40px))",
-            display: "flex",
-            flexDirection: "column",
-            background: "rgba(3,3,7,0.97)",
-            border: "1px solid rgba(255,20,147,0.4)",
-            borderRadius: 16,
-            boxShadow: "0 0 30px rgba(255,20,147,0.3)",
-            overflow: "hidden",
-            pointerEvents: "auto",
+            height: phoneSheet ? `min(92dvh, ${Math.max(240, visibleH - 12)}px)` : undefined,
+            maxHeight: panelMaxHeight,
           }}
         >
           {/* Header */}
@@ -546,13 +579,14 @@ export const CptBuddyWidget: React.FC = () => {
               display: "flex",
               alignItems: "center",
               gap: 10,
-              padding: "12px 14px",
+              padding: "8px 8px 8px 14px",
               borderBottom: "1px solid rgba(255,255,255,0.08)",
             }}
           >
             <img
               src="/cpt-buddy-icon.png"
               alt=""
+              draggable={false}
               style={{ width: 32, height: 32, borderRadius: "50%" }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -567,39 +601,29 @@ export const CptBuddyWidget: React.FC = () => {
             </div>
             <button
               type="button"
+              className="cpt-buddy-icon-btn"
               onClick={() => { void handleResetBuddy(); }}
               disabled={isResetting || !memoryLoaded}
               aria-label="Reset C.P.T. memory"
               title="Reset chat & memory"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: isResetting ? "#666666" : "#AAAAAA",
-                cursor: isResetting || !memoryLoaded ? "default" : "pointer",
-                padding: 4,
-                display: "flex",
-                alignItems: "center",
-              }}
             >
-              <RotateCcw size={16} />
+              <RotateCcw size={18} />
             </button>
             <button
               type="button"
+              className="cpt-buddy-icon-btn"
               onClick={() => setIsOpen(false)}
               aria-label="Close"
-              style={{ background: "transparent", border: "none", color: "#AAAAAA", cursor: "pointer", padding: 4 }}
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
 
           {/* Body */}
           <div
             ref={scrollRef}
+            className="cpt-buddy-log"
             style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: 12,
               minHeight: shortViewport ? 72 : narrowViewport ? 120 : 200,
             }}
           >
@@ -626,18 +650,17 @@ export const CptBuddyWidget: React.FC = () => {
                     <button
                       key={lvl}
                       type="button"
+                      className="cpt-buddy-skill"
                       onClick={() => handleSkillSelect(lvl)}
                       style={{
-                        textAlign: "left",
-                        padding: "8px 12px",
+                        padding: "10px 12px",
                         borderRadius: 8,
                         border: "1px solid rgba(255,20,147,0.3)",
                         background: "rgba(255,20,147,0.08)",
                         color: "#FF1493",
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: 700,
                         textTransform: "capitalize",
-                        cursor: "pointer",
                       }}
                     >
                       {lvl}
@@ -726,18 +749,17 @@ export const CptBuddyWidget: React.FC = () => {
                 <button
                   key={`day-${chip}`}
                   type="button"
+                  className="cpt-buddy-chip"
                   onClick={() => {
                     void handleSend(chip);
                   }}
                   style={{
-                    fontSize: 10,
-                    padding: "6px 10px",
+                    fontSize: 14,
+                    padding: "8px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(255,20,147,0.4)",
                     background: "rgba(255,20,147,0.1)",
                     color: "#FF9AD5",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   {chip}
@@ -761,16 +783,15 @@ export const CptBuddyWidget: React.FC = () => {
                 <button
                   key={`ask-${prompt}`}
                   type="button"
+                  className="cpt-buddy-chip"
                   onClick={() => { void handleSend(prompt); }}
                   style={{
-                    fontSize: 10,
-                    padding: "6px 10px",
+                    fontSize: 14,
+                    padding: "8px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(0,229,255,0.35)",
                     background: "rgba(0,229,255,0.08)",
                     color: "#00E5FF",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   {prompt}
@@ -784,6 +805,7 @@ export const CptBuddyWidget: React.FC = () => {
             <div style={{ display: "flex", gap: 6, padding: 10, borderTop: setupStep === "done" ? "none" : "1px solid rgba(255,255,255,0.08)" }}>
               <input
                 type="text"
+                className="cpt-buddy-input"
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
@@ -801,32 +823,21 @@ export const CptBuddyWidget: React.FC = () => {
                     : "Message C.P.T., your platonic ClearPath buddy"
                 }
                 maxLength={setupStep === "name" ? MAX_NAME_LENGTH : undefined}
-                style={{
-                  flex: 1,
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8,
-                  padding: "8px 10px",
-                  color: "#FFFFFF",
-                  fontSize: 13,
-                  outline: "none",
-                }}
+                enterKeyHint={setupStep === "name" ? "done" : "send"}
+                autoComplete={setupStep === "name" ? "given-name" : "off"}
+                autoCapitalize={setupStep === "name" ? "words" : "sentences"}
+                autoCorrect="on"
+                spellCheck={setupStep !== "name"}
+                inputMode="text"
               />
               <button
                 type="button"
+                className="cpt-buddy-send"
                 onClick={setupStep === "name" ? handleNameSubmit : () => { void handleSend(); }}
                 disabled={isLoading || isResetting}
                 aria-label="Send"
-                style={{
-                  background: "rgba(255,20,147,0.15)",
-                  border: "1px solid rgba(255,20,147,0.4)",
-                  borderRadius: 8,
-                  padding: "8px 10px",
-                  color: "#FF1493",
-                  cursor: "pointer",
-                }}
               >
-                <Send size={16} />
+                <Send size={18} />
               </button>
             </div>
           )}
