@@ -274,11 +274,11 @@ function FooterBar() {
 function FundamentalShell() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   return (
-    <div className="fund-shell flex min-h-0 flex-1 flex-col">
+    <div className="fund-shell flex w-full flex-col">
       <HeaderBar />
       <CompanyIdentity />
       <ResearchRail />
-      <div className="scrollbar-panel min-h-0 flex-1 overflow-auto">
+      <div className="overflow-visible">
         <BentoWorkspace
           expandedId={expandedId}
           onExpand={(id) => setExpandedId(id ? id : null)}

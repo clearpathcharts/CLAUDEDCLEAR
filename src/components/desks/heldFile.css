@@ -73,7 +73,7 @@
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
   z-index: 60;
   width: min(360px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  max-height: min(72vh, 560px);
+  max-height: min(80vh, 640px);
   overflow: auto;
   padding: 14px 14px 12px;
   border-radius: 12px;
@@ -171,7 +171,7 @@
 }
 .rt-held-file__all {
   width: 100%;
-  margin-top: 10px;
+  margin: 0 0 10px;
 }
 
 [data-desk-chart-room] {
