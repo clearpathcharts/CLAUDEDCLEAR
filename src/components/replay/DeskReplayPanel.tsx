@@ -57,7 +57,9 @@ export function DeskReplayPanel({
       symbol,
       timeframe,
       startUnix,
-      // Load up to "now" so user can replay forward from the chosen date within the 5k bar window.
+      // Pass the picker date as Twelve Data startDate so the 5k-bar window
+      // is anchored near the chosen session (not only “last N bars to now”).
+      startDate: dateStr,
       endDate: new Date().toISOString().slice(0, 10),
     });
   };
