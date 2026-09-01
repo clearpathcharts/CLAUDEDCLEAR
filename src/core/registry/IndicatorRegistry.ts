@@ -53,6 +53,7 @@ const FILE_BY_ABBR: Record<string, string> = {
   VOL: "indicators/volume/Volume.ts",
   NETVOL: "indicators/volume/Volume.ts",
   VO: "indicators/volume/Volume.ts",
+  COT: "indicators/sentiment/COT.ts",
 };
 
 const CATEGORY_MAP: Record<string, string> = {

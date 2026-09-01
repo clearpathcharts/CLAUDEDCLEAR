@@ -14,11 +14,14 @@ export type ChartDrawingSessionApi = {
   canUndo: boolean;
   undo: () => void;
   clearAll: () => void;
+  annotationText: string;
+  setAnnotationText: (text: string) => void;
+  annotationGlyph: string;
+  setAnnotationGlyph: (glyph: string) => void;
 };
 
 type ChartDrawingSessionContextValue = {
   session: ChartDrawingSessionApi | null;
-  /** Chart instances call this to publish toolbar controls into the left analytics column. */
   registerSession: (api: ChartDrawingSessionApi) => () => void;
 };
 

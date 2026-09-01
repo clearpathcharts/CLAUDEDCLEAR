@@ -89,6 +89,8 @@ export class IndicatorEngine {
       case "PIVOT":
       case "KST":
         return fn(candles);
+      case "COT":
+        return fn(candles, s);
       default:
         return fn(candles, settings);
     }

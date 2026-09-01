@@ -1,25 +1,91 @@
-/** Chart drawing tools — shared model for all three toolbar layers. */
+/** Chart drawing tools — shared model for all toolbar layers. */
 
-export type DrawingColor = "#00D9FF" | "#BF00FF" | "#FFD166";
+export type DrawingColor = "#00D9FF" | "#BF00FF" | "#FFD166" | "#FFFFFF" | "#22C55E" | "#EF4444";
 
-export const DRAWING_COLORS: DrawingColor[] = ["#00D9FF", "#BF00FF", "#FFD166"];
+export const DRAWING_COLORS: DrawingColor[] = [
+  "#00D9FF",
+  "#BF00FF",
+  "#FFD166",
+  "#FFFFFF",
+  "#22C55E",
+  "#EF4444",
+];
 
 export type DrawingToolId =
   | "select"
   | "trend"
   | "ray"
+  | "info_line"
+  | "extended"
+  | "trend_angle"
   | "horizontal"
+  | "hray"
   | "vertical"
+  | "crossline"
   | "fib"
+  | "fib_extension"
+  | "fib_channel"
+  | "fib_timezone"
+  | "fib_fan"
+  | "fib_trend_time"
+  | "fib_circles"
+  | "fib_spiral"
+  | "fib_arcs"
+  | "fib_wedge"
+  | "pitchfan"
   | "rectangle"
+  | "rotated_rect"
   | "ellipse"
+  | "circle"
   | "triangle"
   | "channel"
+  | "regression"
+  | "flat_channel"
+  | "disjoint"
   | "text"
+  | "note"
+  | "price_note"
+  | "pin"
+  | "callout"
+  | "comment"
+  | "price_label"
+  | "flag"
+  | "emoji"
+  | "sticker"
   | "arrow"
+  | "arrow_up"
+  | "arrow_down"
   | "measure"
+  | "price_range"
+  | "date_range"
   | "pitchfork"
-  | "gann";
+  | "schiff"
+  | "modified_schiff"
+  | "inside_pitchfork"
+  | "gann"
+  | "gann_box"
+  | "gann_square"
+  | "elliott_impulse"
+  | "elliott_correction"
+  | "elliott_triangle"
+  | "elliott_double"
+  | "elliott_triple"
+  | "cyclic_lines"
+  | "time_cycles"
+  | "sine"
+  | "long_position"
+  | "short_position"
+  | "ghost_feed"
+  | "sector"
+  | "anchored_vwap"
+  | "volume_profile"
+  | "brush"
+  | "highlighter"
+  | "path"
+  | "polyline"
+  | "arc"
+  | "curve"
+  | "double_curve";
 
 export type ChartPoint = {
   /** UTC timestamp in seconds (lightweight-charts time). */
@@ -27,42 +93,12 @@ export type ChartPoint = {
   price: number;
 };
 
-type DrawingBase = {
+export type ChartDrawing = {
   id: string;
+  kind: Exclude<DrawingToolId, "select">;
   color: DrawingColor;
-};
-
-export type ChartDrawing =
-  | (DrawingBase & { kind: "trend"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "ray"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "horizontal"; price: number })
-  | (DrawingBase & { kind: "vertical"; time: number })
-  | (DrawingBase & { kind: "fib"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "rectangle"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "ellipse"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "triangle"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
-  | (DrawingBase & { kind: "channel"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
-  | (DrawingBase & { kind: "text"; point: ChartPoint; text: string })
-  | (DrawingBase & { kind: "arrow"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "measure"; p1: ChartPoint; p2: ChartPoint })
-  | (DrawingBase & { kind: "pitchfork"; p1: ChartPoint; p2: ChartPoint; p3: ChartPoint })
-  | (DrawingBase & { kind: "gann"; p1: ChartPoint; p2: ChartPoint });
-
-export const TOOL_CLICKS: Record<Exclude<DrawingToolId, "select">, number> = {
-  trend: 2,
-  ray: 2,
-  horizontal: 1,
-  vertical: 1,
-  fib: 2,
-  rectangle: 2,
-  ellipse: 2,
-  triangle: 3,
-  channel: 3,
-  text: 1,
-  arrow: 2,
-  measure: 2,
-  pitchfork: 3,
-  gann: 2,
+  points: ChartPoint[];
+  text?: string;
 };
 
 export function newDrawingId(): string {

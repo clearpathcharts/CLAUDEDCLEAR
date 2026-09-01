@@ -45,6 +45,8 @@
     "test:chart-pulse": "tsx scripts/chart-pulse.selftest.ts",
     "test:explain-nav": "tsx scripts/explain-nav.selftest.ts",
     "test:chart-zoom": "tsx scripts/chart-zoom.selftest.ts",
+    "test:chart-tools": "tsx scripts/chart-tools.selftest.ts",
+    "test:cot": "tsx scripts/cot-indicator.selftest.ts",
     "test:magazine-rack": "tsx scripts/magazine-rack.selftest.ts",
     "test:rss-discover": "tsx scripts/rss-discover.selftest.ts",
     "test:publication-hub": "tsx scripts/publication-hub.selftest.ts",

@@ -15,6 +15,7 @@ export interface NormalizedCandle {
   high: number;
   low: number;
   close: number;
+  volume?: number;
 }
 
 /**
@@ -294,6 +295,7 @@ export function aggregateCandles(
       high,
       low,
       close: chunk[chunk.length - 1].close,
+      volume: chunk.reduce((sum, c) => sum + (typeof c.volume === "number" && c.volume > 0 ? c.volume : 0), 0) || undefined,
     });
   }
   return out;
@@ -365,6 +367,7 @@ export const fetchTieredHistoricalData = async (
       high: Number(v[2]),
       low: Number(v[3]),
       close: Number(v[4]),
+      volume: Number.isFinite(Number(v[5])) && Number(v[5]) > 0 ? Number(v[5]) : undefined,
     }))
     .filter(
       (c) =>

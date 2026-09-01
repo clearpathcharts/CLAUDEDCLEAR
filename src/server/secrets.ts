@@ -276,7 +276,7 @@ export const FMP_ALLOWED_ENDPOINTS = new Set([
 ]);
 
 /** Query-style FMP resources (not /:endpoint/:symbol). */
-export const FMP_LOOKUP_KINDS = new Set(['search', 'news', 'insider', 'peers']);
+export const FMP_LOOKUP_KINDS = new Set(['search', 'news', 'insider', 'peers', 'cot']);
 
 /** SPA still uses legacy names (sec_filings, shares_float, earnings-surprises). */
 const FMP_STABLE_SYMBOL_PATHS: Record<string, string> = {
@@ -329,7 +329,7 @@ export function buildFmpStableSymbolUrl(
 export function buildFmpStableLookupUrl(
   kind: string,
   apiKey: string,
-  opts: { symbol?: string; q?: string },
+  opts: { symbol?: string; q?: string; fromDays?: number },
 ): string | null {
   const params = new URLSearchParams({ apikey: apiKey });
   if (kind === 'search') {
@@ -350,6 +350,16 @@ export function buildFmpStableLookupUrl(
   if (kind === 'peers') {
     params.set('symbol', opts.symbol || '');
     return `${FMP_STABLE_BASE}/stock-peers?${params.toString()}`;
+  }
+  if (kind === 'cot') {
+    params.set('symbol', opts.symbol || '');
+    const to = new Date();
+    const from = new Date(to);
+    const days = opts.fromDays && opts.fromDays > 0 ? Math.min(Math.floor(opts.fromDays), 3650) : 730;
+    from.setUTCDate(to.getUTCDate() - days);
+    params.set('from', isoDate(from));
+    params.set('to', isoDate(to));
+    return `${FMP_STABLE_BASE}/commitment-of-traders-report?${params.toString()}`;
   }
   return null;
 }
