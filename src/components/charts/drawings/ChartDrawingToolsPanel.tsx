@@ -8,7 +8,13 @@ import { useChartDrawingSession } from "./ChartDrawingSessionContext";
  * Analytics drawing toolbox — lives under the Pattern Scanner column.
  * Never overlays the candle canvas.
  */
-export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean }) {
+export function ChartDrawingToolsPanel({
+  compact = false,
+  allowedTools = "all",
+}: {
+  compact?: boolean;
+  allowedTools?: "basic" | "all";
+}) {
   const session = useChartDrawingSession();
 
   return (
@@ -46,6 +52,7 @@ export function ChartDrawingToolsPanel({ compact = false }: { compact?: boolean 
             onAnnotationText={session.setAnnotationText}
             annotationGlyph={session.annotationGlyph}
             onAnnotationGlyph={session.setAnnotationGlyph}
+            allowedTools={allowedTools}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center text-[11px] text-zinc-500">

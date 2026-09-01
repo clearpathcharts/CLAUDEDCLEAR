@@ -137,6 +137,7 @@ interface ChartDrawingToolbarProps {
   className?: string;
   variant?: "rail" | "panel";
   forceExpanded?: boolean;
+  allowedTools?: "basic" | "all";
 }
 
 function ToolRow({
@@ -184,6 +185,7 @@ export function ChartDrawingToolbar({
   className = "",
   variant = "rail",
   forceExpanded = false,
+  allowedTools = "all",
 }: ChartDrawingToolbarProps) {
   const panel = variant === "panel" || forceExpanded;
   const showTextComposer =
@@ -197,9 +199,17 @@ export function ChartDrawingToolbar({
     activeTool === "flag";
   const showGlyphs = activeTool === "emoji" || activeTool === "sticker";
 
-  const groups = panel
+  const visibleTools =
+    allowedTools === "all"
+      ? DRAWING_TOOLS
+      : DRAWING_TOOLS.filter(
+          (t) => t.group === "nav" || t.id === "trend" || t.id === "horizontal" || t.id === "vertical",
+        );
+  const visibleIds = new Set(visibleTools.map((t) => t.id));
+  const groups = (panel
     ? TOOL_GROUPS
-    : TOOL_GROUPS.filter((g) => g.id === "nav" || g.id === "lines" || g.id === "text");
+    : TOOL_GROUPS.filter((g) => g.id === "nav" || g.id === "lines" || g.id === "text")
+  ).filter((g) => visibleTools.some((t) => t.group === g.id));
 
   return (
     <div
@@ -220,7 +230,7 @@ export function ChartDrawingToolbar({
               {group.label}
             </summary>
             <div className="flex flex-col pb-1">
-              {DRAWING_TOOLS.filter((t) => t.group === group.id).map((t) => (
+              {DRAWING_TOOLS.filter((t) => t.group === group.id && visibleIds.has(t.id)).map((t) => (
                 <ToolRow
                   key={t.id}
                   active={activeTool === t.id}

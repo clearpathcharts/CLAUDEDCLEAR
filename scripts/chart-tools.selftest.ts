@@ -132,8 +132,8 @@ assert.match(toolbar, /elliott_impulse/);
 assert.match(toolbar, /CHART_EMOJIS/);
 assert.match(toolbar, /Write on the chart/);
 
-const retail = fs.readFileSync(path.join(root, "src/components/desks/RetailTraderDesk.tsx"), "utf8");
-assert.match(retail, /ChartSeriesStylePicker/);
+const retail = fs.readFileSync(path.join(root, "src/components/desks/retail/RetailDashboard.tsx"), "utf8");
+assert.match(retail, /priceSeriesType/);
 
 const market = fs.readFileSync(path.join(root, "src/components/markets/LightweightMarketUI.tsx"), "utf8");
 assert.match(market, /ChartSeriesStylePicker/);

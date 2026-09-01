@@ -224,7 +224,8 @@ assert.match(serverSrc, /\/api\/cot\/history/);
 assert.match(serverSrc, /fetchCftcLegacyHistory/);
 assert.match(serverSrc, /ClearPath COT Data Engine/);
 
-const intelSrc = fs.readFileSync(path.join(root, 'src/components/desks/institutional/useInstitutionalIntelligence.ts'), 'utf8');
-assert.match(intelSrc, /\/api\/cot\/history/);
+const chartCot = fs.readFileSync(path.join(root, 'src/indicators/sentiment/COT.ts'), 'utf8');
+assert.match(chartCot, /\/api\/cot\/history/);
+assert.doesNotMatch(chartCot, /from ['"]LibraryCOT['"]/);
 
 console.log('cot-indicator.selftest: ok');

@@ -49,6 +49,8 @@ import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout"
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
 import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
+import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
+import type { DeskVisualPaint } from "../../lib/deskColorChart";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
 export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-31-COT";
@@ -265,6 +267,7 @@ export function LightweightCandles({
   priceSeriesType,
   onPriceSeriesTypeChange,
   onExpandToggle,
+  visualPaint: visualPaintProp,
 }: {
   data?: Candle[];
   symbol?: string;
@@ -302,7 +305,11 @@ export function LightweightCandles({
   onPriceSeriesTypeChange?: (type: PriceSeriesType) => void;
   /** Full-window expand for this slot — not zoom-reset. */
   onExpandToggle?: () => void;
+  /** Desk color-chart overrides (charts, candles, indicators). */
+  visualPaint?: DeskVisualPaint;
 }) {
+  const deskAppearance = useOptionalDeskAppearance();
+  const visualPaint = visualPaintProp ?? deskAppearance?.visualPaint;
   const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
   const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
@@ -419,15 +426,18 @@ export function LightweightCandles({
   // When returning to 'calm_focus', we restore the user's custom-selected chart theme safely.
   const activeCustomTheme = (safeProfileId === "calm_focus") ? (customTheme || savedTheme) : null;
   const [backgroundMode] = useChartBackgroundMode();
-  const paint = useMemo(
-    () =>
-      chartBackgroundColors(backgroundMode, {
-        background: activeCustomTheme?.background || profile.bgBottom,
-        text: activeCustomTheme?.text || profile.text,
-        grid: activeCustomTheme?.grid || profile.grid,
-      }),
-    [backgroundMode, activeCustomTheme, profile],
-  );
+  const paint = useMemo(() => {
+    const base = chartBackgroundColors(backgroundMode, {
+      background: activeCustomTheme?.background || profile.bgBottom,
+      text: activeCustomTheme?.text || profile.text,
+      grid: activeCustomTheme?.grid || profile.grid,
+    });
+    return {
+      background: visualPaint?.chart || base.background,
+      text: visualPaint?.text || base.text,
+      grid: visualPaint?.grid || base.grid,
+    };
+  }, [backgroundMode, activeCustomTheme, profile, visualPaint]);
 
   // Use custom theme if provided, otherwise fallback to profile-based theme
   const theme = useMemo(() => {
@@ -521,12 +531,12 @@ export function LightweightCandles({
     }
 
     const rawCandleColors = {
-      upColor: activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor,
-      downColor: activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor,
-      wickUpColor: activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor,
-      wickDownColor: activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor,
-      borderUpColor: activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor,
-      borderDownColor: activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor,
+      upColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor),
+      downColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor),
+      wickUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor),
+      wickDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor),
+      borderUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor),
+      borderDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor),
     };
     const vividCandles = activeCustomTheme
       ? intensifyCandleColors(rawCandleColors, 1.1)
@@ -743,14 +753,14 @@ export function LightweightCandles({
         lastCandle = tierOptimizedData[tierOptimizedData.length - 1];
 
         const COLOR_MAP: Record<string, string> = {
-          "SMA": "#00FFFF",
-          "EMA": "#FFAA00",
-          "RSI": "#00FF66",
-          "BB": "#7A3BFF",
-          "ADX": "#00D9FF",
-          "ATR": "#FF4500",
-          "AO": "#3E78FF",
-          "MACD": "#FF00C8",
+          "SMA": visualPaint?.indicator || "#00FFFF",
+          "EMA": visualPaint?.indicator || "#FFAA00",
+          "RSI": visualPaint?.indicator || "#00FF66",
+          "BB": visualPaint?.indicator || "#7A3BFF",
+          "ADX": visualPaint?.indicator || "#00D9FF",
+          "ATR": visualPaint?.indicator || "#FF4500",
+          "AO": visualPaint?.indicator || "#3E78FF",
+          "MACD": visualPaint?.indicator || "#FF00C8",
           "COT": "#22C55E",
         };
 
@@ -1218,7 +1228,7 @@ export function LightweightCandles({
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle]);
+  }, [data, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
 
   useEffect(() => {
     const chart = chartRef.current;
