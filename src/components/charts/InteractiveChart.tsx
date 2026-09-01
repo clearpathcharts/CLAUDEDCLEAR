@@ -33,6 +33,7 @@ const TRADINGVIEW_INDICATORS = [
   { name: "Chande Momentum Oscillator", category: "Momentum", abbr: "CMO", activeColor: "#4DEEEA" },
   { name: "Commodity Channel Index", category: "Momentum", abbr: "CCI", activeColor: "#9D4EDD" },
   { name: "Coppock Curve", category: "Momentum", abbr: "CC", activeColor: "#3F37C9" },
+  { name: "COT Commercial vs Non-Commercial", category: "Sentiment", abbr: "COT", activeColor: "#22C55E" },
   { name: "Double Exponential Moving Average", category: "Trend", abbr: "DEMA", activeColor: "#4CC9F0" },
   { name: "Donchian Channels", category: "Volatility", abbr: "DC", activeColor: "#F72585" },
   { name: "Directional Movement Index", category: "Trend", abbr: "DMI", activeColor: "#7209B7" },

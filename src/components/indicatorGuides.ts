@@ -396,6 +396,12 @@ const LIVE_GUIDES: Record<string, IndicatorGuide> = {
     limitations: "No price direction. Surges happen on both panics and breakouts.",
     typicalSettings: "5 / 20",
   },
+  "Commitment of Traders (COT)": {
+    formula: "Net commercial = commercial long − commercial short. Net large (non-commercial) = noncommercial long − noncommercial short. Held as a weekly step until the next CFTC print.",
+    howToRead: "Green commercials vs red large specs. Extremes and divergences versus price are positioning context, not a trade signal. The forming bar is blank by default (incomplete week).",
+    limitations: "Weekly CFTC lag. Only futures with a mapped contract. Unmapped symbols and missing FMP keys stay DATA UNAVAILABLE — never invented.",
+    typicalSettings: "Legacy CFTC; hide current week on; both nets plotted",
+  },
 };
 
 function defaultGuide(name: string, category: string, liveAbbr: string | null): IndicatorGuide {

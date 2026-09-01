@@ -87,6 +87,7 @@ async function main() {
   // DMI vs ADX mapping must not collapse both onto ADX.
   assert.equal(indicatorChartAbbr('Directional Movement Index (DMI)'), 'DMI');
   assert.equal(indicatorChartAbbr('ADX (Average Directional Index)'), 'ADX');
+  assert.equal(indicatorChartAbbr('Commitment of Traders (COT)'), 'COT');
 
   console.log(
     `encyclopedia.selftest ok — ${indicators.length} indicator SVGs, ${covered.size} live overlays, ${encyclopediaArticles.length} finance articles`

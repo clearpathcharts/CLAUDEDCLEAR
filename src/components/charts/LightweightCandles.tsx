@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, BarSeries, BaselineSeries, CrosshairMode, LineSeries, LineStyle, LineType, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
+import { calculateCOT, fetchCotReportsForChart } from "../../indicators/sentiment/COT";
 import { getActiveRiverIndicator, runPine } from "../../river/riverEngine";
 import {
   themeProfiles,
@@ -50,7 +51,7 @@ import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-31-TOOLS";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-08-31-COT";
 
 export type { PriceSeriesType };
 
@@ -133,7 +134,7 @@ const OSCILLATOR_INDICATORS = new Set([
   "RSI", "MACD", "ATR", "ADX", "DMI", "OBV", "AO", "STOCH", "STOCHRSI",
   "CCI", "WPR", "ROC", "PPO", "CMO", "DPO", "RVI", "TRIX", "TSI", "UO",
   "KST", "FT", "CC", "BBW", "HV", "CHV", "AD", "A/D", "CMF", "MFI",
-  "EFI", "EOM", "VOL", "NETVOL", "VO",
+  "EFI", "EOM", "VOL", "NETVOL", "VO", "COT",
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
@@ -540,12 +541,19 @@ export function LightweightCandles({
      * the bottom 25% of the chart. This is what stops RSI/MACD/etc. from
      * flattening the candles.
      */
-    const addOscillatorSeries = (opts: { color: string; lineWidth: any; title: string; lineStyle?: any }) => {
+    const addOscillatorSeries = (opts: {
+      color: string;
+      lineWidth: any;
+      title: string;
+      lineStyle?: any;
+      lineType?: LineType;
+    }) => {
       const s = chart.addSeries(LineSeries, {
         color: opts.color,
         lineWidth: opts.lineWidth,
         title: opts.title,
         lineStyle: opts.lineStyle,
+        lineType: opts.lineType,
         priceScaleId: OSCILLATOR_SCALE_ID,
       });
       chart.priceScale(OSCILLATOR_SCALE_ID).applyOptions({
@@ -742,8 +750,14 @@ export function LightweightCandles({
           "ADX": "#00D9FF",
           "ATR": "#FF4500",
           "AO": "#3E78FF",
-          "MACD": "#FF00C8"
+          "MACD": "#FF00C8",
+          "COT": "#22C55E",
         };
+
+        let cotPack: Awaited<ReturnType<typeof fetchCotReportsForChart>> | null = null;
+        if (activeIndicators.includes("COT")) {
+          cotPack = await fetchCotReportsForChart(sym);
+        }
 
         if (activeIndicators && activeIndicators.length > 0) {
           activeIndicators.forEach((indAbbr) => {
@@ -860,6 +874,49 @@ export function LightweightCandles({
                 const sLine = addOscillatorSeries({ color: "#F59E0B", lineWidth: 2, title: "Signal Line" });
                 mLine.setData(macdLineData);
                 sLine.setData(signalLineData);
+              }
+              else if (indAbbr === "COT") {
+                const cotSeries = calculateCOT(tierOptimizedData, {
+                  reports: cotPack?.reports ?? [],
+                  hideCurrentWeek: true,
+                  nowSec: Date.now() / 1000,
+                  barDurationSec: stepSeconds,
+                });
+                const unavailable = cotSeries.length === 0;
+                const commTitle = unavailable
+                  ? `COT COMM — ${cotPack?.note || "DATA UNAVAILABLE"}`
+                  : "Commercials";
+                const largeTitle = unavailable ? "Large Traders — DATA UNAVAILABLE" : "Large Traders";
+                const commLine = addOscillatorSeries({
+                  color: "#22C55E",
+                  lineWidth: 2,
+                  title: commTitle,
+                  lineType: LineType.WithSteps,
+                });
+                const largeLine = addOscillatorSeries({
+                  color: "#EF4444",
+                  lineWidth: 2,
+                  title: largeTitle,
+                  lineType: LineType.WithSteps,
+                });
+                commLine.setData(
+                  cotSeries
+                    .filter((d) => d.commercial != null)
+                    .map((d) => ({ time: d.time as Time, value: d.commercial as number })),
+                );
+                largeLine.setData(
+                  cotSeries
+                    .filter((d) => d.large != null)
+                    .map((d) => ({ time: d.time as Time, value: d.large as number })),
+                );
+                commLine.createPriceLine({
+                  price: 0,
+                  color: "#94A3B8",
+                  lineWidth: 1,
+                  lineStyle: LineStyle.Solid,
+                  axisLabelVisible: true,
+                  title: unavailable ? (cotPack?.note || "DATA UNAVAILABLE") : "0",
+                });
               }
               else if (indAbbr === "ATR") {
                 const atrData = IndicatorEngine.calculate("ATR", tierOptimizedData, { period: 14 });

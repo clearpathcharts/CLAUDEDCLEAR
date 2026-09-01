@@ -247,6 +247,7 @@ import {
   buildFmpStableLookupUrl,
   buildFmpStableSymbolUrl,
 } from './src/server/secrets';
+import { fetchCftcLegacyHistory } from './src/server/cftcCot';
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
@@ -3641,6 +3642,27 @@ ${CPT_SITE_GUIDE}`;
     }
   });
 
+  // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
+  app.get('/api/cot/history', ...marketLimiter, async (req, res) => {
+    const symbol = String(req.query.symbol || '');
+    if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
+      return res.status(400).json({ error: 'Invalid symbol' });
+    }
+    const force = String(req.query.force || '') === '1';
+    const limitRaw = Number(req.query.limit);
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : undefined;
+    try {
+      const pack = await fetchCftcLegacyHistory(symbol, { limit, force });
+      if ('error' in pack) {
+        return res.status(pack.status).json({ error: pack.error, message: pack.message });
+      }
+      res.json(pack);
+    } catch (error: any) {
+      console.error('[CFTC COT]', error?.message || error);
+      res.status(502).json({ error: 'CFTC UNAVAILABLE', message: 'CFTC.gov request failed.' });
+    }
+  });
+
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
   app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
     const { series_id, limit } = req.query;
@@ -3682,13 +3704,15 @@ ${CPT_SITE_GUIDE}`;
     }
     const symbol = String(req.query.symbol || '');
     const q = String(req.query.q || '');
+    const fromDaysRaw = Number(req.query.fromDays);
+    const fromDays = Number.isFinite(fromDaysRaw) && fromDaysRaw > 0 ? fromDaysRaw : undefined;
     if (kind !== 'search' && !/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
       return res.status(400).json({ error: 'Invalid symbol' });
     }
     if (kind === 'search' && (!q || q.length > 64)) {
       return res.status(400).json({ error: 'query required' });
     }
-    const url = buildFmpStableLookupUrl(kind, apiKey, { symbol, q });
+    const url = buildFmpStableLookupUrl(kind, apiKey, { symbol, q, fromDays });
     if (!url) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
     }

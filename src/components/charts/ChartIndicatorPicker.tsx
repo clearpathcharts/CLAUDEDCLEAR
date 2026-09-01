@@ -63,7 +63,7 @@ export function ChartIndicatorPicker({
 
       {compact ? null : (
         <p className="text-xs text-zinc-500 font-mono">
-          Computed locally from live candle data — no extra API calls.
+          Candle-math overlays compute locally. COT is ClearPath analytics on a cached CFTC.gov archive — browsers never hit CFTC.
         </p>
       )}
     </div>
