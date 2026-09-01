@@ -9,6 +9,7 @@ import {
   type AffectReading,
   type BuddyBondProfile,
 } from './buddyAffect';
+import { normalizeConversationBullets } from '../lib/buddyMemory';
 
 async function groqJsonChat(params: {
   apiKey: string;
@@ -95,6 +96,7 @@ export async function classifyBuddyAffect(params: {
 
 export type GrowthExtract = {
   newFacts: string[];
+  conversationBullets: string[];
   bondPatch: Partial<BuddyBondProfile>;
 };
 
@@ -104,20 +106,21 @@ export async function extractBuddyGrowth(params: {
   question: string;
   affect: AffectReading;
 }): Promise<GrowthExtract> {
-  const empty: GrowthExtract = { newFacts: [], bondPatch: {} };
+  const empty: GrowthExtract = { newFacts: [], conversationBullets: [], bondPatch: {} };
   const raw = await groqJsonChat({
     apiKey: params.apiKey,
     model: 'llama-3.1-8b-instant',
-    maxTokens: 320,
+    maxTokens: 400,
     system: `You extract lasting growth signals for a platonic AI buddy.
 Return ONLY JSON:
-{"facts":["short plain facts about the user"],"knownNeuro":["only if user self-disclosed"],"emotionalThemes":["loss","fear",...],"preferredPace":"short|warm|deep|null","likesDayCheckIn":true|false|null,"growthNotes":["short note for future continuity"]}
+{"facts":["short plain facts about the user"],"conversationBullets":["one short recap of THIS turn"],"knownNeuro":["only if user self-disclosed"],"emotionalThemes":["loss","fear",...],"preferredPace":"short|warm|deep|null","likesDayCheckIn":true|false|null,"growthNotes":["short note for future continuity"]}
 Rules:
 - facts: lasting personal details, goals, preferences, life context they want remembered. Max 8.
+- conversationBullets: 0–2 third-person bullets of what this turn was about (e.g. "Asked how COT works on the institutional desk"). Skip empty greetings like hi/ok. Max 140 chars each.
 - knownNeuro: ONLY explicit self-disclosure (e.g. "I have ADHD"). Never invent.
 - emotionalThemes: stable themes (grief_loss, fear, loneliness, love_care, frustration with learning, etc.)
 - preferredPace / likesDayCheckIn: only if clearly implied or stated; else null
-- Ignore one-off questions with no personal content.
+- Ignore one-off questions with no personal content for facts — still add a conversation bullet if they asked something real.
 - No sexuality. If user asked for sexual content, note fact "Asked for romantic/sexual chat — declined; keep platonic." only if that happened.`,
     user: `User (${params.displayName}) said: "${params.question}"
 Affect read: ${params.affect.primary} @ ${params.affect.intensity}/5 crisis=${params.affect.crisis}`,
@@ -131,6 +134,8 @@ Affect read: ${params.affect.primary} @ ${params.affect.intensity}/5 crisis=${pa
   const facts = Array.isArray(o.facts)
     ? o.facts.filter((f): f is string => typeof f === 'string' && f.trim().length > 0).map((f) => f.trim()).slice(0, 8)
     : [];
+
+  const conversationBullets = normalizeConversationBullets(o.conversationBullets, 2);
 
   const bondPatch: Partial<BuddyBondProfile> = {};
   if (Array.isArray(o.knownNeuro)) {
@@ -171,7 +176,7 @@ Affect read: ${params.affect.primary} @ ${params.affect.intensity}/5 crisis=${pa
     };
   }
 
-  return { newFacts: facts, bondPatch };
+  return { newFacts: facts, conversationBullets, bondPatch };
 }
 
 export function mergeBondProfile(
