@@ -8,7 +8,7 @@ export default function InstitutionalTraderDesk() {
   return (
     <DeskHoldScope
       desk="institutional"
-      storageKey="clearpath_held_institutional_v1"
+      storageKey="clearpath_held_institutional_v2"
       meta={INSTITUTIONAL_HELD_META}
       defaultHeld={INSTITUTIONAL_CHART_FIRST_HELD}
     >

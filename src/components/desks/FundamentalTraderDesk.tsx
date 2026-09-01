@@ -11,7 +11,7 @@ export default function FundamentalTraderDesk({ initialSymbol }: { initialSymbol
   return (
     <DeskHoldScope
       desk="fundamental"
-      storageKey="clearpath_held_fundamental_v1"
+      storageKey="clearpath_held_fundamental_v2"
       meta={FUNDAMENTAL_HELD_META}
       defaultHeld={FUNDAMENTAL_CHART_FIRST_HELD}
     >

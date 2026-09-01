@@ -7,6 +7,7 @@ import { formatStructurePrice } from '../../../lib/institutional/analyzeStructur
 import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles';
 import { Bento, Unavail, KV } from '../institutional/Bento';
 import { useDeskHold } from '../DeskHoldScope';
+import { deskSectionOpen } from '../heldMeta';
 import { RetailEducationBento } from '../retail/RetailEducationBento';
 import { useRetailIntelligence, type RetailQuote } from '../retail/useRetailIntelligence';
 import {
@@ -113,13 +114,23 @@ export default function NeurodivergentDashboard() {
   const profilesHeld = hold?.isHeld('profiles') ?? false;
   const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
   const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
-  const neuroChartCols = [
-    watchHeld ? null : '240px',
-    'minmax(0,1fr)',
-    snapHeld ? null : '240px',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const chartFull = watchHeld && snapHeld;
+  const neuroChartCols = chartFull
+    ? 'minmax(0, 1fr)'
+    : [
+        watchHeld ? null : '240px',
+        'minmax(0, 1fr)',
+        snapHeld ? null : '240px',
+      ]
+        .filter(Boolean)
+        .join(' ');
+  const showBelow = !hideSecondary && deskSectionOpen(hold?.isHeld, [
+    'news',
+    'calendar',
+    'alerts',
+    'education',
+    'simulation',
+  ]);
 
   const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON);
   const candles = intel.primaryCandles;
@@ -179,7 +190,7 @@ export default function NeurodivergentDashboard() {
     <div
       data-neuro-door
       data-neuro-workstation
-      className="flex min-h-0 flex-1 flex-col gap-3 p-3"
+      className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3"
       style={{
         background: deskVisual?.overrides.background
           ? deskVisual.cssVars['--desk-user-bg']
@@ -375,10 +386,11 @@ export default function NeurodivergentDashboard() {
       {/* Main grid */}
       <div
         data-desk-chart-room
-        className="grid min-h-[380px] gap-3 grid-cols-1"
+        data-chart-room={chartFull ? 'full' : 'open'}
+        className="grid min-h-0 min-h-[55vh] flex-1 grid-cols-1 gap-3"
         style={{ ['--desk-chart-cols' as string]: neuroChartCols }}
       >
-        {!hideSecondary && (
+        {!watchHeld && (
           <Bento holdId="watchlist" title="Watchlist" status={activeWl?.name} className="retail-bento min-h-[280px]">
             <div className="mb-2 flex flex-wrap gap-1">
               {watchlists.map((w) => (
@@ -451,7 +463,7 @@ export default function NeurodivergentDashboard() {
 
         <section
           data-retail-bento
-          className="retail-bento flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-xl border"
+          className="retail-bento flex min-h-0 min-h-[55vh] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border"
           style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}
         >
           <header className="space-y-2">
@@ -495,7 +507,7 @@ export default function NeurodivergentDashboard() {
           </p>
         </section>
 
-        {!hideSecondary && (
+        {!snapHeld && (
           <Bento holdId="snapshot" title="Market Snapshot" status={symbol} className="retail-bento min-h-[280px]">
             {price == null && !day ? (
               <Unavail />
@@ -517,8 +529,8 @@ export default function NeurodivergentDashboard() {
         )}
       </div>
 
-      {!hideSecondary && (
-        <>
+      {showBelow ? (
+        <div className="max-h-[32vh] shrink-0 space-y-3 overflow-auto">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento holdId="news" title="News" status={intel.newsError ? 'offline' : `${intel.news.length} items`} className="retail-bento min-h-[160px]">
               {intel.news.length === 0 ? (
@@ -621,10 +633,10 @@ export default function NeurodivergentDashboard() {
               </a>
             </Bento>
           </div>
-        </>
-      )}
+        </div>
+      ) : null}
 
-      <footer
+      <footer>
         data-retail-bento
         className="retail-bento px-3 py-3 text-center text-sm font-bold uppercase tracking-[0.14em] opacity-70"
       >

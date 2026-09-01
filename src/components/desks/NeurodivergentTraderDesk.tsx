@@ -12,7 +12,7 @@ export default function NeurodivergentTraderDesk() {
   return (
     <DeskHoldScope
       desk="neurodivergent"
-      storageKey="clearpath_held_neuro_v1"
+      storageKey="clearpath_held_neuro_v2"
       meta={NEURO_HELD_META}
       defaultHeld={NEURO_CHART_FIRST_HELD}
     >

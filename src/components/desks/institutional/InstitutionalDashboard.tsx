@@ -16,6 +16,7 @@ import {
 } from '../../../lib/institutional/marketMath';
 import { Bento, Unavail, KV, Bar } from './Bento';
 import { useDeskHold } from '../DeskHoldScope';
+import { deskSectionOpen } from '../heldMeta';
 import {
   CORR_KEYS,
   RIBBON_MARKETS,
@@ -144,18 +145,25 @@ export default function InstitutionalDashboard() {
   const flowHeld = hold?.isHeld('flow') ?? false;
   const liqHeld = hold?.isHeld('liq') ?? false;
   const sideHeld = flowHeld && liqHeld;
-  const chartCols = [
-    universeHeld ? null : '260px',
-    'minmax(0,1.6fr)',
-    sideHeld ? null : 'minmax(280px,0.9fr)',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const chartFull = universeHeld && sideHeld;
+  const chartCols = chartFull
+    ? 'minmax(0, 1fr)'
+    : [
+        universeHeld ? null : '260px',
+        'minmax(0, 1fr)',
+        sideHeld ? null : 'minmax(280px, 0.9fr)',
+      ]
+        .filter(Boolean)
+        .join(' ');
+  const showStructureRow = deskSectionOpen(hold?.isHeld, ['tape', 'structure', 'volume', 'vol']);
+  const showOptionsRow = deskSectionOpen(hold?.isHeld, ['options', 'corr', 'macro']);
+  const showNewsRow = deskSectionOpen(hold?.isHeld, ['news', 'calendar', 'positioning', 'risk']);
+  const showEarnings = deskSectionOpen(hold?.isHeld, ['earnings']);
 
   return (
     <div
       data-institutional-door
-      className="flex flex-col gap-2 p-2"
+      className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2"
     >
       <Bento holdId="ribbon" title="Global Markets" status="environment" className="shrink-0">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
@@ -188,8 +196,8 @@ export default function InstitutionalDashboard() {
 
       <div
         data-desk-chart-room
-        data-chart-room={!universeHeld && !sideHeld ? 'full' : 'open'}
-        className="grid min-h-[420px] grid-cols-1 gap-2"
+        data-chart-room={chartFull ? 'full' : 'open'}
+        className="grid min-h-0 min-h-[55vh] flex-1 grid-cols-1 gap-2"
         style={{ ['--desk-chart-cols' as string]: chartCols }}
       >
         <Bento holdId="universe" title="Market Universe" status={tabMeta?.label} className="min-h-[280px]">
@@ -219,7 +227,7 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <section className="flex min-h-[380px] min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)]">
+        <section className="flex min-h-0 min-h-[55vh] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)]">
           <header className="shrink-0 space-y-1.5 border-b border-[var(--desk-border)] px-2.5 py-1.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
@@ -605,14 +613,7 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-<<<<<<< Updated upstream
-        <Bento holdId="positioning" title="Positioning" status="no COT / SI feed">
-          {['COT', 'Futures positioning', 'Short interest', 'ETF flows', 'Fund flows', 'Options positioning', 'Open interest'].map(
-            (k) => (
-              <KV key={k} k={k} v="DATA UNAVAILABLE" />
-            ),
-=======
-        <Bento title="Positioning" status={intel.cot.note}>
+        <Bento holdId="positioning" title="Positioning" status={intel.cot.note}>
           {intel.cot.status === 'ok' && intel.cot.analytics ? (
             <>
               <KV k="CFTC contract" v={`${intel.cot.contract || '—'} · ${intel.cot.cftcCode || '—'}`} />
@@ -644,7 +645,6 @@ export default function InstitutionalDashboard() {
               <KV k="Options positioning" v="DATA UNAVAILABLE" />
               <KV k="Open interest" v="DATA UNAVAILABLE" />
             </>
->>>>>>> Stashed changes
           )}
         </Bento>
 

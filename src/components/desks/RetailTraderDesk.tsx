@@ -8,7 +8,7 @@ export default function RetailTraderDesk() {
   return (
     <DeskHoldScope
       desk="retail"
-      storageKey="clearpath_held_retail_v1"
+      storageKey="clearpath_held_retail_v2"
       meta={RETAIL_HELD_META}
       defaultHeld={RETAIL_CHART_FIRST_HELD}
     >

@@ -173,8 +173,16 @@
   margin-top: 10px;
 }
 
+[data-desk-chart-room] {
+  flex: 1 1 auto;
+  min-height: max(55vh, 420px);
+}
+
 @media (min-width: 1024px) {
   [data-desk-chart-room] {
     grid-template-columns: var(--desk-chart-cols, minmax(0, 1fr));
+  }
+  [data-desk-chart-room][data-chart-room='full'] {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
