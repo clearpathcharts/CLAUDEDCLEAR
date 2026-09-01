@@ -817,20 +817,24 @@
   animation: strokeGlow 8s linear infinite;
 }
 
-/* Glassy styling overrides for academic content scrollbar — Lava-Hot Industrial */
-.clearpath-glass-root .custom-scrollbar,
+/* Nested academic lists stay lava orange. Page (magenta) and panel (cyan)
+   colors are in index.css — do not flatten .main-container / .left-side here. */
+.clearpath-glass-root .main-container .custom-scrollbar,
+.clearpath-glass-root .left-side .custom-scrollbar,
 .clearpath-glass-root .custom-scrollbar-ice,
 .clearpath-glass-root .custom-scrollbar-lava {
   scrollbar-width: thin;
   scrollbar-color: var(--lava-magma) var(--lava-track);
 }
-.clearpath-glass-root .custom-scrollbar::-webkit-scrollbar,
+.clearpath-glass-root .main-container .custom-scrollbar::-webkit-scrollbar,
+.clearpath-glass-root .left-side .custom-scrollbar::-webkit-scrollbar,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar {
   width: 11px;
   height: 11px;
 }
-.clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-track,
+.clearpath-glass-root .main-container .custom-scrollbar::-webkit-scrollbar-track,
+.clearpath-glass-root .left-side .custom-scrollbar::-webkit-scrollbar-track,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-track,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-track {
   background: var(--lava-track);
@@ -838,7 +842,8 @@
   border-radius: 4px;
   box-shadow: inset 0 0 12px rgba(255, 0, 0, 0.15);
 }
-.clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-thumb,
+.clearpath-glass-root .main-container .custom-scrollbar::-webkit-scrollbar-thumb,
+.clearpath-glass-root .left-side .custom-scrollbar::-webkit-scrollbar-thumb,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-thumb {
   background: var(--lava-magma);
@@ -847,7 +852,8 @@
   border-radius: 99px;
   box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
 }
-.clearpath-glass-root .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.clearpath-glass-root .main-container .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.clearpath-glass-root .left-side .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 .clearpath-glass-root .custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
 .clearpath-glass-root .custom-scrollbar-lava::-webkit-scrollbar-thumb:hover {
   background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);

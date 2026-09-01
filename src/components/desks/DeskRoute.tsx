@@ -69,7 +69,7 @@ function DeskShell({
         Skip to desk
       </a>
       <TraderDeskChrome active={deskId} />
-      <main id="desk-main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-auto outline-none">
+      <main id="desk-main" tabIndex={-1} className="scrollbar-panel flex min-h-0 flex-1 flex-col overflow-auto outline-none">
         <h1 className="sr-only">{seoH1}</h1>
         {pathname.replace(/\/$/, '') === '/desk' && (
           <p className="px-3 pt-2 font-mono text-sm font-bold uppercase text-zinc-500">

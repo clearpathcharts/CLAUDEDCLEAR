@@ -34,6 +34,7 @@
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
+    "test:buddy-live-tools": "tsx scripts/buddy-live-tools.selftest.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",
     "test:founder-privacy": "tsx scripts/founder-privacy.selftest.ts",
     "test:profile-share": "tsx scripts/profile-share-password.selftest.ts",

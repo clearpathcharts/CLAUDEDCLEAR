@@ -85,6 +85,14 @@ textarea {
   --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
   --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
 
+  /* Nested scrollbar map: page / large panel / inner list */
+  --scroll-page: #ff00ff;
+  --scroll-page-gradient: linear-gradient(180deg, #ff66ff 0%, #ff00ff 52%, #cc00cc 100%);
+  --scroll-page-glow: inset 0 0 7px rgba(255, 0, 255, 0.9), 0 0 8px rgba(255, 0, 255, 0.65), 0 0 16px rgba(255, 0, 200, 0.4);
+  --scroll-panel: #00ffff;
+  --scroll-panel-gradient: linear-gradient(180deg, #b8ffff 0%, #00ffff 52%, #00e5ff 100%);
+  --scroll-panel-glow: inset 0 0 7px rgba(0, 255, 255, 0.95), 0 0 8px rgba(0, 255, 255, 0.7), 0 0 16px rgba(0, 229, 255, 0.45);
+
   /* CTA fills — mid-tone WCAG-safe (4.5:1 with white). Neon stays in decorative accents. */
   --cpt-pink: #d81b60;
   --cpt-orange: #e65100;
@@ -348,44 +356,72 @@ canvas {
   }
 }
 
-/* Lava-Hot Industrial scrollbars — global (page + every scroll container) */
-html,
-body,
+/* Nested scrollbars — three colors so stacked tracks are readable:
+   MAGENTA  = page (html)
+   CYAN     = large panel (#desk-main, encyclopedia columns, desk doors)
+   ORANGE   = inner list / held file / widget (keep lava) */
 .custom-scrollbar,
 .custom-scrollbar-lava,
 .custom-scrollbar-ice,
-*:not(.no-scrollbar):not(.scrollbar-none) {
+body *:not(.no-scrollbar):not(.scrollbar-none) {
   scrollbar-width: thin;
   scrollbar-color: var(--lava-magma) var(--lava-track);
 }
 
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-page) var(--lava-track);
+}
+
+html:not(.no-scrollbar) :is(
+  #desk-main,
+  #main-scroll-viewport,
+  .main-container,
+  .left-side,
+  .scrollbar-panel,
+  [data-retail-door],
+  [data-institutional-door],
+  [data-fundamental-door],
+  [data-neuro-door]
+) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-panel) var(--lava-track);
+}
+
 .custom-scrollbar::-webkit-scrollbar,
 .custom-scrollbar-lava::-webkit-scrollbar,
 .custom-scrollbar-ice::-webkit-scrollbar,
-*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar {
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track,
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
 .custom-scrollbar::-webkit-scrollbar-track,
 .custom-scrollbar-lava::-webkit-scrollbar-track,
 .custom-scrollbar-ice::-webkit-scrollbar-track,
-*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track {
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track {
   background: var(--lava-track);
   border-radius: 4px;
+}
+
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track {
   box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.12);
 }
 
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.18);
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb,
 .custom-scrollbar-lava::-webkit-scrollbar-thumb,
 .custom-scrollbar-ice::-webkit-scrollbar-thumb,
-*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb {
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb {
   background: var(--lava-magma);
   background-image: var(--lava-thumb-gradient);
   border-radius: 4px;
@@ -393,18 +429,101 @@ body::-webkit-scrollbar-thumb,
   box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
 }
 
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar-lava::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
-*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
   background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);
   box-shadow: inset 0 0 9px rgba(255, 0, 0, 1), inset 0 0 16px rgba(255, 69, 0, 0.65), 0 0 12px rgba(255, 0, 0, 0.75), 0 0 20px rgba(255, 69, 0, 0.5);
 }
 
-*:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-button {
+  background-color: var(--lava-magma);
+  border: 1px solid rgba(255, 69, 0, 0.4);
+}
+
+body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
   height: 8px;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: var(--scroll-page);
+  background-image: var(--scroll-page-gradient);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 255, 0.45);
+  box-shadow: var(--scroll-page-glow);
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #ffaaff 0%, #ff00ff 50%, #ff00c8 100%);
+  box-shadow: inset 0 0 9px rgba(255, 0, 255, 1), 0 0 14px rgba(255, 0, 255, 0.8);
+}
+
+html::-webkit-scrollbar-button {
+  background-color: var(--scroll-page);
+  border: 1px solid rgba(255, 0, 255, 0.45);
+}
+
+html:not(.no-scrollbar) :is(
+  #desk-main,
+  #main-scroll-viewport,
+  .main-container,
+  .left-side,
+  .scrollbar-panel,
+  [data-retail-door],
+  [data-institutional-door],
+  [data-fundamental-door],
+  [data-neuro-door]
+)::-webkit-scrollbar-thumb {
+  background: var(--scroll-panel);
+  background-image: var(--scroll-panel-gradient);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  box-shadow: var(--scroll-panel-glow);
+}
+
+html:not(.no-scrollbar) :is(
+  #desk-main,
+  #main-scroll-viewport,
+  .main-container,
+  .left-side,
+  .scrollbar-panel,
+  [data-retail-door],
+  [data-institutional-door],
+  [data-fundamental-door],
+  [data-neuro-door]
+)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, #ffffff 0%, #00ffff 50%, #00e5ff 100%);
+  box-shadow: inset 0 0 9px rgba(0, 255, 255, 1), 0 0 14px rgba(0, 255, 255, 0.85);
+}
+
+html:not(.no-scrollbar) :is(
+  #desk-main,
+  #main-scroll-viewport,
+  .main-container,
+  .left-side,
+  .scrollbar-panel,
+  [data-retail-door],
+  [data-institutional-door],
+  [data-fundamental-door],
+  [data-neuro-door]
+)::-webkit-scrollbar-button {
+  background-color: var(--scroll-panel);
+  border: 1px solid rgba(0, 255, 255, 0.5);
+}
+
+html:not(.no-scrollbar) :is(
+  #desk-main,
+  #main-scroll-viewport,
+  .main-container,
+  .left-side,
+  .scrollbar-panel,
+  [data-retail-door],
+  [data-institutional-door],
+  [data-fundamental-door],
+  [data-neuro-door]
+)::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.16);
 }
 
 /* Intentionally hidden scrollbars (nav chips, tickers, etc.) */
