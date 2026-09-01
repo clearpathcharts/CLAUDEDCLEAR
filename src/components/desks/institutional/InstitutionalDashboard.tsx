@@ -197,7 +197,7 @@ export default function InstitutionalDashboard() {
       <div
         data-desk-chart-room
         data-chart-room={chartFull ? 'full' : 'open'}
-        className="grid min-h-0 min-h-[55vh] flex-1 grid-cols-1 gap-2"
+        className="grid min-h-[70vh] flex-1 grid-cols-1 gap-2"
         style={{ ['--desk-chart-cols' as string]: chartCols }}
       >
         <Bento holdId="universe" title="Market Universe" status={tabMeta?.label} className="min-h-[280px]">
@@ -227,7 +227,7 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <section className="flex min-h-0 min-h-[55vh] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)]">
+        <section className="flex min-h-[70vh] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--desk-border)] bg-[var(--desk-panel)]">
           <header className="shrink-0 space-y-1.5 border-b border-[var(--desk-border)] px-2.5 py-1.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--desk-cyan)]">
@@ -380,6 +380,7 @@ export default function InstitutionalDashboard() {
         )}
       </div>
 
+      {showStructureRow ? (
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
         <Bento holdId="tape" title="Time & Sales" status="reconstructed bars" onExpand={() => setFocus('tape')}>
           <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
@@ -494,7 +495,9 @@ export default function InstitutionalDashboard() {
           ) : null}
         </Bento>
       </div>
+      ) : null}
 
+      {showOptionsRow ? (
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         <Bento
           holdId="options"
@@ -569,7 +572,9 @@ export default function InstitutionalDashboard() {
           </button>
         </Bento>
       </div>
+      ) : null}
 
+      {showNewsRow ? (
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
         <Bento holdId="news" title="News Intelligence" status={intel.newsError ? 'offline' : 'wire'} onExpand={() => setFocus('news')}>
           {intel.newsError ? <p className="text-[10px] text-rose-400">{intel.newsError}</p> : null}
@@ -673,7 +678,9 @@ export default function InstitutionalDashboard() {
           )}
         </Bento>
       </div>
+      ) : null}
 
+      {showEarnings ? (
       <Bento holdId="earnings" title="Earnings" status={intel.earningsAvail === 'ok' ? 'FMP surprises' : 'DATA UNAVAILABLE'}>
         {intel.earningsAvail !== 'ok' || !intel.earnings?.length ? (
           <Unavail label={intel.earningsAvail === 'unconfigured' ? 'FMP unconfigured — DATA UNAVAILABLE' : 'DATA UNAVAILABLE'} />
@@ -698,6 +705,7 @@ export default function InstitutionalDashboard() {
           Open fundamental workspace
         </button>
       </Bento>
+      ) : null}
 
       <p className="shrink-0 py-1 text-center text-[10px] font-black uppercase tracking-[0.2em] text-[var(--desk-muted)]">
         Information & analytics only · educational market structure · ClearPath does not evaluate, alter, or advise on financial decisions

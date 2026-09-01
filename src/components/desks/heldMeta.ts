@@ -80,5 +80,7 @@ export function deskSectionOpen(
   isHeld: ((id: string) => boolean) | undefined,
   ids: readonly string[],
 ): boolean {
-  return ids.some((id) => !isHeld?.(id));
+  // No hold API → keep intel out of the viewport so the chart is not crushed.
+  if (!isHeld) return false;
+  return ids.some((id) => !isHeld(id));
 }

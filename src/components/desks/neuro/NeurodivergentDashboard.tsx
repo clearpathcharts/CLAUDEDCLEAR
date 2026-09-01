@@ -387,7 +387,7 @@ export default function NeurodivergentDashboard() {
       <div
         data-desk-chart-room
         data-chart-room={chartFull ? 'full' : 'open'}
-        className="grid min-h-0 min-h-[55vh] flex-1 grid-cols-1 gap-3"
+        className="grid min-h-[70vh] flex-1 grid-cols-1 gap-3"
         style={{ ['--desk-chart-cols' as string]: neuroChartCols }}
       >
         {!watchHeld && (
@@ -463,7 +463,7 @@ export default function NeurodivergentDashboard() {
 
         <section
           data-retail-bento
-          className="retail-bento flex min-h-0 min-h-[55vh] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border"
+          className="retail-bento flex min-h-[70vh] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border"
           style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}
         >
           <header className="space-y-2">

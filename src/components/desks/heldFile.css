@@ -175,7 +175,7 @@
 
 [data-desk-chart-room] {
   flex: 1 1 auto;
-  min-height: max(55vh, 420px);
+  min-height: max(70vh, 480px);
 }
 
 @media (min-width: 1024px) {
