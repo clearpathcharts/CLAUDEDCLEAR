@@ -62,6 +62,7 @@ const RETAIL_INDICATORS = [
   'VOL',
   'STOCH',
   'ADX',
+  'COT',
 ] as const;
 
 function readChartProfileId(): string {
