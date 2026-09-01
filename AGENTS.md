@@ -70,3 +70,11 @@ The founder already has **one** Cloud Build trigger for **new website code**. Do
 
 ### Host hardening (ops only)
 - Optional server hardening uses [grapheneX](https://github.com/grapheneX/grapheneX) on the **VPS/Docker host**, not inside the Node app. See `docs/ops-hardening.md` and `scripts/ops/run-graphenex.sh` (localhost `:9090` + SSH tunnel). Not applicable to managed Cloud Run.
+
+### Founder conversation memory
+Durable topics from founder/agent threads. Full notes: `.cursor/memory/conversation-topics.md`.
+
+- **Desk color chart (2026-08-30 / 2026-08-31):** One TradingView-style palette on Retail, Fundamental, Institutional, and Neurodivergent. Target tabs sit **outside** the chart: Background, Chart, Candle ↑, Candle ↓, Indicators, Bento. Neurodivergent also has a pastel row.
+- **Color save (must be explicit):** Swatches are **preview only**. **Save colors** writes this desk to this device (`clearpath_desk_color_chart_v1`). **Save to all desks** copies the palette to all four. **Discard** reverts preview. **Reset desk** clears that desk.
+- **Fundamental has no price plot.** Chart / candle / indicator picks on that desk will not show until **Save to all desks** (or until that desk grows a chart). Background and Bento do apply there.
+- Code: `src/lib/deskColorChart.ts`, `src/components/desks/ColorChartPicker.tsx`, `DeskAppearanceContext.tsx`, `TraderDeskChrome.tsx`, `colorChart.css`; charts read `visualPaint` in `LightweightCandles.tsx`.
