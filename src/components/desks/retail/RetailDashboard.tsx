@@ -11,6 +11,7 @@ import { navigateToDesk } from '../../../lib/traderDesks';
 import { FX_SESSIONS, isSessionOpen } from '../../../lib/traderDesks';
 import { advancedProfiles } from '../../../lib/advanced/profiles';
 import { Bento, Unavail, KV, Bar } from '../institutional/Bento';
+import { useDeskHold } from '../DeskHoldScope';
 import { RetailEducationBento } from './RetailEducationBento';
 import { RetailSlideStrip } from './RetailSlideStrip';
 import { AssetColorControls } from './AssetColorControls';
@@ -412,6 +413,18 @@ export default function RetailDashboard() {
 
   const hideSecondary = focusMode || blackout;
   const denseBlackout = blackout;
+  const hold = useDeskHold();
+  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
+  const scanHeld = hideSecondary || (hold?.isHeld('scanner') ?? false);
+  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
+  const retailChartCols = [
+    watchHeld ? null : '240px',
+    'minmax(0,1.5fr)',
+    scanHeld ? null : '220px',
+    snapHeld ? null : '240px',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const gainers = [...intel.moverQuotes].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)).slice(0, 4);
   const decliners = [...intel.moverQuotes].sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)).slice(0, 4);
@@ -506,7 +519,7 @@ export default function RetailDashboard() {
       ) : null}
       {/* Global market ribbon */}
       {!hideSecondary && (
-        <Bento title="Global Market Ribbon" status="context" className="retail-bento shrink-0">
+        <Bento holdId="ribbon" title="Global Market Ribbon" status="context" className="retail-bento shrink-0">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {RETAIL_RIBBON.map((m) => {
               const row = intel.ribbon.find((r) => r.symbol === m.symbol);
@@ -597,14 +610,13 @@ export default function RetailDashboard() {
       <div className="flex min-h-[55vh] flex-1 flex-col gap-2">
       {/* Primary row: watchlist | chart | snapshot */}
       <div
-        className={`grid min-h-[320px] flex-1 gap-3 ${
-          hideSecondary
-            ? 'grid-cols-1'
-            : 'grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_200px_220px] xl:grid-cols-[240px_minmax(0,1.5fr)_220px_240px]'
-        }`}
+        data-desk-chart-room
+        className={`grid min-h-[320px] flex-1 gap-3 grid-cols-1`}
+        style={{ ['--desk-chart-cols' as string]: retailChartCols }}
       >
         {!hideSecondary && (
           <Bento
+            holdId="watchlist"
             title="My Watchlist"
             status={activeWl?.name}
             expanded={openPanels.watchlist !== false}
@@ -838,6 +850,7 @@ export default function RetailDashboard() {
 
         {!hideSecondary && (
           <Bento
+            holdId="scanner"
             title="Pattern Scanner"
             status={hasFeature('patternOverlay') ? 'live scan' : 'locked'}
             expanded={openPanels.patterns !== false}
@@ -856,6 +869,7 @@ export default function RetailDashboard() {
 
         {!hideSecondary && (
           <Bento
+            holdId="snapshot"
             title="Market Snapshot"
             status={symbol}
             expanded={openPanels.snapshot !== false}
@@ -908,6 +922,7 @@ export default function RetailDashboard() {
         <RetailSlideStrip title="Context · Volume · Movers">
           <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
+              holdId="context"
               title="Market Context"
               status={sessionLabel()}
               expanded={openPanels.context !== false}
@@ -958,6 +973,7 @@ export default function RetailDashboard() {
             </Bento>
 
             <Bento
+              holdId="volume"
               title="Volume / Price"
               status={structure?.volumeMode === 'vendor' ? 'vendor volume' : 'range-proxy'}
               expanded={openPanels.volume !== false}
@@ -991,6 +1007,7 @@ export default function RetailDashboard() {
             </Bento>
 
             <Bento
+              holdId="movers"
               title="Market Movers"
               status={intel.moversStatus === 'ok' ? 'live quotes' : 'unavailable'}
               expanded={openPanels.movers !== false}
@@ -1056,6 +1073,7 @@ export default function RetailDashboard() {
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento
+              holdId="news"
               title="News"
               status={intel.newsError ? 'offline' : `${intel.news.length} items`}
               expanded={openPanels.news !== false}
@@ -1096,6 +1114,7 @@ export default function RetailDashboard() {
             </Bento>
 
             <Bento
+              holdId="calendar"
               title="Economic Calendar"
               status="informational"
               expanded={openPanels.calendar !== false}
@@ -1123,6 +1142,7 @@ export default function RetailDashboard() {
             </Bento>
 
             <Bento
+              holdId="alerts"
               title="Alerts / Events"
               status={`${alerts.filter((a) => a.enabled).length} active`}
               expanded={openPanels.alerts !== false}
@@ -1216,6 +1236,7 @@ export default function RetailDashboard() {
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Bento
+              holdId="changed"
               title="What Changed?"
               status="since last view"
               expanded={openPanels.changed !== false}
@@ -1234,6 +1255,7 @@ export default function RetailDashboard() {
             />
 
             <Bento
+              holdId="fundamental"
               title="Fundamental Snapshot"
               status={intel.fundamentals.status}
               expanded={openPanels.fundamentals !== false}
@@ -1301,6 +1323,7 @@ export default function RetailDashboard() {
             </Bento>
 
             <Bento
+              holdId="simulation"
               title="Simulation Lab"
               status="hypothetical"
               expanded={openPanels.simulation !== false}

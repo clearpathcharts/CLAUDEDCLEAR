@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../../charts/LightweightCandles';
 import { resolveMarketAsset } from '../../../constants/marketAssets';
 import { formatStructurePrice } from '../../../lib/institutional/analyzeStructure';
 import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles';
 import { Bento, Unavail, KV } from '../institutional/Bento';
+import { useDeskHold } from '../DeskHoldScope';
 import { RetailEducationBento } from '../retail/RetailEducationBento';
 import { useRetailIntelligence, type RetailQuote } from '../retail/useRetailIntelligence';
 import {
@@ -106,6 +108,18 @@ export default function NeurodivergentDashboard() {
   const activeWl = watchlists.find((w) => w.id === activeWlId) ?? watchlists[0];
   const watchSymbols = activeWl?.symbols ?? [];
   const reduced = prefersReducedChrome(profileId) || focusMode || blackout;
+  const hideSecondary = reduced;
+  const hold = useDeskHold();
+  const profilesHeld = hold?.isHeld('profiles') ?? false;
+  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
+  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
+  const neuroChartCols = [
+    watchHeld ? null : '240px',
+    'minmax(0,1fr)',
+    snapHeld ? null : '240px',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON);
   const candles = intel.primaryCandles;
@@ -161,8 +175,6 @@ export default function NeurodivergentDashboard() {
     setWatchlists(next);
   };
 
-  const hideSecondary = reduced;
-
   return (
     <div
       data-neuro-door
@@ -179,9 +191,20 @@ export default function NeurodivergentDashboard() {
       {!blackout && (
         <section
           data-retail-bento
-          className="retail-bento overflow-hidden rounded-xl border"
+          className="relative retail-bento overflow-hidden rounded-xl border"
           style={{ borderColor: `${theme.borderA}55`, background: theme.panel }}
         >
+          {hold && !profilesHeld ? (
+            <button
+              type="button"
+              className="rt-bento-x"
+              aria-label="Hold sensory profiles in the file"
+              title="Hold in file"
+              onClick={() => hold.hold('profiles')}
+            >
+              <X size={11} strokeWidth={2.75} aria-hidden="true" />
+            </button>
+          ) : null}
           <header className="flex flex-wrap items-end justify-between gap-3 px-3 py-3">
             <div>
               <p className="text-sm font-black uppercase tracking-[0.2em]" style={{ color: theme.borderA }}>
@@ -193,6 +216,7 @@ export default function NeurodivergentDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {!profilesHeld ? (
               <button
                 type="button"
                 onClick={() => setShowProfiles((v) => !v)}
@@ -201,6 +225,7 @@ export default function NeurodivergentDashboard() {
               >
                 {showProfiles ? 'Hide profiles' : 'Change UI profile'}
               </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
@@ -231,7 +256,7 @@ export default function NeurodivergentDashboard() {
               </a>
             </div>
           </header>
-          {showProfiles ? (
+          {showProfiles && !profilesHeld ? (
             <div className="retail-bento-body grid grid-cols-1 gap-2 border-t border-white/10 p-3 sm:grid-cols-2 lg:grid-cols-3">
               {NEURO_DESK_PROFILES.map((id) => {
                 const p = themeProfiles[id];
@@ -261,7 +286,7 @@ export default function NeurodivergentDashboard() {
 
       {/* Ribbon */}
       {!hideSecondary && (
-        <Bento title="Market Ribbon" status="crypto + majors" className="retail-bento shrink-0">
+        <Bento holdId="ribbon" title="Market Ribbon" status="crypto + majors" className="retail-bento shrink-0">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {NEURO_RIBBON.map((m) => {
               const row = intel.ribbon.find((r) => r.symbol === m.symbol);
@@ -349,12 +374,12 @@ export default function NeurodivergentDashboard() {
 
       {/* Main grid */}
       <div
-        className={`grid min-h-[380px] gap-3 ${
-          hideSecondary ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_240px]'
-        }`}
+        data-desk-chart-room
+        className="grid min-h-[380px] gap-3 grid-cols-1"
+        style={{ ['--desk-chart-cols' as string]: neuroChartCols }}
       >
         {!hideSecondary && (
-          <Bento title="Watchlist" status={activeWl?.name} className="retail-bento min-h-[280px]">
+          <Bento holdId="watchlist" title="Watchlist" status={activeWl?.name} className="retail-bento min-h-[280px]">
             <div className="mb-2 flex flex-wrap gap-1">
               {watchlists.map((w) => (
                 <button
@@ -471,7 +496,7 @@ export default function NeurodivergentDashboard() {
         </section>
 
         {!hideSecondary && (
-          <Bento title="Market Snapshot" status={symbol} className="retail-bento min-h-[280px]">
+          <Bento holdId="snapshot" title="Market Snapshot" status={symbol} className="retail-bento min-h-[280px]">
             {price == null && !day ? (
               <Unavail />
             ) : (
@@ -495,7 +520,7 @@ export default function NeurodivergentDashboard() {
       {!hideSecondary && (
         <>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Bento title="News" status={intel.newsError ? 'offline' : `${intel.news.length} items`} className="retail-bento min-h-[160px]">
+            <Bento holdId="news" title="News" status={intel.newsError ? 'offline' : `${intel.news.length} items`} className="retail-bento min-h-[160px]">
               {intel.news.length === 0 ? (
                 <Unavail label={intel.newsError || 'DATA UNAVAILABLE'} />
               ) : (
@@ -512,7 +537,7 @@ export default function NeurodivergentDashboard() {
               )}
             </Bento>
 
-            <Bento title="Economic Wire" status="informational" className="retail-bento min-h-[160px]">
+            <Bento holdId="calendar" title="Economic Wire" status="informational" className="retail-bento min-h-[160px]">
               {intel.econ.length === 0 ? (
                 <Unavail label={intel.econError || 'DATA UNAVAILABLE'} />
               ) : (
@@ -527,7 +552,7 @@ export default function NeurodivergentDashboard() {
               )}
             </Bento>
 
-            <Bento title="Alerts" status={`${alerts.length} saved`} className="retail-bento min-h-[160px]">
+            <Bento holdId="alerts" title="Alerts" status={`${alerts.length} saved`} className="retail-bento min-h-[160px]">
               <p className="mb-2 text-sm font-bold opacity-70">
                 Informational only — you control the alert. Not a trade recommendation.
               </p>
@@ -580,7 +605,7 @@ export default function NeurodivergentDashboard() {
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <RetailEducationBento />
-            <Bento title="Simulation Lab" status="hypothetical" className="retail-bento min-h-[140px]">
+            <Bento holdId="simulation" title="Simulation Lab" status="hypothetical" className="retail-bento min-h-[140px]">
               <p className="mb-2 text-base font-bold">Simulated trading only.</p>
               <ul className="mb-3 space-y-1 text-sm font-bold uppercase tracking-wider opacity-70">
                 <li>No real money</li>

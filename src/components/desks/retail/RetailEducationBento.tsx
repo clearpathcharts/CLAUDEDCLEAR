@@ -19,6 +19,7 @@ export function RetailEducationBento({
 
   return (
     <Bento
+      holdId="education"
       title="Education"
       status="What am I looking at?"
       expanded={expanded}

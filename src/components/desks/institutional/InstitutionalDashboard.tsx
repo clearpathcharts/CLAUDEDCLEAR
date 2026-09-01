@@ -15,6 +15,7 @@ import {
   scenarioPrices,
 } from '../../../lib/institutional/marketMath';
 import { Bento, Unavail, KV, Bar } from './Bento';
+import { useDeskHold } from '../DeskHoldScope';
 import {
   CORR_KEYS,
   RIBBON_MARKETS,
@@ -130,13 +131,25 @@ export default function InstitutionalDashboard() {
   const sellPct = totalFlow > 0 ? (flow.sell / totalFlow) * 100 : 0;
 
   const toggle = (id: string) => setOpen((s) => ({ ...s, [id]: s[id] === false ? true : false }));
+  const hold = useDeskHold();
+  const universeHeld = hold?.isHeld('universe') ?? false;
+  const flowHeld = hold?.isHeld('flow') ?? false;
+  const liqHeld = hold?.isHeld('liq') ?? false;
+  const sideHeld = flowHeld && liqHeld;
+  const chartCols = [
+    universeHeld ? null : '260px',
+    'minmax(0,1.6fr)',
+    sideHeld ? null : 'minmax(280px,0.9fr)',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
       data-institutional-door
       className="flex flex-col gap-2 p-2"
     >
-      <Bento title="Global Markets" status="environment" className="shrink-0">
+      <Bento holdId="ribbon" title="Global Markets" status="environment" className="shrink-0">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
           {RIBBON_MARKETS.map((m) => {
             const row = intel.ribbon.find((r) => r.symbol === m.symbol);
@@ -165,8 +178,13 @@ export default function InstitutionalDashboard() {
         </div>
       </Bento>
 
-      <div className="grid min-h-[420px] grid-cols-1 gap-2 xl:grid-cols-[260px_minmax(0,1.6fr)_minmax(280px,0.9fr)]">
-        <Bento title="Market Universe" status={tabMeta?.label} className="min-h-[280px]">
+      <div
+        data-desk-chart-room
+        data-chart-room={!universeHeld && !sideHeld ? 'full' : 'open'}
+        className="grid min-h-[420px] grid-cols-1 gap-2"
+        style={{ ['--desk-chart-cols' as string]: chartCols }}
+      >
+        <Bento holdId="universe" title="Market Universe" status={tabMeta?.label} className="min-h-[280px]">
           <div className="mb-2 flex flex-wrap gap-1">
             {UNIVERSE_TABS.map((t) => (
               <button
@@ -275,8 +293,10 @@ export default function InstitutionalDashboard() {
           </div>
         </section>
 
-        <div className="grid min-h-0 grid-rows-2 gap-2">
+        {sideHeld ? null : (
+        <div className={`grid min-h-0 gap-2 ${flowHeld || liqHeld ? 'grid-rows-1' : 'grid-rows-2'}`}>
           <Bento
+            holdId="flow"
             title="Market Flow"
             status={report?.volumeMode === 'vendor' ? 'vendor volume' : 'range-proxy'}
             onExpand={() => setFocus('flow')}
@@ -308,7 +328,7 @@ export default function InstitutionalDashboard() {
             )}
           </Bento>
 
-          <Bento title="Liquidity" status="OHLC-derived" onExpand={() => setFocus('liq')}>
+          <Bento holdId="liq" title="Liquidity" status="OHLC-derived" onExpand={() => setFocus('liq')}>
             <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
               Level II / book depth DATA UNAVAILABLE. Visuals from candles + volume profile.
             </p>
@@ -340,10 +360,11 @@ export default function InstitutionalDashboard() {
             ))}
           </Bento>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-        <Bento title="Time & Sales" status="reconstructed bars" onExpand={() => setFocus('tape')}>
+        <Bento holdId="tape" title="Time & Sales" status="reconstructed bars" onExpand={() => setFocus('tape')}>
           <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
             Tick tape DATA UNAVAILABLE. Each row is one OHLC bar.
           </p>
@@ -369,6 +390,7 @@ export default function InstitutionalDashboard() {
         </Bento>
 
         <Bento
+          holdId="structure"
           title="Market Structure / Technical Analytics"
           status="educational"
           expanded={open.structure === true}
@@ -410,7 +432,7 @@ export default function InstitutionalDashboard() {
           ))}
         </Bento>
 
-        <Bento title="Volume Analytics" status={report?.volumeMode}>
+        <Bento holdId="volume" title="Volume Analytics" status={report?.volumeMode}>
           <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
             {report?.volumeMode === 'vendor'
               ? 'Vendor volume bins'
@@ -437,7 +459,7 @@ export default function InstitutionalDashboard() {
           </div>
         </Bento>
 
-        <Bento title="Volatility" onExpand={() => setFocus('vol')}>
+        <Bento holdId="vol" title="Volatility" onExpand={() => setFocus('vol')}>
           <KV k="VIX" v={vixRow?.live && vixRow.price != null ? formatStructurePrice(vixRow.price) : 'DATA UNAVAILABLE'} />
           <KV k="Realized vol" v={rv != null ? `${rv.toFixed(1)}%` : 'DATA UNAVAILABLE'} />
           <KV k="Implied vol" v="DATA UNAVAILABLE" />
@@ -458,6 +480,7 @@ export default function InstitutionalDashboard() {
 
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         <Bento
+          holdId="options"
           title="Options Intelligence"
           status="no options feed"
           expanded={open.options === true}
@@ -475,7 +498,7 @@ export default function InstitutionalDashboard() {
           )}
         </Bento>
 
-        <Bento title="Cross-Asset Correlation" status="Pearson · daily closes" onExpand={() => setFocus('corr')}>
+        <Bento holdId="corr" title="Cross-Asset Correlation" status="Pearson · daily closes" onExpand={() => setFocus('corr')}>
           <div className="overflow-auto">
             <table className="w-full border-collapse text-center font-mono text-[10px]">
               <thead>
@@ -512,7 +535,7 @@ export default function InstitutionalDashboard() {
           </p>
         </Bento>
 
-        <Bento title="Macro Intelligence" onExpand={() => setFocus('macro')}>
+        <Bento holdId="macro" title="Macro Intelligence" onExpand={() => setFocus('macro')}>
           <KV k="FED" v={fed?.value != null ? `${fed.value.toFixed(2)}%` : 'DATA UNAVAILABLE'} />
           <KV k="CPI" v={cpi?.value != null ? cpi.value.toFixed(2) : 'DATA UNAVAILABLE'} />
           <KV k="GDP" v={gdp?.value != null ? gdp.value.toFixed(1) : 'DATA UNAVAILABLE'} />
@@ -531,7 +554,7 @@ export default function InstitutionalDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-        <Bento title="News Intelligence" status={intel.newsError ? 'offline' : 'wire'} onExpand={() => setFocus('news')}>
+        <Bento holdId="news" title="News Intelligence" status={intel.newsError ? 'offline' : 'wire'} onExpand={() => setFocus('news')}>
           {intel.newsError ? <p className="text-[10px] text-rose-400">{intel.newsError}</p> : null}
           <ul className="max-h-52 overflow-auto">
             {intel.news.map((item, i) => (
@@ -555,7 +578,7 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <Bento title="Economic Calendar" status="wire — not a timed calendar">
+        <Bento holdId="calendar" title="Economic Calendar" status="wire — not a timed calendar">
           <p className="mb-1 text-[9px] uppercase text-[var(--desk-muted)]">
             Dated high/medium event rows DATA UNAVAILABLE. Macro headlines only.
           </p>
@@ -573,7 +596,7 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <Bento title="Positioning" status="no COT / SI feed">
+        <Bento holdId="positioning" title="Positioning" status="no COT / SI feed">
           {['COT', 'Futures positioning', 'Short interest', 'ETF flows', 'Fund flows', 'Options positioning', 'Open interest'].map(
             (k) => (
               <KV key={k} k={k} v="DATA UNAVAILABLE" />
@@ -581,7 +604,7 @@ export default function InstitutionalDashboard() {
           )}
         </Bento>
 
-        <Bento title="Risk Environment" onExpand={() => setFocus('risk')}>
+        <Bento holdId="risk" title="Risk Environment" onExpand={() => setFocus('risk')}>
           <KV k="Volatility (RV)" v={rv != null ? `${rv.toFixed(1)}%` : 'DATA UNAVAILABLE'} />
           <KV k="Market beta" v="DATA UNAVAILABLE" />
           <KV
@@ -607,7 +630,7 @@ export default function InstitutionalDashboard() {
         </Bento>
       </div>
 
-      <Bento title="Earnings" status={intel.earningsAvail === 'ok' ? 'FMP surprises' : 'DATA UNAVAILABLE'}>
+      <Bento holdId="earnings" title="Earnings" status={intel.earningsAvail === 'ok' ? 'FMP surprises' : 'DATA UNAVAILABLE'}>
         {intel.earningsAvail !== 'ok' || !intel.earnings?.length ? (
           <Unavail label={intel.earningsAvail === 'unconfigured' ? 'FMP unconfigured — DATA UNAVAILABLE' : 'DATA UNAVAILABLE'} />
         ) : (

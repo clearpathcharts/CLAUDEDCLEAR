@@ -50,6 +50,13 @@ assert.match(dash, /AssetSearchBox/);
 assert.match(dash, /ResearchRail/);
 assert.match(dash, /BentoWorkspace/);
 
+const fundBento = fs.readFileSync(path.join(root, 'src/components/fundamental/BentoPrimitives.tsx'), 'utf8');
+assert.match(fundBento, /rt-bento-x/);
+assert.match(fundBento, /useDeskHold/);
+
+const fundDesk = fs.readFileSync(path.join(root, 'src/components/desks/FundamentalTraderDesk.tsx'), 'utf8');
+assert.match(fundDesk, /DeskHoldScope/);
+
 const bento = fs.readFileSync(path.join(root, 'src/components/fundamental/BentoWorkspace.tsx'), 'utf8');
 assert.match(bento, /Business model/);
 assert.match(bento, /Revenue engine/);

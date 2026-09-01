@@ -19,6 +19,7 @@ import {
 } from '../src/lib/traderDesks.ts';
 import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeStructure.ts';
 import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
+import { parseHeldIds } from '../src/components/desks/deskHeldPanels.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
 
@@ -135,6 +136,7 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
+    assert.match(text, /DeskHoldScope/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
@@ -157,6 +159,8 @@ for (const rel of srcFiles) {
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
     assert.match(text, /embedMode/);
+    assert.match(text, /holdId=/);
+    assert.match(text, /data-desk-chart-room/);
     assert.match(text, /analyzeInstitutionalStructure/);
     assert.match(text, /Information & analytics only/);
     assert.doesNotMatch(text, /Pattern Scanner/);
@@ -171,6 +175,7 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
+    assert.match(text, /DeskHoldScope/);
     assert.doesNotMatch(text, /study desk/);
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
@@ -196,6 +201,7 @@ for (const rel of srcFiles) {
     assert.match(text, /data-asset-colors-toggle/);
     assert.match(text, /PatternScannerPanel/);
     assert.match(text, /Pattern Scanner/);
+    assert.match(text, /holdId=/);
     assert.match(text, /useDedicatedPatternPanel/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
@@ -242,6 +248,7 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
+    assert.match(text, /DeskHoldScope/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -254,6 +261,7 @@ for (const rel of srcFiles) {
     assert.match(text, /applyNeuroProfile/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /RetailEducationBento/);
+    assert.match(text, /holdId=/);
     assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -289,6 +297,7 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/FundamentalTraderDesk.tsx') {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
+    assert.match(text, /DeskHoldScope/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
   }
@@ -298,6 +307,7 @@ for (const rel of srcFiles) {
     assert.match(text, /DeskAppearanceProvider/);
     assert.match(text, /deskId=\{deskId\}/);
     assert.match(text, /data-desk-color-bg/);
+    assert.match(text, /heldFile\.css/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
@@ -314,6 +324,22 @@ for (const rel of srcFiles) {
 
 const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);
+
+const heldCss = fs.readFileSync(path.join(root, 'src/components/desks/heldFile.css'), 'utf8');
+assert.match(heldCss, /rt-bento-x/);
+assert.match(heldCss, /rt-held-file/);
+assert.match(heldCss, /data-desk-chart-room/);
+
+const bento = fs.readFileSync(path.join(root, 'src/components/desks/institutional/Bento.tsx'), 'utf8');
+assert.match(bento, /holdId/);
+assert.match(bento, /rt-bento-x/);
+assert.match(bento, /useDeskHold/);
+
+const heldFile = fs.readFileSync(path.join(root, 'src/components/desks/DeskHeldFile.tsx'), 'utf8');
+assert.match(heldFile, /data-desk-held-file/);
+
+assert.deepEqual(parseHeldIds('["ribbon","nope"]', new Set(['ribbon', 'flow'])), ['ribbon']);
+assert.deepEqual(parseHeldIds(null, new Set(['ribbon'])), []);
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.ok(r != null && Math.abs(r - 1) < 1e-9);
