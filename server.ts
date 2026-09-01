@@ -120,6 +120,7 @@ import {
   mergeBondProfile,
   offlineCompanionAnswer,
 } from './src/server/buddyMentorService';
+import { fallbackConversationBullet, normalizeConversationBullets } from './src/lib/buddyMemory';
 import {
   fetchEpisodesFromFeed,
   podcastIndexConfigured,
@@ -2636,7 +2637,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
   app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
-    const { question, userName, skillLevel, conversationHistory, memoryFacts, chartContext, bondProfile } =
+    const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile } =
       req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2657,12 +2658,16 @@ Frame your explanation with advanced professional rigor, making it scannable, st
       recentUserLines,
     });
 
+    const turnBullet = fallbackConversationBullet(question);
+    const turnBullets = turnBullet ? [turnBullet] : [];
+
     if (!apiKey) {
       const companionOffline = offlineCompanionAnswer({ question, displayName, affect });
       if (companionOffline) {
         return res.json({
           answer: companionOffline,
           newFacts: [],
+          conversationBullets: turnBullets,
           affect,
           bondPatch: mergeBondProfile(bond, {
             lastMood: {
@@ -2679,16 +2684,18 @@ Frame your explanation with advanced professional rigor, making it scannable, st
         return res.json({
           answer: `Here's what I see on the live chart structure (all possibilities — not confirmed):\n\n${localChart.replace(/===.*?===/g, '').trim()}\n\nAsk me to explain any line, or open a chart first if this looks empty.`,
           newFacts: [],
+          conversationBullets: turnBullets,
           affect,
         });
       }
       const siteHelp = offlineSiteGuideAnswer(question);
       if (siteHelp) {
-        return res.json({ answer: siteHelp, newFacts: [], affect });
+        return res.json({ answer: siteHelp, newFacts: [], conversationBullets: turnBullets, affect });
       }
       return res.json({
         answer: `Hey ${displayName} — I'm still here with you. Live full conversation needs a GROQ_API_KEY in Secrets. Meanwhile I can help with navigating ClearPath, INDACREATOR, Charts, neuro profiles, Education, or the Encyclopedias. How's your day going?`,
         newFacts: [],
+        conversationBullets: turnBullets,
         affect,
       });
     }
@@ -2752,8 +2759,12 @@ ${CPT_SITE_GUIDE}`;
     const rememberedFacts = Array.isArray(memoryFacts)
       ? memoryFacts.filter((f: any) => typeof f === 'string' && f.trim()).slice(0, 60)
       : [];
+    const rememberedBullets = normalizeConversationBullets(conversationBullets, 40);
     const memoryBlock = rememberedFacts.length
       ? `\n\n=== THINGS YOU REMEMBER ABOUT ${displayName.toUpperCase()} FROM PAST CONVERSATIONS ===\n- ${rememberedFacts.join('\n- ')}\nUse these memories naturally, the way a good friend would. Do not recite the list. Never ask ${displayName} to introduce themselves again.\n=== END MEMORY ===`
+      : '';
+    const conversationBlock = rememberedBullets.length
+      ? `\n\n=== CONVERSATION BULLETS (thread recap) ===\n- ${rememberedBullets.join('\n- ')}\nContinue these threads when useful. Do not read the list aloud.\n=== END CONVERSATION BULLETS ===`
       : '';
 
     const bondBlock = `\n\n${formatBondForPrompt(displayName, bond)}`;
@@ -2765,7 +2776,7 @@ ${CPT_SITE_GUIDE}`;
         : '';
 
     const messages = [
-      { role: 'system', content: systemPrompt + memoryBlock + bondBlock + affectBlock + chartBlock },
+      { role: 'system', content: systemPrompt + memoryBlock + conversationBlock + bondBlock + affectBlock + chartBlock },
       ...history.map((m: any) => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
         content: String(m.content || '').slice(0, 4000),
@@ -2800,6 +2811,7 @@ ${CPT_SITE_GUIDE}`;
         'I want to answer you properly — try saying that again in your own words.';
 
       let newFacts: string[] = [];
+      let conversationBulletsOut: string[] = [];
       let bondPatch = mergeBondProfile(bond, {
         lastMood: {
           primary: affect.primary,
@@ -2817,12 +2829,14 @@ ${CPT_SITE_GUIDE}`;
           affect,
         });
         newFacts = growth.newFacts;
+        conversationBulletsOut = growth.conversationBullets.length ? growth.conversationBullets : turnBullets;
         bondPatch = mergeBondProfile(bondPatch, growth.bondPatch);
       } catch (memErr) {
         console.error('[AI Mentor] Growth extraction skipped:', memErr);
+        conversationBulletsOut = turnBullets;
       }
 
-      res.json({ answer, newFacts, affect, bondPatch });
+      res.json({ answer, newFacts, conversationBullets: conversationBulletsOut, affect, bondPatch });
     } catch (err: any) {
       console.error('[AI Mentor Error]', err);
       res.status(500).json({

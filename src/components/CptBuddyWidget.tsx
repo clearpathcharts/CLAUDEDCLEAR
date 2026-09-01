@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Send, RotateCcw } from "lucide-react";
+import { X, Send, RotateCcw, List } from "lucide-react";
 import { useChartVision } from "../hooks/useChartVision";
 import { useAuth } from "../contexts/FirebaseContext";
 import { getDb, doc, getDoc, setDoc, deleteDoc } from "../firebase";
 import type { BuddyBondProfile } from "../lib/buddyBond";
+import {
+  MAX_CONVERSATION_BULLETS,
+  fallbackConversationBullet,
+  mergeMemoryLines,
+  normalizeConversationBullets,
+} from "../lib/buddyMemory";
 import "./CptBuddyWidget.css";
 
 /* ============================================================
    C.P.T. - PERSONAL BUDDY (grows with you)
 
    HOW MEMORY WORKS NOW:
-   1. Name, skill, facts, chat, and a platonic "bond profile"
+   1. Name, skill, facts, conversation bullets, chat, and a platonic "bond profile"
       (mood, neuro self-disclosures, emotional themes, pace)
       save to Firestore: users/{uid}/buddy_memory/profile
    2. On open, C.P.T. greets by name and gently checks in on
@@ -32,6 +38,7 @@ const STORAGE_KEY_SKILL = "cpt_buddy_skill_level";
 const STORAGE_KEY_FACTS = "cpt_buddy_facts";
 const STORAGE_KEY_MSGS = "cpt_buddy_messages";
 const STORAGE_KEY_BOND = "cpt_buddy_bond";
+const STORAGE_KEY_BULLETS = "cpt_buddy_conversation_bullets";
 const MAX_SAVED_MESSAGES = 120;
 const MAX_FACTS = 80;
 const MAX_NAME_LENGTH = 40;
@@ -128,6 +135,7 @@ function clearLocalBuddyMemory() {
     localStorage.removeItem(STORAGE_KEY_FACTS);
     localStorage.removeItem(STORAGE_KEY_MSGS);
     localStorage.removeItem(STORAGE_KEY_BOND);
+    localStorage.removeItem(STORAGE_KEY_BULLETS);
   } catch {}
 }
 
@@ -136,6 +144,7 @@ export const CptBuddyWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [facts, setFacts] = useState<string[]>([]);
+  const [conversationBullets, setConversationBullets] = useState<string[]>([]);
   const [bond, setBond] = useState<BuddyBondProfile>(emptyBond);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -150,6 +159,7 @@ export const CptBuddyWidget: React.FC = () => {
   const [kbInset, setKbInset] = useState(0);
   const [vvHeight, setVvHeight] = useState(0);
   const [showDayChips, setShowDayChips] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const { scans: patternScans, mentorContext } = useChartVision();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +173,7 @@ export const CptBuddyWidget: React.FC = () => {
       rawFacts: unknown,
       rawMsgs: unknown,
       rawBond?: unknown,
+      rawBullets?: unknown,
     ) => {
       const cleanedName = typeof rawName === "string" ? sanitizeBuddyName(rawName) : null;
       const skill = typeof rawSkill === "string" && rawSkill.trim() ? rawSkill.trim() : null;
@@ -173,16 +184,34 @@ export const CptBuddyWidget: React.FC = () => {
               (m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
             )
           : [];
+      let nextBullets = normalizeConversationBullets(rawBullets);
+      if (nextBullets.length === 0 && nextMsgs.length) {
+        nextBullets = mergeMemoryLines(
+          [],
+          nextMsgs
+            .filter((m) => m.role === "user")
+            .map((m) => fallbackConversationBullet(m.content))
+            .filter((b): b is string => !!b),
+          MAX_CONVERSATION_BULLETS
+        );
+      }
       const nextBond =
         rawBond && typeof rawBond === "object" ? { ...emptyBond(), ...(rawBond as BuddyBondProfile) } : emptyBond();
       if (cancelled) return;
       setUserName(cleanedName);
       setSkillLevel(skill);
       setFacts(nextFacts);
+      setConversationBullets(nextBullets);
       setBond(nextBond);
       setMessages(nextMsgs);
       setSetupStep(cleanedName && skill ? "done" : "name");
       setMemoryLoaded(true);
+
+      if (nextBullets.length && normalizeConversationBullets(rawBullets).length === 0) {
+        try {
+          localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(nextBullets));
+        } catch {}
+      }
 
       if (rawName && !cleanedName) {
         try {
@@ -190,6 +219,7 @@ export const CptBuddyWidget: React.FC = () => {
           localStorage.removeItem(STORAGE_KEY_MSGS);
           if (skill) localStorage.setItem(STORAGE_KEY_SKILL, skill);
           localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(nextFacts.slice(-MAX_FACTS)));
+          localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(nextBullets.slice(-MAX_CONVERSATION_BULLETS)));
           localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
         } catch {}
         if (user?.uid) {
@@ -199,6 +229,7 @@ export const CptBuddyWidget: React.FC = () => {
               userName: null,
               skillLevel: skill,
               facts: nextFacts.slice(-MAX_FACTS),
+              conversationBullets: nextBullets.slice(-MAX_CONVERSATION_BULLETS),
               messages: [],
               bond: nextBond,
               updatedAt: Date.now(),
@@ -215,10 +246,12 @@ export const CptBuddyWidget: React.FC = () => {
       let savedFacts: string[] = [];
       let savedMsgs: ChatMessage[] = [];
       let savedBond: BuddyBondProfile = emptyBond();
+      let savedBullets: string[] = [];
       try { savedFacts = JSON.parse(localStorage.getItem(STORAGE_KEY_FACTS) || "[]"); } catch {}
       try { savedMsgs = JSON.parse(localStorage.getItem(STORAGE_KEY_MSGS) || "[]"); } catch {}
       try { savedBond = { ...emptyBond(), ...JSON.parse(localStorage.getItem(STORAGE_KEY_BOND) || "{}") }; } catch {}
-      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs, savedBond);
+      try { savedBullets = JSON.parse(localStorage.getItem(STORAGE_KEY_BULLETS) || "[]"); } catch {}
+      applyLoadedMemory(savedName, savedSkill, savedFacts, savedMsgs, savedBond, savedBullets);
     };
 
     const loadMemory = async () => {
@@ -227,7 +260,7 @@ export const CptBuddyWidget: React.FC = () => {
           const snap: any = await getDoc(doc(getDb(), "users", user.uid, "buddy_memory", "profile"));
           if (!cancelled && snap && typeof snap.exists === "function" && snap.exists()) {
             const d = snap.data() || {};
-            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages, d.bond);
+            applyLoadedMemory(d.userName, d.skillLevel, d.facts, d.messages, d.bond, d.conversationBullets);
             return;
           }
         } catch (e) {
@@ -247,17 +280,20 @@ export const CptBuddyWidget: React.FC = () => {
     userName: string | null;
     skillLevel: string | null;
     facts: string[];
+    conversationBullets: string[];
     messages: ChatMessage[];
     bond: BuddyBondProfile;
   }) => {
     const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
     const trimmedFacts = next.facts.slice(-MAX_FACTS);
+    const trimmedBullets = normalizeConversationBullets(next.conversationBullets);
     const nextBond = next.bond || emptyBond();
 
     try {
       if (next.userName) localStorage.setItem(STORAGE_KEY_NAME, next.userName);
       if (next.skillLevel) localStorage.setItem(STORAGE_KEY_SKILL, next.skillLevel);
       localStorage.setItem(STORAGE_KEY_FACTS, JSON.stringify(trimmedFacts));
+      localStorage.setItem(STORAGE_KEY_BULLETS, JSON.stringify(trimmedBullets));
       localStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(trimmedMsgs));
       localStorage.setItem(STORAGE_KEY_BOND, JSON.stringify(nextBond));
     } catch {}
@@ -270,6 +306,7 @@ export const CptBuddyWidget: React.FC = () => {
             userName: next.userName || null,
             skillLevel: next.skillLevel || null,
             facts: trimmedFacts,
+            conversationBullets: trimmedBullets,
             messages: trimmedMsgs,
             bond: nextBond,
             updatedAt: Date.now(),
@@ -375,7 +412,7 @@ export const CptBuddyWidget: React.FC = () => {
       };
       setMessages([intro]);
       setShowDayChips(true);
-      void saveMemory({ userName: cleaned, skillLevel, facts, messages: [intro], bond });
+      void saveMemory({ userName: cleaned, skillLevel, facts, conversationBullets, messages: [intro], bond });
       return;
     }
 
@@ -391,7 +428,7 @@ export const CptBuddyWidget: React.FC = () => {
     };
     setMessages([intro]);
     setShowDayChips(true);
-    void saveMemory({ userName, skillLevel: level, facts, messages: [intro], bond });
+    void saveMemory({ userName, skillLevel: level, facts, conversationBullets, messages: [intro], bond });
   };
 
   /** Wipe name, facts, and chat so a bad memory (or mistaken name) can be fixed. */
@@ -409,9 +446,11 @@ export const CptBuddyWidget: React.FC = () => {
     setUserName(null);
     setSkillLevel(null);
     setFacts([]);
+    setConversationBullets([]);
     setBond(emptyBond());
     setMessages([]);
     setShowDayChips(false);
+    setShowMemory(false);
     setSetupStep("name");
     clearLocalBuddyMemory();
 
@@ -427,6 +466,7 @@ export const CptBuddyWidget: React.FC = () => {
               userName: null,
               skillLevel: null,
               facts: [],
+              conversationBullets: [],
               messages: [],
               bond: emptyBond(),
               updatedAt: Date.now(),
@@ -462,6 +502,7 @@ export const CptBuddyWidget: React.FC = () => {
           userName,
           skillLevel,
           memoryFacts: facts,
+          conversationBullets,
           bondProfile: bond,
           chartContext: mentorContext,
           conversationHistory: newMessages.slice(-30).map((m) => ({ role: m.role, content: m.content })),
@@ -483,6 +524,11 @@ export const CptBuddyWidget: React.FC = () => {
         setFacts(updatedFacts);
       }
 
+      const fromApi = normalizeConversationBullets(data.conversationBullets, 4);
+      const localBullet = fromApi.length ? [] : [fallbackConversationBullet(question)].filter((b): b is string => !!b);
+      const updatedBullets = mergeMemoryLines(conversationBullets, [...fromApi, ...localBullet], MAX_CONVERSATION_BULLETS);
+      setConversationBullets(updatedBullets);
+
       const updatedBond = mergeBondLocal(bond, data.bondPatch || undefined);
       setBond(updatedBond);
       setMessages(updatedMessages);
@@ -490,6 +536,7 @@ export const CptBuddyWidget: React.FC = () => {
         userName,
         skillLevel,
         facts: updatedFacts,
+        conversationBullets: updatedBullets,
         messages: updatedMessages,
         bond: updatedBond,
       });
@@ -602,6 +649,16 @@ export const CptBuddyWidget: React.FC = () => {
             <button
               type="button"
               className="cpt-buddy-icon-btn"
+              onClick={() => setShowMemory((v) => !v)}
+              aria-label="Conversation memory"
+              aria-pressed={showMemory}
+              title="Conversation memory"
+            >
+              <List size={18} />
+            </button>
+            <button
+              type="button"
+              className="cpt-buddy-icon-btn"
               onClick={() => { void handleResetBuddy(); }}
               disabled={isResetting || !memoryLoaded}
               aria-label="Reset C.P.T. memory"
@@ -618,6 +675,38 @@ export const CptBuddyWidget: React.FC = () => {
               <X size={20} />
             </button>
           </div>
+
+          {showMemory && (
+            <div className="cpt-buddy-memory" aria-label="What C.P.T. remembers">
+              <div className="cpt-buddy-memory__title">Memory</div>
+              {conversationBullets.length === 0 && facts.length === 0 ? (
+                <p className="cpt-buddy-memory__empty">Nothing saved yet. Talk with C.P.T. and conversation bullets land here.</p>
+              ) : (
+                <>
+                  {conversationBullets.length > 0 && (
+                    <>
+                      <div className="cpt-buddy-memory__kicker">Conversation</div>
+                      <ul className="cpt-buddy-memory__list">
+                        {conversationBullets.slice(-MAX_CONVERSATION_BULLETS).reverse().map((bullet) => (
+                          <li key={bullet}>{bullet}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {facts.length > 0 && (
+                    <>
+                      <div className="cpt-buddy-memory__kicker">Lasting facts</div>
+                      <ul className="cpt-buddy-memory__list">
+                        {facts.slice(-24).reverse().map((fact) => (
+                          <li key={fact}>{fact}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Body */}
           <div
