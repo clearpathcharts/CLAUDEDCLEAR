@@ -82,6 +82,7 @@ assert.match(indexHtml, /viewport-fit=cover/);
 const indexCss = fs.readFileSync(path.join(root, 'src/index.css'), 'utf8');
 assert.match(indexCss, /--font-ui:\s*"Inter"/);
 assert.match(indexCss, /--font-mono:\s*"IBM Plex Mono"/);
+assert.match(indexCss, /html:has\(\.desk-shell\)/);
 
 function candle(time: number, o: number, h: number, l: number, c: number, volume = 0): Candle {
   return { time, open: o, high: h, low: l, close: c, volume };
@@ -145,12 +146,15 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_institutional_v2/);
-    assert.match(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_institutional_v3/);
+    assert.match(text, /defaultHeld=\{\[\]\}/);
+    assert.doesNotMatch(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
     assert.match(text, /data-institutional-door/);
+    assert.match(text, /overflow-visible/);
+    assert.doesNotMatch(text, /overflow-hidden p-2/);
     assert.match(text, /Market Universe/);
     assert.match(text, /Global Markets/);
     assert.match(text, /Primary Market Workspace/);
@@ -195,12 +199,14 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_retail_v2/);
-    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_retail_v3/);
+    assert.match(text, /defaultHeld=\{\[\]\}/);
+    assert.doesNotMatch(text, /RETAIL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /study desk/);
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
     assert.match(text, /data-retail-door/);
+    assert.match(text, /overflow-visible/);
     assert.match(text, /Retail Market/);
     assert.match(text, /Global Market Ribbon/);
     assert.match(text, /My Watchlist/);
@@ -273,13 +279,15 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_neuro_v2/);
-    assert.match(text, /NEURO_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_neuro_v3/);
+    assert.match(text, /defaultHeld=\{\[\]\}/);
+    assert.doesNotMatch(text, /NEURO_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
   if (rel === 'src/components/desks/neuro/NeurodivergentDashboard.tsx') {
     assert.match(text, /data-neuro-door/);
+    assert.match(text, /overflow-visible/);
     assert.match(text, /data-neuro-workstation/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /NEURO_DESK_PROFILES/);
@@ -326,11 +334,17 @@ for (const rel of srcFiles) {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.match(text, /DeskHoldScope/);
+    assert.match(text, /clearpath_held_fundamental_v3/);
+    assert.match(text, /defaultHeld=\{\[\]\}/);
+    assert.doesNotMatch(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
   }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);
+    assert.match(text, /min-h-\[100dvh\]/);
+    assert.doesNotMatch(text, /flex h-\[100dvh\]/);
+    assert.match(text, /overflow-visible/);
     assert.match(text, /data-desk-paper/);
     assert.match(text, /DeskAppearanceProvider/);
     assert.match(text, /deskId=\{deskId\}/);
@@ -368,10 +382,11 @@ assert.match(bento, /useDeskHold/);
 
 const heldFile = fs.readFileSync(path.join(root, 'src/components/desks/DeskHeldFile.tsx'), 'utf8');
 assert.match(heldFile, /data-desk-held-file/);
+assert.match(heldFile, /Restore all/);
 
 assert.deepEqual(parseHeldIds('["ribbon","nope"]', new Set(['ribbon', 'flow'])), ['ribbon']);
 assert.deepEqual(parseHeldIds(null, new Set(['ribbon'])), []);
-assert.equal(deskSectionOpen(undefined, ['news', 'education']), false);
+assert.equal(deskSectionOpen(undefined, ['news', 'education']), true);
 assert.equal(deskSectionOpen((id) => id === 'news', ['news', 'education']), true);
 assert.equal(
   deskSectionOpen((id) => NEURO_CHART_FIRST_HELD.includes(id), ['news', 'calendar', 'alerts', 'education', 'simulation']),

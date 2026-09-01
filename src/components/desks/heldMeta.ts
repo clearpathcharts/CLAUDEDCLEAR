@@ -67,7 +67,7 @@ export const NEURO_HELD_META: Record<string, HeldMeta> = {
   simulation: { title: 'Simulation Lab', blurb: 'Hypothetical practice only' },
 };
 
-/** First visit: park intel so the chart is the desk. Restore from the held file. */
+/** Optional park lists for tests / a user who wants chart-only. Desks must not auto-apply these. */
 export const INSTITUTIONAL_CHART_FIRST_HELD = Object.keys(INSTITUTIONAL_HELD_META).filter((id) => id !== 'ribbon');
 
 export const RETAIL_CHART_FIRST_HELD = Object.keys(RETAIL_HELD_META).filter((id) => id !== 'ribbon');
@@ -80,7 +80,7 @@ export function deskSectionOpen(
   isHeld: ((id: string) => boolean) | undefined,
   ids: readonly string[],
 ): boolean {
-  // No hold API → keep intel out of the viewport so the chart is not crushed.
-  if (!isHeld) return false;
+  // No hold API → keep intel on the desk so features are not trapped off-screen.
+  if (!isHeld) return true;
   return ids.some((id) => !isHeld(id));
 }
