@@ -25,6 +25,7 @@ secrets/
 /data/site-doctor/
 /data/daily-ops/
 /data/chart-pulse/
+/data/cot/
 /data/*.log
 /data/*.result.json
 

@@ -50,6 +50,7 @@ import {
   calculateNetVolume,
   calculateVolumeOscillator,
 } from "../../indicators/volume/Volume";
+import { calculateCOT } from "../../indicators/sentiment/COT";
 
 /** All live chart indicators — every key has real math (no placeholders). */
 export const IndicatorBank: Record<string, Function> = {
@@ -104,4 +105,5 @@ export const IndicatorBank: Record<string, Function> = {
   NETVOL: calculateNetVolume,
   VO: calculateVolumeOscillator,
   ADX: calculateADX,
+  COT: calculateCOT,
 };

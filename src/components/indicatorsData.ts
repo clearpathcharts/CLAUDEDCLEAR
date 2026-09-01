@@ -163,6 +163,7 @@ const CHART_ABBR_BY_NAME: Record<string, string> = {
   Volume: "VOL",
   "Net Volume": "NETVOL",
   "Volume Oscillator": "VO",
+  "Commitment of Traders (COT)": "COT",
 };
 
 export function indicatorChartAbbr(name: string): string | null {
@@ -190,7 +191,7 @@ function classifyCategory(name: string): IndicatorCategory {
   const n = name.toLowerCase();
   if (/(option|delta|gamma|theta|vega|put call|open interest|implied volatility|vix)/.test(n)) return "Options";
   if (/(advance|decline|breadth|mcclellan|trin|tick index|new high|nasdaq)/.test(n)) return "Breadth";
-  if (/(obv|volume|vwap|chaikin money|accumulation|williams accumulation|price volume|cumulative delta|ease of movement|market facilitation|time segmented|net volume)/.test(n)) {
+  if (/(obv|volume|vwap|chaikin money|accumulation|williams accumulation|price volume|cumulative delta|ease of movement|market facilitation|time segmented|net volume|commitment of traders)/.test(n)) {
     return "Volume";
   }
   if (/(atr|bollinger|keltner|donchian|turtle|historical volatility|chaikin volatility|standard deviation|ulcer|envelope|acceleration bands|percent b)/.test(n)) {

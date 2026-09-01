@@ -50,6 +50,7 @@ export const SUPPORTED_CHART_INDICATORS = [
   { name: "Volume", category: "Volume", abbr: "VOL", activeColor: "#FF00C8" },
   { name: "Net Volume", category: "Volume", abbr: "NETVOL", activeColor: "#06D6A0" },
   { name: "Volume Oscillator", category: "Volume", abbr: "VO", activeColor: "#4CC9F0" },
+  { name: "COT Commercial vs Non-Commercial", category: "Sentiment", abbr: "COT", activeColor: "#22C55E" },
 ] as const;
 
 /** Drawing tools that are not candle-series indicators (not in the live bank). */
