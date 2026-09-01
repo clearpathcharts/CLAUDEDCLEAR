@@ -19,6 +19,7 @@ import { buildFmpStableLookupUrl } from '../src/server/secrets.ts';
 import { validateCftcRows } from '../src/lib/cot/cftcValidate.ts';
 import { normalizeDisaggregatedRow, normalizeLegacyRow, mergeNormalized } from '../src/lib/cot/normalize.ts';
 import { buildCotAnalytics, priceCotDivergence } from '../src/lib/cot/analytics.ts';
+import { cotAgeDays, cotFeedChip, formatCotAgeLabel, formatCotReportLabel, newsFeedChip, NOT_CONFIGURED } from '../src/lib/cot/status.ts';
 import { cftcAnnualZipUrl } from '../src/server/cot/rawArchive.ts';
 import {
   buildCftcLegacyUrl,
@@ -227,5 +228,21 @@ assert.match(serverSrc, /ClearPath COT Data Engine/);
 const chartCot = fs.readFileSync(path.join(root, 'src/indicators/sentiment/COT.ts'), 'utf8');
 assert.match(chartCot, /\/api\/cot\/history/);
 assert.doesNotMatch(chartCot, /from ['"]LibraryCOT['"]/);
+
+assert.equal(formatCotReportLabel('2026-08-25'), 'Aug 25, 2026');
+assert.equal(cotAgeDays('2026-08-25', new Date(Date.UTC(2026, 7, 31))), 6);
+assert.equal(formatCotAgeLabel('2026-08-25', new Date(Date.UTC(2026, 7, 31))), '6 DAYS');
+assert.equal(cotFeedChip({ status: 'ok', cached: true, note: 'CFTC.gov · GC · 088691' }), 'CACHED');
+assert.equal(cotFeedChip({ status: 'ok', cached: false, note: 'CFTC.gov · GC · 088691' }), 'CFTC FETCH');
+assert.equal(cotFeedChip({ status: 'unmapped', cached: false, note: 'NO CFTC MAP' }), 'NO CFTC MAP');
+assert.equal(cotFeedChip({ status: 'unavailable', cached: false, note: 'loading' }), 'LOADING');
+assert.equal(cotFeedChip({ status: 'unavailable', cached: false, note: 'CFTC UNAVAILABLE' }), 'PROVIDER ERROR');
+assert.equal(newsFeedChip('News unavailable (HTTP 429)'), 'rate limited');
+assert.equal(newsFeedChip(null), 'wire');
+assert.equal(NOT_CONFIGURED, 'NOT CONFIGURED');
+
+const dashSrc = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
+assert.match(dashSrc, /NOT_CONFIGURED/);
+assert.doesNotMatch(dashSrc, /k="Short interest" v="DATA UNAVAILABLE"/);
 
 console.log('cot-indicator.selftest: ok');

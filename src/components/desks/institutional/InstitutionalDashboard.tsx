@@ -18,6 +18,13 @@ import { Bento, Unavail, KV, Bar } from './Bento';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
 import {
+  cotFeedChip,
+  formatCotAgeLabel,
+  formatCotReportLabel,
+  newsFeedChip,
+  NOT_CONFIGURED,
+} from '../../../lib/cot/status';
+import {
   CORR_KEYS,
   RIBBON_MARKETS,
   UNIVERSE_TABS,
@@ -576,7 +583,7 @@ export default function InstitutionalDashboard() {
 
       {showNewsRow ? (
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-        <Bento holdId="news" title="News Intelligence" status={intel.newsError ? 'offline' : 'wire'} onExpand={() => setFocus('news')}>
+        <Bento holdId="news" title="News Intelligence" status={newsFeedChip(intel.newsError)} onExpand={() => setFocus('news')}>
           {intel.newsError ? <p className="text-[10px] text-rose-400">{intel.newsError}</p> : null}
           <ul className="max-h-52 overflow-auto">
             {intel.news.map((item, i) => (
@@ -618,15 +625,19 @@ export default function InstitutionalDashboard() {
           </ul>
         </Bento>
 
-        <Bento holdId="positioning" title="Positioning" status={intel.cot.note}>
+        <Bento holdId="positioning" title="Positioning" status={cotFeedChip(intel.cot)}>
           {intel.cot.status === 'ok' && intel.cot.analytics ? (
             <>
-              <KV k="CFTC contract" v={`${intel.cot.contract || '—'} · ${intel.cot.cftcCode || '—'}`} />
-              <KV k="Report date" v={intel.cot.analytics.reportDate || 'DATA UNAVAILABLE'} />
+              <KV k="COT source" v={intel.cot.note} />
+              <KV k="CFTC report" v={formatCotReportLabel(intel.cot.analytics.reportDate) || 'DATA UNAVAILABLE'} />
+              <KV k="Age" v={formatCotAgeLabel(intel.cot.analytics.reportDate) || 'DATA UNAVAILABLE'} />
+              <p className="mb-1 mt-0.5 text-[8px] uppercase tracking-wider text-[var(--desk-muted)]">
+                Weekly CFTC print. Positions as of Tuesday; CFTC typically releases Friday. Not a live price.
+              </p>
               <KV k="Net commercials" v={fmtSigned(intel.cot.analytics.netCommercial)} />
               <KV k="Net large specs" v={fmtSigned(intel.cot.analytics.netLarge)} />
               <KV k="Managed money net" v={fmtSigned(intel.cot.analytics.netManagedMoney)} />
-              <KV k="OI" v={fmtSigned(intel.cot.analytics.openInterest)} />
+              <KV k="Open interest" v={fmtSigned(intel.cot.analytics.openInterest)} />
               <KV
                 k="COT index (52w)"
                 v={
@@ -636,19 +647,20 @@ export default function InstitutionalDashboard() {
                 }
               />
               <KV k="Institutional flow" v={intel.cot.analytics.institutionalFlow} />
-              <KV k="Short interest" v="DATA UNAVAILABLE" />
-              <KV k="ETF / fund flows" v="DATA UNAVAILABLE" />
-              <KV k="Options positioning" v="DATA UNAVAILABLE" />
+              <KV k="Short interest" v={NOT_CONFIGURED} />
+              <KV k="ETF / fund flows" v={NOT_CONFIGURED} />
+              <KV k="Options positioning" v={NOT_CONFIGURED} />
             </>
           ) : (
             <>
-              <KV k="COT" v={intel.cot.note || 'DATA UNAVAILABLE'} />
-              <KV k="Futures positioning" v="DATA UNAVAILABLE" />
-              <KV k="Short interest" v="DATA UNAVAILABLE" />
-              <KV k="ETF flows" v="DATA UNAVAILABLE" />
-              <KV k="Fund flows" v="DATA UNAVAILABLE" />
-              <KV k="Options positioning" v="DATA UNAVAILABLE" />
-              <KV k="Open interest" v="DATA UNAVAILABLE" />
+              <KV k="COT" v={intel.cot.note === 'loading' ? 'LOADING' : intel.cot.note || 'PROVIDER ERROR'} />
+              <KV
+                k="Futures positioning"
+                v={intel.cot.status === 'unmapped' ? 'NO CFTC MAP' : intel.cot.note === 'loading' ? 'LOADING' : 'PROVIDER ERROR'}
+              />
+              <KV k="Short interest" v={NOT_CONFIGURED} />
+              <KV k="ETF / fund flows" v={NOT_CONFIGURED} />
+              <KV k="Options positioning" v={NOT_CONFIGURED} />
             </>
           )}
         </Bento>

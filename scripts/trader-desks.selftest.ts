@@ -162,6 +162,11 @@ for (const rel of srcFiles) {
     assert.match(text, /News Intelligence/);
     assert.match(text, /Economic Calendar/);
     assert.match(text, /Positioning/);
+    assert.match(text, /cotFeedChip/);
+    assert.match(text, /NOT_CONFIGURED/);
+    assert.match(text, /Weekly CFTC print/);
+    assert.match(text, /newsFeedChip/);
+    assert.doesNotMatch(text, /k="Short interest" v="DATA UNAVAILABLE"/);
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
     assert.match(text, /embedMode/);
@@ -180,6 +185,8 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/quotes/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
+    assert.match(text, /\/api\/cot\/history/);
+    assert.match(text, /cached: Boolean\(body\.cached\)/);
   }
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
