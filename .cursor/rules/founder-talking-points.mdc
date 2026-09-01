@@ -1,0 +1,23 @@
+---
+description: Founder talking points — chart-first desks, deploy path, data honesty
+alwaysApply: true
+---
+
+# Founder talking points (2026-09-01)
+
+## CHARTS / DESKS
+
+- Packed bento boxes hiding candles is a customer-facing emergency (chargebacks). First visit on Institutional / Retail / Neurodivergent is **chart-first**: News, Economic Wire, Alerts, Education, Simulation Lab (and matching institutional below-chart intel) start in the **Held file**, not on the desk. Chart min height ~**70vh**. Red X parks a bento; restore from bottom-right Held file. **Bump hold storage keys** when changing defaults so an existing localStorage `[]` does not keep the packed layout.
+- Do **not** remount `FundamentalResearchDesk` for `/desk/fundamental`. Live door is DeskRoute → FundamentalTraderDesk → FundamentalDashboard. Bugbot “new research desk never mounts” is **wrong** for this product.
+
+## DEPLOY / GITHUB
+
+- Uncommitted laptop work is not on GitHub. No PR = cannot trigger Cloud Build. Path: commit → push → PR → merge `main` → **existing** Cloud Build trigger (do not invent a second) → Cloud Run traffic **100% LATEST** on `clear-path-markets-science` **europe-west1**.
+- Never **Edit & deploy** `clearpath-voice-os` (Ava) for trader UI/keys. Keys live on the Cloud Run **service**, not the trigger and not git. Never commit `.env`.
+- After claiming something is live: confirm Cloud Run LATEST revision SHA (or live JS) and `GET /api/health` uptime in **minutes**. PR **218** (chart-first held file) squash-merged; last noted live revision `clear-path-markets-science-00535-fqq` / SHA `141382a` — **re-verify** before repeating as current.
+- Do **not** merge `origin/main` into a feature branch unless the founder asks.
+
+## HONESTY
+
+- Missing vendor cells stay blank (**DATA UNAVAILABLE**). Do not invent COT/IV/GEX/Level II or timed CPI/NFP rows. COT is official CFTC.gov via `/api/cot/history`. FRED key is local `.env` `FRED_API_KEY` only until set on Cloud Run.
+- Do **not** implement Bugbot candle-color / learn-bar / Daily Ops label unless the founder asks.
