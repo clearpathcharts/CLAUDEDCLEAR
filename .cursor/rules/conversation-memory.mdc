@@ -1,0 +1,17 @@
+---
+description: Founder session memory — FMP, CFTC COT, CI vs live site, deploy path
+alwaysApply: true
+---
+
+# Session memory (2026-08-31 → 2026-09-01)
+
+- Canonical FMP env name is `FMP_API_KEY` (alias `FINANCIAL_MODELING_PREP_API_KEY` only). Server-side only. Never `VITE_`. New FMP accounts use `/stable`, not `/api/v3`.
+- FMP dashboard **0/300** is **calls this minute**, not lifetime. Bandwidth is in **MB**. Quiet site + small JSON ≈ 0 MB.
+- COT is **CFTC.gov**, not FMP. Map `XAUUSD → GC → 088691`. Browser calls `/api/cot/history` only. Chrome will show zero `financialmodelingprep` requests for Positioning.
+- Institutional Positioning: COT chip `CACHED` / `CFTC FETCH` / `NO CFTC MAP` / `PROVIDER ERROR`. Short interest, ETF flows, options = **NOT CONFIGURED**, not DATA UNAVAILABLE. News 429 is NewsData, not COT.
+- GitHub CI ≠ live site. Cloud Run builds **`main`** + traffic **LATEST**. Failed PR commits do not deploy. Inbox keeps old red X emails after later green runs.
+- CI #440/#441 failed `test:plan-catalog`: Silver indicator list was 16; sheet requires **15**. COT is Gold+. Fix commit then PR **#218 merged**; main CI succeeded.
+- Two Cloud Run buttons: trigger = new **code** from `main`; Edit & deploy = **keys only**, same image. Never Edit & deploy `clearpath-voice-os` for trader work.
+- Before any push: `npm run lint` and `npm run test:plan-catalog`. One-job branches. Do not pile mega-PRs.
+- Founder pause: sit ~24h then supercharge from **GitHub `main`**. Wipe Cursor cache if wanted; **do not wipe the repo** (COT engine, FMP proxy, desks, backups).
+- Founder wants feature work **merged to main** (PR targeting main, squash-merge when asked) so Cloud Run can build it.

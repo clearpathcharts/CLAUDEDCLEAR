@@ -306,7 +306,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   if (isBlackoutMode) {
     return createPortal(
       <ChartDrawingSessionProvider>
-        <div className="fixed inset-0 z-[150] bg-[#000000] flex flex-col overflow-y-auto overscroll-contain">
+        <div className="scrollbar-panel fixed inset-0 z-[150] bg-[#000000] flex flex-col overflow-y-auto overscroll-contain">
           <div className="shrink-0 flex items-center justify-between gap-4 px-4 py-3 border-b border-zinc-900 bg-black">
             <div className="flex items-center gap-3 min-w-0">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0" />

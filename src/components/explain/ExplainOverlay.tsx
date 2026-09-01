@@ -43,7 +43,7 @@ export function ExplainOverlay({ contentId, onClose }: ExplainOverlayProps) {
         aria-modal="true"
         aria-labelledby={`explain-title-${content.id}`}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[760px] max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-6"
+        className="scrollbar-panel w-full max-w-[760px] max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-6"
         style={{
           background: 'linear-gradient(180deg, #0c0c14 0%, #07070c 100%)',
           border: `1px solid ${hexToRgba(content.color, 0.55)}`,

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries } from 'lightweight-charts';
 import { TradingHaltController } from '../truth/TradingHaltController';
-import { intensifyCandleColors } from '../lib/charts/intensifyColor';
+import { cleanCandleSeriesOptions } from '../lib/charts/cleanCandleSeries';
 import { ChartZoomControls } from './charts/ChartZoomControls';
 import {
   attachShiftWheelPriceScale,
@@ -77,14 +77,14 @@ export default function LiveChart({
       handleScale: CHART_HANDLE_SCALE,
     });
 
-    const vivid = intensifyCandleColors({
-      upColor: upColor || '#00e5ff',
-      downColor: downColor || '#ff1744',
-      wickUpColor: upColor || '#00e5ff',
-      wickDownColor: downColor || '#ff1744',
-      borderUpColor: upColor || '#00e5ff',
-      borderDownColor: downColor || '#ff1744',
-    });
+    const vivid = cleanCandleSeriesOptions({
+      upColor: upColor || '#00E5FF',
+      downColor: downColor || '#FF1493',
+      wickUpColor: upColor || '#00E5FF',
+      wickDownColor: downColor || '#FF1493',
+      borderUpColor: upColor || '#00E5FF',
+      borderDownColor: downColor || '#FF1493',
+    }, 1.05);
 
     const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: vivid.upColor,
@@ -92,6 +92,8 @@ export default function LiveChart({
       borderVisible: false,
       wickUpColor: vivid.wickUpColor,
       wickDownColor: vivid.wickDownColor,
+      borderUpColor: vivid.borderUpColor,
+      borderDownColor: vivid.borderDownColor,
     });
 
     chartRef.current = chart;

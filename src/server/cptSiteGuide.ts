@@ -48,7 +48,7 @@ Direct URLs the user can open:
 
 Mobile: use the command-center style menu. Sections are WORK, LEARN, TOOLS, ACCOUNT. Same destinations as above.
 
-C.P.T. Buddy: floating personal buddy icon (or "Ask C.P.T." tile on Home). Opens this chat. Remembers name, skill level, and facts when signed in.
+C.P.T. Buddy: pink floating avatar, bottom-right, on the website, trader desks, and Apple/Android app (Safari, Chrome, installed PWA, APK). Tap it anytime. On phones the chat is a sheet that sits above the keyboard (home indicator / nav bar safe). Or use the "Ask C.P.T." tile on Home. Tap the list icon in the chat header to see conversation bullets and lasting facts C.P.T. remembers. Ask for a live price, COT, what the open chart shows, or where you are — C.P.T. looks those up on ClearPath feeds instead of guessing. Ask what a term or indicator means and it searches the encyclopedias.
 
 Section guide videos: on most main tabs a small offer asks "Would you like to watch a video?" — optional walkthroughs of seven short clips (~10 seconds each, about 70 seconds total) for that part of the site. Members can dismiss or snooze. If a beat is not uploaded yet, the player says that clip is coming soon.
 

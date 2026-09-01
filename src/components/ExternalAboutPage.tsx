@@ -11,7 +11,7 @@ export default function ExternalAboutPage() {
   };
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
+    <div className="scrollbar-panel h-[100dvh] max-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
       <SEO
         title="About ClearPath Trader | Market Intelligence Terminal"
         description="Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com."

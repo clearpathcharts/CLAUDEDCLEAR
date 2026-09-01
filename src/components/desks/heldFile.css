@@ -38,8 +38,9 @@
 
 .rt-held-tab {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  /* Sit above C.P.T. Buddy (56–64px FAB + gap) so Apple/Android thumbs hit both */
+  bottom: max(88px, calc(env(safe-area-inset-bottom, 0px) + 76px));
   z-index: 60;
   display: flex;
   align-items: center;
@@ -68,10 +69,10 @@
 
 .rt-held-file {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
   z-index: 60;
-  width: min(360px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   max-height: min(72vh, 560px);
   overflow: auto;
   padding: 14px 14px 12px;

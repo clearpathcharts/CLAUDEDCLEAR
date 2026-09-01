@@ -33,7 +33,7 @@ export default function TradingReimaginedLanding() {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
+    <div className="scrollbar-panel min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-y-auto overflow-x-hidden pb-20 relative">
       <SEO
         title={TRADING_REIMAGINED_SEO.title}
         description={TRADING_REIMAGINED_SEO.description}

@@ -1,17 +1,20 @@
 import type { ThemeProfile } from "../theme/profiles";
 import { chartPhysics } from "../theme/chartPhysics";
-import { intensifyCandleColors } from "./intensifyColor";
+import { cleanCandleSeriesOptions } from "./cleanCandleSeries";
 
 export function lightweightThemeAdapter(profile: ThemeProfile) {
   const physics = chartPhysics(profile);
-  const candleSeries = intensifyCandleColors({
-    upColor: profile.upColor,
-    downColor: profile.downColor,
-    wickUpColor: profile.wickUpColor,
-    wickDownColor: profile.wickDownColor,
-    borderUpColor: profile.borderUpColor,
-    borderDownColor: profile.borderDownColor,
-  }, profile.id === "low_stim_emergency" ? 0.65 : 1.15);
+  const candleSeries = cleanCandleSeriesOptions(
+    {
+      upColor: profile.upColor,
+      downColor: profile.downColor,
+      wickUpColor: profile.wickUpColor,
+      wickDownColor: profile.wickDownColor,
+      borderUpColor: profile.borderUpColor,
+      borderDownColor: profile.borderDownColor,
+    },
+    profile.id === "low_stim_emergency" ? 0.65 : 1.05,
+  );
 
   return {
     layout: {
@@ -22,8 +25,9 @@ export function lightweightThemeAdapter(profile: ThemeProfile) {
       textColor: profile.text,
     },
     grid: {
-      vertLines: { color: profile.grid },
-      horzLines: { color: profile.grid },
+      // Soft grid — TradingView-clean charts keep lines barely visible.
+      vertLines: { color: profile.grid, visible: profile.id !== "low_stim_emergency" },
+      horzLines: { color: profile.grid, visible: profile.id !== "low_stim_emergency" },
     },
     crosshair: {
       vertLine: {

@@ -2632,7 +2632,7 @@ of this software and associated documentation files (the "The Software")...`;
 
         <div className="wrapper">
           {/* COLUMN 1: LEFT VERTICAL SIDEBAR NAVIGATION */}
-          <div className="left-side custom-scrollbar overflow-y-auto flex flex-col p-5 gap-5 z-20">
+          <div className="scrollbar-panel left-side custom-scrollbar overflow-y-auto flex flex-col p-5 gap-5 z-20">
             
             {/* 1. BRAND PLATFORM LOGO BLOCK */}
             <div className="flex flex-col gap-1.5 border-b border-white/5 pb-4 select-none shrink-0">
@@ -2758,7 +2758,7 @@ of this software and associated documentation files (the "The Software")...`;
           </div>
 
           {/* COLUMN 2: CENTER FRACTIONAL FLUID SCROLLABLE MAIN CONTENT AREA */}
-          <div className="main-container custom-scrollbar overflow-y-auto p-6 md:p-8 flex flex-col gap-6 z-20" id="main-scroll-viewport">
+          <div className="scrollbar-panel main-container custom-scrollbar overflow-y-auto p-6 md:p-8 flex flex-col gap-6 z-20" id="main-scroll-viewport">
             
             {/* GIANT DOMINANT MULTI-ACTION SYSTEM NAVIGATION & DISMISSAL HUD BAR */}
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 p-4.5 bg-black/85 border border-[#00f2ff]/25 rounded-2xl relative overflow-hidden select-none mb-1 shadow-[0_8px_30px_rgba(0,0,0,0.85)] shrink-0 z-30">

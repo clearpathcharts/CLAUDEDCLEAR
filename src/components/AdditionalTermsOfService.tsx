@@ -131,7 +131,7 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
         </aside>
 
         {/* Right column: Beautifully styled terms of service body */}
-        <main className="flex-1 bg-black/40 border border-white/10 rounded-2xl p-6 md:p-10 backdrop-blur-xl shadow-2xl space-y-12 overflow-y-auto">
+        <main className="scrollbar-panel flex-1 bg-black/40 border border-white/10 rounded-2xl p-6 md:p-10 backdrop-blur-xl shadow-2xl space-y-12 overflow-y-auto">
           
           <section id="intro" className="space-y-4">
             <h2 className="text-2xl font-black uppercase tracking-wider text-[#00D9FF] border-b border-[#00D9FF]/20 pb-2 family-mono flex items-center gap-3">

@@ -14,6 +14,7 @@ import {
 } from '../../lib/traderDesks';
 import { DESK_SEO } from '../../content/traderDesksCopy';
 import { TRADER_DESKS } from '../../lib/traderDesks';
+import { CptBuddyWidget } from '../CptBuddyWidget';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -68,7 +69,7 @@ function DeskShell({
         Skip to desk
       </a>
       <TraderDeskChrome active={deskId} />
-      <main id="desk-main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-auto outline-none">
+      <main id="desk-main" tabIndex={-1} className="scrollbar-panel flex min-h-0 flex-1 flex-col overflow-auto outline-none">
         <h1 className="sr-only">{seoH1}</h1>
         {pathname.replace(/\/$/, '') === '/desk' && (
           <p className="px-3 pt-2 font-mono text-sm font-bold uppercase text-zinc-500">
@@ -92,6 +93,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   return (
     <DeskAppearanceProvider deskId={deskId}>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} />
+      <CptBuddyWidget />
     </DeskAppearanceProvider>
   );
 }

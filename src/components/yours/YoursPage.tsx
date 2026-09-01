@@ -1154,7 +1154,7 @@ export default function YoursPageHub() {
               exit={{ scale: 0.95, opacity: 0 }}
               className={`bg-[#0b0b0d] border border-[#ff0088]/40 rounded-3xl ${activeStoryDetails.id === 'optimistic-injustice' ? 'max-w-4xl' : 'max-w-2xl'} w-full text-left overflow-hidden shadow-[0_24px_50px_rgba(0,0,0,0.9)] flex flex-col justify-between max-h-[90vh]`}
             >
-              <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar space-y-6">
+              <div className="scrollbar-panel p-6 md:p-8 overflow-y-auto custom-scrollbar space-y-6">
                 
                 {/* Header detail */}
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
