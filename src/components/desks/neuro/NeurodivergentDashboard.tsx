@@ -636,7 +636,7 @@ export default function NeurodivergentDashboard() {
         </div>
       ) : null}
 
-      <footer>
+      <footer
         data-retail-bento
         className="retail-bento px-3 py-3 text-center text-sm font-bold uppercase tracking-[0.14em] opacity-70"
       >
