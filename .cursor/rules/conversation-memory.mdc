@@ -14,3 +14,4 @@ alwaysApply: true
 - Two Cloud Run buttons: trigger = new **code** from `main`; Edit & deploy = **keys only**, same image. Never Edit & deploy `clearpath-voice-os` for trader work.
 - Before any push: `npm run lint` and `npm run test:plan-catalog`. One-job branches. Do not pile mega-PRs.
 - Founder pause: sit ~24h then supercharge from **GitHub `main`**. Wipe Cursor cache if wanted; **do not wipe the repo** (COT engine, FMP proxy, desks, backups).
+- Founder wants feature work **merged to main** (PR targeting main, squash-merge when asked) so Cloud Run can build it.
