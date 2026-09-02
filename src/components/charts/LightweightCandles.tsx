@@ -1105,8 +1105,6 @@ export function LightweightCandles({
         }
 
         // Live tick — align with server quote cache (CACHE_TTL_QUOTE ≈ 5s).
-        // Sub-second polling burned the Express marketLimiter (was 300/15min) and
-        // blanked charts with a false "rate limit" while Twelve Data was fine.
         let tickDelay = 5000;
         if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 5000;
         else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;

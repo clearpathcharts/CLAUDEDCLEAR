@@ -75,9 +75,9 @@ assert.equal(candles.values[0].datetime, '2026-09-01 10:05:00');
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverTs = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.doesNotMatch(serverTs, /Sign in for higher limits/);
-assert.match(serverTs, /max: 1200/);
-assert.match(serverTs, /max: 2400/);
-assert.match(serverTs, /intelLimiter/);
+assert.doesNotMatch(serverTs, /express-rate-limit/);
+assert.doesNotMatch(serverTs, /intelLimiter/);
+assert.doesNotMatch(serverTs, /quoteLimiter/);
 assert.match(serverTs, /fetchFmpQuote|getFmpApiKey\(\)/);
 
 const gateway = fs.readFileSync(path.join(root, 'src/server/marketDataGateway.ts'), 'utf8');
