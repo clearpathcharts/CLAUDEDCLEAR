@@ -432,6 +432,16 @@ export const ASSET_REGISTRY: RegistryAsset[] = [
     tickerPreferred: true,
     deckCritical: true,
   },
+  {
+    symbol: "VIX",
+    providerSymbol: "VIX",
+    display: "VIX",
+    description: "CBOE Volatility Index",
+    category: "indices",
+    latencyClass: "realtime",
+    searchable: ["vix", "volatility", "index"],
+    enabled: true,
+  },
 
   // --- Commodities ---
   {
