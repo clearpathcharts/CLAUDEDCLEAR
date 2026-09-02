@@ -87,6 +87,9 @@ jobs:
       - name: FMP second-layer quotes and candles
         run: npm run test:fmp-market-fallback
 
+      - name: FMP desk news and economic calendar
+        run: npm run test:fmp-news-wire
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

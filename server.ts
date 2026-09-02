@@ -251,6 +251,7 @@ import {
   buildFmpStableSymbolUrl,
 } from './src/server/secrets';
 import { fetchCftcLegacyHistory } from './src/server/cftcCot';
+import { fetchFmpDeskNews, fetchFmpEconomicWire } from './src/server/fmpNewsWire';
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
@@ -3170,6 +3171,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         console.info('[NewsData Info] Utilizing local news fallbacks.');
       }
 
+      const fmpNews = await fetchFmpDeskNews();
+      if (fmpNews.length) return res.json(fmpNews);
+
       // Fallback: Union of news_data.json and master_news.json
       const newsList: any[] = [];
       const newsPath = path.join(process.cwd(), 'news_data.json');
@@ -3214,9 +3218,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
+  // Economic wire — FMP timed calendar first, then NewsData headlines. No fabricated CPI/NFP rows.
   app.get('/api/economic/news', async (req, res) => {
     try {
+      const calendar = await fetchFmpEconomicWire();
+      if (calendar.length) return res.json(calendar);
+
       const apiKey = getNewsDataApiKey();
       const isKeyValid =
         apiKey &&
@@ -3260,6 +3267,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
           }
         }
       }
+
+      const fmpHeadlines = await fetchFmpDeskNews();
+      if (fmpHeadlines.length) return res.json(fmpHeadlines);
 
       // Fallback: filter local curated news files for economy-related titles (if present)
       const newsList: any[] = [];
