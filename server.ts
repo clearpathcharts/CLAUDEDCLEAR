@@ -4356,6 +4356,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/ui/:profileId',
     '/desk',
     '/desk/:deskId',
+    '/desk/:deskId/screen/:pane',
     '/fundamental',
     '/fundamental/:symbol',
     '/tools',

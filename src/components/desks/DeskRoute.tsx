@@ -12,6 +12,8 @@ import {
   symbolFromDeskPath,
   type TraderDeskId,
 } from '../../lib/traderDesks';
+import { parseDeskScreenPane } from '../../lib/deskMonitorTree';
+import DeskScreenWorkspace from './DeskScreenWorkspace';
 import { DESK_SEO } from '../../content/traderDesksCopy';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
@@ -29,15 +31,20 @@ function DeskShell({
   pathname,
   deskId,
   seoH1,
+  satellitePane,
 }: {
   pathname: string;
   deskId: TraderDeskId;
   seoH1: string;
+  satellitePane: ReturnType<typeof parseDeskScreenPane>;
 }) {
   const { paper, cssVars, overrides } = useDeskAppearance();
 
   let body: React.ReactNode;
-  switch (deskId) {
+  if (satellitePane) {
+    body = <DeskScreenWorkspace deskId={deskId} pane={satellitePane} />;
+  } else {
+    switch (deskId) {
     case 'institutional':
       body = <InstitutionalTraderDesk />;
       break;
@@ -52,15 +59,17 @@ function DeskShell({
       break;
     default:
       body = <InstitutionalTraderDesk />;
+    }
   }
 
   return (
     <div
       className={`desk-shell flex min-h-[100dvh] min-h-screen w-full flex-col ${
-        paper === 'white' ? 'bg-white text-zinc-900' : 'bg-[#050505] text-white'
-      }`}
+        satellitePane ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : ''
+      } ${paper === 'white' ? 'bg-white text-zinc-900' : 'bg-[#050505] text-white'}`}
       data-trader-desk={deskId}
       data-desk-paper={paper}
+      data-desk-satellite={satellitePane || undefined}
       data-desk-color-bg={overrides.background ? '1' : undefined}
       data-desk-color-bento={overrides.bento ? '1' : undefined}
       style={cssVars as React.CSSProperties}
@@ -68,8 +77,14 @@ function DeskShell({
       <a href="#desk-main" className="cp-skip-link">
         Skip to desk
       </a>
-      <TraderDeskChrome active={deskId} />
-      <main id="desk-main" tabIndex={-1} className="flex w-full flex-1 flex-col overflow-visible pb-36 outline-none">
+      <TraderDeskChrome active={deskId} satellitePane={satellitePane} />
+      <main
+        id="desk-main"
+        tabIndex={-1}
+        className={`flex w-full flex-1 flex-col outline-none ${
+          satellitePane ? 'min-h-0 overflow-hidden pb-0' : 'overflow-visible pb-36'
+        }`}
+      >
         <h1 className="sr-only">{seoH1}</h1>
         {pathname.replace(/\/$/, '') === '/desk' && (
           <p className="px-3 pt-2 font-mono text-sm font-bold uppercase text-zinc-500">
@@ -85,6 +100,7 @@ function DeskShell({
 export default function DeskRoute({ pathname }: { pathname: string }) {
   const deskId = resolveDesk(pathname);
   const seo = DESK_SEO[deskId];
+  const satellitePane = parseDeskScreenPane(pathname);
 
   useEffect(() => {
     rememberTraderDesk(deskId);
@@ -92,8 +108,8 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
 
   return (
     <DeskAppearanceProvider deskId={deskId}>
-      <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} />
-      <CptBuddyWidget />
+      <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} satellitePane={satellitePane} />
+      {satellitePane ? null : <CptBuddyWidget />}
     </DeskAppearanceProvider>
   );
 }

@@ -18,6 +18,7 @@ import { formatCompactUsd, formatPercent, formatUsdPerShare, marketSessionUtc } 
 import { DataRibbon } from './primitives';
 import './bento.css';
 import type { ResearchSection } from '../../fundamental/types';
+import { useDeskMonitorSync } from '../../hooks/useDeskMonitorSync';
 
 function HeaderBar() {
   const { lastUpdatedAt, settingsOpen, setSettingsOpen, noticesOpen, setNoticesOpen, alerts, bundle } = useFundamental();
@@ -290,9 +291,17 @@ function FundamentalShell() {
   );
 }
 
+function FundamentalMonitorBridge() {
+  const { symbol, setSymbol } = useFundamental();
+  const [timeframe, setTimeframe] = useState('1d');
+  useDeskMonitorSync('fundamental', symbol, timeframe, setSymbol, setTimeframe);
+  return null;
+}
+
 export default function FundamentalDashboard({ initialSymbol = 'NVDA' }: { initialSymbol?: string }) {
   return (
     <FundamentalProvider initialSymbol={initialSymbol}>
+      <FundamentalMonitorBridge />
       <FundamentalShell />
     </FundamentalProvider>
   );
