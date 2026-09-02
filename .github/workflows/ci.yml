@@ -84,6 +84,9 @@ jobs:
       - name: Twelve Data 401 retry + circuit breaker
         run: npm run test:twelvedata-gateway-auth
 
+      - name: FMP second-layer quotes and candles
+        run: npm run test:fmp-market-fallback
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

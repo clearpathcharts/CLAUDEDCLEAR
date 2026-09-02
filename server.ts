@@ -581,9 +581,10 @@ async function startServer() {
     message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
   });
 
-  // Charts poll /api/quote on a live tick (server quote cache is ~5s). Signed-in
-  // members keep a high ceiling; anonymous traffic gets a tight budget so open
-  // proxies cannot burn TwelveData credits.
+  // Charts poll /api/quote on a live tick (server quote cache is ~5s).
+  // The gateway + Twelve Data Venture credits are the real budget.
+  // Anon 90/15min was blanking public desks (yellow DATA UNAVAILABLE) while
+  // the Venture 610 dashboard sat at ~13/610. FRED/COT/FMP share a separate bucket.
   const marketLimiterAuthed = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 2400,
@@ -594,10 +595,10 @@ async function startServer() {
   });
   const marketLimiterAnon = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 90,
+    max: 1200,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
     skip: (req) => Boolean(getPrivateSessionUser(req)),
   });
   const marketLimiter = [marketLimiterAnon, marketLimiterAuthed];
@@ -612,13 +613,31 @@ async function startServer() {
   });
   const quoteLimiterAnon = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 180,
+    max: 2400,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
+    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
     skip: (req) => Boolean(getPrivateSessionUser(req)),
   });
   const quoteLimiter = [quoteLimiterAnon, quoteLimiterAuthed];
+
+  const intelLimiterAuthed = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many research requests. Please wait a few minutes.' },
+    skip: (req) => !getPrivateSessionUser(req),
+  });
+  const intelLimiterAnon = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 400,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many research requests. Please wait a few minutes.' },
+    skip: (req) => Boolean(getPrivateSessionUser(req)),
+  });
+  const intelLimiter = [intelLimiterAnon, intelLimiterAuthed];
 
   const newsLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -3076,7 +3095,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3104,18 +3123,18 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
+  // Batch quotes — Twelve Data then FMP. Cap 80 covers the Venture registry + typed tickers.
   app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
-      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
+      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 80.' });
     }
-    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 80);
     if (symbols.length === 0) {
       return res.status(400).json({ error: 'symbols required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3139,7 +3158,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
     );
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3172,7 +3191,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     );
 
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3702,7 +3721,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
-  app.get('/api/cot/history', ...marketLimiter, async (req, res) => {
+  app.get('/api/cot/history', ...intelLimiter, async (req, res) => {
     const symbol = String(req.query.symbol || '');
     if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
       return res.status(400).json({ error: 'Invalid symbol' });
@@ -3723,7 +3742,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
-  app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
+  app.get('/api/fred/observations', ...intelLimiter, async (req, res) => {
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3752,7 +3771,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
-  app.get('/api/fmp/lookup', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/lookup', ...intelLimiter, async (req, res) => {
     const kind = String(req.query.kind || '');
     if (!FMP_LOOKUP_KINDS.has(kind)) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
@@ -3786,7 +3805,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
-  app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/:endpoint/:symbol', ...intelLimiter, async (req, res) => {
     const { endpoint, symbol } = req.params;
     const { limit, period } = req.query;
     if (!symbol || !endpoint) {

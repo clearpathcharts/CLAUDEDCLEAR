@@ -558,7 +558,7 @@ export default function InstitutionalDashboard() {
             </table>
           </div>
           <p className="mt-1 text-[8px] uppercase text-[var(--desk-muted)]">
-            VIX series not in the live registry — those cells stay unavailable. Missing series are never filled with 1.0.
+            Missing correlation series stay unavailable. Empty cells are never filled with 1.0.
           </p>
         </Bento>
 

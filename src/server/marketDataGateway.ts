@@ -17,6 +17,8 @@
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
 import { resolveProviderSymbol } from "../constants/assetRegistry";
+import { historySymbol } from "../lib/institutional/vendorMaps";
+import { fetchFmpCandles, fetchFmpQuote, fetchFmpQuotes } from "./fmpMarketFallback";
 import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
 
 export interface TwelveDataHealth {
@@ -73,6 +75,33 @@ export function logHealthEvent(type: HealthEvent['type'], message: string, code?
   if (twelvedataEvents.length > 30) {
     twelvedataEvents.pop();
   }
+}
+
+function isTwelveDataCoolingDown(): boolean {
+  return Date.now() < rateLimitedUntil;
+}
+
+async function quoteWithFmpFallback(deskSymbol: string, tdErr: unknown): Promise<any> {
+  const fmp = await fetchFmpQuote(deskSymbol);
+  if (fmp) {
+    logHealthEvent('FALLBACK', `Quote ${deskSymbol} served from FMP after Twelve Data miss`);
+    return fmp;
+  }
+  throw tdErr;
+}
+
+async function candlesWithFmpFallback(
+  deskSymbol: string,
+  interval: string,
+  limit: number,
+  tdErr: unknown,
+): Promise<any> {
+  const fmp = await fetchFmpCandles(deskSymbol, interval, limit);
+  if (fmp) {
+    logHealthEvent('FALLBACK', `Candles ${deskSymbol} ${interval} served from FMP after Twelve Data miss`);
+    return fmp;
+  }
+  throw tdErr;
 }
 
 type CacheEntry = {
@@ -291,10 +320,11 @@ async function fetchAndTrack(
         console.error(`==================================================\n`);
 
         if (response.status === 429) {
+          twelvedataHealth.lastError = `HTTP 429 Rate Limited: speed quota limit exceeded for ${symbol}`;
+          logHealthEvent('WARNING', `429 Rate Limit Exceeded: ${symbol} ${type} via ${source}`, 429);
+          if (i < candidates.length - 1) continue;
           twelvedataHealth.status = 'RATE_LIMITED';
           rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
-          twelvedataHealth.lastError = `HTTP 429 Rate Limited: speed quota limit exceeded for ${symbol}`;
-          logHealthEvent('WARNING', `429 Rate Limit Exceeded: ${symbol} ${type}`, 429);
         } else {
           twelvedataHealth.status = 'ERROR';
           twelvedataHealth.lastError = `HTTP ${response.status} failed for ${symbol}`;
@@ -433,6 +463,13 @@ export function formatSymbolForTwelveData(symbol: string): string {
   const clean = symbol.trim().toUpperCase().replace(/\s+/g, '');
   if (!clean) return clean;
 
+  // Cash indices (SPX/NDX) are not clean Twelve Data quotes — use ETF proxies first.
+  const mapped = historySymbol(clean).symbol.trim().toUpperCase().replace(/\s+/g, '');
+  if (mapped && mapped !== clean) {
+    const fromAlias = resolveProviderSymbol(mapped) || resolveProviderSymbol(mapped.replace(/\//g, ''));
+    return fromAlias || mapped;
+  }
+
   // Registry is source of truth for Venture 70 provider symbols.
   const fromRegistry = resolveProviderSymbol(clean) || resolveProviderSymbol(clean.replace(/\//g, ''));
   if (fromRegistry) return fromRegistry;
@@ -491,7 +528,16 @@ export async function getMarketData(symbol: string) {
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
-    return await fetchPrice(formatted);
+    try {
+      return await fetchPrice(formatted);
+    } catch (err) {
+      const fmp = await fetchFmpQuote(symbol);
+      if (fmp?.price) {
+        logHealthEvent('FALLBACK', `Price ${symbol} served from FMP after Twelve Data miss`);
+        return { price: fmp.price, vendor: 'FMP' };
+      }
+      throw err;
+    }
   }
 
   pendingRequests[cacheKey] = runFetch()
@@ -537,6 +583,10 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
     console.log(`[Gateway] QUOTE CACHE HIT: ${canon}`)
     return cached.data
   }
+  if (cached && isTwelveDataCoolingDown()) {
+    console.log(`[Gateway] QUOTE STALE DURING TD COOLDOWN: ${canon}`)
+    return cached.data
+  }
 
   if (pendingRequests[cacheKey]) {
     console.log(`[Gateway] QUOTE WAITING SIGNALS: ${canon}`)
@@ -548,6 +598,7 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
     const isDxy = cleanSym === 'DXY' || cleanSym === 'DX-Y.F' || cleanSym === 'USDX' || cleanSym === 'DXY INDEX';
 
     if (isDxy) {
+      try {
       // DXY is genuinely computed from six live FX pairs. This is REAL data —
       // a legitimate derivation, not a fabrication. If any component is missing
       // or the batch query fails, we throw instead of inventing a value.
@@ -620,10 +671,17 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
         // Missing components — fail honestly. Do NOT fabricate a DXY value.
         throw new Error('Could not resolve all 6 major dollar index components from live API response.');
       }
+      } catch (err) {
+        return quoteWithFmpFallback(symbol, err);
+      }
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
-    return await fetchQuoteFromAPI(formatted, apiKey);
+    try {
+      return await fetchQuoteFromAPI(formatted, apiKey);
+    } catch (err) {
+      return quoteWithFmpFallback(symbol, err);
+    }
   }
 
   pendingRequests[cacheKey] = runFetch()
@@ -666,11 +724,12 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
 
 /**
  * Batch quotes for ticker / multi-symbol UI.
- * DXY stays on the single-quote path (derived basket). Other symbols use one
- * Twelve Data comma-batch request. Cap at 12 symbols to protect credit budget.
+ * DXY stays on the single-quote path (derived basket, then FMP DXUSD).
+ * Other symbols use one Twelve Data comma-batch request, then FMP for misses.
+ * Cap at 80 so a full registry tab or typed watchlist is proxied, not truncated.
  */
 export async function getMarketQuotes(symbols: string[], apiKey: string): Promise<Record<string, any>> {
-  const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))].slice(0, 12);
+  const unique = [...new Set(symbols.map((s) => s.trim()).filter(Boolean))].slice(0, 80);
   const out: Record<string, any> = {};
   if (unique.length === 0) return out;
 
@@ -700,7 +759,7 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
   for (const row of plain) {
     const cacheKey = `quote:${row.provider}`;
     const cached = marketCache[cacheKey];
-    if (cached && now - cached.timestamp < CACHE_TTL_QUOTE) {
+    if (cached && (now - cached.timestamp < CACHE_TTL_QUOTE || isTwelveDataCoolingDown())) {
       out[row.original] = cached.data;
     } else {
       needFetch.push(row);
@@ -712,7 +771,13 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
   const activeKey = apiKey || getCleanApiKey();
   const providers = [...new Set(needFetch.map((r) => r.provider))];
   const batchUrl = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(providers.join(','))}`;
-  const batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','), 5000, activeKey);
+  let batchData: any = null;
+  let batchErr: unknown = null;
+  try {
+    batchData = await fetchAndTrack(batchUrl, 'quote_batch', providers.join(','), 5000, activeKey);
+  } catch (err) {
+    batchErr = err;
+  }
 
   const pick = (provider: string): any => {
     if (!batchData) return null;
@@ -720,19 +785,41 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
     return batchData[provider] || null;
   };
 
+  const missing: typeof needFetch = [];
   for (const row of needFetch) {
     const item = pick(row.provider);
-    if (!item || item.status === 'error' || !(item.close || item.price)) {
-      out[row.original] = {
-        error: true,
-        message: item?.message || `No quote for ${row.provider}`,
-        symbol: row.original,
-      };
-      continue;
+    if (item && item.status !== 'error' && (item.close || item.price)) {
+      const normalized = { ...item, price: item.price ?? item.close, symbol: row.original };
+      marketCache[`quote:${row.provider}`] = { data: normalized, timestamp: Date.now() };
+      out[row.original] = normalized;
+    } else {
+      missing.push(row);
     }
-    const normalized = { ...item, price: item.price ?? item.close, symbol: row.original };
-    marketCache[`quote:${row.provider}`] = { data: normalized, timestamp: Date.now() };
-    out[row.original] = normalized;
+  }
+
+  if (missing.length) {
+    const fmpMap = await fetchFmpQuotes(missing.map((r) => r.original));
+    if (Object.keys(fmpMap).length) {
+      logHealthEvent('FALLBACK', `Quotes from FMP after Twelve Data miss: ${Object.keys(fmpMap).join(',')}`);
+    }
+    for (const row of missing) {
+      const fmp = fmpMap[row.original];
+      if (fmp) {
+        marketCache[`quote:${row.provider}`] = { data: fmp, timestamp: Date.now() };
+        out[row.original] = fmp;
+        continue;
+      }
+      const stale = marketCache[`quote:${row.provider}`];
+      if (stale) {
+        out[row.original] = stale.data;
+      } else {
+        out[row.original] = {
+          error: true,
+          message: (batchErr as Error)?.message || `No quote for ${row.provider}`,
+          symbol: row.original,
+        };
+      }
+    }
   }
   evictMarketCacheIfNeeded();
   return out;
@@ -755,6 +842,10 @@ export async function getMarketCandles(symbol: string, interval: string, request
     console.log(`[Gateway] CANDLES CACHE HIT: ${canon} (${interval})`)
     return cached.data
   }
+  if (cached && isTwelveDataCoolingDown()) {
+    console.log(`[Gateway] CANDLES STALE DURING TD COOLDOWN: ${canon} (${interval})`)
+    return cached.data
+  }
 
   if (pendingRequests[cacheKey]) {
     console.log(`[Gateway] CANDLES WAITING SIGNALS: ${canon} (${interval})`)
@@ -773,10 +864,20 @@ export async function getMarketCandles(symbol: string, interval: string, request
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
       const batchUrl = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbols.join(','))}&interval=${interval}&outputsize=${limit}`;
-      const batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000, activeKey);
+      let batchData: any;
+      try {
+        batchData = await fetchAndTrack(batchUrl, 'candles_batch', symbol, 20000, activeKey);
+      } catch (err) {
+        return candlesWithFmpFallback(symbol, interval, limit, err);
+      }
 
       if (!batchData || batchData.status === 'error') {
-        throw new Error(batchData?.message || 'Twelve Data batch query returned error');
+        return candlesWithFmpFallback(
+          symbol,
+          interval,
+          limit,
+          new Error(batchData?.message || 'Twelve Data batch query returned error'),
+        );
       }
 
       const timeSeriesMap: Record<string, Record<string, any>> = {};
@@ -864,12 +965,21 @@ export async function getMarketCandles(symbol: string, interval: string, request
         };
       } else {
         // No aligned component data — fail honestly, do not fabricate.
-        throw new Error('DXY component series alignment returned 0 entries from live data.');
+        return candlesWithFmpFallback(
+          symbol,
+          interval,
+          limit,
+          new Error('DXY component series alignment returned 0 entries from live data.'),
+        );
       }
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
-    return await fetchCandlesFromAPI(formatted, interval, limit, apiKey);
+    try {
+      return await fetchCandlesFromAPI(formatted, interval, limit, apiKey);
+    } catch (err) {
+      return candlesWithFmpFallback(symbol, interval, limit, err);
+    }
   }
 
   pendingRequests[cacheKey] = runFetch()
