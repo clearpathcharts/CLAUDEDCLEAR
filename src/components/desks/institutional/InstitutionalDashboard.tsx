@@ -170,7 +170,7 @@ export default function InstitutionalDashboard() {
   return (
     <div
       data-institutional-door
-      className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2"
+      className="flex w-full flex-col gap-2 overflow-visible p-2"
     >
       <Bento holdId="ribbon" title="Global Markets" status="environment" className="shrink-0">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
@@ -558,7 +558,7 @@ export default function InstitutionalDashboard() {
             </table>
           </div>
           <p className="mt-1 text-[8px] uppercase text-[var(--desk-muted)]">
-            VIX series not in the live registry — those cells stay unavailable. Missing series are never filled with 1.0.
+            Missing correlation series stay unavailable. Empty cells are never filled with 1.0.
           </p>
         </Bento>
 

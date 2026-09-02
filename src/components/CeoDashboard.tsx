@@ -8,7 +8,7 @@ import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
-import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
+import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
 
 type SafePrivateMemberRow = {
   uid: string;
@@ -156,10 +156,7 @@ export default function CeoDashboard() {
   const [siteDoctorBusy, setSiteDoctorBusy] = useState(false);
 
   const { user, userProfile } = useAuth();
-  const founderOk =
-    isFounderEmail(user?.email) ||
-    isFounderEmail(userProfile?.email) ||
-    isFounderEmail(auth.currentUser?.email);
+  const founderOk = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
   const showsUnauthorized =
     /unauthorized|forbidden|founder auth|sign in|catalog admin/i.test(
       `${membersError || ''} ${convertMsg || ''}`

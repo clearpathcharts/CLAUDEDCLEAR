@@ -190,7 +190,7 @@ export default function NeurodivergentDashboard() {
     <div
       data-neuro-door
       data-neuro-workstation
-      className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3"
+      className="flex w-full flex-col gap-3 overflow-visible p-3"
       style={{
         background: deskVisual?.overrides.background
           ? deskVisual.cssVars['--desk-user-bg']
@@ -530,7 +530,7 @@ export default function NeurodivergentDashboard() {
       </div>
 
       {showBelow ? (
-        <div className="max-h-[32vh] shrink-0 space-y-3 overflow-auto">
+        <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento holdId="news" title="News" status={intel.newsError ? 'offline' : `${intel.news.length} items`} className="retail-bento min-h-[160px]">
               {intel.news.length === 0 ? (

@@ -458,7 +458,7 @@ export default function RetailDashboard() {
     candles.length >= 2 ? Math.min(...candles.slice(-Math.min(candles.length, 24), -1).map((c) => c.low)) : null;
 
   return (
-    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+    <div data-retail-door className="flex w-full flex-col gap-3 overflow-visible p-3">
       {/* Header */}
       {!denseBlackout && (
         <section data-retail-bento className="retail-bento flex flex-wrap items-end justify-between gap-3">

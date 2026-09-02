@@ -9,7 +9,6 @@ import net from 'node:net';
 import crypto from 'node:crypto';
 import dnsPromises from 'node:dns/promises';
 import RSSParser from 'rss-parser';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -252,6 +251,7 @@ import {
   buildFmpStableSymbolUrl,
 } from './src/server/secrets';
 import { fetchCftcLegacyHistory } from './src/server/cftcCot';
+import { fetchFmpDeskNews, fetchFmpEconomicWire } from './src/server/fmpNewsWire';
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
@@ -386,8 +386,7 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const isProd = process.env.NODE_ENV === 'production';
 
-  // Enable trust proxy for Cloud Run environments
-  // This allows express-rate-limit to see the real client IP
+  // Enable trust proxy for Cloud Run (real client IP behind the load balancer).
   app.set('trust proxy', 1);
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
@@ -545,96 +544,9 @@ async function startServer() {
     next();
   });
 
-  // 2. RATE LIMITING (Crucial for 25k users)
-  // Protects the institutional data streams from being overwhelmed.
-  // Market/news paths have dedicated limiters below — do NOT also count them
-  // against this global bucket. A ticker retry storm was burning the global
-  // 900/15min ceiling and returning "Too many requests from this institutional
-  // terminal" on /api/market/history, blanking StrictlyCharts.
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3000,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' },
-    skip: (req) => {
-      const url = String(req.originalUrl || req.url || '').split('?')[0];
-      return /^\/api\/(quote|candles|market\/|newsdata|twelvedata|fred|fmp)\b/.test(url);
-    },
-  });
-  app.set('trust proxy', 1);
-  app.use('/api/', limiter);
-
-  const registrationLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
-  });
-
-  const aiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
-  });
-
-  // Charts poll /api/quote on a live tick (server quote cache is ~5s). Signed-in
-  // members keep a high ceiling; anonymous traffic gets a tight budget so open
-  // proxies cannot burn TwelveData credits.
-  const marketLimiterAuthed = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 2400,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
-    skip: (req) => !getPrivateSessionUser(req),
-  });
-  const marketLimiterAnon = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 90,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
-    skip: (req) => Boolean(getPrivateSessionUser(req)),
-  });
-  const marketLimiter = [marketLimiterAnon, marketLimiterAuthed];
-
-  const quoteLimiterAuthed = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 3600,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
-    skip: (req) => !getPrivateSessionUser(req),
-  });
-  const quoteLimiterAnon = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 180,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
-    skip: (req) => Boolean(getPrivateSessionUser(req)),
-  });
-  const quoteLimiter = [quoteLimiterAnon, quoteLimiterAuthed];
-
-  const newsLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'News rate limit reached. Please wait a few minutes.' },
-  });
-
-  const logErrorLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 60,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many error reports.' },
-  });
+  // Vendor credits (Twelve Data / FMP / Groq) are the only budget.
+  // Express rate-limit 429s were blanking desks (yellow DATA UNAVAILABLE) while
+  // the Venture 610 dashboard still had credits.
 
   // Initialize WebSockets
   setupWebSockets(server);
@@ -793,7 +705,7 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/lookup', async (req, res) => {
     try {
       const result = await lookupPrivateUser(req.body?.email || '');
       res.json(result);
@@ -803,7 +715,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/register', async (req, res) => {
     try {
       const result = await registerPrivateUser({
         email: req.body?.email || '',
@@ -865,7 +777,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/login', async (req, res) => {
     try {
       const result = await loginPrivateUser({
         email: req.body?.email || '',
@@ -901,7 +813,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resubmit', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/resubmit', async (req, res) => {
     try {
       const result = await resubmitIdentity({
         currentEmail: req.body?.currentEmail || req.body?.email || '',
@@ -973,7 +885,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/decline', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/decline', async (req, res) => {
     try {
       await declineIdentity({
         email: req.body?.email || '',
@@ -994,7 +906,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resend', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/resend', async (req, res) => {
     try {
       const reminted = await remintIdentityChallenge({
         email: req.body?.email || '',
@@ -1063,7 +975,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', registrationLimiter, (req, res) => {
+  app.post('/api/auth/board/verify', (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1176,7 +1088,7 @@ async function startServer() {
     res.json({ ok: true, profile: publicProfile });
   });
 
-  app.post('/api/auth/private/change-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/change-password', async (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
     if (!sessionUser?.email || !sessionUser.privateAccount) {
       return res.status(401).json({ error: 'Sign in to change your password.' });
@@ -1217,7 +1129,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/auth/private/forgot-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/forgot-password', async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     try {
       if (email.includes('@')) {
@@ -1239,7 +1151,7 @@ async function startServer() {
     return res.json({ ok: true });
   });
 
-  app.post('/api/auth/private/reset-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/reset-password', async (req, res) => {
     const token = String(req.body?.token || '');
     const newPassword = String(req.body?.newPassword || req.body?.password || '');
     const confirmPassword = String(req.body?.confirmPassword || '');
@@ -1302,14 +1214,6 @@ async function startServer() {
     return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
   };
 
-  const chartPulseLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 60,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many chart pulse changes. Please wait and try again.' },
-  });
-
   app.get('/api/chart-pulse/status', (req, res) => {
     const user = getPrivateSessionUser(req);
     res.json({
@@ -1319,7 +1223,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', chartPulseLimiter, (req, res) => {
+  app.post('/api/chart-pulse/subscribe', (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
     const sessionEmail = getPrivateSessionUser(req)?.email;
@@ -1353,7 +1257,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', chartPulseLimiter, (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
@@ -1444,7 +1348,7 @@ async function startServer() {
   });
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
-  app.post('/api/stripe/create-checkout-session', registrationLimiter, async (req, res) => {
+  app.post('/api/stripe/create-checkout-session', async (req, res) => {
     if (!PAYMENTS_ENABLED) {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
     }
@@ -2140,7 +2044,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2170,7 +2074,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
+  app.post('/api/registrations/waitlist', async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
       res.json(result);
@@ -2180,7 +2084,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/identity', registrationLimiter, async (req, res) => {
+  app.post('/api/registrations/identity', async (req, res) => {
     try {
       const result = await registerIdentity(req.body || {});
       res.json(result);
@@ -2365,7 +2269,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', logErrorLimiter, (req, res) => {
+  app.post('/api/log_error', (req, res) => {
     try {
       const raw = JSON.stringify(req.body ?? {});
       if (raw.length > 4000) {
@@ -2588,7 +2492,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2637,7 +2541,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
-  app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile, pagePath } =
       req.body;
     if (!question || typeof question !== 'string') {
@@ -2910,7 +2814,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, registrationLimiter, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -3070,13 +2974,13 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   };
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', ...quoteLimiter, async (req, res) => {
+  app.get('/api/quote', async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3104,18 +3008,18 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
-  app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
+  // Batch quotes — Twelve Data then FMP. Cap 80 covers the Venture registry + typed tickers.
+  app.get('/api/quotes', async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
-      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
+      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 80.' });
     }
-    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 80);
     if (symbols.length === 0) {
       return res.status(400).json({ error: 'symbols required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3130,7 +3034,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', ...marketLimiter, async (req, res) => {
+  app.get('/api/candles', async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -3139,7 +3043,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
     );
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3161,7 +3065,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', ...marketLimiter, async (req, res) => {
+  app.get('/api/market/history', async (req, res) => {
     const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -3172,7 +3076,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     );
 
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3224,7 +3128,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // NewsData Live Ingress API with fallback
-  app.get('/api/newsdata/latest', newsLimiter, async (req, res) => {
+  app.get('/api/newsdata/latest', async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
@@ -3266,6 +3170,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         }
         console.info('[NewsData Info] Utilizing local news fallbacks.');
       }
+
+      const fmpNews = await fetchFmpDeskNews();
+      if (fmpNews.length) return res.json(fmpNews);
 
       // Fallback: Union of news_data.json and master_news.json
       const newsList: any[] = [];
@@ -3311,9 +3218,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
-  app.get('/api/economic/news', newsLimiter, async (req, res) => {
+  // Economic wire — FMP timed calendar first, then NewsData headlines. No fabricated CPI/NFP rows.
+  app.get('/api/economic/news', async (req, res) => {
     try {
+      const calendar = await fetchFmpEconomicWire();
+      if (calendar.length) return res.json(calendar);
+
       const apiKey = getNewsDataApiKey();
       const isKeyValid =
         apiKey &&
@@ -3357,6 +3267,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
           }
         }
       }
+
+      const fmpHeadlines = await fetchFmpDeskNews();
+      if (fmpHeadlines.length) return res.json(fmpHeadlines);
 
       // Fallback: filter local curated news files for economy-related titles (if present)
       const newsList: any[] = [];
@@ -3516,7 +3429,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/literacy/truth-search', requirePrivateSession, ...marketLimiter, moderateBodyFields('query'), async (req, res) => {
+  app.post('/api/literacy/truth-search', requirePrivateSession, moderateBodyFields('query'), async (req, res) => {
     const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
     if (!query) {
       return res.status(400).json({ error: 'query required' });
@@ -3586,7 +3499,6 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   app.post(
     '/api/ywc/translate',
-    ...marketLimiter,
     moderateBodyFields('storyId', 'lang'),
     async (req, res) => {
       const storyId = String(req.body?.storyId || '').slice(0, 200);
@@ -3702,7 +3614,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
-  app.get('/api/cot/history', ...marketLimiter, async (req, res) => {
+  app.get('/api/cot/history', async (req, res) => {
     const symbol = String(req.query.symbol || '');
     if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
       return res.status(400).json({ error: 'Invalid symbol' });
@@ -3723,7 +3635,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
-  app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
+  app.get('/api/fred/observations', async (req, res) => {
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3752,7 +3664,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
-  app.get('/api/fmp/lookup', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/lookup', async (req, res) => {
     const kind = String(req.query.kind || '');
     if (!FMP_LOOKUP_KINDS.has(kind)) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
@@ -3786,7 +3698,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
-  app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
     const { endpoint, symbol } = req.params;
     const { limit, period } = req.query;
     if (!symbol || !endpoint) {
@@ -3843,7 +3755,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', requirePrivateSession, aiLimiter, async (req, res) => {
+  app.get('/api/news/search', requirePrivateSession, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
