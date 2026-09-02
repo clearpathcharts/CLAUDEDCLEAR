@@ -797,11 +797,15 @@ export default function RetailDashboard() {
           </header>
           <div
             className={`min-h-0 flex-1 ${
-              layout === 1 ? '' : layout === 2 ? 'grid grid-cols-1 gap-1 md:grid-cols-2' : 'grid grid-cols-1 gap-1 md:grid-cols-2'
+              layout === 1 ? 'flex flex-col' : layout === 2 ? 'grid grid-cols-1 gap-1 md:grid-cols-2' : 'grid grid-cols-1 gap-1 md:grid-cols-2'
             }`}
           >
             {intel.slots.map((slot, i) => (
-              <div key={`${slot.symbol}-${slot.timeframe}-${i}`} className="relative min-h-[280px]">
+              <div
+                key={`${slot.symbol}-${slot.timeframe}-${i}`}
+                className="relative h-full min-h-[280px] flex-1"
+              >
+                <div className="absolute inset-0">
                 {layout > 1 ? (
                   <div className="absolute left-1 top-1 z-10 flex flex-wrap gap-1 rounded border border-[var(--desk-border)] bg-black/70 px-1 py-0.5">
                     <input
@@ -843,7 +847,7 @@ export default function RetailDashboard() {
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
-                  fillParent={layout === 1}
+                  fillParent
                   height={layout === 1 ? 420 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
@@ -851,6 +855,7 @@ export default function RetailDashboard() {
                   hidePatternOverlays={!(layout === 1 && i === 0)}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
+                </div>
               </div>
             ))}
           </div>

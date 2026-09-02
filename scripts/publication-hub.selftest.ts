@@ -340,6 +340,6 @@ const candles = readFileSync(
   path.join(repoRoot, 'src/components/charts/LightweightCandles.tsx'),
   'utf8',
 );
-assert.ok(candles.includes('CHART-BUILD-2026-09-01-CLEAN'));
+assert.ok(candles.includes('CHART-BUILD-2026-09-01-FILL'));
 
 console.log('publication-hub.selftest: ok');

@@ -53,7 +53,7 @@ import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
 import type { DeskVisualPaint } from "../../lib/deskColorChart";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-01-CLEAN";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-01-FILL";
 
 export type { PriceSeriesType };
 

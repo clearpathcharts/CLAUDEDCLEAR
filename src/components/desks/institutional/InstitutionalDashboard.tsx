@@ -300,6 +300,7 @@ export default function InstitutionalDashboard() {
                   <p className="absolute left-2 top-1 z-10 font-mono text-[10px] font-black uppercase tracking-wider text-[var(--desk-cyan)]">
                     {s}
                   </p>
+                  <div className="absolute inset-0">
                   <LightweightCandles
                     data={data}
                     symbol={s}
@@ -311,6 +312,7 @@ export default function InstitutionalDashboard() {
                     hideChartToolbar
                     activeIndicators={intel.cot.status === 'ok' ? ['COT'] : []}
                   />
+                  </div>
                 </div>
               );
             })}

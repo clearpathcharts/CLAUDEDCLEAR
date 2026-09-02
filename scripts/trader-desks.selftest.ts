@@ -233,6 +233,7 @@ for (const rel of srcFiles) {
     assert.match(text, /showBelow/);
     assert.match(text, /deskSectionOpen/);
     assert.match(text, /min-h-\[70vh\]/);
+    assert.match(text, /absolute inset-0/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);

@@ -492,6 +492,7 @@ export default function NeurodivergentDashboard() {
             ) : null}
           </header>
           <div className="relative min-h-[300px] flex-1">
+            <div className="absolute inset-0">
             <LightweightCandles
               symbol={symbol}
               profileId={profileId}
@@ -501,6 +502,7 @@ export default function NeurodivergentDashboard() {
               hidePatternOverlays
               publishDrawingSession
             />
+            </div>
           </div>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
