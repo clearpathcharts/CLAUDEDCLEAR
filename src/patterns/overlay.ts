@@ -25,20 +25,23 @@ export function buildPatternLineOverlays(
 ): PatternLineOverlay[] {
   const chartPatterns = patterns
     .filter((p) => p.category === 'chart' && p.geometry?.lines.length)
-    .slice(0, 8);
+    .slice(0, 12);
 
   const overlays: PatternLineOverlay[] = [];
 
   for (const pattern of chartPatterns) {
+    const nested = pattern.scale === 'nested';
     for (const [i, line] of (pattern.geometry?.lines ?? []).entries()) {
       if (line.from.time === line.to.time && line.from.price === line.to.price) continue;
-      const color = neonLineColor(line.role, i);
+      const color = neonLineColor(line.role, i, pattern.scale);
       overlays.push({
-        id: `${pattern.id}-${line.role}-${i}`,
-        label: pattern.label,
+        id: `${pattern.scale ?? 'major'}-${pattern.id}-${pattern.startIndex}-${line.role}-${i}`,
+        label: nested ? `${pattern.label} (nested)` : pattern.label,
         color,
-        dashed: line.role === 'neckline',
-        lineWidth: line.role === 'horizontal' || line.role === 'neckline' ? 4 : 3,
+        dashed: nested || line.role === 'neckline',
+        lineWidth: nested
+          ? 2
+          : line.role === 'horizontal' || line.role === 'neckline' ? 4 : 3,
         points: [
           { time: line.from.time as Time, value: line.from.price },
           { time: line.to.time as Time, value: line.to.price },

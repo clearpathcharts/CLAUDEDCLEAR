@@ -5,8 +5,9 @@ import type { DetectedPattern } from './types';
 
 function formatMeasuredPattern(p: DetectedPattern): string {
   const pct = Math.round(p.confidence * 100);
+  const nested = p.scale === 'nested' ? 'nested ' : '';
   const note = p.detail || `${p.label} measured on the latest candles.`;
-  return `- ${p.label} (${p.direction}, ${pct}% geometric confidence): ${note}`;
+  return `- ${nested}${p.label} (${p.direction}, ${pct}% geometric confidence): ${note}`;
 }
 
 function formatMethodologyContext(brief: FormingStructureBrief): string[] {
@@ -50,7 +51,7 @@ function formatChartSection(
 
   if (chartPatterns.length > 0) {
     lines.push('Measured chart patterns (latest window):');
-    lines.push(...chartPatterns.slice(0, 3).map(formatMeasuredPattern));
+    lines.push(...chartPatterns.slice(0, 6).map(formatMeasuredPattern));
   } else {
     lines.push('Measured chart patterns: none forming in the latest window.');
   }

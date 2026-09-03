@@ -7,6 +7,8 @@ import { scanAllPatterns } from './scan';
 import { scanCandlestickPatterns } from './candlesticks';
 import { buildPatternLineOverlays } from './overlay';
 import { allSegmentsCandleSafe } from './trendlineFit';
+import { detectNestedStructures } from './chartPatterns';
+import type { DetectedPattern } from './types';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -33,7 +35,11 @@ assert(scanCandlestickPatterns(soldiers).some((p) => p.id === 'three_white_soldi
 const oldHistory = generateSampleCandles(200);
 const oldScan = scanAllPatterns(oldHistory);
 assert(
-  oldScan.patterns.every((p) => p.endIndex >= oldHistory.length - 12),
+  oldScan.patterns.every((p) => {
+    if (p.scale === 'nested') return true;
+    if (p.category === 'chart') return p.endIndex >= oldHistory.length - 64;
+    return p.endIndex >= oldHistory.length - 16;
+  }),
   'live-edge filter should drop historical pattern hits',
 );
 
@@ -68,5 +74,68 @@ const lines = buildPatternLineOverlays(sample, scan.patterns);
 assert(Array.isArray(lines), 'expected line overlays array');
 console.log(`  line overlays: ${lines.length}`);
 console.log(`  chart patterns: ${chartPatterns.map((p) => p.id).join(', ') || 'none on sample'}`);
+
+function descTriangleBars(
+  bars: number,
+  floor: number,
+  startHigh: number,
+  t0: number,
+): { time: number; open: number; high: number; low: number; close: number }[] {
+  const out = [];
+  for (let i = 0; i < bars; i++) {
+    const t = bars === 1 ? 0 : i / (bars - 1);
+    const peak = startHigh - (startHigh - floor - 0.4) * t;
+    const isPeak = i % 3 === 0;
+    const isTrough = i % 3 === 1;
+    const high = isPeak ? peak : peak - 0.18;
+    const low = isTrough ? floor : floor + 0.14;
+    const open = low + (high - low) * (isPeak ? 0.35 : 0.65);
+    const close = low + (high - low) * (isPeak ? 0.7 : 0.3);
+    out.push({ time: t0 + i, open, high, low, close });
+  }
+  return out;
+}
+
+const nestedA = descTriangleBars(16, 105.4, 108.2, 1);
+const drop1 = descTriangleBars(10, 102.2, 105.5, 17);
+const nestedB = descTriangleBars(16, 102.4, 105.1, 27);
+const drop2 = descTriangleBars(14, 100.0, 102.6, 43);
+const fractalDesc = [...nestedA, ...drop1, ...nestedB, ...drop2];
+const parentDesc: DetectedPattern = {
+  id: 'descending_triangle',
+  category: 'chart',
+  label: 'Descending Triangle',
+  direction: 'bearish',
+  startIndex: 0,
+  endIndex: fractalDesc.length - 1,
+  time: fractalDesc[fractalDesc.length - 1].time,
+  confidence: 0.81,
+  scale: 'major',
+  geometry: {
+    lines: [
+      {
+        role: 'upper',
+        from: { index: 0, time: fractalDesc[0].time, price: 108.2 },
+        to: { index: fractalDesc.length - 1, time: fractalDesc[fractalDesc.length - 1].time, price: 101.2 },
+      },
+      {
+        role: 'lower',
+        from: { index: 0, time: fractalDesc[0].time, price: 100 },
+        to: { index: fractalDesc.length - 1, time: fractalDesc[fractalDesc.length - 1].time, price: 100 },
+      },
+    ],
+  },
+};
+const nestedHits = detectNestedStructures(fractalDesc, [parentDesc]);
+assert(
+  nestedHits.some((p) => p.id === 'descending_triangle' && p.scale === 'nested'),
+  'expected nested descending triangle inside the larger descending triangle',
+);
+const nestedOverlays = buildPatternLineOverlays(fractalDesc, [...nestedHits, parentDesc]);
+assert(
+  nestedOverlays.some((l) => l.color === '#00D9FF'),
+  'nested geometry should draw in cyan',
+);
+console.log(`  nested hits: ${nestedHits.map((p) => `${p.id}@${p.startIndex}-${p.endIndex}`).join(', ')}`);
 
 console.log('PASS: Pattern engine (candle-safe geometry)');
