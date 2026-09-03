@@ -150,9 +150,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_institutional_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_institutional_v4/);
+    assert.match(text, /defaultHeld=\{INSTITUTIONAL_CHART_FIRST_HELD\}/);
+    assert.match(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
@@ -181,6 +181,8 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /k="Short interest" v="DATA UNAVAILABLE"/);
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
+    assert.match(text, /DeskChartFill/);
+    assert.match(text, /height=\{layout === 1 \? 640 : 280\}/);
     assert.match(text, /embedMode/);
     assert.match(text, /holdId=/);
     assert.match(text, /data-desk-chart-room/);
@@ -203,9 +205,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_retail_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_retail_v4/);
+    assert.match(text, /defaultHeld=\{RETAIL_CHART_FIRST_HELD\}/);
+    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /study desk/);
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
@@ -233,6 +235,7 @@ for (const rel of srcFiles) {
     assert.match(text, /PatternScannerPanel/);
     assert.match(text, /Pattern Scanner/);
     assert.match(text, /holdId=/);
+    assert.match(text, /DeskChartFill/);
     assert.match(text, /useDedicatedPatternPanel/);
     assert.match(text, /showBelow/);
     assert.match(text, /deskSectionOpen/);
@@ -283,9 +286,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_neuro_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /NEURO_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_neuro_v4/);
+    assert.match(text, /defaultHeld=\{NEURO_CHART_FIRST_HELD\}/);
+    assert.match(text, /NEURO_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -293,6 +296,7 @@ for (const rel of srcFiles) {
     assert.match(text, /data-neuro-door/);
     assert.match(text, /overflow-visible/);
     assert.match(text, /data-neuro-workstation/);
+    assert.match(text, /DeskChartFill/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /NEURO_DESK_PROFILES/);
     assert.match(text, /NEURO_RIBBON/);
@@ -355,9 +359,9 @@ for (const rel of srcFiles) {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_fundamental_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_fundamental_v4/);
+    assert.match(text, /defaultHeld=\{FUNDAMENTAL_CHART_FIRST_HELD\}/);
+    assert.match(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
   }
@@ -409,6 +413,10 @@ assert.match(bento, /useDeskHold/);
 const heldFile = fs.readFileSync(path.join(root, 'src/components/desks/DeskHeldFile.tsx'), 'utf8');
 assert.match(heldFile, /data-desk-held-file/);
 assert.match(heldFile, /Restore all/);
+
+const fill = fs.readFileSync(path.join(root, 'src/components/desks/DeskChartFill.tsx'), 'utf8');
+assert.match(fill, /min-h-\[70vh\]/);
+assert.match(fill, /absolute inset-0/);
 
 assert.deepEqual(parseHeldIds('["ribbon","nope"]', new Set(['ribbon', 'flow'])), ['ribbon']);
 assert.deepEqual(parseHeldIds(null, new Set(['ribbon'])), []);

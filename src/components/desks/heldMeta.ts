@@ -67,7 +67,7 @@ export const NEURO_HELD_META: Record<string, HeldMeta> = {
   simulation: { title: 'Simulation Lab', blurb: 'Hypothetical practice only' },
 };
 
-/** Optional park lists for tests / a user who wants chart-only. Desks must not auto-apply these. */
+/** First visit parks below-chart intel in the Held file so the plot can use ~70vh. Bump the storage key when changing this list. */
 export const INSTITUTIONAL_CHART_FIRST_HELD = Object.keys(INSTITUTIONAL_HELD_META).filter((id) => id !== 'ribbon');
 
 export const RETAIL_CHART_FIRST_HELD = Object.keys(RETAIL_HELD_META).filter((id) => id !== 'ribbon');

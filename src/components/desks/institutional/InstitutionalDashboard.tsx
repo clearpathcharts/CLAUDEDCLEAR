@@ -18,6 +18,7 @@ import { Bento, Unavail, KV, Bar } from './Bento';
 import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
+import { DeskChartFill } from '../DeskChartFill';
 import {
   cotFeedChip,
   formatCotAgeLabel,
@@ -298,7 +299,7 @@ export default function InstitutionalDashboard() {
             {intel.slots.map((s) => {
               const data = intel.candlesBySymbol[s] ?? [];
               return (
-                <div key={s} className="relative min-h-[180px] overflow-hidden rounded border border-[var(--desk-border)]">
+                <DeskChartFill key={s} tall={layout === 1}>
                   <p className="absolute left-2 top-1 z-10 font-mono text-[10px] font-black uppercase tracking-wider text-[var(--desk-cyan)]">
                     {s}
                   </p>
@@ -308,12 +309,12 @@ export default function InstitutionalDashboard() {
                     profileId="focus_mode"
                     timeframe={timeframe}
                     fillParent
-                    height={layout === 1 ? 420 : 200}
+                    height={layout === 1 ? 640 : 280}
                     embedMode
                     hideChartToolbar
                     activeIndicators={intel.cot.status === 'ok' ? ['COT'] : []}
                   />
-                </div>
+                </DeskChartFill>
               );
             })}
           </div>
