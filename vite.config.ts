@@ -69,8 +69,9 @@ export default defineConfig(({mode}) => {
     },
     server: {
       headers: {
-        'X-Service-Worker-Version': '4.0.0-firmware-val',
-        'Cache-Control': 'no-cache, must-revalidate'
+        'X-Service-Worker-Version': '5.0.0-kill-switch',
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store'
       },
       strictPort: false,
       hmr: {
@@ -84,8 +85,9 @@ export default defineConfig(({mode}) => {
     },
     preview: {
       headers: {
-        'X-Service-Worker-Version': '4.0.0-firmware-val',
-        'Cache-Control': 'no-cache, must-revalidate'
+        'X-Service-Worker-Version': '5.0.0-kill-switch',
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate, max-age=0',
+        'CDN-Cache-Control': 'no-store'
       }
     },
   };

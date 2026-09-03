@@ -6,8 +6,11 @@ import { A11yPreferencesProvider } from './contexts/A11yPreferencesContext';
 import { ExplainModeProvider } from './components/explain';
 import { BootErrorBoundary, BootReadySignal } from './components/BootErrorBoundary';
 import { markBootFailed } from './lib/bootWatchdog';
+import { scheduleForceFreshBuild } from './lib/forceFreshBuild';
 import App from './App.tsx';
 import './index.css';
+
+scheduleForceFreshBuild();
 
 const rootEl = document.getElementById('root');
 

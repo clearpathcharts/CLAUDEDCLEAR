@@ -20,7 +20,7 @@
       } catch (e) {}
     </script>
     <script>
-      // Force-unregister stale/old service workers that cause frozen black screens
+      // Drop stale service workers + Cache Storage so visitors are not stuck on an old shell.
       try {
         if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -29,6 +29,11 @@
                 if (success) console.log('[Purge] Unregistered SW');
               });
             }
+          });
+        }
+        if (typeof caches !== 'undefined' && caches.keys) {
+          caches.keys().then(function(keys) {
+            for (var c = 0; c < keys.length; c++) caches.delete(keys[c]);
           });
         }
       } catch (e) {}

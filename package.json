@@ -17,6 +17,7 @@
     "pr:auto-update:merge": "bash scripts/pr-auto-updater.sh --merge-ready",
     "pr:auto-update:dry": "bash scripts/pr-auto-updater.sh --dry-run",
     "test:app-update": "tsx scripts/app-update.selftest.ts",
+    "test:force-fresh-build": "tsx scripts/force-fresh-build.selftest.ts",
     "test:firebase-mock": "tsx scripts/firebase-mock.selftest.ts",
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "test:ui-fonts": "tsx scripts/ui-fonts.selftest.ts",

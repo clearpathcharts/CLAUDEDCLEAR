@@ -3,11 +3,8 @@
     return;
   }
 
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./sw.js').catch(function (error) {
-      console.error('CPMS Core Service worker registration failed:', error);
-    });
-  });
+  // Do not register a service worker. /tv/sw.js is a kill-switch for the
+  // old cache-first worker. Keep the install-prompt listeners below.
 
   let deferredPrompt;
   const installBtn = document.getElementById('pwa-install-btn');
