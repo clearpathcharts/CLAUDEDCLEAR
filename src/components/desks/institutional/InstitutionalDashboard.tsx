@@ -15,6 +15,7 @@ import {
   scenarioPrices,
 } from '../../../lib/institutional/marketMath';
 import { Bento, Unavail, KV, Bar } from './Bento';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
 import {
@@ -104,6 +105,7 @@ function heatColor(r: number | null): string {
 export default function InstitutionalDashboard() {
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState<string>('1h');
+  useDeskMonitorSync('institutional', symbol, timeframe, setSymbol, setTimeframe);
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [universeTab, setUniverseTab] = useState('equities');
   const [open, setOpen] = useState<Record<string, boolean>>({

@@ -18,6 +18,7 @@ import { RetailSlideStrip } from './RetailSlideStrip';
 import { AssetColorControls } from './AssetColorControls';
 import { PatternScannerPanel } from '../../charts/PatternScannerPanel';
 import { useMembership } from '../../../hooks/useMembership';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   loadAssetColorMap,
   resolveAssetColors,
@@ -249,6 +250,7 @@ export default function RetailDashboard() {
   const { hasFeature } = useMembership();
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState('1h');
+  useDeskMonitorSync('retail', symbol, timeframe, setSymbol, setTimeframe);
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [chartType, setChartType] = useState<PriceSeriesType>('candlestick');
   const [chartProfileId, setChartProfileId] = useState(readChartProfileId);

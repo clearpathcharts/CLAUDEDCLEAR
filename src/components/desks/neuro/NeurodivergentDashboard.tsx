@@ -18,6 +18,7 @@ import {
   type RetailWatchlist,
 } from '../retail/retailStore';
 import { useOptionalDeskAppearance } from '../DeskAppearanceContext';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   NEURO_DEFAULT_SYMBOL,
   NEURO_DEFAULT_WATCHLISTS,
@@ -91,6 +92,7 @@ export default function NeurodivergentDashboard() {
   const [showProfiles, setShowProfiles] = useState(false);
   const [symbol, setSymbol] = useState(NEURO_DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState('1h');
+  useDeskMonitorSync('neurodivergent', symbol, timeframe, setSymbol, setTimeframe);
   const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readStoredNeuroProfile()));
   const [blackout, setBlackout] = useState(false);
   const [watchlists, setWatchlists] = useState<RetailWatchlist[]>(() => loadNeuroWatchlists());

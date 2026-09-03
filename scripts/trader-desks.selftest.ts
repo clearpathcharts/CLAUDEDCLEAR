@@ -119,6 +119,10 @@ const srcFiles = [
   'src/components/desks/neuro/neuroProfile.ts',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
+  'src/components/desks/DeskScreensMenu.tsx',
+  'src/components/desks/DeskScreenWorkspace.tsx',
+  'src/lib/deskMonitorTree.ts',
+  'src/hooks/useDeskMonitorSync.ts',
   'src/components/desks/ColorChartPicker.tsx',
   'src/lib/deskColorChart.ts',
   'src/components/Dashboard.tsx',
@@ -316,6 +320,8 @@ for (const rel of srcFiles) {
     assert.match(text, /isFounderSession/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
+    assert.match(text, /DeskScreensMenu/);
+    assert.match(text, /Screens/);
   }
   if (rel === 'src/components/desks/ColorChartPicker.tsx') {
     assert.match(text, /data-color-chart/);
@@ -323,6 +329,21 @@ for (const rel of srcFiles) {
     assert.match(text, /Opacity/);
     assert.match(text, /Save colors/);
     assert.match(text, /data-color-chart-save/);
+  }
+  if (rel === 'src/lib/deskMonitorTree.ts') {
+    assert.match(text, /MONITOR_TREE_PRESETS/);
+    assert.match(text, /parseDeskScreenPane/);
+    assert.match(text, /getScreenDetails/);
+    assert.match(text, /launchMonitorTree/);
+  }
+  if (rel === 'src/components/desks/DeskScreensMenu.tsx') {
+    assert.match(text, /data-desk-screens-toggle/);
+    assert.match(text, /\{p\.n\}-screen/);
+    assert.match(text, /Pop out one panel/);
+  }
+  if (rel === 'src/hooks/useDeskMonitorSync.ts') {
+    assert.match(text, /BroadcastChannel/);
+    assert.match(text, /DESK_MONITOR_CHANNEL/);
   }
   if (rel === 'src/lib/deskColorChart.ts') {
     assert.match(text, /clearpath_desk_color_chart_v1/);
@@ -351,6 +372,10 @@ for (const rel of srcFiles) {
     assert.match(text, /data-desk-color-bg/);
     assert.match(text, /heldFile\.css/);
     assert.match(text, /CptBuddyWidget/);
+    assert.match(text, /parseDeskScreenPane/);
+    assert.match(text, /DeskScreenWorkspace/);
+    assert.match(text, /data-desk-satellite/);
+    assert.match(text, /satellitePane \? null : <CptBuddyWidget/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
@@ -360,6 +385,7 @@ for (const rel of srcFiles) {
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
+    assert.match(text, /\/desk\/:deskId\/screen\/:pane/);
     assert.match(text, /isDeskRoute/);
     assert.match(text, /\/api\/fmp\/lookup/);
   }

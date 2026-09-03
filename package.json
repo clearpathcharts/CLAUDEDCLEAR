@@ -23,6 +23,7 @@
     "test:ui-fonts": "tsx scripts/ui-fonts.selftest.ts",
     "test:choose-path": "tsx scripts/choose-path.selftest.ts",
     "test:trader-desks": "tsx scripts/trader-desks.selftest.ts",
+    "test:desk-monitor-tree": "tsx scripts/desk-monitor-tree.selftest.ts",
     "test:desk-color-chart": "tsx scripts/desk-color-chart.selftest.ts",
     "test:fundamental-door": "tsx scripts/fundamental-door.selftest.ts",
     "test:about-manifesto": "tsx scripts/about-manifesto.selftest.ts",
