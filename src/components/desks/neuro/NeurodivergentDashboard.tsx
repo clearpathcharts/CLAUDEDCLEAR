@@ -8,6 +8,7 @@ import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles'
 import { Bento, Unavail, KV } from '../institutional/Bento';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
+import { DeskChartFill } from '../DeskChartFill';
 import { RetailEducationBento } from '../retail/RetailEducationBento';
 import { useRetailIntelligence, type RetailQuote } from '../retail/useRetailIntelligence';
 import {
@@ -493,17 +494,17 @@ export default function NeurodivergentDashboard() {
               <p className="font-mono text-sm text-rose-400">{intel.candleError}</p>
             ) : null}
           </header>
-          <div className="relative min-h-[300px] flex-1">
+          <DeskChartFill tall>
             <LightweightCandles
               symbol={symbol}
               profileId={profileId}
               timeframe={timeframe}
               fillParent
-              height={420}
+              height={640}
               hidePatternOverlays
               publishDrawingSession
             />
-          </div>
+          </DeskChartFill>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
           </p>
