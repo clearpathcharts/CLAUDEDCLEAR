@@ -10,6 +10,7 @@ import {
   HTML_NO_STORE_HEADERS,
   injectBuildStamp,
   readLiveBuildIdentity,
+  sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
 import {
   CACHE_BUST_PARAM,
@@ -31,6 +32,31 @@ applyHtmlNoStore({
 });
 assert.equal(headers.get('Cache-Control'), HTML_NO_STORE_HEADERS['Cache-Control']);
 assert.equal(headers.has('ETag'), false);
+
+{
+  const sent = new Map<string, string>();
+  let statusCode = 0;
+  let body = '';
+  sendUncachedHtml(
+    {
+      setHeader: (name, value) => sent.set(name, value),
+      removeHeader: (name) => sent.delete(name),
+      status: (code) => {
+        statusCode = code;
+      },
+      write: (chunk) => {
+        body += chunk;
+      },
+      end: () => undefined,
+    },
+    '<html>ok</html>',
+    200,
+  );
+  assert.equal(statusCode, 200);
+  assert.equal(body, '<html>ok</html>');
+  assert.equal(sent.has('ETag'), false);
+  assert.equal(sent.get('CDN-Cache-Control'), 'no-store');
+}
 
 assert.equal(
   shouldForceReload({
@@ -144,7 +170,7 @@ for (const rel of killSwitches) {
   const body = fs.readFileSync(path.join(root, rel), 'utf8');
   assert.match(body, /registration\.unregister/);
   assert.match(body, /caches\.delete/);
-  assert.doesNotMatch(body, /cache-first|caches\.match|cache\.addAll/);
+  assert.doesNotMatch(body, /caches\.match\(|cache\.addAll\(/, `${rel} must not cache-match`);
 }
 
 const learnMain = fs.readFileSync(path.join(root, 'public/learn/assets/js/main.js'), 'utf8');
@@ -159,6 +185,7 @@ assert.match(indexHtml, /serviceWorker\.getRegistrations/);
 
 const serverSrc = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(serverSrc, /applyHtmlNoStore/);
+assert.match(serverSrc, /sendUncachedHtml/);
 assert.match(serverSrc, /readLiveBuildIdentity/);
 
 console.log('force-fresh-build.selftest: ok');

@@ -24,6 +24,22 @@ export function applyHtmlNoStore(res: HeaderWriter): void {
   res.removeHeader?.('ETag');
 }
 
+type HtmlSender = HeaderWriter & {
+  status: (code: number) => unknown;
+  write: (chunk: string) => unknown;
+  end: () => unknown;
+};
+
+/** write/end so Express cannot attach an ETag (Google Frontend 304s the old shell). */
+export function sendUncachedHtml(res: HtmlSender, html: string, status = 200): void {
+  applyHtmlNoStore(res);
+  res.status(status);
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.removeHeader?.('ETag');
+  res.write(html);
+  res.end();
+}
+
 export function readLiveBuildIdentity(): {
   service: string | null;
   revision: string | null;

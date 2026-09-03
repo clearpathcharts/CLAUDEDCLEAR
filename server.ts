@@ -38,7 +38,7 @@ import {
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
-import { applyHtmlNoStore, readLiveBuildIdentity } from './src/server/htmlCacheHeaders';
+import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
   resolveIndexNowKey,
   submitIndexNow,
@@ -4230,23 +4230,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
-        applyHtmlNoStore(res);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       if (!wantLiveSpa && pathClean === '/about' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
-        applyHtmlNoStore(res);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
         const enriched = enrichHtmlWithMetadata(renderUnknownRegionNotFound(req.path), req.path);
-        res.status(404);
-        applyHtmlNoStore(res);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched, 404);
       }
       const isDeskRoute =
         pathClean === '/desk' ||
@@ -4259,9 +4252,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
-        applyHtmlNoStore(res);
-        res.setHeader('Content-Type', 'text/html');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
 
       if (isDev) {
@@ -4273,17 +4264,13 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        applyHtmlNoStore(res);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          applyHtmlNoStore(res);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          return res.send(enriched);
+          return sendUncachedHtml(res, enriched);
         } else {
           applyHtmlNoStore(res);
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
@@ -4298,10 +4285,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           ? path.resolve(process.cwd(), 'index.html')
           : path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(fallbackPath)) {
-          res.status(200);
-          applyHtmlNoStore(res);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          return res.send(safeReadTextFile(fallbackPath));
+          return sendUncachedHtml(res, safeReadTextFile(fallbackPath));
         }
       } catch (fallbackErr) {
         console.error('[SEO Page Interceptor fallback failed]', fallbackErr);
