@@ -17,6 +17,7 @@ import {
 } from '../content/productIdentity';
 import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
+import { injectBuildStamp } from './htmlCacheHeaders';
 import {
   lookupStock,
   lookupCrypto,
@@ -1280,7 +1281,7 @@ ${hreflangTags}
   }
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
-  return injectFirebaseClientConfig(html);
+  return injectBuildStamp(injectFirebaseClientConfig(html));
 }
 
 // Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.

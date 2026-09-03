@@ -33,6 +33,9 @@ jobs:
       - name: Firebase mock safety (no black-screen regressions)
         run: npm run test:firebase-mock
 
+      - name: Force-fresh public build (no user cache wipe)
+        run: npm run test:force-fresh-build
+
       - name: Login choose-your-path images
         run: npm run test:choose-path
 

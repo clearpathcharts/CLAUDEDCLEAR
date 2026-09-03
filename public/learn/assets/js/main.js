@@ -262,18 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
   `;
   document.body.prepend(envContainer);
 
-  // 1. REGISTER THE ENCYCLOPEDIA SERVICE WORKER
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/learn/service-worker.js')
-        .then((reg) => {
-          console.log('[PWA] Service Worker connected successfully under scope:', reg.scope);
-        })
-        .catch((err) => {
-          console.warn('[PWA] Service Worker registration skipped:', err);
-        });
-    });
-  }
+  // Do not register a service worker. /learn/service-worker.js is a kill-switch
+  // for browsers that still have the old cache-first worker.
 
   // 2. DETECT NETWORK ONLINE/OFFLINE EVENT LOGIC
   window.addEventListener('online', updateNetworkStatus);
