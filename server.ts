@@ -38,6 +38,7 @@ import {
 import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
+import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
   resolveIndexNowKey,
   submitIndexNow,
@@ -665,6 +666,9 @@ async function startServer() {
     const adminDb = getAdminFirestore();
     const privateMeta = getPrivateStorageMeta();
     const sessionSecretConfigured = Boolean(getSessionSecret() && getSessionSecret().length >= 32);
+    res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('CDN-Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
     res.json({ 
       status: privateMeta.productionHardFail ? 'degraded' : 'healthy', 
       version: '5.0.0-institutional',
@@ -674,6 +678,7 @@ async function startServer() {
         service: process.env.K_SERVICE || null,
         revision: process.env.K_REVISION || null,
       },
+      build: readLiveBuildIdentity(),
       waitlist: {
         firestoreAdmin: Boolean(adminDb),
         appwriteConfigured: Boolean(
@@ -4225,23 +4230,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       if (!wantLiveSpa && pathClean === '/about' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
         const enriched = enrichHtmlWithMetadata(renderUnknownRegionNotFound(req.path), req.path);
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched, 404);
       }
       const isDeskRoute =
         pathClean === '/desk' ||
@@ -4254,8 +4252,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
-        res.setHeader('Content-Type', 'text/html');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
 
       if (isDev) {
@@ -4267,24 +4264,15 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          return res.send(enriched);
+          return sendUncachedHtml(res, enriched);
         } else {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          applyHtmlNoStore(res);
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -4297,10 +4285,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           ? path.resolve(process.cwd(), 'index.html')
           : path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(fallbackPath)) {
-          res.status(200);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          return res.send(safeReadTextFile(fallbackPath));
+          return sendUncachedHtml(res, safeReadTextFile(fallbackPath));
         }
       } catch (fallbackErr) {
         console.error('[SEO Page Interceptor fallback failed]', fallbackErr);
@@ -4414,12 +4399,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          if (filePath.endsWith('sw.js')) {
-            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+        if (
+          filePath.endsWith('sw.js') ||
+          filePath.endsWith('service-worker.js') ||
+          filePath.endsWith('index.html')
+        ) {
+          applyHtmlNoStore(res);
+          if (filePath.endsWith('sw.js') || filePath.endsWith('service-worker.js')) {
+            res.setHeader('X-Service-Worker-Version', '5.0.0-kill-switch');
           }
           return;
         }
