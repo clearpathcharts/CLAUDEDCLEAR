@@ -17,7 +17,9 @@ import { RetailEducationBento } from './RetailEducationBento';
 import { RetailSlideStrip } from './RetailSlideStrip';
 import { AssetColorControls } from './AssetColorControls';
 import { PatternScannerPanel } from '../../charts/PatternScannerPanel';
+import { DeskChartFill } from '../DeskChartFill';
 import { useMembership } from '../../../hooks/useMembership';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   loadAssetColorMap,
   resolveAssetColors,
@@ -249,6 +251,7 @@ export default function RetailDashboard() {
   const { hasFeature } = useMembership();
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState('1h');
+  useDeskMonitorSync('retail', symbol, timeframe, setSymbol, setTimeframe);
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [chartType, setChartType] = useState<PriceSeriesType>('candlestick');
   const [chartProfileId, setChartProfileId] = useState(readChartProfileId);
@@ -801,7 +804,7 @@ export default function RetailDashboard() {
             }`}
           >
             {intel.slots.map((slot, i) => (
-              <div key={`${slot.symbol}-${slot.timeframe}-${i}`} className="relative min-h-[280px]">
+              <DeskChartFill key={`${slot.symbol}-${slot.timeframe}-${i}`} tall={layout === 1}>
                 {layout > 1 ? (
                   <div className="absolute left-1 top-1 z-10 flex flex-wrap gap-1 rounded border border-[var(--desk-border)] bg-black/70 px-1 py-0.5">
                     <input
@@ -843,15 +846,15 @@ export default function RetailDashboard() {
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
-                  fillParent={layout === 1}
-                  height={layout === 1 ? 420 : layout === 2 ? 280 : 220}
+                  fillParent
+                  height={layout === 1 ? 640 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
                   useDedicatedPatternPanel={layout === 1 && i === 0}
                   hidePatternOverlays={!(layout === 1 && i === 0)}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
-              </div>
+              </DeskChartFill>
             ))}
           </div>
           <p className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-sm font-bold uppercase tracking-wider text-[var(--desk-muted)]">

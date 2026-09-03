@@ -13,16 +13,19 @@ import ColorChartPicker from './ColorChartPicker';
 import { useAuth } from '../../contexts/FirebaseContext';
 import { isFounderSession } from '../../lib/founder';
 import { auth } from '../../firebase';
+import DeskScreensMenu from './DeskScreensMenu';
+import { DESK_SCREEN_PANE_LABEL, type DeskScreenPane } from '../../lib/deskMonitorTree';
 
 type Props = {
   active: TraderDeskId;
+  satellitePane?: DeskScreenPane | null;
 };
 
 function utcHourFrom(date: Date): number {
   return date.getUTCHours();
 }
 
-export default function TraderDeskChrome({ active }: Props) {
+export default function TraderDeskChrome({ active, satellitePane = null }: Props) {
   const meta = TRADER_DESKS[active];
   const {
     paper,
@@ -80,18 +83,21 @@ export default function TraderDeskChrome({ active }: Props) {
                     : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
-              {active === 'institutional'
-                ? 'Market Intelligence Platform'
-                : active === 'fundamental'
-                  ? 'Equity Research Workstation'
-                  : active === 'neurodivergent'
-                    ? 'Calm retail + crypto · sensory UI'
-                    : meta.tagline}
+              {satellitePane
+                ? `Satellite · ${DESK_SCREEN_PANE_LABEL[satellitePane]}`
+                : active === 'institutional'
+                  ? 'Market Intelligence Platform'
+                  : active === 'fundamental'
+                    ? 'Equity Research Workstation'
+                    : active === 'neurodivergent'
+                      ? 'Calm retail + crypto · sensory UI'
+                      : meta.tagline}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
+          <DeskScreensMenu deskId={active} accent={meta.accent} paper={paper} />
           <button
             type="button"
             onClick={() => setPickerOpen(!pickerOpen)}

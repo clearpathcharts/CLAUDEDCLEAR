@@ -57,15 +57,20 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
         <p className="text-[9px] text-white/45">Scanning structure… ask C.P.T. Buddy what may be forming.</p>
       ) : (
         <div className="space-y-1 overflow-y-auto max-h-32">
-          {brief.possibilities.map((p) => (
+          {brief.possibilities.map((p, i) => (
             <div
-              key={p.id}
+              key={`${p.id}-${p.scale ?? 'major'}-${p.startIndex ?? i}-${p.label}`}
               className={`rounded border px-2 py-1.5 text-[10px] ${STATUS_STYLE[p.status]}`}
             >
               <div className="flex items-center gap-1">
                 <ChevronRight size={10} />
                 <span className="font-bold uppercase tracking-wide">{p.status}</span>
                 <span className="flex-1 truncate text-white/90">{p.label}</span>
+                {p.scale === 'nested' && (
+                  <span className="rounded border border-[#00D9FF]/50 px-1 text-[7px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                    Nested
+                  </span>
+                )}
                 <span>{Math.round(p.probability * 100)}%</span>
               </div>
               <p className="mt-0.5 pl-3 text-[8px] text-white/50 leading-snug">{p.detail}</p>

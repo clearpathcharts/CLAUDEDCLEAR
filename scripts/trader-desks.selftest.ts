@@ -119,6 +119,10 @@ const srcFiles = [
   'src/components/desks/neuro/neuroProfile.ts',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
+  'src/components/desks/DeskScreensMenu.tsx',
+  'src/components/desks/DeskScreenWorkspace.tsx',
+  'src/lib/deskMonitorTree.ts',
+  'src/hooks/useDeskMonitorSync.ts',
   'src/components/desks/ColorChartPicker.tsx',
   'src/lib/deskColorChart.ts',
   'src/components/Dashboard.tsx',
@@ -146,9 +150,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_institutional_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_institutional_v4/);
+    assert.match(text, /defaultHeld=\{INSTITUTIONAL_CHART_FIRST_HELD\}/);
+    assert.match(text, /INSTITUTIONAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/institutional/InstitutionalDashboard.tsx') {
@@ -177,6 +181,8 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /k="Short interest" v="DATA UNAVAILABLE"/);
     assert.match(text, /Risk Environment/);
     assert.match(text, /Earnings/);
+    assert.match(text, /DeskChartFill/);
+    assert.match(text, /height=\{layout === 1 \? 640 : 280\}/);
     assert.match(text, /embedMode/);
     assert.match(text, /holdId=/);
     assert.match(text, /data-desk-chart-room/);
@@ -199,9 +205,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_retail_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_retail_v4/);
+    assert.match(text, /defaultHeld=\{RETAIL_CHART_FIRST_HELD\}/);
+    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /study desk/);
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
@@ -229,6 +235,7 @@ for (const rel of srcFiles) {
     assert.match(text, /PatternScannerPanel/);
     assert.match(text, /Pattern Scanner/);
     assert.match(text, /holdId=/);
+    assert.match(text, /DeskChartFill/);
     assert.match(text, /useDedicatedPatternPanel/);
     assert.match(text, /showBelow/);
     assert.match(text, /deskSectionOpen/);
@@ -279,9 +286,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_neuro_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /NEURO_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_neuro_v4/);
+    assert.match(text, /defaultHeld=\{NEURO_CHART_FIRST_HELD\}/);
+    assert.match(text, /NEURO_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
@@ -289,6 +296,7 @@ for (const rel of srcFiles) {
     assert.match(text, /data-neuro-door/);
     assert.match(text, /overflow-visible/);
     assert.match(text, /data-neuro-workstation/);
+    assert.match(text, /DeskChartFill/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /NEURO_DESK_PROFILES/);
     assert.match(text, /NEURO_RIBBON/);
@@ -316,6 +324,8 @@ for (const rel of srcFiles) {
     assert.match(text, /isFounderSession/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
+    assert.match(text, /DeskScreensMenu/);
+    assert.match(text, /Screens/);
   }
   if (rel === 'src/components/desks/ColorChartPicker.tsx') {
     assert.match(text, /data-color-chart/);
@@ -323,6 +333,21 @@ for (const rel of srcFiles) {
     assert.match(text, /Opacity/);
     assert.match(text, /Save colors/);
     assert.match(text, /data-color-chart-save/);
+  }
+  if (rel === 'src/lib/deskMonitorTree.ts') {
+    assert.match(text, /MONITOR_TREE_PRESETS/);
+    assert.match(text, /parseDeskScreenPane/);
+    assert.match(text, /getScreenDetails/);
+    assert.match(text, /launchMonitorTree/);
+  }
+  if (rel === 'src/components/desks/DeskScreensMenu.tsx') {
+    assert.match(text, /data-desk-screens-toggle/);
+    assert.match(text, /\{p\.n\}-screen/);
+    assert.match(text, /Pop out one panel/);
+  }
+  if (rel === 'src/hooks/useDeskMonitorSync.ts') {
+    assert.match(text, /BroadcastChannel/);
+    assert.match(text, /DESK_MONITOR_CHANNEL/);
   }
   if (rel === 'src/lib/deskColorChart.ts') {
     assert.match(text, /clearpath_desk_color_chart_v1/);
@@ -334,9 +359,9 @@ for (const rel of srcFiles) {
     assert.match(text, /FundamentalDashboard/);
     assert.match(text, /data-fundamental-door/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_fundamental_v3/);
-    assert.match(text, /defaultHeld=\{\[\]\}/);
-    assert.doesNotMatch(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
+    assert.match(text, /clearpath_held_fundamental_v4/);
+    assert.match(text, /defaultHeld=\{FUNDAMENTAL_CHART_FIRST_HELD\}/);
+    assert.match(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
   }
@@ -351,6 +376,10 @@ for (const rel of srcFiles) {
     assert.match(text, /data-desk-color-bg/);
     assert.match(text, /heldFile\.css/);
     assert.match(text, /CptBuddyWidget/);
+    assert.match(text, /parseDeskScreenPane/);
+    assert.match(text, /DeskScreenWorkspace/);
+    assert.match(text, /data-desk-satellite/);
+    assert.match(text, /satellitePane \? null : <CptBuddyWidget/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
@@ -360,6 +389,7 @@ for (const rel of srcFiles) {
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
+    assert.match(text, /\/desk\/:deskId\/screen\/:pane/);
     assert.match(text, /isDeskRoute/);
     assert.match(text, /\/api\/fmp\/lookup/);
   }
@@ -383,6 +413,10 @@ assert.match(bento, /useDeskHold/);
 const heldFile = fs.readFileSync(path.join(root, 'src/components/desks/DeskHeldFile.tsx'), 'utf8');
 assert.match(heldFile, /data-desk-held-file/);
 assert.match(heldFile, /Restore all/);
+
+const fill = fs.readFileSync(path.join(root, 'src/components/desks/DeskChartFill.tsx'), 'utf8');
+assert.match(fill, /min-h-\[70vh\]/);
+assert.match(fill, /absolute inset-0/);
 
 assert.deepEqual(parseHeldIds('["ribbon","nope"]', new Set(['ribbon', 'flow'])), ['ribbon']);
 assert.deepEqual(parseHeldIds(null, new Set(['ribbon'])), []);

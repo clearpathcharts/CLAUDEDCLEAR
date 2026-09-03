@@ -8,6 +8,7 @@ import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles'
 import { Bento, Unavail, KV } from '../institutional/Bento';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
+import { DeskChartFill } from '../DeskChartFill';
 import { RetailEducationBento } from '../retail/RetailEducationBento';
 import { useRetailIntelligence, type RetailQuote } from '../retail/useRetailIntelligence';
 import {
@@ -18,6 +19,7 @@ import {
   type RetailWatchlist,
 } from '../retail/retailStore';
 import { useOptionalDeskAppearance } from '../DeskAppearanceContext';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   NEURO_DEFAULT_SYMBOL,
   NEURO_DEFAULT_WATCHLISTS,
@@ -91,6 +93,7 @@ export default function NeurodivergentDashboard() {
   const [showProfiles, setShowProfiles] = useState(false);
   const [symbol, setSymbol] = useState(NEURO_DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState('1h');
+  useDeskMonitorSync('neurodivergent', symbol, timeframe, setSymbol, setTimeframe);
   const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readStoredNeuroProfile()));
   const [blackout, setBlackout] = useState(false);
   const [watchlists, setWatchlists] = useState<RetailWatchlist[]>(() => loadNeuroWatchlists());
@@ -491,17 +494,17 @@ export default function NeurodivergentDashboard() {
               <p className="font-mono text-sm text-rose-400">{intel.candleError}</p>
             ) : null}
           </header>
-          <div className="relative min-h-[300px] flex-1">
+          <DeskChartFill tall>
             <LightweightCandles
               symbol={symbol}
               profileId={profileId}
               timeframe={timeframe}
               fillParent
-              height={420}
+              height={640}
               hidePatternOverlays
               publishDrawingSession
             />
-          </div>
+          </DeskChartFill>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
           </p>

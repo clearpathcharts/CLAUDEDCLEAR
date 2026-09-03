@@ -93,6 +93,9 @@ jobs:
       - name: FMP desk news and economic calendar
         run: npm run test:fmp-news-wire
 
+      - name: Multi-monitor desk tree
+        run: npm run test:desk-monitor-tree
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
