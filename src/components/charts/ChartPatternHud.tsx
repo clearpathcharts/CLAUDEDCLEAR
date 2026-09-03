@@ -75,9 +75,14 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
             {items.map((p, i) => {
               const Icon = DIRECTION_ICON[p.direction];
               return (
-                <div key={`${group}-${p.id}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
-                  <Icon size={10} className="text-[#FF1493]" />
+                <div key={`${group}-${p.id}-${p.startIndex}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
+                  <Icon size={10} className={p.scale === 'nested' ? 'text-[#00D9FF]' : 'text-[#FF1493]'} />
                   <span className="flex-1 truncate text-white/90">{p.label}</span>
+                  {p.scale === 'nested' && (
+                    <span className="rounded border border-[#00D9FF]/50 px-1 text-[7px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                      Nested
+                    </span>
+                  )}
                   <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
                 </div>
               );

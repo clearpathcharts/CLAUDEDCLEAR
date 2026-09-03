@@ -33,9 +33,13 @@ export const NEON_PATTERN_LINE_COLORS = {
   purple: '#BF00FF',
   violet: '#9D00FF',
   deepPurple: '#7F00FF',
+  nestedCyan: '#00D9FF',
 } as const;
 
-export function neonLineColor(role: string, lineIndex: number): string {
+export function neonLineColor(role: string, lineIndex: number, scale?: 'major' | 'nested'): string {
+  if (scale === 'nested') {
+    return NEON_PATTERN_LINE_COLORS.nestedCyan;
+  }
   switch (role) {
     case 'upper':
       return NEON_PATTERN_LINE_COLORS.hotPink;

@@ -5,6 +5,9 @@ import type { PatternGroup } from './patternMeta';
 
 export type PatternCategory = 'candlestick' | 'chart' | 'structure';
 
+/** Major = outer structure. Nested = same geometry inside a larger pattern. */
+export type PatternScale = 'major' | 'nested';
+
 export type CandlestickPatternId =
   | 'doji'
   | 'hammer'
@@ -42,6 +45,8 @@ export interface DetectedPattern {
   confidence: number;
   detail?: string;
   geometry?: PatternGeometry;
+  /** Default major. Nested hits reuse the same fit on a smaller interior window. */
+  scale?: PatternScale;
 }
 
 export interface PatternLineSegment {
