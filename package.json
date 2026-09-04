@@ -59,6 +59,7 @@
     "ingest:rss-catalog": "tsx scripts/ingest-rss-catalog.ts",
     "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
+    "test:company-catalog": "tsx scripts/company-catalog.selftest.ts",
     "update:disposable-domains": "bash scripts/update-disposable-domains.sh",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",

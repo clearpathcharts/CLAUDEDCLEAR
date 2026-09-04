@@ -96,6 +96,9 @@ jobs:
       - name: Multi-monitor desk tree
         run: npm run test:desk-monitor-tree
 
+      - name: Company directory catalog
+        run: npm run test:company-catalog
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

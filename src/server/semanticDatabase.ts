@@ -28,6 +28,7 @@ import {
   lookupEconomy,
   getLessonSeo,
   PROFILE_SEO,
+  lookupCompany,
 } from './crawlCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
@@ -841,7 +842,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       },
       '/companies': {
         title: 'Company Directory | ClearPathTrader Encyclopedia',
-        description: 'Company directory for the ClearPath financial encyclopedia — explore issuers behind listed equities.',
+        description:
+          'Educational company directory: public issuers on stock profiles plus subsidiary study pages. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
         crumb: 'Companies',
       },
     };
@@ -853,6 +855,38 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: 'Encyclopedia', url: '/encyclopedia' },
       { name: hub.crumb, url: pathClean },
     ]));
+  } else if (pathClean.startsWith('/companies/')) {
+    const slug = pathClean.slice('/companies/'.length);
+    const rec = lookupCompany(slug);
+    if (!rec) {
+      title = 'Company listing not found | ClearPathTrader';
+      description = 'No educational directory record matches this slug. Browse the company directory or stock encyclopedia.';
+      robotsMeta = 'noindex, follow';
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: 'Not found', url: pathClean },
+      ]));
+    } else {
+      title = rec.seoTitle;
+      description = rec.seoDescription;
+      keywords = [rec.name, rec.parentTicker, rec.sector, 'company directory', 'ClearPath Trader'].filter(Boolean).join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: rec.name, url: rec.status === 'Public' && rec.ticker ? `/stocks/${rec.ticker.toLowerCase()}` : pathClean },
+      ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': rec.status === 'Public' ? 'Corporation' : 'Organization',
+        name: rec.name,
+        description: rec.description,
+        url: canonicalUrl,
+        ...(rec.parentTicker
+          ? { parentOrganization: { '@type': 'Corporation', name: rec.parentCompany, tickerSymbol: rec.parentTicker } }
+          : {}),
+      });
+    }
   } else if (pathClean.startsWith('/stocks/')) {
     const symbol = pathClean.slice('/stocks/'.length);
     const stock = lookupStock(symbol);

@@ -15,6 +15,7 @@ import { INDICATOR_NAMES, indicatorImageSlug, buildIndicators } from '../compone
 import { CURRICULUM, getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
 import { advancedProfiles, type AdvancedProfileId } from '../lib/advanced/profiles';
+import { getCompanyCatalog, lookupCompany as lookupCompanyRecord, type CompanyRecord } from '../lib/companyCatalog';
 
 export interface CrawlEntry {
   path: string;
@@ -222,6 +223,7 @@ let cryptoBySymbol: Map<string, any> | null = null;
 let forexByPair: Map<string, any> | null = null;
 let commodityBySymbol: Map<string, any> | null = null;
 let indicatorBySlug: Map<string, ReturnType<typeof buildIndicators>[number]> | null = null;
+let companyBySlug: Map<string, CompanyRecord> | null = null;
 
 function ensureLookups() {
   if (!stockByTicker) {
@@ -253,6 +255,16 @@ function ensureLookups() {
     indicatorBySlug = new Map();
     for (const ind of buildIndicators()) {
       indicatorBySlug.set(indicatorImageSlug(ind.name), ind);
+    }
+  }
+  if (!companyBySlug) {
+    companyBySlug = new Map();
+    for (const c of getCompanyCatalog()) {
+      companyBySlug.set(c.slug, c);
+      if (c.ticker) {
+        const t = c.ticker.toLowerCase();
+        if (!companyBySlug.has(t)) companyBySlug.set(t, c);
+      }
     }
   }
 }
@@ -312,6 +324,9 @@ export function lookupCommodity(symbol: string) {
 export function lookupIndicator(slug: string) {
   ensureLookups();
   return indicatorBySlug!.get(slug.toLowerCase()) || null;
+}
+export function lookupCompany(slug: string) {
+  return lookupCompanyRecord(slug);
 }
 export function lookupProfile(slug: string) {
   return PROFILE_SEO.find((p) => p.slug === slug || p.id === slug) || null;
@@ -450,6 +465,20 @@ export function commodityEntries(): CrawlEntry[] {
   );
 }
 
+/** Indexable company pages — subsidiaries only. Public issuers live on /stocks/{ticker}. */
+export function companyEntries(): CrawlEntry[] {
+  return dedupeEntries(
+    getCompanyCatalog()
+      .filter((c) => c.status === 'Subsidiary')
+      .map((c) => ({
+        path: `/companies/${c.slug}`,
+        lastmod: sitemapLastmod(),
+        changefreq: 'monthly',
+        priority: '0.5',
+      }))
+  );
+}
+
 export function economyEntries(): CrawlEntry[] {
   return ECONOMY_TOPICS.map((t) => ({
     path: `/economy/${t.slug}`,
@@ -528,11 +557,14 @@ export function encyclopediaHubEntries(): CrawlEntry[] {
 
 export function catalogCounts() {
   ensureLookups();
+  const companies = getCompanyCatalog();
   return {
     stocks: stockByTicker!.size,
     crypto: cryptoBySymbol!.size,
     forex: forexByPair!.size,
     commodities: commodityBySymbol!.size,
+    companies: companies.length,
+    companyPages: companies.filter((c) => c.status === 'Subsidiary').length,
     economy: ECONOMY_TOPICS.length,
     indicators: INDICATOR_NAMES.length,
     education: educationEntries().length,
