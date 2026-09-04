@@ -94,6 +94,29 @@ function publicDescription(stock: any): string {
   return `${company} (${ticker}) is the public issuer${sector} in the ClearPath equity encyclopedia. Open the stock profile for educational context. Live filings stay DATA UNAVAILABLE unless a vendor cell is filled.`;
 }
 
+/** Meta description: ≤160 chars, no ellipsis clamp. */
+function publicSeoDescription(stock: any): string {
+  const company = String(stock.company || stock.ticker);
+  const ticker = String(stock.ticker).toUpperCase();
+  const full = `${company} (${ticker}) public issuer in ClearPath’s educational company directory. Not a live filing.`;
+  if (full.length <= 160) return full;
+  return `${ticker} educational company directory listing on ClearPathTrader. Not a live filing.`;
+}
+
+function publicSeoTitle(stock: any): string {
+  const company = String(stock.company || stock.ticker);
+  const ticker = String(stock.ticker).toUpperCase();
+  const full = `${company} (${ticker}) | ClearPathTrader Directory`;
+  if (full.length <= 70) return full;
+  return `${ticker} | ClearPathTrader Directory`;
+}
+
+function subsidiarySeoTitle(name: string, ticker: string, unit: (typeof COMPANY_UNITS)[number]): string {
+  const full = `${name} | ClearPathTrader`;
+  if (full.length <= 70) return full;
+  return `${unit.label} · ${ticker} | ClearPathTrader`;
+}
+
 function subsidiaryDescription(name: string, stock: any, unit: (typeof COMPANY_UNITS)[number]): string {
   const ticker = String(stock.ticker).toUpperCase();
   const parent = String(stock.company || ticker);
@@ -101,12 +124,12 @@ function subsidiaryDescription(name: string, stock: any, unit: (typeof COMPANY_U
   return `${name} is an educational study node under ${parent} (${ticker}) in the ${sector} sector. Use it to practice ${unit.studyAngle}. Not a live subsidiary filing — financials stay DATA UNAVAILABLE.`;
 }
 
-function clampDesc(raw: string, max = 160): string {
-  const t = raw.replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  const cut = t.slice(0, max - 1);
-  const sp = cut.lastIndexOf(' ');
-  return `${(sp > 100 ? cut.slice(0, sp) : cut).trimEnd()}…`;
+function subsidiarySeoDescription(name: string, stock: any, unit: (typeof COMPANY_UNITS)[number]): string {
+  const ticker = String(stock.ticker).toUpperCase();
+  const parent = String(stock.company || ticker);
+  const full = `${name}: educational ${unit.label} study node under ${parent} (${ticker}). Not a live filing — DATA UNAVAILABLE for missing financials.`;
+  if (full.length <= 160) return full;
+  return `Educational ${unit.label} study node under ${ticker}. Not a live filing — DATA UNAVAILABLE for missing financials.`;
 }
 
 let cached: CompanyRecord[] | null = null;
@@ -142,10 +165,8 @@ function buildCatalog(): void {
       industry: stock.industry ? String(stock.industry) : undefined,
       ticker,
       description: pubDesc,
-      seoTitle: `${company} (${ticker}) | ClearPathTrader Directory`,
-      seoDescription: clampDesc(
-        `${company} (${ticker}) public issuer in the ClearPath company directory — educational stock profile, not a live filing.`,
-      ),
+      seoTitle: publicSeoTitle(stock),
+      seoDescription: publicSeoDescription(stock),
     };
     list.push(pub);
     const nameSlug = slugifyCompanyName(company);
@@ -172,8 +193,8 @@ function buildCatalog(): void {
         unitLabel: unit.label,
         capitalTier: `Tier ${i + 1}`,
         description: desc,
-        seoTitle: `${name} | ClearPathTrader Directory`,
-        seoDescription: clampDesc(desc),
+        seoTitle: subsidiarySeoTitle(name, ticker, unit),
+        seoDescription: subsidiarySeoDescription(name, stock, unit),
       };
       list.push(rec);
     }

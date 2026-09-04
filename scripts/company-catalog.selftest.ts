@@ -49,6 +49,17 @@ for (const rec of catalog) {
   if (rec.status === 'Subsidiary' && rec.parentTicker) {
     assert.ok(!REAL_MAJOR_TICKERS.has(rec.parentTicker), `fake sub under ${rec.parentTicker}`);
   }
+  assert.ok(rec.seoTitle.length <= 70, `title too long: ${rec.seoTitle}`);
+  assert.doesNotMatch(rec.seoTitle, /…/);
+  assert.ok(rec.seoDescription.length <= 160, `desc too long (${rec.seoDescription.length}): ${rec.slug}`);
+  assert.ok(rec.seoDescription.length >= 50, `desc too short: ${rec.slug}`);
+  assert.doesNotMatch(rec.seoDescription, /…/);
+}
+
+function metaName(html: string, name: string): string {
+  const re = new RegExp(`<meta[^>]+name="${name}"[^>]*>`, 'i');
+  const tag = html.match(re)?.[0] || '';
+  return tag.match(/content="([^"]*)"/i)?.[1] || '';
 }
 
 const sample = catalog.find((c) => c.status === 'Subsidiary');
@@ -64,6 +75,10 @@ assert.equal(
   (enriched.match(/<meta name="robots" content="noindex/) || []).length,
   0,
 );
+const metaDesc = metaName(enriched, 'description');
+assert.ok(metaDesc.length >= 50 && metaDesc.length <= 160, `meta desc ${metaDesc.length}: ${metaDesc}`);
+assert.doesNotMatch(metaDesc, /…/);
+assert.match(metaDesc, /DATA UNAVAILABLE|Not a live filing/i);
 
 const missing = enrichHtmlWithMetadata(
   fs.readFileSync(path.join(root, 'index.html'), 'utf8'),
