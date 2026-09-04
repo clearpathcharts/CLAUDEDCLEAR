@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { PAYMENTS_DISABLED_MESSAGE } from '../lib/paymentsEnabled';
 import { PlanComparisonTable } from './PlanComparisonTable';
+import { PackagesPanel } from './PackagesPanel';
 import { CANONICAL_PLANS } from '../lib/planCatalog';
 
 export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
@@ -11,10 +12,10 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
         <div className="mx-auto w-14 h-14 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 flex items-center justify-center">
           <ShieldCheck className="w-7 h-7 text-emerald-300" />
         </div>
-        <h2 className="text-xl font-black text-white uppercase tracking-widest">Membership sheet</h2>
+        <h2 className="text-xl font-black text-white uppercase tracking-widest">Membership packages</h2>
         <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto">{PAYMENTS_DISABLED_MESSAGE}</p>
         <p className="text-zinc-500 text-xs font-mono">
-          Limits below are the feature spec — no list prices. Preview a tier with{' '}
+          Four membership packages from the founder sheet, plus add-on packages you can add. No list prices. Preview a tier with{' '}
           {CANONICAL_PLANS.map((id) => (
             <a
               key={id}
@@ -36,6 +37,7 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
           </button>
         )}
       </div>
+      <PackagesPanel showAddForm />
       <PlanComparisonTable />
     </div>
   );

@@ -69,6 +69,9 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: Membership + add-on package catalog self-test
+        run: npm run test:package-catalog
+
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 
