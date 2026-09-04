@@ -4342,8 +4342,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/desk',
     '/desk/:deskId',
     '/desk/:deskId/screen/:pane',
-    '/fundamental',
-    '/fundamental/:symbol',
     '/tools',
     '/tools/position-size',
     '/u/:username',
@@ -4352,6 +4350,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
   SEO_PAGES.forEach(pagePath => {
     app.get(pagePath, handlePageServing);
+  });
+
+  // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).
+  app.get(['/fundamental', '/fundamental/:symbol'], (req, res) => {
+    const raw = typeof req.params.symbol === 'string' ? req.params.symbol : '';
+    const symbol = raw.replace(/[^A-Za-z0-9.^-]/g, '');
+    const dest = symbol ? `/desk/fundamental/${symbol}` : '/desk/fundamental';
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `${dest}${query}`);
   });
 
   // Company slugs are not a separate encyclopedia tree — canonical lives under /stocks/:ticker.

@@ -11,6 +11,7 @@ import {
   FX_SESSIONS,
   TRADER_DESK_IDS,
   TRADER_DESKS,
+  deskCanonicalPath,
   isDeskPaper,
   isDeskPath,
   isSessionOpen,
@@ -32,8 +33,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 assert.equal(TRADER_DESK_IDS.length, 4);
 for (const id of TRADER_DESK_IDS) {
   assert.ok(TRADER_DESKS[id].href.startsWith('/desk/'));
-  assert.ok(DESK_SEO[id].h1);
-  assert.ok(DESK_SEO[id].description.includes('ClearPath') || DESK_SEO[id].title.includes('ClearPath'));
+  assert.ok(DESK_SEO[id].h1.endsWith('Trader Desk'));
+  assert.match(DESK_SEO[id].title, /ClearPathTrader/);
+  assert.ok(DESK_SEO[id].description.length <= 160);
+  assert.ok(DESK_SEO[id].faqs.length >= 2);
 }
 
 assert.equal(parseDeskPath('/desk/institutional'), 'institutional');
@@ -42,6 +45,8 @@ assert.equal(parseDeskPath('/fundamental'), 'fundamental');
 assert.equal(parseDeskPath('/fundamental/NVDA'), 'fundamental');
 assert.equal(parseDeskPath('/desk'), null);
 assert.equal(parseDeskPath('/desk/unknown'), null);
+assert.equal(deskCanonicalPath('/fundamental'), '/desk/fundamental');
+assert.equal(deskCanonicalPath('/desk/institutional'), '/desk/institutional');
 assert.equal(isDeskPath('/desk/retail'), true);
 assert.equal(isDeskPath('/fundamental'), true);
 assert.equal(isTraderDeskId('retail'), true);
