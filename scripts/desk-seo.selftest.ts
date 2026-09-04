@@ -112,6 +112,7 @@ assert.match(server, /\/desk\/retail/);
 assert.match(server, /\/desk\/neurodivergent/);
 assert.match(server, /app\.get\(\['\/fundamental', '\/fundamental\/:symbol'\]/);
 assert.match(server, /res\.redirect\(301,/);
+assert.match(server, /cleanPath = `\/desk\$\{cleanPath\}`/);
 
 const deskRoute = fs.readFileSync(path.join(root, 'src/components/desks/DeskRoute.tsx'), 'utf8');
 assert.match(deskRoute, /from 'react-helmet-async'/);

@@ -3929,6 +3929,10 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
       if (isCapitalized) {
         cleanPath = cleanPath.toLowerCase();
       }
+      // Fold the /fundamental alias into the canonical desk URL in the same hop.
+      if (cleanPath === '/fundamental' || cleanPath.startsWith('/fundamental/')) {
+        cleanPath = `/desk${cleanPath}`;
+      }
       
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const redirectUrl = `${protocol}://${canonicalHost}${cleanPath}${req.url.slice(req.path.length)}`;
