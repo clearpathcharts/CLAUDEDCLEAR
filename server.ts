@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -60,15 +60,24 @@ import {
   forexEntries,
   commodityEntries,
   companyEntries,
+  companyIndexEntries,
   economyEntries,
   indicatorEntries,
   educationEntries,
   uiProfileEntries,
   encyclopediaHubEntries,
+  glossaryEntries,
+  literacyEntries,
+  knowledgeBaseEntries,
   catalogCounts,
   sitemapLastmod,
   lookupStock,
+  lookupCrypto,
+  lookupForex,
+  lookupCommodity,
+  lookupIndicator,
   lookupCompany,
+  lookupGlossary,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAuth } from 'firebase-admin/auth';
@@ -3985,6 +3994,9 @@ ${entries.map(e => `  <url>
     'sitemap-forex.xml',
     'sitemap-commodities.xml',
     'sitemap-companies.xml',
+    'sitemap-glossary.xml',
+    'sitemap-literacy.xml',
+    'sitemap-knowledge.xml',
     'sitemap-economy.xml',
     'sitemap-indicators.xml',
     'sitemap-education.xml',
@@ -4129,7 +4141,19 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   });
   app.get('/sitemap-companies.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('companies', companyEntries));
+    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
+  });
+  app.get('/sitemap-glossary.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('glossary', glossaryEntries));
+  });
+  app.get('/sitemap-literacy.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('literacy', literacyEntries));
+  });
+  app.get('/sitemap-knowledge.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
   });
   app.get('/sitemap-economy.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
@@ -4315,6 +4339,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/guides',
     '/guides/:slug',
     '/glossary',
+    '/glossary/letter/:letter',
+    '/glossary/:slug',
     '/faq',
     '/accessibility',
     '/regions',
@@ -4332,6 +4358,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/encyclopedia-of-indicators',
     '/literacy',
     '/literacy-os',
+    '/literacy/wiki/:id',
+    '/literacy/:trackId',
+    '/literacy/:trackId/:lessonId',
+    '/markets/:slug',
+    '/sectors/:slug',
     '/market-universe',
     '/stocks',
     '/stocks/:symbol',
@@ -4342,6 +4373,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/commodities',
     '/commodities/:commodity',
     '/companies',
+    '/companies/page/:n',
     '/companies/:slug',
     '/economy/:topic',
     '/ui',
@@ -4368,6 +4400,41 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
+  });
+
+  const sendEncyclopedia404 = (res: any, kind: string, slug: string, hub: string, label: string, reqPath: string) => {
+    const enriched = enrichHtmlWithMetadata(
+      renderUnknownEncyclopediaNotFound(kind, slug, hub, label),
+      reqPath,
+    );
+    return sendUncachedHtml(res, enriched, 404);
+  };
+
+  app.get('/stocks/:symbol', (req, res, next) => {
+    if (lookupStock(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Stock', String(req.params.symbol || ''), '/stocks', 'Stocks', req.path);
+  });
+  app.get('/crypto/:symbol', (req, res, next) => {
+    if (lookupCrypto(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Crypto', String(req.params.symbol || ''), '/crypto', 'Crypto', req.path);
+  });
+  app.get('/forex/:pair', (req, res, next) => {
+    if (lookupForex(String(req.params.pair || ''))) return next();
+    return sendEncyclopedia404(res, 'Forex', String(req.params.pair || ''), '/forex', 'Forex', req.path);
+  });
+  app.get('/commodities/:symbol', (req, res, next) => {
+    if (lookupCommodity(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Commodity', String(req.params.symbol || ''), '/commodities', 'Commodities', req.path);
+  });
+  app.get('/indicators/:slug', (req, res, next) => {
+    if (lookupIndicator(String(req.params.slug || ''))) return next();
+    return sendEncyclopedia404(res, 'Indicator', String(req.params.slug || ''), '/indicators', 'Indicators', req.path);
+  });
+  app.get('/glossary/:slug', (req, res, next) => {
+    const slug = String(req.params.slug || '');
+    if (slug === 'letter') return next();
+    if (lookupGlossary(slug)) return next();
+    return sendEncyclopedia404(res, 'Glossary', slug, '/glossary', 'Glossary', req.path);
   });
 
   SEO_PAGES.forEach(pagePath => {
@@ -4583,6 +4650,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       void submitIndexNow([
         'https://clearpathtrader.com/',
         'https://clearpathtrader.com/about',
+        'https://clearpathtrader.com/glossary',
+        'https://clearpathtrader.com/literacy',
+        'https://clearpathtrader.com/markets/bonds',
+        'https://clearpathtrader.com/companies',
+        'https://clearpathtrader.com/encyclopedia',
         ...regionalIndexNowUrls(),
       ]).then((r) => {
         if (r.skipped) {

@@ -134,6 +134,7 @@ function subsidiarySeoDescription(name: string, stock: any, unit: (typeof COMPAN
 
 let cached: CompanyRecord[] | null = null;
 let bySlug: Map<string, CompanyRecord> | null = null;
+let subsidiariesCached: CompanyRecord[] | null = null;
 
 function buildCatalog(): void {
   const stocks = uniqueStocks();
@@ -201,6 +202,7 @@ function buildCatalog(): void {
   }
 
   cached = list;
+  subsidiariesCached = null;
   bySlug = new Map();
   for (const rec of list) {
     bySlug.set(rec.slug, rec);
@@ -246,6 +248,28 @@ export function companyCatalogCounts() {
     publicIssuers,
     subsidiaries,
   };
+}
+
+export const COMPANY_INDEX_PAGE_SIZE = 40;
+
+export function getCompanySubsidiaries(): CompanyRecord[] {
+  ensureCatalog();
+  if (!subsidiariesCached) {
+    subsidiariesCached = cached!.filter((c) => c.status === 'Subsidiary');
+  }
+  return subsidiariesCached;
+}
+
+export function companyIndexPageCount(): number {
+  return Math.max(1, Math.ceil(getCompanySubsidiaries().length / COMPANY_INDEX_PAGE_SIZE));
+}
+
+export function companyIndexPage(page: number): { page: number; pages: number; rows: CompanyRecord[] } {
+  const rows = getCompanySubsidiaries();
+  const pages = Math.max(1, Math.ceil(rows.length / COMPANY_INDEX_PAGE_SIZE));
+  const p = Number.isFinite(page) ? Math.min(Math.max(1, Math.floor(page)), pages) : 1;
+  const start = (p - 1) * COMPANY_INDEX_PAGE_SIZE;
+  return { page: p, pages, rows: rows.slice(start, start + COMPANY_INDEX_PAGE_SIZE) };
 }
 
 export function featuredCompanies(limit = 16): CompanyRecord[] {

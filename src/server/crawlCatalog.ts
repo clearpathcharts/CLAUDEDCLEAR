@@ -15,7 +15,16 @@ import { INDICATOR_NAMES, indicatorImageSlug, buildIndicators } from '../compone
 import { CURRICULUM, getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
 import { advancedProfiles, type AdvancedProfileId } from '../lib/advanced/profiles';
-import { getCompanyCatalog, lookupCompany as lookupCompanyRecord, type CompanyRecord } from '../lib/companyCatalog';
+import { getCompanyCatalog, lookupCompany as lookupCompanyRecord, companyIndexPageCount, type CompanyRecord } from '../lib/companyCatalog';
+import {
+  getGlossaryCatalog,
+  glossaryCatalogCounts,
+  glossaryLetters,
+  lookupGlossary as lookupGlossaryRecord,
+} from '../lib/glossaryCatalog';
+import { standaloneKnowledgeRoutes } from '../lib/knowledgeBaseRoutes';
+import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
+import { SEED_WIKI } from '../literacy/data/conceptSeed';
 
 export interface CrawlEntry {
   path: string;
@@ -544,6 +553,98 @@ export function uiProfileEntries(): CrawlEntry[] {
   ];
 }
 
+export function glossaryEntries(): CrawlEntry[] {
+  const lastmod = sitemapLastmod();
+  const letters: CrawlEntry[] = glossaryLetters().map((l) => ({
+    path: `/glossary/letter/${l.letter}`,
+    lastmod,
+    changefreq: 'monthly',
+    priority: '0.55',
+  }));
+  const terms = getGlossaryCatalog().map((g) => ({
+    path: `/glossary/${g.slug}`,
+    lastmod,
+    changefreq: 'monthly' as const,
+    priority: g.source === 'core' ? '0.7' : g.source === 'seed' ? '0.6' : '0.45',
+  }));
+  return dedupeEntries([...letters, ...terms]);
+}
+
+export function literacyEntries(): CrawlEntry[] {
+  const lastmod = sitemapLastmod();
+  const out: CrawlEntry[] = [];
+  for (const track of LITERACY_TRACKS) {
+    out.push({
+      path: `/literacy/${track.id}`,
+      lastmod,
+      changefreq: 'monthly',
+      priority: '0.7',
+    });
+    for (const lesson of track.lessons) {
+      out.push({
+        path: `/literacy/${track.id}/${lesson.id}`,
+        lastmod,
+        changefreq: 'monthly',
+        priority: '0.65',
+      });
+    }
+  }
+  for (const node of SEED_WIKI) {
+    const slug = node.id.replace(/^wiki_/, '');
+    out.push({
+      path: `/literacy/wiki/${slug}`,
+      lastmod,
+      changefreq: 'monthly',
+      priority: '0.65',
+    });
+  }
+  return dedupeEntries(out);
+}
+
+export function knowledgeBaseEntries(): CrawlEntry[] {
+  const lastmod = sitemapLastmod();
+  return standaloneKnowledgeRoutes().map((r) => ({
+    path: r.path,
+    lastmod,
+    changefreq: 'monthly',
+    priority: '0.75',
+  }));
+}
+
+export function companyIndexEntries(): CrawlEntry[] {
+  const lastmod = sitemapLastmod();
+  const pages = companyIndexPageCount();
+  const out: CrawlEntry[] = [];
+  for (let n = 1; n <= pages; n++) {
+    out.push({
+      path: `/companies/page/${n}`,
+      lastmod,
+      changefreq: 'weekly',
+      priority: n === 1 ? '0.6' : '0.45',
+    });
+  }
+  return out;
+}
+
+export function lookupGlossary(slug: string) {
+  return lookupGlossaryRecord(slug);
+}
+
+export function lookupLiteracyTrack(trackId: string) {
+  return LITERACY_TRACKS.find((t) => t.id === trackId) || null;
+}
+
+export function lookupLiteracyLesson(trackId: string, lessonId: string) {
+  const track = lookupLiteracyTrack(trackId);
+  const lesson = track?.lessons.find((l) => l.id === lessonId) || null;
+  return track && lesson ? { track, lesson } : null;
+}
+
+export function lookupLiteracyWiki(slug: string) {
+  const id = slug.startsWith('wiki_') ? slug : `wiki_${slug}`;
+  return SEED_WIKI.find((w) => w.id === id || w.id.replace(/^wiki_/, '') === slug) || null;
+}
+
 /** Hub pages that belong in sitemap-pages (in addition to existing content hubs). */
 export function encyclopediaHubEntries(): CrawlEntry[] {
   return [
@@ -558,6 +659,7 @@ export function encyclopediaHubEntries(): CrawlEntry[] {
 export function catalogCounts() {
   ensureLookups();
   const companies = getCompanyCatalog();
+  const glossary = glossaryCatalogCounts();
   return {
     stocks: stockByTicker!.size,
     crypto: cryptoBySymbol!.size,
@@ -565,9 +667,15 @@ export function catalogCounts() {
     commodities: commodityBySymbol!.size,
     companies: companies.length,
     companyPages: companies.filter((c) => c.status === 'Subsidiary').length,
+    companyIndexPages: companyIndexPageCount(),
     economy: ECONOMY_TOPICS.length,
     indicators: INDICATOR_NAMES.length,
     education: educationEntries().length,
     uiProfiles: PROFILE_SEO.length,
+    glossary: glossary.total,
+    glossaryCore: glossary.core,
+    glossaryLetters: glossary.letters,
+    literacy: literacyEntries().length,
+    knowledgeStandalone: standaloneKnowledgeRoutes().length,
   };
 }
