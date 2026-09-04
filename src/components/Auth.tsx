@@ -452,8 +452,51 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Secondary link row — enlarge all; lava on plain tabs only; 4 featured keep cyan/magenta/indigo pills */}
-        <div className="auth-nav-tabs-row" role="navigation" aria-label="Site sections">
+        {/* Phones: collapse the link parade so the sticky header is one row (brand + login). */}
+        <details className="md:hidden group/nav">
+          <summary className="cursor-pointer list-none py-1 font-mono text-[10px] font-black uppercase tracking-widest text-zinc-400">
+            Site menu
+          </summary>
+          <div className="auth-nav-tabs-row pt-1" role="navigation" aria-label="Site sections">
+            <a
+              href={TRADING_REIMAGINED_SHORT_PATH}
+              className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
+            >
+              Trading × AI
+            </a>
+            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
+            <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+            <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
+            <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
+            <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
+            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
+            <a
+              href="/encyclopedia"
+              onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
+              className="auth-nav-tab-label shrink-0 text-[#00FFFF] hover:text-[#FF1493] transition-colors flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg"
+            >
+              <BookOpen size={15} className="text-[#00FFFF]" aria-hidden="true" /> Encyclopedia of Finance
+            </a>
+            <a
+              href="/education"
+              onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }}
+              className="auth-nav-tab-label shrink-0 text-[#B026FF] hover:text-[#00FFFF] transition-colors flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg"
+            >
+              <GraduationCap size={15} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
+            </a>
+            <a
+              href="/ui"
+              className="auth-nav-tab-label shrink-0 text-[#B026FF] hover:text-[#00FFFF] transition-colors flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg"
+            >
+              UI Modes
+            </a>
+            <a href="/learn" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Learn</a>
+            <a href="/guides" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Guides</a>
+            <a href="/faq" className="auth-nav-tab-label auth-nav-lava-text shrink-0">FAQ</a>
+          </div>
+        </details>
+        {/* Desktop: full link row — enlarge all; lava on plain tabs only; 4 featured keep cyan/magenta/indigo pills */}
+        <div className="auth-nav-tabs-row hidden md:flex" role="navigation" aria-label="Site sections">
           <a
             href={TRADING_REIMAGINED_SHORT_PATH}
             className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
@@ -503,7 +546,7 @@ export default function Auth() {
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
           ========================================== */}
-      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
+      <div className="hidden md:block bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" />
@@ -532,19 +575,24 @@ export default function Auth() {
         </div>
       </div>
 
-      <ChooseYourPath onEnter={enterChosenPath} />
-
-      <Suspense
-        fallback={
-          <section
-            id="public-chart"
-            className="relative w-full min-h-[85vh] px-2 sm:px-4 pb-10 z-20"
-            aria-label="Loading live chart"
-          />
-        }
-      >
-        <PublicLiveChart />
-      </Suspense>
+      <div className="relative z-20 flex flex-col" data-auth-chart-first="">
+        <div className="order-2 md:order-1">
+          <ChooseYourPath onEnter={enterChosenPath} />
+        </div>
+        <div className="order-1 md:order-2">
+          <Suspense
+            fallback={
+              <section
+                id="public-chart"
+                className="relative w-full min-h-[70vh] md:min-h-[85vh] px-2 sm:px-4 pb-10"
+                aria-label="Loading live chart"
+              />
+            }
+          >
+            <PublicLiveChart />
+          </Suspense>
+        </div>
+      </div>
 
       {/* ==========================================
           5. HERO SECTION

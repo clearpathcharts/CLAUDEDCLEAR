@@ -20,10 +20,12 @@ interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
   onClose?: () => void;
+  /** Inline = document flow off the candles (phones). Overlay = on-canvas card (desktop). */
+  placement?: 'overlay' | 'inline';
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
+export function ChartPatternHud({ symbol, scan, onClose, placement = 'overlay' }: ChartPatternHudProps) {
   if (!scan) return null;
 
   const chartPatterns = scan.patterns.filter((p) => p.category === 'chart');
@@ -35,10 +37,17 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
     items: chartPatterns.filter((p) => p.patternGroup === group),
   })).filter((g) => g.items.length > 0);
 
+  const inline = placement === 'inline';
+
   return (
     <div
-      className="absolute bottom-3 left-3 z-[55] w-72 max-h-64 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
+      className={
+        inline
+          ? 'relative z-10 w-full max-h-36 overflow-y-auto rounded-xl border border-[#FF1493]/40 bg-black/92 p-2.5 pt-3 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto'
+          : 'absolute bottom-3 left-3 z-[55] w-72 max-h-64 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto'
+      }
       id={`pattern-hud-${symbol}`}
+      data-pattern-hud-placement={placement}
     >
       {onClose && (
         <button
