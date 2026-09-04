@@ -18,7 +18,7 @@ interface ChartFormingWatchProps {
 
 /** Live forming-pattern probabilities — per chart, every symbol and timeframe. */
 export function ChartFormingWatch({ symbol, brief, onClose, placement = 'overlay' }: ChartFormingWatchProps) {
-  if (!brief) return null;
+  if (!brief && placement === 'overlay') return null;
 
   const inline = placement === 'inline';
 
@@ -49,10 +49,10 @@ export function ChartFormingWatch({ symbol, brief, onClose, placement = 'overlay
       <div className="mb-2 flex items-center gap-2 overflow-hidden rounded-t-lg border-b border-[#FF1493]/25 pb-2 pr-10">
         <Radio size={13} className="text-[#FF1493] animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Forming Watch</span>
-        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>
+        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief ? `${brief.symbol} · ${brief.timeframe}` : symbol}</span>
       </div>
 
-      {brief.clock.active && (
+      {brief?.clock.active && (
         <p className="mb-2 text-[9px] leading-relaxed text-[#FF00CC]/90">
           {brief.clock.type === '16-bar-retrace' ? '16' : '12'}-bar clock:{' '}
           <strong>
@@ -62,7 +62,7 @@ export function ChartFormingWatch({ symbol, brief, onClose, placement = 'overlay
         </p>
       )}
 
-      {brief.possibilities.length === 0 ? (
+      {!brief || brief.possibilities.length === 0 ? (
         <p className="text-[9px] text-white/45">Scanning structure… ask C.P.T. Buddy what may be forming.</p>
       ) : (
         <div className="space-y-1 overflow-y-auto max-h-32">

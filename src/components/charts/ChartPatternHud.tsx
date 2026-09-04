@@ -26,11 +26,11 @@ interface ChartPatternHudProps {
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
 export function ChartPatternHud({ symbol, scan, onClose, placement = 'overlay' }: ChartPatternHudProps) {
-  if (!scan) return null;
+  if (!scan && placement === 'overlay') return null;
 
-  const chartPatterns = scan.patterns.filter((p) => p.category === 'chart');
-  const candlePatterns = scan.patterns.filter((p) => p.category === 'candlestick');
-  const total = scan.patterns.length;
+  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart') ?? [];
+  const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick') ?? [];
+  const total = scan?.patterns.length ?? 0;
 
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
@@ -70,7 +70,9 @@ export function ChartPatternHud({ symbol, scan, onClose, placement = 'overlay' }
       </div>
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
-        {total > 0
+        {!scan
+          ? 'Loading candles… pattern scan runs as soon as bars arrive.'
+          : total > 0
           ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
           : `Scanned ${scan.scannedBars.toLocaleString()} bars · nothing forming on the latest candles`}
       </p>

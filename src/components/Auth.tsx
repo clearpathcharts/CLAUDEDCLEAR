@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, Lock, Eye, EyeOff, UserCheck, 
-  Sparkles, BookOpen, Users, X, GraduationCap
+  Sparkles, BookOpen, Users, X, GraduationCap, Menu
 } from 'lucide-react';
 import { loginAnonymously } from "../firebase";
 import { verifyBoardAccess } from "../api/privateAuth";
@@ -426,7 +426,7 @@ export default function Auth() {
       <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
       <nav
         aria-label="Primary"
-        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-3 flex flex-col gap-2.5"
+        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-3 py-2 sm:px-8 md:py-3 flex flex-col md:gap-2.5"
       >
         <div className="flex items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0 shrink">
@@ -441,23 +441,13 @@ export default function Auth() {
 
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => openPrivateLogin('login')}
-              className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            >
-              <Lock size={12} aria-hidden="true" />
-              Private Login
-            </button>
-          </div>
-        </div>
-
-        {/* Phones: collapse the link parade so the sticky header is one row (brand + login). */}
-        <details className="md:hidden group/nav">
-          <summary className="cursor-pointer list-none py-1 font-mono text-[10px] font-black uppercase tracking-widest text-zinc-400">
-            Site menu
-          </summary>
-          <div className="auth-nav-tabs-row pt-1" role="navigation" aria-label="Site sections">
+            <details className="relative md:hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                <Menu size={12} aria-hidden="true" />
+                Site menu
+              </summary>
+              <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-[min(92vw,20rem)] overflow-y-auto rounded-xl border border-white/15 bg-black/95 p-3 shadow-[0_12px_40px_rgba(0,0,0,0.65)]" role="navigation" aria-label="Site sections">
+                <div className="flex flex-col gap-2">
             <a
               href={TRADING_REIMAGINED_SHORT_PATH}
               className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
@@ -493,8 +483,20 @@ export default function Auth() {
             <a href="/learn" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Learn</a>
             <a href="/guides" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Guides</a>
             <a href="/faq" className="auth-nav-tab-label auth-nav-lava-text shrink-0">FAQ</a>
+                </div>
+              </div>
+            </details>
+            <button
+              type="button"
+              onClick={() => openPrivateLogin('login')}
+              className="px-3 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            >
+              <Lock size={12} aria-hidden="true" />
+              <span className="hidden xs:inline sm:inline">Private Login</span>
+              <span className="sm:hidden">Login</span>
+            </button>
           </div>
-        </details>
+        </div>
         {/* Desktop: full link row — enlarge all; lava on plain tabs only; 4 featured keep cyan/magenta/indigo pills */}
         <div className="auth-nav-tabs-row hidden md:flex" role="navigation" aria-label="Site sections">
           <a

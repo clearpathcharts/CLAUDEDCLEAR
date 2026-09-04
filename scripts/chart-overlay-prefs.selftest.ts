@@ -62,6 +62,7 @@ const pub = fs.readFileSync(path.join(root, "src/components/PublicLiveChart.tsx"
 assert.match(pub, /min-h-\[70vh\]/);
 assert.match(pub, /data-mobile-chart-first/);
 assert.match(pub, /data-public-chart-plot/);
+assert.match(pub, /hideChartToolbar=\{narrow\}/);
 
 const auth = fs.readFileSync(path.join(root, "src/components/Auth.tsx"), "utf8");
 assert.match(auth, /data-auth-chart-first/);
