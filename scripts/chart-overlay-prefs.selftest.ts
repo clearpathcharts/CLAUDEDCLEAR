@@ -69,6 +69,8 @@ assert.match(auth, /data-auth-chart-first/);
 assert.match(auth, /order-1 md:order-2/);
 assert.match(auth, /Site menu/);
 assert.match(auth, /hidden md:block/);
+assert.match(auth, /hidden md:flex/);
+assert.doesNotMatch(auth, /\.auth-nav-tabs-row \{\s*display: flex;/);
 
 const market = fs.readFileSync(path.join(root, "src/components/markets/LightweightMarketUI.tsx"), "utf8");
 assert.match(market, /Pattern Scanner \+ drawing tools — tap to open/);

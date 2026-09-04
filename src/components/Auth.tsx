@@ -405,7 +405,6 @@ export default function Auth() {
           filter: brightness(1.18) saturate(1.1);
         }
         .auth-nav-tabs-row {
-          display: flex;
           flex-wrap: nowrap;
           align-items: center;
           gap: 0.85rem 1.1rem;
@@ -442,9 +441,9 @@ export default function Auth() {
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <div className="flex items-center gap-2 shrink-0">
             <details className="relative md:hidden">
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 font-mono text-[10px] font-black uppercase tracking-widest text-zinc-300">
-                <Menu size={12} aria-hidden="true" />
-                Site menu
+              <summary className="flex cursor-pointer list-none items-center justify-center rounded-lg border border-white/15 p-1.5 text-zinc-300" aria-label="Site menu">
+                <Menu size={16} aria-hidden="true" />
+                <span className="sr-only">Site menu</span>
               </summary>
               <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-[min(92vw,20rem)] overflow-y-auto rounded-xl border border-white/15 bg-black/95 p-3 shadow-[0_12px_40px_rgba(0,0,0,0.65)]" role="navigation" aria-label="Site sections">
                 <div className="flex flex-col gap-2">

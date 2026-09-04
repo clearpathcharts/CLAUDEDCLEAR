@@ -1395,15 +1395,11 @@ export function LightweightCandles({
               Forming
             </button>
           ) : null}
-          {showPatternHud || showFormingWatch ? (
-            <span className="font-mono text-[8px] uppercase tracking-wider text-zinc-500">
-              Intel sits below the candles — tap X to park
-            </span>
-          ) : (
-            <span className="font-mono text-[8px] uppercase tracking-wider text-zinc-600">
-              Candles first — open intel from these chips
-            </span>
-          )}
+          <span className="sr-only">
+            {showPatternHud || showFormingWatch
+              ? 'Intel sits below the candles — tap X to park'
+              : 'Candles first — open intel from these chips'}
+          </span>
         </div>
       ) : null}
 
