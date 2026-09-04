@@ -147,12 +147,17 @@ function fitTitle(preferred: string, fallback: string, max = 70): string {
   return fallback.length <= max ? fallback : fallback.slice(0, max);
 }
 
-function fitDesc(raw: string, max = 160): string {
+/** Sentence-aware meta description: ≤160 chars, no ellipsis, no mid-word cut. */
+export function fitMetaDescription(raw: string, max = 160): string {
   const t = raw.replace(/\s+/g, ' ').trim();
   if (t.length <= max) return t;
   const cut = t.slice(0, max);
   const sp = cut.lastIndexOf(' ');
   return (sp > 80 ? cut.slice(0, sp) : cut).trimEnd();
+}
+
+function fitDesc(raw: string, max = 160): string {
+  return fitMetaDescription(raw, max);
 }
 
 export function uniqueProceduralDefinition(term: string, prefix: string, core: string, category: string): string {

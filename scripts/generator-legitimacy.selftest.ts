@@ -11,7 +11,7 @@ import {
   glossaryCatalogCounts,
   lookupGlossary,
 } from '../src/lib/glossaryCatalog.ts';
-import { standaloneKnowledgeRoutes } from '../src/lib/knowledgeBaseRoutes.ts';
+import { standaloneKnowledgeRoutes, knowledgeItemForPath } from '../src/lib/knowledgeBaseRoutes.ts';
 import {
   catalogCounts,
   glossaryEntries,
@@ -74,6 +74,14 @@ for (const r of standaloneKnowledgeRoutes()) {
   const en = enrichHtmlWithMetadata(page!, r.path);
   assert.match(en, /DATA UNAVAILABLE|education/i);
   assert.doesNotMatch(en, /guaranteed returns/i);
+  const meta = en.match(/<meta name="description" content="([^"]*)"/i)?.[1] || '';
+  assert.ok(meta.length >= 50 && meta.length <= 160, `${r.path} desc ${meta.length}`);
+  assert.doesNotMatch(meta, /…/);
+  const full = (knowledgeItemForPath(r.path)?.definition || '').replace(/\s+/g, ' ').trim();
+  assert.ok(full.startsWith(meta), `${r.path} meta is not a prefix of the article`);
+  if (meta.length < full.length) {
+    assert.equal(full[meta.length], ' ', `${r.path} meta cut mid-word: …${meta.slice(-12)}`);
+  }
 }
 assert.equal(knowledgeBaseEntries().length, 6);
 

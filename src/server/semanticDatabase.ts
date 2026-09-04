@@ -35,7 +35,7 @@ import {
   lookupLiteracyWiki,
 } from './crawlCatalog';
 import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
-import { glossaryCatalogCounts } from '../lib/glossaryCatalog';
+import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 import { DESK_SEO } from '../content/traderDesksCopy';
@@ -1006,7 +1006,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         robotsMeta = 'noindex, follow';
       } else {
         title = `${hit.lesson.title} | ${hit.track.title} | ClearPathTrader`;
-        description = hit.lesson.body.slice(0, 160);
+        description = fitMetaDescription(hit.lesson.body);
         schemas.push(makeBreadcrumb([
           { name: 'Home', url: '' },
           { name: 'Literacy OS', url: '/literacy' },
@@ -1038,7 +1038,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       robotsMeta = 'noindex, follow';
     } else {
       title = `${kb.title} | ClearPathTrader Encyclopedia`;
-      description = kb.definition.replace(/\s+/g, ' ').trim().slice(0, 160);
+      description = fitMetaDescription(kb.definition);
       schemas.push(makeBreadcrumb([
         { name: 'Home', url: '' },
         { name: 'Encyclopedia', url: '/encyclopedia' },
