@@ -1,11 +1,11 @@
 /**
- * Product packages — membership ladder plus founder-added add-ons.
+ * Product packages — membership ladder plus Silver add-ons.
  *
- * The handwritten Basic / Silver / Gold / Platinum sheet stays the membership
- * source of truth (`planCatalog.ts`). This catalog wraps those four as locked
- * packages and lets the founder add more packages later.
+ * Membership (Basic → Platinum) stays the handwritten feature sheet and
+ * publishes no list prices. Add-ons are a separate sheet: Silver + extras.
+ * Add-on cents are founder-sheet amounts, not live checkout.
  *
- * No list prices. Billing stays off (`PAYMENTS_ENABLED`).
+ * Billing stays off (`PAYMENTS_ENABLED`).
  */
 
 import {
@@ -32,8 +32,78 @@ export type ProductPackage = {
   includes: string[];
   /** Membership packages map onto the founder sheet. */
   planId?: CanonicalPlanId;
+  /** Sheet add-ons stack on Silver. */
+  stacksOn?: CanonicalPlanId;
+  /** Add-ons only. Membership packages must omit this. */
+  priceMonthlyCents?: number;
   locked: boolean;
   addedAt: string;
+};
+
+/** Founder sheet — Custom Package (Silver + add-ons). Not membership tiers. */
+export const SHEET_ADD_ONS = [
+  {
+    id: 'addon-unlimited-charts',
+    name: 'Unlimited Charts',
+    priceMonthlyCents: 699,
+    status: 'enforced' as const,
+    includes: ['Unlimited charts per window on top of Silver'],
+  },
+  {
+    id: 'addon-unlimited-indicators',
+    name: 'Unlimited Indicators',
+    priceMonthlyCents: 699,
+    status: 'enforced' as const,
+    includes: ['Full indicator bank on top of Silver’s 15'],
+  },
+  {
+    id: 'addon-unlimited-watchlist',
+    name: 'Unlimited Watchlist',
+    priceMonthlyCents: 199,
+    status: 'enforced' as const,
+    includes: ['Unlimited watchlists on top of Silver’s 8'],
+  },
+  {
+    id: 'addon-market-replay',
+    name: 'Market Replay',
+    priceMonthlyCents: 599,
+    status: 'planned' as const,
+    includes: ['Historical bar replay on the desk you are using'],
+  },
+  {
+    id: 'addon-indacreator',
+    name: 'IndaCreator',
+    priceMonthlyCents: 599,
+    status: 'enforced' as const,
+    includes: ['INDACREATOR / River — build and explain custom indicators'],
+  },
+  {
+    id: 'addon-pattern-overlay',
+    name: 'Pattern Overlay',
+    priceMonthlyCents: 1299,
+    status: 'enforced' as const,
+    includes: ['Educational pattern overlay on the live chart'],
+  },
+  {
+    id: 'addon-ai-pattern-scanner',
+    name: 'AI Pattern Scanner',
+    priceMonthlyCents: 1499,
+    status: 'partial' as const,
+    includes: ['Pattern scanner + Structure Read (educational)'],
+  },
+  {
+    id: 'addon-bots',
+    name: 'Ability to add Bots',
+    priceMonthlyCents: 599,
+    status: 'partial' as const,
+    includes: ['Bot / automation slot — not live broker execution'],
+  },
+] as const;
+
+const ADDON_STATUS: Record<(typeof SHEET_ADD_ONS)[number]['status'], PackageStatus> = {
+  enforced: 'shipped',
+  planned: 'planned',
+  partial: 'partial',
 };
 
 function flagAccuracy(flags: PlanFlags): FeatureAccuracy[] {
@@ -66,6 +136,30 @@ export function membershipPackages(): ProductPackage[] {
   });
 }
 
+export function sheetAddOnPackages(): ProductPackage[] {
+  return SHEET_ADD_ONS.map((row) => ({
+    id: row.id,
+    name: row.name,
+    kind: 'add_on' as const,
+    status: ADDON_STATUS[row.status],
+    summary: `Silver add-on only — not a membership tier. Sheet price $${(row.priceMonthlyCents / 100).toFixed(2)} / mo. Checkout is off.`,
+    includes: [...row.includes],
+    stacksOn: 'silver' as const,
+    priceMonthlyCents: row.priceMonthlyCents,
+    locked: true,
+    addedAt: '2026-09-04T00:00:00.000Z',
+  }));
+}
+
+export function isSheetAddOnId(id: string): boolean {
+  return SHEET_ADD_ONS.some((row) => row.id === id);
+}
+
+export function formatAddonPrice(cents: number | undefined): string | null {
+  if (typeof cents !== 'number' || !Number.isFinite(cents) || cents <= 0) return null;
+  return `$${(cents / 100).toFixed(2)} / mo`;
+}
+
 export function isPackageKind(value: unknown): value is PackageKind {
   return typeof value === 'string' && (PACKAGE_KINDS as readonly string[]).includes(value);
 }
@@ -91,5 +185,8 @@ export function assertNoListPrice(pkg: ProductPackage): void {
     if (key in rec) {
       throw new Error(`${pkg.id} must not publish a list price`);
     }
+  }
+  if (pkg.kind === 'membership' && pkg.priceMonthlyCents != null) {
+    throw new Error(`${pkg.id} membership must not publish a list price`);
   }
 }

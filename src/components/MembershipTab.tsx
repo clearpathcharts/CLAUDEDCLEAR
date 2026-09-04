@@ -15,7 +15,7 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
         <h2 className="text-xl font-black text-white uppercase tracking-widest">Membership packages</h2>
         <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto">{PAYMENTS_DISABLED_MESSAGE}</p>
         <p className="text-zinc-500 text-xs font-mono">
-          Four membership packages from the founder sheet, plus add-on packages you can add. No list prices. Preview a tier with{' '}
+          Four membership packages (no list prices). Silver add-ons are priced extras only — not new tiers. Preview a tier with{' '}
           {CANONICAL_PLANS.map((id) => (
             <a
               key={id}

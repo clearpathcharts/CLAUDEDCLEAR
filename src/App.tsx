@@ -320,7 +320,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
           <h1 className="text-xl font-black uppercase tracking-widest">Membership packages</h1>
           <p className="text-zinc-400 text-sm">
-            Basic / Silver / Gold / Platinum feature unlocks as enforced in the product, plus add-on packages. List prices are not published here.
+            Basic / Silver / Gold / Platinum have no list prices. Silver add-ons are priced extras only — checkout is off.
           </p>
           <PackagesPanel showAddForm />
           <PlanComparisonTable />

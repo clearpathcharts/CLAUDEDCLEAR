@@ -3,7 +3,7 @@ import { Package, Plus, Trash2 } from 'lucide-react';
 import { auth } from '../firebase';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isFounderEmail, isFounderSession } from '../lib/founder';
-import type { PackageStatus, ProductPackage } from '../lib/packageCatalog';
+import { formatAddonPrice, isSheetAddOnId, type PackageStatus, type ProductPackage } from '../lib/packageCatalog';
 
 const STATUS_TONE: Record<PackageStatus, string> = {
   shipped: 'bg-emerald-400',
@@ -110,7 +110,8 @@ export function PackagesPanel({ showAddForm = false }: { showAddForm?: boolean }
   };
 
   const membership = packages.filter((pkg) => pkg.kind === 'membership');
-  const addOns = packages.filter((pkg) => pkg.kind === 'add_on');
+  const sheetAddOns = packages.filter((pkg) => pkg.kind === 'add_on' && isSheetAddOnId(pkg.id));
+  const extraAddOns = packages.filter((pkg) => pkg.kind === 'add_on' && !isSheetAddOnId(pkg.id));
 
   return (
     <div className="space-y-6" data-testid="packages-panel">
@@ -145,14 +146,49 @@ export function PackagesPanel({ showAddForm = false }: { showAddForm?: boolean }
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Added packages</h3>
-        {addOns.length === 0 ? (
+        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Silver add-ons only</h3>
+        <p className="text-xs text-zinc-500">
+          Custom package = Silver + these extras. Not membership tiers. Sheet prices only — no checkout.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2" data-testid="sheet-addons">
+          {sheetAddOns.map((pkg) => (
+            <article
+              key={pkg.id}
+              className="rounded-2xl border border-amber-400/20 bg-black/50 p-4 space-y-3"
+              data-package-id={pkg.id}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <h4 className="text-sm font-black uppercase tracking-widest text-white">{pkg.name}</h4>
+                <div className="text-right space-y-1">
+                  <p className="text-sm font-black text-amber-200">{formatAddonPrice(pkg.priceMonthlyCents)}</p>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    <span className={`w-2 h-2 rounded-full ${STATUS_TONE[pkg.status]}`} />
+                    {statusLabel(pkg.status)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed">{pkg.summary}</p>
+              {pkg.includes.length > 0 ? (
+                <ul className="space-y-1 text-[11px] font-mono text-zinc-300">
+                  {pkg.includes.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Extra add-ons</h3>
+        {extraAddOns.length === 0 ? (
           <p className="text-xs text-zinc-500" data-testid="packages-empty">
-            No add-on packages yet. The founder can add ones below.
+            No extra add-ons beyond the Silver sheet. The founder can add ones below.
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {addOns.map((pkg) => (
+            {extraAddOns.map((pkg) => (
               <article
                 key={pkg.id}
                 className="rounded-2xl border border-white/10 bg-black/50 p-4 space-y-3"

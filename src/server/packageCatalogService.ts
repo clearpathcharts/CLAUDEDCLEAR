@@ -6,7 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   isPackageStatus,
+  isSheetAddOnId,
   membershipPackages,
+  sheetAddOnPackages,
   slugifyPackageId,
   type PackageStatus,
   type ProductPackage,
@@ -73,7 +75,7 @@ export type AddPackageInput = {
 };
 
 export function listPackages(): ProductPackage[] {
-  return [...membershipPackages(), ...readAdded()];
+  return [...membershipPackages(), ...sheetAddOnPackages(), ...readAdded()];
 }
 
 export function addPackage(input: AddPackageInput): ProductPackage {
@@ -115,8 +117,8 @@ export function addPackage(input: AddPackageInput): ProductPackage {
 export function removePackage(id: string): boolean {
   const key = String(id || '').trim();
   if (!key) return false;
-  if (membershipPackages().some((p) => p.id === key)) {
-    throw Object.assign(new Error('Membership packages are locked to the founder sheet.'), { status: 400 });
+  if (membershipPackages().some((p) => p.id === key) || isSheetAddOnId(key)) {
+    throw Object.assign(new Error('Sheet packages are locked and cannot be deleted.'), { status: 400 });
   }
   const current = readAdded();
   const next = current.filter((p) => p.id !== key);
