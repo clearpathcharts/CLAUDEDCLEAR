@@ -42,6 +42,9 @@ jobs:
       - name: About manifesto copy
         run: npm run test:about-manifesto
 
+      - name: Product overview PDF ships with press kit
+        run: npm run test:brochure-pdf
+
       - name: Affiliate rewards self-test
         run: npm run test:affiliate
 

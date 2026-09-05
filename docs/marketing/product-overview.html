@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ClearPath Trader — Product Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black: #050505;
+      --ink: #0a0a0c;
+      --panel: #0d0d12;
+      --line: rgba(255,255,255,0.10);
+      --muted: #8b8798;
+      --text: #ccc8db;
+      --white: #f7f7fb;
+      --cyan: #00e5ff;
+      --pink: #ff1493;
+      --purple: #b026ff;
+      --orange: #ff7a00;
+      --gold: #ffd700;
+      --silver: #c8cdd8;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #000;
+      color: var(--text);
+      font-family: Inter, system-ui, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @page { size: 11in 8.5in; margin: 0; }
+    .page {
+      width: 11in;
+      height: 8.5in;
+      overflow: hidden;
+      position: relative;
+      page-break-after: always;
+      break-after: page;
+      background: var(--black);
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+    .kicker {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .path {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: inherit;
+    }
+    .foot {
+      position: absolute;
+      left: 0.5in;
+      right: 0.5in;
+      bottom: 0.28in;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 8px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #5c5868;
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+    }
+    .glow-cyan {
+      position: absolute;
+      width: 7in;
+      height: 5in;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,229,255,0.16), transparent 68%);
+      pointer-events: none;
+    }
+    .glow-pink {
+      position: absolute;
+      width: 6in;
+      height: 5in;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,20,147,0.14), transparent 68%);
+      pointer-events: none;
+    }
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 78%);
+      pointer-events: none;
+    }
+    h1, h2, h3 { color: var(--white); font-weight: 900; letter-spacing: -0.03em; }
+    p { line-height: 1.45; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+    }
+    .accent-bar { width: 36px; height: 3px; border-radius: 99px; margin-bottom: 10px; }
+    ul.clean { list-style: none; }
+    ul.clean li {
+      position: relative;
+      padding-left: 14px;
+      margin: 5px 0;
+      font-size: 11.5px;
+      color: var(--text);
+      line-height: 1.35;
+    }
+    ul.clean li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.45em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+    }
+    table.plans {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    table.plans th, table.plans td {
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 7px 8px;
+      text-align: left;
+    }
+    table.plans th {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #7a7686;
+      font-weight: 600;
+    }
+    table.plans td { color: var(--white); font-weight: 600; }
+    table.plans td.feat { color: var(--text); font-weight: 500; }
+    .yes { color: var(--green); }
+    .dim { color: #5c5868; }
+    .gold { color: var(--gold); }
+    .cyan { color: var(--cyan); }
+    .pink { color: var(--pink); }
+    .purple { color: var(--purple); }
+    .orange { color: var(--orange); }
+  </style>
+</head>
+<body>
+
+  <!-- 1 COVER -->
+  <section class="page">
+    <div class="grid-bg"></div>
+    <div class="glow-cyan" style="top:-1.4in; right:-0.6in;"></div>
+    <div class="glow-pink" style="bottom:-1.6in; left:-0.8in;"></div>
+    <header style="position:relative; z-index:2; padding:0.42in 0.55in 0; display:flex; justify-content:space-between; align-items:center;">
+      <div class="kicker">Clear Path Markets Science</div>
+      <div class="kicker" style="color:#7a7686;">Product overview · 2026</div>
+    </header>
+    <div style="position:relative; z-index:2; padding:0.55in 0.55in 0; display:flex; gap:0.45in; height:6.7in;">
+      <div style="flex:1.15; display:flex; flex-direction:column; justify-content:center;">
+        <div class="chip" style="width:fit-content; border-color:rgba(0,229,255,0.35); color:var(--cyan); margin-bottom:22px;">
+          Market intelligence &amp; education terminal
+        </div>
+        <div class="mono" style="font-size:13px; letter-spacing:0.42em; text-transform:uppercase; color:var(--pink); margin-bottom:10px;">Clear Path</div>
+        <h1 style="font-size:92px; line-height:0.86; text-transform:uppercase;">
+          Trader
+        </h1>
+        <p style="margin-top:22px; max-width:5.6in; font-size:16px; color:var(--text);">
+          Charts first. Less noise. Education before risk. A terminal built so different minds can actually read the market — not fight the interface.
+        </p>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:28px;">
+          <span class="chip">Not a brokerage</span>
+          <span class="chip">Not financial advice</span>
+          <span class="chip">Neurodivergent-first</span>
+        </div>
+        <p class="mono" style="margin-top:34px; font-size:13px; color:var(--cyan); letter-spacing:0.12em;">clearpathtrader.com</p>
+      </div>
+      <div style="flex:0.95; display:flex; flex-direction:column; justify-content:center; gap:14px;">
+        <svg viewBox="0 0 420 280" width="100%" height="250" aria-hidden="true">
+          <defs>
+            <linearGradient id="plot" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="420" height="280" rx="18" fill="#0b0b10" stroke="rgba(255,255,255,0.08)"/>
+          <text x="18" y="28" fill="#00e5ff" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="2">ILLUSTRATION · CHART-FIRST DESK</text>
+          <polyline fill="url(#plot)" stroke="none" points="18,250 18,180 50,170 82,190 114,150 146,158 178,120 210,132 242,96 274,110 306,78 338,92 370,60 402,74 402,250"/>
+          <polyline fill="none" stroke="#00e5ff" stroke-width="2" points="18,180 50,170 82,190 114,150 146,158 178,120 210,132 242,96 274,110 306,78 338,92 370,60 402,74"/>
+          <g stroke-width="2">
+            <line x1="70" y1="150" x2="70" y2="210" stroke="#34d399"/><rect x="64" y="162" width="12" height="32" fill="#34d399"/>
+            <line x1="118" y1="128" x2="118" y2="188" stroke="#ff1493"/><rect x="112" y="140" width="12" height="28" fill="#ff1493"/>
+            <line x1="166" y1="108" x2="166" y2="168" stroke="#34d399"/><rect x="160" y="118" width="12" height="34" fill="#34d399"/>
+            <line x1="214" y1="96" x2="214" y2="154" stroke="#34d399"/><rect x="208" y="108" width="12" height="30" fill="#34d399"/>
+            <line x1="262" y1="84" x2="262" y2="142" stroke="#ff1493"/><rect x="256" y="98" width="12" height="26" fill="#ff1493"/>
+            <line x1="310" y1="62" x2="310" y2="128" stroke="#34d399"/><rect x="304" y="74" width="12" height="38" fill="#34d399"/>
+            <line x1="358" y1="50" x2="358" y2="112" stroke="#34d399"/><rect x="352" y="64" width="12" height="32" fill="#34d399"/>
+          </g>
+        </svg>
+        <div class="card">
+          <div class="kicker" style="margin-bottom:8px;">The rule</div>
+          <p style="color:var(--white); font-size:15px; font-weight:700; line-height:1.35;">
+            Knowledge before execution.<br/>Understanding before risk.<br/>Clarity before decisions.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <span>ClearPath Trader</span>
+      <span>Education · Analytics · Accessibility</span>
+      <span>01 / 08</span>
+    </div>
+  </section>
+
+  <!-- 2 WHY -->
+  <section class="page">
+    <div class="glow-cyan" style="top:-2in; left:3in;"></div>
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Why it exists</div>
+      <h2 style="font-size:34px; margin:10px 0 8px; max-width:9.4in;">Financial education should adapt to people — not the other way around.</h2>
+      <p style="max-width:8.8in; color:var(--muted); font-size:13.5px; margin-bottom:22px;">
+        Most trading software is designed to keep people clicking. ClearPath Trader was built so the chart stays the center of attention, and the rest of the desk can be parked until you ask for it.
+      </p>
+      <div style="display:grid; grid-template-columns: 1.15fr 0.85fr; gap:16px; flex:1;">
+        <div class="card" style="padding:22px;">
+          <div class="accent-bar" style="background:var(--cyan);"></div>
+          <h3 style="font-size:18px; margin-bottom:12px;">The manifesto</h3>
+          <p style="font-size:13.5px; color:var(--text); white-space:pre-line; line-height:1.55;">Some people see patterns.
+Some people need structure.
+Some people learn visually.
+Some people become overwhelmed by cluttered screens, endless indicators, and information overload.
+
+Before risking capital, understand the system.
+Before following signals, understand the logic.
+Before chasing markets, understand the relationships.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div class="card" style="border-color:rgba(255,20,147,0.35);">
+            <div class="kicker" style="color:var(--pink); margin-bottom:8px;">Founder question</div>
+            <p style="font-size:18px; color:var(--white); font-weight:800; line-height:1.3;">“What if I built the trading platform my own brain actually needed?”</p>
+            <p class="mono" style="margin-top:10px; font-size:10px; color:#7a7686;">Richard A. Floyd · Founder &amp; CEO</p>
+          </div>
+          <div class="card">
+            <h3 style="font-size:14px; margin-bottom:8px;">Built from need</h3>
+            <p style="font-size:12px; color:var(--text);">Autism, ADHD, and TBI shaped the product. Flashing widgets and stacked alerts were not “engagement.” They were exhaustion. The durable asset is the terminal — not a personal brand, not casino hype.</p>
+          </div>
+          <div class="card">
+            <h3 style="font-size:14px; margin-bottom:8px;">What this is not</h3>
+            <ul class="clean">
+              <li>Not a broker. No order tickets. No customer funds.</li>
+              <li>Not financial advice or trade signals.</li>
+              <li>Not a website chatbot that books appointments.</li>
+              <li>Not aiclearpath.com — different company.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>clearpathtrader.com/about</span><span>Charts should adapt to people</span><span>02 / 08</span></div>
+  </section>
+
+  <!-- 3 FOUR DESKS -->
+  <section class="page">
+    <div class="glow-pink" style="right:-2in; top:-1in;"></div>
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Choose your path</div>
+      <h2 style="font-size:32px; margin:8px 0 6px;">Four desks. Same honesty. Different minds.</h2>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px; max-width:9.2in;">
+        First visit is chart-first: the plot uses about 70% of the screen. News, calendars, alerts, education, and research start in the Held file — restore any bento when you want it. Study desks, not brokerage.
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:14px; flex:1;">
+        <div class="card" style="border-color:rgba(255,20,147,0.4);">
+          <div class="accent-bar" style="background:var(--pink);"></div>
+          <div class="path" style="color:var(--pink);">/desk/institutional</div>
+          <h3 style="font-size:22px; margin:6px 0 4px;">Institutional Trader</h3>
+          <p style="font-size:12px; color:var(--pink); font-weight:700; margin-bottom:8px;">Give me the information</p>
+          <p style="font-size:12px; margin-bottom:8px;">Bento command center: global ribbon, universe, flow, liquidity, time &amp; sales, structure, volume, volatility, options, correlation, macro, news, calendar, positioning, risk, earnings.</p>
+          <p class="mono" style="font-size:9px; color:#7a7686;">COT from official CFTC.gov — not invented. Missing vendor cells stay blank.</p>
+        </div>
+        <div class="card" style="border-color:rgba(255,122,0,0.4);">
+          <div class="accent-bar" style="background:var(--orange);"></div>
+          <div class="path" style="color:var(--orange);">/desk/fundamental</div>
+          <h3 style="font-size:22px; margin:6px 0 4px;">Fundamental Trader</h3>
+          <p style="font-size:12px; color:var(--orange); font-weight:700; margin-bottom:8px;">What is this business doing financially?</p>
+          <p style="font-size:12px;">Research workstation: identity, business model, multiples, revenue, profitability, cash flow, balance sheet, earnings, capital allocation, peers, geo mix, macro mapping, filings, company news, management.</p>
+        </div>
+        <div class="card" style="border-color:rgba(255,20,147,0.28);">
+          <div class="accent-bar" style="background:var(--pink);"></div>
+          <div class="path" style="color:var(--pink);">/desk/retail</div>
+          <h3 style="font-size:22px; margin:6px 0 4px;">Retail Trader</h3>
+          <p style="font-size:12px; color:var(--pink); font-weight:700; margin-bottom:8px;">Make trading understandable</p>
+          <p style="font-size:12px;">Large chart, watchlist, pattern scanner, market snapshot, movers, news, economic wire, alerts, “what changed,” structure glossary (BOS / CHoCH / FVG), simulation lab. Plain language over jargon.</p>
+        </div>
+        <div class="card" style="border-color:rgba(176,38,255,0.45);">
+          <div class="accent-bar" style="background:var(--purple);"></div>
+          <div class="path" style="color:var(--purple);">/desk/neurodivergent</div>
+          <h3 style="font-size:22px; margin:6px 0 4px;">Neurodivergent Traders</h3>
+          <p style="font-size:12px; color:var(--purple); font-weight:700; margin-bottom:8px;">Built for different minds. Made for real traders.</p>
+          <p style="font-size:12px;">Calm retail + crypto workstation with sensory profiles (calm focus, ADHD, autism-predictable, low-stim, and more). Profiles change look and density — never the market data.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>clearpathtrader.com/desk</span><span>Park a bento. Restore from the Held file.</span><span>03 / 08</span></div>
+  </section>
+
+  <!-- 4 CHARTS + NEURO -->
+  <section class="page">
+    <div class="glow-cyan" style="bottom:-2in; right:0;"></div>
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Charts · patterns · accessibility</div>
+      <h2 style="font-size:32px; margin:8px 0 14px;">The chart is the product. Everything else is optional.</h2>
+      <div style="display:grid; grid-template-columns:1.05fr 0.95fr; gap:16px; flex:1;">
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div class="card">
+            <h3 style="font-size:16px; margin-bottom:8px;">Live workspace</h3>
+            <ul class="clean">
+              <li>Lightweight Charts canvas engine — panels open fast, stay smooth.</li>
+              <li>Stocks, forex, crypto, commodities on one combined server.</li>
+              <li>Drawing tools: basic on Basic; full set from Silver up.</li>
+              <li>Gold Bar (ATR trailing example) on Silver+.</li>
+              <li>Pattern overlay on Gold+. AI pattern scanner on Platinum (rolling out).</li>
+              <li>INDACREATOR: paste or upload Pine Script, compile, apply to charts.</li>
+              <li>River Genie co-pilot writes Pine in the workstation — you still compile it.</li>
+              <li>Multi-monitor Screens menu to pop panes onto other displays.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 style="font-size:16px; margin-bottom:8px;">Indicators — honest caps</h3>
+            <p style="font-size:12px;">Most platforms invent a low cap. ClearPath follows the membership sheet: <strong style="color:var(--white);">Basic 5</strong> (SMA, EMA, RSI, MACD, Volume) · <strong style="color:var(--white);">Silver 15</strong> · <strong style="color:var(--white);">Gold &amp; Platinum: all supported indicators</strong>, no extra artificial limit. Candle history is vendor-capped (Twelve Data, 5,000 bars) even when the sheet says “unlimited years.”</p>
+          </div>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column;">
+          <div class="kicker" style="margin-bottom:8px;">Neuro-adaptive chart profiles · /ui</div>
+          <h3 style="font-size:16px; margin-bottom:6px;">Thirteen looks. Same data.</h3>
+          <p style="font-size:11.5px; color:var(--muted); margin-bottom:12px;">Optional visual comfort modes — not medical treatment. Switch live on Charts. Remembered for later sessions when possible.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:7px;">
+            <span class="chip">Calm Focus</span>
+            <span class="chip">Low Stimulation</span>
+            <span class="chip">Reading Support</span>
+            <span class="chip">Numeric Relief</span>
+            <span class="chip">Visual Ease</span>
+            <span class="chip">Reduced Signal Load</span>
+            <span class="chip">Task Structure</span>
+            <span class="chip">Large Target Mode</span>
+            <span class="chip">Balanced Energy</span>
+            <span class="chip">Hyperfocus</span>
+            <span class="chip">Autism — Predictable</span>
+            <span class="chip">Minimal Motion</span>
+            <span class="chip">Standard Red &amp; Green</span>
+          </div>
+          <p style="margin-top:auto; padding-top:14px; font-size:11px; color:var(--muted);">Blackout mode, custom dashboards, and no-ads arrive on Silver+. Explain Mode adds a cinema-style overlay next to each tab — extra understanding, never a trade call.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>clearpathtrader.com/ui</span><span>Profiles change presentation, not prices</span><span>04 / 08</span></div>
+  </section>
+
+  <!-- 5 LEARN -->
+  <section class="page">
+    <div class="glow-pink" style="left:-1in; bottom:-2in;"></div>
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Learn · study · mentor</div>
+      <h2 style="font-size:32px; margin:8px 0 14px;">From first chart to a full literacy OS.</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; flex:1;">
+        <div class="card">
+          <div class="accent-bar" style="background:var(--green);"></div>
+          <h3 style="font-size:16px;">ClearPath Education</h3>
+          <p class="path" style="color:#7a7686; margin:4px 0 8px;">/education</p>
+          <p style="font-size:12px;">Schools → unlocked units → lessons → quizzes. Pass to open the next unit. Plain language, everyday comparisons. Curriculum includes methodology ideas such as Four Up, Three Down — taught with patience, not hype.</p>
+        </div>
+        <div class="card">
+          <div class="accent-bar" style="background:var(--cyan);"></div>
+          <h3 style="font-size:16px;">Encyclopedia of Finance</h3>
+          <p class="path" style="color:#7a7686; margin:4px 0 8px;">/encyclopedia</p>
+          <p style="font-size:12px;">Deep library across stocks, forex, crypto, commodities, companies, events, and market relationships. Built as a visual learning environment — thousands of educational URLs, not a signal feed.</p>
+        </div>
+        <div class="card">
+          <div class="accent-bar" style="background:var(--gold);"></div>
+          <h3 style="font-size:16px;">Encyclopedia of Indicators</h3>
+          <p class="path" style="color:#7a7686; margin:4px 0 8px;">/indicators</p>
+          <p style="font-size:12px;">Filterable cards: what it is, the formula, how to read it, limitations, typical settings. Live-overlay badge when the model can sit on Charts. Study articles — not advice.</p>
+        </div>
+        <div class="card" style="grid-column:1 / span 2;">
+          <div class="accent-bar" style="background:var(--purple);"></div>
+          <h3 style="font-size:16px; margin-bottom:8px;">Literacy OS · /literacy</h3>
+          <p style="font-size:12px; margin-bottom:10px;">A personal market-science desk: archive, verify, and study. Education only.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <span class="chip">Morning Brief</span>
+            <span class="chip">Thesis Vault</span>
+            <span class="chip">Concept Wiki</span>
+            <span class="chip">Source Sentinel</span>
+            <span class="chip">Neuro LMS</span>
+            <span class="chip">Media Pantry</span>
+            <span class="chip">Listen → Learn</span>
+            <span class="chip">Truth Search</span>
+            <span class="chip">Mentor Trust</span>
+            <span class="chip">Study Coach</span>
+            <span class="chip">Idea Pins</span>
+            <span class="chip">Pattern Studio</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="accent-bar" style="background:var(--pink);"></div>
+          <h3 style="font-size:16px;">C.P.T. Buddy</h3>
+          <p style="font-size:12px; margin-top:8px;">In-terminal mentor — pink avatar, always there. Looks up live prices, COT, the open chart, and encyclopedia entries instead of guessing. Platonic, calm, no sales widget on someone else’s homepage.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>clearpathtrader.com/learn</span><span>Source Sentinel watches Fed / SEC / Treasury page diffs</span><span>05 / 08</span></div>
+  </section>
+
+  <!-- 6 INTELLIGENCE -->
+  <section class="page">
+    <div class="glow-cyan" style="top:-1.5in; left:2in;"></div>
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Intelligence · honesty protocol</div>
+      <h2 style="font-size:32px; margin:8px 0 8px;">If a vendor cell is missing, it stays blank.</h2>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px; max-width:9.4in;">
+        ClearPath does not invent COT, IV, GEX, Level II, or timed CPI/NFP rows. Labels tell you the source. “DATA UNAVAILABLE” is a feature.
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+        <div class="card">
+          <h3 style="font-size:14px; color:var(--cyan);">News wire</h3>
+          <p style="font-size:12px; margin-top:6px;">Live headlines on desks. Rate-limits are labeled as the vendor (e.g. NewsData), not as a COT failure.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px; color:var(--gold);">Positioning / COT</h3>
+          <p style="font-size:12px; margin-top:6px;">Official CFTC.gov via <span class="mono">/api/cot/history</span>. Example map: XAUUSD → GC → 088691. Chips: CACHED · CFTC FETCH · NO CFTC MAP · PROVIDER ERROR.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px; color:var(--orange);">Macro / FRED</h3>
+          <p style="font-size:12px; margin-top:6px;">Policy and inflation series when a FRED key is configured on the server. Client-supplied keys are rejected.</p>
+        </div>
+        <div class="card">
+          <h3 style="font-size:14px; color:var(--pink);">Economic wire</h3>
+          <p style="font-size:12px; margin-top:6px;">Calendar panels are a headline wire — not a fabricated timed-release grid. Empty beats stay empty.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1.2fr 0.8fr; gap:12px; flex:1;">
+        <div class="card">
+          <h3 style="font-size:16px; margin-bottom:8px;">Also in the terminal</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px 18px;">
+            <ul class="clean">
+              <li>Y.W.C. — Yours / World / Community hub</li>
+              <li>Social Media Hub (Silver+, rolling out)</li>
+              <li>Affiliate Network — every private account gets /r/CODE</li>
+              <li>Paper trading / Simulation Lab (hypothetical only)</li>
+              <li>Position-size calculator · /tools/position-size</li>
+              <li>Alerts &amp; watchlists (plan-capped)</li>
+            </ul>
+            <ul class="clean">
+              <li>Sentinel — platform integrity checks, not signals</li>
+              <li>Regional hubs: RU · CN · JP · PH</li>
+              <li>Glossary, guides, FAQ, accessibility statement</li>
+              <li>Web + Android (PWA / APK) with consent-first updates</li>
+              <li>Market Replay — on the Silver+ roadmap</li>
+              <li>Bots — Platinum, rolling out</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(0,229,255,0.3);">
+          <div class="kicker" style="margin-bottom:8px;">Speed</div>
+          <p style="font-size:13px;">One combined service: market data and the terminal share a pipeline. No chain of third-party iframes. Server-side candle cache keeps repeat loads snappy. Result: the UI stays responsive while you work.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>CFTC · FRED · Twelve Data · FMP</span><span>Keys live server-side — never VITE_ secrets</span><span>06 / 08</span></div>
+  </section>
+
+  <!-- 7 PLANS -->
+  <section class="page">
+    <div style="padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Memberships · /plans</div>
+      <h2 style="font-size:30px; margin:8px 0 6px;">Four plans. One catalog. No invented prices here.</h2>
+      <p style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">
+        List prices live on the site. This sheet is the feature truth: Basic · Silver · Gold · Platinum. Green means you get it. “Roadmap” means it is catalogued but not fully live yet.
+      </p>
+      <div class="card" style="padding:8px 10px 4px; flex:1;">
+        <table class="plans">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Basic</th>
+              <th>Silver</th>
+              <th class="gold">Gold</th>
+              <th class="cyan">Platinum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="feat">Charts per window</td><td>1</td><td>4</td><td>10</td><td>Unlimited</td></tr>
+            <tr><td class="feat">Indicators</td><td>5</td><td>15</td><td>All</td><td>All</td></tr>
+            <tr><td class="feat">Drawing tools</td><td>Basic</td><td>All</td><td>All</td><td>All</td></tr>
+            <tr><td class="feat">Alerts</td><td>3</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+            <tr><td class="feat">Watchlists</td><td>3</td><td>8</td><td>15</td><td>Unlimited</td></tr>
+            <tr><td class="feat">Intraday charts</td><td class="dim">Daily+</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">Neuro-divergent layouts</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">Paper trading · real-time news</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">No ads · blackout · education · encyclopedia</td><td class="dim">—</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">Gold Bar · affiliate · custom dashboard</td><td class="dim">—</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">Pattern overlay · INDACREATOR</td><td class="dim">—</td><td class="dim">—</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+            <tr><td class="feat">AI pattern scanner · bots</td><td class="dim">—</td><td class="dim">—</td><td class="dim">—</td><td>Rolling out</td></tr>
+            <tr><td class="feat">Market replay</td><td class="dim">—</td><td>Roadmap</td><td>Roadmap</td><td>Roadmap</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px; font-size:11px; color:#7a7686;">No platform manipulation is a product rule on every plan: we do not juice the UI with FOMO, fake liquidity, or invented vendor numbers. Historical “7 year / unlimited” claims are still capped by the candle vendor.</p>
+    </div>
+    <div class="foot"><span>clearpathtrader.com/plans</span><span>Founder sheet is the source of truth</span><span>07 / 08</span></div>
+  </section>
+
+  <!-- 8 CLOSE -->
+  <section class="page">
+    <div class="grid-bg"></div>
+    <div class="glow-pink" style="top:-1in; right:-1in;"></div>
+    <div class="glow-cyan" style="bottom:-1.4in; left:-0.6in;"></div>
+    <div style="position:relative; z-index:2; padding:0.42in 0.55in 0.7in; height:100%; display:flex; flex-direction:column;">
+      <div class="kicker">Open the terminal</div>
+      <h2 style="font-size:36px; margin:10px 0 8px; max-width:9in;">A safer place to learn. A clearer place to think.</h2>
+      <p style="font-size:14px; max-width:8.6in; margin-bottom:18px;">
+        ClearPath Trader is the product of one trader’s need for a desk that does not shout. It is still being refined. The standard is simple: if a feature does not help someone understand the market better, it does not belong.
+      </p>
+      <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:14px; flex:1;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; align-content:start;">
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">Web</div><p class="mono" style="color:var(--cyan); font-size:13px;">clearpathtrader.com</p></div>
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">Press</div><p class="mono" style="color:var(--cyan); font-size:13px;">/press</p></div>
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">About</div><p class="mono" style="color:var(--cyan); font-size:13px;">/about</p></div>
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">Accessibility</div><p class="mono" style="color:var(--cyan); font-size:13px;">/accessibility · /ui</p></div>
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">Contact</div><p class="mono" style="color:var(--cyan); font-size:12px;">clearpathcharts@gmail.com</p></div>
+          <div class="card"><div class="kicker" style="margin-bottom:6px;">Company</div><p style="font-size:12px; color:var(--white);">Clear Path Markets Science Corp</p></div>
+        </div>
+        <div class="card" style="border-color:rgba(255,20,147,0.35); display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div class="kicker" style="color:var(--pink); margin-bottom:10px;">Legal, in plain English</div>
+            <p style="font-size:13px; line-height:1.5;">This document describes education and market-intelligence software. It is not an offer of brokerage, not a solicitation to trade, and not personalized investment advice. Past charts and illustrations are decorative. Live data depends on configured vendors. Empty cells mean the data is not there — we will not fill them in for you.</p>
+          </div>
+          <p style="margin-top:16px; font-size:18px; color:var(--white); font-weight:800; line-height:1.3;">The problem isn’t the person.<br/>The problem is the software.</p>
+        </div>
+      </div>
+    </div>
+    <div class="foot"><span>© 2026 Clear Path Markets Science</span><span>Not a brokerage · Not financial advice</span><span>08 / 08</span></div>
+  </section>
+
+</body>
+</html>
