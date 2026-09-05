@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Quote, Newspaper } from 'lucide-react';
+import { ArrowLeft, Quote, Newspaper, FileDown } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
 import { PRESS_KIT } from '../content/pressKit';
@@ -16,7 +16,7 @@ export default function PressKitPage() {
     <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-x-hidden relative text-base md:text-lg">
       <SEO
         title="Press Kit — Richard Floyd, Founder of ClearPath Trader"
-        description="Official press kit for Richard Floyd, founder of ClearPathTrader.com: short bio, founder story, and media facts."
+        description="Official press kit for Richard Floyd, founder of ClearPathTrader.com: short bio, founder story, media facts, and a downloadable product overview PDF."
         canonical="https://clearpathtrader.com/press"
       />
       <SurfBackground />
@@ -52,6 +52,24 @@ export default function PressKitPage() {
             {PRESS_KIT.thesis}
           </p>
         </header>
+
+        <a
+          href="/press/ClearPath-Trader-Product-Overview.pdf"
+          download="ClearPath-Trader-Product-Overview.pdf"
+          className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-[#00E5FF]/30 bg-[#00E5FF]/5 p-6 md:p-7 hover:bg-[#00E5FF]/10 transition-colors"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[#00E5FF]/40 bg-black/40 text-[#00E5FF]">
+            <FileDown size={22} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm md:text-base font-black uppercase tracking-[0.2em] text-[#00E5FF]">
+              Product overview PDF
+            </span>
+            <span className="mt-1 block text-base md:text-lg text-zinc-300 leading-relaxed">
+              Eight-page landscape brochure — desks, charts, education, literacy OS, intelligence honesty, and memberships. Not a brokerage.
+            </span>
+          </span>
+        </a>
 
         {/* Short bio — for journalists */}
         <section className="rounded-2xl border border-white/10 bg-black/50 p-6 md:p-8 space-y-4">
