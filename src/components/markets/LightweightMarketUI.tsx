@@ -460,17 +460,22 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
             </div>
 
             <div className="min-w-0 space-y-2">
-              {/* Mobile: same stack — scanner then tools — never over candles */}
-              <div className="lg:hidden space-y-3">
-                <PatternScannerPanel
-                  symbol={patternPanelSymbol || '—'}
-                  timeframe={patternTimeframe}
-                  compact
-                  locked={!hasFeature('patternOverlay')}
-                  aiMode={hasFeature('aiScanner')}
-                />
-                <ChartDrawingToolsPanel compact allowedTools={limits.drawingTools} />
-              </div>
+              {/* Mobile: scanner/tools start collapsed so candles own the first screen */}
+              <details className="lg:hidden rounded-xl border border-[#FF1493]/30 bg-black/70">
+                <summary className="cursor-pointer px-3 py-2 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
+                  Pattern Scanner + drawing tools — tap to open
+                </summary>
+                <div className="space-y-3 px-2 pb-3">
+                  <PatternScannerPanel
+                    symbol={patternPanelSymbol || '—'}
+                    timeframe={patternTimeframe}
+                    compact
+                    locked={!hasFeature('patternOverlay')}
+                    aiMode={hasFeature('aiScanner')}
+                  />
+                  <ChartDrawingToolsPanel compact allowedTools={limits.drawingTools} />
+                </div>
+              </details>
               <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between gap-2">
                 <div>
                   {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => {
