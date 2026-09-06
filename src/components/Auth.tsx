@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, Lock, Eye, EyeOff, UserCheck, 
-  Sparkles, BookOpen, Users, X, GraduationCap
+  Sparkles, BookOpen, Users, X, GraduationCap, Menu
 } from 'lucide-react';
 import { loginAnonymously } from "../firebase";
 import { verifyBoardAccess } from "../api/privateAuth";
@@ -405,7 +405,6 @@ export default function Auth() {
           filter: brightness(1.18) saturate(1.1);
         }
         .auth-nav-tabs-row {
-          display: flex;
           flex-wrap: nowrap;
           align-items: center;
           gap: 0.85rem 1.1rem;
@@ -426,7 +425,7 @@ export default function Auth() {
       <header className="sticky top-0 z-40" aria-hidden={anyModalOpen || undefined}>
       <nav
         aria-label="Primary"
-        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-4 sm:px-8 py-3 flex flex-col gap-2.5"
+        className="bg-[#050505]/80 backdrop-blur-md border-b border-zinc-900/80 px-3 py-2 sm:px-8 md:py-3 flex flex-col md:gap-2.5"
       >
         <div className="flex items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0 shrink">
@@ -441,19 +440,64 @@ export default function Auth() {
 
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <div className="flex items-center gap-2 shrink-0">
+            <details className="relative md:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-center rounded-lg border border-white/15 p-1.5 text-zinc-300" aria-label="Site menu">
+                <Menu size={16} aria-hidden="true" />
+                <span className="sr-only">Site menu</span>
+              </summary>
+              <div className="absolute right-0 z-50 mt-2 max-h-[70vh] w-[min(92vw,20rem)] overflow-y-auto rounded-xl border border-white/15 bg-black/95 p-3 shadow-[0_12px_40px_rgba(0,0,0,0.65)]" role="navigation" aria-label="Site sections">
+                <div className="flex flex-col gap-2">
+            <a
+              href={TRADING_REIMAGINED_SHORT_PATH}
+              className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
+            >
+              Trading × AI
+            </a>
+            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
+            <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+            <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
+            <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
+            <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
+            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
+            <a
+              href="/encyclopedia"
+              onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
+              className="auth-nav-tab-label shrink-0 text-[#00FFFF] hover:text-[#FF1493] transition-colors flex items-center gap-1.5 font-sans border border-[#00FFFF]/20 bg-[#00FFFF]/5 px-2.5 py-1 rounded-lg"
+            >
+              <BookOpen size={15} className="text-[#00FFFF]" aria-hidden="true" /> Encyclopedia of Finance
+            </a>
+            <a
+              href="/education"
+              onClick={(e) => { e.preventDefault(); window.location.assign('/education'); }}
+              className="auth-nav-tab-label shrink-0 text-[#B026FF] hover:text-[#00FFFF] transition-colors flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg"
+            >
+              <GraduationCap size={15} className="text-[#B026FF]" aria-hidden="true" /> ClearPath Education
+            </a>
+            <a
+              href="/ui"
+              className="auth-nav-tab-label shrink-0 text-[#B026FF] hover:text-[#00FFFF] transition-colors flex items-center gap-1.5 font-sans border border-[#B026FF]/20 bg-[#B026FF]/5 px-2.5 py-1 rounded-lg"
+            >
+              UI Modes
+            </a>
+            <a href="/learn" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Learn</a>
+            <a href="/guides" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Guides</a>
+            <a href="/faq" className="auth-nav-tab-label auth-nav-lava-text shrink-0">FAQ</a>
+                </div>
+              </div>
+            </details>
             <button
               type="button"
               onClick={() => openPrivateLogin('login')}
-              className="px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="px-3 py-1.5 sm:px-5 sm:py-2 rounded-xl gradient-bg text-white text-xs font-black uppercase tracking-wider hover:shadow-[0_0_15px_rgba(255,20,147,0.45)] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <Lock size={12} aria-hidden="true" />
-              Private Login
+              <span className="hidden xs:inline sm:inline">Private Login</span>
+              <span className="sm:hidden">Login</span>
             </button>
           </div>
         </div>
-
-        {/* Secondary link row — enlarge all; lava on plain tabs only; 4 featured keep cyan/magenta/indigo pills */}
-        <div className="auth-nav-tabs-row" role="navigation" aria-label="Site sections">
+        {/* Desktop: full link row — enlarge all; lava on plain tabs only; 4 featured keep cyan/magenta/indigo pills */}
+        <div className="auth-nav-tabs-row hidden md:flex" role="navigation" aria-label="Site sections">
           <a
             href={TRADING_REIMAGINED_SHORT_PATH}
             className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
@@ -503,7 +547,7 @@ export default function Auth() {
       {/* ==========================================
           4. IMMERSIVE STAT BAR TICKER
           ========================================== */}
-      <div className="bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
+      <div className="hidden md:block bg-[#050505] border-b border-zinc-900/60 py-2.5 overflow-hidden relative z-20">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#00FFFF] animate-ping" />
@@ -532,19 +576,24 @@ export default function Auth() {
         </div>
       </div>
 
-      <ChooseYourPath onEnter={enterChosenPath} />
-
-      <Suspense
-        fallback={
-          <section
-            id="public-chart"
-            className="relative w-full min-h-[85vh] px-2 sm:px-4 pb-10 z-20"
-            aria-label="Loading live chart"
-          />
-        }
-      >
-        <PublicLiveChart />
-      </Suspense>
+      <div className="relative z-20 flex flex-col" data-auth-chart-first="">
+        <div className="order-2 md:order-1">
+          <ChooseYourPath onEnter={enterChosenPath} />
+        </div>
+        <div className="order-1 md:order-2">
+          <Suspense
+            fallback={
+              <section
+                id="public-chart"
+                className="relative w-full min-h-[70vh] md:min-h-[85vh] px-2 sm:px-4 pb-10"
+                aria-label="Loading live chart"
+              />
+            }
+          >
+            <PublicLiveChart />
+          </Suspense>
+        </div>
+      </div>
 
       {/* ==========================================
           5. HERO SECTION

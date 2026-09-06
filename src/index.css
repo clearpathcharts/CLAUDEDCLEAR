@@ -878,6 +878,22 @@ input, textarea, select {
   outline-offset: 2px;
 }
 
+details.relative summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Phone chart-first: keep the crawlable H1 visible but tiny so candles get ~70vh. */
+@media (max-width: 767px) {
+  #seo-document-header {
+    padding: 0.35rem 0.75rem 0.2rem !important;
+  }
+  #seo-document-h1 {
+    font-size: 0.72rem !important;
+    line-height: 1.2 !important;
+    max-width: 100% !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
