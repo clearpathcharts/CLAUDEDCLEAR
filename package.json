@@ -53,6 +53,7 @@
     "test:explain-nav": "tsx scripts/explain-nav.selftest.ts",
     "test:chart-zoom": "tsx scripts/chart-zoom.selftest.ts",
     "test:chart-tools": "tsx scripts/chart-tools.selftest.ts",
+    "test:chart-overlay-prefs": "tsx scripts/chart-overlay-prefs.selftest.ts",
     "test:cot": "tsx scripts/cot-indicator.selftest.ts",
     "test:magazine-rack": "tsx scripts/magazine-rack.selftest.ts",
     "test:rss-discover": "tsx scripts/rss-discover.selftest.ts",

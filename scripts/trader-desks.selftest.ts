@@ -147,6 +147,8 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/Auth.tsx') {
     assert.match(text, /navigateToDesk/);
     assert.doesNotMatch(text, /enterChosenPath = \(profileId/);
+    assert.match(text, /data-auth-chart-first/);
+    assert.match(text, /order-1 md:order-2/);
   }
   if (rel === 'src/components/ChooseYourPath.tsx') {
     assert.match(text, /onEnter\(card\.id\)/);

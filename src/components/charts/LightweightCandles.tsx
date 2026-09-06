@@ -51,9 +51,19 @@ import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
 import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
 import type { DeskVisualPaint } from "../../lib/deskColorChart";
+import {
+  FORMING_WATCH_OPEN_KEY,
+  NARROW_CHART_MQ,
+  PATTERN_HUD_OPEN_KEY,
+  defaultChartOverlayOpen,
+  hideDesktopAxisHints,
+  isNarrowChartViewport,
+  readOverlayOpen,
+  writeOverlayOpen,
+} from "../../lib/charts/chartOverlayPrefs";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-01-CLEAN";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-04-MOBILE";
 
 export type { PriceSeriesType };
 
@@ -326,22 +336,26 @@ export function LightweightCandles({
   const [isLoading, setIsLoading] = useState(true);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
-  const [showPatternHud, setShowPatternHud] = useState(() => {
-    try {
-      const stored = localStorage.getItem("cp_chart_pattern_hud_open");
-      return stored === null ? true : stored === "1";
-    } catch {
-      return true;
-    }
-  });
-  const [showFormingWatch, setShowFormingWatch] = useState(() => {
-    try {
-      const stored = localStorage.getItem("cp_chart_forming_watch_open");
-      return stored === null ? true : stored === "1";
-    } catch {
-      return true;
-    }
-  });
+  const [narrowViewport, setNarrowViewport] = useState(() => isNarrowChartViewport());
+  const [hideAxisHints, setHideAxisHints] = useState(() => hideDesktopAxisHints());
+  const [showPatternHud, setShowPatternHud] = useState(() =>
+    readOverlayOpen(PATTERN_HUD_OPEN_KEY, defaultChartOverlayOpen(isNarrowChartViewport())),
+  );
+  const [showFormingWatch, setShowFormingWatch] = useState(() =>
+    readOverlayOpen(FORMING_WATCH_OPEN_KEY, defaultChartOverlayOpen(isNarrowChartViewport())),
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const narrowMq = window.matchMedia(NARROW_CHART_MQ);
+    const apply = () => {
+      setNarrowViewport(narrowMq.matches);
+      setHideAxisHints(hideDesktopAxisHints());
+    };
+    apply();
+    narrowMq.addEventListener("change", apply);
+    return () => narrowMq.removeEventListener("change", apply);
+  }, []);
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
   const registerDrawingSession = useRegisterChartDrawingSession();
@@ -1341,13 +1355,53 @@ export function LightweightCandles({
             <ChartZoomControls chartRef={chartRef} className="flex-row" />
           </div>
         </div>
-        {useDedicatedPatternPanel ? null : (
-        <p className="px-2 pb-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">
+        {useDedicatedPatternPanel || hideAxisHints ? null : (
+        <p className="hidden md:block px-2 pb-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">
           Drag the right axis to lift/squish · drag the bottom axis to stretch time · Shift+wheel = price
         </p>
         )}
         </>
       )}
+      {narrowViewport && !hidePatternChrome ? (
+        <div
+          className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-white/10 bg-black/90 px-2 py-1"
+          data-chart-mobile-intel=""
+        >
+          {!showPatternHud ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowPatternHud(true);
+                writeOverlayOpen(PATTERN_HUD_OPEN_KEY, true);
+              }}
+              aria-label="Open pattern scanner"
+              className="flex items-center gap-1 rounded-md border border-[#FF1493]/35 bg-black/85 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-[#FF1493]"
+            >
+              <Scan size={10} />
+              Patterns
+            </button>
+          ) : null}
+          {!showFormingWatch ? (
+            <button
+              type="button"
+              onClick={() => {
+                setShowFormingWatch(true);
+                writeOverlayOpen(FORMING_WATCH_OPEN_KEY, true);
+              }}
+              aria-label="Open forming watch"
+              className="flex items-center gap-1 rounded-md border border-[#BF00FF]/35 bg-black/85 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-[#BF00FF]"
+            >
+              <Radio size={10} className="animate-pulse" />
+              Forming
+            </button>
+          ) : null}
+          <span className="sr-only">
+            {showPatternHud || showFormingWatch
+              ? 'Intel sits below the candles — tap X to park'
+              : 'Candles first — open intel from these chips'}
+          </span>
+        </div>
+      ) : null}
 
       <div
         ref={containerRef}
@@ -1410,67 +1464,83 @@ export function LightweightCandles({
             </button>
           </div>
         )}
-        <ChartFormingWatch
-          symbol={sym}
-          brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
-          onClose={() => {
-            setShowFormingWatch(false);
-            try {
-              localStorage.setItem("cp_chart_forming_watch_open", "0");
-            } catch {
-              /* ignore */
-            }
-          }}
-        />
-        {!hidePatternChrome && !showFormingWatch && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowFormingWatch(true);
-              try {
-                localStorage.setItem("cp_chart_forming_watch_open", "1");
-              } catch {
-                /* ignore */
-              }
-            }}
-            aria-label="Open forming watch"
-            className="absolute top-3 right-16 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
-          >
-            <Radio size={10} className="animate-pulse" />
-            Forming
-          </button>
-        )}
-        <ChartPatternHud
-          symbol={sym}
-          scan={!hidePatternChrome && showPatternHud ? patternScan : null}
-          onClose={() => {
-            setShowPatternHud(false);
-            try {
-              localStorage.setItem("cp_chart_pattern_hud_open", "0");
-            } catch {
-              /* ignore */
-            }
-          }}
-        />
-        {!hidePatternChrome && !showPatternHud && (
-          <button
-            type="button"
-            onClick={() => {
-              setShowPatternHud(true);
-              try {
-                localStorage.setItem("cp_chart_pattern_hud_open", "1");
-              } catch {
-                /* ignore */
-              }
-            }}
-            aria-label="Open pattern scanner"
-            className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
-          >
-            <Scan size={10} />
-            Patterns
-          </button>
-        )}
+        {!narrowViewport ? (
+          <>
+            <ChartFormingWatch
+              symbol={sym}
+              brief={!hidePatternChrome && showFormingWatch ? formingBrief : null}
+              placement="overlay"
+              onClose={() => {
+                setShowFormingWatch(false);
+                writeOverlayOpen(FORMING_WATCH_OPEN_KEY, false);
+              }}
+            />
+            {!hidePatternChrome && !showFormingWatch && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFormingWatch(true);
+                  writeOverlayOpen(FORMING_WATCH_OPEN_KEY, true);
+                }}
+                aria-label="Open forming watch"
+                className="absolute top-3 right-16 z-50 flex items-center gap-1.5 rounded-lg border border-[#BF00FF]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#BF00FF] shadow-lg backdrop-blur-md transition-all hover:border-[#FF1493]/50 hover:text-[#FF1493]"
+              >
+                <Radio size={10} className="animate-pulse" />
+                Forming
+              </button>
+            )}
+            <ChartPatternHud
+              symbol={sym}
+              scan={!hidePatternChrome && showPatternHud ? patternScan : null}
+              placement="overlay"
+              onClose={() => {
+                setShowPatternHud(false);
+                writeOverlayOpen(PATTERN_HUD_OPEN_KEY, false);
+              }}
+            />
+            {!hidePatternChrome && !showPatternHud && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPatternHud(true);
+                  writeOverlayOpen(PATTERN_HUD_OPEN_KEY, true);
+                }}
+                aria-label="Open pattern scanner"
+                className="absolute bottom-3 left-3 z-50 flex items-center gap-1.5 rounded-lg border border-[#FF1493]/35 bg-black/85 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider text-[#FF1493] shadow-lg backdrop-blur-md transition-all hover:border-[#BF00FF]/50 hover:text-[#BF00FF]"
+              >
+                <Scan size={10} />
+                Patterns
+              </button>
+            )}
+          </>
+        ) : null}
       </div>
+      {narrowViewport && !hidePatternChrome && (showPatternHud || showFormingWatch) ? (
+        <div className="flex shrink-0 flex-col gap-1.5 px-2 py-1.5" data-chart-mobile-intel-panels="">
+          {showFormingWatch ? (
+            <ChartFormingWatch
+              symbol={sym}
+              brief={formingBrief}
+              placement="inline"
+              onClose={() => {
+                setShowFormingWatch(false);
+                writeOverlayOpen(FORMING_WATCH_OPEN_KEY, false);
+              }}
+            />
+          ) : null}
+          {showPatternHud ? (
+            <ChartPatternHud
+              symbol={sym}
+              scan={patternScan}
+              placement="inline"
+              onClose={() => {
+                setShowPatternHud(false);
+                writeOverlayOpen(PATTERN_HUD_OPEN_KEY, false);
+              }}
+            />
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
