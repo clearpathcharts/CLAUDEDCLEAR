@@ -12,16 +12,25 @@ interface ChartFormingWatchProps {
   symbol: string;
   brief: FormingStructureBrief | null;
   onClose?: () => void;
+  /** Inline = document flow off the candles (phones). Overlay = on-canvas card (desktop). */
+  placement?: 'overlay' | 'inline';
 }
 
 /** Live forming-pattern probabilities — per chart, every symbol and timeframe. */
-export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchProps) {
-  if (!brief) return null;
+export function ChartFormingWatch({ symbol, brief, onClose, placement = 'overlay' }: ChartFormingWatchProps) {
+  if (!brief && placement === 'overlay') return null;
+
+  const inline = placement === 'inline';
 
   return (
     <div
-      className="absolute top-3 right-16 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto"
+      className={
+        inline
+          ? 'relative z-10 w-full max-h-32 overflow-y-auto rounded-xl border border-[#BF00FF]/35 bg-black/92 p-2.5 pt-3 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto'
+          : 'absolute top-3 right-16 z-[55] w-72 max-h-52 overflow-visible rounded-xl border border-[#BF00FF]/35 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_24px_rgba(191,0,255,0.2)] backdrop-blur-md pointer-events-auto'
+      }
       id={`forming-watch-${symbol}`}
+      data-forming-watch-placement={placement}
     >
       {onClose && (
         <button
@@ -40,10 +49,10 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
       <div className="mb-2 flex items-center gap-2 overflow-hidden rounded-t-lg border-b border-[#FF1493]/25 pb-2 pr-10">
         <Radio size={13} className="text-[#FF1493] animate-pulse" />
         <span className="text-[10px] font-black uppercase tracking-wider text-white">Forming Watch</span>
-        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief.symbol} · {brief.timeframe}</span>
+        <span className="ml-auto text-[9px] text-[#BF00FF]">{brief ? `${brief.symbol} · ${brief.timeframe}` : symbol}</span>
       </div>
 
-      {brief.clock.active && (
+      {brief?.clock.active && (
         <p className="mb-2 text-[9px] leading-relaxed text-[#FF00CC]/90">
           {brief.clock.type === '16-bar-retrace' ? '16' : '12'}-bar clock:{' '}
           <strong>
@@ -53,7 +62,7 @@ export function ChartFormingWatch({ symbol, brief, onClose }: ChartFormingWatchP
         </p>
       )}
 
-      {brief.possibilities.length === 0 ? (
+      {!brief || brief.possibilities.length === 0 ? (
         <p className="text-[9px] text-white/45">Scanning structure… ask C.P.T. Buddy what may be forming.</p>
       ) : (
         <div className="space-y-1 overflow-y-auto max-h-32">
