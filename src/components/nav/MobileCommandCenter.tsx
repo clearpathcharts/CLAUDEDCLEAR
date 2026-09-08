@@ -179,6 +179,28 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         "
       >
         <div className="flex items-center justify-around gap-1">
+        {isFounder ? (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleItemTap("CeoDashboard")}
+              className={`
+                flex items-center gap-2 rounded-full px-3 py-2
+                text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
+                ${
+                  activeTab === "CeoDashboard"
+                    ? "bg-[#FF1493]/25 text-[#FF1493] border border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]"
+                    : "text-[#FF1493] border border-[#FF1493]/30 hover:bg-[#FF1493]/10"
+                }
+              `}
+              style={{ fontFamily: "'Cinzel', serif" }}
+            >
+              <Shield className="w-4 h-4" />
+              <span>CEO</span>
+            </button>
+            <ExplainTrigger contentId="CeoDashboard" color={explainColorForNavTab("CeoDashboard")} />
+          </div>
+        ) : null}
         <div className="flex items-center gap-1">
         <button
           type="button"
