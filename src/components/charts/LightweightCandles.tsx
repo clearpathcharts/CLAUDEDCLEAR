@@ -16,9 +16,10 @@ import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
 import { getCandleLimit } from "../../config/tierLimits";
 import { fetchTieredHistoricalData } from "../../services/marketData";
 import { executeActiveRirOnCandles, applyRirColorsToCandles, getActiveRirProgram } from "../../river/runtime";
-import { scanAllPatterns, buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
+import { buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers, filterDismissedChartPatterns, scheduleChartVisionImmediate, cancelChartVision } from "../../patterns";
 import type { PatternScanResult, FormingStructureBrief } from "../../patterns";
 import { ChartPatternHud } from "./ChartPatternHud";
+import { PatternDismissPins } from "./PatternDismissPins";
 import { ChartFormingWatch } from "./ChartFormingWatch";
 import { ChartZoomControls } from "./ChartZoomControls";
 import { ChartBackgroundToggle } from "./ChartBackgroundToggle";
@@ -335,6 +336,11 @@ export function LightweightCandles({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [patternScan, setPatternScan] = useState<PatternScanResult | null>(null);
+  const [dismissedPatternKeys, setDismissedPatternKeys] = useState<Set<string>>(() => new Set());
+  const dismissedPatternKeysRef = useRef<Set<string>>(new Set());
+  dismissedPatternKeysRef.current = dismissedPatternKeys;
+  const patternOverlaySeriesRef = useRef<ISeriesApi<SeriesType>[]>([]);
+  const scanCandlesRef = useRef<Candle[] | null>(null);
   const [formingBrief, setFormingBrief] = useState<FormingStructureBrief | null>(null);
   const [narrowViewport, setNarrowViewport] = useState(() => isNarrowChartViewport());
   const [hideAxisHints, setHideAxisHints] = useState(() => hideDesktopAxisHints());
@@ -344,6 +350,22 @@ export function LightweightCandles({
   const [showFormingWatch, setShowFormingWatch] = useState(() =>
     readOverlayOpen(FORMING_WATCH_OPEN_KEY, defaultChartOverlayOpen(isNarrowChartViewport())),
   );
+  const visiblePatternScan = useMemo(() => {
+    if (!patternScan) return null;
+    if (dismissedPatternKeys.size === 0) return patternScan;
+    return {
+      ...patternScan,
+      patterns: filterDismissedChartPatterns(patternScan.patterns, dismissedPatternKeys),
+    };
+  }, [patternScan, dismissedPatternKeys]);
+  const dismissChartPattern = (key: string) => {
+    setDismissedPatternKeys((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
@@ -358,6 +380,11 @@ export function LightweightCandles({
   }, []);
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
+
+  useEffect(() => {
+    setDismissedPatternKeys(new Set());
+    dismissedPatternKeysRef.current = new Set();
+  }, [sym, timeframe]);
   const registerDrawingSession = useRegisterChartDrawingSession();
 
   // Drawings attach on the candle series (engine only — toolbar lives under Pattern Scanner).
@@ -713,34 +740,9 @@ export function LightweightCandles({
           { candles: tierOptimizedData, symbol: sym, timeframe },
           (output) => {
             if (!active) return;
+            scanCandlesRef.current = tierOptimizedData;
             setPatternScan(output.scan);
             setFormingBrief(output.forming);
-
-            try {
-              const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
-              for (const overlay of patternLines) {
-                const line = chart.addSeries(LineSeries, {
-                  color: overlay.color,
-                  lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
-                  lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
-                  title: '',
-                  priceLineVisible: false,
-                  lastValueVisible: false,
-                  crosshairMarkerVisible: false,
-                });
-                line.setData(overlay.points);
-              }
-
-              const candleMarkers = [
-                ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
-                ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
-              ];
-              if (candleMarkers.length > 0) {
-                createSeriesMarkers(series, candleMarkers as any);
-              }
-            } catch (overlayErr) {
-              console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
-            }
           },
         );
 
@@ -1231,6 +1233,7 @@ export function LightweightCandles({
       detachShiftWheel();
       chartRef.current = null;
       candleSeriesRef.current = null;
+      patternOverlaySeriesRef.current = [];
       barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
       if (takeSnapshotRef) {
@@ -1267,6 +1270,47 @@ export function LightweightCandles({
       },
     });
   }, [paint, chartReadyKey]);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    const series = candleSeriesRef.current;
+    const candles = scanCandlesRef.current;
+    if (!chart || !series || !candles || !patternScan) return;
+
+    for (const overlaySeries of patternOverlaySeriesRef.current) {
+      try {
+        chart.removeSeries(overlaySeries);
+      } catch {
+        /* series already detached with the last chart */
+      }
+    }
+    patternOverlaySeriesRef.current = [];
+
+    const visiblePatterns = filterDismissedChartPatterns(patternScan.patterns, dismissedPatternKeys);
+    try {
+      const patternLines = buildPatternLineOverlays(candles, visiblePatterns);
+      for (const overlay of patternLines) {
+        const line = chart.addSeries(LineSeries, {
+          color: overlay.color,
+          lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
+          lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+          title: '',
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        line.setData(overlay.points);
+        patternOverlaySeriesRef.current.push(line);
+      }
+      const candleMarkers = [
+        ...buildCandlestickMarkers(candles, visiblePatterns),
+        ...buildPatternPeakMarkers(candles, visiblePatterns),
+      ];
+      createSeriesMarkers(series, candleMarkers as any);
+    } catch (overlayErr) {
+      console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
+    }
+  }, [patternScan, dismissedPatternKeys, chartReadyKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1411,6 +1455,14 @@ export function LightweightCandles({
           background: paint.background,
         }}
       >
+        {!embedMode && !hidePatternOverlays ? (
+          <PatternDismissPins
+            chart={chartRef.current}
+            series={candleSeriesRef.current}
+            patterns={visiblePatternScan?.patterns ?? []}
+            onDismiss={dismissChartPattern}
+          />
+        ) : null}
         {embedMode || hideChartToolbar ? (
           <span
             className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
@@ -1491,7 +1543,8 @@ export function LightweightCandles({
             )}
             <ChartPatternHud
               symbol={sym}
-              scan={!hidePatternChrome && showPatternHud ? patternScan : null}
+              scan={!hidePatternChrome && showPatternHud ? visiblePatternScan : null}
+              onDismissPattern={dismissChartPattern}
               placement="overlay"
               onClose={() => {
                 setShowPatternHud(false);
@@ -1531,7 +1584,8 @@ export function LightweightCandles({
           {showPatternHud ? (
             <ChartPatternHud
               symbol={sym}
-              scan={patternScan}
+              scan={visiblePatternScan}
+              onDismissPattern={dismissChartPattern}
               placement="inline"
               onClose={() => {
                 setShowPatternHud(false);
