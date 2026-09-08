@@ -52,7 +52,7 @@ import { ENCYCLOPEDIA_KNOWLEDGE_BASE } from '../components/encyclopedia/Knowledg
 import { CURRICULUM } from '../education/curriculumData';
 import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
-import { DESK_SEO } from '../content/traderDesksCopy';
+import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { TRADER_DESK_IDS, TRADER_DESKS, isTraderDeskId } from '../lib/traderDesks';
 
 // ==========================================
@@ -665,8 +665,8 @@ function renderTraderDesksIndex(): string {
     return `<li><a class="card" href="${desk.href}"><h2>${escapeHtml(desk.title)}</h2><p>${escapeHtml(seo.lead)}</p></a></li>`;
   }).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Trader desks' }])}
-<h1>ClearPath Trader desks</h1>
-<p class="lead">Four distinct interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Study tools and data visualization only — not a brokerage and not financial advice.</p>
+<h1>${escapeHtml(DESK_INDEX_SEO.h1)}</h1>
+<p class="lead">${escapeHtml(DESK_INDEX_SEO.description)}</p>
 <article><ul class="card-list">${cards}</ul></article>`;
 }
 

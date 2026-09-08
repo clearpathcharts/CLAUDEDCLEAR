@@ -3940,6 +3940,10 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
       if (isCapitalized) {
         cleanPath = cleanPath.toLowerCase();
       }
+      // Fold the /fundamental alias into the canonical desk URL in the same hop.
+      if (cleanPath === '/fundamental' || cleanPath.startsWith('/fundamental/')) {
+        cleanPath = `/desk${cleanPath}`;
+      }
       
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const redirectUrl = `${protocol}://${canonicalHost}${cleanPath}${req.url.slice(req.path.length)}`;
@@ -4381,8 +4385,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/desk',
     '/desk/:deskId',
     '/desk/:deskId/screen/:pane',
-    '/fundamental',
-    '/fundamental/:symbol',
     '/tools',
     '/tools/position-size',
     '/u/:username',
@@ -4400,6 +4402,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
+  });
+
+  // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).
+  app.get(['/fundamental', '/fundamental/:symbol'], (req, res) => {
+    const raw = typeof req.params.symbol === 'string' ? req.params.symbol : '';
+    const symbol = raw.replace(/[^A-Za-z0-9.^-]/g, '');
+    const dest = symbol ? `/desk/fundamental/${symbol}` : '/desk/fundamental';
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `${dest}${query}`);
   });
 
   const sendEncyclopedia404 = (res: any, kind: string, slug: string, hub: string, label: string, reqPath: string) => {

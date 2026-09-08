@@ -96,6 +96,12 @@ jobs:
       - name: Multi-monitor desk tree
         run: npm run test:desk-monitor-tree
 
+      - name: Trader desk routing
+        run: npm run test:trader-desks
+
+      - name: Trader desk SEO metadata
+        run: npm run test:desk-seo
+
       - name: Company directory catalog
         run: npm run test:company-catalog
 

@@ -21,7 +21,7 @@ Main bar items (left to right style):
 4. CHARTS — Live chart workspace (Strictly Charts). Neuro-adaptive chart profiles live here.
 4b. TRADER DESKS — Four distinct UIs at /desk. Choose Your Path on the public home enters them:
    - Institutional (/desk/institutional): bento market command center — global ribbon, market universe, multi-chart workspace, flow, liquidity, time & sales, volatility, options, correlation, macro, calendar, news, positioning, earnings, risk. Market structure (BOS/CHoCH/FVG) lives in a collapsible technical module. Information-first; no order tickets.
-   - Fundamental (/desk/fundamental or /fundamental): research workstation — company search, financial statements, earnings, valuation, peers, industry, FRED macro, filings, notes. Information only; no buy/sell or order tickets.
+   - Fundamental (/desk/fundamental): research workstation — company search, financial statements, earnings, valuation, peers, industry, FRED macro, filings, notes. Information only; no buy/sell or order tickets. The /fundamental alias 301s here.
    - Retail (/desk/retail): large chart, plain-language structure glossary, education links.
    - Neurodivergent (/desk/neurodivergent): calm retail + crypto workstation with pre-built sensory UI profiles (calm focus, ADHD, autism-predictable, low-stim, and more). Chart, watchlist, news, alerts — look changes, not market data. Full catalog also on /ui.
    These are study desks, not brokerage. They do not place trades or give advice.

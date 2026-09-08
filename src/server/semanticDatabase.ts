@@ -38,8 +38,8 @@ import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
 import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
-import { DESK_SEO } from '../content/traderDesksCopy';
-import { isTraderDeskId, TRADER_DESKS } from '../lib/traderDesks';
+import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
+import { deskCanonicalPath, isTraderDeskId, TRADER_DESK_IDS, TRADER_DESKS } from '../lib/traderDesks';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -335,7 +335,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   let robotsMeta =
     'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   const baseUrl = "https://clearpathtrader.com";
-  const canonicalPath = CANONICAL_ALIASES[pathClean] ?? pathClean;
+  const canonicalPath =
+    deskCanonicalPath(pathClean) ?? CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
 
   // Organization + WebSite schema (brand trust — no personal founder attribution)
@@ -1240,27 +1241,67 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       });
     }
   } else if (pathClean === '/desk') {
-    title = 'Trader Desks | ClearPathTrader';
-    description =
-      'Four ClearPathTrader interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Educational market desks — not a brokerage.';
+    title = DESK_INDEX_SEO.title;
+    description = DESK_INDEX_SEO.description;
+    keywords = DESK_INDEX_SEO.keywords;
     schemas.push(makeBreadcrumb([
       { name: 'Home', url: '' },
       { name: 'Trader desks', url: '/desk' },
     ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: DESK_INDEX_SEO.h1,
+      description: DESK_INDEX_SEO.description,
+      hasPart: TRADER_DESK_IDS.map((id) => ({
+        '@type': 'WebApplication',
+        name: DESK_SEO[id].h1,
+        url: `${baseUrl}${TRADER_DESKS[id].href}`,
+        applicationCategory: 'FinanceApplication',
+      })),
+    });
   } else if (pathClean === '/fundamental' || pathClean.startsWith('/fundamental/') || pathClean.startsWith('/desk/')) {
     const id = pathClean.includes('fundamental')
       ? 'fundamental'
       : pathClean.slice('/desk/'.length).split('/')[0];
     if (isTraderDeskId(id)) {
       const seo = DESK_SEO[id];
+      const deskHref = TRADER_DESKS[id].href;
       title = seo.title;
       description = seo.description;
-      keywords = [TRADER_DESKS[id].title, 'ClearPath Trader desk', 'market intelligence'].join(', ');
+      keywords = seo.keywords;
+      if (/\/desk\/[^/]+\/screen\//.test(pathClean)) {
+        robotsMeta = 'noindex, follow';
+      }
       schemas.push(makeBreadcrumb([
         { name: 'Home', url: '' },
         { name: 'Trader desks', url: '/desk' },
-        { name: TRADER_DESKS[id].title, url: pathClean },
+        { name: TRADER_DESKS[id].title, url: deskHref },
       ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        '@id': `${canonicalUrl}#webpage`,
+        name: seo.h1,
+        applicationCategory: 'FinanceApplication',
+        applicationSubCategory: `${TRADER_DESKS[id].title} educational desk`,
+        operatingSystem: 'Web',
+        url: canonicalUrl,
+        description: seo.description,
+        isPartOf: { '@id': `${baseUrl}/#organization` },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      });
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: seo.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+        })),
+      });
     }
   }
 
@@ -1317,6 +1358,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       ? getRegionalMarket(canonicalPath.slice('/regions/'.length))
       : null;
   const noindexPage = robotsMeta.startsWith('noindex');
+  const unknownRegionHub = Boolean(pathClean.startsWith('/regions/') && !regionalMarket);
   const hreflangTags = noindexPage
     ? ''
     : regionalHreflangHints(canonicalUrl, {
@@ -1326,7 +1368,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
         .join('\n');
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
-  const shareUrl = noindexPage ? `${baseUrl}/regions` : canonicalUrl;
+  const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
   const ogTags = `
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${primaryLocale}" />
