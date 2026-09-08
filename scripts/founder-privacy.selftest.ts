@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GITHUB_SOURCE_ZIP_URL } from '../src/lib/sourceRepo.ts';
 
 const root = path.resolve('.');
 
@@ -56,11 +57,10 @@ assert.match(ceo, /Download source ZIP/, 'CEO Dashboard has a one-tap source ZIP
 assert.match(ceo, /GITHUB_SOURCE_ZIP_URL/, 'CEO Dashboard uses the shared GitHub main ZIP URL');
 assert.match(ceo, /Website source ZIP/, 'CEO Dashboard explains the source ZIP vs disaster backup');
 
-const sourceRepo = read('src/lib/sourceRepo.ts');
-assert.match(
-  sourceRepo,
-  /https:\/\/github\.com\/clearpathcharts\/CLAUDEDCLEAR\/archive\/refs\/heads\/main\.zip/,
-  'sourceRepo exports the GitHub main ZIP URL',
+assert.equal(
+  GITHUB_SOURCE_ZIP_URL,
+  'https://github.com/clearpathcharts/CLAUDEDCLEAR/archive/refs/heads/main.zip',
+  'resolved source ZIP URL is the GitHub main archive',
 );
 
 const server = read('server.ts');
