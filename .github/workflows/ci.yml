@@ -102,6 +102,12 @@ jobs:
       - name: Trader desk SEO metadata
         run: npm run test:desk-seo
 
+      - name: Company directory catalog
+        run: npm run test:company-catalog
+
+      - name: Generator domain legitimacy
+        run: npm run test:generator-legitimacy
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'

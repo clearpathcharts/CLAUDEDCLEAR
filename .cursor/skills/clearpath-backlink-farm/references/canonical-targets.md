@@ -44,6 +44,7 @@ Do **not** link `/fundamental` — it 301s to `/desk/fundamental`.
 | Crypto | https://clearpathtrader.com/crypto |
 | Forex | https://clearpathtrader.com/forex |
 | Commodities | https://clearpathtrader.com/commodities |
+| Company directory | https://clearpathtrader.com/companies |
 | Gold | https://clearpathtrader.com/commodities/xauusd |
 | USD/JPY | https://clearpathtrader.com/forex/usdjpy |
 

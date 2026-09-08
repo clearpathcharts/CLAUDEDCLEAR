@@ -15,7 +15,7 @@ import {
   PRODUCT_META_DESCRIPTION,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
-import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
 import { injectBuildStamp } from './htmlCacheHeaders';
 import {
@@ -28,7 +28,14 @@ import {
   lookupEconomy,
   getLessonSeo,
   PROFILE_SEO,
+  lookupCompany,
+  lookupGlossary,
+  lookupLiteracyTrack,
+  lookupLiteracyLesson,
+  lookupLiteracyWiki,
 } from './crawlCatalog';
+import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
+import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
@@ -515,8 +522,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Guides", url: "/guides" }
     ]));
   } else if (pathClean === '/glossary') {
+    const gCounts = glossaryCatalogCounts();
     title = "Financial Glossary: Trading Terms Defined | ClearPathTrader";
-    description = `Plain-language definitions of ${GLOSSARY_TERMS.length}+ trading terms: leverage, liquidity, margin, order books, spreads, volatility, and more.`;
+    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus unique vocabulary-study nodes. Not a live data feed.`;
     keywords = "financial glossary, trading terms, leverage, liquidity, margin, volatility, order book";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
@@ -528,13 +536,42 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "@id": `${canonicalUrl}#glossary`,
       "name": "ClearPathTrader Financial Glossary",
       "url": canonicalUrl,
-      "hasDefinedTerm": GLOSSARY_TERMS.map(t => ({
-        "@type": "DefinedTerm",
-        "name": t.term,
-        "description": t.definition,
-        "inDefinedTermSet": `${canonicalUrl}#glossary`
-      }))
+      "numberOfItems": gCounts.total,
     });
+  } else if (pathClean.startsWith('/glossary/letter/')) {
+    const letter = pathClean.slice('/glossary/letter/'.length);
+    const label = letter === '0' ? '#' : letter.toUpperCase();
+    title = `Glossary ${label} | ClearPathTrader`;
+    description = `Educational glossary terms beginning with ${label}. Not a live vendor feed — missing cells stay DATA UNAVAILABLE.`;
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Glossary", url: "/glossary" },
+      { name: label, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/glossary/')) {
+    const rec = lookupGlossary(pathClean.slice('/glossary/'.length));
+    if (!rec) {
+      title = 'Glossary term not found | ClearPathTrader';
+      description = 'No educational glossary record matches this slug.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = rec.seoTitle;
+      description = rec.seoDescription;
+      keywords = [rec.term, rec.category, 'glossary', 'ClearPath Trader'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: "Home", url: "" },
+        { name: "Glossary", url: "/glossary" },
+        { name: rec.term, url: pathClean },
+      ]));
+      schemas.push({
+        "@context": "https://schema.org",
+        "@type": "DefinedTerm",
+        name: rec.term,
+        description: rec.definition,
+        inDefinedTermSet: "https://clearpathtrader.com/glossary",
+        url: canonicalUrl,
+      });
+    }
   } else if (pathClean === '/faq') {
     title = "FAQ: What ClearPath Trader Is (and Isn't) | ClearPathTrader";
     description = "Answers on what ClearPathTrader does, whether it is a brokerage, valuation basics, and accessibility support for disabled users.";
@@ -842,7 +879,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       },
       '/companies': {
         title: 'Company Directory | ClearPathTrader Encyclopedia',
-        description: 'Company directory for the ClearPath financial encyclopedia — explore issuers behind listed equities.',
+        description:
+          'Educational company directory: public issuers on stock profiles plus subsidiary study pages. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
         crumb: 'Companies',
       },
     };
@@ -854,9 +892,56 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: 'Encyclopedia', url: '/encyclopedia' },
       { name: hub.crumb, url: pathClean },
     ]));
+  } else if (pathClean.startsWith('/companies/page/')) {
+    const n = pathClean.slice('/companies/page/'.length);
+    title = `Company study index ${n} | ClearPathTrader`;
+    description =
+      'Educational company-directory index. Not a live filing database — missing cells stay DATA UNAVAILABLE.';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Companies', url: '/companies' },
+      { name: `Page ${n}`, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/companies/')) {
+    const slug = pathClean.slice('/companies/'.length);
+    const rec = lookupCompany(slug);
+    if (!rec) {
+      title = 'Company listing not found | ClearPathTrader';
+      description = 'No educational directory record matches this slug. Browse the company directory or stock encyclopedia.';
+      robotsMeta = 'noindex, follow';
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: 'Not found', url: pathClean },
+      ]));
+    } else {
+      title = rec.seoTitle;
+      description = rec.seoDescription;
+      keywords = [rec.name, rec.parentTicker, rec.sector, 'company directory', 'ClearPath Trader'].filter(Boolean).join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: rec.name, url: rec.status === 'Public' && rec.ticker ? `/stocks/${rec.ticker.toLowerCase()}` : pathClean },
+      ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': rec.status === 'Public' ? 'Corporation' : 'Organization',
+        name: rec.name,
+        description: rec.description,
+        url: canonicalUrl,
+        ...(rec.parentTicker
+          ? { parentOrganization: { '@type': 'Corporation', name: rec.parentCompany, tickerSymbol: rec.parentTicker } }
+          : {}),
+      });
+    }
   } else if (pathClean.startsWith('/stocks/')) {
     const symbol = pathClean.slice('/stocks/'.length);
     const stock = lookupStock(symbol);
+    if (!stock) {
+      title = 'Stock listing not found | ClearPathTrader';
+      description = 'No educational equity profile matches this ticker.';
+      robotsMeta = 'noindex, follow';
+    } else {
     const ticker = (stock?.ticker || symbol).toUpperCase();
     const company = stock?.company || ticker;
     title = `${ticker} Stock Profile — ${company} | ClearPathTrader`;
@@ -873,23 +958,94 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       '@type': 'Corporation',
       name: company,
       tickerSymbol: ticker,
-      description,
+      description: description,
       url: canonicalUrl,
     });
+    }
   } else if (pathClean.startsWith('/crypto/')) {
     const symbol = pathClean.slice('/crypto/'.length);
     const coin = lookupCrypto(symbol);
-    const sym = (coin?.symbol || symbol).toUpperCase();
-    const name = coin?.name || sym;
-    title = `${name} (${sym}) Crypto Profile | ClearPathTrader`;
-    description = coin?.description
-      || `${name} (${sym}) cryptocurrency profile — category, market context, and educational overview in ClearPath.`;
-    keywords = [sym, name, coin?.category, 'crypto', 'digital asset'].filter(Boolean).join(', ');
-    schemas.push(makeBreadcrumb([
-      { name: 'Home', url: '' },
-      { name: 'Crypto', url: '/crypto' },
-      { name: name, url: pathClean },
-    ]));
+    if (!coin) {
+      title = 'Crypto listing not found | ClearPathTrader';
+      description = 'No educational crypto profile matches this symbol.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      const sym = String(coin.symbol || symbol).toUpperCase();
+      const name = coin.name || sym;
+      title = `${name} (${sym}) Crypto Profile | ClearPathTrader`;
+      description = coin.description
+        || `${name} (${sym}) cryptocurrency profile — category, market context, and educational overview in ClearPath.`;
+      keywords = [sym, name, coin.category, 'crypto', 'digital asset'].filter(Boolean).join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Crypto', url: '/crypto' },
+        { name: name, url: pathClean },
+      ]));
+    }
+  } else if (pathClean.startsWith('/literacy/wiki/')) {
+    const node = lookupLiteracyWiki(pathClean.slice('/literacy/wiki/'.length));
+    if (!node) {
+      title = 'Literacy wiki not found | ClearPathTrader';
+      description = 'No concept-wiki node matches this slug.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = `${node.title} | Literacy OS | ClearPathTrader`;
+      description = node.summary;
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Literacy OS', url: '/literacy' },
+        { name: node.title, url: pathClean },
+      ]));
+    }
+  } else if (pathClean.startsWith('/literacy/')) {
+    const parts = pathClean.split('/').filter(Boolean);
+    if (parts.length === 3) {
+      const hit = lookupLiteracyLesson(parts[1], parts[2]);
+      if (!hit) {
+        title = 'Literacy lesson not found | ClearPathTrader';
+        description = 'No Literacy OS lesson matches this path.';
+        robotsMeta = 'noindex, follow';
+      } else {
+        title = `${hit.lesson.title} | ${hit.track.title} | ClearPathTrader`;
+        description = fitMetaDescription(hit.lesson.body);
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Literacy OS', url: '/literacy' },
+          { name: hit.track.title, url: `/literacy/${hit.track.id}` },
+          { name: hit.lesson.title, url: pathClean },
+        ]));
+      }
+    } else {
+      const track = lookupLiteracyTrack(parts[1] || '');
+      if (!track) {
+        title = 'Literacy track not found | ClearPathTrader';
+        description = 'No Literacy OS track matches this path.';
+        robotsMeta = 'noindex, follow';
+      } else {
+        title = `${track.title} | Literacy OS | ClearPathTrader`;
+        description = track.summary;
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Literacy OS', url: '/literacy' },
+          { name: track.title, url: pathClean },
+        ]));
+      }
+    }
+  } else if (pathClean.startsWith('/markets/') || pathClean.startsWith('/sectors/')) {
+    const kb = knowledgeItemForPath(pathClean);
+    if (!kb) {
+      title = 'Encyclopedia article not found | ClearPathTrader';
+      description = 'No authored knowledge article matches this path.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = `${kb.title} | ClearPathTrader Encyclopedia`;
+      description = fitMetaDescription(kb.definition);
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Encyclopedia', url: '/encyclopedia' },
+        { name: kb.title, url: pathClean },
+      ]));
+    }
   } else if (pathClean.startsWith('/forex/')) {
     const pairKey = pathClean.slice('/forex/'.length);
     const enrich = getRegionalFxEnrichment(pairKey);

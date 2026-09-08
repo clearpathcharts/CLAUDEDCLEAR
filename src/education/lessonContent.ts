@@ -170,47 +170,69 @@ const AUTHORED: Record<string, LessonBody> = {
   },
 };
 
+const STUDY_ANGLES = [
+  'mechanism — how the thing works before anyone prices it',
+  'risk — how you can get hurt if you skip the definition',
+  'process — the checklist professionals run before they size a position',
+  'vocabulary — the words you need so a chart or filing is readable',
+  'structure — where this idea sits relative to the rest of the unit',
+  'constraints — capital, time, attention, and custody limits that change the answer',
+  'evidence — what would count as a real observation versus a story',
+  'failure — the common mistake this chapter is trying to prevent',
+] as const;
+
+function angleForLesson(lessonId: string): (typeof STUDY_ANGLES)[number] {
+  let h = 2166136261;
+  for (let i = 0; i < lessonId.length; i++) {
+    h ^= lessonId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return STUDY_ANGLES[Math.abs(h) % STUDY_ANGLES.length];
+}
+
 function buildFallbackLesson(
+  lessonId: string,
   lessonTitle: string,
   schoolName: string,
   unitTitle: string
 ): LessonBody {
-  const topic = lessonTitle.replace(/\s+/g, " ").trim();
+  const topic = lessonTitle.replace(/\s+/g, ' ').trim();
+  const angle = angleForLesson(lessonId);
   return {
-    summary: `${topic} sits inside ${schoolName}'s path (${unitTitle}). Read it as a calm building block — not a trade signal.`,
+    summary: `${topic} (${schoolName} · ${unitTitle}) is a ClearPath Education chapter on ${angle}. Not a trade signal. Missing live cells stay DATA UNAVAILABLE.`,
     sections: [
       {
-        heading: "What this chapter is about",
+        heading: `What “${topic}” is in this school`,
         paragraphs: [
-          `${topic} is one idea you need before the next chapter makes sense. In ClearPath Education we strip jargon first, then add only the detail that changes how you think about risk, process, or market structure.`,
-          `Stay inside the ${schoolName} school framing: plain language, honest tradeoffs, and no promises of profit.`,
+          `${topic} is the ${angle.split('—')[0].trim()} chapter inside ${schoolName}'s ${unitTitle} unit. ClearPath writes it as a building block — not a brokerage note and not a promise of profit.`,
+          `Stay inside this school’s framing: plain language, honest tradeoffs, and DATA UNAVAILABLE for any vendor cell this page does not fill.`,
         ],
       },
       {
-        heading: "Core idea",
+        heading: 'Core idea for this lesson',
         paragraphs: [
-          `When professionals talk about "${topic}", they are usually pointing at a mechanism (how something works), a risk (how you can get hurt), or a decision rule (what to check before you act). Name which of those three this chapter is for you.`,
-          "Write one sentence in your own words. If you cannot, re-read slowly — the goal is ownership of the idea, not finishing the list.",
+          `This chapter’s study angle is ${angle}. When professionals mention “${topic}”, they are usually pointing at that angle — not a guaranteed setup.`,
+          `Write one sentence that uses the words “${topic}” and names the angle. If you cannot, re-read slowly — the goal is ownership of the idea, not finishing the list.`,
         ],
       },
       {
-        heading: "Why it matters in real markets",
+        heading: 'Why it matters in real markets',
         paragraphs: [
-          "Markets punish confusion. People who skip foundations misread charts, misuse leverage, trust the wrong intermediary, or copy a strategy that does not match their constraints.",
-          `Connecting "${topic}" to the rest of ${unitTitle} helps you see the system instead of isolated tips.`,
+          `Skipping “${topic}” in ${unitTitle} is how people misread charts, misuse leverage, trust the wrong intermediary, or copy a strategy that does not match their constraints.`,
+          `Connect this lesson to the previous and next chapters in ${schoolName} so you see a system instead of isolated tips.`,
         ],
       },
       {
-        heading: "How to practice this",
+        heading: 'How to practice this chapter',
         paragraphs: [
-          "1) Restate the idea to a friend without buzzwords. 2) Find one real-world example (a chart, a news print, a product fee). 3) Note one mistake this chapter is trying to prevent. 4) Only then move to the next lesson.",
+          `1) Restate “${topic}” without buzzwords. 2) Find one real-world example that matches the ${angle.split('—')[0].trim()} angle. 3) Note one mistake this chapter is trying to prevent. 4) Only then open the next lesson.`,
         ],
       },
     ],
     takeaways: [
-      `${topic} is a foundation idea inside ${schoolName}.`,
-      "Understand the mechanism or risk before you act on it.",
-      "If you cannot explain it simply, you are not done with the chapter.",
+      `${topic} is a ${angle.split('—')[0].trim()} idea inside ${schoolName}.`,
+      'Understand the mechanism or risk before you act on it.',
+      'If you cannot explain it simply, you are not done with the chapter.',
     ],
   };
 }
@@ -221,5 +243,5 @@ export function getLessonBody(
   schoolName: string,
   unitTitle: string
 ): LessonBody {
-  return AUTHORED[lessonId] ?? buildFallbackLesson(lessonTitle, schoolName, unitTitle);
+  return AUTHORED[lessonId] ?? buildFallbackLesson(lessonId, lessonTitle, schoolName, unitTitle);
 }
