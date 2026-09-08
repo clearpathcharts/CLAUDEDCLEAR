@@ -109,6 +109,8 @@ assert.match(secrets, /opts\?\.period === 'annual' \|\| opts\?\.period === 'quar
 assert.match(server, /buildFmpStableSymbolUrl/);
 assert.match(server, /buildFmpStableLookupUrl/);
 assert.doesNotMatch(server, /financialmodelingprep\.com\/api\/v3/);
+assert.match(server, /app\.get\(\['\/fundamental', '\/fundamental\/:symbol'\]/);
+assert.match(server, /res\.redirect\(301, `\$\{dest\}/);
 
 const quoteUrl = buildFmpStableSymbolUrl('quote', 'AAPL', 'test-key');
 assert.match(String(quoteUrl), /financialmodelingprep\.com\/stable\/quote\?/);
