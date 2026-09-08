@@ -52,6 +52,17 @@ assert.doesNotMatch(
   'Locked CEO screen must not hard-code the founder login',
 );
 
+assert.match(ceo, /Download source ZIP/, 'CEO Dashboard has a one-tap source ZIP control');
+assert.match(ceo, /GITHUB_SOURCE_ZIP_URL/, 'CEO Dashboard uses the shared GitHub main ZIP URL');
+assert.match(ceo, /Website source ZIP/, 'CEO Dashboard explains the source ZIP vs disaster backup');
+
+const sourceRepo = read('src/lib/sourceRepo.ts');
+assert.match(
+  sourceRepo,
+  /https:\/\/github\.com\/clearpathcharts\/CLAUDEDCLEAR\/archive\/refs\/heads\/main\.zip/,
+  'sourceRepo exports the GitHub main ZIP URL',
+);
+
 const server = read('server.ts');
 const unlockIdx = server.indexOf("app.post('/api/admin/founder-unlock'");
 assert.ok(unlockIdx >= 0, 'founder-unlock route exists');
