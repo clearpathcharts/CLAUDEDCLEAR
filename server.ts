@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -59,14 +59,25 @@ import {
   cryptoEntries,
   forexEntries,
   commodityEntries,
+  companyEntries,
+  companyIndexEntries,
   economyEntries,
   indicatorEntries,
   educationEntries,
   uiProfileEntries,
   encyclopediaHubEntries,
+  glossaryEntries,
+  literacyEntries,
+  knowledgeBaseEntries,
   catalogCounts,
   sitemapLastmod,
   lookupStock,
+  lookupCrypto,
+  lookupForex,
+  lookupCommodity,
+  lookupIndicator,
+  lookupCompany,
+  lookupGlossary,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAuth } from 'firebase-admin/auth';
@@ -3929,6 +3940,10 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
       if (isCapitalized) {
         cleanPath = cleanPath.toLowerCase();
       }
+      // Fold the /fundamental alias into the canonical desk URL in the same hop.
+      if (cleanPath === '/fundamental' || cleanPath.startsWith('/fundamental/')) {
+        cleanPath = `/desk${cleanPath}`;
+      }
       
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const redirectUrl = `${protocol}://${canonicalHost}${cleanPath}${req.url.slice(req.path.length)}`;
@@ -3982,6 +3997,10 @@ ${entries.map(e => `  <url>
     'sitemap-crypto.xml',
     'sitemap-forex.xml',
     'sitemap-commodities.xml',
+    'sitemap-companies.xml',
+    'sitemap-glossary.xml',
+    'sitemap-literacy.xml',
+    'sitemap-knowledge.xml',
     'sitemap-economy.xml',
     'sitemap-indicators.xml',
     'sitemap-education.xml',
@@ -4123,6 +4142,22 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   app.get('/sitemap-commodities.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(cachedUrlset('commodities', commodityEntries));
+  });
+  app.get('/sitemap-companies.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
+  });
+  app.get('/sitemap-glossary.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('glossary', glossaryEntries));
+  });
+  app.get('/sitemap-literacy.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('literacy', literacyEntries));
+  });
+  app.get('/sitemap-knowledge.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
   });
   app.get('/sitemap-economy.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
@@ -4308,6 +4343,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/guides',
     '/guides/:slug',
     '/glossary',
+    '/glossary/letter/:letter',
+    '/glossary/:slug',
     '/faq',
     '/accessibility',
     '/regions',
@@ -4325,6 +4362,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/encyclopedia-of-indicators',
     '/literacy',
     '/literacy-os',
+    '/literacy/wiki/:id',
+    '/literacy/:trackId',
+    '/literacy/:trackId/:lessonId',
+    '/markets/:slug',
+    '/sectors/:slug',
     '/market-universe',
     '/stocks',
     '/stocks/:symbol',
@@ -4335,33 +4377,80 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/commodities',
     '/commodities/:commodity',
     '/companies',
-    // /companies/:slug → 301 to /stocks/:ticker (see redirect below); not a separate thin indexable surface
+    '/companies/page/:n',
+    '/companies/:slug',
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
     '/desk',
     '/desk/:deskId',
     '/desk/:deskId/screen/:pane',
-    '/fundamental',
-    '/fundamental/:symbol',
     '/tools',
     '/tools/position-size',
     '/u/:username',
     '/reset-password',
   ];
 
-  SEO_PAGES.forEach(pagePath => {
-    app.get(pagePath, handlePageServing);
+  // Public issuers canonical to /stocks/{ticker}. Unknown slugs 404. Subsidiaries fall through to SSR.
+  app.get('/companies/:slug', (req, res, next) => {
+    const rec = lookupCompany(String(req.params.slug || ''));
+    if (rec?.status === 'Public' && rec.ticker) {
+      return res.redirect(301, `/stocks/${String(rec.ticker).toLowerCase()}`);
+    }
+    if (!rec) {
+      const enriched = enrichHtmlWithMetadata(renderUnknownCompanyNotFound(req.path), req.path);
+      return sendUncachedHtml(res, enriched, 404);
+    }
+    return next();
   });
 
-  // Company slugs are not a separate encyclopedia tree — canonical lives under /stocks/:ticker.
-  app.get('/companies/:slug', (req, res) => {
-    const slug = String(req.params.slug || '').toLowerCase();
-    const stock = lookupStock(slug);
-    if (stock?.ticker) {
-      return res.redirect(301, `/stocks/${String(stock.ticker).toLowerCase()}`);
-    }
-    return res.redirect(301, '/companies');
+  // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).
+  app.get(['/fundamental', '/fundamental/:symbol'], (req, res) => {
+    const raw = typeof req.params.symbol === 'string' ? req.params.symbol : '';
+    const symbol = raw.replace(/[^A-Za-z0-9.^-]/g, '');
+    const dest = symbol ? `/desk/fundamental/${symbol}` : '/desk/fundamental';
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `${dest}${query}`);
+  });
+
+  const sendEncyclopedia404 = (res: any, kind: string, slug: string, hub: string, label: string, reqPath: string) => {
+    const enriched = enrichHtmlWithMetadata(
+      renderUnknownEncyclopediaNotFound(kind, slug, hub, label),
+      reqPath,
+    );
+    return sendUncachedHtml(res, enriched, 404);
+  };
+
+  app.get('/stocks/:symbol', (req, res, next) => {
+    if (lookupStock(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Stock', String(req.params.symbol || ''), '/stocks', 'Stocks', req.path);
+  });
+  app.get('/crypto/:symbol', (req, res, next) => {
+    if (lookupCrypto(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Crypto', String(req.params.symbol || ''), '/crypto', 'Crypto', req.path);
+  });
+  app.get('/forex/:pair', (req, res, next) => {
+    if (lookupForex(String(req.params.pair || ''))) return next();
+    return sendEncyclopedia404(res, 'Forex', String(req.params.pair || ''), '/forex', 'Forex', req.path);
+  });
+  app.get('/commodities/:symbol', (req, res, next) => {
+    if (lookupCommodity(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Commodity', String(req.params.symbol || ''), '/commodities', 'Commodities', req.path);
+  });
+  app.get('/indicators/:slug', (req, res, next) => {
+    if (lookupIndicator(String(req.params.slug || ''))) return next();
+    return sendEncyclopedia404(res, 'Indicator', String(req.params.slug || ''), '/indicators', 'Indicators', req.path);
+  });
+  app.get('/glossary/:slug', (req, res, next) => {
+    const slug = String(req.params.slug || '');
+    if (slug === 'letter') return next();
+    if (lookupGlossary(slug)) return next();
+    return sendEncyclopedia404(res, 'Glossary', slug, '/glossary', 'Glossary', req.path);
+  });
+
+  SEO_PAGES.forEach(pagePath => {
+    app.get(pagePath, handlePageServing);
   });
 
   // TikTok for Developers — URL prefix verification (terms.html/ and site root)
@@ -4573,6 +4662,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       void submitIndexNow([
         'https://clearpathtrader.com/',
         'https://clearpathtrader.com/about',
+        'https://clearpathtrader.com/glossary',
+        'https://clearpathtrader.com/literacy',
+        'https://clearpathtrader.com/markets/bonds',
+        'https://clearpathtrader.com/companies',
+        'https://clearpathtrader.com/encyclopedia',
         ...regionalIndexNowUrls(),
       ]).then((r) => {
         if (r.skipped) {

@@ -69,6 +69,7 @@ const notFound = enrichHtmlWithMetadata(renderUnknownRegionNotFound('/regions/kr
 assert.match(notFound, /noindex/);
 assert.match(notFound, /Regional hub not found/);
 assert.match(notFound, /\/regions\/ru/);
+assert.match(notFound, /rel="canonical" href="https:\/\/clearpathtrader.com\/regions"/);
 
 // Regional FX pair pages should be thickened (not procedural one-liners only)
 for (const fx of REGIONAL_FX_ENRICHMENTS) {

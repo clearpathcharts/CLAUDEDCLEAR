@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import TraderDeskChrome from './TraderDeskChrome';
 import InstitutionalTraderDesk from './InstitutionalTraderDesk';
 import FundamentalTraderDesk from './FundamentalTraderDesk';
@@ -15,6 +16,7 @@ import {
 import { parseDeskScreenPane } from '../../lib/deskMonitorTree';
 import DeskScreenWorkspace from './DeskScreenWorkspace';
 import { DESK_SEO } from '../../content/traderDesksCopy';
+import { PRODUCT_URL } from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
 import './deskTheme.css';
@@ -101,6 +103,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   const deskId = resolveDesk(pathname);
   const seo = DESK_SEO[deskId];
   const satellitePane = parseDeskScreenPane(pathname);
+  const canonical = `${PRODUCT_URL}${TRADER_DESKS[deskId].href}`;
 
   useEffect(() => {
     rememberTraderDesk(deskId);
@@ -108,6 +111,21 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
 
   return (
     <DeskAppearanceProvider deskId={deskId}>
+      <Helmet>
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.description} />
+        <meta name="keywords" content={seo.keywords} />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content={`${PRODUCT_URL}/og-image.png`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:description" content={seo.description} />
+        {satellitePane ? <meta name="robots" content="noindex, follow" /> : null}
+      </Helmet>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} satellitePane={satellitePane} />
       {satellitePane ? null : <CptBuddyWidget />}
     </DeskAppearanceProvider>

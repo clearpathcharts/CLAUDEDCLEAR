@@ -61,6 +61,14 @@ export function parseDeskPath(pathname: string): TraderDeskId | null {
   return isTraderDeskId(id) ? id : null;
 }
 
+/** Hub URL crawlers should index. Aliases and satellite screens collapse here. */
+export function deskCanonicalPath(pathname: string): string | null {
+  const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  if (p === '/desk') return '/desk';
+  const id = parseDeskPath(p);
+  return id ? TRADER_DESKS[id].href : null;
+}
+
 export function isDeskPath(pathname: string): boolean {
   const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   return p === '/desk' || p.startsWith('/desk/') || p === '/fundamental' || p.startsWith('/fundamental/');

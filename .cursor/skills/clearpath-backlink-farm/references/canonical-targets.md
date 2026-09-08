@@ -11,6 +11,18 @@ Always prefer a **deep, useful URL** over bare `/`.
 | About | https://clearpathtrader.com/about |
 | Accessibility | https://clearpathtrader.com/accessibility |
 
+## Trader desks (chart-first workstations)
+
+| Intent | URL |
+|---|---|
+| Desk chooser | https://clearpathtrader.com/desk |
+| Institutional Trader | https://clearpathtrader.com/desk/institutional |
+| Fundamental Trader | https://clearpathtrader.com/desk/fundamental |
+| Retail Trader | https://clearpathtrader.com/desk/retail |
+| Neurodivergent Trader | https://clearpathtrader.com/desk/neurodivergent |
+
+Do **not** link `/fundamental` — it 301s to `/desk/fundamental`.
+
 ## Education (high EEAT)
 
 | Intent | URL |
@@ -32,6 +44,7 @@ Always prefer a **deep, useful URL** over bare `/`.
 | Crypto | https://clearpathtrader.com/crypto |
 | Forex | https://clearpathtrader.com/forex |
 | Commodities | https://clearpathtrader.com/commodities |
+| Company directory | https://clearpathtrader.com/companies |
 | Gold | https://clearpathtrader.com/commodities/xauusd |
 | USD/JPY | https://clearpathtrader.com/forex/usdjpy |
 
