@@ -31,7 +31,9 @@ import {
   featuredCommodities,
   allIndicators,
   catalogCounts,
+  lookupCompany,
 } from './crawlCatalog';
+import { featuredCompanies, relatedCompanies, COMPANY_DIRECTORY_DISCLAIMER } from '../lib/companyCatalog';
 import { buildIndicators } from '../components/indicatorsData';
 import { ENCYCLOPEDIA_KNOWLEDGE_BASE } from '../components/encyclopedia/KnowledgeBaseData';
 import { CURRICULUM } from '../education/curriculumData';
@@ -648,7 +650,7 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <li><a class="card" href="/crypto"><h2>Crypto</h2><p>${counts.crypto.toLocaleString()} coins and protocols explained for literacy, not hype.</p></a></li>
 <li><a class="card" href="/forex"><h2>Forex</h2><p>${counts.forex.toLocaleString()} currency pairs with macro drivers.</p></a></li>
 <li><a class="card" href="/commodities"><h2>Commodities</h2><p>${counts.commodities} metals, energy, and agriculture profiles.</p></a></li>
-<li><a class="card" href="/companies"><h2>Companies</h2><p>Issuer directory linked to equity encyclopedia entries.</p></a></li>
+<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} educational listings — ${counts.companyPages.toLocaleString()} crawlable subsidiary study pages plus public issuers on stock profiles.</p></a></li>
 </ul>
 <h2>Economy &amp; macro concepts</h2>
 <ul class="card-list">${economyCards}</ul>
@@ -755,12 +757,13 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 }
 
 function renderCompaniesHub(): string {
-  const featured = featuredStocks(16);
+  const counts = catalogCounts();
+  const featured = featuredCompanies(12);
   const cards = featured
-    .map(
-      (s) =>
-        `<li><a class="card" href="/stocks/${String(s.ticker).toLowerCase()}"><h2>${escapeHtml(s.company)}</h2><p>Ticker ${escapeHtml(String(s.ticker).toUpperCase())} · ${escapeHtml(s.sector || '')}</p></a></li>`
-    )
+    .map((c) => {
+      const href = c.status === 'Public' && c.ticker ? `/stocks/${c.ticker.toLowerCase()}` : `/companies/${c.slug}`;
+      return `<li><a class="card" href="${href}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.status)}${c.ticker ? ' · ' + escapeHtml(c.ticker) : ''} · ${escapeHtml(c.sector || '')}</p></a></li>`;
+    })
     .join('\n');
   return `${breadcrumbHtml([
     { name: 'Home', url: '/' },
@@ -768,12 +771,87 @@ function renderCompaniesHub(): string {
     { name: 'Companies' },
   ])}
 <h1>Company Directory</h1>
-<p class="lead">Issuers behind ClearPath equity encyclopedia entries. Start here, then open the matching stock profile for market context.</p>
+<p class="lead">${counts.companies.toLocaleString()} educational listings: ${counts.stocks.toLocaleString()} public issuers (canonical on stock profiles) and ${counts.companyPages.toLocaleString()} subsidiary study pages. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+<h2>Featured public issuers</h2>
 <ul class="card-list">${cards}</ul>
-<p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a></p>
+<p>Every subsidiary study page has its own URL under <code>/companies/{slug}</code> and is listed in <a href="/sitemap-companies.xml">sitemap-companies.xml</a>. Public tickers 301 to <code>/stocks/{ticker}</code>.</p>
+<p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a> · <a href="/desk/fundamental">Fundamental trader desk</a></p>
 </article>`;
+}
+
+function renderCompanyProfile(slug: string): string | null {
+  const rec = lookupCompany(slug);
+  if (!rec || rec.status !== 'Subsidiary') return null;
+  const parentHref = rec.parentTicker ? `/stocks/${rec.parentTicker.toLowerCase()}` : '/stocks';
+  const peers = relatedCompanies(rec, 4);
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Companies', url: '/companies' },
+    { name: rec.name },
+  ])}
+<h1>${escapeHtml(rec.name)}</h1>
+<p class="lead">${escapeHtml(rec.description)}</p>
+${metaGrid([
+  { k: 'Status', v: rec.status },
+  { k: 'Parent issuer', v: rec.parentCompany || '' },
+  { k: 'Parent ticker', v: rec.parentTicker || '' },
+  { k: 'Study unit', v: rec.unitLabel || '' },
+  { k: 'Sector', v: rec.sector || '' },
+  { k: 'Industry', v: rec.industry || '' },
+  { k: 'Capital tier', v: rec.capitalTier || '' },
+])}
+<article>
+<h2>How to read this listing</h2>
+<p>${escapeHtml(rec.name)} is a ClearPath educational study node, not a live company filing and not a trade idea. Use it to connect a corporate-tree role (${escapeHtml(rec.unitLabel || 'subsidiary')}) to the parent issuer’s stock encyclopedia page.</p>
+<p><strong>DATA UNAVAILABLE</strong> for live revenue, filings, and quotes on this page. Open the parent stock profile for any vendor-backed cells.</p>
+<h2>Parent issuer</h2>
+<p><a href="${parentHref}">${escapeHtml(rec.parentCompany || rec.parentTicker || 'Stock profile')}</a> — educational equity encyclopedia entry.</p>
+<h2>Study path</h2>
+<ol>
+<li>Read the parent <a href="${parentHref}">stock profile</a>.</li>
+<li>Walk <a href="/learn/valuation">valuation</a> and <a href="/education/stocks">Stocks school</a>.</li>
+<li>Open the <a href="/desk/fundamental">Fundamental trader desk</a> for statements when vendor data exists.</li>
+</ol>
+${faqSectionHtml([
+  {
+    question: `Is ${rec.name} a real SEC filer?`,
+    answer:
+      'This URL is an educational corporate-tree listing in the ClearPath encyclopedia. It is not a live filing, not a brokerage research note, and not investment advice. Missing financials stay DATA UNAVAILABLE.',
+  },
+  {
+    question: 'Where is the public issuer?',
+    answer: rec.parentTicker
+      ? `The public issuer is ${rec.parentCompany} (${rec.parentTicker}). Its crawlable encyclopedia page is /stocks/${rec.parentTicker.toLowerCase()}.`
+      : 'Open the stock encyclopedia hub at /stocks.',
+  },
+])}
+${relatedLinksSection(
+  'Related listings',
+  peers.map((p) => ({
+    href: p.status === 'Public' && p.ticker ? `/stocks/${p.ticker.toLowerCase()}` : `/companies/${p.slug}`,
+    label: p.name,
+    blurb: p.status === 'Public' ? `Public issuer ${p.ticker}` : p.unitLabel,
+  }))
+)}
+<p><a href="/companies">← Company directory</a> · <a href="/stocks">Stocks</a> · <a href="/encyclopedia">Encyclopedia</a></p>
+</article>`;
+}
+
+export function renderUnknownCompanyNotFound(reqPath: string): string {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const slug = pathClean.split('/').filter(Boolean)[1] || '';
+  const body = `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Companies', url: '/companies' },
+    { name: 'Not found' },
+  ])}
+<h1>Company listing not found</h1>
+<p class="lead">No educational directory record matches <code>${escapeHtml(slug)}</code>.</p>
+<p><a href="/companies">← Company directory</a> · <a href="/stocks">Stock encyclopedia</a></p>`;
+  return renderShell(pathClean, body, 'en', null, 'noindex, follow');
 }
 
 function renderIndicatorsHub(): string {
@@ -1388,6 +1466,7 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/forex') body = renderForexHub();
   else if (pathClean === '/commodities') body = renderCommoditiesHub();
   else if (pathClean === '/companies') body = renderCompaniesHub();
+  else if (parts[0] === 'companies' && parts.length === 2) body = renderCompanyProfile(parts[1]);
   else if (pathClean === '/indicators' || pathClean === '/encyclopedia-of-indicators') body = renderIndicatorsHub();
   else if (parts[0] === 'indicators' && parts.length === 2) body = renderIndicatorDetail(parts[1]);
   else if (pathClean === '/education' || pathClean === '/clearpath-education') body = renderEducationHub();

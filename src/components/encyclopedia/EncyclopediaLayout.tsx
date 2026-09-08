@@ -27,6 +27,8 @@ import WatchlistView from './WatchlistView';
 import MarketPsychologyView from './MarketPsychologyView';
 import StockDetailsView from './StockDetailsView';
 import CompaniesDirectoryView from './CompaniesDirectoryView';
+import CompanyProfileView from './CompanyProfileView';
+import { lookupCompany } from '../../lib/companyCatalog';
 import MasterMarketExplorerView from './MasterMarketExplorerView';
 import ForexPage from '../../pages/forex';
 import CryptoPage from '../../pages/crypto';
@@ -927,14 +929,16 @@ export default function EncyclopediaLayout() {
           setActiveFile(`encyclopedia/stocks/${symbol}.html`);
         }
       } else if (path.startsWith('/companies/')) {
-        const comp = path.replace('/companies/', '');
-        let symbolMapped = comp;
-        if (comp === 'apple') symbolMapped = 'apple';
-        else if (comp === 'tesla') symbolMapped = 'tesla';
-        else if (comp === 'nvidia') symbolMapped = 'nvidia';
-        else if (comp === 'microsoft') symbolMapped = 'microsoft';
-        else if (comp === 'amazon') symbolMapped = 'amazon';
-        setActiveFile(`encyclopedia/stocks/${symbolMapped}.html`);
+        const comp = path.replace('/companies/', '').split('?')[0].replace(/\/$/, '');
+        const rec = lookupCompany(comp);
+        if (rec?.status === 'Public' && rec.ticker) {
+          const t = rec.ticker.toLowerCase();
+          setActiveFile(`encyclopedia/stocks/${t === 'aapl' ? 'apple' : t === 'tsla' ? 'tesla' : t === 'nvda' ? 'nvidia' : t === 'msft' ? 'microsoft' : t === 'amzn' ? 'amazon' : t}.html`);
+        } else if (rec) {
+          setActiveFile(`encyclopedia/companies/${rec.slug}.html`);
+        } else {
+          setActiveFile('encyclopedia/companies/directory.html');
+        }
       } else if (path.startsWith('/crypto/')) {
         const coin = path.replace('/crypto/', '');
         setActiveFile(`encyclopedia/crypto/${coin}.html`);
@@ -2693,7 +2697,7 @@ of this software and associated documentation files (the "The Software")...`;
                 { file: 'index.html', label: 'HOME', desc: 'Global Financial Observatory', icon: Home, highlight: false },
                 { file: 'markets.html', label: 'MARKETS', desc: 'World Market Systems', icon: Globe, highlight: false },
                 { file: 'encyclopedia/markets/stocks.html', label: 'STOCKS', desc: '10,000+ Publicly Traded Stocks', icon: TrendingUp, highlight: false },
-                { file: 'encyclopedia/companies/directory.html', label: 'COMPANIES', desc: '60,000+ Corporations Directory', icon: Users, highlight: false },
+                { file: 'encyclopedia/companies/directory.html', label: 'COMPANIES', desc: 'Educational company directory', icon: Users, highlight: false },
                 { file: 'encyclopedia/markets/forex.html', label: 'FOREX', desc: 'Global Currency Systems', icon: DollarSign, highlight: false },
                 { file: 'encyclopedia/markets/crypto.html', label: 'CRYPTO', desc: 'Digital Asset Ecosystems', icon: Coins, highlight: false },
                 { file: 'encyclopedia/markets/commodities.html', label: 'COMMODITIES', desc: 'Energy, Metals, Agriculture', icon: Boxes, highlight: false },
@@ -4046,6 +4050,12 @@ of this software and associated documentation files (the "The Software")...`;
                   {/* Companies Directory View (60,000+ corporations) */}
                   {activeFile === 'encyclopedia/companies/directory.html' && (
                     <CompaniesDirectoryView selectFileNode={selectFileNode} />
+                  )}
+                  {activeFile.startsWith('encyclopedia/companies/') &&
+                    activeFile !== 'encyclopedia/companies/directory.html' && (
+                    <CompanyProfileView
+                      slug={activeFile.replace('encyclopedia/companies/', '').replace(/\.html$/, '')}
+                    />
                   )}
 
                   {/* Portfolio Lab View */}

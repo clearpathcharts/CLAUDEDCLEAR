@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -59,6 +59,7 @@ import {
   cryptoEntries,
   forexEntries,
   commodityEntries,
+  companyEntries,
   economyEntries,
   indicatorEntries,
   educationEntries,
@@ -67,6 +68,7 @@ import {
   catalogCounts,
   sitemapLastmod,
   lookupStock,
+  lookupCompany,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAuth } from 'firebase-admin/auth';
@@ -3982,6 +3984,7 @@ ${entries.map(e => `  <url>
     'sitemap-crypto.xml',
     'sitemap-forex.xml',
     'sitemap-commodities.xml',
+    'sitemap-companies.xml',
     'sitemap-economy.xml',
     'sitemap-indicators.xml',
     'sitemap-education.xml',
@@ -4123,6 +4126,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   app.get('/sitemap-commodities.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(cachedUrlset('commodities', commodityEntries));
+  });
+  app.get('/sitemap-companies.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('companies', companyEntries));
   });
   app.get('/sitemap-economy.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
@@ -4335,7 +4342,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/commodities',
     '/commodities/:commodity',
     '/companies',
-    // /companies/:slug → 301 to /stocks/:ticker (see redirect below); not a separate thin indexable surface
+    '/companies/:slug',
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
@@ -4350,18 +4357,21 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/reset-password',
   ];
 
-  SEO_PAGES.forEach(pagePath => {
-    app.get(pagePath, handlePageServing);
+  // Public issuers canonical to /stocks/{ticker}. Unknown slugs 404. Subsidiaries fall through to SSR.
+  app.get('/companies/:slug', (req, res, next) => {
+    const rec = lookupCompany(String(req.params.slug || ''));
+    if (rec?.status === 'Public' && rec.ticker) {
+      return res.redirect(301, `/stocks/${String(rec.ticker).toLowerCase()}`);
+    }
+    if (!rec) {
+      const enriched = enrichHtmlWithMetadata(renderUnknownCompanyNotFound(req.path), req.path);
+      return sendUncachedHtml(res, enriched, 404);
+    }
+    return next();
   });
 
-  // Company slugs are not a separate encyclopedia tree — canonical lives under /stocks/:ticker.
-  app.get('/companies/:slug', (req, res) => {
-    const slug = String(req.params.slug || '').toLowerCase();
-    const stock = lookupStock(slug);
-    if (stock?.ticker) {
-      return res.redirect(301, `/stocks/${String(stock.ticker).toLowerCase()}`);
-    }
-    return res.redirect(301, '/companies');
+  SEO_PAGES.forEach(pagePath => {
+    app.get(pagePath, handlePageServing);
   });
 
   // TikTok for Developers — URL prefix verification (terms.html/ and site root)
