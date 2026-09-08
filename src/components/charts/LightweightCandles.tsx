@@ -331,6 +331,8 @@ export function LightweightCandles({
   layoutRef.current = { isExpanded, fillParent };
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const [chartReadyKey, setChartReadyKey] = useState(0);
+  const [liveChartApi, setLiveChartApi] = useState<IChartApi | null>(null);
+  const [liveCandleSeries, setLiveCandleSeries] = useState<ISeriesApi<SeriesType> | null>(null);
   const barCountRef = useRef(0);
   const [crosshairEnabled, setCrosshairEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -587,6 +589,8 @@ export function LightweightCandles({
 
     const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
     candleSeriesRef.current = series;
+    setLiveChartApi(chart);
+    setLiveCandleSeries(series);
     setChartReadyKey((k) => k + 1);
 
     /**
@@ -1233,6 +1237,8 @@ export function LightweightCandles({
       detachShiftWheel();
       chartRef.current = null;
       candleSeriesRef.current = null;
+      setLiveChartApi(null);
+      setLiveCandleSeries(null);
       patternOverlaySeriesRef.current = [];
       barCountRef.current = 0;
       cancelChartVision(sym, timeframe);
@@ -1457,8 +1463,8 @@ export function LightweightCandles({
       >
         {!embedMode && !hidePatternOverlays ? (
           <PatternDismissPins
-            chart={chartRef.current}
-            series={candleSeriesRef.current}
+            chart={liveChartApi}
+            series={liveCandleSeries}
             patterns={visiblePatternScan?.patterns ?? []}
             onDismiss={dismissChartPattern}
           />
