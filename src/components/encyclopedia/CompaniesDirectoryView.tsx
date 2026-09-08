@@ -497,8 +497,8 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
 
                     <div className="flex items-center gap-3 self-stretch sm:self-auto justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-white/10 shrink-0">
                       <div className="flex flex-col items-end leading-none">
-                        <span className="font-mono text-xs sm:text-sm text-white font-extrabold">{corp.marketCap}</span>
-                        <span className="font-mono text-[9px] sm:text-[10px] text-zinc-400 uppercase mt-1">{corp.marketCapRank}</span>
+                        <span className="font-mono text-xs sm:text-sm text-white font-extrabold">DATA UNAVAILABLE</span>
+                        <span className="font-mono text-[9px] sm:text-[10px] text-zinc-400 uppercase mt-1">Educational listing</span>
                       </div>
                       <ChevronRight className={`w-5 h-5 transition-transform ${isSelected ? 'text-cyan-400 translate-x-1.5' : 'text-zinc-500'}`} />
                     </div>
@@ -607,11 +607,11 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs sm:text-sm bg-black/40 p-4 rounded-xl border border-white/10">
                   <div>
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Market Cap Tier</span>
-                    <span className="text-white font-black mt-1 block text-sm sm:text-base">{selectedCorp.marketCap}</span>
+                    <span className="text-white font-black mt-1 block text-sm sm:text-base">DATA UNAVAILABLE</span>
                   </div>
                   <div>
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Cap Position</span>
-                    <span className="text-cyan-400 font-black mt-1 block text-sm sm:text-base">{selectedCorp.marketCapRank}</span>
+                    <span className="text-cyan-400 font-black mt-1 block text-sm sm:text-base">Educational listing</span>
                   </div>
                   <div className="pt-2.5 border-t border-white/10">
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Founded Year</span>
