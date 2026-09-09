@@ -12,6 +12,7 @@ import {
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import { isFounderEmail } from '../lib/founder';
+import { continueToRememberedDesk } from '../lib/traderDesks';
 import './privateLoginSciFi.css';
 
 type Step =
@@ -146,9 +147,9 @@ export default function PrivateLoginDesk({
         return;
       }
       if (isFounderEmail(email) || isFounderEmail(result.user?.email)) {
-        window.location.assign('/ceo');
+        continueToRememberedDesk({ founder: true });
       } else {
-        window.location.reload();
+        continueToRememberedDesk();
       }
     } catch (err: any) {
       setError(err.message || 'Login failed.');
@@ -179,7 +180,9 @@ export default function PrivateLoginDesk({
         setBusy(false);
         return;
       }
-      window.location.reload();
+      continueToRememberedDesk({
+        founder: isFounderEmail(email) || isFounderEmail(result.user?.email),
+      });
     } catch (err: any) {
       setError(err.message || 'Could not create private account.');
       setBusy(false);
@@ -198,7 +201,9 @@ export default function PrivateLoginDesk({
         newDisplayName: displayName,
       });
       if (!result.quarantined) {
-        window.location.reload();
+        continueToRememberedDesk({
+          founder: isFounderEmail(email) || isFounderEmail(result.user?.email),
+        });
         return;
       }
       if (result.emailSent) {

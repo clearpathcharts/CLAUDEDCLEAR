@@ -1,5 +1,5 @@
 /**
- * Login choose-your-path: heading, Enter above each image (no white Login),
+ * Login choose-your-path: heading, no guest Enter (Private Login only),
  * public full-size chart with search, manifesto copy must not remain on login.
  *
  * Run: npx tsx scripts/choose-path.selftest.ts
@@ -24,6 +24,9 @@ const auth = fs.readFileSync(path.join(root, 'src/components/Auth.tsx'), 'utf8')
 assert.match(auth, /ChooseYourPath/);
 assert.match(auth, /#choose-path/);
 assert.match(auth, /enterChosenPath/);
+assert.match(auth, /rememberTraderDesk/);
+assert.match(auth, /openPrivateLogin\('login'\)/);
+assert.doesNotMatch(auth, /navigateToDesk\(deskId\)/);
 assert.doesNotMatch(auth, /loginChosenPath/);
 assert.match(auth, /PublicLiveChart/);
 assert.match(auth, /#public-chart/);
@@ -51,7 +54,10 @@ assert.doesNotMatch(auth, /Soft Launch/);
 
 const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'), 'utf8');
 assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
-assert.match(ui, />\s*Enter\s*</);
+assert.match(ui, /onChoosePath/);
+assert.match(ui, /Private Login to open/);
+assert.doesNotMatch(ui, />\s*Enter\s*</);
+assert.doesNotMatch(ui, /PathEnter/);
 assert.doesNotMatch(ui, />\s*Login\s*</);
 assert.match(ui, /grid-cols-3/);
 assert.match(ui, /justify-center/);
