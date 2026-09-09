@@ -92,6 +92,9 @@
   max-height: min(78vh, 38rem);
   padding-top: 2px;
 }
+
+
+.cp-scifi-login-field {
   margin-bottom: 15px;
   text-align: left;
 }
