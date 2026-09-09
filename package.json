@@ -22,6 +22,7 @@
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "test:ui-fonts": "tsx scripts/ui-fonts.selftest.ts",
     "test:choose-path": "tsx scripts/choose-path.selftest.ts",
+    "test:private-login-scifi": "tsx scripts/private-login-scifi.selftest.ts",
     "test:trader-desks": "tsx scripts/trader-desks.selftest.ts",
     "test:desk-seo": "tsx scripts/desk-seo.selftest.ts",
     "test:desk-monitor-tree": "tsx scripts/desk-monitor-tree.selftest.ts",
