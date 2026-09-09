@@ -7,6 +7,7 @@ import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
+import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
 
@@ -786,13 +787,14 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
-        Ops only · Daily Ops · Budget · Members · Alerts · Disaster backup · Site Doctor
+        Ops only · Daily Ops · Overnight structure review · Budget · Members · Alerts · Disaster backup · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
 
       <CeoAlwaysOnMonitor />
       <DailyOpsDesk getHeaders={founderApiHeaders} />
+      <DailyPatternReviewDesk getHeaders={founderApiHeaders} />
 
       {/* CEO Micro-Tabs */}
       <div className="flex border-b border-indigo-500/20 mb-8 gap-4 select-none flex-wrap">

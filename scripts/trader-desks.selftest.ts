@@ -119,6 +119,7 @@ const srcFiles = [
   'src/components/desks/retail/useRetailIntelligence.ts',
   'src/components/desks/retail/retailStore.ts',
   'src/components/CeoDashboard.tsx',
+  'src/components/DailyPatternReviewDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/neuro/NeurodivergentDashboard.tsx',
   'src/components/desks/neuro/neuroProfile.ts',
@@ -263,8 +264,16 @@ for (const rel of srcFiles) {
     assert.match(text, /resolveAssetColors/);
     assert.match(text, /RAINBOW_PRESETS/);
   }
+  if (rel === 'src/components/DailyPatternReviewDesk.tsx') {
+    assert.match(text, /Overnight structure review/);
+    assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /MARKETS/);
+    assert.match(text, /Not a trade signal/);
+    assert.doesNotMatch(text, /You should buy|Place order/i);
+  }
   if (rel === 'src/components/CeoDashboard.tsx') {
     assert.match(text, /DailyOpsDesk/);
+    assert.match(text, /DailyPatternReviewDesk/);
     assert.match(text, /CeoAlwaysOnMonitor/);
     assert.match(text, /userProfile\?\.email/);
     assert.match(text, /\/ceo/);

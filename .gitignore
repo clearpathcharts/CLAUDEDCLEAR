@@ -24,6 +24,7 @@ secrets/
 /data/timeframe-verify/
 /data/site-doctor/
 /data/daily-ops/
+/data/daily-pattern-review/
 /data/chart-pulse/
 /data/cot/
 /data/*.log

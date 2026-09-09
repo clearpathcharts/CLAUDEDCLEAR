@@ -96,6 +96,9 @@ jobs:
       - name: Multi-monitor desk tree
         run: npm run test:desk-monitor-tree
 
+      - name: Overnight structure review
+        run: npm run test:daily-pattern-review
+
       - name: Trader desk routing
         run: npm run test:trader-desks
 

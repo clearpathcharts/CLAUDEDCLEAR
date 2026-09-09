@@ -146,7 +146,7 @@ export function describeClearPathLocation(pathname: string): {
     return { path, surface: 'ClearPath Education', directions: 'Structured lessons and quizzes.' };
   }
   if (p.startsWith('/ceo')) {
-    return { path, surface: 'CEO Dashboard', directions: 'Founder ops only — Daily Ops, budget, members. Chart patterns stay on MARKETS/CHARTS.' };
+    return { path, surface: 'CEO Dashboard', directions: 'Founder ops only — Daily Ops, overnight structure review, budget, members. Live overlays stay on MARKETS/CHARTS.' };
   }
   return {
     path,
