@@ -7,12 +7,6 @@ import {
   Image as ImageIcon, 
   Search, 
   MessageSquare, 
-  Bell, 
-  Mail, 
-  Plus, 
-  Heart, 
-  MoreHorizontal,
-  ChevronDown,
   ArrowLeft,
   User,
   CheckCircle2,
@@ -35,8 +29,6 @@ import {
   Layout,
   Terminal,
   Cpu,
-  X,
-  Users,
   Trophy,
   Briefcase,
   Grid,
@@ -64,7 +56,6 @@ import { setClearState } from '../lib/trading/clearState';
 
 import SEO from './SEO';
 import ThemeSelector from './ThemeSelector';
-import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { chartThemes } from '../config/chartThemes';
 import { AnalysisEvent } from '../types';
 
@@ -305,18 +296,6 @@ const TabContent = ({
   isFounder,
   selectedLightweightSymbol,
   setSelectedLightweightSymbol,
-  rightSide,
-  setRightSide,
-  showTicker,
-  setShowTicker,
-  layoutDensity,
-  setLayoutDensity,
-  showTerminalMatrixNoise,
-  setShowTerminalMatrixNoise,
-  activeChat,
-  setActiveChat,
-  showHomepageContacts,
-  handleSetShowHomepageContacts
 }: { 
   activeTab: string, 
   setActiveTab: (t: string) => void, 
@@ -329,18 +308,6 @@ const TabContent = ({
   isFounder: boolean,
   selectedLightweightSymbol: string,
   setSelectedLightweightSymbol: (s: string) => void,
-  rightSide: boolean,
-  setRightSide: (v: boolean) => void,
-  showTicker: boolean,
-  setShowTicker: (v: boolean) => void,
-  layoutDensity: 'compact' | 'balanced' | 'cozy',
-  setLayoutDensity: (v: 'compact' | 'balanced' | 'cozy') => void,
-  showTerminalMatrixNoise: boolean,
-  setShowTerminalMatrixNoise: (v: boolean) => void,
-  activeChat: any,
-  setActiveChat: (v: any) => void,
-  showHomepageContacts: boolean,
-  handleSetShowHomepageContacts: (v: boolean) => void
 }) => {
   // Membership tier gating (founders bypass all gates)
   const { tierRank, loading: membershipLoading, hasFeature } = useMembership(profile);
@@ -369,12 +336,6 @@ const TabContent = ({
         <DiscoveryFeed 
           onTabChange={setActiveTab} 
           profile={profile} 
-          showHomepageContacts={showHomepageContacts}
-          showTerminalMatrixNoise={showTerminalMatrixNoise}
-          onSelectContact={(contact) => {
-            setActiveChat(contact);
-            setRightSide(true);
-          }}
         />
       );
       case 'Market': return <StandardMarketUI profile={profile} onBack={onBack} />;
@@ -513,18 +474,6 @@ const TabContent = ({
     isFounder,
     selectedLightweightSymbol,
     setSelectedLightweightSymbol,
-    rightSide, 
-    setRightSide, 
-    showTicker, 
-    setShowTicker, 
-    layoutDensity, 
-    setLayoutDensity, 
-    showTerminalMatrixNoise, 
-    setShowTerminalMatrixNoise,
-    showHomepageContacts,
-    handleSetShowHomepageContacts,
-    activeChat,
-    setActiveChat,
     tierRank,
     membershipLoading,
   ]);
@@ -563,14 +512,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     logout,
     purgeAuthCache
   } = useAuth();
-  // Contacts rail stays closed on login — no auto-open faces/conversations.
-  const [rightSide, setRightSide] = useState(false);
   const [chatDockOpen, setChatDockOpen] = useState(false);
-
-  const handleSetRightSide = (open: boolean) => {
-    setRightSide(open);
-    localStorage.setItem('cp_contacts_sidebar_open', open ? 'true' : 'false');
-  };
   const [activeTab, setActiveTab ] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -640,7 +582,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   });
   const [layoutDensity, setLayoutDensity] = useState<'compact' | 'balanced' | 'cozy'>(() => (localStorage.getItem('cp_layout_density') as any) || 'balanced');
   const [showTerminalMatrixNoise, setShowTerminalMatrixNoise] = useState(() => localStorage.getItem('cp_terminal_ambient_overlay') === 'true');
-  const [showHomepageContacts, setShowHomepageContacts] = useState(() => localStorage.getItem('cp_show_homepage_contacts') === 'true');
 
   const handleSetShowTicker = (val: boolean) => {
     setShowTicker(val);
@@ -657,14 +598,8 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     localStorage.setItem('cp_terminal_ambient_overlay', val ? 'true' : 'false');
   };
 
-  const handleSetShowHomepageContacts = (val: boolean) => {
-    setShowHomepageContacts(val);
-    localStorage.setItem('cp_show_homepage_contacts', val ? 'true' : 'false');
-  };
-
 
   const [showAdditionalTerms, setShowAdditionalTerms] = useState(false);
-  const [isEditingIntro, setIsEditingIntro] = useState(false);
   const [statusText, setStatusText] = useState('');
   
   const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -702,8 +637,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     location: '',
     company: ''
   });
-  const [activeChat, setActiveChat] = useState<any>(null);
-  const [activeStory, setActiveStory] = useState<any>(null);
   const [chartTheme, setChartTheme] = useState<any>(() => {
     try {
       const savedKey = localStorage.getItem('clearpath_selected_chart_theme_key');
@@ -934,7 +867,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
   const handleSaveIntro = async () => {
     await updateIntro(introForm);
-    setIsEditingIntro(false);
   };
 
   const handleDetectLocation = async () => {
@@ -1017,10 +949,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       }
     }
   }, [authLoading, authUser?.email, userProfile?.email]);
-
-  /** Real stories/contacts only — no seeded fake people. */
-  const stories: { id: number; name: string; time: string; img: string }[] = [];
-  const contacts: { id: number; name: string; status: string; img: string }[] = [];
 
   const getSeoData = () => {
     switch (activeTab) {
@@ -1431,18 +1359,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                         isFounder={isFounder()}
                         selectedLightweightSymbol={selectedLightweightSymbol}
                         setSelectedLightweightSymbol={setSelectedLightweightSymbol}
-                        rightSide={rightSide}
-                        setRightSide={handleSetRightSide}
-                        showTicker={showTicker}
-                        setShowTicker={handleSetShowTicker}
-                        layoutDensity={layoutDensity}
-                        setLayoutDensity={handleSetLayoutDensity}
-                        showTerminalMatrixNoise={showTerminalMatrixNoise}
-                        setShowTerminalMatrixNoise={handleSetShowTerminalMatrixNoise}
-                        activeChat={activeChat}
-                        setActiveChat={setActiveChat}
-                        showHomepageContacts={showHomepageContacts}
-                        handleSetShowHomepageContacts={handleSetShowHomepageContacts}
                       />
                     </Suspense>
                   </div>
@@ -1456,164 +1372,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           </div>
         </div>
       </div>
-
-      {/* Right Sidebar */}
-      {activeTab !== 'StrictlyCharts' && !isAppShell && (
-      <div className={`
-        fixed inset-y-0 right-0 z-50 w-[280px] border-l flex flex-col transition-all duration-300 glass
-        xl:sticky xl:top-0 xl:h-dvh
-        ${rightSide ? 'translate-x-0' : 'translate-x-full'}
-      `}
-      style={{ borderColor: `${profile.borderA}22` }}
-      >
-        <div className="h-[60px] flex items-center justify-between px-4 sticky top-0 z-10" style={{ background: profile.bgBottom }}>
-          <div className="flex items-center justify-around flex-1 min-w-0">
-            <button type="button" aria-label="Mail" className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
-              <Mail size={20} />
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
-            </button>
-            <button type="button" aria-label="Notifications" className="text-[#64677a] hover:text-white relative" style={{ color: `${profile.borderA}88` }}>
-              <Bell size={20} />
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2" style={{ background: profile.borderA, borderColor: profile.bgBottom }} />
-            </button>
-            <div className="flex items-center text-[#64677a] font-semibold text-sm cursor-pointer hover:text-white transition-colors min-w-0" onClick={() => setIsEditingIntro(true)}>
-              <span className="name-text font-bold truncate max-w-[60px]" style={{ color: profile.borderA }}>{user.name}</span>
-              <div className="surfboard-profile-outline mx-2 border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500] overflow-hidden shrink-0" style={{ width: '28px', height: '46px' }}>
-                {user.avatar ? (
-                  isVideoUrl(user.avatar) ? (
-                    <video src={user.avatar} className="surfboard-img object-cover" autoPlay loop muted playsInline />
-                  ) : isAudioUrl(user.avatar) ? (
-                    <div className="surfboard-img bg-[#111] flex items-center justify-center overflow-hidden">
-                      <audio src={user.avatar} className="w-[300%] scale-[0.25] opacity-50" />
-                    </div>
-                  ) : (
-                    <img src={user.avatar} referrerPolicy="no-referrer" className="surfboard-img object-cover" />
-                  )
-                ) : (
-                  <div className="surfboard-img bg-[#111]" />
-                )}
-              </div>
-              <ChevronDown size={10} style={{ color: profile.borderA }} />
-            </div>
-          </div>
-          <button
-            type="button"
-            aria-label="Close contacts"
-            onClick={() => handleSetRightSide(false)}
-            className="ml-2 p-2 hover:bg-white/10 rounded-full transition-colors shrink-0"
-          >
-            <X size={20} style={{ color: profile.borderA }} />
-          </button>
-        </div>
-
-        <div className="scrollbar-panel flex-1 overflow-y-auto custom-scrollbar pb-32 lg:pb-8">
-          <div className="px-6 py-8 border-b" style={{ borderColor: `${profile.borderA}22` }}>
-            <div className="text-[15px] font-black uppercase tracking-[0.2em] mb-6 text-[#ff8c00]">Stories</div>
-            {stories.length === 0 ? (
-              <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
-                No stories yet. When traders you follow share updates, they show up here.
-              </p>
-            ) : (
-              <div className="space-y-6">
-                {stories.map((story) => (
-                  <div key={story.id} onClick={() => setActiveStory(story)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
-                    <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
-                      {story.img ? <img src={story.img} referrerPolicy="no-referrer" className="surfboard-img" alt="" /> : <div className="surfboard-img bg-[#111]" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[14px] font-black uppercase tracking-tighter name-text truncate text-[#ff8c00]">{story.name}</div>
-                      <div className="opacity-70 text-[10px] uppercase font-mono mt-1 text-zinc-400">{story.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="px-6 py-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="text-[15px] font-black uppercase tracking-[0.2em] text-[#ff8c00]">Contacts</div>
-              <button
-                type="button"
-                aria-label="Close contacts"
-                onClick={() => handleSetRightSide(false)}
-                className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X size={18} style={{ color: profile.borderA }} />
-              </button>
-            </div>
-            {contacts.length === 0 ? (
-              <div className="space-y-4">
-                <p className="text-[11px] font-mono text-zinc-400 leading-relaxed">
-                  No contacts yet. Connect with real traders — this list stays empty until you add people.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSetRightSide(false);
-                    setChatDockOpen(true);
-                  }}
-                  className="w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-black border border-[#ff4500]/60"
-                  style={{ background: 'linear-gradient(135deg, #ff0000 0%, #ff4500 52%, #ff8c00 100%)' }}
-                >
-                  Open live chat
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {contacts.map((contact) => (
-                  <div key={contact.id} onClick={() => setActiveChat(contact)} className="flex items-center cursor-pointer group hover:bg-white/5 p-2 rounded-xl transition-all">
-                    <div className="surfboard-profile-outline mr-4 group-hover:scale-110 transition-transform border-2 border-[#FF4500] shadow-[0_0_15px_#FF4500]" style={{ width: '36px', height: '60px' }}>
-                      {contact.img ? <img src={contact.img} referrerPolicy="no-referrer" className="surfboard-img" alt="" /> : <div className="surfboard-img bg-[#111]" />}
-                    </div>
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="text-[14px] font-black uppercase tracking-tighter text-[#ff8c00]">{contact.name}</span>
-                      <div className={`w-2 h-2 rounded-full ${contact.status === 'online' ? 'bg-[#ff4500]' : 'bg-[#606a8d] opacity-30'}`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="h-[60px] border-t flex items-center px-4 sticky bottom-0" style={{ background: profile.bgBottom, borderColor: `${profile.borderA}22` }}>
-          <div className="relative flex-1">
-            <input 
-              type="text" 
-              placeholder="Search" 
-              className="w-full h-8 bg-transparent border-none pr-10 text-sm placeholder:text-[#5c5d71] focus:outline-none"
-              style={{ color: profile.borderA }}
-            />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex space-x-3" style={{ color: profile.borderA }}>
-              <button type="button" aria-label="Add" className="cursor-pointer hover:opacity-70"><Plus size={16} /></button>
-              <button type="button" aria-label="More options" className="cursor-pointer hover:opacity-70"><MoreHorizontal size={16} /></button>
-            </div>
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* Overlay */}
-      <AnimatePresence>
-        {rightSide && !isAppShell && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => { handleSetRightSide(false); }}
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Daily Legal Acknowledgment */}
-
-
-      {/* Private Profile Build Modal */}
-      <AnimatePresence>
-        {isEditingIntro && null}
-      </AnimatePresence>
 
       {/* Compact lava-orange chat dock — closed on login; no fake faces */}
       <AnimatePresence>
@@ -1638,69 +1396,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                 heightClass="h-full"
               />
             </Suspense>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Live contact chat panel (real contacts only) */}
-      <AnimatePresence>
-        {activeChat && (
-          <motion.div 
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[90] flex flex-col shadow-[-20px_0_40px_rgba(0,0,0,0.5)]"
-          >
-            <Suspense fallback={<TabLoading />}>
-              <ClearPathChatroom
-                variant="panel"
-                initialRoomId="lobby"
-                title={activeChat.name}
-                subtitle="Direct trader channel"
-                showRoomSidebar={false}
-                accentColor="#FF4500"
-                onClose={() => setActiveChat(null)}
-                className="rounded-none border-l h-full cp-chatroom-lava"
-              />
-            </Suspense>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Dark Popup for Stories */}
-      <AnimatePresence>
-        {activeStory && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black backdrop-blur-xl flex flex-col"
-          >
-            <div className="p-6 flex justify-between items-center z-10 absolute top-0 w-full" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
-             <div className="flex items-center space-x-3">
-                <div className="surfboard-profile-outline border-2 border-[#FF4500]" style={{ width: '40px', height: '65px' }}>
-                  {activeStory.img ? <img src={activeStory.img} referrerPolicy="no-referrer" className="surfboard-img" /> : <div className="surfboard-img bg-[#111]" />}
-                </div>
-                <div>
-                  <div className="text-white font-black uppercase tracking-widest text-lg">{activeStory.name}</div>
-                  <div className="text-white/60 text-xs font-mono">{activeStory.time}</div>
-                </div>
-              </div>
-              <button onClick={() => setActiveStory(null)} className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md">
-                <X size={24} className="text-white" />
-              </button>
-            </div>
-            
-            <div className="flex-1 flex items-center justify-center relative p-8">
-               <div className="h-[60vh] w-full max-w-2xl bg-white/5 rounded-lg shadow-[0_0_50px_rgba(255,255,255,0.1)] border border-white/10" />
-            </div>
-
-            <div className="p-6 absolute bottom-0 w-full flex justify-center" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
-              <div className="w-full max-w-md relative">
-                <input type="text" placeholder="Reply to story..." className="w-full bg-white/10 border border-[#FF00C8]/20 rounded-full px-6 py-3 text-white placeholder-white/50 backdrop-blur-md focus:outline-none focus:bg-white/20 transition-all font-semibold" />
-              </div>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

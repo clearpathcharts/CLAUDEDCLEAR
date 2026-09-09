@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Newspaper, Radio, AlertCircle, RefreshCw, Layers } from 'lucide-react';
 import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
 
@@ -9,11 +9,45 @@ interface NewsItem {
   pubDate?: string;
 }
 
+/** Discrete headline step — not a continuous marquee. */
+export const BREAKING_NEWS_TICKER_INTERVAL_MS = 3000;
+
+function NewsChip({
+  item,
+  onOpen,
+}: {
+  item: NewsItem;
+  onOpen: (item: NewsItem) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(item)}
+      className="flex items-center gap-3 bg-[#0a0e17] hover:bg-[#ff4500]/10 hover:border-[#ff4500]/40 border border-white/5 px-3 py-1 rounded transition-all cursor-pointer select-none shrink-0 group text-left max-w-[min(100%,42rem)]"
+    >
+      <span className="text-[#ff4500] font-black text-[9px] px-1 border border-[#ff4500]/30 rounded bg-[#ff4500]/5 group-hover:bg-[#ff4500] group-hover:text-black transition-colors uppercase shrink-0">
+        {item.source}
+      </span>
+      <span className="text-zinc-400 text-[10px] uppercase font-bold text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-zinc-500 shrink-0">
+        {item.category}
+      </span>
+      <span className="text-white group-hover:text-[#ff4500] font-medium text-[10.5px] transition-colors truncate">
+        {item.title}
+      </span>
+      <span className="text-[9px] text-zinc-600 shrink-0">
+        {item.pubDate ? new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'LIVE'}
+      </span>
+    </button>
+  );
+}
+
 export default function BreakingNewsTicker() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const noteRateLimitedRef = React.useRef<(ms?: number) => void>(() => {});
 
   const fetchNews = async () => {
@@ -47,9 +81,27 @@ export default function BreakingNewsTicker() {
   const { noteRateLimited } = usePageAutoUpdate(fetchNews, { intervalMs: 60_000 });
   noteRateLimitedRef.current = noteRateLimited;
 
+  useEffect(() => {
+    setIndex(0);
+  }, [news]);
+
+  useEffect(() => {
+    if (paused || news.length <= 1) return;
+    const id = window.setInterval(() => {
+      setIndex((i) => (i + 1) % news.length);
+    }, BREAKING_NEWS_TICKER_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [paused, news.length]);
+
+  const current = news.length > 0 ? news[index % news.length] : null;
+  const next = news.length > 1 ? news[(index + 1) % news.length] : null;
+
   return (
     <>
-      <div className="w-full bg-[#0a0d14] border-t border-[#ff4500]/30 h-10 flex items-center justify-between font-mono text-[11px] text-white overflow-hidden select-none relative z-40 shadow-[0_-5px_15px_rgba(255,69,0,0.08)]">
+      <div
+        className="w-full bg-[#0a0d14] border-t border-[#ff4500]/30 h-10 flex items-center justify-between font-mono text-[11px] text-white overflow-hidden select-none relative z-40 shadow-[0_-5px_15px_rgba(255,69,0,0.08)]"
+        data-ticker-interval-ms={BREAKING_NEWS_TICKER_INTERVAL_MS}
+      >
         {/* Ticker Lead-In Label */}
         <div className="flex items-center gap-1.5 px-3 bg-black h-full border-r border-[#ff4500]/30 shrink-0 text-[#ff4500] font-black tracking-wider shadow-[5px_0_10px_rgba(0,0,0,0.5)] z-10">
           <Radio className="h-3.5 w-3.5 animate-pulse text-[#ff4500]" />
@@ -57,8 +109,12 @@ export default function BreakingNewsTicker() {
           <span className="text-[9px] text-[#ff4500]/50 font-normal">LIVE FEED</span>
         </div>
 
-        {/* Scrolling Area Container */}
-        <div className="flex-1 overflow-hidden relative h-full flex items-center bg-[#070a0f]">
+        {/* Interval carousel — one step every 3 seconds */}
+        <div
+          className="flex-1 overflow-hidden relative h-full flex items-center bg-[#070a0f]"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
           {loading && news.length === 0 ? (
             <div className="flex items-center gap-2 pl-4 text-zinc-400">
               <RefreshCw className="h-3 w-3 animate-spin text-[#ff4500]" />
@@ -69,43 +125,26 @@ export default function BreakingNewsTicker() {
               <AlertCircle className="h-3 w-3" />
               <span>FEED TEMPORARILY OFFLINE: {error}</span>
             </div>
-          ) : (
-            <div className="relative w-full overflow-hidden h-full flex items-center">
-              {/* Marquee Body */}
-              <div 
-                className="absolute flex items-center gap-12 whitespace-nowrap animate-[marquee_50s_linear_infinite] hover:[animation-play-state:paused]"
-                style={{
-                  willChange: 'transform',
-                }}
-              >
-                {/* Render items twice to ensure seamless looping scroll */}
-                {news.concat(news).map((item, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedNews(item)}
-                    className="flex items-center gap-3 bg-[#0a0e17] hover:bg-[#ff4500]/10 hover:border-[#ff4500]/40 border border-white/5 px-3 py-1 rounded transition-all cursor-pointer select-none shrink-0 group text-left"
-                  >
-                    <span className="text-[#ff4500] font-black text-[9px] px-1 border border-[#ff4500]/30 rounded bg-[#ff4500]/5 group-hover:bg-[#ff4500] group-hover:text-black transition-colors uppercase">
-                      {item.source}
-                    </span>
-                    <span className="text-zinc-400 text-[10px] uppercase font-bold text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-zinc-500">
-                      {item.category}
-                    </span>
-                    <span className="text-white group-hover:text-[#ff4500] font-medium text-[10.5px] transition-colors">
-                      {item.title}
-                    </span>
-                    <span className="text-[9px] text-zinc-600">
-                      {item.pubDate ? new Date(item.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'LIVE'}
-                    </span>
-                  </button>
-                ))}
-              </div>
+          ) : current ? (
+            <div
+              key={index}
+              className="flex items-center gap-6 pl-4 pr-2 w-full"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <NewsChip item={current} onOpen={setSelectedNews} />
+              {next && (
+                <div className="hidden md:block min-w-0 opacity-70">
+                  <NewsChip item={next} onOpen={setSelectedNews} />
+                </div>
+              )}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Sync Controls */}
         <button
+          type="button"
           onClick={fetchNews}
           disabled={loading}
           className="px-3 bg-black h-full border-l border-[#ff4500]/30 hover:bg-[#ff4500]/10 text-zinc-400 hover:text-white transition-all flex items-center justify-center shrink-0 disabled:opacity-50 cursor-pointer select-none"
@@ -114,14 +153,6 @@ export default function BreakingNewsTicker() {
           <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin text-[#ff4500]' : ''}`} />
         </button>
       </div>
-
-      {/* Styled inline animation block if not defined in Tailwind */}
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
 
       {/* Breaking News Brief Detail Overlay Modal */}
       {selectedNews && (
@@ -155,6 +186,7 @@ export default function BreakingNewsTicker() {
                 CLEARPATH SENTINEL DISPATCH
               </span>
               <button
+                type="button"
                 onClick={() => setSelectedNews(null)}
                 className="px-4 py-1.5 bg-[#ff4500] hover:bg-red-600 text-black font-black text-xs rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
               >
