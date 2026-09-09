@@ -222,12 +222,6 @@ const PAGE_CSS = `
   .alpha-block a.chip:hover { border-color: rgba(0,229,255,0.5); }
   aside.cta a.btn { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
   aside.cta .cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; }
-  aside.cta form.waitlist { display: grid; gap: 0.65rem; max-width: 28rem; }
-  aside.cta form.waitlist label { display: grid; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
-  aside.cta form.waitlist input, aside.cta form.waitlist select { background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; padding: 0.55rem 0.7rem; font-size: 0.9rem; }
-  aside.cta form.waitlist button { background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.7rem 1.1rem; border: 0; border-radius: 8px; cursor: pointer; }
-  aside.cta form.waitlist .status { font-size: 0.85rem; min-height: 1.2em; color: #00E5FF; }
-  aside.cta form.waitlist .status.err { color: #ff6b8a; }
   .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 0 0 1.5rem; }
   .meta-grid div { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.03); }
   .meta-grid .k { display: block; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 0.25rem; }
@@ -261,7 +255,7 @@ function renderShell(
           educationLabel: 'Start education',
           waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'Create an account with email + password on the terminal (Private Login). Optional: leave your email below for launch notes only — this is not a login password.',
+            'There is no waitlist. Create an account with email + password on the terminal. That email lives in Firestore and survives Cloud Run redeploys.',
           firstNameLabel: 'First name',
           emailLabel: 'Email (updates only)',
           countryLabel: 'Country',
@@ -283,26 +277,11 @@ function renderShell(
         </div>
         <h2 style="margin-top:0.5rem">${escapeHtml(c.waitlistTitle)}</h2>
         <p>${escapeHtml(c.waitlistBody)}</p>
-        <form class="waitlist" id="cpt-waitlist" novalidate>
-          <label>${escapeHtml(c.firstNameLabel)}<input name="firstName" required maxlength="200" autocomplete="given-name" /></label>
-          <label>${escapeHtml(c.emailLabel)}<input name="emailAddress" type="email" required maxlength="320" autocomplete="email" /></label>
-          <label>${escapeHtml(c.countryLabel)}<input name="country" required maxlength="120" autocomplete="country-name" placeholder="${escapeHtml(c.countryPlaceholder)}" /></label>
-          <label>${escapeHtml(c.experienceLabel)}
-            <select name="experienceLevel">
-              <option>Beginner</option>
-              <option>Intermediate</option>
-              <option>Advanced</option>
-              <option>Professional</option>
-            </select>
-          </label>
-          <button type="submit">${escapeHtml(c.submitLabel)}</button>
-          <div class="status" id="cpt-waitlist-status" aria-live="polite"></div>
-        </form>
+        <div class="cta-actions">
+          <a class="btn" href="/?login=1">Open Private Login</a>
+        </div>
       </aside>`
     : '';
-
-  const submitMsg = c?.submittingMsg || 'Submitting…';
-  const successMsg = c?.successMsg || 'You are on the waitlist. Check your email for confirmation.';
 
   return `<!doctype html>
 <html lang="${htmlLang}">
@@ -345,46 +324,6 @@ ${ctaHtml}
         <a href="/disclaimer.html">Disclaimer</a>
       </div>
     </footer>
-    <script>
-      (function () {
-        var form = document.getElementById('cpt-waitlist');
-        if (!form) return;
-        var status = document.getElementById('cpt-waitlist-status');
-        var submittingMsg = ${JSON.stringify(submitMsg)};
-        var successMsg = ${JSON.stringify(successMsg)};
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          status.className = 'status';
-          status.textContent = submittingMsg;
-          var data = new FormData(form);
-          var body = {
-            firstName: String(data.get('firstName') || ''),
-            emailAddress: String(data.get('emailAddress') || ''),
-            country: String(data.get('country') || ''),
-            experienceLevel: String(data.get('experienceLevel') || 'Beginner')
-          };
-          fetch('/api/registrations/waitlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          }).then(function (res) {
-            return res.json().then(function (j) { return { ok: res.ok, j: j }; });
-          }).then(function (r) {
-            if (r.ok) {
-              status.className = 'status';
-              status.textContent = successMsg;
-              form.reset();
-            } else {
-              status.className = 'status err';
-              status.textContent = (r.j && (r.j.message || r.j.error)) || 'Could not join waitlist.';
-            }
-          }).catch(function () {
-            status.className = 'status err';
-            status.textContent = 'Network error — try again in a moment.';
-          });
-        });
-      })();
-    </script>
   </body>
 </html>`;
 }

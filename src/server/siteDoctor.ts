@@ -9,7 +9,7 @@
  *
  * This module is ClearPath's "detect + report to CEO" layer:
  *   - runs once per hour
- *   - checks auth durability, market data, sessions, waitlist wiring, plan integrity
+ *   - checks auth durability, market data, sessions, Private Login store, plan integrity
  *   - writes data/site-doctor/latest.json
  *   - exposed to founder CEO Dashboard
  *
@@ -192,21 +192,16 @@ function checkFirebaseAdmin(): SiteDoctorCheck {
   };
 }
 
-function checkWaitlistWiring(): SiteDoctorCheck {
-  const appwrite = Boolean(
-    process.env.VITE_APPWRITE_PROJECT_ID &&
-      process.env.VITE_APPWRITE_PROJECT_ID !== "YOUR_PROJECT_ID"
-  );
+function checkWaitlistConversion(): SiteDoctorCheck {
   const fsOk = Boolean(getAdminFirestore());
-  const ok = appwrite || fsOk;
   return {
-    id: "waitlist",
-    label: "Waitlist backend",
-    ok,
-    severity: ok ? "info" : "warn",
-    detail: ok
-      ? `appwrite=${appwrite} firestore=${fsOk}`
-      : "Neither Appwrite nor Firestore waitlist configured",
+    id: "waitlist_convert",
+    label: "Waitlist → Firestore convert",
+    ok: fsOk,
+    severity: fsOk ? "info" : "warn",
+    detail: fsOk
+      ? "Boot converts leftover site_registrations into private_accounts (no password reset)"
+      : "Firestore Admin offline — leftover waitlist emails cannot convert on this process",
   };
 }
 
@@ -284,7 +279,7 @@ export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
     checks.push(checkSecretsPresence());
     checks.push(checkFirebaseAdmin());
     checks.push(await checkPrivateStorage());
-    checks.push(checkWaitlistWiring());
+    checks.push(checkWaitlistConversion());
     checks.push(checkTimeframePlans());
     checks.push(checkTimeframeVerifyFreshness());
     checks.push(await checkTwelveData());

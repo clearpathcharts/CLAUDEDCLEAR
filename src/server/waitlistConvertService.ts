@@ -134,7 +134,7 @@ async function markWaitlistConverted(params: {
     if (params.docId && params.sourceDb === 'default') {
       await db.collection(WAITLIST_COLLECTION).doc(params.docId).set(
         {
-          // 'converted' = released from active waitlist (no longer shown in CEO Waitlist).
+          // 'converted' = already provisioned into Firestore private_accounts.
           status: 'converted',
           convertedAt: new Date().toISOString(),
           convertedUid: params.uid,
@@ -161,7 +161,7 @@ async function markWaitlistConverted(params: {
         return;
       }
     }
-    // Alt-only email: record conversion on default DB so CEO waitlist can hide them.
+    // Alt-only email: record conversion on default DB so leftover waitlist rows stay marked.
     if (params.sourceDb === 'alt') {
       await db.collection(WAITLIST_COLLECTION).add({
         emailAddress: params.email,
@@ -231,6 +231,8 @@ export async function listWaitlistConversionCandidates(): Promise<WaitlistCandid
 
 export async function convertWaitlistToPrivateAccounts(options?: {
   dryRun?: boolean;
+  /** When true, mint a new temp password for people who already have Private Login. Boot must leave this off. */
+  resetExisting?: boolean;
 }): Promise<{
   ok: true;
   dryRun: boolean;
@@ -244,6 +246,7 @@ export async function convertWaitlistToPrivateAccounts(options?: {
   invitesCreated: number;
 }> {
   const dryRun = Boolean(options?.dryRun);
+  const resetExisting = Boolean(options?.resetExisting);
   if (!dryRun) {
     // Production: refuse convert that would only land on ephemeral disk.
     assertDurablePrivateWritesAllowed();
@@ -268,8 +271,25 @@ export async function convertWaitlistToPrivateAccounts(options?: {
     try {
       const existing = await findPrivateUserByEmail(row.email);
       if (existing) {
-        // Already has Private Login but may be stuck on waitlist without a usable
-        // password after the wipe — mint a fresh temp invite and release waitlist row.
+        if (!resetExisting) {
+          if (!dryRun) {
+            await markWaitlistConverted({
+              email: row.email,
+              uid: existing.uid,
+              docId: row.docId,
+              sourceDb: row.sourceDb,
+            });
+          }
+          already += 1;
+          results.push({
+            email: existing.email,
+            status: 'already',
+            uid: existing.uid,
+            displayName: existing.displayName,
+          });
+          continue;
+        }
+        // Already has Private Login — mint a fresh temp invite only when explicitly requested.
         if (dryRun) {
           reset += 1;
           invitesCreated += 1;
@@ -388,8 +408,8 @@ export async function convertWaitlistToPrivateAccounts(options?: {
 }
 
 /**
- * One-click: mark every waitlist row that already has a Private Login as
- * `converted` so CEO Waitlist goes empty. Does not create accounts / emails.
+ * One-click: mark every leftover waitlist row that already has a Private Login as
+ * `converted`. Does not create accounts / emails.
  */
 export async function clearWaitlistAlreadyInPrivateLogin(): Promise<{
   ok: true;

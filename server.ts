@@ -1574,7 +1574,8 @@ async function startServer() {
   });
 
   /**
-   * Founder / catalog-admin only — private login members + waitlist (safe fields).
+   * Founder / catalog-admin only — private login members (safe fields).
+   * Leftover site_registrations rows are listed for ops/backup only.
    * Auth: Bearer Firebase ID token for forexanarchy@gmail.com, private founder session,
    * or x-catalog-admin-secret. Never public.
    */
@@ -1627,7 +1628,10 @@ async function startServer() {
   app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
-      const result = await convertWaitlistToPrivateAccounts({ dryRun });
+      const result = await convertWaitlistToPrivateAccounts({
+        dryRun,
+        resetExisting: Boolean(req.body?.resetExisting),
+      });
       res.json(result);
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -2096,7 +2100,7 @@ async function startServer() {
       res.json(result);
     } catch (error: any) {
       const status = error instanceof RegistrationError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Waitlist registration failed.' });
+      res.status(status).json({ error: error.message || 'Private Login registration failed.' });
     }
   });
 
@@ -4600,6 +4604,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             );
           } catch (seedErr: any) {
             console.warn('[STARTUP] Emergency known-member seed skipped:', seedErr?.message || seedErr);
+          }
+          try {
+            const waitlistMoved = await convertWaitlistToPrivateAccounts({ resetExisting: false });
+            console.log(
+              `[STARTUP] Waitlist → Firestore private_accounts → created=${waitlistMoved.created} already=${waitlistMoved.already} errors=${waitlistMoved.errors} candidates=${waitlistMoved.candidates}`
+            );
+          } catch (wlErr: any) {
+            console.warn('[STARTUP] Waitlist → private accounts skipped:', wlErr?.message || wlErr);
           }
           try {
             await bootPersistFounderBackupSnapshot();
