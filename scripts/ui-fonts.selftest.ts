@@ -45,6 +45,11 @@ const linkHref = indexHtml.match(
 assert.ok(linkHref, 'must have a single Google Fonts css2 stylesheet link');
 assert.match(linkHref[1], /family=Inter/);
 assert.match(linkHref[1], /family=IBM\+Plex\+Mono/);
+assert.match(
+  linkHref[1],
+  /family=Orbitron:wght@400;700/,
+  'same Google Fonts css2 link must include Orbitron for Private Login',
+);
 
 assert.match(indexCss, /--font-ui:\s*"Inter"/);
 assert.match(indexCss, /--font-mono:\s*"IBM Plex Mono"/);
