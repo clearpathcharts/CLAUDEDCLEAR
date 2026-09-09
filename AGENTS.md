@@ -10,6 +10,7 @@
 - **Ava voice:** `clearpath-voice-os` in **us-central1**. Never hit **Edit & deploy** on voice-os unless you mean Ava.
 - Keep Cloud Run traffic on **LATEST**. A named-revision pin is how GitHub “deploys” while the public site stays old.
 - Trader work belongs in `clearpath-COMPLETE-tonight`. Do not fetch dead Cursor workspace branches from ALL EYES OS.
+- **Always land finished work on `main`.** The Cloud Build trigger builds `main` only, so work parked on a feature branch can never reach the site. Standing founder order: branch → PR → **squash-merge into `main`** as soon as CI is green; do not wait for a per-PR "merge it". This applies to work in the current task only — do not bulk-merge older stale or conflicting PRs.
 - After every `main` push, confirm the live Cloud Run revision SHA (or live CEO JS) before telling the founder it is on the site.
 - CEO Dashboard is ops-only: Daily Ops + budget + members/alerts. Chart patterns stay on MARKETS/CHARTS.
 

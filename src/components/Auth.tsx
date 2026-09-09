@@ -13,7 +13,7 @@ import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import type { AdvancedProfileId } from '../lib/advanced/profiles';
 import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../content/chooseYourPath';
-import { navigateToDesk, type TraderDeskId } from '../lib/traderDesks';
+import { isDeskPath, parseDeskPath, rememberTraderDesk, type TraderDeskId } from '../lib/traderDesks';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 
@@ -182,12 +182,13 @@ export default function Auth() {
     const card = PATH_CARDS.find((c) => c.id === deskId);
     const profileId = card?.profileId ?? NEURODIVERGENT_BANNER.profileId;
     rememberPath(profileId);
+    rememberTraderDesk(deskId);
     try {
       window.dispatchEvent(new CustomEvent('clearpath-set-profile', { detail: profileId }));
     } catch {
       /* ignore */
     }
-    navigateToDesk(deskId);
+    openPrivateLogin('login');
   };
 
   // Activation links: /activate (or ?login=1) auto-opens the member login,
@@ -200,7 +201,15 @@ export default function Auth() {
       const emailParam = String(params.get('email') || '').trim();
       if (emailParam && emailParam.includes('@')) setActivationEmail(emailParam);
       const hash = window.location.hash.toLowerCase();
-      if (path === '/activate' || path === '/login' || params.get('login') === '1' || hash === '#private-login') {
+      const deskFromUrl = parseDeskPath(path);
+      if (deskFromUrl) rememberTraderDesk(deskFromUrl);
+      if (
+        path === '/activate' ||
+        path === '/login' ||
+        params.get('login') === '1' ||
+        hash === '#private-login' ||
+        isDeskPath(path)
+      ) {
         openPrivateLogin('login');
       } else if (path === '/join' || params.get('register') === '1') {
         openPrivateLogin('register');
@@ -578,7 +587,7 @@ export default function Auth() {
 
       <div className="relative z-20 flex flex-col" data-auth-chart-first="">
         <div className="order-2 md:order-1">
-          <ChooseYourPath onEnter={enterChosenPath} />
+          <ChooseYourPath onChoosePath={enterChosenPath} />
         </div>
         <div className="order-1 md:order-2">
           <Suspense

@@ -64,30 +64,25 @@ export async function sendWaitlistConfirmationEmail(params: {
   activationKey: string;
   country: string;
 }): Promise<boolean> {
-  const subject = 'Your ClearPath Soft Launch Access Key';
+  const subject = 'Your ClearPath Private Login is ready';
   const text = [
     `Hi ${params.firstName},`,
     '',
-    'Your soft launch waitlist registration is confirmed.',
+    'There is no waitlist. Your email is now a Private Login account in Firestore.',
     '',
-    `Private activation key: ${params.activationKey}`,
+    'Open https://clearpathtrader.com/?login=1 and sign in with this email.',
+    'If you did not set a password yet, use Forgot password on that screen.',
     `Country: ${params.country}`,
-    '',
-    'Keep this key safe. You will use it to activate your trading education desk when the portal opens.',
     '',
     '— ClearPath Trader',
   ].join('\n');
 
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
-      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Access Key Secured</h1>
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Private Login</h1>
       <p>Hi ${params.firstName},</p>
-      <p>Your soft launch waitlist registration is confirmed for <strong>${params.country}</strong>.</p>
-      <div style="margin:24px 0; padding:20px; border:1px solid #00FFFF; border-radius:12px; background:#0a0a0a;">
-        <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:2px;">Private Activation Key</div>
-        <div style="font-size:24px; font-weight:bold; color:#FF1493; margin-top:8px; font-family:monospace;">${params.activationKey}</div>
-      </div>
-      <p style="color:#aaa;">Keep this key safe. You will use it to activate your account when the portal opens.</p>
+      <p>There is no waitlist. Your email is now a Private Login account in Firestore for <strong>${params.country}</strong>.</p>
+      <p><a href="https://clearpathtrader.com/?login=1" style="color:#00FFFF">Open Private Login</a> and sign in with this email. If you did not set a password yet, use Forgot password on that screen.</p>
       <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
     </div>
   `;

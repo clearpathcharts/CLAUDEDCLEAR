@@ -1,6 +1,6 @@
 /**
  * Private Login copies the MIT sci-fi CodePen look, but auth stays email + password.
- * Path cards still say Enter (guest). Reduced motion is required.
+ * Path cards open Private Login (no guest Enter). Reduced motion is required.
  *
  * Run: npx tsx scripts/private-login-scifi.selftest.ts
  */
@@ -52,7 +52,8 @@ assert.doesNotMatch(
 );
 
 const choose = read('src/components/ChooseYourPath.tsx');
-assert.match(choose, />\s*Enter\s*</);
+assert.match(choose, /Private Login to open/);
+assert.doesNotMatch(choose, />\s*Enter\s*</);
 assert.doesNotMatch(choose, />\s*Login\s*</);
 
 const indexHtml = read('index.html');

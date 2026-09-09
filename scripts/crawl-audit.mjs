@@ -124,8 +124,8 @@ for (const path of toCheck) {
     if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—|Accessibility/.test(title)) {
       problems.push('entity page still has default title');
     }
-    if (!html.includes('cpt-waitlist')) {
-      problems.push('missing waitlist lead capture');
+    if (!html.includes('/?login=1') && !html.includes('Private Login')) {
+      problems.push('missing Private Login CTA');
     }
   }
 

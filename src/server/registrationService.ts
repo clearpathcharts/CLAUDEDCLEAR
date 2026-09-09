@@ -2,9 +2,7 @@ import { generateActivationKey, normalizeEmail } from './activationKey';
 import { getAdminFirestore } from './firebaseAdmin';
 import {
   emailExistsInIdentity,
-  emailExistsInWaitlist,
   saveIdentityPreregistration,
-  saveWaitlistRegistration,
 } from './registrationStore';
 import {
   notifyAdminNewRegistration,
@@ -16,6 +14,11 @@ import {
   getRegistrationNameBlock,
 } from './identityRisk';
 import { isFounderEmail } from '../lib/founder';
+import {
+  findPrivateUserByEmail,
+  provisionPrivateUser,
+} from './privateAuthService';
+import { generateTempPassword, recordFounderInvite } from './waitlistConvertService';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -78,7 +81,6 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
   const firstName = input.firstName?.trim();
   const emailAddress = normalizeEmail(input.emailAddress || '');
   const country = input.country?.trim();
-  const experienceLevel = input.experienceLevel?.trim() || 'Beginner';
 
   if (!firstName || firstName.length > 200) {
     throw new RegistrationError('A valid first name is required.');
@@ -92,30 +94,37 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
     throw new RegistrationError('Country of residence is required.');
   }
 
-  if (await emailExistsInWaitlist(emailAddress)) {
-    throw new RegistrationError('This email is already registered on the waitlist.', 409);
+  const existing = await findPrivateUserByEmail(emailAddress);
+  if (existing) {
+    throw new RegistrationError('This email already has a Private Login. Sign in on the terminal.', 409);
   }
 
   if (!getAdminFirestore() && process.env.NODE_ENV === 'production') {
     throw new RegistrationError(
-      'Waitlist registration unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).',
+      'Private Login unavailable: durable Firestore is offline in production (Cloud Run disk is ephemeral).',
       503
     );
   }
 
   const activationKey = generateActivationKey();
-  const createdAt = new Date().toISOString();
+  const tempPassword = generateTempPassword();
+  const provisioned = await provisionPrivateUser({
+    email: emailAddress,
+    password: tempPassword,
+    displayName: firstName.slice(0, 80),
+    tempPassword,
+    skipIdentityRisk: true,
+  });
+  const user = provisioned.user;
 
-  const registrationId = await saveWaitlistRegistration({
-    firstName,
-    emailAddress,
-    country,
-    experienceLevel,
-    status: 'pending',
-    registrationSource: 'ClearPath Soft Launch Waitlist Portal',
+  await recordFounderInvite({
+    email: user.email,
+    displayName: user.displayName,
+    uid: user.uid,
     activationKey,
-    uid: input.uid,
-    createdAt,
+    tempPassword,
+    createdAt: new Date().toISOString(),
+    waitlistSource: 'waitlist_form_to_firestore',
   });
 
   const emailSent = await sendWaitlistConfirmationEmail({
@@ -128,10 +137,10 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
   await notifyAdminNewRegistration({
     type: 'waitlist',
     email: emailAddress,
-    details: `Name: ${firstName}\nCountry: ${country}\nKey: ${activationKey}`,
+    details: `Name: ${firstName}\nCountry: ${country}\nExperience: ${input.experienceLevel || 'n/a'}\nMoved to Firestore private_accounts (${user.uid})`,
   });
 
-  return { success: true, activationKey, emailSent, registrationId };
+  return { success: true, activationKey, emailSent, registrationId: user.uid };
 }
 
 export async function registerIdentity(input: IdentityInput): Promise<RegistrationResult> {

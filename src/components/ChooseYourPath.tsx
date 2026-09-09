@@ -3,7 +3,7 @@ import { PATH_CARDS, NEURODIVERGENT_BANNER } from '../content/chooseYourPath';
 import type { TraderDeskId } from '../lib/traderDesks';
 
 type Props = {
-  onEnter: (deskId: TraderDeskId) => void;
+  onChoosePath: (deskId: TraderDeskId) => void;
 };
 
 /** Native-pixel images — never CSS-upscale past width/height. */
@@ -40,37 +40,7 @@ function SharpPathImage({
   );
 }
 
-function PathEnter({
-  accent,
-  deskId,
-  onEnter,
-}: {
-  accent: string;
-  deskId: TraderDeskId;
-  onEnter: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      data-path-enter={deskId}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onEnter();
-      }}
-      className="relative z-10 mb-2 sm:mb-3 w-full max-w-[12rem] px-2 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest cursor-pointer border"
-      style={{
-        color: accent,
-        borderColor: `${accent}99`,
-        background: `${accent}14`,
-      }}
-    >
-      Enter
-    </button>
-  );
-}
-
-export default function ChooseYourPath({ onEnter }: Props) {
+export default function ChooseYourPath({ onChoosePath }: Props) {
   return (
     <section
       id="choose-path"
@@ -88,21 +58,16 @@ export default function ChooseYourPath({ onEnter }: Props) {
         <ul className="relative z-20 grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-start isolate">
           {PATH_CARDS.map((card) => (
             <li key={card.id} className="relative z-10 min-w-0 w-full flex flex-col items-center">
-              <PathEnter
-                accent={card.accent}
-                deskId={card.id}
-                onEnter={() => onEnter(card.id)}
-              />
               <button
                 type="button"
                 data-path-card={card.id}
-                onClick={() => onEnter(card.id)}
+                onClick={() => onChoosePath(card.id)}
                 className="w-full rounded-2xl overflow-hidden border bg-black/80 text-left cursor-pointer"
                 style={{
                   borderColor: `${card.accent}66`,
                   boxShadow: `0 0 24px ${card.accent}22`,
                 }}
-                aria-label={`Enter ${card.title}`}
+                aria-label={`Private Login to open ${card.title}`}
               >
                 <SharpPathImage
                   webp={card.webp}
@@ -118,17 +83,12 @@ export default function ChooseYourPath({ onEnter }: Props) {
 
         <div className="relative z-10 mt-8 sm:mt-12 flex justify-center isolate">
           <div className="w-[min(100%,42rem)] md:w-[min(100%,48rem)] flex flex-col items-center">
-            <PathEnter
-              accent="#FF1493"
-              deskId="neurodivergent"
-              onEnter={() => onEnter('neurodivergent')}
-            />
             <button
               type="button"
               data-path-card="neurodivergent"
-              onClick={() => onEnter('neurodivergent')}
+              onClick={() => onChoosePath('neurodivergent')}
               className="w-full rounded-2xl overflow-hidden border border-[#FF1493]/40 text-left cursor-pointer"
-              aria-label="Enter Neurodivergent Traders"
+              aria-label="Private Login to open Neurodivergent Traders"
             >
               <SharpPathImage
                 webp={NEURODIVERGENT_BANNER.webp}

@@ -40,6 +40,8 @@ for (const m of REGIONAL_MARKETS) {
     /Put this knowledge on a live chart/,
     `${m.id} CTA must be localized`,
   );
+  assert.match(enriched, /\/\?login=1/, `${m.id} CTA must open Private Login`);
+  assert.doesNotMatch(enriched, /id="cpt-waitlist"/, `${m.id} must not render a waitlist form`);
 }
 
 const ph = getRegionalMarket('ph')!;
