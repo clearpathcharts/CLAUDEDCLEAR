@@ -164,6 +164,12 @@ import {
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
 import {
+  getLatestDailyPatternReview,
+  runDailyPatternSweep,
+  markDailyPatternReviewed,
+  startDailyPatternReviewScheduler,
+} from './src/server/dailyPatternReviewService';
+import {
   fireDueSubscriptions,
   getChartPulseDeliveryStatus,
   isPulseInterval,
@@ -2935,6 +2941,49 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   );
 
+  app.get('/api/admin/daily-pattern-review', requireFounderOrCatalogAdmin, (_req, res) => {
+    const report = getLatestDailyPatternReview();
+    if (!report) {
+      return res.status(404).json({
+        error: 'NO_REPORT',
+        message: 'No overnight structure review yet — first sweep runs ~90s after boot, then once per Pacific day.',
+      });
+    }
+    res.json(report);
+  });
+
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await runDailyPatternSweep({ force: true });
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_FAILED',
+        message: e?.message || 'Overnight structure review failed',
+      });
+    }
+  });
+
+  app.post(
+    '/api/admin/daily-pattern-review/review',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    (req, res) => {
+      try {
+        const rowId = String(req.body?.rowId || '');
+        const reviewed = Boolean(req.body?.reviewed);
+        const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
+        const report = markDailyPatternReviewed(rowId, reviewed, note);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_PATTERN_REVIEW_SAVE_FAILED',
+          message: e?.message || 'Could not save review flag',
+        });
+      }
+    }
+  );
+
   app.post(
     '/api/admin/daily-ops/investor',
     requireFounderOrCatalogAdmin,
@@ -4540,6 +4589,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startDailyOpsScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Daily Ops scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startDailyPatternReviewScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Daily pattern review scheduler failed to start:', e?.message || e);
     }
 
     try {
