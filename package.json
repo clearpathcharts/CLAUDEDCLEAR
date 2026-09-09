@@ -39,6 +39,7 @@
     "test:waitlist-convert": "tsx scripts/waitlist-convert.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
+    "test:ceo-desk-cleanup": "tsx scripts/ceo-desk-cleanup.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
     "test:buddy-live-tools": "tsx scripts/buddy-live-tools.selftest.ts",

@@ -57,6 +57,9 @@ jobs:
       - name: Section guide video catalog self-test
         run: npm run test:section-guides
 
+      - name: CEO desk cleanup (ticker interval, no contacts rail)
+        run: npm run test:ceo-desk-cleanup
+
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
 
