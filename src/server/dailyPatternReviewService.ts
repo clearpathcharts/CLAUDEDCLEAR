@@ -3,13 +3,12 @@
  *
  * Fetches completed daily OHLC for the curated universe, runs the existing
  * educational pattern engine, stores SVG snapshots + free RSS headlines,
- * and raises an unread alert until the founder marks rows reviewed.
+ * raises an unread alert until the founder marks rows reviewed, persists to
+ * Firestore, emails a digest, and pulls the Market Prophets brief when live.
  *
  * Not a trade signal. Live overlays stay on MARKETS/CHARTS.
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { getFmpApiKey, getTwelveDataApiKey } from "./secrets";
 import { getMarketCandles, getCleanApiKey } from "./marketDataGateway";
 import { scanAllPatterns } from "../patterns/scan";
@@ -19,69 +18,38 @@ import type { DetectedPattern } from "../patterns/types";
 import { pacificDateKey } from "./dailyOpsCatalog";
 import {
   DAILY_PATTERN_UNIVERSE,
-  type PatternReviewBucket,
   type PatternReviewTarget,
 } from "./dailyPatternUniverse";
 import { classifyDailyPatterns, summarizeClassification } from "./dailyPatternClassify";
 import { renderDailyPatternSnapshot, sessionDateFromCandles } from "./dailyPatternSnapshot";
 import { fetchFreeFinanceNews, type FreeNewsItem } from "./freeFinanceNews";
+import {
+  persistDailyPatternReviewReport,
+  resolveDailyPatternReviewReport,
+  resolveLatestDailyPatternReviewReport,
+} from "./dailyPatternReviewStore";
+import { fetchMarketProphetsBrief } from "./marketProphetsClient";
+import {
+  marketProphetsUnavailableSummary,
+  sendDailyPatternReviewDigest,
+} from "./dailyPatternReviewEmail";
 
-export type PatternHitSummary = {
-  id: string;
-  label: string;
-  direction: DetectedPattern["direction"];
-  scale?: DetectedPattern["scale"];
-  category: DetectedPattern["category"];
-  confidence: number;
-  startIndex: number;
-  endIndex: number;
-  detail?: string;
-};
+export type {
+  PatternHitSummary,
+  SymbolReviewRow,
+  DailyPatternReviewReport,
+} from "./dailyPatternReviewTypes";
 
-export type SymbolReviewRow = {
-  id: string;
-  bucket: PatternReviewBucket;
-  symbol: string | null;
-  display: string;
-  description: string;
-  proxyNote?: string;
-  status: "ok" | "unavailable";
-  unavailableReason?: string;
-  sessionDate: string | null;
-  lastClose?: number;
-  dailyPattern: PatternHitSummary | null;
-  subPatterns: PatternHitSummary[];
-  independentPatterns: PatternHitSummary[];
-  summary: string;
-  snapshotSvg: string;
-  reviewed: boolean;
-  reviewNote?: string;
-  reviewedAt?: string;
-};
-
-export type DailyPatternReviewReport = {
-  date: string;
-  ranAt: string;
-  timezone: "America/Los_Angeles";
-  unreadAlert: boolean;
-  unreadCount: number;
-  scanned: number;
-  labeled: number;
-  unavailable: number;
-  disclaimer: string;
-  nextDueHint: string;
-  news: {
-    items: FreeNewsItem[];
-    sourcesTried: string[];
-    sourcesOk: string[];
-  };
-  rows: SymbolReviewRow[];
-};
+import type {
+  PatternHitSummary,
+  SymbolReviewRow,
+  DailyPatternReviewReport,
+} from "./dailyPatternReviewTypes";
 
 export type CandleFetcher = (symbol: string) => Promise<Candle[]>;
 export type NewsFetcher = () => Promise<DailyPatternReviewReport["news"]>;
+export type MarketProphetsFetcher = () => Promise<DailyPatternReviewReport["marketProphets"]>;
 
-const DIR = path.join(process.cwd(), "data", "daily-pattern-review");
 const DISCLAIMER =
   "Educational geometry on completed daily bars. Possible / forming — never a confirmed signal. Full overlays stay on MARKETS/CHARTS.";
 
@@ -89,83 +57,23 @@ let latest: DailyPatternReviewReport | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
 let running = false;
 
-function ensureDir() {
-  if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
+function pacificDayFromMs(ms: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms));
 }
 
-function fileFor(date: string) {
-  return path.join(DIR, `${date}.json`);
-}
-
-function loadFromDisk(date: string): DailyPatternReviewReport | null {
-  try {
-    const p = fileFor(date);
-    if (!fs.existsSync(p)) return null;
-    return JSON.parse(fs.readFileSync(p, "utf8")) as DailyPatternReviewReport;
-  } catch {
-    return null;
-  }
-}
-
-function persist(report: DailyPatternReviewReport): DailyPatternReviewReport {
-  ensureDir();
-  const unreadCount = report.rows.filter((r) => r.status === "ok" && !r.reviewed && r.dailyPattern).length;
-  const next: DailyPatternReviewReport = {
-    ...report,
-    unreadCount,
-    unreadAlert: unreadCount > 0,
-  };
-  fs.writeFileSync(fileFor(next.date), JSON.stringify(next, null, 2), "utf8");
-  fs.writeFileSync(path.join(DIR, "latest.json"), JSON.stringify(next, null, 2), "utf8");
-  latest = next;
-  return next;
-}
-
-export function getLatestDailyPatternReview(): DailyPatternReviewReport | null {
-  const today = pacificDateKey();
-  const disk = loadFromDisk(today);
-  if (disk) {
-    latest = disk;
-    return latest;
-  }
-  return latest;
-}
-
-export function twelveValuesToCandles(values: unknown): Candle[] {
-  if (!Array.isArray(values)) return [];
-  const out: Candle[] = [];
-  for (const raw of values) {
-    if (!raw || typeof raw !== "object") continue;
-    const row = raw as Record<string, unknown>;
-    const time = Date.parse(String(row.datetime ?? row.date ?? ""));
-    const open = Number(row.open);
-    const high = Number(row.high);
-    const low = Number(row.low);
-    const close = Number(row.close);
-    const volume = row.volume == null || row.volume === "" ? undefined : Number(row.volume);
-    if (!Number.isFinite(time) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) {
-      continue;
-    }
-    out.push({
-      time,
-      open,
-      high,
-      low,
-      close,
-      volume: Number.isFinite(volume) ? volume : undefined,
-    });
-  }
-  return sanitizeCandles(out);
-}
-
-/** Drop the in-progress daily bar so we scan previous completed sessions. */
+/** Drop the in-progress daily bar so we scan previous completed sessions (Pacific calendar). */
 export function previousCompletedDaily(candles: Candle[], now = Date.now()): Candle[] {
   const safe = sanitizeCandles(candles);
   if (safe.length === 0) return [];
   const last = safe[safe.length - 1];
-  const lastDay = new Date(last.time).toISOString().slice(0, 10);
-  const today = new Date(now).toISOString().slice(0, 10);
-  if (lastDay === today) return safe.slice(0, -1);
+  const lastDay = pacificDayFromMs(last.time);
+  const todayPacific = pacificDateKey(new Date(now));
+  if (lastDay === todayPacific) return safe.slice(0, -1);
   return safe;
 }
 
@@ -204,6 +112,62 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   const n = Math.max(1, Math.min(limit, items.length));
   await Promise.all(Array.from({ length: n }, () => worker()));
   return out;
+}
+
+export function twelveValuesToCandles(values: unknown): Candle[] {
+  if (!Array.isArray(values)) return [];
+  const out: Candle[] = [];
+  for (const raw of values) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Record<string, unknown>;
+    const time = Date.parse(String(row.datetime ?? row.date ?? ""));
+    const open = Number(row.open);
+    const high = Number(row.high);
+    const low = Number(row.low);
+    const close = Number(row.close);
+    const volume = row.volume == null || row.volume === "" ? undefined : Number(row.volume);
+    if (!Number.isFinite(time) || !Number.isFinite(open) || !Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(close)) {
+      continue;
+    }
+    out.push({
+      time,
+      open,
+      high,
+      low,
+      close,
+      volume: Number.isFinite(volume) ? volume : undefined,
+    });
+  }
+  return sanitizeCandles(out);
+}
+
+function withUnreadCounts(report: DailyPatternReviewReport): DailyPatternReviewReport {
+  const unreadCount = report.rows.filter((r) => r.status === "ok" && !r.reviewed && r.dailyPattern).length;
+  return {
+    ...report,
+    unreadCount,
+    unreadAlert: unreadCount > 0,
+  };
+}
+
+async function finalizeReport(report: DailyPatternReviewReport): Promise<DailyPatternReviewReport> {
+  const next = withUnreadCounts(report);
+  const saved = await persistDailyPatternReviewReport(next);
+  latest = saved;
+
+  if (!saved.digestEmailSentAt) {
+    const mail = await sendDailyPatternReviewDigest(saved);
+    if (mail.sent) {
+      const stamped: DailyPatternReviewReport = {
+        ...saved,
+        digestEmailSentAt: new Date().toISOString(),
+        digestEmailTo: mail.to,
+      };
+      latest = await persistDailyPatternReviewReport(stamped);
+      return latest;
+    }
+  }
+  return saved;
 }
 
 export function scanSymbolFromCandles(
@@ -297,14 +261,28 @@ export function scanSymbolFromCandles(
   };
 }
 
+export async function getLatestDailyPatternReview(): Promise<DailyPatternReviewReport | null> {
+  if (latest) return latest;
+  const today = pacificDateKey();
+  latest = await resolveLatestDailyPatternReviewReport(today);
+  return latest;
+}
+
+export async function hydrateDailyPatternReviewFromStore(): Promise<DailyPatternReviewReport | null> {
+  latest = await getLatestDailyPatternReview();
+  return latest;
+}
+
 export async function runDailyPatternSweep(options?: {
   force?: boolean;
   fetchCandles?: CandleFetcher;
   fetchNews?: NewsFetcher;
+  fetchMarketProphets?: MarketProphetsFetcher;
+  skipEmail?: boolean;
 }): Promise<DailyPatternReviewReport> {
   const force = Boolean(options?.force);
   const date = pacificDateKey();
-  const existing = loadFromDisk(date);
+  const existing = await resolveDailyPatternReviewReport(date);
   if (!force && existing?.rows?.length) {
     latest = existing;
     return existing;
@@ -361,15 +339,22 @@ export async function runDailyPatternSweep(options?: {
     try {
       news = options?.fetchNews ? await options.fetchNews() : await fetchFreeFinanceNews();
     } catch (err) {
-      news = {
-        items: [],
-        sourcesTried: [],
-        sourcesOk: [],
-      };
       console.info(
         "[DailyPatternReview] news sweep failed:",
         err instanceof Error ? err.message : err,
       );
+    }
+
+    let marketProphets: DailyPatternReviewReport["marketProphets"] = null;
+    try {
+      marketProphets = options?.fetchMarketProphets
+        ? await options.fetchMarketProphets()
+        : await fetchMarketProphetsBrief();
+    } catch {
+      marketProphets = null;
+    }
+    if (!marketProphets) {
+      marketProphets = marketProphetsUnavailableSummary();
     }
 
     const labeled = rows.filter((r) => r.dailyPattern).length;
@@ -384,13 +369,26 @@ export async function runDailyPatternSweep(options?: {
       labeled,
       unavailable,
       disclaimer: DISCLAIMER,
-      nextDueHint: "Automatic sweep once per Pacific day (re-runs after midnight LA, or Run now)",
+      nextDueHint: "Automatic sweep once per Pacific day · Firestore durable · digest email when SMTP is set",
       news,
+      marketProphets,
+      digestEmailSentAt: force ? undefined : existing?.digestEmailSentAt,
+      digestEmailTo: force ? undefined : existing?.digestEmailTo,
       rows,
     };
-    const saved = persist(report);
+
+    if (options?.skipEmail) {
+      const saved = await persistDailyPatternReviewReport(withUnreadCounts(report));
+      latest = saved;
+      console.log(
+        `[DailyPatternReview] ${date} scanned=${saved.scanned} labeled=${saved.labeled} unavailable=${saved.unavailable} news=${news.sourcesOk.length} storage=${saved.storage || "disk"}`,
+      );
+      return saved;
+    }
+
+    const saved = await finalizeReport(report);
     console.log(
-      `[DailyPatternReview] ${date} scanned=${saved.scanned} labeled=${saved.labeled} unavailable=${saved.unavailable} news=${news.sourcesOk.length}`,
+      `[DailyPatternReview] ${date} scanned=${saved.scanned} labeled=${saved.labeled} unavailable=${saved.unavailable} news=${news.sourcesOk.length} storage=${saved.storage || "disk"} digest=${saved.digestEmailSentAt ? "sent" : "skipped"}`,
     );
     return saved;
   } finally {
@@ -398,13 +396,13 @@ export async function runDailyPatternSweep(options?: {
   }
 }
 
-export function markDailyPatternReviewed(
+export async function markDailyPatternReviewed(
   rowId: string,
   reviewed: boolean,
   note?: string,
-): DailyPatternReviewReport {
+): Promise<DailyPatternReviewReport> {
   const date = pacificDateKey();
-  const report = loadFromDisk(date) || latest;
+  const report = (await resolveDailyPatternReviewReport(date)) || latest;
   if (!report) throw new Error("No daily pattern review yet — run the sweep first.");
   const idx = report.rows.findIndex((r) => r.id === rowId);
   if (idx < 0) throw new Error("Unknown review row.");
@@ -415,7 +413,9 @@ export function markDailyPatternReviewed(
     reviewNote: note?.slice(0, 2000),
     reviewedAt: new Date().toISOString(),
   };
-  return persist({ ...report, rows: nextRows });
+  const saved = await persistDailyPatternReviewReport(withUnreadCounts({ ...report, rows: nextRows }));
+  latest = saved;
+  return saved;
 }
 
 export function startDailyPatternReviewScheduler() {
@@ -425,14 +425,16 @@ export function startDailyPatternReviewScheduler() {
     console.log("[DailyPatternReview] Disabled (DAILY_PATTERN_REVIEW_ENABLED=0)");
     return;
   }
-  console.log("[DailyPatternReview] Scheduler armed — Pacific daily");
+  console.log("[DailyPatternReview] Scheduler armed — Pacific daily · Firestore · digest email");
+  void hydrateDailyPatternReviewFromStore();
   setTimeout(() => {
     void runDailyPatternSweep();
   }, 90_000);
   timer = setInterval(() => {
     const today = pacificDateKey();
-    const have = loadFromDisk(today);
-    if (!have) void runDailyPatternSweep();
+    void resolveDailyPatternReviewReport(today).then((have) => {
+      if (!have) void runDailyPatternSweep();
+    });
   }, 60 * 60 * 1000);
 }
 

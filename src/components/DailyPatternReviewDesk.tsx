@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Bell, Check, RefreshCw, Newspaper } from "lucide-react";
+import { Bell, Check, RefreshCw, Newspaper, Mail, ExternalLink } from "lucide-react";
 
 type PatternHit = {
   id: string;
@@ -38,6 +38,17 @@ type NewsItem = {
   pubDate?: string;
 };
 
+type MarketProphetsBrief = {
+  editionDate: string;
+  headline: string;
+  summary: string;
+  bullets: string[];
+  traderLens?: string;
+  watchToday?: string[];
+  url: string;
+  source: "live" | "unavailable";
+};
+
 export type DailyPatternReviewReport = {
   date: string;
   ranAt: string;
@@ -49,6 +60,10 @@ export type DailyPatternReviewReport = {
   disclaimer: string;
   nextDueHint: string;
   news: { items: NewsItem[]; sourcesTried: string[]; sourcesOk: string[] };
+  marketProphets?: MarketProphetsBrief | null;
+  digestEmailSentAt?: string;
+  digestEmailTo?: string;
+  storage?: "disk" | "both";
   rows: ReviewRow[];
 };
 
@@ -178,9 +193,11 @@ export default function DailyPatternReviewDesk({
               Overnight structure review — {report?.date || "today (Pacific)"}
             </h2>
             <p className="text-white/55 text-sm max-w-2xl">
-              Founder alert inbox. Completed daily bars for the mapped universe, nested geometry, and
-              independent prints in the gaps. Live overlays stay on MARKETS. Missing vendor maps stay{" "}
-              <span className="font-mono text-zinc-400">DATA UNAVAILABLE</span>. Not a trade signal.
+              Founder alert inbox + optional digest email. Completed daily bars for the mapped universe,
+              nested geometry, independent prints, free RSS headlines, and the Market Prophets brief when
+              live. Reports persist to Firestore on Cloud Run. Live overlays stay on MARKETS. Missing
+              vendor maps stay <span className="font-mono text-zinc-400">DATA UNAVAILABLE</span>. Not a
+              trade signal.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -223,11 +240,65 @@ export default function DailyPatternReviewDesk({
             <span className="text-white/70">labeled {report.labeled}</span>
             <span className="text-white/45">unavailable {report.unavailable}</span>
             <span className="text-white/40">{report.nextDueHint}</span>
+            {report.storage === "both" ? (
+              <span className="text-emerald-400/80">firestore ok</span>
+            ) : (
+              <span className="text-zinc-500">local disk only</span>
+            )}
+            {report.digestEmailSentAt ? (
+              <span className="text-sky-300 flex items-center gap-1">
+                <Mail size={12} />
+                digest sent
+              </span>
+            ) : (
+              <span className="text-zinc-600">digest pending (needs SMTP)</span>
+            )}
           </div>
         ) : null}
 
         <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">{report?.disclaimer}</p>
       </div>
+
+      {report?.marketProphets && (
+        <div className="mt-4 bg-[#1a1a2e] p-5 rounded-lg border border-violet-500/25">
+          <h3 className="text-violet-200 font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
+            <ExternalLink size={16} />
+            Market Prophets · daily brief
+          </h3>
+          {report.marketProphets.source === "live" ? (
+            <>
+              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
+                {report.marketProphets.editionDate}
+              </p>
+              <p className="text-white font-bold text-sm mb-2">{report.marketProphets.headline}</p>
+              {report.marketProphets.summary ? (
+                <p className="text-zinc-400 text-xs mb-3 leading-relaxed">{report.marketProphets.summary}</p>
+              ) : null}
+              {report.marketProphets.bullets.length > 0 ? (
+                <ul className="space-y-1 mb-3">
+                  {report.marketProphets.bullets.slice(0, 6).map((b, i) => (
+                    <li key={i} className="text-xs text-zinc-300 font-mono">
+                      · {b}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <a
+                href={report.marketProphets.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-violet-300 text-xs font-bold uppercase tracking-wider hover:underline"
+              >
+                Read on marketprophets.io →
+              </a>
+            </>
+          ) : (
+            <p className="text-zinc-600 font-mono text-xs">
+              DATA UNAVAILABLE — no live edition from Market Prophets this sweep.
+            </p>
+          )}
+        </div>
+      )}
 
       {report && (
         <div className="mt-4 bg-[#1a1a2e] p-5 rounded-lg border border-white/10">
