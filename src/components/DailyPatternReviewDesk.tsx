@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Bell, Check, RefreshCw, Newspaper, Mail, ExternalLink } from "lucide-react";
+import { Bell, Check, RefreshCw, Newspaper, Mail, ExternalLink, Send } from "lucide-react";
 
 type PatternHit = {
   id: string;
@@ -21,7 +21,11 @@ type ReviewRow = {
   status: "ok" | "unavailable";
   unavailableReason?: string;
   sessionDate: string | null;
-  lastClose?: number;
+  weeklyPattern: PatternHit | null;
+  weeklySubPatterns: PatternHit[];
+  weeklyIndependentPatterns: PatternHit[];
+  weeklySummary?: string;
+  weeklySnapshotSvg?: string;
   dailyPattern: PatternHit | null;
   subPatterns: PatternHit[];
   independentPatterns: PatternHit[];
@@ -31,35 +35,32 @@ type ReviewRow = {
   reviewNote?: string;
 };
 
-type NewsItem = {
-  title: string;
-  source: string;
-  link?: string;
-  pubDate?: string;
-};
-
 type MarketProphetsBrief = {
   editionDate: string;
   headline: string;
   summary: string;
   bullets: string[];
-  traderLens?: string;
-  watchToday?: string[];
   url: string;
   source: "live" | "unavailable";
 };
 
 export type DailyPatternReviewReport = {
+  reportId: string;
   date: string;
+  slot: "market_close" | "overnight";
   ranAt: string;
+  publishStatus: "draft" | "published";
+  publishedAt?: string;
   unreadAlert: boolean;
   unreadCount: number;
   scanned: number;
   labeled: number;
   unavailable: number;
   disclaimer: string;
+  scannerNote: string;
+  trainingPricingNote: string;
   nextDueHint: string;
-  news: { items: NewsItem[]; sourcesTried: string[]; sourcesOk: string[] };
+  news: { items: { title: string; source: string; link?: string }[]; sourcesTried: string[]; sourcesOk: string[] };
   marketProphets?: MarketProphetsBrief | null;
   digestEmailSentAt?: string;
   digestEmailTo?: string;
@@ -70,9 +71,14 @@ export type DailyPatternReviewReport = {
 const BUCKET_LABEL: Record<ReviewRow["bucket"], string> = {
   forex: "Top 25 forex",
   stocks: "Top stocks",
-  indices: "Top indices",
-  futures: "Top 10 futures (cash proxies)",
-  commodities: "Top 10 commodities",
+  indices: "DXY · DJI · indices",
+  futures: "Top futures (proxies)",
+  commodities: "Top 25 commodities",
+};
+
+const SLOT_LABEL: Record<DailyPatternReviewReport["slot"], string> = {
+  market_close: "NYSE close bell",
+  overnight: "1:00 AM ET",
 };
 
 const DIRECTION: Record<PatternHit["direction"], string> = {
@@ -102,6 +108,10 @@ function HitList({ title, items, empty }: { title: string; items: PatternHit[]; 
   );
 }
 
+function rowNeedsReview(row: ReviewRow): boolean {
+  return row.status === "ok" && !row.reviewed && Boolean(row.dailyPattern || row.weeklyPattern);
+}
+
 export default function DailyPatternReviewDesk({
   getHeaders,
 }: {
@@ -124,19 +134,19 @@ export default function DailyPatternReviewDesk({
       const body = await res.json().catch(() => ({}));
       if (res.status === 404) {
         setReport(null);
-        setError(body.message || "No overnight review yet — tap Run now.");
+        setError(body.message || "No briefing yet — tap Run now.");
         return;
       }
       if (!res.ok) throw new Error(body.message || body.error || `Unavailable (${res.status})`);
       setReport(body as DailyPatternReviewReport);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load overnight review");
+      setError(e instanceof Error ? e.message : "Failed to load briefing");
     } finally {
       setLoading(false);
     }
   };
 
-  const runNow = async () => {
+  const runNow = async (slot: DailyPatternReviewReport["slot"] = "market_close") => {
     setBusy(true);
     setError(null);
     try {
@@ -145,7 +155,7 @@ export default function DailyPatternReviewDesk({
         method: "POST",
         headers,
         credentials: "include",
-        body: "{}",
+        body: JSON.stringify({ slot }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Sweep failed (${res.status})`);
@@ -157,14 +167,42 @@ export default function DailyPatternReviewDesk({
     }
   };
 
+  const publishBriefing = async () => {
+    if (!report) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch("/api/admin/daily-pattern-review/publish", {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({ reportId: report.reportId }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || "Publish failed");
+      setReport(body as DailyPatternReviewReport);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Publish failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const markRow = async (row: ReviewRow, reviewed: boolean) => {
+    if (!report) return;
     try {
       const headers = await getHeaders();
       const res = await fetch("/api/admin/daily-pattern-review/review", {
         method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify({ rowId: row.id, reviewed, note: notes[row.id] ?? row.reviewNote ?? "" }),
+        body: JSON.stringify({
+          rowId: row.id,
+          reviewed,
+          note: notes[row.id] ?? row.reviewNote ?? "",
+          reportId: report.reportId,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || "Save failed");
@@ -190,17 +228,26 @@ export default function DailyPatternReviewDesk({
           <div>
             <h2 className="text-amber-200 text-xl font-bold uppercase mb-1 flex items-center gap-2">
               <Bell size={20} />
-              Overnight structure review — {report?.date || "today (Pacific)"}
+              Daily structure briefing — {report?.date || "today (ET)"}
+              {report?.slot ? (
+                <span className="text-[10px] font-mono text-zinc-400 normal-case">{SLOT_LABEL[report.slot]}</span>
+              ) : null}
             </h2>
-            <p className="text-white/55 text-sm max-w-2xl">
-              Founder alert inbox + optional digest email. Completed daily bars for the mapped universe,
-              nested geometry, independent prints, free RSS headlines, and the Market Prophets brief when
-              live. Reports persist to Firestore on Cloud Run. Live overlays stay on MARKETS. Missing
-              vendor maps stay <span className="font-mono text-zinc-400">DATA UNAVAILABLE</span>. Not a
-              trade signal.
+            <p className="text-white/55 text-sm max-w-2xl mb-2">
+              Sun–Fri sweeps at NYSE close (4 PM ET) and 1 AM ET. Weekly + daily geometry, in-between prints, DXY,
+              DJI, metals, crude, top 25 forex & commodities. CEO reviews each set before publish. Not a trade
+              signal.
             </p>
+            {report?.scannerNote ? (
+              <p className="text-amber-100/80 text-xs max-w-2xl border border-amber-400/20 rounded-md px-3 py-2 mb-2">
+                {report.scannerNote}
+              </p>
+            ) : null}
+            {report?.trainingPricingNote ? (
+              <p className="text-violet-200/80 text-xs max-w-2xl">{report.trainingPricingNote}</p>
+            ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void load()}
@@ -211,13 +258,32 @@ export default function DailyPatternReviewDesk({
             </button>
             <button
               type="button"
-              onClick={() => void runNow()}
+              onClick={() => void runNow("market_close")}
               disabled={busy || loading}
               className="px-3 py-2 rounded-md border border-amber-400/50 text-amber-200 text-xs font-bold uppercase tracking-wider hover:bg-amber-400/10 disabled:opacity-50 flex items-center gap-1.5"
             >
               <RefreshCw size={14} className={busy ? "animate-spin" : ""} />
-              Run now
+              Run close
             </button>
+            <button
+              type="button"
+              onClick={() => void runNow("overnight")}
+              disabled={busy || loading}
+              className="px-3 py-2 rounded-md border border-white/20 text-zinc-300 text-xs font-bold uppercase tracking-wider hover:bg-white/5 disabled:opacity-50"
+            >
+              Run 1 AM
+            </button>
+            {report && report.publishStatus !== "published" ? (
+              <button
+                type="button"
+                onClick={() => void publishBriefing()}
+                disabled={busy || loading}
+                className="px-3 py-2 rounded-md border border-sky-400/50 text-sky-200 text-xs font-bold uppercase tracking-wider hover:bg-sky-400/10 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Send size={14} />
+                Approve & publish
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -227,6 +293,15 @@ export default function DailyPatternReviewDesk({
           <p className="text-white/50 font-mono text-xs">Loading…</p>
         ) : report ? (
           <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+            <span
+              className={`px-3 py-1 rounded font-black uppercase tracking-widest border ${
+                report.publishStatus === "published"
+                  ? "text-sky-200 bg-sky-500/15 border-sky-400/40"
+                  : "text-zinc-300 bg-zinc-500/10 border-zinc-500/30"
+              }`}
+            >
+              {report.publishStatus === "published" ? "published" : "draft — awaiting CEO"}
+            </span>
             <span
               className={`px-3 py-1 rounded font-black uppercase tracking-widest border ${
                 report.unreadAlert
@@ -239,7 +314,6 @@ export default function DailyPatternReviewDesk({
             <span className="text-white/70">scanned {report.scanned}</span>
             <span className="text-white/70">labeled {report.labeled}</span>
             <span className="text-white/45">unavailable {report.unavailable}</span>
-            <span className="text-white/40">{report.nextDueHint}</span>
             {report.storage === "both" ? (
               <span className="text-emerald-400/80">firestore ok</span>
             ) : (
@@ -248,54 +322,35 @@ export default function DailyPatternReviewDesk({
             {report.digestEmailSentAt ? (
               <span className="text-sky-300 flex items-center gap-1">
                 <Mail size={12} />
-                digest sent
+                newsletter sent
               </span>
             ) : (
-              <span className="text-zinc-600">digest pending (needs SMTP)</span>
+              <span className="text-zinc-600">newsletter after publish</span>
             )}
           </div>
         ) : null}
 
-        <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">{report?.disclaimer}</p>
+        <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">{report?.nextDueHint || report?.disclaimer}</p>
       </div>
 
       {report?.marketProphets && (
         <div className="mt-4 bg-[#1a1a2e] p-5 rounded-lg border border-violet-500/25">
           <h3 className="text-violet-200 font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
             <ExternalLink size={16} />
-            Market Prophets · daily brief
+            Market Prophets · free daily media
           </h3>
           {report.marketProphets.source === "live" ? (
             <>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
-                {report.marketProphets.editionDate}
-              </p>
               <p className="text-white font-bold text-sm mb-2">{report.marketProphets.headline}</p>
               {report.marketProphets.summary ? (
-                <p className="text-zinc-400 text-xs mb-3 leading-relaxed">{report.marketProphets.summary}</p>
+                <p className="text-zinc-400 text-xs mb-3">{report.marketProphets.summary}</p>
               ) : null}
-              {report.marketProphets.bullets.length > 0 ? (
-                <ul className="space-y-1 mb-3">
-                  {report.marketProphets.bullets.slice(0, 6).map((b, i) => (
-                    <li key={i} className="text-xs text-zinc-300 font-mono">
-                      · {b}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <a
-                href={report.marketProphets.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-violet-300 text-xs font-bold uppercase tracking-wider hover:underline"
-              >
+              <a href={report.marketProphets.url} target="_blank" rel="noreferrer" className="text-violet-300 text-xs font-bold uppercase hover:underline">
                 Read on marketprophets.io →
               </a>
             </>
           ) : (
-            <p className="text-zinc-600 font-mono text-xs">
-              DATA UNAVAILABLE — no live edition from Market Prophets this sweep.
-            </p>
+            <p className="text-zinc-600 font-mono text-xs">DATA UNAVAILABLE — no live Market Prophets edition.</p>
           )}
         </div>
       )}
@@ -306,26 +361,14 @@ export default function DailyPatternReviewDesk({
             <Newspaper size={16} className="text-amber-200" />
             Basic news · free RSS
           </h3>
-          <p className="text-zinc-500 text-xs mb-3">
-            Sources ok: {report.news.sourcesOk.length ? report.news.sourcesOk.join(" · ") : "none this run"}{" "}
-            <span className="text-zinc-600">(tried {report.news.sourcesTried.join(", ") || "none"})</span>
-          </p>
           {report.news.items.length === 0 ? (
-            <p className="text-zinc-600 font-mono text-xs">DATA UNAVAILABLE — no headlines from free feeds this sweep.</p>
+            <p className="text-zinc-600 font-mono text-xs">DATA UNAVAILABLE — no headlines this sweep.</p>
           ) : (
             <ul className="grid md:grid-cols-2 gap-2">
               {report.news.items.slice(0, 12).map((item, i) => (
                 <li key={`${item.source}-${i}`} className="text-xs text-zinc-300 border border-white/5 rounded-md px-3 py-2">
-                  <span className="text-amber-200/80 font-mono uppercase tracking-wider">{item.source}</span>
-                  <span className="block text-white/90 mt-0.5">
-                    {item.link ? (
-                      <a href={item.link} target="_blank" rel="noreferrer" className="hover:underline">
-                        {item.title}
-                      </a>
-                    ) : (
-                      item.title
-                    )}
-                  </span>
+                  <span className="text-amber-200/80 font-mono uppercase">{item.source}</span>
+                  <span className="block text-white/90 mt-0.5">{item.title}</span>
                 </li>
               ))}
             </ul>
@@ -381,28 +424,46 @@ export default function DailyPatternReviewDesk({
                     )}
                     {row.reviewed ? (
                       <span className="ml-auto text-[10px] uppercase tracking-widest text-emerald-300">reviewed</span>
-                    ) : row.dailyPattern ? (
+                    ) : rowNeedsReview(row) ? (
                       <span className="ml-auto text-[10px] uppercase tracking-widest text-amber-200">needs review</span>
                     ) : (
-                      <span className="ml-auto text-[10px] uppercase tracking-widest text-zinc-600">no daily label</span>
+                      <span className="ml-auto text-[10px] uppercase tracking-widest text-zinc-600">no label</span>
                     )}
                   </button>
                   {open && (
-                    <div className="px-3 pb-4 grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 border-t border-white/5">
-                      <div
-                        className="mt-3 rounded-md overflow-hidden border border-white/10 bg-black"
-                        dangerouslySetInnerHTML={{ __html: row.snapshotSvg }}
-                      />
-                      <div className="mt-3 space-y-3">
+                    <div className="px-3 pb-4 grid lg:grid-cols-2 gap-4 border-t border-white/5">
+                      <div className="space-y-3">
+                        <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mt-3">Daily snapshot</p>
+                        <div
+                          className="rounded-md overflow-hidden border border-white/10 bg-black"
+                          dangerouslySetInnerHTML={{ __html: row.snapshotSvg }}
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        {row.weeklySnapshotSvg ? (
+                          <>
+                            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-black mt-3">Weekly snapshot</p>
+                            <div
+                              className="rounded-md overflow-hidden border border-white/10 bg-black"
+                              dangerouslySetInnerHTML={{ __html: row.weeklySnapshotSvg }}
+                            />
+                          </>
+                        ) : null}
                         {row.proxyNote && <p className="text-[11px] text-zinc-500">{row.proxyNote}</p>}
+                        <HitList
+                          title="Weekly pattern"
+                          items={row.weeklyPattern ? [row.weeklyPattern] : []}
+                          empty="none on completed weekly bars"
+                        />
+                        <HitList title="Weekly nested" items={row.weeklySubPatterns || []} empty="none nested on weekly" />
                         <HitList
                           title="Daily pattern"
                           items={row.dailyPattern ? [row.dailyPattern] : []}
-                          empty="none labeled on completed daily bars"
+                          empty="none on completed daily bars"
                         />
-                        <HitList title="Sub-patterns (nested)" items={row.subPatterns} empty="none nested inside the daily structure" />
+                        <HitList title="Daily nested" items={row.subPatterns} empty="none nested on daily" />
                         <HitList
-                          title="Independent / in-between"
+                          title="In-between / independent"
                           items={row.independentPatterns}
                           empty="none in the gaps"
                         />
@@ -411,7 +472,7 @@ export default function DailyPatternReviewDesk({
                             <input
                               value={notes[row.id] ?? row.reviewNote ?? ""}
                               onChange={(e) => setNotes((n) => ({ ...n, [row.id]: e.target.value }))}
-                              placeholder="Founder note"
+                              placeholder="CEO training note"
                               className="flex-1 min-w-[10rem] bg-black border border-white/15 rounded-md px-2 py-1.5 text-xs text-white"
                             />
                             <button

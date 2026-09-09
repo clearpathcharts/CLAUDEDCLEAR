@@ -71,3 +71,20 @@ export function summarizeClassification(classified: ClassifiedDailyPatterns): st
   const independent = classified.independentPatterns.length;
   return `daily ${daily} · nested ${nested} · independent ${independent}`;
 }
+
+export function summarizeMultiTimeframe(
+  weekly: ClassifiedDailyPatterns,
+  daily: ClassifiedDailyPatterns,
+): string {
+  const w = weekly.dailyPattern
+    ? `${weekly.dailyPattern.label} (${weekly.dailyPattern.direction})`
+    : "none";
+  const d = daily.dailyPattern
+    ? `${daily.dailyPattern.label} (${daily.dailyPattern.direction})`
+    : "none";
+  const between = daily.independentPatterns.length;
+  return `weekly ${w} · daily ${d} · in-between ${between} · nested ${daily.subPatterns.length}`;
+}
+
+/** Alias — same classifier for weekly or daily bars. */
+export const classifyTimeframePatterns = classifyDailyPatterns;

@@ -16,13 +16,13 @@ function ensureDir() {
   if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
 }
 
-function fileFor(date: string) {
-  return path.join(DIR, `${date}.json`);
+function fileFor(reportId: string) {
+  return path.join(DIR, `${reportId}.json`);
 }
 
-export function loadDailyPatternReviewFromDisk(date: string): DailyPatternReviewReport | null {
+export function loadDailyPatternReviewFromDisk(reportId: string): DailyPatternReviewReport | null {
   try {
-    const p = fileFor(date);
+    const p = fileFor(reportId);
     if (!fs.existsSync(p)) return null;
     return JSON.parse(fs.readFileSync(p, "utf8")) as DailyPatternReviewReport;
   } catch {
@@ -41,13 +41,13 @@ export function loadLatestDailyPatternReviewFromDisk(): DailyPatternReviewReport
   }
   try {
     if (!fs.existsSync(DIR)) return null;
-    const dates = fs
+    const ids = fs
       .readdirSync(DIR)
-      .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+      .filter((f) => f.endsWith(".json") && f !== LATEST_FILE)
       .map((f) => f.replace(/\.json$/, ""))
       .sort((a, b) => b.localeCompare(a));
-    if (!dates.length) return null;
-    return loadDailyPatternReviewFromDisk(dates[0]);
+    if (!ids.length) return null;
+    return loadDailyPatternReviewFromDisk(ids[0]);
   } catch {
     return null;
   }
@@ -55,21 +55,21 @@ export function loadLatestDailyPatternReviewFromDisk(): DailyPatternReviewReport
 
 export function saveDailyPatternReviewToDisk(report: DailyPatternReviewReport): DailyPatternReviewReport {
   ensureDir();
-  fs.writeFileSync(fileFor(report.date), JSON.stringify(report, null, 2), "utf8");
+  fs.writeFileSync(fileFor(report.reportId), JSON.stringify(report, null, 2), "utf8");
   fs.writeFileSync(path.join(DIR, LATEST_FILE), JSON.stringify(report, null, 2), "utf8");
   return report;
 }
 
 export async function loadDailyPatternReviewFromFirestore(
-  date: string,
+  reportId: string,
 ): Promise<DailyPatternReviewReport | null> {
   const db = getAdminFirestore();
   if (!db) return null;
   try {
-    const snap = await db.collection(COLLECTION).doc(date).get();
+    const snap = await db.collection(COLLECTION).doc(reportId).get();
     if (!snap.exists) return null;
     const data = snap.data() as DailyPatternReviewReport | undefined;
-    return data?.date ? data : null;
+    return data?.reportId ? data : null;
   } catch (err) {
     console.warn("[DailyPatternReview] Firestore load failed:", err instanceof Error ? err.message : err);
     return null;
@@ -80,10 +80,10 @@ export async function loadLatestDailyPatternReviewFromFirestore(): Promise<Daily
   const db = getAdminFirestore();
   if (!db) return null;
   try {
-    const snap = await db.collection(COLLECTION).orderBy("date", "desc").limit(1).get();
+    const snap = await db.collection(COLLECTION).orderBy("ranAt", "desc").limit(1).get();
     if (snap.empty) return null;
     const data = snap.docs[0]?.data() as DailyPatternReviewReport | undefined;
-    return data?.date ? data : null;
+    return data?.reportId ? data : null;
   } catch (err) {
     console.warn("[DailyPatternReview] Firestore latest load failed:", err instanceof Error ? err.message : err);
     return null;
@@ -96,7 +96,7 @@ export async function saveDailyPatternReviewToFirestore(
   const db = getAdminFirestore();
   if (!db) return false;
   try {
-    await db.collection(COLLECTION).doc(report.date).set(report, { merge: true });
+    await db.collection(COLLECTION).doc(report.reportId).set(report, { merge: true });
     return true;
   } catch (err) {
     console.warn("[DailyPatternReview] Firestore save failed:", err instanceof Error ? err.message : err);
@@ -116,21 +116,17 @@ export async function persistDailyPatternReviewReport(
 }
 
 export async function resolveDailyPatternReviewReport(
-  date: string,
+  reportId: string,
 ): Promise<DailyPatternReviewReport | null> {
   return (
-    loadDailyPatternReviewFromDisk(date) ||
-    (await loadDailyPatternReviewFromFirestore(date)) ||
+    loadDailyPatternReviewFromDisk(reportId) ||
+    (await loadDailyPatternReviewFromFirestore(reportId)) ||
     null
   );
 }
 
-export async function resolveLatestDailyPatternReviewReport(
-  today: string,
-): Promise<DailyPatternReviewReport | null> {
+export async function resolveLatestDailyPatternReviewReport(): Promise<DailyPatternReviewReport | null> {
   return (
-    loadDailyPatternReviewFromDisk(today) ||
-    (await loadDailyPatternReviewFromFirestore(today)) ||
     loadLatestDailyPatternReviewFromDisk() ||
     (await loadLatestDailyPatternReviewFromFirestore()) ||
     null
