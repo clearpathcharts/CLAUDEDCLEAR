@@ -11,6 +11,8 @@ import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
+import ChooseYourPath from './ChooseYourPath';
+import { navigateToDesk } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
   uid: string;
@@ -721,6 +723,8 @@ export default function CeoDashboard() {
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
+
+      <ChooseYourPath onChoosePath={navigateToDesk} />
 
       <CeoAlwaysOnMonitor />
       <DailyOpsDesk getHeaders={founderApiHeaders} />

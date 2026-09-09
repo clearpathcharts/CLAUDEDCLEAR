@@ -11,6 +11,8 @@ import {
   Newspaper,
   Crown,
 } from 'lucide-react';
+import ChooseYourPath from './ChooseYourPath';
+import { navigateToDesk } from '../lib/traderDesks';
 
 interface DiscoveryFeedProps {
   onTabChange: (tabId: string) => void;
@@ -256,6 +258,9 @@ export default function DiscoveryFeed({ onTabChange, profile }: DiscoveryFeedPro
             </p>
           </div>
         </section>
+
+        {/* Current trader setup — Institutional / Fundamental / Retail / Neurodivergent */}
+        <ChooseYourPath onChoosePath={navigateToDesk} />
 
         {/* Explained nav grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

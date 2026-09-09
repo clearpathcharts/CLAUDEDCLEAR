@@ -31,6 +31,23 @@ assert.doesNotMatch(home, /Appealing Additions/);
 assert.doesNotMatch(home, /Free literacy certificates/);
 assert.doesNotMatch(home, /Coming into the desk/);
 assert.doesNotMatch(home, /id="certificate-desk"/);
+assert.doesNotMatch(home, /Run-your-own literacy stack/);
+assert.doesNotMatch(home, /Free scholarly/);
+assert.match(home, /ChooseYourPath/);
+assert.match(home, /navigateToDesk/);
+
+const ceo = read('src/components/CeoDashboard.tsx');
+assert.match(ceo, /ChooseYourPath/);
+assert.match(ceo, /navigateToDesk/);
+assert.doesNotMatch(ceo, /Appealing Additions/);
+assert.doesNotMatch(ceo, /Free literacy certificates/);
+assert.doesNotMatch(ceo, /Run-your-own literacy stack/);
+assert.doesNotMatch(ceo, /Free scholarly/);
+
+const pathCards = read('src/content/chooseYourPath.ts');
+assert.match(pathCards, /id: 'institutional'/);
+assert.match(pathCards, /id: 'fundamental'/);
+assert.match(pathCards, /id: 'retail'/);
 
 const guides = read('src/sectionGuides/catalog.ts');
 assert.doesNotMatch(guides, /id: '06-appealing-additions'/);
