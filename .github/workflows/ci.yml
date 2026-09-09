@@ -51,6 +51,9 @@ jobs:
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable
 
+      - name: Waitlist → Firestore private accounts
+        run: npm run test:waitlist-convert
+
       - name: Section guide video catalog self-test
         run: npm run test:section-guides
 

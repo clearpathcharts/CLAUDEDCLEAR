@@ -138,9 +138,8 @@ export type SafeWaitlistMember = {
 
 export type ListWaitlistOptions = {
   /**
-   * When true (default), hide released/converted rows and smoke-test emails so the
-   * CEO Waitlist empties after “Release waitlist → Private Login”.
-   * Pass false for disaster backups that need full history.
+   * When true (default), hide converted/released rows and smoke-test emails.
+   * Pass false for disaster backups that need full leftover waitlist history.
    */
   activeOnly?: boolean;
 };

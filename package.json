@@ -36,6 +36,7 @@
     "test:fmp-news-wire": "tsx scripts/fmp-news-wire.selftest.ts",
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
+    "test:waitlist-convert": "tsx scripts/waitlist-convert.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
