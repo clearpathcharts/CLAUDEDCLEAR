@@ -44,6 +44,15 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 }) => {
   void isAdmin; // legacy — CEO uses isFounder only
   const primaryNavItems: NavItem[] = [
+    ...(isFounder
+      ? [
+          {
+            id: "CeoDashboard",
+            icon: Shield,
+            label: "CEO",
+          },
+        ]
+      : []),
     {
       id: "Discovery",
       icon: Home,
@@ -88,16 +97,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Network,
       label: "AFFILIATE",
     },
-
-    ...(isFounder
-      ? [
-          {
-            id: "CeoDashboard",
-            icon: Shield,
-            label: "CEO DASHBOARD",
-          },
-        ]
-      : []),
 
     {
       id: "CpmsApk",
