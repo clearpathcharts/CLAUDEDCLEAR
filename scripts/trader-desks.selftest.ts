@@ -142,18 +142,22 @@ for (const rel of srcFiles) {
   if (rel === 'src/App.tsx') {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
+    assert.match(text, /user \? <DeskRoute pathname=\{currentPath\} \/> : <Auth \/>/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
   }
   if (rel === 'src/components/Auth.tsx') {
-    assert.match(text, /navigateToDesk/);
+    assert.match(text, /rememberTraderDesk/);
+    assert.match(text, /openPrivateLogin/);
     assert.doesNotMatch(text, /enterChosenPath = \(profileId/);
     assert.match(text, /data-auth-chart-first/);
     assert.match(text, /order-1 md:order-2/);
   }
   if (rel === 'src/components/ChooseYourPath.tsx') {
-    assert.match(text, /onEnter\(card\.id\)/);
-    assert.match(text, /onEnter\('neurodivergent'\)/);
+    assert.match(text, /onChoosePath\(card\.id\)/);
+    assert.match(text, /onChoosePath\('neurodivergent'\)/);
+    assert.doesNotMatch(text, /PathEnter/);
+    assert.doesNotMatch(text, />\s*Enter\s*</);
   }
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);

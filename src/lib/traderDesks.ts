@@ -105,6 +105,17 @@ export function navigateToDesk(id: TraderDeskId): void {
   window.dispatchEvent(new Event('clearpath-location'));
 }
 
+/** After Private Login, open the path the member chose (or home). */
+export function continueToRememberedDesk(options?: { founder?: boolean }): void {
+  if (typeof window === 'undefined') return;
+  if (options?.founder) {
+    window.location.assign('/ceo');
+    return;
+  }
+  const pending = readRememberedTraderDesk();
+  window.location.assign(pending ? TRADER_DESKS[pending].href : '/');
+}
+
 /** FX session windows in UTC hours (inclusive start, exclusive end, wrapping midnight). */
 export const FX_SESSIONS: { id: string; label: string; utcStart: number; utcEnd: number }[] = [
   { id: 'sydney', label: 'Sydney', utcStart: 21, utcEnd: 6 },
