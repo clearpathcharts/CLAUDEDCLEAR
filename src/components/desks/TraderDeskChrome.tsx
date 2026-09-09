@@ -156,9 +156,9 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           <a
             href="/ceo"
             data-ceo-ops-link
-            className="rounded-md border border-amber-400/50 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-amber-300 hover:bg-amber-400/10"
+            className="rounded-md border border-[#FF1493]/50 bg-[#FF1493]/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-[#FF1493] hover:bg-[#FF1493]/25"
           >
-            CEO Ops
+            CEO
           </a>
         ) : null}
         <a
