@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Lock, Mail, User, Eye, EyeOff, X, Shield, KeyRound } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   loginPrivateAccount,
   registerPrivateAccount,
@@ -12,6 +12,7 @@ import {
 } from '../api/privateAuth';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import { isFounderEmail } from '../lib/founder';
+import './privateLoginSciFi.css';
 
 type Step =
   | 'identify'
@@ -283,13 +284,13 @@ export default function PrivateLoginDesk({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
+      <div className="cp-scifi-login fixed inset-0 z-[220] flex items-center justify-center p-4" data-testid="private-login-scifi">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/85 backdrop-blur-xl"
-          onClick={step === 'goodbye' ? handleClose : handleClose}
+          className="cp-scifi-login-backdrop absolute inset-0"
+          onClick={handleClose}
           aria-hidden="true"
         />
 
@@ -299,131 +300,84 @@ export default function PrivateLoginDesk({
           aria-modal="true"
           aria-labelledby="private-login-title"
           tabIndex={-1}
-          initial={{ opacity: 0, y: 24, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 16, scale: 0.96 }}
-          className="relative z-10 w-full max-w-md rounded-3xl border border-[#00E5FF]/25 bg-[#050508] shadow-[0_0_60px_rgba(0,229,255,0.12)] overflow-hidden outline-none"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          className="cp-scifi-login-panel relative z-10 outline-none"
         >
-          <div className="px-6 py-5 border-b border-white/10 bg-gradient-to-r from-[#00E5FF]/10 via-transparent to-[#FF1493]/10 flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-[#00E5FF]/15 border border-[#00E5FF]/30" aria-hidden="true">
-                <Shield size={18} className="text-[#00E5FF]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#00E5FF]">
-                  Private Member Desk
-                </p>
-                <h2
-                  id="private-login-title"
-                  className="text-lg font-black text-white tracking-tight mt-1"
-                  style={{ fontFamily: "'Cinzel', serif" }}
-                >
-                  {title}
-                </h2>
-                {step !== 'goodbye' && (
-                  <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
-                    {step === 'login'
-                      ? 'Email and password. That’s it.'
-                      : step === 'register'
-                        ? 'Create your login — then you’re in.'
-                        : step === 'forgot'
-                          ? 'We’ll email a 2-hour link to the address on this account.'
-                          : 'Your workspace stays yours.'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="text-zinc-500 hover:text-white transition-colors p-1"
-              aria-label="Close private login"
-            >
-              <X size={18} />
-            </button>
+          <div className="cp-scifi-login-glitch" aria-hidden="true">
+            [ SYSTEM ONLINE ]
           </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="cp-scifi-login-close"
+            aria-label="Close private login"
+          >
+            ×
+          </button>
+          <h2 id="private-login-title">Access Terminal</h2>
+          <p className="cp-scifi-login-sub">{title}</p>
 
-          <div className="p-6 space-y-5">
+          <div>
             {infoBanner && step !== 'goodbye' && (
-              <p className="text-[11px] text-[#00E5FF] bg-[#00E5FF]/10 border border-[#00E5FF]/25 rounded-xl px-3 py-2 leading-relaxed">
-                {infoBanner}
-              </p>
+              <p className="cp-scifi-login-banner">{infoBanner}</p>
             )}
 
             {step === 'goodbye' && (
-              <div className="space-y-4 text-center py-6">
-                <p
-                  className="text-2xl font-black text-white tracking-tight"
-                  style={{ fontFamily: "'Cinzel', serif" }}
-                >
+              <div>
+                <p className="cp-scifi-login-sub" style={{ marginBottom: '0.75rem' }}>
                   Have a good one.
                 </p>
-                <p className="text-[12px] text-zinc-500 leading-relaxed">
+                <p className="cp-scifi-login-note">
                   ClearPath is built on honesty and real membership. You’re welcome back anytime with real details.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="w-full py-3 rounded-xl border border-white/15 text-zinc-300 text-xs font-black uppercase tracking-widest hover:border-[#00E5FF]/40 hover:text-white transition-colors"
-                >
+                <button type="button" onClick={handleClose} className="cp-scifi-login-ghost">
                   Close
                 </button>
               </div>
             )}
 
             {step === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Email
-                  </span>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
-                    <input
-                      type="email"
-                      required
-                      autoFocus
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+              <form onSubmit={handleLogin}>
+                <label className="cp-scifi-login-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                  />
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Password
-                  </span>
-                  <div className="relative">
-                    <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF1493]/80" />
+                <label className="cp-scifi-login-field">
+                  <span>Password</span>
+                  <div className="cp-scifi-login-input-wrap">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl pl-10 pr-12 py-3 text-sm text-white outline-none tracking-widest"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       aria-pressed={showPassword}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      className="cp-scifi-login-toggle"
                     >
                       {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                     </button>
                   </div>
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Lock size={14} />
-                  {busy ? 'Signing in…' : 'Sign in'}
+                <button type="submit" disabled={busy} className="cp-scifi-login-submit">
+                  {busy ? 'Signing in…' : 'Login'}
                 </button>
 
                 <button
@@ -435,7 +389,7 @@ export default function PrivateLoginDesk({
                     setError('');
                     setInfoBanner('');
                   }}
-                  className="w-full text-[11px] text-zinc-500 hover:text-[#FF1493] transition-colors"
+                  className="cp-scifi-login-alt"
                 >
                   Forgot password?
                 </button>
@@ -449,7 +403,7 @@ export default function PrivateLoginDesk({
                     setError('');
                     setInfoBanner('');
                   }}
-                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                  className="cp-scifi-login-alt"
                 >
                   Need an account? Create one
                 </button>
@@ -457,29 +411,23 @@ export default function PrivateLoginDesk({
             )}
 
             {step === 'forgot' && (
-              <form onSubmit={handleForgot} className="space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Email
-                  </span>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
-                    <input
-                      type="email"
-                      required
-                      autoFocus
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+              <form onSubmit={handleForgot}>
+                <p className="cp-scifi-login-note">
+                  Enter the email on the account. We send a one-time reset link by email. The token is never shown in the browser.
+                </p>
+                <label className="cp-scifi-login-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                  />
                 </label>
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
+                <button type="submit" disabled={busy} className="cp-scifi-login-submit">
                   {busy ? 'Sending…' : 'Email me a reset link'}
                 </button>
                 <button
@@ -488,7 +436,7 @@ export default function PrivateLoginDesk({
                     setStep('login');
                     setError('');
                   }}
-                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                  className="cp-scifi-login-alt"
                 >
                   Back to sign in
                 </button>
@@ -496,90 +444,71 @@ export default function PrivateLoginDesk({
             )}
 
             {step === 'register' && (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Email
-                  </span>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
-                    <input
-                      type="email"
-                      required
-                      autoFocus
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+              <form onSubmit={handleRegister}>
+                <label className="cp-scifi-login-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                  />
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Your name
-                  </span>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B026FF]" />
-                    <input
-                      type="text"
-                      required
-                      minLength={2}
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full bg-black border border-white/10 focus:border-[#B026FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+                <label className="cp-scifi-login-field">
+                  <span>Your name</span>
+                  <input
+                    type="text"
+                    required
+                    minLength={2}
+                    autoComplete="name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your name"
+                  />
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Password (min 8)
-                  </span>
-                  <div className="relative">
-                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#FF1493]" />
+                <label className="cp-scifi-login-field">
+                  <span>Password (min 8)</span>
+                  <div className="cp-scifi-login-input-wrap">
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={8}
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl pl-10 pr-12 py-3 text-sm text-white outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       aria-pressed={showPassword}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                      className="cp-scifi-login-toggle"
                     >
                       {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                     </button>
                   </div>
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Confirm password
-                  </span>
+                <label className="cp-scifi-login-field">
+                  <span>Confirm password</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     minLength={8}
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl px-4 py-3 text-sm text-white outline-none"
                   />
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#FF1493] to-[#B026FF] text-white text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
+                <button type="submit" disabled={busy} className="cp-scifi-login-submit">
                   {busy ? 'Creating…' : 'Create account & enter'}
                 </button>
 
@@ -592,7 +521,7 @@ export default function PrivateLoginDesk({
                     setError('');
                     setInfoBanner('');
                   }}
-                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
+                  className="cp-scifi-login-alt"
                 >
                   Already have an account? Sign in
                 </button>
@@ -600,51 +529,37 @@ export default function PrivateLoginDesk({
             )}
 
             {step === 'real_info' && (
-              <form onSubmit={handleResubmit} className="space-y-4">
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
+              <form onSubmit={handleResubmit}>
+                <p className="cp-scifi-login-note">
                   ClearPath is built on honesty. Please use your real name and a real email — temporary or fake addresses will not unlock membership.
                 </p>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Real display name
-                  </span>
-                  <div className="relative">
-                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#B026FF]" />
-                    <input
-                      type="text"
-                      required
-                      autoFocus
-                      minLength={2}
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your real name"
-                      className="w-full bg-black border border-white/10 focus:border-[#B026FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+                <label className="cp-scifi-login-field">
+                  <span>Real display name</span>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    minLength={2}
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Your real name"
+                  />
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Real email
-                  </span>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#00E5FF]/70" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="w-full bg-black border border-white/10 focus:border-[#00E5FF]/50 rounded-xl pl-10 pr-4 py-3 text-sm text-white outline-none"
-                    />
-                  </div>
+                <label className="cp-scifi-login-field">
+                  <span>Real email</span>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                  />
                 </label>
 
-                <label className="block space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                    Password (same as you just created)
-                  </span>
+                <label className="cp-scifi-login-field">
+                  <span>Password (same as you just created)</span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
@@ -652,15 +567,10 @@ export default function PrivateLoginDesk({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-black border border-white/10 focus:border-[#FF1493]/50 rounded-xl px-4 py-3 text-sm text-white outline-none"
                   />
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
+                <button type="submit" disabled={busy} className="cp-scifi-login-submit">
                   {busy ? 'Saving…' : 'Submit real info'}
                 </button>
 
@@ -668,7 +578,7 @@ export default function PrivateLoginDesk({
                   type="button"
                   disabled={busy}
                   onClick={handleDecline}
-                  className="w-full py-3 rounded-xl border border-white/10 text-zinc-400 text-xs font-black uppercase tracking-widest hover:border-[#FF5277]/40 hover:text-[#FF5277] transition-colors disabled:opacity-50"
+                  className="cp-scifi-login-ghost cp-scifi-login-danger"
                 >
                   No thanks
                 </button>
@@ -676,43 +586,28 @@ export default function PrivateLoginDesk({
             )}
 
             {step === 'pending_email' && (
-              <div className="space-y-4">
-                <p className="text-[12px] text-zinc-300 leading-relaxed">
-                  We sent a confirmation link to <span className="text-[#00E5FF] font-mono">{email}</span>.
-                  Click it to unlock your private desk. The link expires in 48 hours.
+              <div>
+                <p className="cp-scifi-login-note">
+                  We sent a confirmation link to <span className="font-mono">{email}</span>. Click it to unlock your private desk. The link expires in 48 hours.
                 </p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={handleResend}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#00E5FF] to-[#00B8D4] text-black text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                >
+                <button type="button" disabled={busy} onClick={handleResend} className="cp-scifi-login-submit">
                   {busy ? 'Sending…' : 'Resend confirmation email'}
                 </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setStep('real_info')}
-                  className="w-full text-[11px] text-zinc-500 hover:text-[#00E5FF] transition-colors"
-                >
+                <button type="button" disabled={busy} onClick={() => setStep('real_info')} className="cp-scifi-login-alt">
                   Update my information
                 </button>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={handleDecline}
-                  className="w-full text-[11px] text-zinc-600 hover:text-[#FF5277] transition-colors"
+                  className="cp-scifi-login-alt cp-scifi-login-danger"
                 >
                   No thanks
                 </button>
               </div>
             )}
 
-            {error && step !== 'goodbye' && (
-              <p className="text-[11px] text-[#FF5277] bg-[#FF5277]/10 border border-[#FF5277]/25 rounded-xl px-3 py-2">
-                {error}
-              </p>
-            )}
+            {error && step !== 'goodbye' && <p className="cp-scifi-login-error">{error}</p>}
           </div>
         </motion.div>
       </div>
