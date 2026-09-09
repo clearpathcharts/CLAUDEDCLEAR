@@ -270,9 +270,10 @@ for (const rel of srcFiles) {
   }
   if (rel === 'src/components/DailyPatternReviewDesk.tsx') {
     assert.match(text, /Overnight structure review/);
+    assert.match(text, /Market Prophets/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /MARKETS/);
-    assert.match(text, /Not a trade signal/);
+    assert.match(text, /Not a[\s\S]*trade signal/);
     assert.doesNotMatch(text, /You should buy|Place order/i);
   }
   if (rel === 'src/components/CeoDashboard.tsx') {

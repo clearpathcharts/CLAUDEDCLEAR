@@ -2945,15 +2945,22 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   );
 
-  app.get('/api/admin/daily-pattern-review', requireFounderOrCatalogAdmin, (_req, res) => {
-    const report = getLatestDailyPatternReview();
-    if (!report) {
-      return res.status(404).json({
-        error: 'NO_REPORT',
-        message: 'No overnight structure review yet — first sweep runs ~90s after boot, then once per Pacific day.',
+  app.get('/api/admin/daily-pattern-review', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await getLatestDailyPatternReview();
+      if (!report) {
+        return res.status(404).json({
+          error: 'NO_REPORT',
+          message: 'No overnight structure review yet — first sweep runs ~90s after boot, then once per Pacific day.',
+        });
+      }
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_LOAD_FAILED',
+        message: e?.message || 'Could not load overnight structure review',
       });
     }
-    res.json(report);
   });
 
   app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (_req, res) => {
@@ -2972,12 +2979,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     '/api/admin/daily-pattern-review/review',
     requireFounderOrCatalogAdmin,
     requireFounderActionHeader,
-    (req, res) => {
+    async (req, res) => {
       try {
         const rowId = String(req.body?.rowId || '');
         const reviewed = Boolean(req.body?.reviewed);
         const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
-        const report = markDailyPatternReviewed(rowId, reviewed, note);
+        const report = await markDailyPatternReviewed(rowId, reviewed, note);
         res.json(report);
       } catch (e: any) {
         res.status(400).json({

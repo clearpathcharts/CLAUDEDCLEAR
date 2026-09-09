@@ -1,8 +1,10 @@
 /**
- * Overnight structure review — universe, classifier, snapshot, sweep (no live vendor).
+ * Overnight structure review — universe, classifier, snapshot, sweep, store, email, Market Prophets.
  * Run: npm run test:daily-pattern-review
  */
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import {
   DAILY_PATTERN_UNIVERSE,
   universeCounts,
@@ -17,6 +19,15 @@ import {
   runDailyPatternSweep,
   twelveValuesToCandles,
 } from "../src/server/dailyPatternReviewService";
+import {
+  loadDailyPatternReviewFromDisk,
+  saveDailyPatternReviewToDisk,
+} from "../src/server/dailyPatternReviewStore";
+import {
+  buildDailyPatternReviewDigest,
+  dailyPatternReviewRecipient,
+} from "../src/server/dailyPatternReviewEmail";
+import { fetchMarketProphetsBrief, marketProphetsBriefUrl } from "../src/server/marketProphetsClient";
 import { detectNestedStructures } from "../src/patterns/chartPatterns";
 import { getRegistryAsset } from "../src/constants/assetRegistry";
 import type { DetectedPattern } from "../src/patterns/types";
@@ -56,12 +67,13 @@ const fromTd = twelveValuesToCandles(values);
 assert.equal(fromTd.length, 2);
 assert.ok(fromTd[0].time < fromTd[1].time);
 
-const today = Date.parse("2026-09-09T12:00:00.000Z");
+// Pacific calendar: in-progress bar shares today's LA date with `now`.
+const nowPacificDay = Date.parse("2026-09-09T20:00:00.000-07:00");
 const withToday: Candle[] = [
   ...fromTd,
-  { time: Date.parse("2026-09-09T00:00:00.000Z"), open: 1.12, high: 1.14, low: 1.11, close: 1.13 },
+  { time: Date.parse("2026-09-09T08:00:00.000-07:00"), open: 1.12, high: 1.14, low: 1.11, close: 1.13 },
 ];
-const completed = previousCompletedDaily(withToday, today);
+const completed = previousCompletedDaily(withToday, nowPacificDay);
 assert.equal(completed.length, 2);
 assert.equal(sessionDateFromCandles(completed), "2026-09-08");
 
@@ -176,8 +188,36 @@ for (let i = 0; i < 40; i++) {
   });
 }
 
+const mockMpPayload = {
+  editionDate: "2026-09-09",
+  headline: "Fixture headline",
+  summary: "Fixture summary for wiring test.",
+  bullets: ["Bullet one", "Bullet two"],
+};
+
+const mockFetch = (async () =>
+  ({
+    ok: true,
+    json: async () => mockMpPayload,
+  }) as Response) as typeof fetch;
+
+const brief = await fetchMarketProphetsBrief(mockFetch);
+assert.equal(brief?.headline, "Fixture headline");
+assert.equal(brief?.source, "live");
+assert.equal(brief?.url, marketProphetsBriefUrl("2026-09-09"));
+
+const mockMpFetcher = async () => ({
+  editionDate: "2026-09-09",
+  headline: "Fixture headline",
+  summary: "Fixture summary for wiring test.",
+  bullets: ["Bullet one", "Bullet two"],
+  url: marketProphetsBriefUrl("2026-09-09"),
+  source: "live" as const,
+});
+
 const report = await runDailyPatternSweep({
   force: true,
+  skipEmail: true,
   fetchCandles: async () => wedgeCandles,
   fetchNews: async () => ({
     items: [
@@ -190,12 +230,14 @@ const report = await runDailyPatternSweep({
     sourcesTried: ["BBC Business", "Federal Reserve Press"],
     sourcesOk: ["Federal Reserve Press"],
   }),
+  fetchMarketProphets: mockMpFetcher,
 });
 
 assert.equal(report.rows.length, DAILY_PATTERN_UNIVERSE.length);
 assert.ok(report.scanned >= 25);
 assert.ok(report.unavailable >= 4);
 assert.ok(report.news.items[0]?.title.includes("Fed holds rates"));
+assert.equal(report.marketProphets?.headline, "Fixture headline");
 assert.match(report.disclaimer, /never a confirmed signal/i);
 assert.doesNotMatch(JSON.stringify(report.rows.filter((r) => r.status === "unavailable").slice(0, 4)), /1\.2345/);
 
@@ -208,6 +250,21 @@ assert.equal(fxRow?.status, "ok");
 assert.match(fxRow?.snapshotSvg || "", /<svg /);
 assert.match(fxRow?.summary || "", /daily /);
 
+saveDailyPatternReviewToDisk(report);
+const reloaded = loadDailyPatternReviewFromDisk(report.date);
+assert.equal(reloaded?.date, report.date);
+assert.equal(reloaded?.marketProphets?.headline, "Fixture headline");
+
+const digest = buildDailyPatternReviewDigest(report);
+assert.match(digest.subject, /overnight structure/i);
+assert.match(digest.text, /Fixture headline/);
+assert.match(digest.html, /marketprophets/i);
+assert.ok(dailyPatternReviewRecipient().includes("@"));
+
+const desk = fs.readFileSync(path.join(process.cwd(), "src/components/DailyPatternReviewDesk.tsx"), "utf8");
+assert.match(desk, /Market Prophets/);
+assert.match(desk, /digest sent|digest pending/);
+
 console.log(
-  `PASS: daily pattern review universe forex=${counts.forex} stocks=${counts.stocks} indices=${counts.indices} futures=${counts.futures} commodities=${counts.commodities} labeled=${report.labeled}`,
+  `PASS: daily pattern review universe forex=${counts.forex} stocks=${counts.stocks} indices=${counts.indices} futures=${counts.futures} commodities=${counts.commodities} labeled=${report.labeled} mp=${report.marketProphets?.source}`,
 );
