@@ -116,6 +116,11 @@ function isFundamentalDeskPath(path: string): boolean {
   return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
 }
 
+function isCeoPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/ceo' || p === '/ceo-dashboard';
+}
+
 function PublicLearnShell({
   children,
   deskTab = EDUCATION_TAB_ID,
@@ -294,6 +299,13 @@ export default function App() {
         <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
         <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
       </div>
+    );
+  } else if (isCeoPath(currentPath)) {
+    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+    content = (
+      <AppShellProvider>
+        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+      </AppShellProvider>
     );
   } else if (isDeskPath(currentPath)) {
     content = <DeskRoute pathname={currentPath} />;
