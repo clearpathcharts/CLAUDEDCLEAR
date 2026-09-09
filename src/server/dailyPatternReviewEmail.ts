@@ -1,12 +1,12 @@
 /**
- * Founder email digest for overnight structure review.
- * Requires SMTP_HOST / SMTP_USER / SMTP_PASS on Cloud Run.
+ * Founder email digest — sent only after CEO publishes a briefing.
  */
 
 import { FOUNDER_EMAIL } from "../lib/founder";
 import { isSmtpConfigured, sendTransactionalEmail } from "./registrationEmail";
 import type { DailyPatternReviewReport, SymbolReviewRow } from "./dailyPatternReviewTypes";
 import type { MarketProphetsBriefSummary } from "./marketProphetsClient";
+import { slotLabel } from "./dailyPatternReviewSchedule";
 
 export type DigestEmailResult = {
   sent: boolean;
@@ -27,7 +27,7 @@ function siteBaseUrl(): string {
 }
 
 function labeledRows(rows: SymbolReviewRow[]): SymbolReviewRow[] {
-  return rows.filter((r) => r.status === "ok" && r.dailyPattern);
+  return rows.filter((r) => r.status === "ok" && (r.dailyPattern || r.weeklyPattern));
 }
 
 function escapeHtml(s: string): string {
@@ -44,14 +44,15 @@ export function buildDailyPatternReviewDigest(report: DailyPatternReviewReport):
   text: string;
 } {
   const site = siteBaseUrl();
-  const hits = labeledRows(report.rows).slice(0, 12);
+  const hits = labeledRows(report.rows).slice(0, 15);
   const mp = report.marketProphets;
 
-  const subject = `ClearPath overnight structure · ${report.date} · ${report.labeled} labeled · ${report.unreadCount} unread`;
+  const subject = `ClearPath daily briefing · ${report.date} · ${slotLabel(report.slot)} · ${report.labeled} labeled`;
 
   const hitLines = hits.map((r) => {
-    const p = r.dailyPattern!;
-    return `· ${r.display}: ${p.label} (${p.direction}) — ${Math.round(p.confidence * 100)}%`;
+    const d = r.dailyPattern ? `daily ${r.dailyPattern.label}` : "daily —";
+    const w = r.weeklyPattern ? `weekly ${r.weeklyPattern.label}` : "weekly —";
+    return `· ${r.display}: ${w} · ${d}`;
   });
 
   const mpLines: string[] = [];
@@ -63,29 +64,36 @@ export function buildDailyPatternReviewDigest(report: DailyPatternReviewReport):
   }
 
   const text = [
-    `Overnight structure review — ${report.date} (Pacific)`,
+    `Daily structure briefing — ${report.date} · ${slotLabel(report.slot)} (ET)`,
+    "",
+    report.scannerNote,
     "",
     `Scanned: ${report.scanned} · Labeled: ${report.labeled} · Unavailable: ${report.unavailable}`,
-    `Unread daily labels: ${report.unreadCount}`,
     "",
-    hits.length ? "Top labeled daily structures:" : "No major daily labels this sweep.",
+    hits.length ? "Weekly + daily labels:" : "No major weekly/daily labels this sweep.",
     ...hitLines,
     "",
-    ...(mpLines.length ? ["— Market Prophets —", ...mpLines, ""] : []),
+    ...(mpLines.length ? ["— Market Prophets (free media) —", ...mpLines, ""] : []),
+    report.trainingPricingNote,
+    "",
     report.disclaimer,
     "",
-    `Open CEO inbox: ${site}/ceo`,
-    "— ClearPath Trader (not a trade signal)",
+    `CEO review desk: ${site}/ceo`,
   ].join("\n");
 
   const hitHtml = hits.length
     ? `<ul>${hits
         .map((r) => {
-          const p = r.dailyPattern!;
-          return `<li><strong>${escapeHtml(r.display)}</strong>: ${escapeHtml(p.label)} (${escapeHtml(p.direction)}) · ${Math.round(p.confidence * 100)}%</li>`;
+          const d = r.dailyPattern
+            ? `${escapeHtml(r.dailyPattern.label)} (${escapeHtml(r.dailyPattern.direction)})`
+            : "—";
+          const w = r.weeklyPattern
+            ? `${escapeHtml(r.weeklyPattern.label)} (${escapeHtml(r.weeklyPattern.direction)})`
+            : "—";
+          return `<li><strong>${escapeHtml(r.display)}</strong><br/>Weekly: ${w}<br/>Daily: ${d}</li>`;
         })
         .join("")}</ul>`
-    : "<p>No major daily labels this sweep.</p>";
+    : "<p>No major weekly/daily labels this sweep.</p>";
 
   const mpHtml =
     mp?.source === "live"
@@ -98,13 +106,15 @@ export function buildDailyPatternReviewDigest(report: DailyPatternReviewReport):
 
   const html = `
     <div style="font-family:monospace;background:#0a0a0f;color:#e4e4e7;padding:24px;max-width:640px;">
-      <h1 style="color:#fbbf24;font-size:18px;">Overnight structure review</h1>
-      <p style="color:#a1a1aa;">${escapeHtml(report.date)} · scanned ${report.scanned} · labeled ${report.labeled} · <strong style="color:#fbbf24;">${report.unreadCount} unread</strong></p>
-      <h2 style="color:#fff;font-size:14px;">Daily labels</h2>
+      <h1 style="color:#fbbf24;font-size:18px;">Daily structure briefing</h1>
+      <p style="color:#a1a1aa;">${escapeHtml(report.date)} · ${escapeHtml(slotLabel(report.slot))}</p>
+      <p style="color:#cbd5e1;font-size:12px;">${escapeHtml(report.scannerNote)}</p>
+      <h2 style="color:#fff;font-size:14px;">Weekly + daily labels</h2>
       ${hitHtml}
       ${mpHtml}
-      <p style="color:#71717a;font-size:11px;margin-top:24px;">${escapeHtml(report.disclaimer)}</p>
-      <p><a href="${escapeHtml(site)}/ceo" style="color:#22d3ee;">Open CEO inbox</a></p>
+      <p style="color:#a78bfa;font-size:11px;margin-top:16px;">${escapeHtml(report.trainingPricingNote)}</p>
+      <p style="color:#71717a;font-size:11px;margin-top:16px;">${escapeHtml(report.disclaimer)}</p>
+      <p><a href="${escapeHtml(site)}/ceo" style="color:#22d3ee;">CEO review desk</a></p>
     </div>`;
 
   return { subject, html, text };

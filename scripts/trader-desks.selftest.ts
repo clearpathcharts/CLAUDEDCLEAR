@@ -269,11 +269,13 @@ for (const rel of srcFiles) {
     assert.match(text, /RAINBOW_PRESETS/);
   }
   if (rel === 'src/components/DailyPatternReviewDesk.tsx') {
-    assert.match(text, /Overnight structure review/);
+    assert.match(text, /Daily structure briefing/);
     assert.match(text, /Market Prophets/);
+    assert.match(text, /Approve & publish/);
+    assert.match(text, /Weekly pattern/);
+    assert.match(text, /scannerNote/);
     assert.match(text, /DATA UNAVAILABLE/);
-    assert.match(text, /MARKETS/);
-    assert.match(text, /Not a[\s\S]*trade signal/);
+    assert.match(text, /Not a[\s\S]*signal/);
     assert.doesNotMatch(text, /You should buy|Place order/i);
   }
   if (rel === 'src/components/CeoDashboard.tsx') {

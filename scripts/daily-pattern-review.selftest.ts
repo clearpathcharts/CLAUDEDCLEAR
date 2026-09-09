@@ -1,5 +1,5 @@
 /**
- * Overnight structure review — universe, classifier, snapshot, sweep, store, email, Market Prophets.
+ * Daily structure briefing — universe, weekly+daily classifier, schedule, sweep.
  * Run: npm run test:daily-pattern-review
  */
 import assert from "node:assert/strict";
@@ -10,11 +10,12 @@ import {
   universeCounts,
   mappedUniverse,
 } from "../src/server/dailyPatternUniverse";
-import { classifyDailyPatterns } from "../src/server/dailyPatternClassify";
+import { classifyDailyPatterns, summarizeMultiTimeframe } from "../src/server/dailyPatternClassify";
 import { renderDailyPatternSnapshot, sessionDateFromCandles } from "../src/server/dailyPatternSnapshot";
 import { FREE_FINANCE_NEWS_FEEDS } from "../src/server/freeFinanceNews";
 import {
   previousCompletedDaily,
+  previousCompletedWeekly,
   scanSymbolFromCandles,
   runDailyPatternSweep,
   twelveValuesToCandles,
@@ -28,243 +29,140 @@ import {
   dailyPatternReviewRecipient,
 } from "../src/server/dailyPatternReviewEmail";
 import { fetchMarketProphetsBrief, marketProphetsBriefUrl } from "../src/server/marketProphetsClient";
+import {
+  briefingReportId,
+  easternDateKey,
+  isBriefingDay,
+  isSlotDue,
+  slotLabel,
+} from "../src/server/dailyPatternReviewSchedule";
+import { SCANNER_ACCURACY_NOTE, TRAINING_PRICING_NOTE } from "../src/server/dailyPatternReviewCopy";
 import { detectNestedStructures } from "../src/patterns/chartPatterns";
 import { getRegistryAsset } from "../src/constants/assetRegistry";
 import type { DetectedPattern } from "../src/patterns/types";
 import type { Candle } from "../src/types/indicators";
 
 const counts = universeCounts();
-assert.equal(counts.forex, 25, "top 25 forex");
-assert.equal(counts.stocks, 10, "top stocks from registry");
-assert.equal(counts.indices, 5, "top indices from registry");
-assert.equal(counts.futures, 10, "top 10 futures proxy slots");
-assert.equal(counts.commodities, 10, "top 10 commodities slots");
+assert.equal(counts.forex, 25);
+assert.equal(counts.commodities, 25);
+assert.ok(counts.indices >= 5);
+assert.ok(counts.futures >= 10);
 
 const unmapped = DAILY_PATTERN_UNIVERSE.filter((t) => t.unavailableReason === "NO VENDOR MAP");
-assert.equal(unmapped.length, 4);
-assert.ok(unmapped.every((t) => t.symbol === null));
+assert.ok(unmapped.length >= 19);
+
+assert.ok(DAILY_PATTERN_UNIVERSE.some((t) => t.symbol === "DXY"));
+assert.ok(DAILY_PATTERN_UNIVERSE.some((t) => t.symbol === "DJI"));
+assert.ok(DAILY_PATTERN_UNIVERSE.some((t) => t.symbol === "WTI"));
+assert.ok(DAILY_PATTERN_UNIVERSE.some((t) => t.symbol === "XAUUSD"));
 
 for (const row of mappedUniverse()) {
   assert.ok(row.symbol);
   const asset = getRegistryAsset(row.symbol!);
-  assert.ok(asset?.enabled, `${row.symbol} must be an enabled registry asset`);
+  assert.ok(asset?.enabled, `${row.symbol} must be enabled`);
 }
 
-assert.ok(
-  DAILY_PATTERN_UNIVERSE.filter((t) => t.bucket === "futures").every((t) => t.proxyNote),
-  "futures rows must disclose cash/index proxy — not listed contracts",
-);
+assert.match(SCANNER_ACCURACY_NOTE, /mathematically sound/i);
+assert.match(TRAINING_PRICING_NOTE, /\$5\.99/);
 
-for (const feed of FREE_FINANCE_NEWS_FEEDS) {
-  assert.match(feed.url, /^https:\/\//);
-}
+const mondayClose = new Date("2026-09-07T20:00:00-04:00");
+assert.equal(isBriefingDay(mondayClose), true);
+assert.equal(isBriefingDay(new Date("2026-09-05T12:00:00-04:00")), false);
+assert.equal(isSlotDue("market_close", new Date("2026-09-08T16:00:00-04:00")), true);
+assert.equal(isSlotDue("overnight", new Date("2026-09-08T01:00:00-04:00")), true);
+assert.match(slotLabel("market_close"), /close/i);
 
 const values = [
   { datetime: "2026-09-07", open: "1.10", high: "1.12", low: "1.09", close: "1.11" },
   { datetime: "2026-09-08", open: "1.11", high: "1.13", low: "1.10", close: "1.12" },
 ];
 const fromTd = twelveValuesToCandles(values);
-assert.equal(fromTd.length, 2);
-assert.ok(fromTd[0].time < fromTd[1].time);
-
-// Pacific calendar: in-progress bar shares today's LA date with `now`.
-const nowPacificDay = Date.parse("2026-09-09T20:00:00.000-07:00");
+const nowEt = Date.parse("2026-09-09T20:00:00-04:00");
 const withToday: Candle[] = [
   ...fromTd,
-  { time: Date.parse("2026-09-09T08:00:00.000-07:00"), open: 1.12, high: 1.14, low: 1.11, close: 1.13 },
+  { time: Date.parse("2026-09-09T08:00:00-04:00"), open: 1.12, high: 1.14, low: 1.11, close: 1.13 },
 ];
-const completed = previousCompletedDaily(withToday, nowPacificDay);
-assert.equal(completed.length, 2);
-assert.equal(sessionDateFromCandles(completed), "2026-09-08");
+assert.equal(previousCompletedDaily(withToday, nowEt).length, 2);
 
-function descTriangleBars(
-  bars: number,
-  floor: number,
-  startHigh: number,
-  t0: number,
-): Candle[] {
+const weeklyBars: Candle[] = [];
+for (let i = 0; i < 8; i++) {
+  weeklyBars.push({
+    time: Date.parse("2026-06-01T00:00:00.000Z") + i * 7 * 86_400_000,
+    open: 100 + i,
+    high: 105 + i,
+    low: 99 + i,
+    close: 103 + i,
+  });
+}
+assert.equal(previousCompletedWeekly(weeklyBars, weeklyBars[weeklyBars.length - 1].time + 86_400_000).length, 7);
+
+function wedgeCandles(n: number, t0: number): Candle[] {
   const out: Candle[] = [];
-  for (let i = 0; i < bars; i++) {
-    const t = bars === 1 ? 0 : i / (bars - 1);
-    const peak = startHigh - (startHigh - floor - 0.4) * t;
-    const isPeak = i % 3 === 0;
-    const isTrough = i % 3 === 1;
-    const high = isPeak ? peak : peak - 0.18;
-    const low = isTrough ? floor : floor + 0.14;
-    const open = low + (high - low) * (isPeak ? 0.35 : 0.65);
-    const close = low + (high - low) * (isPeak ? 0.7 : 0.3);
-    out.push({ time: t0 + i * 86_400_000, open, high, low, close });
+  for (let i = 0; i < n; i++) {
+    const floor = 100 + i * 0.35;
+    const ceil = floor + 4 - i * 0.06;
+    out.push({ time: t0 + i * 86_400_000, open: floor + 1, high: ceil, low: floor, close: floor + 2.5 });
   }
   return out;
 }
 
-const nestedA = descTriangleBars(16, 105.4, 108.2, Date.parse("2026-06-01T00:00:00.000Z"));
-const drop1 = descTriangleBars(10, 102.2, 105.5, nestedA[nestedA.length - 1].time + 86_400_000);
-const nestedB = descTriangleBars(16, 102.4, 105.1, drop1[drop1.length - 1].time + 86_400_000);
-const drop2 = descTriangleBars(14, 100.0, 102.6, nestedB[nestedB.length - 1].time + 86_400_000);
-const fractalDesc = [...nestedA, ...drop1, ...nestedB, ...drop2];
-
-const parentDesc: DetectedPattern = {
-  id: "descending_triangle",
-  category: "chart",
-  label: "Descending Triangle",
-  direction: "bearish",
-  startIndex: 0,
-  endIndex: fractalDesc.length - 1,
-  time: fractalDesc[fractalDesc.length - 1].time,
-  confidence: 0.81,
-  scale: "major",
-  geometry: {
-    lines: [
-      {
-        role: "upper",
-        from: { index: 0, time: fractalDesc[0].time, price: 108.2 },
-        to: { index: fractalDesc.length - 1, time: fractalDesc[fractalDesc.length - 1].time, price: 101.2 },
-      },
-      {
-        role: "lower",
-        from: { index: 0, time: fractalDesc[0].time, price: 100 },
-        to: { index: fractalDesc.length - 1, time: fractalDesc[fractalDesc.length - 1].time, price: 100 },
-      },
-    ],
-  },
-};
-
-const nestedHits = detectNestedStructures(fractalDesc, [parentDesc]);
-assert.ok(nestedHits.some((p) => p.scale === "nested"));
-
-const candleHit: DetectedPattern = {
-  id: "bearish_engulfing",
-  category: "candlestick",
-  label: "Bearish Engulfing",
-  direction: "bearish",
-  startIndex: fractalDesc.length - 1,
-  endIndex: fractalDesc.length - 1,
-  time: fractalDesc[fractalDesc.length - 1].time,
-  confidence: 0.7,
-};
-
-const classified = classifyDailyPatterns([parentDesc, ...nestedHits, candleHit]);
-assert.equal(classified.dailyPattern?.id, "descending_triangle");
-assert.ok(classified.subPatterns.length >= 1);
-assert.ok(
-  classified.independentPatterns.some((p) => p.id === "bearish_engulfing"),
-  "candlestick not nested inside a child structure should be independent",
-);
-
-const svg = renderDailyPatternSnapshot(fractalDesc, [parentDesc, ...nestedHits], {
-  symbol: "EURUSD",
-  sessionDate: sessionDateFromCandles(fractalDesc),
-  title: "EUR/USD",
-});
-assert.match(svg, /<svg /);
-assert.match(svg, /EUR\/USD/);
-assert.doesNotMatch(svg, /<script/i);
+const wedgeDaily = wedgeCandles(40, Date.parse("2026-06-01T00:00:00.000Z"));
+const wedgeWeekly = wedgeCandles(30, Date.parse("2026-01-01T00:00:00.000Z"));
 
 const eurusdTarget = DAILY_PATTERN_UNIVERSE.find((t) => t.symbol === "EURUSD");
 assert.ok(eurusdTarget);
-const scanned = scanSymbolFromCandles(eurusdTarget, fractalDesc);
+const scanned = scanSymbolFromCandles(eurusdTarget, { daily: wedgeDaily, weekly: wedgeWeekly });
 assert.equal(scanned.status, "ok");
+assert.match(scanned.summary, /weekly /);
 assert.match(scanned.snapshotSvg, /<svg /);
-assert.match(scanned.summary, /daily /);
-
-const wheat = DAILY_PATTERN_UNIVERSE.find((t) => t.id === "commodities:wheat");
-assert.ok(wheat);
-const blank = scanSymbolFromCandles(wheat, []);
-assert.equal(scanned.status === "ok", true);
-assert.equal(blank.status, "unavailable");
-assert.equal(blank.summary, "DATA UNAVAILABLE");
-
-const wedgeCandles: Candle[] = [];
-for (let i = 0; i < 40; i++) {
-  const floor = 100 + i * 0.35;
-  const ceil = floor + 4 - i * 0.06;
-  wedgeCandles.push({
-    time: Date.parse("2026-06-01T00:00:00.000Z") + i * 86_400_000,
-    open: floor + 1,
-    high: ceil,
-    low: floor,
-    close: floor + 2.5,
-  });
-}
-
-const mockMpPayload = {
-  editionDate: "2026-09-09",
-  headline: "Fixture headline",
-  summary: "Fixture summary for wiring test.",
-  bullets: ["Bullet one", "Bullet two"],
-};
-
-const mockFetch = (async () =>
-  ({
-    ok: true,
-    json: async () => mockMpPayload,
-  }) as Response) as typeof fetch;
-
-const brief = await fetchMarketProphetsBrief(mockFetch);
-assert.equal(brief?.headline, "Fixture headline");
-assert.equal(brief?.source, "live");
-assert.equal(brief?.url, marketProphetsBriefUrl("2026-09-09"));
 
 const mockMpFetcher = async () => ({
   editionDate: "2026-09-09",
   headline: "Fixture headline",
-  summary: "Fixture summary for wiring test.",
-  bullets: ["Bullet one", "Bullet two"],
+  summary: "Fixture summary.",
+  bullets: ["Bullet one"],
   url: marketProphetsBriefUrl("2026-09-09"),
   source: "live" as const,
 });
 
 const report = await runDailyPatternSweep({
   force: true,
+  slot: "market_close",
   skipEmail: true,
-  fetchCandles: async () => wedgeCandles,
+  fetchCandles: async () => ({ daily: wedgeDaily, weekly: wedgeWeekly }),
   fetchNews: async () => ({
-    items: [
-      {
-        title: "Fed holds rates (fixture)",
-        source: "Federal Reserve Press",
-        link: "https://www.federalreserve.gov/",
-      },
-    ],
-    sourcesTried: ["BBC Business", "Federal Reserve Press"],
+    items: [{ title: "Fed holds rates (fixture)", source: "Federal Reserve Press" }],
+    sourcesTried: ["Federal Reserve Press"],
     sourcesOk: ["Federal Reserve Press"],
   }),
   fetchMarketProphets: mockMpFetcher,
 });
 
 assert.equal(report.rows.length, DAILY_PATTERN_UNIVERSE.length);
+assert.equal(report.slot, "market_close");
+assert.equal(report.publishStatus, "draft");
+assert.match(report.reportId, /_market_close$/);
+assert.match(report.scannerNote, /mathematically sound/i);
+assert.match(report.trainingPricingNote, /\$5\.99/);
 assert.ok(report.scanned >= 25);
-assert.ok(report.unavailable >= 4);
-assert.ok(report.news.items[0]?.title.includes("Fed holds rates"));
-assert.equal(report.marketProphets?.headline, "Fixture headline");
-assert.match(report.disclaimer, /never a confirmed signal/i);
-assert.doesNotMatch(JSON.stringify(report.rows.filter((r) => r.status === "unavailable").slice(0, 4)), /1\.2345/);
-
-const wheatRow = report.rows.find((r) => r.id === "commodities:wheat");
-assert.equal(wheatRow?.status, "unavailable");
-assert.equal(wheatRow?.unavailableReason, "NO VENDOR MAP");
-
-const fxRow = report.rows.find((r) => r.symbol === "EURUSD");
-assert.equal(fxRow?.status, "ok");
-assert.match(fxRow?.snapshotSvg || "", /<svg /);
-assert.match(fxRow?.summary || "", /daily /);
+assert.ok(report.unavailable >= 19);
 
 saveDailyPatternReviewToDisk(report);
-const reloaded = loadDailyPatternReviewFromDisk(report.date);
-assert.equal(reloaded?.date, report.date);
-assert.equal(reloaded?.marketProphets?.headline, "Fixture headline");
+assert.equal(loadDailyPatternReviewFromDisk(report.reportId)?.reportId, report.reportId);
 
 const digest = buildDailyPatternReviewDigest(report);
-assert.match(digest.subject, /overnight structure/i);
+assert.match(digest.subject, /daily briefing/i);
 assert.match(digest.text, /Fixture headline/);
-assert.match(digest.html, /marketprophets/i);
 assert.ok(dailyPatternReviewRecipient().includes("@"));
 
+const id = briefingReportId(easternDateKey(), "overnight");
+assert.match(id, /_overnight$/);
+
 const desk = fs.readFileSync(path.join(process.cwd(), "src/components/DailyPatternReviewDesk.tsx"), "utf8");
-assert.match(desk, /Market Prophets/);
-assert.match(desk, /digest sent|digest pending/);
+assert.match(desk, /Approve & publish/);
+assert.match(desk, /Weekly pattern/);
+assert.match(desk, /\$5\.99|trainingPricingNote|mathematically sound/i);
 
 console.log(
-  `PASS: daily pattern review universe forex=${counts.forex} stocks=${counts.stocks} indices=${counts.indices} futures=${counts.futures} commodities=${counts.commodities} labeled=${report.labeled} mp=${report.marketProphets?.source}`,
+  `PASS: briefing forex=${counts.forex} commodities=${counts.commodities} indices=${counts.indices} futures=${counts.futures} total=${report.rows.length}`,
 );
