@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail } from 'lucide-react';
+import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
+import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
 
 type SafePrivateMemberRow = {
   uid: string;
@@ -786,7 +787,7 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
-        Ops only · Daily Ops · Budget · Members · Alerts · Disaster backup · Site Doctor
+        Ops only · Daily Ops · Budget · Members · Alerts · Disaster backup · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
@@ -994,6 +995,15 @@ export default function CeoDashboard() {
               >
                 Download disaster backup
               </button>
+              <a
+                href={GITHUB_SOURCE_ZIP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-violet-500/40 bg-violet-500/10 text-violet-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-violet-500/20"
+              >
+                <Download size={14} aria-hidden="true" />
+                Download source ZIP
+              </a>
               <button
                 type="button"
                 onClick={() => setImportOpen((v) => !v)}
@@ -1011,6 +1021,17 @@ export default function CeoDashboard() {
               Cloud Run disk is temporary. Download disaster backup stores private members, waitlist,
               invites, and Stripe customer emails as a JSON file on your machine. Do this after every
               member change. No agent is allowed to tell you backups are unnecessary.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-violet-500/25 bg-violet-500/5 px-4 py-3 text-violet-50/90 text-sm leading-relaxed">
+            <strong className="uppercase tracking-wider text-violet-200/90">Website source ZIP</strong>
+            <p className="mt-2 mb-0">
+              Tap Download source ZIP to get GitHub <span className="font-mono">main</span> as a
+              ~25&nbsp;MB file. Sign in to GitHub on this phone first if asked. Save the ZIP in Files,
+              then copy it to a flash drive. This is the website code only — not API keys, not{' '}
+              <span className="font-mono">node_modules</span>, and not member accounts (use Download
+              disaster backup for those).
             </p>
           </div>
 
