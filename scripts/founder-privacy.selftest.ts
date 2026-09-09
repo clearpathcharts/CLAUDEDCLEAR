@@ -16,6 +16,18 @@ function read(rel: string): string {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
 
+const clearNav = read('src/components/nav/ClearNav.tsx');
+assert.match(clearNav, /label: "CEO"/, 'Founder desktop primary nav pins a CEO chip');
+assert.doesNotMatch(
+  clearNav,
+  /label: "CEO DASHBOARD"/,
+  'CEO is the short top-bar label, not buried as CEO DASHBOARD',
+);
+
+const mobileNav = read('src/components/nav/MobileCommandCenter.tsx');
+assert.match(mobileNav, /<span>CEO<\/span>/, 'Founder mobile top bar pins a CEO chip');
+assert.match(mobileNav, /isFounder \? \(/, 'Mobile CEO chip is founder-gated');
+
 const dashboard = read('src/components/Dashboard.tsx');
 assert.doesNotMatch(
   dashboard,
@@ -62,6 +74,10 @@ assert.equal(
   'https://github.com/clearpathcharts/CLAUDEDCLEAR/archive/refs/heads/main.zip',
   'resolved source ZIP URL is the GitHub main archive',
 );
+
+const app = read('src/App.tsx');
+assert.match(app, /function isCeoPath/, '/ceo must not require a logged-in shell');
+assert.match(app, /isCeoPath\(currentPath\)/, 'logged-out /ceo still mounts the CEO route');
 
 const server = read('server.ts');
 const unlockIdx = server.indexOf("app.post('/api/admin/founder-unlock'");
