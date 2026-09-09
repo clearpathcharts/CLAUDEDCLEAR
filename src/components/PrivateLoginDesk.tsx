@@ -284,7 +284,7 @@ export default function PrivateLoginDesk({
 
   return (
     <AnimatePresence>
-      <div className="cp-scifi-login fixed inset-0 z-[220] flex items-center justify-center p-4" data-testid="private-login-scifi">
+      <div className="cp-scifi-login fixed inset-0 z-[220] flex items-center justify-center p-4 pt-12" data-testid="private-login-scifi">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -319,7 +319,7 @@ export default function PrivateLoginDesk({
           <h2 id="private-login-title">Access Terminal</h2>
           <p className="cp-scifi-login-sub">{title}</p>
 
-          <div>
+          <div className="cp-scifi-login-body">
             {infoBanner && step !== 'goodbye' && (
               <p className="cp-scifi-login-banner">{infoBanner}</p>
             )}

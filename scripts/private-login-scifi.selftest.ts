@@ -35,7 +35,13 @@ assert.match(desk, /privateLoginSciFi\.css/);
 assert.match(desk, /data-testid="private-login-scifi"/);
 assert.match(desk, /Access Terminal/);
 assert.match(desk, /SYSTEM ONLINE/);
-assert.match(desk, /cp-scifi-login/);
+assert.match(desk, /cp-scifi-login-body/);
+assert.match(css, /\.cp-scifi-login-body/);
+assert.doesNotMatch(
+  css,
+  /\.cp-scifi-login-panel \{[^}]*overflow-y:\s*auto/,
+  'panel overflow must stay visible so [ SYSTEM ONLINE ] is not clipped',
+);
 assert.match(desk, /type="email"/);
 assert.match(desk, /type=\{showPassword \? 'text' : 'password'\}/);
 assert.match(desk, /loginPrivateAccount/);
