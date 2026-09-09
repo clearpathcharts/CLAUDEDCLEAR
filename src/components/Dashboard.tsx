@@ -463,7 +463,7 @@ const TabContent = ({
       case 'Tasks': return <TodoList profile={profile} />;
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
-      case 'CeoDashboard': return isFounder ? <CeoDashboard /> : <YoursPage />;
+      case 'CeoDashboard': return <CeoDashboard />;
       case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return gate(
         'institutional', 'gold', 'Global Trading Sessions',
@@ -1040,9 +1040,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const handleTabChange = (tabId: string) => {
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
-    if (nextTab === 'CeoDashboard' && !isFounder()) {
-      if (authLoading) return;
-      setActiveTab('StrictlyCharts');
+    if (nextTab === 'CeoDashboard' && authLoading) {
       return;
     }
     if (nextTab === 'Diagnostics') {
@@ -1206,8 +1204,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
       setActiveTab('Fundamentals');
     } else if (path === '/ceo' || path === '/ceo-dashboard') {
-      if (authLoading || isFounder()) setActiveTab('CeoDashboard');
-      else setActiveTab('StrictlyCharts');
+      setActiveTab('CeoDashboard');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
@@ -1243,11 +1240,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'ApiMonitor';
         if (validHash) {
           const next = normalizeTabId(hash);
-          if (next === 'CeoDashboard' && !isFounder()) {
-            if (!authLoading) setActiveTab('StrictlyCharts');
-          } else {
-            setActiveTab(next);
-          }
+          setActiveTab(next);
         }
         }
       }
