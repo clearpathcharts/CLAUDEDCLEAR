@@ -39,9 +39,12 @@ import {
   type BriefingSlot,
 } from "./dailyPatternReviewSchedule";
 import {
+  defaultBillingNote,
   defaultBriefingDisclaimer,
+  defaultBriefingProducts,
   defaultScannerNote,
   defaultTrainingPricingNote,
+  normalizeDailyPatternReviewReport,
 } from "./dailyPatternReviewTypes";
 
 export type {
@@ -305,8 +308,9 @@ export function scanSymbolFromCandles(
 }
 
 export async function getLatestDailyPatternReview(): Promise<DailyPatternReviewReport | null> {
-  if (latest) return latest;
-  latest = await resolveLatestDailyPatternReviewReport();
+  if (latest) return normalizeDailyPatternReviewReport(latest);
+  const loaded = await resolveLatestDailyPatternReviewReport();
+  latest = loaded ? normalizeDailyPatternReviewReport(loaded) : null;
   return latest;
 }
 
@@ -398,6 +402,8 @@ export async function runDailyPatternSweep(options?: {
       disclaimer: defaultBriefingDisclaimer(),
       scannerNote: defaultScannerNote(),
       trainingPricingNote: defaultTrainingPricingNote(),
+      products: defaultBriefingProducts(),
+      billingNote: defaultBillingNote(),
       nextDueHint: nextDueHintText(),
       news,
       marketProphets,

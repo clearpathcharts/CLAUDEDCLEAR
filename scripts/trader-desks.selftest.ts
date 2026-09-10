@@ -274,6 +274,8 @@ for (const rel of srcFiles) {
     assert.match(text, /Approve & publish/);
     assert.match(text, /Weekly pattern/);
     assert.match(text, /scannerNote/);
+    assert.match(text, /briefing-product-tiers/);
+    assert.match(text, /DAILY_BRIEFING_BILLING_NOTE/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /Not a[\s\S]*signal/);
     assert.doesNotMatch(text, /You should buy|Place order/i);

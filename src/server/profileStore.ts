@@ -49,6 +49,13 @@ export type StoredProfile = {
   };
   /** Launch gift: every account gets Ultimate free for its first 15 days. Server-set only. */
   launchTrial?: { startedAt: string };
+  /**
+   * Optional paid add-ons (billing provider TBD — not Stripe-specific).
+   * Set only by founder/admin or a future billing webhook — never via /api/profile/me.
+   */
+  addOns?: {
+    patternLiteracyTraining?: boolean;
+  };
   updatedAt?: string;
 };
 
