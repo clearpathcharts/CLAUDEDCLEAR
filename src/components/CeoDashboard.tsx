@@ -719,7 +719,7 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
-        Ops only · Daily Ops · Overnight structure review · Budget · Members · Alerts · Disaster backup · Source ZIP · Site Doctor
+        Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>

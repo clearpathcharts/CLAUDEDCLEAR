@@ -1,134 +1,114 @@
 /**
- * Overnight daily-structure review for the founder CEO inbox.
- *
- * Fetches completed daily OHLC for the curated universe, runs the existing
- * educational pattern engine, stores SVG snapshots + free RSS headlines,
- * and raises an unread alert until the founder marks rows reviewed.
- *
- * Not a trade signal. Live overlays stay on MARKETS/CHARTS.
+ * Overnight structure review — dual daily + weekly scans, ET schedule, CEO publish gate.
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { getFmpApiKey, getTwelveDataApiKey } from "./secrets";
 import { getMarketCandles, getCleanApiKey } from "./marketDataGateway";
 import { scanAllPatterns } from "../patterns/scan";
 import { sanitizeCandles } from "../patterns/sanitize";
 import type { Candle } from "../types/indicators";
 import type { DetectedPattern } from "../patterns/types";
-import { pacificDateKey } from "./dailyOpsCatalog";
 import {
   DAILY_PATTERN_UNIVERSE,
-  type PatternReviewBucket,
   type PatternReviewTarget,
 } from "./dailyPatternUniverse";
-import { classifyDailyPatterns, summarizeClassification } from "./dailyPatternClassify";
+import {
+  classifyTimeframePatterns,
+  summarizeClassification,
+  summarizeMultiTimeframe,
+} from "./dailyPatternClassify";
 import { renderDailyPatternSnapshot, sessionDateFromCandles } from "./dailyPatternSnapshot";
-import { fetchFreeFinanceNews, type FreeNewsItem } from "./freeFinanceNews";
+import { fetchFreeFinanceNews } from "./freeFinanceNews";
+import {
+  persistDailyPatternReviewReport,
+  resolveDailyPatternReviewReport,
+  resolveLatestDailyPatternReviewReport,
+} from "./dailyPatternReviewStore";
+import { fetchMarketProphetsBrief } from "./marketProphetsClient";
+import {
+  marketProphetsUnavailableSummary,
+  sendDailyPatternReviewDigest,
+} from "./dailyPatternReviewEmail";
+import {
+  activeSlots,
+  briefingReportId,
+  easternDateKey,
+  isBriefingDay,
+  nextDueHintText,
+  slotLabel,
+  type BriefingSlot,
+} from "./dailyPatternReviewSchedule";
+import {
+  defaultBillingNote,
+  defaultBriefingDisclaimer,
+  defaultBriefingProducts,
+  defaultScannerNote,
+  defaultTrainingPricingNote,
+  normalizeDailyPatternReviewReport,
+} from "./dailyPatternReviewTypes";
 
-export type PatternHitSummary = {
-  id: string;
-  label: string;
-  direction: DetectedPattern["direction"];
-  scale?: DetectedPattern["scale"];
-  category: DetectedPattern["category"];
-  confidence: number;
-  startIndex: number;
-  endIndex: number;
-  detail?: string;
-};
+export type {
+  PatternHitSummary,
+  SymbolReviewRow,
+  DailyPatternReviewReport,
+  PublishStatus,
+} from "./dailyPatternReviewTypes";
 
-export type SymbolReviewRow = {
-  id: string;
-  bucket: PatternReviewBucket;
-  symbol: string | null;
-  display: string;
-  description: string;
-  proxyNote?: string;
-  status: "ok" | "unavailable";
-  unavailableReason?: string;
-  sessionDate: string | null;
-  lastClose?: number;
-  dailyPattern: PatternHitSummary | null;
-  subPatterns: PatternHitSummary[];
-  independentPatterns: PatternHitSummary[];
-  summary: string;
-  snapshotSvg: string;
-  reviewed: boolean;
-  reviewNote?: string;
-  reviewedAt?: string;
-};
+import type {
+  PatternHitSummary,
+  SymbolReviewRow,
+  DailyPatternReviewReport,
+} from "./dailyPatternReviewTypes";
 
-export type DailyPatternReviewReport = {
-  date: string;
-  ranAt: string;
-  timezone: "America/Los_Angeles";
-  unreadAlert: boolean;
-  unreadCount: number;
-  scanned: number;
-  labeled: number;
-  unavailable: number;
-  disclaimer: string;
-  nextDueHint: string;
-  news: {
-    items: FreeNewsItem[];
-    sourcesTried: string[];
-    sourcesOk: string[];
-  };
-  rows: SymbolReviewRow[];
-};
-
-export type CandleFetcher = (symbol: string) => Promise<Candle[]>;
+export type TimeframeCandles = { daily: Candle[]; weekly: Candle[] };
+export type CandleFetcher = (symbol: string) => Promise<TimeframeCandles>;
 export type NewsFetcher = () => Promise<DailyPatternReviewReport["news"]>;
-
-const DIR = path.join(process.cwd(), "data", "daily-pattern-review");
-const DISCLAIMER =
-  "Educational geometry on completed daily bars. Possible / forming — never a confirmed signal. Full overlays stay on MARKETS/CHARTS.";
+export type MarketProphetsFetcher = () => Promise<DailyPatternReviewReport["marketProphets"]>;
 
 let latest: DailyPatternReviewReport | null = null;
-let timer: ReturnType<typeof setInterval> | null = null;
+let schedulerTimer: ReturnType<typeof setInterval> | null = null;
+let lastFiredReportId: string | null = null;
 let running = false;
 
-function ensureDir() {
-  if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
+function easternDayFromMs(ms: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(ms));
 }
 
-function fileFor(date: string) {
-  return path.join(DIR, `${date}.json`);
+/** Drop in-progress daily bar (US/Eastern calendar). */
+export function previousCompletedDaily(candles: Candle[], now = Date.now()): Candle[] {
+  const safe = sanitizeCandles(candles);
+  if (safe.length === 0) return [];
+  const last = safe[safe.length - 1];
+  if (easternDayFromMs(last.time) === easternDateKey(new Date(now))) return safe.slice(0, -1);
+  return safe;
 }
 
-function loadFromDisk(date: string): DailyPatternReviewReport | null {
-  try {
-    const p = fileFor(date);
-    if (!fs.existsSync(p)) return null;
-    return JSON.parse(fs.readFileSync(p, "utf8")) as DailyPatternReviewReport;
-  } catch {
-    return null;
-  }
+/** Drop in-progress weekly bar when the last week is still open (<6 days old). */
+export function previousCompletedWeekly(candles: Candle[], now = Date.now()): Candle[] {
+  const safe = sanitizeCandles(candles);
+  if (safe.length === 0) return [];
+  const last = safe[safe.length - 1];
+  if (now - last.time < 6 * 86_400_000) return safe.slice(0, -1);
+  return safe;
 }
 
-function persist(report: DailyPatternReviewReport): DailyPatternReviewReport {
-  ensureDir();
-  const unreadCount = report.rows.filter((r) => r.status === "ok" && !r.reviewed && r.dailyPattern).length;
-  const next: DailyPatternReviewReport = {
-    ...report,
-    unreadCount,
-    unreadAlert: unreadCount > 0,
+function toHit(p: DetectedPattern): PatternHitSummary {
+  return {
+    id: p.id,
+    label: p.label,
+    direction: p.direction,
+    scale: p.scale,
+    category: p.category,
+    confidence: p.confidence,
+    startIndex: p.startIndex,
+    endIndex: p.endIndex,
+    detail: p.detail,
   };
-  fs.writeFileSync(fileFor(next.date), JSON.stringify(next, null, 2), "utf8");
-  fs.writeFileSync(path.join(DIR, "latest.json"), JSON.stringify(next, null, 2), "utf8");
-  latest = next;
-  return next;
-}
-
-export function getLatestDailyPatternReview(): DailyPatternReviewReport | null {
-  const today = pacificDateKey();
-  const disk = loadFromDisk(today);
-  if (disk) {
-    latest = disk;
-    return latest;
-  }
-  return latest;
 }
 
 export function twelveValuesToCandles(values: unknown): Candle[] {
@@ -158,38 +138,21 @@ export function twelveValuesToCandles(values: unknown): Candle[] {
   return sanitizeCandles(out);
 }
 
-/** Drop the in-progress daily bar so we scan previous completed sessions. */
-export function previousCompletedDaily(candles: Candle[], now = Date.now()): Candle[] {
-  const safe = sanitizeCandles(candles);
-  if (safe.length === 0) return [];
-  const last = safe[safe.length - 1];
-  const lastDay = new Date(last.time).toISOString().slice(0, 10);
-  const today = new Date(now).toISOString().slice(0, 10);
-  if (lastDay === today) return safe.slice(0, -1);
-  return safe;
-}
-
-function toHit(p: DetectedPattern): PatternHitSummary {
-  return {
-    id: p.id,
-    label: p.label,
-    direction: p.direction,
-    scale: p.scale,
-    category: p.category,
-    confidence: p.confidence,
-    startIndex: p.startIndex,
-    endIndex: p.endIndex,
-    detail: p.detail,
-  };
-}
-
-async function defaultFetchCandles(symbol: string): Promise<Candle[]> {
+async function defaultFetchCandles(symbol: string): Promise<TimeframeCandles> {
   const apiKey = getCleanApiKey();
-  const data = await getMarketCandles(symbol, "1day", 80, apiKey);
-  if (!data || data.status === "error" || !Array.isArray(data.values)) {
-    throw new Error(data?.message || "No daily values");
+  const [dailyData, weeklyData] = await Promise.all([
+    getMarketCandles(symbol, "1day", 80, apiKey),
+    getMarketCandles(symbol, "1week", 52, apiKey),
+  ]);
+  if (!dailyData || dailyData.status === "error" || !Array.isArray(dailyData.values)) {
+    throw new Error(dailyData?.message || "No daily values");
   }
-  return previousCompletedDaily(twelveValuesToCandles(data.values));
+  const daily = previousCompletedDaily(twelveValuesToCandles(dailyData.values));
+  let weekly: Candle[] = [];
+  if (weeklyData && weeklyData.status !== "error" && Array.isArray(weeklyData.values)) {
+    weekly = previousCompletedWeekly(twelveValuesToCandles(weeklyData.values));
+  }
+  return { daily, weekly };
 }
 
 async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -206,71 +169,106 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   return out;
 }
 
+function rowHasLabel(row: SymbolReviewRow): boolean {
+  return Boolean(row.dailyPattern || row.weeklyPattern);
+}
+
+function withUnreadCounts(report: DailyPatternReviewReport): DailyPatternReviewReport {
+  const unreadCount = report.rows.filter((r) => r.status === "ok" && !r.reviewed && rowHasLabel(r)).length;
+  return {
+    ...report,
+    unreadCount,
+    unreadAlert: unreadCount > 0,
+  };
+}
+
+function unavailableRow(target: PatternReviewTarget, prior?: SymbolReviewRow, reason?: string): SymbolReviewRow {
+  return {
+    id: target.id,
+    bucket: target.bucket,
+    symbol: target.symbol,
+    display: target.display,
+    description: target.description,
+    proxyNote: target.proxyNote,
+    status: "unavailable",
+    unavailableReason: reason || target.unavailableReason || "NO VENDOR MAP",
+    sessionDate: null,
+    weeklySessionDate: null,
+    dailyPattern: null,
+    weeklyPattern: null,
+    subPatterns: [],
+    independentPatterns: [],
+    weeklySubPatterns: [],
+    weeklyIndependentPatterns: [],
+    weeklySummary: "DATA UNAVAILABLE",
+    summary: "DATA UNAVAILABLE",
+    snapshotSvg: renderDailyPatternSnapshot([], [], {
+      symbol: target.display,
+      sessionDate: null,
+      title: target.display,
+    }),
+    weeklySnapshotSvg: renderDailyPatternSnapshot([], [], {
+      symbol: target.display,
+      sessionDate: null,
+      title: `${target.display} · weekly`,
+    }),
+    reviewed: prior?.reviewed ?? false,
+    reviewNote: prior?.reviewNote,
+    reviewedAt: prior?.reviewedAt,
+  };
+}
+
 export function scanSymbolFromCandles(
   target: PatternReviewTarget,
-  candles: Candle[],
+  candles: TimeframeCandles,
   prior?: SymbolReviewRow,
 ): SymbolReviewRow {
   if (!target.symbol || target.unavailableReason) {
-    return {
-      id: target.id,
-      bucket: target.bucket,
-      symbol: target.symbol,
-      display: target.display,
-      description: target.description,
-      proxyNote: target.proxyNote,
-      status: "unavailable",
-      unavailableReason: target.unavailableReason || "NO VENDOR MAP",
-      sessionDate: null,
-      dailyPattern: null,
-      subPatterns: [],
-      independentPatterns: [],
-      summary: "DATA UNAVAILABLE",
-      snapshotSvg: renderDailyPatternSnapshot([], [], {
-        symbol: target.display,
-        sessionDate: null,
-        title: target.display,
-      }),
-      reviewed: prior?.reviewed ?? false,
-      reviewNote: prior?.reviewNote,
-      reviewedAt: prior?.reviewedAt,
-    };
+    return unavailableRow(target, prior);
   }
 
-  if (candles.length < 25) {
+  const { daily, weekly } = candles;
+  if (daily.length < 25) {
     return {
-      id: target.id,
-      bucket: target.bucket,
-      symbol: target.symbol,
-      display: target.display,
-      description: target.description,
-      proxyNote: target.proxyNote,
-      status: "unavailable",
-      unavailableReason: candles.length === 0 ? "DATA UNAVAILABLE" : "Not enough completed daily bars",
-      sessionDate: sessionDateFromCandles(candles),
-      lastClose: candles.length ? candles[candles.length - 1].close : undefined,
-      dailyPattern: null,
-      subPatterns: [],
-      independentPatterns: [],
-      summary: "DATA UNAVAILABLE",
-      snapshotSvg: renderDailyPatternSnapshot(candles, [], {
+      ...unavailableRow(
+        target,
+        prior,
+        daily.length === 0 ? "DATA UNAVAILABLE" : "Not enough completed daily bars",
+      ),
+      sessionDate: sessionDateFromCandles(daily),
+      weeklySessionDate: sessionDateFromCandles(weekly),
+      lastClose: daily.length ? daily[daily.length - 1].close : undefined,
+      snapshotSvg: renderDailyPatternSnapshot(daily, [], {
         symbol: target.symbol,
-        sessionDate: sessionDateFromCandles(candles),
+        sessionDate: sessionDateFromCandles(daily),
         title: target.display,
       }),
-      reviewed: prior?.reviewed ?? false,
-      reviewNote: prior?.reviewNote,
-      reviewedAt: prior?.reviewedAt,
+      weeklySnapshotSvg: renderDailyPatternSnapshot(weekly, [], {
+        symbol: target.symbol,
+        sessionDate: sessionDateFromCandles(weekly),
+        title: `${target.display} · weekly`,
+      }),
     };
   }
 
-  const scan = scanAllPatterns(candles);
-  const classified = classifyDailyPatterns(scan.patterns);
+  const dailyScan = scanAllPatterns(daily);
+  const dailyClass = classifyTimeframePatterns(dailyScan.patterns);
+  const weeklyClass =
+    weekly.length >= 12 ? classifyTimeframePatterns(scanAllPatterns(weekly).patterns) : null;
+
   const snapshotPatterns = [
-    classified.dailyPattern,
-    ...classified.subPatterns,
-    ...classified.independentPatterns.filter((p) => p.category === "chart"),
+    dailyClass.dailyPattern,
+    ...dailyClass.subPatterns,
+    ...dailyClass.independentPatterns.filter((p) => p.category === "chart"),
   ].filter((p): p is DetectedPattern => Boolean(p));
+
+  const weeklySnapshotPatterns = weeklyClass
+    ? [
+        weeklyClass.dailyPattern,
+        ...weeklyClass.subPatterns,
+        ...weeklyClass.independentPatterns.filter((p) => p.category === "chart"),
+      ].filter((p): p is DetectedPattern => Boolean(p))
+    : [];
 
   return {
     id: target.id,
@@ -280,16 +278,28 @@ export function scanSymbolFromCandles(
     description: target.description,
     proxyNote: target.proxyNote,
     status: "ok",
-    sessionDate: sessionDateFromCandles(candles),
-    lastClose: candles[candles.length - 1].close,
-    dailyPattern: classified.dailyPattern ? toHit(classified.dailyPattern) : null,
-    subPatterns: classified.subPatterns.map(toHit),
-    independentPatterns: classified.independentPatterns.map(toHit),
-    summary: summarizeClassification(classified),
-    snapshotSvg: renderDailyPatternSnapshot(candles, snapshotPatterns, {
+    sessionDate: sessionDateFromCandles(daily),
+    weeklySessionDate: sessionDateFromCandles(weekly),
+    lastClose: daily[daily.length - 1].close,
+    weeklyPattern: weeklyClass?.dailyPattern ? toHit(weeklyClass.dailyPattern) : null,
+    weeklySubPatterns: weeklyClass?.subPatterns.map(toHit) ?? [],
+    weeklyIndependentPatterns: weeklyClass?.independentPatterns.map(toHit) ?? [],
+    weeklySummary: weeklyClass ? summarizeClassification(weeklyClass) : "weekly DATA UNAVAILABLE",
+    dailyPattern: dailyClass.dailyPattern ? toHit(dailyClass.dailyPattern) : null,
+    subPatterns: dailyClass.subPatterns.map(toHit),
+    independentPatterns: dailyClass.independentPatterns.map(toHit),
+    summary: weeklyClass
+      ? summarizeMultiTimeframe(weeklyClass, dailyClass)
+      : summarizeClassification(dailyClass),
+    snapshotSvg: renderDailyPatternSnapshot(daily, snapshotPatterns, {
       symbol: target.symbol,
-      sessionDate: sessionDateFromCandles(candles),
-      title: target.display,
+      sessionDate: sessionDateFromCandles(daily),
+      title: `${target.display} · daily`,
+    }),
+    weeklySnapshotSvg: renderDailyPatternSnapshot(weekly, weeklySnapshotPatterns, {
+      symbol: target.symbol,
+      sessionDate: sessionDateFromCandles(weekly),
+      title: `${target.display} · weekly`,
     }),
     reviewed: prior?.reviewed ?? false,
     reviewNote: prior?.reviewNote,
@@ -297,14 +307,31 @@ export function scanSymbolFromCandles(
   };
 }
 
+export async function getLatestDailyPatternReview(): Promise<DailyPatternReviewReport | null> {
+  if (latest) return normalizeDailyPatternReviewReport(latest);
+  const loaded = await resolveLatestDailyPatternReviewReport();
+  latest = loaded ? normalizeDailyPatternReviewReport(loaded) : null;
+  return latest;
+}
+
+export async function hydrateDailyPatternReviewFromStore(): Promise<DailyPatternReviewReport | null> {
+  latest = await getLatestDailyPatternReview();
+  return latest;
+}
+
 export async function runDailyPatternSweep(options?: {
+  slot?: BriefingSlot;
   force?: boolean;
   fetchCandles?: CandleFetcher;
   fetchNews?: NewsFetcher;
+  fetchMarketProphets?: MarketProphetsFetcher;
+  skipEmail?: boolean;
 }): Promise<DailyPatternReviewReport> {
   const force = Boolean(options?.force);
-  const date = pacificDateKey();
-  const existing = loadFromDisk(date);
+  const slot: BriefingSlot = options?.slot ?? "market_close";
+  const date = easternDateKey();
+  const reportId = briefingReportId(date, slot);
+  const existing = await resolveDailyPatternReviewReport(reportId);
   if (!force && existing?.rows?.length) {
     latest = existing;
     return existing;
@@ -318,38 +345,20 @@ export async function runDailyPatternSweep(options?: {
     const rows = await mapPool(DAILY_PATTERN_UNIVERSE, 3, async (target) => {
       const prior = existing?.rows.find((r) => r.id === target.id);
       if (!target.symbol || target.unavailableReason) {
-        return scanSymbolFromCandles(target, [], prior);
+        return scanSymbolFromCandles(target, { daily: [], weekly: [] }, prior);
       }
       if (!hasVendor && !options?.fetchCandles) {
-        return scanSymbolFromCandles(target, [], prior);
+        return scanSymbolFromCandles(target, { daily: [], weekly: [] }, prior);
       }
       try {
         const candles = await fetchCandles(target.symbol);
         return scanSymbolFromCandles(target, candles, prior);
       } catch (err) {
-        return {
-          id: target.id,
-          bucket: target.bucket,
-          symbol: target.symbol,
-          display: target.display,
-          description: target.description,
-          proxyNote: target.proxyNote,
-          status: "unavailable" as const,
-          unavailableReason: err instanceof Error ? err.message : "DATA UNAVAILABLE",
-          sessionDate: null,
-          dailyPattern: null,
-          subPatterns: [],
-          independentPatterns: [],
-          summary: "DATA UNAVAILABLE",
-          snapshotSvg: renderDailyPatternSnapshot([], [], {
-            symbol: target.display,
-            sessionDate: null,
-            title: target.display,
-          }),
-          reviewed: prior?.reviewed ?? false,
-          reviewNote: prior?.reviewNote,
-          reviewedAt: prior?.reviewedAt,
-        };
+        return unavailableRow(
+          target,
+          prior,
+          err instanceof Error ? err.message : "DATA UNAVAILABLE",
+        );
       }
     });
 
@@ -361,36 +370,52 @@ export async function runDailyPatternSweep(options?: {
     try {
       news = options?.fetchNews ? await options.fetchNews() : await fetchFreeFinanceNews();
     } catch (err) {
-      news = {
-        items: [],
-        sourcesTried: [],
-        sourcesOk: [],
-      };
-      console.info(
-        "[DailyPatternReview] news sweep failed:",
-        err instanceof Error ? err.message : err,
-      );
+      console.info("[DailyPatternReview] news sweep failed:", err instanceof Error ? err.message : err);
     }
 
-    const labeled = rows.filter((r) => r.dailyPattern).length;
+    let marketProphets: DailyPatternReviewReport["marketProphets"] = null;
+    try {
+      marketProphets = options?.fetchMarketProphets
+        ? await options.fetchMarketProphets()
+        : await fetchMarketProphetsBrief();
+    } catch {
+      marketProphets = null;
+    }
+    if (!marketProphets) marketProphets = marketProphetsUnavailableSummary();
+
+    const labeled = rows.filter((r) => rowHasLabel(r)).length;
     const unavailable = rows.filter((r) => r.status === "unavailable").length;
+
     const report: DailyPatternReviewReport = {
+      reportId,
       date,
+      slot,
       ranAt: new Date().toISOString(),
-      timezone: "America/Los_Angeles",
+      timezone: "America/New_York",
+      publishStatus: "draft",
+      publishedAt: force ? undefined : existing?.publishedAt,
       unreadAlert: false,
       unreadCount: 0,
       scanned: rows.filter((r) => r.status === "ok").length,
       labeled,
       unavailable,
-      disclaimer: DISCLAIMER,
-      nextDueHint: "Automatic sweep once per Pacific day (re-runs after midnight LA, or Run now)",
+      disclaimer: defaultBriefingDisclaimer(),
+      scannerNote: defaultScannerNote(),
+      trainingPricingNote: defaultTrainingPricingNote(),
+      products: defaultBriefingProducts(),
+      billingNote: defaultBillingNote(),
+      nextDueHint: nextDueHintText(),
       news,
+      marketProphets,
+      digestEmailSentAt: force ? undefined : existing?.digestEmailSentAt,
+      digestEmailTo: force ? undefined : existing?.digestEmailTo,
       rows,
     };
-    const saved = persist(report);
+
+    const saved = await persistDailyPatternReviewReport(withUnreadCounts(report));
+    latest = saved;
     console.log(
-      `[DailyPatternReview] ${date} scanned=${saved.scanned} labeled=${saved.labeled} unavailable=${saved.unavailable} news=${news.sourcesOk.length}`,
+      `[DailyPatternReview] ${reportId} (${slotLabel(slot)}) scanned=${saved.scanned} labeled=${saved.labeled} unavailable=${saved.unavailable} storage=${saved.storage || "disk"}`,
     );
     return saved;
   } finally {
@@ -398,13 +423,35 @@ export async function runDailyPatternSweep(options?: {
   }
 }
 
-export function markDailyPatternReviewed(
+export async function publishDailyPatternReview(reportId?: string): Promise<DailyPatternReviewReport> {
+  const report =
+    (reportId ? await resolveDailyPatternReviewReport(reportId) : null) || latest || (await getLatestDailyPatternReview());
+  if (!report) throw new Error("No briefing to publish — run a sweep first.");
+  if (report.publishStatus === "published" && report.digestEmailSentAt) return report;
+
+  const mail = await sendDailyPatternReviewDigest(report);
+  const next: DailyPatternReviewReport = {
+    ...report,
+    publishStatus: "published",
+    publishedAt: new Date().toISOString(),
+    digestEmailSentAt: mail.sent ? new Date().toISOString() : report.digestEmailSentAt,
+    digestEmailTo: mail.to ?? report.digestEmailTo,
+  };
+  latest = await persistDailyPatternReviewReport(next);
+  if (!mail.sent) {
+    console.info("[DailyPatternReview] Publish saved; digest not sent:", mail.reason);
+  }
+  return latest;
+}
+
+export async function markDailyPatternReviewed(
   rowId: string,
   reviewed: boolean,
   note?: string,
-): DailyPatternReviewReport {
-  const date = pacificDateKey();
-  const report = loadFromDisk(date) || latest;
+  reportId?: string,
+): Promise<DailyPatternReviewReport> {
+  const report =
+    (reportId ? await resolveDailyPatternReviewReport(reportId) : null) || latest || (await getLatestDailyPatternReview());
   if (!report) throw new Error("No daily pattern review yet — run the sweep first.");
   const idx = report.rows.findIndex((r) => r.id === rowId);
   if (idx < 0) throw new Error("Unknown review row.");
@@ -415,30 +462,45 @@ export function markDailyPatternReviewed(
     reviewNote: note?.slice(0, 2000),
     reviewedAt: new Date().toISOString(),
   };
-  return persist({ ...report, rows: nextRows });
+  latest = await persistDailyPatternReviewReport(withUnreadCounts({ ...report, rows: nextRows }));
+  return latest;
+}
+
+async function schedulerTick() {
+  if (!isBriefingDay()) return;
+  for (const slot of activeSlots()) {
+    const reportId = briefingReportId(easternDateKey(), slot);
+    if (lastFiredReportId === reportId) continue;
+    const existing = await resolveDailyPatternReviewReport(reportId);
+    if (existing) {
+      lastFiredReportId = reportId;
+      continue;
+    }
+    lastFiredReportId = reportId;
+    void runDailyPatternSweep({ slot });
+  }
 }
 
 export function startDailyPatternReviewScheduler() {
-  if (timer) return;
+  if (schedulerTimer) return;
   const enabled = (process.env.DAILY_PATTERN_REVIEW_ENABLED || "1").toLowerCase();
   if (enabled === "0" || enabled === "false" || enabled === "off") {
     console.log("[DailyPatternReview] Disabled (DAILY_PATTERN_REVIEW_ENABLED=0)");
     return;
   }
-  console.log("[DailyPatternReview] Scheduler armed — Pacific daily");
-  setTimeout(() => {
-    void runDailyPatternSweep();
-  }, 90_000);
-  timer = setInterval(() => {
-    const today = pacificDateKey();
-    const have = loadFromDisk(today);
-    if (!have) void runDailyPatternSweep();
-  }, 60 * 60 * 1000);
+  console.log(
+    "[DailyPatternReview] Scheduler armed — Sun–Fri · NYSE close + 1 AM ET · weekly+daily · CEO publish gate",
+  );
+  void hydrateDailyPatternReviewFromStore();
+  void schedulerTick();
+  schedulerTimer = setInterval(() => {
+    void schedulerTick();
+  }, 60_000);
 }
 
 export function stopDailyPatternReviewScheduler() {
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
+  if (schedulerTimer) {
+    clearInterval(schedulerTimer);
+    schedulerTimer = null;
   }
 }
