@@ -12,7 +12,7 @@ const CREW = 'crew' + 'ai';
 const ZAP = 'zap' + 'ier';
 const MAKE_HOST = 'make' + '.com';
 const MAKE_ENV = 'MAKE_' + 'WEBHOOK';
-const INTEGRO = 'integromat';
+const INTEGRO = 'integro' + 'mat';
 
 const skipFiles = new Set(['data/disposable-email-domains.txt']);
 
