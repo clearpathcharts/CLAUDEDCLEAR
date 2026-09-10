@@ -75,6 +75,7 @@ export function buildDailyPatternReviewDigest(report: DailyPatternReviewReport):
     "",
     ...(mpLines.length ? ["— Market Prophets (free media) —", ...mpLines, ""] : []),
     report.trainingPricingNote,
+    report.billingNote,
     "",
     report.disclaimer,
     "",
@@ -113,6 +114,7 @@ export function buildDailyPatternReviewDigest(report: DailyPatternReviewReport):
       ${hitHtml}
       ${mpHtml}
       <p style="color:#a78bfa;font-size:11px;margin-top:16px;">${escapeHtml(report.trainingPricingNote)}</p>
+      <p style="color:#71717a;font-size:10px;">${escapeHtml(report.billingNote)}</p>
       <p style="color:#71717a;font-size:11px;margin-top:16px;">${escapeHtml(report.disclaimer)}</p>
       <p><a href="${escapeHtml(site)}/ceo" style="color:#22d3ee;">CEO review desk</a></p>
     </div>`;

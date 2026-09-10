@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Bell, Check, RefreshCw, Newspaper, Mail, ExternalLink, Send } from "lucide-react";
+import {
+  DAILY_BRIEFING_BILLING_NOTE,
+  DAILY_BRIEFING_PRODUCTS,
+  type DailyBriefingProduct,
+} from "../lib/dailyBriefingProducts";
 
 type PatternHit = {
   id: string;
@@ -59,6 +64,8 @@ export type DailyPatternReviewReport = {
   disclaimer: string;
   scannerNote: string;
   trainingPricingNote: string;
+  products?: DailyBriefingProduct[];
+  billingNote?: string;
   nextDueHint: string;
   news: { items: { title: string; source: string; link?: string }[]; sourcesTried: string[]; sourcesOk: string[] };
   marketProphets?: MarketProphetsBrief | null;
@@ -110,6 +117,38 @@ function HitList({ title, items, empty }: { title: string; items: PatternHit[]; 
 
 function rowNeedsReview(row: ReviewRow): boolean {
   return row.status === "ok" && !row.reviewed && Boolean(row.dailyPattern || row.weeklyPattern);
+}
+
+function BriefingProductTiers({ products }: { products: DailyBriefingProduct[] }) {
+  return (
+    <div className="mt-4 grid md:grid-cols-2 gap-3" data-testid="briefing-product-tiers">
+      {products.map((product) => (
+        <div
+          key={product.id}
+          className={`rounded-lg border px-4 py-3 ${
+            product.tier === "free"
+              ? "border-violet-500/30 bg-violet-500/5"
+              : "border-amber-400/35 bg-amber-400/5"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="text-white text-sm font-bold">{product.title}</p>
+            <span
+              className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border shrink-0 ${
+                product.tier === "free"
+                  ? "text-emerald-300 border-emerald-500/40"
+                  : "text-amber-200 border-amber-400/40"
+              }`}
+            >
+              {product.priceLabel}
+            </span>
+          </div>
+          <p className="text-zinc-400 text-xs leading-relaxed">{product.description}</p>
+        </div>
+      ))}
+      <p className="md:col-span-2 text-[10px] text-zinc-600 font-mono">{DAILY_BRIEFING_BILLING_NOTE}</p>
+    </div>
+  );
 }
 
 export default function DailyPatternReviewDesk({
@@ -221,6 +260,10 @@ export default function DailyPatternReviewDesk({
     return bucket === "all" ? list : list.filter((r) => r.bucket === bucket);
   }, [report, bucket]);
 
+  const productTiers = report?.products?.length
+    ? report.products
+    : Object.values(DAILY_BRIEFING_PRODUCTS);
+
   return (
     <div className="mb-8" data-testid="daily-pattern-review">
       <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-amber-400/35 shadow-[0_0_18px_rgba(251,191,36,0.12)]">
@@ -331,6 +374,8 @@ export default function DailyPatternReviewDesk({
         ) : null}
 
         <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">{report?.nextDueHint || report?.disclaimer}</p>
+
+        <BriefingProductTiers products={productTiers} />
       </div>
 
       {report?.marketProphets && (

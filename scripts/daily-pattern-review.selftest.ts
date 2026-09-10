@@ -36,7 +36,11 @@ import {
   isSlotDue,
   slotLabel,
 } from "../src/server/dailyPatternReviewSchedule";
-import { SCANNER_ACCURACY_NOTE, TRAINING_PRICING_NOTE } from "../src/server/dailyPatternReviewCopy";
+import {
+  PATTERN_LITERACY_TRAINING_PRICE_USD,
+  SCANNER_ACCURACY_NOTE,
+  TRAINING_PRICING_NOTE,
+} from "../src/server/dailyPatternReviewCopy";
 import { detectNestedStructures } from "../src/patterns/chartPatterns";
 import { getRegistryAsset } from "../src/constants/assetRegistry";
 import type { DetectedPattern } from "../src/patterns/types";
@@ -63,6 +67,7 @@ for (const row of mappedUniverse()) {
 }
 
 assert.match(SCANNER_ACCURACY_NOTE, /mathematically sound/i);
+assert.equal(PATTERN_LITERACY_TRAINING_PRICE_USD, 5.99);
 assert.match(TRAINING_PRICING_NOTE, /\$5\.99/);
 
 const mondayClose = new Date("2026-09-07T20:00:00-04:00");
@@ -144,6 +149,9 @@ assert.equal(report.publishStatus, "draft");
 assert.match(report.reportId, /_market_close$/);
 assert.match(report.scannerNote, /mathematically sound/i);
 assert.match(report.trainingPricingNote, /\$5\.99/);
+assert.equal(report.products.length, 2);
+assert.match(report.products[1]?.priceLabel || "", /\$5\.99/);
+assert.match(report.billingNote, /not live yet/i);
 assert.ok(report.scanned >= 25);
 assert.ok(report.unavailable >= 19);
 
@@ -161,6 +169,8 @@ assert.match(id, /_overnight$/);
 const desk = fs.readFileSync(path.join(process.cwd(), "src/components/DailyPatternReviewDesk.tsx"), "utf8");
 assert.match(desk, /Approve & publish/);
 assert.match(desk, /Weekly pattern/);
+assert.match(desk, /briefing-product-tiers/);
+assert.match(desk, /DAILY_BRIEFING_PRODUCTS/);
 assert.match(desk, /\$5\.99|trainingPricingNote|mathematically sound/i);
 
 console.log(
