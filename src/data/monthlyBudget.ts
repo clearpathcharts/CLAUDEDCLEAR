@@ -11,11 +11,11 @@ export const MONTHLY_BUDGET = {
   month: "August 2026",
   source: "src/data/monthlyBudget.ts — edit this file; a sheet/API import can replace it later",
   named: 1282,
-  missingLiveTotal: 113,
-  operatingFloor: 1395,
+  missingLiveTotal: 88,
+  operatingFloor: 1370,
   twelveDataSharePct: 78,
   warning:
-    "The gap is not another $499 data vendor. Twelve Data is the expensive line. Missing is Zapier, Gemini API (not Flow), rest of GCP, and two domains. Do not add FMP or NewsData until members pay.",
+    "The gap is not another $499 data vendor. Twelve Data is the expensive line. Missing is Gemini API (not Flow), rest of GCP, and two domains. Do not add FMP or NewsData until members pay.",
   namedBills: [
     {
       vendor: "Twelve Data Venture x2",
@@ -43,12 +43,6 @@ export const MONTHLY_BUDGET = {
     },
   ] satisfies BudgetLine[],
   missingLiveBills: [
-    {
-      vendor: "Zapier Professional",
-      monthly: "$30",
-      status: "$20–$70",
-      note: "MCP is live. Free is 100 tasks; each MCP call burns 2.",
-    },
     {
       vendor: "Gemini / Vertex AI",
       monthly: "$40",

@@ -2,7 +2,7 @@
 
 **Own domain. Disconnected from clearpathtrader.com.**
 
-Site-owned **direct** social publishing. **No Buffer. No Zapier. No Make. No Hootsuite.**
+Site-owned **direct** social publishing. ClearPath adapters only.
 
 ## Architecture
 
