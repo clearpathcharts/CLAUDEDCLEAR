@@ -37,7 +37,9 @@ import {
   slotLabel,
 } from "../src/server/dailyPatternReviewSchedule";
 import {
-  PATTERN_LITERACY_TRAINING_PRICE_USD,
+  PATTERN_LITERACY_TRAINING_PRICE_USD_MONTHLY,
+  PATTERN_LITERACY_TRAINING_PRICE_USD_WEEKLY,
+  PATTERN_LITERACY_TRAINING_PRICE_LABEL,
   SCANNER_ACCURACY_NOTE,
   TRAINING_PRICING_NOTE,
 } from "../src/server/dailyPatternReviewCopy";
@@ -67,8 +69,11 @@ for (const row of mappedUniverse()) {
 }
 
 assert.match(SCANNER_ACCURACY_NOTE, /mathematically sound/i);
-assert.equal(PATTERN_LITERACY_TRAINING_PRICE_USD, 5.99);
-assert.match(TRAINING_PRICING_NOTE, /\$5\.99/);
+assert.equal(PATTERN_LITERACY_TRAINING_PRICE_USD_WEEKLY, 7.99);
+assert.equal(PATTERN_LITERACY_TRAINING_PRICE_USD_MONTHLY, 15.75);
+assert.match(PATTERN_LITERACY_TRAINING_PRICE_LABEL, /\$7\.99\/wk or \$15\.75\/mo/);
+assert.match(TRAINING_PRICING_NOTE, /\$7\.99/);
+assert.match(TRAINING_PRICING_NOTE, /\$15\.75/);
 
 const mondayClose = new Date("2026-09-07T20:00:00-04:00");
 assert.equal(isBriefingDay(mondayClose), true);
@@ -148,9 +153,10 @@ assert.equal(report.slot, "market_close");
 assert.equal(report.publishStatus, "draft");
 assert.match(report.reportId, /_market_close$/);
 assert.match(report.scannerNote, /mathematically sound/i);
-assert.match(report.trainingPricingNote, /\$5\.99/);
+assert.match(report.trainingPricingNote, /\$7\.99/);
+assert.match(report.trainingPricingNote, /\$15\.75/);
 assert.equal(report.products.length, 2);
-assert.match(report.products[1]?.priceLabel || "", /\$5\.99/);
+assert.match(report.products[1]?.priceLabel || "", /\$7\.99\/wk or \$15\.75\/mo/);
 assert.match(report.billingNote, /not live yet/i);
 assert.ok(report.scanned >= 25);
 assert.ok(report.unavailable >= 19);
@@ -171,7 +177,7 @@ assert.match(desk, /Approve & publish/);
 assert.match(desk, /Weekly pattern/);
 assert.match(desk, /briefing-product-tiers/);
 assert.match(desk, /DAILY_BRIEFING_PRODUCTS/);
-assert.match(desk, /\$5\.99|trainingPricingNote|mathematically sound/i);
+assert.match(desk, /\$7\.99|\$15\.75|trainingPricingNote|mathematically sound/i);
 
 console.log(
   `PASS: briefing forex=${counts.forex} commodities=${counts.commodities} indices=${counts.indices} futures=${counts.futures} total=${report.rows.length}`,
