@@ -321,6 +321,8 @@ export function LightweightCandles({
   const deskAppearance = useOptionalDeskAppearance();
   const visualPaint = visualPaintProp ?? deskAppearance?.visualPaint;
   const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
+  const hidePatternOverlaysRef = useRef(hidePatternOverlays);
+  hidePatternOverlaysRef.current = hidePatternOverlays;
   const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
@@ -709,40 +711,46 @@ export function LightweightCandles({
           lo.setData(plotBars.map((c) => ({ time: c.time as Time, value: c.low })));
         }
 
-        scheduleChartVisionImmediate(
-          { candles: tierOptimizedData, symbol: sym, timeframe },
-          (output) => {
-            if (!active) return;
-            setPatternScan(output.scan);
-            setFormingBrief(output.forming);
+        if (hidePatternOverlaysRef.current) {
+          cancelChartVision(sym, timeframe);
+          setPatternScan(null);
+          setFormingBrief(null);
+        } else {
+          scheduleChartVisionImmediate(
+            { candles: tierOptimizedData, symbol: sym, timeframe },
+            (output) => {
+              if (!active) return;
+              setPatternScan(output.scan);
+              setFormingBrief(output.forming);
 
-            try {
-              const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
-              for (const overlay of patternLines) {
-                const line = chart.addSeries(LineSeries, {
-                  color: overlay.color,
-                  lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
-                  lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
-                  title: '',
-                  priceLineVisible: false,
-                  lastValueVisible: false,
-                  crosshairMarkerVisible: false,
-                });
-                line.setData(overlay.points);
-              }
+              try {
+                const patternLines = buildPatternLineOverlays(tierOptimizedData, output.scan.patterns);
+                for (const overlay of patternLines) {
+                  const line = chart.addSeries(LineSeries, {
+                    color: overlay.color,
+                    lineWidth: overlay.lineWidth as 1 | 2 | 3 | 4,
+                    lineStyle: overlay.dashed ? LineStyle.Dashed : LineStyle.Solid,
+                    title: '',
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                    crosshairMarkerVisible: false,
+                  });
+                  line.setData(overlay.points);
+                }
 
-              const candleMarkers = [
-                ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
-                ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
-              ];
-              if (candleMarkers.length > 0) {
-                createSeriesMarkers(series, candleMarkers as any);
+                const candleMarkers = [
+                  ...buildCandlestickMarkers(tierOptimizedData, output.scan.patterns),
+                  ...buildPatternPeakMarkers(tierOptimizedData, output.scan.patterns),
+                ];
+                if (candleMarkers.length > 0) {
+                  createSeriesMarkers(series, candleMarkers as any);
+                }
+              } catch (overlayErr) {
+                console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
               }
-            } catch (overlayErr) {
-              console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
-            }
-          },
-        );
+            },
+          );
+        }
 
         chart.timeScale().applyOptions({
           ...CHART_TIME_SCALE_GESTURE,

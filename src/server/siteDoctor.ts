@@ -25,7 +25,8 @@ import { getMarketCandles } from "./marketDataGateway";
 import { getAdminFirestore, getFirebaseAdminStatus } from "./firebaseAdmin";
 import { resolveTimeframePlan } from "../services/marketData";
 import { getLatestTimeframeVerifyReport } from "./timeframeAccuracyVerifier";
-import { getPrivateStorageMeta } from "./privateAuthService";
+import { getPrivateStorageMeta, hasDurablePrivateStore } from "./privateAuthService";
+import { stripePrivateStoreConfigured } from "./stripePrivateAccountStore";
 
 // UI timeframes list duplicated lightly to avoid circular import issues if any
 const UI_TFS = [
@@ -179,16 +180,29 @@ function checkSessionSecret(): SiteDoctorCheck {
 function checkFirebaseAdmin(): SiteDoctorCheck {
   const st = getFirebaseAdminStatus();
   const db = getAdminFirestore();
-  const ok = Boolean(st.firestore || db);
+  const firestoreOk = Boolean(st.firestore || db);
   const isProd = process.env.NODE_ENV === "production";
+  const stripeDurable = stripePrivateStoreConfigured() || hasDurablePrivateStore();
+  // Firestore offline is not a site outage when Stripe holds private accounts.
+  const ok = firestoreOk || !isProd || (isProd && stripeDurable);
+  const severity: SiteDoctorCheck["severity"] = firestoreOk
+    ? "info"
+    : stripeDurable
+      ? "warn"
+      : isProd
+        ? "critical"
+        : "warn";
+  const detail = firestoreOk
+    ? `mode=${st.mode} firestore=${st.firestore}`
+    : stripeDurable
+      ? `Firestore Admin offline — Stripe durable private store active (${st.reason || "no Firestore"})`
+      : st.reason || "Firebase Admin not connected";
   return {
     id: "firebase_admin",
     label: "Firebase Admin / Firestore",
-    ok: ok || !isProd,
-    severity: ok ? "info" : isProd ? "critical" : "warn",
-    detail: ok
-      ? `mode=${st.mode} firestore=${st.firestore}`
-      : st.reason || "Firebase Admin not connected",
+    ok,
+    severity,
+    detail,
   };
 }
 

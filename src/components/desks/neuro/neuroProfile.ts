@@ -19,6 +19,28 @@ export function readStoredNeuroProfile(): ThemeProfileId {
   }
 }
 
+/** Honor ?profile= on direct desk links (Choose Your Path writes storage; URL-only visits did not). */
+export function readNeuroProfileFromUrl(): ThemeProfileId | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const urlProfile = new URLSearchParams(window.location.search).get('profile');
+    if (!urlProfile) return null;
+    const chartId = resolveNeuroChartProfile(urlProfile);
+    return chartId in themeProfiles ? chartId : null;
+  } catch {
+    return null;
+  }
+}
+
+export function readInitialNeuroProfile(): ThemeProfileId {
+  const fromUrl = readNeuroProfileFromUrl();
+  if (fromUrl) {
+    applyNeuroProfile(fromUrl);
+    return fromUrl;
+  }
+  return readStoredNeuroProfile();
+}
+
 export function applyNeuroProfile(profileId: AdvancedProfileId | ThemeProfileId) {
   const chartId = resolveNeuroChartProfile(profileId);
   try {

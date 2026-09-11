@@ -9,18 +9,25 @@ import {
 import type { ChartPatternScan, FormingStructureBrief } from '../patterns';
 
 /** Single React hook for HUD + mentor — one subscription, no duplicate state. */
-export function useChartVision() {
-  const [briefs, setBriefs] = useState<FormingStructureBrief[]>(getAllFormingBriefs);
-  const [scans, setScans] = useState<ChartPatternScan[]>(getAllPatternScans);
+export function useChartVision(enabled = true) {
+  const [briefs, setBriefs] = useState<FormingStructureBrief[]>(() =>
+    enabled ? getAllFormingBriefs() : [],
+  );
+  const [scans, setScans] = useState<ChartPatternScan[]>(() =>
+    enabled ? getAllPatternScans() : [],
+  );
 
   useEffect(() => {
+    if (!enabled) return;
+    setBriefs(getAllFormingBriefs());
+    setScans(getAllPatternScans());
     const unsubBriefs = subscribeFormingBrief(() => setBriefs(getAllFormingBriefs()));
     const unsubScans = subscribePatternScan(() => setScans(getAllPatternScans()));
     return () => {
       unsubBriefs();
       unsubScans();
     };
-  }, []);
+  }, [enabled]);
 
   const mentorContext = useMemo(
     () => formatChartVisionForMentor(briefs, scans),
