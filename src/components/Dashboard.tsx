@@ -934,7 +934,22 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   }, [userRole?.role, authUser?.email, userProfile?.email, profile?.vipStatus]);
 
   useEffect(() => {
-    if (authLoading || !isFounder()) return;
+    if (authLoading) return;
+    if (activeTab === 'CeoDashboard' && !isFounder()) {
+      setActiveTab('StrictlyCharts');
+      if (typeof window !== 'undefined') {
+        try {
+          const path = window.location.pathname.toLowerCase();
+          if (path === '/ceo' || path === '/ceo-dashboard') {
+            window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+    if (!isFounder()) return;
     if (typeof window === 'undefined') return;
     const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
     const params = new URLSearchParams(window.location.search);
@@ -969,6 +984,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
     if (nextTab === 'CeoDashboard' && authLoading) {
+      return;
+    }
+    if (nextTab === 'CeoDashboard' && !isFounder()) {
+      setActiveTab('StrictlyCharts');
+      if (typeof window !== 'undefined') {
+        try {
+          window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
+        } catch {
+          /* ignore */
+        }
+      }
       return;
     }
     if (nextTab === 'Diagnostics') {
@@ -1084,7 +1110,12 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           return;
         }
         if (path === '/ceo' || path === '/ceo-dashboard') {
-          setActiveTab('CeoDashboard');
+          if (isFounder()) {
+            setActiveTab('CeoDashboard');
+          } else {
+            setActiveTab('StrictlyCharts');
+            window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
+          }
           return;
         }
       }
@@ -1132,7 +1163,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
       setActiveTab('Fundamentals');
     } else if (path === '/ceo' || path === '/ceo-dashboard') {
-      setActiveTab('CeoDashboard');
+      setActiveTab(isFounder() ? 'CeoDashboard' : 'StrictlyCharts');
+      if (!isFounder()) {
+        window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
+      }
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
