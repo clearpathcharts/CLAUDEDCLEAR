@@ -78,6 +78,9 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: Third-party automation vendors absent from tree
+        run: npm run test:no-third-party-automation
+
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 

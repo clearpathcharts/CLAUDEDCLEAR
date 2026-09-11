@@ -193,10 +193,6 @@ export function getCatalogAdminSecret(): string {
   return first(process.env.CATALOG_ADMIN_SECRET, process.env.RIVER_CATALOG_ADMIN_SECRET);
 }
 
-export function getMakeWebhookUrl(): string {
-  return first(process.env.MAKE_WEBHOOK_URL);
-}
-
 export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
@@ -269,7 +265,6 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     STRIPE_SECRET_KEY: Boolean(getStripeSecretKey()),
     STRIPE_WEBHOOK_SECRET: Boolean(getStripeWebhookSecret()),
     BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
-    MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
     SOCIAL_DIRECT_WEBHOOK_URL: Boolean(clean(process.env.SOCIAL_DIRECT_WEBHOOK_URL)),
     SOCIAL_X_BEARER_TOKEN: Boolean(clean(process.env.SOCIAL_X_BEARER_TOKEN) || clean(process.env.SOCIAL_X_ACCESS_TOKEN)),
     SOCIAL_LINKEDIN_ACCESS_TOKEN: Boolean(clean(process.env.SOCIAL_LINKEDIN_ACCESS_TOKEN)),

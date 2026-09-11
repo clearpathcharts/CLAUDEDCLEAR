@@ -258,7 +258,7 @@ export default function SocialOsPage({ standalone = false }: SocialOsPageProps) 
     <div className="min-h-screen bg-[#07080f] text-zinc-100">
       <SEO
         title="ClearPath Social OS — Direct multi-network publisher"
-        description="ClearPath Social OS — dedicated-domain direct publisher. Posts to Facebook, Instagram, X, LinkedIn, TikTok, YouTube, and more — no Buffer or Zapier."
+        description="ClearPath Social OS — dedicated-domain direct publisher. Posts to Facebook, Instagram, X, LinkedIn, TikTok, YouTube, and more."
         canonical={publicHost || undefined}
       />
       <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#07080f]/80 backdrop-blur-xl px-4 py-3 flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function SocialOsPage({ standalone = false }: SocialOsPageProps) 
       <main className="max-w-6xl mx-auto px-4 py-10 space-y-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <header className="space-y-3">
           <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-cyan-400">
-            Own domain · ClearPath-owned · never Buffer · never Zapier
+            Own domain · ClearPath-owned · direct APIs
           </p>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif" }}>
             ClearPath Social OS

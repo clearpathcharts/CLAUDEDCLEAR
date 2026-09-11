@@ -154,7 +154,6 @@ import {
   searchPodcastsByTerm,
 } from './src/server/podcastService';
 import {
-  forwardIntelligenceToMake,
   getIntelligenceBriefing,
   ingestIntelligenceWebhook,
   listIntelligenceBriefings,
@@ -4303,7 +4302,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(GENERAL_FAQS);
   });
 
-  // CrewAI / Make.com intelligence briefing webhook receiver
+  // Intelligence briefing webhook receiver (ClearPath-owned ingest only)
   app.post('/api/intelligence/webhook', async (req, res) => {
     const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
     if (!verifyIntelligenceWebhookSecret(secretHeader)) {
@@ -4312,11 +4311,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
     try {
       const record = await ingestIntelligenceWebhook(req.body);
-      const shouldForward =
-        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
-      const forwardResult = shouldForward
-        ? await forwardIntelligenceToMake(record)
-        : { forwarded: false };
 
       res.status(201).json({
         success: true,
@@ -4325,7 +4319,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         publishMode: record.publishMode,
         hasBriefing: Boolean(record.briefingMarkdown),
         hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
-        makeForward: forwardResult,
       });
     } catch (error: any) {
       console.error('[Intelligence Webhook Error]', error);

@@ -8,7 +8,7 @@ Use these playbooks when the request matches. Always end with **what needs found
 2. Draft platform-native variants (do not paste one identical block everywhere).
 3. Compliance pass: no financial advice, no FOMO/casino language, no unverified metrics.
 4. Output a schedule table: platform | time (UTC) | copy | asset needed | status=`pending_approval`.
-5. Stop until founder approves — then provide exact paste/schedule steps or Zapier handoff JSON if Growth OS style output is useful.
+5. Stop until founder approves — then provide exact paste/schedule steps.
 
 ## 2. Email newsletter
 
@@ -90,10 +90,9 @@ Produce one short brief:
 - Explicitly deferred
 ```
 
-## Zapier / Growth OS handoff
+## Publishing handoff
 
 When publishing pipelines exist:
 
-- Prefer writing structured JSON batches similar to `automation/clearpath_growth_os` outputs.
-- Use Zapier MCP for connected apps only after listing enabled actions; confirm before writes.
+- Prefer writing structured JSON batches for ClearPath Social OS or a human copy pack.
 - Default `FORCE_HUMAN_REVIEW` mindset: nothing public ships without founder OK.

@@ -50,6 +50,7 @@
     "test:profile-share": "tsx scripts/profile-share-password.selftest.ts",
     "test:identity-risk": "tsx scripts/identity-risk.selftest.ts",
     "test:social-os": "tsx scripts/social-os.selftest.ts",
+    "test:no-third-party-automation": "tsx scripts/no-third-party-automation.selftest.ts",
     "test:plan-catalog": "tsx scripts/plan-catalog.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
     "test:clean-candles": "tsx scripts/clean-candles.selftest.ts",
