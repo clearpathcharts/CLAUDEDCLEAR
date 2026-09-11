@@ -8,6 +8,7 @@ import { analysisWindow, candleFingerprint, sanitizeCandles } from './sanitize';
 import type { Candle } from './types';
 import type { FormingStructureBrief } from './forming';
 import type { PatternScanResult } from './types';
+import { LruMap } from '../lib/lruMap';
 
 export interface ChartVisionInput {
   candles: Candle[];
@@ -24,7 +25,8 @@ export interface ChartVisionOutput {
   analyzedAt: number;
 }
 
-const fingerprintCache = new Map<string, string>();
+const FINGERPRINT_CACHE_MAX = 48;
+const fingerprintCache = new LruMap<string, string>(FINGERPRINT_CACHE_MAX);
 
 function buildScan(candles: Candle[]): PatternScanResult {
   return scanAllPatterns(analysisWindow(candles));

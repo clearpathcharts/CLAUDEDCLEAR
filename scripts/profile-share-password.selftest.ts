@@ -69,13 +69,13 @@ async function main() {
   assert.equal(pubB, null);
 
   const reset = await import('../src/server/passwordResetStore.ts');
-  const minted = reset.mintPasswordResetToken({ uid: 'user_a', email: 'alpha@gmail.com' });
+  const minted = await reset.mintPasswordResetToken({ uid: 'user_a', email: 'alpha@gmail.com' });
   assert.ok(minted.rawToken.length > 16);
-  assert.equal(reset.consumePasswordResetToken('not-a-real-token'), null);
-  const consumed = reset.consumePasswordResetToken(minted.rawToken);
+  assert.equal(await reset.consumePasswordResetToken('not-a-real-token'), null);
+  const consumed = await reset.consumePasswordResetToken(minted.rawToken);
   assert.ok(consumed);
   assert.equal(consumed.email, 'alpha@gmail.com');
-  assert.equal(reset.consumePasswordResetToken(minted.rawToken), null);
+  assert.equal(await reset.consumePasswordResetToken(minted.rawToken), null);
 
   const auth = await import('../src/server/privateAuthService.ts');
   auth._forceEphemeralPrivateStoreForTests(true);

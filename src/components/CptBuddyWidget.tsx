@@ -164,6 +164,15 @@ const CptBuddyOpenPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { scans: patternScans, mentorContext } = useChartVision(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const greetingQueued = useRef(false);
+  const firestoreSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFirestoreSave = useRef<{
+    userName: string | null;
+    skillLevel: string | null;
+    facts: string[];
+    conversationBullets: string[];
+    messages: ChatMessage[];
+    bond: BuddyBondProfile;
+  } | null>(null);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -277,7 +286,39 @@ const CptBuddyOpenPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return () => { cancelled = true; };
   }, [user?.uid]);
 
-  /* ---------- SAVE MEMORY (both places, every time) ---------- */
+  const flushFirestoreMemory = async (next: {
+    userName: string | null;
+    skillLevel: string | null;
+    facts: string[];
+    conversationBullets: string[];
+    messages: ChatMessage[];
+    bond: BuddyBondProfile;
+  }) => {
+    if (!user?.uid) return;
+    const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
+    const trimmedFacts = next.facts.slice(-MAX_FACTS);
+    const trimmedBullets = normalizeConversationBullets(next.conversationBullets);
+    const nextBond = next.bond || emptyBond();
+    try {
+      await setDoc(
+        doc(getDb(), "users", user.uid, "buddy_memory", "profile"),
+        {
+          userName: next.userName || null,
+          skillLevel: next.skillLevel || null,
+          facts: trimmedFacts,
+          conversationBullets: trimmedBullets,
+          messages: trimmedMsgs,
+          bond: nextBond,
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      console.error("[C.P.T.] Failed to save memory to Firestore:", e);
+    }
+  };
+
+  /* ---------- SAVE MEMORY (local immediately; Firestore debounced ~3s) ---------- */
   const saveMemory = async (next: {
     userName: string | null;
     skillLevel: string | null;
@@ -301,25 +342,26 @@ const CptBuddyOpenPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     } catch {}
 
     if (user?.uid) {
-      try {
-        await setDoc(
-          doc(getDb(), "users", user.uid, "buddy_memory", "profile"),
-          {
-            userName: next.userName || null,
-            skillLevel: next.skillLevel || null,
-            facts: trimmedFacts,
-            conversationBullets: trimmedBullets,
-            messages: trimmedMsgs,
-            bond: nextBond,
-            updatedAt: Date.now(),
-          },
-          { merge: true }
-        );
-      } catch (e) {
-        console.error("[C.P.T.] Failed to save memory to Firestore:", e);
-      }
+      pendingFirestoreSave.current = next;
+      if (firestoreSaveTimer.current) clearTimeout(firestoreSaveTimer.current);
+      firestoreSaveTimer.current = setTimeout(() => {
+        const payload = pendingFirestoreSave.current;
+        firestoreSaveTimer.current = null;
+        if (payload) void flushFirestoreMemory(payload);
+      }, 3000);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (firestoreSaveTimer.current) {
+        clearTimeout(firestoreSaveTimer.current);
+        firestoreSaveTimer.current = null;
+      }
+      const payload = pendingFirestoreSave.current;
+      if (payload && user?.uid) void flushFirestoreMemory(payload);
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

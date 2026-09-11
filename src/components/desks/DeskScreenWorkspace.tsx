@@ -17,6 +17,7 @@ import {
 } from '../../lib/deskMonitorTree';
 import { useDeskMonitorSync } from '../../hooks/useDeskMonitorSync';
 import { useMembership } from '../../hooks/useMembership';
+import { useVisibilityPause } from '../../hooks/useVisibilityPause';
 import {
   loadActiveWatchlistId,
   loadWatchlists,
@@ -182,7 +183,9 @@ function ScannerSatellite({
   locked: boolean;
   aiMode: boolean;
 }) {
+  const visible = useVisibilityPause();
   useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -196,7 +199,7 @@ function ScannerSatellite({
     return () => {
       cancelled = true;
     };
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, visible]);
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-3">
