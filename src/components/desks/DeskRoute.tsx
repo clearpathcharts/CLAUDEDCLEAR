@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import TraderDeskChrome from './TraderDeskChrome';
 import InstitutionalTraderDesk from './InstitutionalTraderDesk';
@@ -19,6 +19,7 @@ import { DESK_SEO } from '../../content/traderDesksCopy';
 import { PRODUCT_URL } from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
+import DeskErrorBoundary from './DeskErrorBoundary';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -27,6 +28,29 @@ function resolveDesk(pathname: string): TraderDeskId {
   const fromPath = parseDeskPath(pathname);
   if (fromPath) return fromPath;
   return readRememberedTraderDesk() ?? 'institutional';
+}
+
+/** Defer Buddy on neuro desk so chart paint wins the main thread first (accessibility). */
+function DeferredDeskBuddy({ deskId }: { deskId: TraderDeskId }) {
+  const defer = deskId === 'neurodivergent';
+  const [ready, setReady] = useState(!defer);
+
+  useEffect(() => {
+    if (!defer || ready) return;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (win.requestIdleCallback) {
+      const id = win.requestIdleCallback(() => setReady(true), { timeout: 5000 });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(() => setReady(true), 2000);
+    return () => window.clearTimeout(t);
+  }, [defer, ready]);
+
+  if (!ready) return null;
+  return <CptBuddyWidget />;
 }
 
 function DeskShell({
@@ -93,7 +117,9 @@ function DeskShell({
             Opening {TRADER_DESKS[deskId].title}
           </p>
         )}
-        {body}
+        <DeskErrorBoundary deskLabel={TRADER_DESKS[deskId].title}>
+          {body}
+        </DeskErrorBoundary>
       </main>
     </div>
   );
@@ -127,7 +153,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
         {satellitePane ? <meta name="robots" content="noindex, follow" /> : null}
       </Helmet>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} satellitePane={satellitePane} />
-      {satellitePane ? null : <CptBuddyWidget />}
+      {satellitePane ? null : <DeferredDeskBuddy deskId={deskId} />}
     </DeskAppearanceProvider>
   );
 }

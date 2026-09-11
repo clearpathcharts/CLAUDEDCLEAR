@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, Globe, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail } from 'lucide-react';
+import { Search, Activity, Users, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
+import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
+import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
+import ChooseYourPath from './ChooseYourPath';
+import { navigateToDesk } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
   uid: string;
@@ -123,7 +127,7 @@ export default function CeoDashboard() {
   const [logSearchQuery, setLogSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
-  // Private login + waitlist (server API — founder Bearer / catalog secret)
+  // Private login members (server API — founder Bearer / catalog secret)
   const [membersPayload, setMembersPayload] = useState<AdminMembersPayload | null>(null);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
@@ -280,68 +284,6 @@ export default function CeoDashboard() {
       setApiUnlocked(false);
     } finally {
       setMembersLoading(false);
-    }
-  };
-
-  const clearReleasedWaitlist = async () => {
-    setConvertBusy(true);
-    setConvertMsg(null);
-    try {
-      const headers = await founderApiHeaders();
-      const res = await fetch('/api/admin/members/waitlist/clear-released', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: '{}',
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body.message || body.error || `Clear waitlist failed (${res.status})`);
-      }
-      setConvertMsg(
-        body.message ||
-          `Waitlist cleared: ${body.markedConverted || 0} released. Refresh Members if the table still shows old rows.`
-      );
-      await loadAdminMembers();
-    } catch (err: any) {
-      setConvertMsg(err?.message || 'Could not clear waitlist.');
-    } finally {
-      setConvertBusy(false);
-    }
-  };
-
-  const runWaitlistConvert = async (dryRun: boolean) => {
-    setConvertBusy(true);
-    setConvertMsg(null);
-    try {
-      const headers = await founderApiHeaders();
-      const res = await fetch('/api/admin/members/convert-waitlist', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ dryRun }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body.message || body.error || `Convert failed (${res.status})`);
-      }
-      const resetN = Number(body.reset || 0);
-      const createdN = Number(body.created || 0);
-      const invitesN = Number(body.invitesCreated || 0);
-      const candidatesN = Number(body.candidates || 0);
-      const summary = dryRun
-        ? `Dry run: ${createdN} new Private Logins + ${resetN} password resets for people already in Members (${candidatesN} real waitlist emails).`
-        : `Released: ${createdN} created, ${resetN} passwords reset, ${invitesN} invites ready. Waitlist rows marked converted (hidden). Copy passwords below — send Ahmad’s privately.`;
-      setConvertMsg(summary);
-      await loadAdminMembers();
-      if (!dryRun && invitesN > 0) {
-        // Auto-open invite vault so founder does not have to hunt a second button.
-        await fetchFounderInvites({ keepBusy: true, appendMsg: summary });
-      }
-    } catch (err: any) {
-      setConvertMsg(err?.message || 'Conversion failed.');
-    } finally {
-      setConvertBusy(false);
     }
   };
 
@@ -754,15 +696,6 @@ export default function CeoDashboard() {
       (m.identityStatus && m.identityStatus.toLowerCase().includes(memberQ))
     );
   });
-  const filteredWaitlist = (membersPayload?.waitlist || []).filter((m) => {
-    if (!memberQ) return true;
-    return (
-      m.email.toLowerCase().includes(memberQ) ||
-      (m.firstName && m.firstName.toLowerCase().includes(memberQ)) ||
-      (m.country && m.country.toLowerCase().includes(memberQ)) ||
-      (m.status && m.status.toLowerCase().includes(memberQ))
-    );
-  });
 
   // CEO Dashboard is Rick Floyd founder-only — never render data for anyone else.
   if (!founderOk) {
@@ -786,13 +719,16 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
-        Ops only · Daily Ops · Budget · Members · Alerts · Disaster backup · Site Doctor
+        Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
 
+      <ChooseYourPath onChoosePath={navigateToDesk} />
+
       <CeoAlwaysOnMonitor />
       <DailyOpsDesk getHeaders={founderApiHeaders} />
+      <DailyPatternReviewDesk getHeaders={founderApiHeaders} />
 
       {/* CEO Micro-Tabs */}
       <div className="flex border-b border-indigo-500/20 mb-8 gap-4 select-none flex-wrap">
@@ -883,11 +819,10 @@ export default function CeoDashboard() {
             <div>
               <h2 className="text-2xl text-white font-black uppercase tracking-widest flex items-center gap-3">
                 <UserPlus className="text-[#00FFFF]" size={26} />
-                Private Login + Waitlist
+                Private Login members
               </h2>
               <p className="text-zinc-400 text-sm mt-2 max-w-2xl leading-relaxed">
-                Server-backed member list so you do not have to hunt Firebase Auth. Password hashes and
-                activation keys are never returned.
+                Server-backed Firestore member list. Password hashes and activation keys are never returned.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -899,30 +834,6 @@ export default function CeoDashboard() {
               >
                 <RefreshCw size={14} className={membersLoading ? 'animate-spin' : ''} />
                 Refresh
-              </button>
-              <button
-                type="button"
-                onClick={() => void runWaitlistConvert(true)}
-                disabled={convertBusy}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-200 text-xs font-mono uppercase tracking-widest font-black hover:bg-zinc-500/20 disabled:opacity-50"
-              >
-                Dry-run release
-              </button>
-              <button
-                type="button"
-                onClick={() => void runWaitlistConvert(false)}
-                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-xs font-mono uppercase tracking-widest font-black hover:bg-emerald-500/20 disabled:opacity-50"
-              >
-                RELEASE waitlist → Private Login + passwords
-              </button>
-              <button
-                type="button"
-                onClick={() => void clearReleasedWaitlist()}
-                disabled={convertBusy || membersPayload?.meta?.writesAllowed === false}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-pink-500/50 bg-pink-500/15 text-pink-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-pink-500/25 disabled:opacity-50"
-              >
-                EMPTY WAITLIST (already Private Login)
               </button>
               <button
                 type="button"
@@ -994,6 +905,15 @@ export default function CeoDashboard() {
               >
                 Download disaster backup
               </button>
+              <a
+                href={GITHUB_SOURCE_ZIP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-violet-500/40 bg-violet-500/10 text-violet-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-violet-500/20"
+              >
+                <Download size={14} aria-hidden="true" />
+                Download source ZIP
+              </a>
               <button
                 type="button"
                 onClick={() => setImportOpen((v) => !v)}
@@ -1008,9 +928,21 @@ export default function CeoDashboard() {
           <div className="rounded-lg border border-teal-500/25 bg-teal-500/5 px-4 py-3 text-teal-50/90 text-sm leading-relaxed">
             <strong className="uppercase tracking-wider text-teal-200/90">Always keep a backup</strong>
             <p className="mt-2 mb-0">
-              Cloud Run disk is temporary. Download disaster backup stores private members, waitlist,
-              invites, and Stripe customer emails as a JSON file on your machine. Do this after every
-              member change. No agent is allowed to tell you backups are unnecessary.
+              Cloud Run disk is temporary. Download disaster backup stores Firestore private members,
+              leftover site_registrations rows, invites, and Stripe customer emails as a JSON file
+              on your machine. Do this after every member change. No agent is allowed to tell you
+              backups are unnecessary.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-violet-500/25 bg-violet-500/5 px-4 py-3 text-violet-50/90 text-sm leading-relaxed">
+            <strong className="uppercase tracking-wider text-violet-200/90">Website source ZIP</strong>
+            <p className="mt-2 mb-0">
+              Tap Download source ZIP to get GitHub <span className="font-mono">main</span> as a
+              ~25&nbsp;MB file. Sign in to GitHub on this phone first if asked. Save the ZIP in Files,
+              then copy it to a flash drive. This is the website code only — not API keys, not{' '}
+              <span className="font-mono">node_modules</span>, and not member accounts (use Download
+              disaster backup for those).
             </p>
           </div>
 
@@ -1215,8 +1147,8 @@ export default function CeoDashboard() {
               <span className="font-mono">
                 {membersPayload?.meta?.privateCollection || 'private_accounts'}
               </span>
-              ). Waitlist source of truth remains Firestore{' '}
-              <span className="font-mono">site_registrations</span>.
+              ). Boot converts leftover waitlist emails into this collection without resetting
+              existing passwords.
             </div>
           )}
 
@@ -1237,26 +1169,12 @@ export default function CeoDashboard() {
                 </span>
               </p>
             </div>
-            <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-[#FF00FF] shadow-[0_0_15px_rgba(255,0,255,0.2)]">
-              <h3 className="text-[#FF00FF] text-lg font-bold uppercase mb-3 flex items-center gap-2">
-                <Globe size={18} /> Waitlist
-              </h3>
-              <p className="text-white text-5xl font-black m-0">
-                {membersLoading && !membersPayload ? '—' : membersPayload?.counts.waitlist ?? 0}
-              </p>
-              <p className="text-gray-400 text-sm mt-3">
-                Source:{' '}
-                <span className="font-mono text-zinc-300">
-                  {membersPayload?.meta?.waitlistSource || '—'}
-                </span>
-              </p>
-            </div>
           </div>
 
           <div className="relative">
             <input
               type="text"
-              placeholder="Filter by email, name, country, status…"
+              placeholder="Filter by email, name, identity…"
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
               className="w-full bg-black/50 border border-white/20 rounded-lg py-3 px-11 text-white placeholder-white/40 focus:outline-none focus:border-[#00FFFF] transition-all font-mono text-sm"
@@ -1323,55 +1241,6 @@ export default function CeoDashboard() {
             </div>
           </div>
 
-          <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
-            <h3 className="text-xl text-white font-bold mb-4 uppercase tracking-wider">Waitlist / registrations</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-white/80 text-sm">
-                <thead className="bg-black/40 text-xs uppercase tracking-wider text-zinc-400">
-                  <tr>
-                    <th className="px-4 py-3">Email</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Country</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Joined</th>
-                    <th className="px-4 py-3">Source</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {membersLoading && !membersPayload ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-white/50 font-mono text-xs">
-                        Loading waitlist…
-                      </td>
-                    </tr>
-                  ) : filteredWaitlist.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-white/55 text-sm leading-relaxed">
-                        {memberQ
-                          ? `No waitlist rows match “${memberSearch}”.`
-                          : 'Waitlist empty — released people are in Private Members (not stuck here). Use RELEASE waitlist if anyone reappears as pending/confirmed.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredWaitlist.map((m) => (
-                      <tr key={m.id} className="hover:bg-white/5">
-                        <td className="px-4 py-3 font-mono text-[#FF00FF]">{m.email}</td>
-                        <td className="px-4 py-3">{m.firstName || '—'}</td>
-                        <td className="px-4 py-3">{m.country || '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase border border-white/15 bg-white/5">
-                            {m.status || m.experienceLevel || '—'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-zinc-300">{formatJoined(m.createdAt)}</td>
-                        <td className="px-4 py-3 font-mono text-[10px] text-zinc-500">{m.source}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       ) : (
       <>

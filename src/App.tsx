@@ -308,7 +308,7 @@ export default function App() {
       </AppShellProvider>
     );
   } else if (isDeskPath(currentPath)) {
-    content = <DeskRoute pathname={currentPath} />;
+    content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/affiliate-terms') {

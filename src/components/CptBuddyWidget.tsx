@@ -140,9 +140,9 @@ function clearLocalBuddyMemory() {
   } catch {}
 }
 
-export const CptBuddyWidget: React.FC = () => {
+/** Heavy panel — only mounted while open so chart-vision subscriptions stay off the main thread. */
+const CptBuddyOpenPanel: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { user } = useAuth() as any;
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [facts, setFacts] = useState<string[]>([]);
   const [conversationBullets, setConversationBullets] = useState<string[]>([]);
@@ -161,8 +161,18 @@ export const CptBuddyWidget: React.FC = () => {
   const [vvHeight, setVvHeight] = useState(0);
   const [showDayChips, setShowDayChips] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
-  const { scans: patternScans, mentorContext } = useChartVision();
+  const { scans: patternScans, mentorContext } = useChartVision(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const greetingQueued = useRef(false);
+  const firestoreSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFirestoreSave = useRef<{
+    userName: string | null;
+    skillLevel: string | null;
+    facts: string[];
+    conversationBullets: string[];
+    messages: ChatMessage[];
+    bond: BuddyBondProfile;
+  } | null>(null);
 
   /* ---------- LOAD MEMORY (Firestore first, localStorage fallback) ---------- */
   useEffect(() => {
@@ -276,7 +286,39 @@ export const CptBuddyWidget: React.FC = () => {
     return () => { cancelled = true; };
   }, [user?.uid]);
 
-  /* ---------- SAVE MEMORY (both places, every time) ---------- */
+  const flushFirestoreMemory = async (next: {
+    userName: string | null;
+    skillLevel: string | null;
+    facts: string[];
+    conversationBullets: string[];
+    messages: ChatMessage[];
+    bond: BuddyBondProfile;
+  }) => {
+    if (!user?.uid) return;
+    const trimmedMsgs = next.messages.slice(-MAX_SAVED_MESSAGES);
+    const trimmedFacts = next.facts.slice(-MAX_FACTS);
+    const trimmedBullets = normalizeConversationBullets(next.conversationBullets);
+    const nextBond = next.bond || emptyBond();
+    try {
+      await setDoc(
+        doc(getDb(), "users", user.uid, "buddy_memory", "profile"),
+        {
+          userName: next.userName || null,
+          skillLevel: next.skillLevel || null,
+          facts: trimmedFacts,
+          conversationBullets: trimmedBullets,
+          messages: trimmedMsgs,
+          bond: nextBond,
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      console.error("[C.P.T.] Failed to save memory to Firestore:", e);
+    }
+  };
+
+  /* ---------- SAVE MEMORY (local immediately; Firestore debounced ~3s) ---------- */
   const saveMemory = async (next: {
     userName: string | null;
     skillLevel: string | null;
@@ -300,47 +342,41 @@ export const CptBuddyWidget: React.FC = () => {
     } catch {}
 
     if (user?.uid) {
-      try {
-        await setDoc(
-          doc(getDb(), "users", user.uid, "buddy_memory", "profile"),
-          {
-            userName: next.userName || null,
-            skillLevel: next.skillLevel || null,
-            facts: trimmedFacts,
-            conversationBullets: trimmedBullets,
-            messages: trimmedMsgs,
-            bond: nextBond,
-            updatedAt: Date.now(),
-          },
-          { merge: true }
-        );
-      } catch (e) {
-        console.error("[C.P.T.] Failed to save memory to Firestore:", e);
-      }
+      pendingFirestoreSave.current = next;
+      if (firestoreSaveTimer.current) clearTimeout(firestoreSaveTimer.current);
+      firestoreSaveTimer.current = setTimeout(() => {
+        const payload = pendingFirestoreSave.current;
+        firestoreSaveTimer.current = null;
+        if (payload) void flushFirestoreMemory(payload);
+      }, 3000);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (firestoreSaveTimer.current) {
+        clearTimeout(firestoreSaveTimer.current);
+        firestoreSaveTimer.current = null;
+      }
+      const payload = pendingFirestoreSave.current;
+      if (payload && user?.uid) void flushFirestoreMemory(payload);
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, isOpen]);
-
-  const handleOpen = () => {
-    setIsOpen(true);
-    if (messages.length === 0 && setupStep === "done" && memoryLoaded) {
-      const greeting: ChatMessage = {
-        role: "assistant",
-        content: buildReturnGreeting(userName, bond, facts.length),
-      };
-      setMessages([greeting]);
-      setShowDayChips(bond.likesDayCheckIn !== false);
-    }
-  };
+  }, [messages]);
 
   useEffect(() => {
-    const listener = () => handleOpen();
-    window.addEventListener("open-cpt-buddy", listener);
-    return () => window.removeEventListener("open-cpt-buddy", listener);
-  }, [userName, setupStep, messages, memoryLoaded, facts, bond]);
+    if (greetingQueued.current || !memoryLoaded || setupStep !== "done" || messages.length > 0) return;
+    greetingQueued.current = true;
+    const greeting: ChatMessage = {
+      role: "assistant",
+      content: buildReturnGreeting(userName, bond, facts.length),
+    };
+    setMessages([greeting]);
+    setShowDayChips(bond.likesDayCheckIn !== false);
+  }, [memoryLoaded, setupStep, messages.length, userName, bond, facts.length]);
 
   useEffect(() => {
     const shortMq = window.matchMedia("(max-height: 520px)");
@@ -382,7 +418,7 @@ export const CptBuddyWidget: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!isOpen || !narrowViewport) return;
+    if (!narrowViewport) return;
     const html = document.documentElement;
     const prevBody = document.body.style.overflow;
     const prevHtml = html.style.overflow;
@@ -392,7 +428,7 @@ export const CptBuddyWidget: React.FC = () => {
       document.body.style.overflow = prevBody;
       html.style.overflow = prevHtml;
     };
-  }, [isOpen, narrowViewport]);
+  }, [narrowViewport]);
 
   const handleNameSubmit = () => {
     const cleaned = sanitizeBuddyName(input);
@@ -569,7 +605,7 @@ export const CptBuddyWidget: React.FC = () => {
     }
   };
 
-  const phoneSheet = isOpen && narrowViewport && !shortViewport;
+  const phoneSheet = narrowViewport && !shortViewport;
   const visibleH = vvHeight > 0 ? vvHeight : 640;
   const panelMaxHeight = shortViewport
     ? "min(260px, calc(100dvh - 24px))"
@@ -577,44 +613,7 @@ export const CptBuddyWidget: React.FC = () => {
       ? `min(${Math.max(220, visibleH - 12)}px, 100dvh)`
       : "min(480px, calc(100dvh - 40px))";
 
-  // Portal to <body>: full-screen overlays elsewhere in the app (e.g. chart
-  // blackout mode) also portal to <body>. zIndex 280 sits above desk chrome
-  // and the chart drawing dock (250) so the buddy stays tappable on phones.
-  return createPortal(
-    <div
-      className="cpt-buddy-root"
-      data-cpt-buddy={isOpen ? "open" : "fab"}
-      style={{
-        position: "fixed",
-        bottom: kbInset > 8 ? kbInset : "max(12px, env(safe-area-inset-bottom, 0px))",
-        right: "max(12px, env(safe-area-inset-right, 0px))",
-        left: isOpen && narrowViewport ? "max(12px, env(safe-area-inset-left, 0px))" : "auto",
-        zIndex: 280,
-        display: "flex",
-        justifyContent: "flex-end",
-        alignItems: "flex-end",
-        pointerEvents: "none",
-      }}
-    >
-      {/* Floating avatar button */}
-      {!isOpen && (
-        <button
-          type="button"
-          className="cpt-buddy-fab"
-          onClick={handleOpen}
-          aria-label="Open C.P.T. Personal Buddy"
-        >
-          <img
-            src="/cpt-buddy-icon.png"
-            alt="C.P.T. Personal Buddy"
-            draggable={false}
-            decoding="async"
-          />
-        </button>
-      )}
-
-      {/* Chat panel — phone sheet above the keyboard; compact in landscape */}
-      {isOpen && (
+  return (
         <div
           className="cpt-buddy-panel"
           data-phone-sheet={phoneSheet ? "1" : "0"}
@@ -677,7 +676,7 @@ export const CptBuddyWidget: React.FC = () => {
             <button
               type="button"
               className="cpt-buddy-icon-btn"
-              onClick={() => setIsOpen(false)}
+              onClick={onClose}
               aria-label="Close"
             >
               <X size={20} />
@@ -952,6 +951,60 @@ export const CptBuddyWidget: React.FC = () => {
             </div>
           )}
         </div>
+  );
+};
+
+export const CptBuddyWidget: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const open = () => {
+      requestAnimationFrame(() => setIsOpen(true));
+    };
+    window.addEventListener("open-cpt-buddy", open);
+    return () => window.removeEventListener("open-cpt-buddy", open);
+  }, []);
+
+  const handleOpen = () => {
+    requestAnimationFrame(() => setIsOpen(true));
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+  };
+
+  return createPortal(
+    <div
+      className="cpt-buddy-root"
+      data-cpt-buddy={isOpen ? "open" : "fab"}
+      style={{
+        position: "fixed",
+        bottom: "max(12px, env(safe-area-inset-bottom, 0px))",
+        right: "max(12px, env(safe-area-inset-right, 0px))",
+        left: isOpen ? "max(12px, env(safe-area-inset-left, 0px))" : "auto",
+        zIndex: 280,
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "flex-end",
+        pointerEvents: "none",
+      }}
+    >
+      {!isOpen ? (
+        <button
+          type="button"
+          className="cpt-buddy-fab"
+          onClick={handleOpen}
+          aria-label="Open C.P.T. Personal Buddy"
+        >
+          <img
+            src="/cpt-buddy-icon.png"
+            alt="C.P.T. Personal Buddy"
+            draggable={false}
+            decoding="async"
+          />
+        </button>
+      ) : (
+        <CptBuddyOpenPanel onClose={handleClose} />
       )}
     </div>,
     document.body

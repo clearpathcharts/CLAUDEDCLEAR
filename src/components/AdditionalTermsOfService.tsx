@@ -420,7 +420,7 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
                     <li>custody funds or assets;</li>
                     <li>accept customer deposits;</li>
                     <li>manage investment accounts;</li>
-                    <li>place orders on behalf of users;</li>
+                    <li>act as broker-dealer or custody customer funds;</li>
                     <li>provide personalized investment advice;</li>
                     <li>provide individualized trading recommendations;</li>
                     <li>provide “buy,” “sell,” or “hold” directives.</li>
@@ -434,6 +434,10 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
 
               <p className="border-l-2 border-[#00D9FF] pl-3 italic text-zinc-300">
                 ClearPathTrader.com may display, advertise, integrate with, or link to third-party financial platforms, brokers, exchanges, trading tools, or financial service providers. Such references do not constitute endorsements, recommendations, guarantees, solicitations, investment advice, or partnerships creating agency relationships.
+              </p>
+
+              <p className="border-l-2 border-[#FF00C8] pl-3 text-zinc-300">
+                <strong className="text-white">Pass-through broker connect (optional):</strong> ClearPathTrader.com is not a broker-dealer and will never become one. If you choose to OAuth-link your existing account at a licensed broker (for example Alpaca), you authorize the platform to send instructions you submit to that broker. The licensed broker executes orders, holds funds, and performs KYC/AML — not ClearPath. Without a connected broker, the platform remains analytics and education only.
               </p>
 
               <h4 className="text-[#00D9FF] text-[10px] font-black uppercase tracking-widest pt-2">User Responsibility</h4>

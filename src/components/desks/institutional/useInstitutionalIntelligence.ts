@@ -8,6 +8,7 @@ import { classifyNewsCategory } from '../../../fundamental/format';
 import type { Candle } from '../../../types/indicators';
 import { closeSeries, pearsonCorrelation } from '../../../lib/institutional/marketMath';
 import type { CotAnalytics } from '../../../lib/cot/analytics';
+import { LruMap } from '../../../lib/lruMap';
 
 export const RIBBON_MARKETS: { symbol: string; label: string }[] = [
   { symbol: 'SPX', label: 'SPX' },
@@ -197,7 +198,18 @@ export function workspaceSymbols(primary: string, layout: 1 | 2 | 4): string[] {
   return [primary, ...context].slice(0, 4);
 }
 
-const histCache = new Map<string, { at: number; candles: Candle[] }>();
+const HIST_CACHE_MAX = 48;
+const histCache = new LruMap<string, { at: number; candles: Candle[] }>(HIST_CACHE_MAX);
+
+export type InstitutionalIntelligencePollOptions = {
+  pollUniverse?: boolean;
+  pollNews?: boolean;
+  pollEcon?: boolean;
+  pollMacro?: boolean;
+  pollCorr?: boolean;
+  pollCot?: boolean;
+  pollEarnings?: boolean;
+};
 
 async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]> {
   const key = `${symbol}:${timeframe}`;
@@ -209,7 +221,22 @@ async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]>
   return candles;
 }
 
-export function useInstitutionalIntelligence(symbol: string, timeframe: string, layout: 1 | 2 | 4, universeTab: string) {
+export function useInstitutionalIntelligence(
+  symbol: string,
+  timeframe: string,
+  layout: 1 | 2 | 4,
+  universeTab: string,
+  pollOptions: InstitutionalIntelligencePollOptions = {},
+) {
+  const {
+    pollUniverse = true,
+    pollNews = true,
+    pollEcon = true,
+    pollMacro = true,
+    pollCorr = true,
+    pollCot = true,
+    pollEarnings = true,
+  } = pollOptions;
   const [candlesBySymbol, setCandlesBySymbol] = useState<Record<string, Candle[]>>({});
   const [candleError, setCandleError] = useState<string | null>(null);
   const [ribbon, setRibbon] = useState<QuoteRow[]>([]);
@@ -307,7 +334,11 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     void loadUniverse();
   }, [loadUniverse]);
 
-  usePageAutoUpdate(loadUniverse, { intervalMs: 20_000, immediate: false });
+  usePageAutoUpdate(loadUniverse, {
+    intervalMs: 20_000,
+    immediate: false,
+    enabled: pollUniverse,
+  });
 
   usePageAutoUpdate(
     async () => {
@@ -351,7 +382,7 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
         setNewsError(e instanceof Error ? e.message : 'News offline');
       }
     },
-    { intervalMs: 60_000 },
+    { intervalMs: 60_000, enabled: pollNews },
   );
 
   usePageAutoUpdate(
@@ -365,14 +396,14 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
         setEconError(e instanceof Error ? e.message : 'Economic wire unavailable');
       }
     },
-    { intervalMs: 60_000 },
+    { intervalMs: 60_000, enabled: pollEcon },
   );
 
   usePageAutoUpdate(
     async () => {
       setMacro(await loadFred());
     },
-    { intervalMs: 10 * 60 * 1000 },
+    { intervalMs: 10 * 60 * 1000, enabled: pollMacro },
   );
 
   usePageAutoUpdate(
@@ -388,10 +419,11 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
       }
       setCorrSeries(next);
     },
-    { intervalMs: 5 * 60 * 1000 },
+    { intervalMs: 5 * 60 * 1000, enabled: pollCorr },
   );
 
   useEffect(() => {
+    if (!pollEarnings) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -428,9 +460,10 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     return () => {
       cancelled = true;
     };
-  }, [symbol]);
+  }, [symbol, pollEarnings]);
 
   useEffect(() => {
+    if (!pollCot) return;
     let cancelled = false;
     (async () => {
       try {
@@ -482,7 +515,7 @@ export function useInstitutionalIntelligence(symbol: string, timeframe: string, 
     return () => {
       cancelled = true;
     };
-  }, [symbol]);
+  }, [symbol, pollCot]);
 
   const correlation = useMemo(() => {
     const matrix: Record<string, Record<string, number | null>> = {};

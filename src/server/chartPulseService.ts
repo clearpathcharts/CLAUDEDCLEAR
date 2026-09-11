@@ -9,6 +9,8 @@ import path from 'node:path';
 import { isSmtpConfigured, sendTransactionalEmail } from './registrationEmail';
 import { getTwelveDataApiKey } from './secrets';
 import { getMarketQuote } from './marketDataGateway';
+import { getAdminFirestore } from './firebaseAdmin';
+import { tryAcquireSchedulerLock } from './durableLeaderLock';
 
 export const CHART_PULSE_INTERVALS = [5, 10, 15, 30] as const;
 export type ChartPulseInterval = (typeof CHART_PULSE_INTERVALS)[number];
@@ -37,6 +39,7 @@ export type ChartPulsePublicSub = Omit<ChartPulseSubscription, 'ownerKey'> & {
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'chart-pulse');
 const FILE = path.join(DATA_DIR, 'subscriptions.json');
+const FIRESTORE_COLLECTION = 'chart_pulse_subscriptions';
 const MAX_SUBS_PER_OWNER = 12;
 const SLOT_ID_RE = /^[a-zA-Z0-9._:-]{1,64}$/;
 const SYMBOL_RE = /^[A-Z0-9./:_-]{2,24}$/;
@@ -116,6 +119,38 @@ function persist() {
   ensureDir();
   const rows = loadAll();
   fs.writeFileSync(FILE, JSON.stringify(rows, null, 2), 'utf8');
+  void persistSubscriptionsToFirestore(rows);
+}
+
+async function persistSubscriptionsToFirestore(rows: ChartPulseSubscription[]): Promise<void> {
+  const db = getAdminFirestore();
+  if (!db) return;
+  try {
+    const batch = db.batch();
+    const snap = await db.collection(FIRESTORE_COLLECTION).limit(500).get();
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    for (const row of rows.slice(0, 500)) {
+      batch.set(db.collection(FIRESTORE_COLLECTION).doc(row.id), row);
+    }
+    await batch.commit();
+  } catch (err) {
+    console.warn('[ChartPulse] Firestore persist failed (local file kept)', err);
+  }
+}
+
+export async function hydrateChartPulseFromFirestore(): Promise<number> {
+  const db = getAdminFirestore();
+  if (!db) return 0;
+  try {
+    const snap = await db.collection(FIRESTORE_COLLECTION).limit(500).get();
+    if (snap.empty) return 0;
+    cache = snap.docs.map((d) => d.data() as ChartPulseSubscription).filter((r) => r?.id);
+    persist();
+    return cache.length;
+  } catch (err) {
+    console.warn('[ChartPulse] Firestore hydrate failed', err);
+    return 0;
+  }
 }
 
 function toPublic(sub: ChartPulseSubscription): ChartPulsePublicSub {
@@ -365,11 +400,16 @@ export function startChartPulseScheduler() {
   timer = setInterval(() => {
     if (firing) return;
     firing = true;
-    void fireDueSubscriptions()
-      .catch((err) => console.warn('[ChartPulse] tick failed', err))
-      .finally(() => {
+    void (async () => {
+      try {
+        if (!(await tryAcquireSchedulerLock('chart_pulse_scheduler', 45_000))) return;
+        await fireDueSubscriptions();
+      } catch (err) {
+        console.warn('[ChartPulse] tick failed', err);
+      } finally {
         firing = false;
-      });
+      }
+    })();
   }, 30_000);
 }
 

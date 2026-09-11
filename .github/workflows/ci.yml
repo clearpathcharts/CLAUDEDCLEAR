@@ -39,6 +39,9 @@ jobs:
       - name: Login choose-your-path images
         run: npm run test:choose-path
 
+      - name: Private Login sci-fi restyle
+        run: npm run test:private-login-scifi
+
       - name: About manifesto copy
         run: npm run test:about-manifesto
 
@@ -48,8 +51,14 @@ jobs:
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable
 
+      - name: Waitlist → Firestore private accounts
+        run: npm run test:waitlist-convert
+
       - name: Section guide video catalog self-test
         run: npm run test:section-guides
+
+      - name: CEO desk cleanup (ticker interval, no contacts rail)
+        run: npm run test:ceo-desk-cleanup
 
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
@@ -98,6 +107,9 @@ jobs:
 
       - name: Multi-monitor desk tree
         run: npm run test:desk-monitor-tree
+
+      - name: Overnight structure review
+        run: npm run test:daily-pattern-review
 
       - name: Trader desk routing
         run: npm run test:trader-desks

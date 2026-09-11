@@ -119,6 +119,7 @@ const srcFiles = [
   'src/components/desks/retail/useRetailIntelligence.ts',
   'src/components/desks/retail/retailStore.ts',
   'src/components/CeoDashboard.tsx',
+  'src/components/DailyPatternReviewDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/neuro/NeurodivergentDashboard.tsx',
   'src/components/desks/neuro/neuroProfile.ts',
@@ -141,18 +142,22 @@ for (const rel of srcFiles) {
   if (rel === 'src/App.tsx') {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
+    assert.match(text, /user \? <DeskRoute pathname=\{currentPath\} \/> : <Auth \/>/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
   }
   if (rel === 'src/components/Auth.tsx') {
-    assert.match(text, /navigateToDesk/);
+    assert.match(text, /rememberTraderDesk/);
+    assert.match(text, /openPrivateLogin/);
     assert.doesNotMatch(text, /enterChosenPath = \(profileId/);
     assert.match(text, /data-auth-chart-first/);
     assert.match(text, /order-1 md:order-2/);
   }
   if (rel === 'src/components/ChooseYourPath.tsx') {
-    assert.match(text, /onEnter\(card\.id\)/);
-    assert.match(text, /onEnter\('neurodivergent'\)/);
+    assert.match(text, /onChoosePath\(card\.id\)/);
+    assert.match(text, /onChoosePath\('neurodivergent'\)/);
+    assert.doesNotMatch(text, /PathEnter/);
+    assert.doesNotMatch(text, />\s*Enter\s*</);
   }
   if (rel === 'src/components/desks/InstitutionalTraderDesk.tsx') {
     assert.match(text, /InstitutionalDashboard/);
@@ -249,6 +254,7 @@ for (const rel of srcFiles) {
     assert.match(text, /min-h-\[70vh\]/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /PassThroughTradePanel/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
   }
@@ -263,8 +269,21 @@ for (const rel of srcFiles) {
     assert.match(text, /resolveAssetColors/);
     assert.match(text, /RAINBOW_PRESETS/);
   }
+  if (rel === 'src/components/DailyPatternReviewDesk.tsx') {
+    assert.match(text, /Daily structure briefing/);
+    assert.match(text, /Market Prophets/);
+    assert.match(text, /Approve & publish/);
+    assert.match(text, /Weekly pattern/);
+    assert.match(text, /scannerNote/);
+    assert.match(text, /briefing-product-tiers/);
+    assert.match(text, /DAILY_BRIEFING_BILLING_NOTE/);
+    assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /Not a[\s\S]*signal/);
+    assert.doesNotMatch(text, /You should buy|Place order/i);
+  }
   if (rel === 'src/components/CeoDashboard.tsx') {
     assert.match(text, /DailyOpsDesk/);
+    assert.match(text, /DailyPatternReviewDesk/);
     assert.match(text, /CeoAlwaysOnMonitor/);
     assert.match(text, /userProfile\?\.email/);
     assert.match(text, /\/ceo/);
@@ -305,6 +324,11 @@ for (const rel of srcFiles) {
     assert.match(text, /data-neuro-workstation/);
     assert.match(text, /DeskChartFill/);
     assert.match(text, /LightweightCandles/);
+    assert.match(text, /readInitialNeuroProfile/);
+    assert.match(text, /pollWorkspace:\s*false/);
+    assert.match(text, /pollMovers:\s*false/);
+    assert.match(text, /data=\{candles\}/);
+    assert.match(text, /hidePatternOverlays/);
     assert.match(text, /NEURO_DESK_PROFILES/);
     assert.match(text, /NEURO_RIBBON/);
     assert.match(text, /applyNeuroProfile/);
@@ -316,20 +340,26 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
+  if (rel === 'src/components/charts/LightweightCandles.tsx') {
+    assert.match(text, /hidePatternOverlaysRef/);
+    assert.match(text, /hidePatternOverlaysRef\.current/);
+  }
   if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
+    assert.match(text, /readInitialNeuroProfile/);
+    assert.match(text, /readNeuroProfileFromUrl/);
     assert.match(text, /calm_focus/);
     assert.match(text, /adhd_hyperfocus/);
     assert.match(text, /BTCUSD/);
     assert.match(text, /clearpath-set-profile/);
   }
   if (rel === 'src/components/desks/TraderDeskChrome.tsx') {
+    assert.match(text, /BrokerDeskChip/);
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
-    assert.match(text, /data-ceo-ops-link/);
-    assert.match(text, /\/ceo/);
-    assert.match(text, />\s*CEO\s*</);
-    assert.match(text, /isFounderSession/);
+    assert.doesNotMatch(text, /data-ceo-ops-link/, 'CEO is not a fifth desk tab — founder uses /ceo from Home nav');
+    assert.doesNotMatch(text, /href="\/ceo"/);
+    assert.doesNotMatch(text, /isFounderSession/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
     assert.match(text, /DeskScreensMenu/);
@@ -387,14 +417,15 @@ for (const rel of srcFiles) {
     assert.match(text, /parseDeskScreenPane/);
     assert.match(text, /DeskScreenWorkspace/);
     assert.match(text, /data-desk-satellite/);
-    assert.match(text, /satellitePane \? null : <CptBuddyWidget/);
+    assert.match(text, /DeferredDeskBuddy/);
+    assert.match(text, /satellitePane \? null : <DeferredDeskBuddy/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
     assert.match(text, /path === '\/ceo'/);
     assert.match(text, /case 'CeoDashboard': return <CeoDashboard/);
-    assert.doesNotMatch(text, /next === 'CeoDashboard' && !isFounder\(\)/);
-    assert.doesNotMatch(text, /next === 'CeoDashboard' && !isFounderEmail\(authUser\?\.email\)/);
+    assert.match(text, /nextTab === 'CeoDashboard' && !isFounder\(\)/);
+    assert.match(text, /activeTab === 'CeoDashboard' && !isFounder\(\)/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
@@ -445,6 +476,9 @@ assert.equal(tape[0].side, 'BUY-SIDE');
 assert.equal(tape[0].reconstructed, true);
 
 const buddyWidget = fs.readFileSync(path.join(root, 'src/components/CptBuddyWidget.tsx'), 'utf8');
+assert.match(buddyWidget, /CptBuddyOpenPanel/);
+assert.match(buddyWidget, /useChartVision\(true\)/);
+assert.match(buddyWidget, /requestAnimationFrame\(\(\) => setIsOpen\(true\)\)/);
 assert.match(buddyWidget, /visualViewport/);
 assert.match(buddyWidget, /cpt-buddy-input/);
 assert.match(buddyWidget, /enterKeyHint/);

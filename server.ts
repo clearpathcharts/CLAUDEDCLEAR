@@ -103,7 +103,22 @@ import {
   isValidProfileUsername,
   normalizeProfileUsername,
 } from './src/lib/profileUsername';
-import { consumePasswordResetToken, mintPasswordResetToken } from './src/server/passwordResetStore';
+import {
+  consumePasswordResetToken,
+  hydratePasswordResetsFromFirestore,
+  mintPasswordResetToken,
+} from './src/server/passwordResetStore';
+import { createSessionStore } from './src/server/firestoreSessionStore';
+import {
+  aiChatLimiter,
+  authForgotPasswordLimiter,
+  authLoginLimiter,
+  authRegisterLimiter,
+  frontendErrorLimiter,
+} from './src/server/routeRateLimit';
+import { appendFrontendError } from './src/server/frontendErrorLog';
+import { createBrokerRouter } from './src/server/broker/brokerRoutes';
+import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -164,8 +179,16 @@ import {
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
 import {
+  getLatestDailyPatternReview,
+  runDailyPatternSweep,
+  markDailyPatternReviewed,
+  publishDailyPatternReview,
+  startDailyPatternReviewScheduler,
+} from './src/server/dailyPatternReviewService';
+import {
   fireDueSubscriptions,
   getChartPulseDeliveryStatus,
+  hydrateChartPulseFromFirestore,
   isPulseInterval,
   listSubscriptionsForOwner,
   removeSubscription,
@@ -592,6 +615,7 @@ async function startServer() {
   }
   app.use(session({
     secret: sessionSecret,
+    store: createSessionStore(),
     resave: false,
     saveUninitialized: false,
     name: 'cpt.sid',
@@ -731,7 +755,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/register', async (req, res) => {
+  app.post('/api/auth/private/register', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerPrivateUser({
         email: req.body?.email || '',
@@ -793,7 +817,9 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', async (req, res) => {
+  app.use('/api/broker', createBrokerRouter());
+
+  app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {
       const result = await loginPrivateUser({
         email: req.body?.email || '',
@@ -1030,7 +1056,16 @@ async function startServer() {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
-      // Pull the durable copy first — another instance may have newer data.
+      const local = readProfile(uid);
+      const localAgeMs = local?.updatedAt ? Date.now() - Date.parse(local.updatedAt) : Infinity;
+      if (localAgeMs < 60_000) {
+        const profile =
+          applyPendingContractorBadges(uid, sessionUser?.email) ||
+          local ||
+          { uid, displayName: sessionUser?.displayName || '' };
+        return res.json({ ok: true, profile });
+      }
+      // Pull the durable copy — another instance may have newer data.
       await refreshProfileFromDurable(uid);
       const profile =
         applyPendingContractorBadges(uid, sessionUser?.email) ||
@@ -1145,13 +1180,13 @@ async function startServer() {
     });
   });
 
-  app.post('/api/auth/private/forgot-password', async (req, res) => {
+  app.post('/api/auth/private/forgot-password', authForgotPasswordLimiter, async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     try {
       if (email.includes('@')) {
         const user = await findPrivateUserByEmail(email);
         if (user?.uid && user.email) {
-          const { rawToken } = mintPasswordResetToken({ uid: user.uid, email: user.email });
+          const { rawToken } = await mintPasswordResetToken({ uid: user.uid, email: user.email });
           const resetUrl = `${publicSiteOrigin(req)}/reset-password?token=${encodeURIComponent(rawToken)}`;
           await sendPasswordResetEmail({
             to: user.email,
@@ -1174,7 +1209,7 @@ async function startServer() {
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ error: 'New password and confirmation do not match.' });
     }
-    const record = consumePasswordResetToken(token);
+    const record = await consumePasswordResetToken(token);
     if (!record) {
       return res.status(400).json({ error: 'That reset link is invalid or expired. Request a new one from Private Login.' });
     }
@@ -1574,7 +1609,8 @@ async function startServer() {
   });
 
   /**
-   * Founder / catalog-admin only — private login members + waitlist (safe fields).
+   * Founder / catalog-admin only — private login members (safe fields).
+   * Leftover site_registrations rows are listed for ops/backup only.
    * Auth: Bearer Firebase ID token for forexanarchy@gmail.com, private founder session,
    * or x-catalog-admin-secret. Never public.
    */
@@ -1627,7 +1663,10 @@ async function startServer() {
   app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
-      const result = await convertWaitlistToPrivateAccounts({ dryRun });
+      const result = await convertWaitlistToPrivateAccounts({
+        dryRun,
+        resetExisting: Boolean(req.body?.resetExisting),
+      });
       res.json(result);
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -2060,7 +2099,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2096,7 +2135,7 @@ async function startServer() {
       res.json(result);
     } catch (error: any) {
       const status = error instanceof RegistrationError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Waitlist registration failed.' });
+      res.status(status).json({ error: error.message || 'Private Login registration failed.' });
     }
   });
 
@@ -2285,7 +2324,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', (req, res) => {
+  app.post('/api/log_error', frontendErrorLimiter, (req, res) => {
     try {
       const raw = JSON.stringify(req.body ?? {});
       if (raw.length > 4000) {
@@ -2295,7 +2334,7 @@ async function startServer() {
       const sanitized = raw
         .replace(/("?(?:api[_-]?key|apikey|secret|token|authorization|password)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1[REDACTED]$3')
         .replace(/(Bearer\s+)[A-Za-z0-9._\-]{8,}/gi, '$1[REDACTED]');
-      fs.appendFileSync('frontend_errors.log', sanitized + '\n');
+      appendFrontendError(sanitized);
       console.log('\n[FRONTEND ERROR]', sanitized.slice(0, 500), '\n');
       res.json({ ok: true });
     } catch {
@@ -2508,7 +2547,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2557,7 +2596,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
-  app.post('/api/mentor/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile, pagePath } =
       req.body;
     if (!question || typeof question !== 'string') {
@@ -2930,6 +2969,77 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         res.status(400).json({
           error: 'DAILY_OPS_INVESTOR_RESEARCH_FAILED',
           message: e?.message || 'Could not research that investor',
+        });
+      }
+    }
+  );
+
+  app.get('/api/admin/daily-pattern-review', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await getLatestDailyPatternReview();
+      if (!report) {
+        return res.status(404).json({
+          error: 'NO_REPORT',
+          message: 'No briefing yet — auto sweeps Sun–Fri at NYSE close (4 PM ET) and 1 AM ET, or tap Run now.',
+        });
+      }
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_LOAD_FAILED',
+        message: e?.message || 'Could not load overnight structure review',
+      });
+    }
+  });
+
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const slot =
+        req.body?.slot === 'overnight' || req.body?.slot === 'market_close' ? req.body.slot : 'market_close';
+      const report = await runDailyPatternSweep({ force: true, slot });
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_FAILED',
+        message: e?.message || 'Overnight structure review failed',
+      });
+    }
+  });
+
+  app.post(
+    '/api/admin/daily-pattern-review/review',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const rowId = String(req.body?.rowId || '');
+        const reviewed = Boolean(req.body?.reviewed);
+        const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
+        const reportId = typeof req.body?.reportId === 'string' ? req.body.reportId : undefined;
+        const report = await markDailyPatternReviewed(rowId, reviewed, note, reportId);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_PATTERN_REVIEW_SAVE_FAILED',
+          message: e?.message || 'Could not save review flag',
+        });
+      }
+    }
+  );
+
+  app.post(
+    '/api/admin/daily-pattern-review/publish',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const reportId = typeof req.body?.reportId === 'string' ? req.body.reportId : undefined;
+        const report = await publishDailyPatternReview(reportId);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_PATTERN_REVIEW_PUBLISH_FAILED',
+          message: e?.message || 'Could not publish briefing',
         });
       }
     }
@@ -4543,6 +4653,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
 
     try {
+      startDailyPatternReviewScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Daily pattern review scheduler failed to start:', e?.message || e);
+    }
+
+    try {
       startChartPulseScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Chart pulse scheduler failed to start:', e?.message || e);
@@ -4602,6 +4718,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             console.warn('[STARTUP] Emergency known-member seed skipped:', seedErr?.message || seedErr);
           }
           try {
+            const waitlistMoved = await convertWaitlistToPrivateAccounts({ resetExisting: false });
+            console.log(
+              `[STARTUP] Waitlist → Firestore private_accounts → created=${waitlistMoved.created} already=${waitlistMoved.already} errors=${waitlistMoved.errors} candidates=${waitlistMoved.candidates}`
+            );
+          } catch (wlErr: any) {
+            console.warn('[STARTUP] Waitlist → private accounts skipped:', wlErr?.message || wlErr);
+          }
+          try {
             await bootPersistFounderBackupSnapshot();
           } catch (backupErr: any) {
             console.warn('[STARTUP] Founder backup snapshot skipped:', backupErr?.message || backupErr);
@@ -4633,6 +4757,24 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         );
       } catch (e: any) {
         console.warn('[STARTUP] Pending grants hydrate skipped:', e?.message || e);
+      }
+      try {
+        const resets = await hydratePasswordResetsFromFirestore();
+        console.log(`[STARTUP] Password reset tokens hydrated from Firestore → count=${resets}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Password reset hydrate skipped:', e?.message || e);
+      }
+      try {
+        const pulse = await hydrateChartPulseFromFirestore();
+        console.log(`[STARTUP] Chart pulse subscriptions hydrated from Firestore → count=${pulse}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Chart pulse hydrate skipped:', e?.message || e);
+      }
+      try {
+        const brokers = await hydrateBrokerConnectionsFromFirestore();
+        console.log(`[STARTUP] Broker OAuth connections hydrated from Firestore → count=${brokers}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Broker connections hydrate skipped:', e?.message || e);
       }
       try {
         const seeded = await seedIndependentContractorBadges();

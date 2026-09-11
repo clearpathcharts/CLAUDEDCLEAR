@@ -19,6 +19,14 @@
  * Review this list periodically — language evolves.
  */
 
+import type { ModerationActorRecord } from './moderationActorStore';
+import {
+  clearModerationActorLocal,
+  hydrateModerationActor,
+  persistModerationActor,
+  readModerationActorLocal,
+} from './moderationActorStore';
+
 export type ModerationCategory =
   | 'marketing_claim'
   | 'sexual_explicit'
@@ -422,27 +430,16 @@ const VIOLATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MUTE_AFTER = 3;
 const SUSPEND_AFTER = 6;
 
-interface ActorRecord {
-  count: number;
-  firstAt: number;
-  lastAt: number;
-  mutedUntil?: number;
-  suspended?: boolean;
-}
-
-const actorRecords = new Map<string, ActorRecord>();
-
-function getActor(actorKey: string): ActorRecord {
+function getActor(actorKey: string): ModerationActorRecord {
   const now = Date.now();
-  let rec = actorRecords.get(actorKey);
+  let rec = readModerationActorLocal(actorKey);
   if (!rec || now - rec.firstAt > VIOLATION_WINDOW_MS) {
     rec = { count: 0, firstAt: now, lastAt: now };
-    actorRecords.set(actorKey, rec);
   }
   return rec;
 }
 
-export function recordModerationViolation(actorKey: string): ActorRecord {
+export function recordModerationViolation(actorKey: string): ModerationActorRecord {
   const rec = getActor(actorKey);
   rec.count += 1;
   rec.lastAt = Date.now();
@@ -451,7 +448,7 @@ export function recordModerationViolation(actorKey: string): ActorRecord {
   } else if (rec.count >= MUTE_AFTER) {
     rec.mutedUntil = Date.now() + 60 * 60 * 1000; // 1 hour mute
   }
-  actorRecords.set(actorKey, rec);
+  void persistModerationActor(actorKey, rec);
   return rec;
 }
 
@@ -460,10 +457,10 @@ export function getActorModerationState(actorKey: string): {
   suspended: boolean;
   count: number;
 } {
-  const rec = actorRecords.get(actorKey);
+  const rec = readModerationActorLocal(actorKey);
   if (!rec) return { muted: false, suspended: false, count: 0 };
   if (Date.now() - rec.firstAt > VIOLATION_WINDOW_MS) {
-    actorRecords.delete(actorKey);
+    clearModerationActorLocal(actorKey);
     return { muted: false, suspended: false, count: 0 };
   }
   const muted = !!(rec.mutedUntil && rec.mutedUntil > Date.now());
@@ -630,12 +627,18 @@ export function assertCleanText(
  * Usage: app.post('/path', moderateBodyFields('content', 'question'), handler)
  */
 export function moderateBodyFields(...fields: string[]) {
-  return (req: any, res: any, next: any) => {
+  return async (req: any, res: any, next: any) => {
     const actorKey =
       req.body?.uid ||
       req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ||
       req.ip ||
       'anonymous';
+
+    try {
+      await hydrateModerationActor(actorKey);
+    } catch {
+      /* memory-only fallback */
+    }
 
     for (const field of fields) {
       const value = req.body?.[field];
@@ -644,7 +647,6 @@ export function moderateBodyFields(...fields: string[]) {
       if (check.ok === false) {
         return res.status(check.status).json(check.body);
       }
-      // Attach flags for downstream logging without blocking
       if (check.result.action === 'flag') {
         req.contentModerationFlags = check.result;
       }

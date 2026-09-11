@@ -12,7 +12,7 @@ import { convertWaitlistToPrivateAccounts } from '../src/server/waitlistConvertS
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
-  const result = await convertWaitlistToPrivateAccounts({ dryRun });
+  const result = await convertWaitlistToPrivateAccounts({ dryRun, resetExisting: false });
   const safe = {
     ok: result.ok,
     dryRun: result.dryRun,

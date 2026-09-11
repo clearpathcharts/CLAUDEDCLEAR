@@ -322,6 +322,8 @@ export function LightweightCandles({
   const deskAppearance = useOptionalDeskAppearance();
   const visualPaint = visualPaintProp ?? deskAppearance?.visualPaint;
   const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
+  const hidePatternOverlaysRef = useRef(hidePatternOverlays);
+  hidePatternOverlaysRef.current = hidePatternOverlays;
   const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
@@ -740,15 +742,22 @@ export function LightweightCandles({
           lo.setData(plotBars.map((c) => ({ time: c.time as Time, value: c.low })));
         }
 
-        scheduleChartVisionImmediate(
-          { candles: tierOptimizedData, symbol: sym, timeframe },
-          (output) => {
-            if (!active) return;
-            scanCandlesRef.current = tierOptimizedData;
-            setPatternScan(output.scan);
-            setFormingBrief(output.forming);
-          },
-        );
+        if (hidePatternOverlaysRef.current) {
+          cancelChartVision(sym, timeframe);
+          scanCandlesRef.current = null;
+          setPatternScan(null);
+          setFormingBrief(null);
+        } else {
+          scheduleChartVisionImmediate(
+            { candles: tierOptimizedData, symbol: sym, timeframe },
+            (output) => {
+              if (!active) return;
+              scanCandlesRef.current = tierOptimizedData;
+              setPatternScan(output.scan);
+              setFormingBrief(output.forming);
+            },
+          );
+        }
 
         chart.timeScale().applyOptions({
           ...CHART_TIME_SCALE_GESTURE,
@@ -1281,16 +1290,25 @@ export function LightweightCandles({
     const chart = chartRef.current;
     const series = candleSeriesRef.current;
     const candles = scanCandlesRef.current;
-    if (!chart || !series || !candles || !patternScan) return;
 
-    for (const overlaySeries of patternOverlaySeriesRef.current) {
-      try {
-        chart.removeSeries(overlaySeries);
-      } catch {
-        /* series already detached with the last chart */
+    const clearOverlays = () => {
+      if (!chart) return;
+      for (const overlaySeries of patternOverlaySeriesRef.current) {
+        try {
+          chart.removeSeries(overlaySeries);
+        } catch {
+          /* series already detached with the last chart */
+        }
       }
+      patternOverlaySeriesRef.current = [];
+    };
+
+    if (!chart || !series || hidePatternOverlays || !candles || !patternScan) {
+      clearOverlays();
+      return;
     }
-    patternOverlaySeriesRef.current = [];
+
+    clearOverlays();
 
     const visiblePatterns = filterDismissedChartPatterns(patternScan.patterns, dismissedPatternKeys);
     try {
@@ -1316,7 +1334,7 @@ export function LightweightCandles({
     } catch (overlayErr) {
       console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
     }
-  }, [patternScan, dismissedPatternKeys, chartReadyKey]);
+  }, [patternScan, dismissedPatternKeys, chartReadyKey, hidePatternOverlays]);
 
   useEffect(() => {
     const chart = chartRef.current;
