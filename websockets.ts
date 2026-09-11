@@ -1,6 +1,11 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { getFinnhubApiKey } from './src/server/secrets';
+import {
+  appendChatRoomMessage,
+  loadChatRoomHistory,
+  type ChatRoomMessage,
+} from './src/server/chatRoomStore';
 
 let wssInstance: WebSocketServer | null = null;
 
@@ -33,31 +38,10 @@ function allowWsMessage(ws: WebSocket): boolean {
   return true;
 }
 
-export interface ChatRoomMessage {
-  id: string;
-  roomId: string;
-  author: string;
-  avatar?: string;
-  text: string;
-  timestamp: number;
-  isSystem?: boolean;
-}
-
-/** Rooms start empty — no seeded fake people or demo conversations. */
+/** Rooms start empty — history loads from Firestore when Admin is up. */
 const CHAT_ROOM_IDS = ['lobby', 'macro-minds', 'forex-syndicate', 'liquidity-alchemists'] as const;
 
-const chatRoomMessages: Record<string, ChatRoomMessage[]> = Object.fromEntries(
-  CHAT_ROOM_IDS.map((roomId) => [roomId, [] as ChatRoomMessage[]])
-);
-
 const chatRoomOnline: Record<string, Set<WebSocket>> = {};
-
-function ensureChatRoom(roomId: string): ChatRoomMessage[] {
-  if (!chatRoomMessages[roomId]) {
-    chatRoomMessages[roomId] = [];
-  }
-  return chatRoomMessages[roomId];
-}
 
 function getChatRoomOnlineCount(roomId: string): number {
   return chatRoomOnline[roomId]?.size ?? 0;
@@ -172,20 +156,25 @@ export function setupWebSockets(server: Server) {
           });
         } else if (parsed.type === 'CHAT_ROOM_JOIN') {
           const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
+          if (!CHAT_ROOM_IDS.includes(roomId as (typeof CHAT_ROOM_IDS)[number])) {
+            return;
+          }
           joinChatRoom(ws, roomId);
-          const history = ensureChatRoom(roomId);
-          ws.send(JSON.stringify({
-            type: 'CHAT_ROOM_HISTORY',
-            roomId,
-            messages: history.slice(-80),
-            onlineCount: getChatRoomOnlineCount(roomId),
-            timestamp: Date.now()
-          }));
-          broadcastChatRoom(roomId, {
-            type: 'CHAT_ROOM_PRESENCE',
-            roomId,
-            onlineCount: getChatRoomOnlineCount(roomId),
-            timestamp: Date.now()
+          void loadChatRoomHistory(roomId).then((history) => {
+            if (ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({
+              type: 'CHAT_ROOM_HISTORY',
+              roomId,
+              messages: history.slice(-80),
+              onlineCount: getChatRoomOnlineCount(roomId),
+              timestamp: Date.now()
+            }));
+            broadcastChatRoom(roomId, {
+              type: 'CHAT_ROOM_PRESENCE',
+              roomId,
+              onlineCount: getChatRoomOnlineCount(roomId),
+              timestamp: Date.now()
+            });
           });
         } else if (parsed.type === 'CHAT_ROOM_LEAVE') {
           const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
@@ -212,17 +201,13 @@ export function setupWebSockets(server: Server) {
             timestamp: Date.now()
           };
 
-          const room = ensureChatRoom(roomId);
-          room.push(newMessage);
-          if (room.length > 120) {
-            room.splice(0, room.length - 120);
-          }
-
-          broadcastChatRoom(roomId, {
-            type: 'CHAT_ROOM_MESSAGE_BROADCAST',
-            message: newMessage,
-            onlineCount: getChatRoomOnlineCount(roomId),
-            timestamp: Date.now()
+          void appendChatRoomMessage(newMessage).then(() => {
+            broadcastChatRoom(roomId, {
+              type: 'CHAT_ROOM_MESSAGE_BROADCAST',
+              message: newMessage,
+              onlineCount: getChatRoomOnlineCount(roomId),
+              timestamp: Date.now()
+            });
           });
         } else {
           // Echo back generic ACK

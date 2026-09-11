@@ -19,6 +19,7 @@ import { DESK_SEO } from '../../content/traderDesksCopy';
 import { PRODUCT_URL } from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
+import DeskErrorBoundary from './DeskErrorBoundary';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -116,7 +117,9 @@ function DeskShell({
             Opening {TRADER_DESKS[deskId].title}
           </p>
         )}
-        {body}
+        <DeskErrorBoundary deskLabel={TRADER_DESKS[deskId].title}>
+          {body}
+        </DeskErrorBoundary>
       </main>
     </div>
   );

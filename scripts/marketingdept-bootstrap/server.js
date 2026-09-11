@@ -2,7 +2,7 @@
  * ClearPath Publisher + Automation Console (social-only)
  * Team accounts: Brent / Dustin / Brian / owner
  * Shared marketing treasure chest for all authenticated users
- * NO Zapier / Buffer / Make / CrewAI — never commit secrets
+ * ClearPath-owned sends only — never commit secrets
  */
 import "dotenv/config";
 import express from "express";

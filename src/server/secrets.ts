@@ -193,10 +193,6 @@ export function getCatalogAdminSecret(): string {
   return first(process.env.CATALOG_ADMIN_SECRET, process.env.RIVER_CATALOG_ADMIN_SECRET);
 }
 
-export function getMakeWebhookUrl(): string {
-  return first(process.env.MAKE_WEBHOOK_URL);
-}
-
 export function getSessionSecret(): string {
   return first(process.env.SESSION_SECRET);
 }
@@ -212,6 +208,42 @@ export function getStripeWebhookSecret(): string {
 /** Board / Founders portal code — server-only; never expose via client APIs. */
 export function getBoardAccessCode(): string {
   return first(process.env.BOARD_ACCESS_CODE, process.env.VITE_BOARD_ACCESS_CODE);
+}
+
+/** Pass-through broker OAuth (Alpaca-first) — server only. */
+export function getAlpacaClientId(): string {
+  return first(process.env.ALPACA_CLIENT_ID);
+}
+
+export function getAlpacaClientSecret(): string {
+  return first(process.env.ALPACA_CLIENT_SECRET);
+}
+
+export function getBrokerTokenEncryptionKey(): string {
+  return first(process.env.BROKER_TOKEN_ENCRYPTION_KEY);
+}
+
+export function isAlpacaPaperMode(): boolean {
+  const raw = String(process.env.ALPACA_PAPER ?? '1').trim().toLowerCase();
+  return raw !== '0' && raw !== 'false' && raw !== 'live';
+}
+
+export function getAlpacaOAuthScope(): string {
+  return (
+    first(process.env.ALPACA_OAUTH_SCOPE) ||
+    'account:read trading:read trading:write'
+  );
+}
+
+export function getAlpacaApiBase(environment: 'paper' | 'live'): string {
+  if (environment === 'paper') {
+    return (process.env.ALPACA_PAPER_API_BASE || 'https://paper-api.alpaca.markets').replace(/\/$/, '');
+  }
+  return (process.env.ALPACA_LIVE_API_BASE || 'https://api.alpaca.markets').replace(/\/$/, '');
+}
+
+export function isAlpacaOAuthConfigured(): boolean {
+  return Boolean(getAlpacaClientId() && getAlpacaClientSecret());
 }
 
 /** Safe boolean presence flags for diagnostics — never include key material. */
@@ -233,7 +265,6 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     STRIPE_SECRET_KEY: Boolean(getStripeSecretKey()),
     STRIPE_WEBHOOK_SECRET: Boolean(getStripeWebhookSecret()),
     BOARD_ACCESS_CODE: Boolean(getBoardAccessCode()),
-    MAKE_WEBHOOK_URL: Boolean(getMakeWebhookUrl()),
     SOCIAL_DIRECT_WEBHOOK_URL: Boolean(clean(process.env.SOCIAL_DIRECT_WEBHOOK_URL)),
     SOCIAL_X_BEARER_TOKEN: Boolean(clean(process.env.SOCIAL_X_BEARER_TOKEN) || clean(process.env.SOCIAL_X_ACCESS_TOKEN)),
     SOCIAL_LINKEDIN_ACCESS_TOKEN: Boolean(clean(process.env.SOCIAL_LINKEDIN_ACCESS_TOKEN)),
@@ -247,6 +278,9 @@ export function getSecretPresenceReport(): Record<string, boolean> {
     SMTP_HOST: Boolean(clean(process.env.SMTP_HOST)),
     TWILIO_ACCOUNT_SID: Boolean(clean(process.env.TWILIO_ACCOUNT_SID)),
     TWILIO_FROM: Boolean(clean(process.env.TWILIO_FROM) || clean(process.env.TWILIO_PHONE_NUMBER)),
+    ALPACA_CLIENT_ID: Boolean(getAlpacaClientId()),
+    ALPACA_CLIENT_SECRET: Boolean(getAlpacaClientSecret()),
+    BROKER_TOKEN_ENCRYPTION_KEY: Boolean(getBrokerTokenEncryptionKey()),
   };
 }
 

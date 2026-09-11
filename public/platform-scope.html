@@ -109,10 +109,9 @@
     </div>
 
     <ul>
-      <li class="no">Does NOT execute trades</li>
-      <li class="no">Does NOT place or complete orders</li>
-      <li class="no">Does NOT route or transmit trade data</li>
-      <li class="no">Does NOT connect to brokers for execution</li>
+      <li class="no">Does NOT hold a broker-dealer or introducing-broker license</li>
+      <li class="no">Does NOT custody user funds or securities</li>
+      <li class="no">Does NOT execute trades on its own books (without your connected licensed broker)</li>
       <li class="no">Does NOT provide investment advice or recommendations</li>
       <li class="no">Does NOT suggest buying, selling, or holding assets</li>
       <li class="no">Does NOT manage accounts or portfolios</li>
@@ -133,12 +132,12 @@
       Visual formatting is applied uniformly and is not designed to influence trading decisions or emphasize specific securities.
     </p>
 
-    <h2>5. Separation From Trading Activity</h2>
+    <h2>5. Optional pass-through broker connect (OAuth)</h2>
     <p>
-      Clear Path Markets ScienceTrader has <strong>no connection to trade execution systems</strong>.
+      Clear Path Markets ScienceTrader is building toward the same model used by chart platforms that partner with licensed brokers (for example TradingView + Alpaca): you open and maintain your own account with an already-licensed broker, authorize ClearPath via OAuth, and orders you submit in the terminal route to that broker. The broker holds the license, performs KYC/AML, and custodies funds — ClearPath is the interface only.
     </p>
     <p>
-      All trading activity occurs independently outside of the platform.
+      When no broker is connected, the platform remains analytics and education only — no order routing.
     </p>
 
     <h2>6. No Investment Advisory Relationship</h2>

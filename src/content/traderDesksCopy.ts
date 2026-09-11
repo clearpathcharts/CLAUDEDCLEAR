@@ -1,7 +1,8 @@
 import type { TraderDeskId } from '../lib/traderDesks';
+import { DESK_PASS_THROUGH_FOOTER } from '../lib/passThroughBrokerModel';
 
 export const DESK_DISCLAIMER =
-  'Educational market structure and data visualization only. ClearPath does not evaluate, alter, or advise on financial decisions.';
+  `Educational market structure and data visualization only. ClearPath is not a broker-dealer. ${DESK_PASS_THROUGH_FOOTER}`;
 
 export type DeskFaq = { question: string; answer: string };
 

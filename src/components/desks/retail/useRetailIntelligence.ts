@@ -5,6 +5,7 @@ import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
 import { fetchTieredHistoricalData } from '../../../services/marketData';
 import { fetchEconomicNews, type EconomicNewsItem } from '../../../services/economicService';
 import type { Candle } from '../../../types/indicators';
+import { LruMap } from '../../../lib/lruMap';
 
 export const RETAIL_RIBBON: { symbol: string; label: string }[] = [
   { symbol: 'SPX', label: 'S&P 500' },
@@ -87,7 +88,8 @@ async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQu
   return out;
 }
 
-const histCache = new Map<string, { at: number; candles: Candle[] }>();
+const HIST_CACHE_MAX = 48;
+const histCache = new LruMap<string, { at: number; candles: Candle[] }>(HIST_CACHE_MAX);
 
 async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]> {
   const key = `${symbol}:${timeframe}`;

@@ -3,6 +3,38 @@ import { Candle } from '../types/indicators';
 import { DetectedPattern } from './types';
 import { neonLineColor, NEON_PATTERN_LINE_COLORS } from './patternMeta';
 
+/** Stable id for one drawn chart pattern (all of its lines). */
+export function chartPatternDismissKey(pattern: DetectedPattern): string {
+  return `${pattern.scale ?? 'major'}:${pattern.id}:${pattern.startIndex}:${pattern.endIndex}`;
+}
+
+export function filterDismissedChartPatterns(
+  patterns: DetectedPattern[],
+  dismissed: ReadonlySet<string>,
+): DetectedPattern[] {
+  if (dismissed.size === 0) return patterns;
+  return patterns.filter((p) => p.category !== 'chart' || !dismissed.has(chartPatternDismissKey(p)));
+}
+
+/** Highest vertex — X sits just above this so it does not sit on the candles. */
+export function chartPatternDismissAnchor(
+  pattern: DetectedPattern,
+): { time: number; price: number } | null {
+  const lines = pattern.geometry?.lines;
+  if (!lines?.length) return null;
+  let time = lines[0].from.time;
+  let price = -Infinity;
+  for (const line of lines) {
+    for (const pt of [line.from, line.to]) {
+      if (pt.price >= price) {
+        price = pt.price;
+        time = pt.time;
+      }
+    }
+  }
+  return Number.isFinite(price) ? { time, price } : null;
+}
+
 export interface PatternLineOverlay {
   id: string;
   label: string;

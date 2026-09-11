@@ -91,11 +91,7 @@ function parsePayload(payload: unknown): ParsedPayload {
   const data = isRecord(root.data) ? root.data : {};
   const outputs = isRecord(root.outputs) ? root.outputs : {};
 
-  const source =
-    asString(root.source) ||
-    asString(root.crew) ||
-    asString(root.crewName) ||
-    'crewai';
+  const source = asString(root.source) || 'webhook';
 
   const runMode =
     asString(inputs.run_mode) ||
@@ -139,7 +135,6 @@ function parsePayload(payload: unknown): ParsedPayload {
 
   const meta: Record<string, unknown> = {};
   if (isRecord(root.meta)) Object.assign(meta, root.meta);
-  if (asString(root.crewWebhookUrl)) meta.crewWebhookUrl = root.crewWebhookUrl;
   if (asString(root.status)) meta.status = root.status;
 
   return {
@@ -252,37 +247,4 @@ export function listIntelligenceBriefings(limit = 20): IntelligenceBriefingRecor
 export function getIntelligenceBriefing(id: string): IntelligenceBriefingRecord | null {
   if (!/^[a-f0-9-]{36}$/i.test(id)) return null;
   return readRecordFile(recordPath(id));
-}
-
-export async function forwardIntelligenceToMake(
-  record: IntelligenceBriefingRecord
-): Promise<{ forwarded: boolean; status?: number; error?: string }> {
-  const webhookUrl = process.env.MAKE_WEBHOOK_URL?.trim();
-  if (!webhookUrl) {
-    return { forwarded: false, error: 'MAKE_WEBHOOK_URL not configured' };
-  }
-
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: record.id,
-        receivedAt: record.receivedAt,
-        source: record.source,
-        runMode: record.runMode,
-        activeNeuroProfile: record.activeNeuroProfile,
-        publishMode: record.publishMode,
-        assetUniverse: record.assetUniverse,
-        briefingMarkdown: record.briefingMarkdown,
-        localizedBriefingMarkdown: record.localizedBriefingMarkdown,
-        artifacts: record.artifacts,
-        meta: record.meta,
-      }),
-    });
-
-    return { forwarded: response.ok, status: response.status };
-  } catch (error: any) {
-    return { forwarded: false, error: error?.message || 'Make.com forward failed' };
-  }
 }

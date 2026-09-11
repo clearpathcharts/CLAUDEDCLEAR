@@ -1,5 +1,6 @@
 import { formingChartKey } from './activeForming';
 import { PatternScanResult } from './types';
+import { LruMap } from '../lib/lruMap';
 
 export interface ChartPatternScan {
   symbol: string;
@@ -8,7 +9,8 @@ export interface ChartPatternScan {
   updatedAt: number;
 }
 
-const scans = new Map<string, ChartPatternScan>();
+const SCAN_CACHE_MAX = 48;
+const scans = new LruMap<string, ChartPatternScan>(SCAN_CACHE_MAX);
 let latestKey: string | null = null;
 const listeners = new Set<() => void>();
 

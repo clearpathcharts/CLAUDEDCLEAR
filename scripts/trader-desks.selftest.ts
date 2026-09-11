@@ -254,6 +254,7 @@ for (const rel of srcFiles) {
     assert.match(text, /min-h-\[70vh\]/);
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
+    assert.match(text, /PassThroughTradePanel/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
   }
@@ -352,6 +353,7 @@ for (const rel of srcFiles) {
     assert.match(text, /clearpath-set-profile/);
   }
   if (rel === 'src/components/desks/TraderDeskChrome.tsx') {
+    assert.match(text, /BrokerDeskChip/);
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
