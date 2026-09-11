@@ -84,6 +84,9 @@ jobs:
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 
+      - name: Per-pattern dismiss X
+        run: npm run test:pattern-dismiss
+
       - name: YWC magazine rack allowlist self-test
         run: npm run test:magazine-rack
 

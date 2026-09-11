@@ -1,7 +1,7 @@
 import React from 'react';
 import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import type { PatternScanResult, PatternGroup } from '../../patterns';
-import { PATTERN_GROUP_LABELS } from '../../patterns';
+import { PATTERN_GROUP_LABELS, chartPatternDismissKey } from '../../patterns';
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
@@ -20,12 +20,13 @@ interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
   onClose?: () => void;
+  onDismissPattern?: (key: string) => void;
   /** Inline = document flow off the candles (phones). Overlay = on-canvas card (desktop). */
   placement?: 'overlay' | 'inline';
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan, onClose, placement = 'overlay' }: ChartPatternHudProps) {
+export function ChartPatternHud({ symbol, scan, onClose, onDismissPattern, placement = 'overlay' }: ChartPatternHudProps) {
   if (!scan && placement === 'overlay') return null;
 
   const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart') ?? [];
@@ -95,6 +96,21 @@ export function ChartPatternHud({ symbol, scan, onClose, placement = 'overlay' }
                     </span>
                   )}
                   <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
+                  {onDismissPattern ? (
+                    <button
+                      type="button"
+                      data-pattern-dismiss={chartPatternDismissKey(p)}
+                      aria-label={`Remove ${p.label} from this chart`}
+                      title="Remove this pattern"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDismissPattern(chartPatternDismissKey(p));
+                      }}
+                      className="flex h-4 w-4 items-center justify-center rounded-full border border-[#FF1493]/60 text-[#FF1493] hover:bg-[#FF1493] hover:text-white"
+                    >
+                      <X size={9} strokeWidth={3} />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
