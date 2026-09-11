@@ -5,6 +5,11 @@ import {
   startAlpacaConnect,
   type BrokerPublicStatus,
 } from '../../api/brokerConnect';
+import {
+  NEVER_BROKER_DEALER,
+  PASS_THROUGH_SUMMARY,
+  BROKER_STATUS_NOTE,
+} from '../../lib/passThroughBrokerModel';
 
 /**
  * Optional pass-through broker connect — user OAuth's their own Alpaca account.
@@ -60,12 +65,12 @@ export default function BrokerConnectPanel() {
   return (
     <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl">
       <div className="text-[20px] md:text-[24px] mb-2 font-orbitron font-bold bg-gradient-to-r from-[#00e5ff] to-[#818cf8] text-transparent bg-clip-text w-fit">
-        Broker connect (pass-through)
+        Licensed broker connect (TradingView-style)
       </div>
-      <p className="text-[12px] md:text-[13px] text-zinc-400 leading-relaxed mb-4 max-w-2xl">
-        {note ||
-          'Link your own licensed broker account via OAuth — same model as TradingView + Alpaca. ClearPath is the chart interface; your broker holds funds and executes orders when you authorize them.'}
+      <p className="text-[12px] md:text-[13px] text-zinc-400 leading-relaxed mb-2 max-w-2xl">
+        {note || BROKER_STATUS_NOTE || PASS_THROUGH_SUMMARY}
       </p>
+      <p className="text-[11px] text-zinc-500 leading-relaxed mb-4 max-w-2xl">{NEVER_BROKER_DEALER}</p>
 
       {loading ? (
         <p className="text-xs font-mono uppercase text-zinc-500">Loading broker status…</p>
@@ -143,7 +148,7 @@ export default function BrokerConnectPanel() {
       {error ? <p className="mt-3 text-xs text-rose-400">{error}</p> : null}
 
       <p className="mt-4 text-[10px] text-zinc-600 leading-relaxed max-w-2xl">
-        ClearPath Trader is not a broker-dealer and does not custody your money. Future chart order tickets will pass through to your connected broker only after you OAuth authorize them. Not investment advice.
+        {NEVER_BROKER_DEALER} Chart submissions pass through to your connected broker only after OAuth and disclaimer acknowledgment. Not investment advice.
       </p>
     </div>
   );

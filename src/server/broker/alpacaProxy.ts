@@ -106,3 +106,79 @@ export async function fetchAlpacaPositions(uid: string): Promise<unknown[]> {
   const raw = await alpacaFetch(uid, '/v2/positions');
   return Array.isArray(raw) ? raw : [];
 }
+
+export type AlpacaOrderInput = {
+  symbol: string;
+  qty: number;
+  side: 'buy' | 'sell';
+  type: 'market' | 'limit';
+  limit_price?: number;
+  time_in_force?: 'day' | 'gtc';
+};
+
+function sanitizeOrder(raw: Record<string, unknown>) {
+  return {
+    id: raw.id != null ? String(raw.id) : null,
+    status: raw.status != null ? String(raw.status) : null,
+    symbol: raw.symbol != null ? String(raw.symbol) : null,
+    qty: raw.qty != null ? String(raw.qty) : null,
+    side: raw.side != null ? String(raw.side) : null,
+    type: raw.type != null ? String(raw.type) : null,
+    submitted_at: raw.submitted_at != null ? String(raw.submitted_at) : null,
+  };
+}
+
+/** Pass-through order — Alpaca executes; ClearPath is not counterparty. */
+export async function submitAlpacaOrder(uid: string, input: AlpacaOrderInput) {
+  const record = await connectionWithFreshToken(uid);
+  const accessToken = decryptBrokerSecret(record.accessTokenEnc);
+  const base = getAlpacaApiBase(record.environment);
+
+  const symbol = String(input.symbol || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9./]/g, '')
+    .slice(0, 24);
+  if (!symbol) throw new Error('Invalid symbol');
+
+  const qty = Number(input.qty);
+  if (!Number.isFinite(qty) || qty <= 0 || qty > 1_000_000) {
+    throw new Error('Invalid quantity');
+  }
+
+  const payload: Record<string, unknown> = {
+    symbol,
+    qty: Math.floor(qty),
+    side: input.side,
+    type: input.type,
+    time_in_force: input.time_in_force || 'day',
+  };
+  if (input.type === 'limit') {
+    const lp = Number(input.limit_price);
+    if (!Number.isFinite(lp) || lp <= 0) throw new Error('Limit price required');
+    payload.limit_price = lp;
+  }
+
+  const res = await fetch(`${base}/v2/orders`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    const msg =
+      typeof body.message === 'string' ? body.message : `Alpaca order HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return sanitizeOrder(body);
+}
+
+export async function listAlpacaOrders(uid: string, limit = 20) {
+  const raw = await alpacaFetch(uid, `/v2/orders?status=all&limit=${Math.min(limit, 50)}`);
+  if (!Array.isArray(raw)) return [];
+  return raw.map((row) => sanitizeOrder(row as Record<string, unknown>));
+}

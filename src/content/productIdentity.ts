@@ -50,6 +50,11 @@ export const PRODUCT_KNOWS_ABOUT = [
 
 export const IDENTITY_FAQS: Array<{ question: string; answer: string }> = [
   {
+    question: "Will ClearPath ever become a broker-dealer?",
+    answer:
+      "No — never. ClearPath Trader is a chart and intelligence interface only. Optional pass-through OAuth (same model as TradingView + Alpaca) lets you link your own account at a licensed broker; that broker holds funds, performs KYC/AML, and executes orders you authorize. ClearPath does not custody money or hold a broker-dealer license.",
+  },
+  {
     question: "What is ClearPath Trader?",
     answer: PRODUCT_WHAT_IT_IS,
   },

@@ -46,6 +46,7 @@ import {
   type RetailWatchlist,
 } from './retailStore';
 import type { Candle } from '../../../types/indicators';
+import PassThroughTradePanel from '../../broker/PassThroughTradePanel';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
 const CHART_TYPES: { id: PriceSeriesType; label: string }[] = [
@@ -864,6 +865,7 @@ export default function RetailDashboard() {
               </DeskChartFill>
             ))}
           </div>
+          {layout === 1 ? <PassThroughTradePanel symbol={symbol} /> : null}
           <p className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-sm font-bold uppercase tracking-wider text-[var(--desk-muted)]">
             Chart tools: use the chart toolbar for crosshair, zoom, pan, reset, drawings, and fullscreen.
             Default chart stays clean — indicators are opt-in.

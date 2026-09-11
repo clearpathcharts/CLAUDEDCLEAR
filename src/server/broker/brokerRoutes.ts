@@ -7,8 +7,10 @@ import { getPrivateSessionUser, requirePrivateSession } from '../authGuards';
 import {
   brokerOAuthCallbackLimiter,
   brokerOAuthStartLimiter,
+  brokerOrderLimiter,
   brokerProxyLimiter,
 } from '../routeRateLimit';
+import { BROKER_STATUS_NOTE, PASS_THROUGH_MODEL_ID } from '../../lib/passThroughBrokerModel';
 import {
   buildAlpacaAuthorizeUrl,
   createAlpacaOAuthState,
@@ -18,7 +20,12 @@ import {
   alpacaRedirectUri,
 } from './alpacaOAuth';
 import { deleteBrokerConnection, loadBrokerConnection } from './brokerConnectionStore';
-import { fetchAlpacaAccountSummary, fetchAlpacaPositions } from './alpacaProxy';
+import {
+  fetchAlpacaAccountSummary,
+  fetchAlpacaPositions,
+  listAlpacaOrders,
+  submitAlpacaOrder,
+} from './alpacaProxy';
 import { brokerPublicStatus } from './registry';
 import type { AlpacaOAuthPendingState } from './types';
 
@@ -33,6 +40,7 @@ function safeBrokerReturnTo(raw: unknown): string {
     return '/?tab=Biography#Biography';
   }
   if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
+  if (/^\/desk(?:\/[a-z-]+)?\/?$/.test(candidate)) return candidate;
   return '/?tab=Biography#Biography';
 }
 
@@ -49,9 +57,8 @@ export function createBrokerRouter(): Router {
       const brokers = await brokerPublicStatus(uid);
       res.json({
         ok: true,
-        model: 'pass-through-oauth',
-        note:
-          'ClearPath is not a broker-dealer. When you connect, you authorize your existing licensed broker account; orders route to them.',
+        model: PASS_THROUGH_MODEL_ID,
+        note: BROKER_STATUS_NOTE,
         brokers,
       });
     } catch (err: unknown) {
@@ -142,6 +149,64 @@ export function createBrokerRouter(): Router {
       res.json({ ok: true, account, environment: row.environment });
     } catch (err: unknown) {
       res.status(502).json({ error: err instanceof Error ? err.message : 'Alpaca account unavailable' });
+    }
+  });
+
+  router.get('/alpaca/orders', requirePrivateSession, brokerProxyLimiter, async (req, res) => {
+    const uid = getPrivateSessionUser(req)?.uid;
+    if (!uid) return res.status(401).json({ error: 'Sign in required.' });
+
+    const row = await loadBrokerConnection(uid, 'alpaca');
+    if (!row) {
+      return res.status(404).json({ error: 'Alpaca not connected', code: 'BROKER_NOT_CONNECTED' });
+    }
+
+    try {
+      const orders = await listAlpacaOrders(uid);
+      res.json({ ok: true, orders, environment: row.environment, executedBy: 'alpaca' });
+    } catch (err: unknown) {
+      res.status(502).json({ error: err instanceof Error ? err.message : 'Alpaca orders unavailable' });
+    }
+  });
+
+  router.post('/alpaca/orders', requirePrivateSession, brokerOrderLimiter, async (req, res) => {
+    const uid = getPrivateSessionUser(req)?.uid;
+    if (!uid) return res.status(401).json({ error: 'Sign in required.' });
+
+    if (req.body?.passThroughAcknowledged !== true) {
+      return res.status(400).json({
+        error: 'Pass-through acknowledgment required',
+        message: 'Confirm that your licensed broker executes the order, not ClearPath.',
+      });
+    }
+
+    const row = await loadBrokerConnection(uid, 'alpaca');
+    if (!row) {
+      return res.status(404).json({ error: 'Alpaca not connected', code: 'BROKER_NOT_CONNECTED' });
+    }
+
+    const side = req.body?.side === 'sell' ? 'sell' : 'buy';
+    const type = req.body?.type === 'limit' ? 'limit' : 'market';
+    const tif = req.body?.time_in_force === 'gtc' ? 'gtc' : 'day';
+
+    try {
+      const order = await submitAlpacaOrder(uid, {
+        symbol: String(req.body?.symbol || ''),
+        qty: Number(req.body?.qty),
+        side,
+        type,
+        limit_price: req.body?.limit_price != null ? Number(req.body.limit_price) : undefined,
+        time_in_force: tif,
+      });
+      res.json({
+        ok: true,
+        order,
+        executedBy: 'alpaca',
+        passThrough: true,
+        note: 'Order sent to your connected licensed broker. ClearPath is not the broker-dealer.',
+      });
+    } catch (err: unknown) {
+      res.status(502).json({ error: err instanceof Error ? err.message : 'Order submission failed' });
     }
   });
 

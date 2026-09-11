@@ -7,6 +7,7 @@ import {
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
+import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
 import { clampOpacity } from '../../lib/deskColorChart';
 import ColorChartPicker from './ColorChartPicker';
@@ -90,6 +91,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <BrokerDeskChip />
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
           <DeskScreensMenu deskId={active} accent={meta.accent} paper={paper} />
           <button

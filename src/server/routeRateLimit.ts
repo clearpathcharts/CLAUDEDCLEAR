@@ -91,3 +91,15 @@ export const brokerProxyLimiter = rateLimit({
   },
   message: { error: 'Too many broker API requests. Slow down.' },
 });
+
+export const brokerOrderLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = (req as any).session?.privateUser?.uid;
+    return uid ? `broker-order:uid:${uid}` : `broker-order:ip:${clientIp(req)}`;
+  },
+  message: { error: 'Too many pass-through orders. Wait a minute.' },
+});

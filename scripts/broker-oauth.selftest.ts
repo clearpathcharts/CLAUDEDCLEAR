@@ -7,6 +7,7 @@ import {
   createAlpacaOAuthState,
   alpacaConfiguredSummary,
 } from '../src/server/broker/alpacaOAuth';
+import { PASS_THROUGH_MODEL_ID, NEVER_BROKER_DEALER } from '../src/lib/passThroughBrokerModel';
 import { brokerPublicStatus } from '../src/server/broker/registry';
 import { encryptBrokerSecret, decryptBrokerSecret } from '../src/server/broker/tokenCrypto';
 
@@ -55,7 +56,14 @@ function testTokenCryptoRoundTrip() {
   }
 }
 
+function testCanonicalCopy() {
+  assert.match(NEVER_BROKER_DEALER, /never/i);
+  assert.match(NEVER_BROKER_DEALER, /broker-dealer/i);
+  assert.equal(PASS_THROUGH_MODEL_ID, 'tradingview-pass-through-oauth');
+}
+
 async function main() {
+  testCanonicalCopy();
   await testStubModeWithoutEnv();
   await testAuthorizeUrlWhenConfigured();
   testTokenCryptoRoundTrip();
