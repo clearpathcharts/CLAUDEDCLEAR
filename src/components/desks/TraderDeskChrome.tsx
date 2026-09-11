@@ -10,9 +10,6 @@ import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import { useDeskAppearance } from './DeskAppearanceContext';
 import { clampOpacity } from '../../lib/deskColorChart';
 import ColorChartPicker from './ColorChartPicker';
-import { useAuth } from '../../contexts/FirebaseContext';
-import { isFounderSession } from '../../lib/founder';
-import { auth } from '../../firebase';
 import DeskScreensMenu from './DeskScreensMenu';
 import { DESK_SCREEN_PANE_LABEL, type DeskScreenPane } from '../../lib/deskMonitorTree';
 
@@ -46,7 +43,6 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
-  const { user, userProfile } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -56,8 +52,6 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
 
   const hour = utcHourFrom(now);
   const utcStamp = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const founderOk = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
-
   return (
     <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
@@ -152,15 +146,6 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
             </button>
           );
         })}
-        {founderOk ? (
-          <a
-            href="/ceo"
-            data-ceo-ops-link
-            className="rounded-md border border-[#FF1493]/50 bg-[#FF1493]/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-[#FF1493] hover:bg-[#FF1493]/25"
-          >
-            CEO
-          </a>
-        ) : null}
         <a
           href="/"
           className="ml-auto rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white"

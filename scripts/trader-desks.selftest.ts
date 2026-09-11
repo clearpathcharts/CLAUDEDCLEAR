@@ -355,10 +355,9 @@ for (const rel of srcFiles) {
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
-    assert.match(text, /data-ceo-ops-link/);
-    assert.match(text, /\/ceo/);
-    assert.match(text, />\s*CEO\s*</);
-    assert.match(text, /isFounderSession/);
+    assert.doesNotMatch(text, /data-ceo-ops-link/, 'CEO is not a fifth desk tab — founder uses /ceo from Home nav');
+    assert.doesNotMatch(text, /href="\/ceo"/);
+    assert.doesNotMatch(text, /isFounderSession/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
     assert.match(text, /DeskScreensMenu/);
@@ -423,8 +422,8 @@ for (const rel of srcFiles) {
     assert.match(text, /CeoDashboard/);
     assert.match(text, /path === '\/ceo'/);
     assert.match(text, /case 'CeoDashboard': return <CeoDashboard/);
-    assert.doesNotMatch(text, /next === 'CeoDashboard' && !isFounder\(\)/);
-    assert.doesNotMatch(text, /next === 'CeoDashboard' && !isFounderEmail\(authUser\?\.email\)/);
+    assert.match(text, /nextTab === 'CeoDashboard' && !isFounder\(\)/);
+    assert.match(text, /activeTab === 'CeoDashboard' && !isFounder\(\)/);
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);
@@ -475,6 +474,9 @@ assert.equal(tape[0].side, 'BUY-SIDE');
 assert.equal(tape[0].reconstructed, true);
 
 const buddyWidget = fs.readFileSync(path.join(root, 'src/components/CptBuddyWidget.tsx'), 'utf8');
+assert.match(buddyWidget, /CptBuddyOpenPanel/);
+assert.match(buddyWidget, /useChartVision\(true\)/);
+assert.match(buddyWidget, /requestAnimationFrame\(\(\) => setIsOpen\(true\)\)/);
 assert.match(buddyWidget, /visualViewport/);
 assert.match(buddyWidget, /cpt-buddy-input/);
 assert.match(buddyWidget, /enterKeyHint/);
