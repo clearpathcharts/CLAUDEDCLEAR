@@ -17,6 +17,7 @@ import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import { PlanComparisonTable } from './components/PlanComparisonTable';
+import { PackagesPanel } from './components/PackagesPanel';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
@@ -108,7 +109,7 @@ function isLiteracyPath(path: string): boolean {
 
 function isPlansPath(path: string): boolean {
   const p = path.toLowerCase().trim();
-  return p === '/plans' || p === '/membership' || p === '/pricing';
+  return p === '/plans' || p === '/membership' || p === '/pricing' || p === '/packages';
 }
 
 function isFundamentalDeskPath(path: string): boolean {
@@ -144,6 +145,7 @@ function PublicLearnShell({
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
+            <a href="/packages" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Packages</a>
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
@@ -324,6 +326,19 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isPlansPath(currentPath)) {
+    content = (
+      <PublicLearnShell>
+        <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
+          <h1 className="text-xl font-black uppercase tracking-widest">Membership packages</h1>
+          <p className="text-zinc-400 text-sm">
+            Basic / Silver / Gold / Platinum have no list prices. Silver add-ons are priced extras only — checkout is off.
+          </p>
+          <PackagesPanel showAddForm />
+          <PlanComparisonTable />
+        </div>
+      </PublicLearnShell>
+    );
   } else if (!user) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
@@ -336,18 +351,6 @@ export default function App() {
       content = (
         <PublicLearnShell>
           <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    } else if (isPlansPath(currentPath)) {
-      content = (
-        <PublicLearnShell>
-          <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
-            <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
-            <p className="text-zinc-400 text-sm">
-              Basic / Silver / Gold / Platinum feature unlocks as enforced in the product. List prices are not published here.
-            </p>
-            <PlanComparisonTable />
-          </div>
         </PublicLearnShell>
       );
     } else if (isEducationPath(currentPath)) {

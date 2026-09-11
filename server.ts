@@ -117,6 +117,7 @@ import {
 } from './src/server/stripeService';
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
+import { addPackage, listPackages, removePackage } from './src/server/packageCatalogService';
 import { PAYMENTS_DISABLED_MESSAGE, PAYMENTS_ENABLED } from './src/lib/paymentsEnabled';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
@@ -1355,6 +1356,38 @@ async function startServer() {
         plan: pack.plan.id,
       },
     });
+  });
+
+  /** Public product packages — membership ladder plus founder-added add-ons. No prices. */
+  app.get('/api/packages', (_req, res) => {
+    res.json({
+      ok: true,
+      packages: listPackages(),
+      note: 'Feature packages only — no list prices. Billing stays off.',
+    });
+  });
+
+  app.post('/api/packages', requireFounderOrCatalogAdmin, (req, res) => {
+    try {
+      const created = addPackage(req.body || {});
+      res.status(201).json({ ok: true, package: created, packages: listPackages() });
+    } catch (err: any) {
+      const status = typeof err?.status === 'number' ? err.status : 400;
+      res.status(status).json({ error: err?.message || 'Could not add package.' });
+    }
+  });
+
+  app.delete('/api/packages/:id', requireFounderOrCatalogAdmin, (req, res) => {
+    try {
+      const removed = removePackage(String(req.params.id || ''));
+      if (!removed) {
+        return res.status(404).json({ error: 'Package not found.' });
+      }
+      res.json({ ok: true, packages: listPackages() });
+    } catch (err: any) {
+      const status = typeof err?.status === 'number' ? err.status : 400;
+      res.status(status).json({ error: err?.message || 'Could not remove package.' });
+    }
   });
 
   /** Public founder-sheet catalog (no secrets). */
