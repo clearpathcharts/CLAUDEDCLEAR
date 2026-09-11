@@ -323,6 +323,11 @@ for (const rel of srcFiles) {
     assert.match(text, /data-neuro-workstation/);
     assert.match(text, /DeskChartFill/);
     assert.match(text, /LightweightCandles/);
+    assert.match(text, /readInitialNeuroProfile/);
+    assert.match(text, /pollWorkspace:\s*false/);
+    assert.match(text, /pollMovers:\s*false/);
+    assert.match(text, /data=\{candles\}/);
+    assert.match(text, /hidePatternOverlays/);
     assert.match(text, /NEURO_DESK_PROFILES/);
     assert.match(text, /NEURO_RIBBON/);
     assert.match(text, /applyNeuroProfile/);
@@ -334,7 +339,13 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
+  if (rel === 'src/components/charts/LightweightCandles.tsx') {
+    assert.match(text, /hidePatternOverlaysRef/);
+    assert.match(text, /hidePatternOverlaysRef\.current/);
+  }
   if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
+    assert.match(text, /readInitialNeuroProfile/);
+    assert.match(text, /readNeuroProfileFromUrl/);
     assert.match(text, /calm_focus/);
     assert.match(text, /adhd_hyperfocus/);
     assert.match(text, /BTCUSD/);
@@ -405,7 +416,8 @@ for (const rel of srcFiles) {
     assert.match(text, /parseDeskScreenPane/);
     assert.match(text, /DeskScreenWorkspace/);
     assert.match(text, /data-desk-satellite/);
-    assert.match(text, /satellitePane \? null : <CptBuddyWidget/);
+    assert.match(text, /DeferredDeskBuddy/);
+    assert.match(text, /satellitePane \? null : <DeferredDeskBuddy/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);
