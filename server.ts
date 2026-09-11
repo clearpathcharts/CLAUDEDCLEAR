@@ -117,6 +117,8 @@ import {
   frontendErrorLimiter,
 } from './src/server/routeRateLimit';
 import { appendFrontendError } from './src/server/frontendErrorLog';
+import { createBrokerRouter } from './src/server/broker/brokerRoutes';
+import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -814,6 +816,8 @@ async function startServer() {
       });
     }
   });
+
+  app.use('/api/broker', createBrokerRouter());
 
   app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {
@@ -4765,6 +4769,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.log(`[STARTUP] Chart pulse subscriptions hydrated from Firestore → count=${pulse}`);
       } catch (e: any) {
         console.warn('[STARTUP] Chart pulse hydrate skipped:', e?.message || e);
+      }
+      try {
+        const brokers = await hydrateBrokerConnectionsFromFirestore();
+        console.log(`[STARTUP] Broker OAuth connections hydrated from Firestore → count=${brokers}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Broker connections hydrate skipped:', e?.message || e);
       }
       try {
         const seeded = await seedIndependentContractorBadges();

@@ -5,6 +5,7 @@ import SocialLinksForm from "./profile/SocialLinksForm";
 import { getProfile, updateBasicProfile } from "../services/profileService";
 import { saveProfileToServer, loadProfileFromServer } from "../api/profileApi";
 import ChangePasswordCard from "./profile/ChangePasswordCard";
+import BrokerConnectPanel from "./profile/BrokerConnectPanel";
 import {
   isReservedProfileUsername,
   isValidProfileUsername,
@@ -850,6 +851,8 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
 
           <ChangePasswordCard />
         </div>
+
+        <BrokerConnectPanel />
 
         {/* INTEGRATED SOCIAL LINKS FORM (Replacing old OAuth Login Hub) */}
         {socials && uid && (
