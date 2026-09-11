@@ -28,7 +28,7 @@ import {
   NEURO_RIBBON,
   applyNeuroProfile,
   prefersReducedChrome,
-  readStoredNeuroProfile,
+  readInitialNeuroProfile,
 } from './neuroProfile';
 
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
@@ -89,12 +89,12 @@ function QuoteRow({
 }
 
 export default function NeurodivergentDashboard() {
-  const [profileId, setProfileId] = useState<ThemeProfileId>(() => readStoredNeuroProfile());
+  const [profileId, setProfileId] = useState<ThemeProfileId>(() => readInitialNeuroProfile());
   const [showProfiles, setShowProfiles] = useState(false);
   const [symbol, setSymbol] = useState(NEURO_DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState('1h');
   useDeskMonitorSync('neurodivergent', symbol, timeframe, setSymbol, setTimeframe);
-  const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readStoredNeuroProfile()));
+  const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readInitialNeuroProfile()));
   const [blackout, setBlackout] = useState(false);
   const [watchlists, setWatchlists] = useState<RetailWatchlist[]>(() => loadNeuroWatchlists());
   const [activeWlId, setActiveWlId] = useState(() => {
@@ -135,7 +135,16 @@ export default function NeurodivergentDashboard() {
     'simulation',
   ]);
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON);
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON, {
+    // One history fetch on mount; chart live-tick handles quotes. Avoids duplicate 5k-bar fetch + rebuild.
+    pollWorkspace: false,
+    pollRibbon: !hideSecondary,
+    pollWatchlist: !hideSecondary && !watchHeld,
+    pollMovers: false,
+    pollNews: showBelow,
+    pollEcon: showBelow,
+    pollFundamentals: false,
+  });
   const candles = intel.primaryCandles;
   const last = candles.length ? candles[candles.length - 1] : null;
   const quote =
@@ -495,15 +504,26 @@ export default function NeurodivergentDashboard() {
             ) : null}
           </header>
           <DeskChartFill tall>
-            <LightweightCandles
-              symbol={symbol}
-              profileId={profileId}
-              timeframe={timeframe}
-              fillParent
-              height={640}
-              hidePatternOverlays
-              publishDrawingSession
-            />
+            {candles.length === 0 ? (
+              <div
+                className="flex h-full min-h-[320px] items-center justify-center font-mono text-sm text-zinc-500"
+                role="status"
+                aria-live="polite"
+              >
+                {intel.candleError || 'Loading chart…'}
+              </div>
+            ) : (
+              <LightweightCandles
+                symbol={symbol}
+                profileId={profileId}
+                timeframe={timeframe}
+                data={candles}
+                fillParent
+                height={640}
+                hidePatternOverlays
+                publishDrawingSession
+              />
+            )}
           </DeskChartFill>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
