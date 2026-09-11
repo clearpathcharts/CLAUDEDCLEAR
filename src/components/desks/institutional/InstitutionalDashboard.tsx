@@ -115,7 +115,16 @@ export default function InstitutionalDashboard() {
   });
   const [focus, setFocus] = useState<string | null>(null);
 
-  const intel = useInstitutionalIntelligence(symbol, timeframe, layout, universeTab);
+  const hold = useDeskHold();
+  const intel = useInstitutionalIntelligence(symbol, timeframe, layout, universeTab, {
+    pollUniverse: !(hold?.isHeld('universe') ?? false),
+    pollNews: deskSectionOpen(hold?.isHeld, ['news']),
+    pollEcon: deskSectionOpen(hold?.isHeld, ['calendar']),
+    pollMacro: deskSectionOpen(hold?.isHeld, ['macro']),
+    pollCorr: deskSectionOpen(hold?.isHeld, ['corr']),
+    pollCot: deskSectionOpen(hold?.isHeld, ['positioning']),
+    pollEarnings: deskSectionOpen(hold?.isHeld, ['earnings']),
+  });
   const primaryCandles = intel.candlesBySymbol[symbol] ?? [];
   const report = useMemo(
     () => (primaryCandles.length ? analyzeInstitutionalStructure(primaryCandles) : null),
@@ -150,7 +159,6 @@ export default function InstitutionalDashboard() {
   const sellPct = totalFlow > 0 ? (flow.sell / totalFlow) * 100 : 0;
 
   const toggle = (id: string) => setOpen((s) => ({ ...s, [id]: s[id] === false ? true : false }));
-  const hold = useDeskHold();
   const universeHeld = hold?.isHeld('universe') ?? false;
   const flowHeld = hold?.isHeld('flow') ?? false;
   const liqHeld = hold?.isHeld('liq') ?? false;
@@ -312,7 +320,8 @@ export default function InstitutionalDashboard() {
                     height={layout === 1 ? 640 : 280}
                     embedMode
                     hideChartToolbar
-                    activeIndicators={intel.cot.status === 'ok' ? ['COT'] : []}
+                    hidePatternOverlays={s !== symbol}
+                    activeIndicators={s === symbol && intel.cot.status === 'ok' ? ['COT'] : []}
                   />
                 </DeskChartFill>
               );

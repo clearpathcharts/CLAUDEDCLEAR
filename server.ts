@@ -103,7 +103,20 @@ import {
   isValidProfileUsername,
   normalizeProfileUsername,
 } from './src/lib/profileUsername';
-import { consumePasswordResetToken, mintPasswordResetToken } from './src/server/passwordResetStore';
+import {
+  consumePasswordResetToken,
+  hydratePasswordResetsFromFirestore,
+  mintPasswordResetToken,
+} from './src/server/passwordResetStore';
+import { createSessionStore } from './src/server/firestoreSessionStore';
+import {
+  aiChatLimiter,
+  authForgotPasswordLimiter,
+  authLoginLimiter,
+  authRegisterLimiter,
+  frontendErrorLimiter,
+} from './src/server/routeRateLimit';
+import { appendFrontendError } from './src/server/frontendErrorLog';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -173,6 +186,7 @@ import {
 import {
   fireDueSubscriptions,
   getChartPulseDeliveryStatus,
+  hydrateChartPulseFromFirestore,
   isPulseInterval,
   listSubscriptionsForOwner,
   removeSubscription,
@@ -599,6 +613,7 @@ async function startServer() {
   }
   app.use(session({
     secret: sessionSecret,
+    store: createSessionStore(),
     resave: false,
     saveUninitialized: false,
     name: 'cpt.sid',
@@ -738,7 +753,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/register', async (req, res) => {
+  app.post('/api/auth/private/register', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerPrivateUser({
         email: req.body?.email || '',
@@ -800,7 +815,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', async (req, res) => {
+  app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {
       const result = await loginPrivateUser({
         email: req.body?.email || '',
@@ -1037,7 +1052,16 @@ async function startServer() {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
-      // Pull the durable copy first — another instance may have newer data.
+      const local = readProfile(uid);
+      const localAgeMs = local?.updatedAt ? Date.now() - Date.parse(local.updatedAt) : Infinity;
+      if (localAgeMs < 60_000) {
+        const profile =
+          applyPendingContractorBadges(uid, sessionUser?.email) ||
+          local ||
+          { uid, displayName: sessionUser?.displayName || '' };
+        return res.json({ ok: true, profile });
+      }
+      // Pull the durable copy — another instance may have newer data.
       await refreshProfileFromDurable(uid);
       const profile =
         applyPendingContractorBadges(uid, sessionUser?.email) ||
@@ -1152,13 +1176,13 @@ async function startServer() {
     });
   });
 
-  app.post('/api/auth/private/forgot-password', async (req, res) => {
+  app.post('/api/auth/private/forgot-password', authForgotPasswordLimiter, async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     try {
       if (email.includes('@')) {
         const user = await findPrivateUserByEmail(email);
         if (user?.uid && user.email) {
-          const { rawToken } = mintPasswordResetToken({ uid: user.uid, email: user.email });
+          const { rawToken } = await mintPasswordResetToken({ uid: user.uid, email: user.email });
           const resetUrl = `${publicSiteOrigin(req)}/reset-password?token=${encodeURIComponent(rawToken)}`;
           await sendPasswordResetEmail({
             to: user.email,
@@ -1181,7 +1205,7 @@ async function startServer() {
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ error: 'New password and confirmation do not match.' });
     }
-    const record = consumePasswordResetToken(token);
+    const record = await consumePasswordResetToken(token);
     if (!record) {
       return res.status(400).json({ error: 'That reset link is invalid or expired. Request a new one from Private Login.' });
     }
@@ -2071,7 +2095,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2296,7 +2320,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', (req, res) => {
+  app.post('/api/log_error', frontendErrorLimiter, (req, res) => {
     try {
       const raw = JSON.stringify(req.body ?? {});
       if (raw.length > 4000) {
@@ -2306,7 +2330,7 @@ async function startServer() {
       const sanitized = raw
         .replace(/("?(?:api[_-]?key|apikey|secret|token|authorization|password)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1[REDACTED]$3')
         .replace(/(Bearer\s+)[A-Za-z0-9._\-]{8,}/gi, '$1[REDACTED]');
-      fs.appendFileSync('frontend_errors.log', sanitized + '\n');
+      appendFrontendError(sanitized);
       console.log('\n[FRONTEND ERROR]', sanitized.slice(0, 500), '\n');
       res.json({ ok: true });
     } catch {
@@ -2519,7 +2543,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2568,7 +2592,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
-  app.post('/api/mentor/chat', requirePrivateSession, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile, pagePath } =
       req.body;
     if (!question || typeof question !== 'string') {
@@ -4729,6 +4753,18 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         );
       } catch (e: any) {
         console.warn('[STARTUP] Pending grants hydrate skipped:', e?.message || e);
+      }
+      try {
+        const resets = await hydratePasswordResetsFromFirestore();
+        console.log(`[STARTUP] Password reset tokens hydrated from Firestore → count=${resets}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Password reset hydrate skipped:', e?.message || e);
+      }
+      try {
+        const pulse = await hydrateChartPulseFromFirestore();
+        console.log(`[STARTUP] Chart pulse subscriptions hydrated from Firestore → count=${pulse}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Chart pulse hydrate skipped:', e?.message || e);
       }
       try {
         const seeded = await seedIndependentContractorBadges();

@@ -291,7 +291,29 @@ export default function RetailDashboard() {
   const activeWl = watchlists.find((w) => w.id === activeWlId) ?? watchlists[0];
   const watchSymbols = activeWl?.symbols ?? [];
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, layout, slotOverrides);
+  const hold = useDeskHold();
+  const hideSecondary = focusMode || blackout;
+  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
+  const scanHeld = hideSecondary || (hold?.isHeld('scanner') ?? false);
+  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
+  const showSlide = !hideSecondary && deskSectionOpen(hold?.isHeld, ['context', 'volume', 'movers']);
+  const showBelow = !hideSecondary && deskSectionOpen(hold?.isHeld, [
+    'news',
+    'calendar',
+    'alerts',
+    'changed',
+    'education',
+    'fundamental',
+    'simulation',
+  ]);
+
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, layout, slotOverrides, RETAIL_RIBBON, {
+    pollWatchlist: !watchHeld,
+    pollMovers: showSlide,
+    pollNews: deskSectionOpen(hold?.isHeld, ['news']),
+    pollEcon: deskSectionOpen(hold?.isHeld, ['calendar']),
+    pollFundamentals: deskSectionOpen(hold?.isHeld, ['fundamental']),
+  });
   const candles = intel.primaryCandles;
   const snap = useMemo(() => daySnapshot(candles), [candles]);
   const structure = useMemo(
@@ -416,12 +438,7 @@ export default function RetailDashboard() {
   const togglePanel = (id: string) =>
     setOpenPanels((s) => ({ ...s, [id]: s[id] === false ? true : false }));
 
-  const hideSecondary = focusMode || blackout;
   const denseBlackout = blackout;
-  const hold = useDeskHold();
-  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
-  const scanHeld = hideSecondary || (hold?.isHeld('scanner') ?? false);
-  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
   const retailChartCols = [
     watchHeld ? null : '240px',
     'minmax(0,1.5fr)',
@@ -430,16 +447,6 @@ export default function RetailDashboard() {
   ]
     .filter(Boolean)
     .join(' ');
-  const showSlide = !hideSecondary && deskSectionOpen(hold?.isHeld, ['context', 'volume', 'movers']);
-  const showBelow = !hideSecondary && deskSectionOpen(hold?.isHeld, [
-    'news',
-    'calendar',
-    'alerts',
-    'changed',
-    'education',
-    'fundamental',
-    'simulation',
-  ]);
 
   const gainers = [...intel.moverQuotes].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)).slice(0, 4);
   const decliners = [...intel.moverQuotes].sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)).slice(0, 4);
