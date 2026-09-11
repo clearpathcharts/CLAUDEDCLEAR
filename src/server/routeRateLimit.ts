@@ -58,3 +58,36 @@ export const frontendErrorLimiter = rateLimit({
   keyGenerator: (req) => `logerr:${clientIp(req)}`,
   message: { error: 'Too many error reports.' },
 });
+
+export const brokerOAuthStartLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = (req as any).session?.privateUser?.uid;
+    return uid ? `broker-oauth:uid:${uid}` : `broker-oauth:ip:${clientIp(req)}`;
+  },
+  message: { error: 'Too many broker connect attempts. Wait a minute.' },
+});
+
+export const brokerOAuthCallbackLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `broker-cb:ip:${clientIp(req)}`,
+  message: { error: 'Too many broker OAuth callbacks.' },
+});
+
+export const brokerProxyLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = (req as any).session?.privateUser?.uid;
+    return uid ? `broker-proxy:uid:${uid}` : `broker-proxy:ip:${clientIp(req)}`;
+  },
+  message: { error: 'Too many broker API requests. Slow down.' },
+});
