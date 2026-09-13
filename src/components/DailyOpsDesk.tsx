@@ -490,12 +490,12 @@ export default function DailyOpsDesk({
             </div>
             <div>
               <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block mb-2">
-                Draft note — copy, then send yourself
+                Draft letter — copy, then send yourself
               </span>
               <textarea
                 readOnly
                 value={report.investor.draftNote}
-                className="w-full h-56 bg-black/50 border border-white/15 rounded-md p-3 text-xs font-mono text-zinc-200"
+                className="w-full min-h-[28rem] h-[32rem] bg-black/50 border border-white/15 rounded-md p-3 text-xs font-mono text-zinc-200 whitespace-pre-wrap"
               />
               <div className="flex flex-wrap gap-2 mt-3">
                 <button
@@ -511,7 +511,7 @@ export default function DailyOpsDesk({
                   }}
                   className="px-3 py-2 rounded-md border border-[#00FFFF]/40 text-[#00FFFF] text-xs font-bold uppercase"
                 >
-                  {copied ? "Copied" : "Copy draft"}
+                  {copied ? "Copied" : "Copy letter"}
                 </button>
                 <input
                   value={investorNotes}

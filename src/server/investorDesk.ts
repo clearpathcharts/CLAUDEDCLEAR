@@ -8,8 +8,26 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { PRODUCT_LEGAL_NAME, PRODUCT_NAME, PRODUCT_URL } from "../content/productIdentity";
+import { TRADER_DESK_IDS, TRADER_DESKS, type TraderDeskId } from "../lib/traderDesks";
 import { getGroqApiKey } from "./secrets";
 import { pacificDateKey } from "./dailyOpsCatalog";
+
+/** One-line desk blurbs for founder outreach. Facts only — no invented data rooms. */
+const DESK_LETTER_LINES: Record<TraderDeskId, string> = {
+  institutional: "Information-first market command center (charts, flow, macro, and news).",
+  fundamental: "Company, statements, earnings, valuation, and macro research.",
+  retail: "Chart-first educational workstation for everyday traders.",
+  neurodivergent:
+    "Calm workstation with sensory UI profiles — a first-class site, not a marketing afterthought.",
+};
+
+const DESK_LETTER_LABELS: Record<TraderDeskId, string> = {
+  institutional: "Institutional",
+  fundamental: "Fundamental",
+  retail: "Retail",
+  neurodivergent: "Neurodivergent",
+};
 
 export type InvestorKind = "vc" | "seed" | "angel" | "accelerator" | "ib";
 
@@ -302,7 +320,8 @@ export const INVESTOR_SEED: InvestorSeed[] = [
     stage: "Angel",
     thesis: "Women and non-binary angel network.",
     whyClearPath: "Angel check + network; accessibility/education story travels.",
-    suggestedAngle: "Educational product with a founder who built for his own nervous system.",
+    suggestedAngle:
+      "Pipeline Angels’ network of women and non-binary angels is a natural home for an educational product I built for my own nervous system, with dedicated Institutional, Fundamental, Retail, and Neurodivergent sites already live.",
   },
   {
     id: "baird_augustine",
@@ -467,18 +486,44 @@ async function groqFit(inv: InvestorSeed, corpus: string): Promise<string | unde
   return data.choices?.[0]?.message?.content?.trim();
 }
 
-function draftNote(inv: InvestorSeed): string {
+function letterGreeting(inv: InvestorSeed): string {
+  if (inv.id === "baird_augustine") return "Dear Ryan,";
+  return `Dear ${inv.name},`;
+}
+
+function deskLetterBlock(): string {
+  return TRADER_DESK_IDS.map((id) => {
+    const href = `${PRODUCT_URL}${TRADER_DESKS[id].href}`;
+    return [`${DESK_LETTER_LABELS[id]}`, href, DESK_LETTER_LINES[id]].join("\n");
+  }).join("\n\n");
+}
+
+/** Copy-ready outreach letter. Never auto-sent. */
+export function buildInvestorDraftLetter(inv: InvestorSeed): string {
   return [
-    `Hi — I'm Richard Floyd, founder of ClearPath Market Sciences (ClearPath Trader).`,
+    letterGreeting(inv),
     ``,
-    `We built a charting and financial-education platform with neurodivergent accessibility as a core interface (13 chart profiles), not a marketing afterthought. We are educational software — not a broker, not trade advice.`,
+    `I am Richard A. Floyd, founder of ${PRODUCT_LEGAL_NAME} (${PRODUCT_NAME}).`,
     ``,
-    `Why ${inv.name}: ${inv.suggestedAngle}`,
+    `I am writing to introduce our live educational market-intelligence platform:`,
     ``,
-    `If useful, I'm happy to send a 10-minute product walk-through (charts + education + accessibility modes).`,
+    PRODUCT_URL,
+    ``,
+    `${PRODUCT_NAME} is charting and financial-education software. We are not a brokerage, and we do not provide trade advice.`,
+    ``,
+    `The product is four dedicated desks — each a first-class site on its own URL:`,
+    ``,
+    deskLetterBlock(),
+    ``,
+    `${inv.suggestedAngle.replace(/[.!?]*$/, "")}.`,
+    ``,
+    `If a brief conversation would be useful, I would be glad to walk through all four desks in about ten minutes.`,
+    ``,
+    `Sincerely,`,
     ``,
     `Richard A. Floyd`,
-    `clearpathtrader.com`,
+    `Founder, ${PRODUCT_LEGAL_NAME}`,
+    PRODUCT_URL,
   ].join("\n");
 }
 
@@ -551,7 +596,7 @@ export async function researchInvestorForDate(
     siteDescription,
     groqFit: groqSummary,
     sources,
-    draftNote: draftNote(investor),
+    draftNote: buildInvestorDraftLetter(investor),
     warnings,
   };
 }
