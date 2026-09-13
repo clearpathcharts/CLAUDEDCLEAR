@@ -88,8 +88,14 @@ function badge(ok: boolean, severity: string) {
 
 export default function DailyOpsDesk({
   getHeaders,
+  kickEveryone,
 }: {
   getHeaders: () => Promise<Record<string, string>>;
+  kickEveryone?: {
+    busy: boolean;
+    message: string | null;
+    onKick: () => void;
+  };
 }) {
   const [report, setReport] = useState<DailyOpsReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -247,7 +253,18 @@ export default function DailyOpsDesk({
               (Belgium). Do not Edit & deploy clearpath-voice-os unless you mean Ava.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {kickEveryone ? (
+              <button
+                type="button"
+                data-ceo-kick-sessions
+                disabled={kickEveryone.busy}
+                onClick={kickEveryone.onKick}
+                className="px-3 py-2 rounded-md border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                {kickEveryone.busy ? "Signing everyone out…" : "Force everyone out"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setSurvivalOnly((v) => !v)}
@@ -279,6 +296,9 @@ export default function DailyOpsDesk({
           </div>
         </div>
 
+        {kickEveryone?.message ? (
+          <p className="text-amber-100 text-sm mb-3 font-mono whitespace-pre-wrap">{kickEveryone.message}</p>
+        ) : null}
         {error && <p className="text-amber-300 text-sm mb-3 font-mono">{error}</p>}
 
         {loading && !report ? (
@@ -315,10 +335,23 @@ export default function DailyOpsDesk({
 
       {report && (
         <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
-          <h3 className="text-white font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
-            <ShieldAlert size={16} className="text-[#FF4500]" />
-            Automated site checks
-          </h3>
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+            <h3 className="text-white font-black uppercase tracking-widest text-sm flex items-center gap-2">
+              <ShieldAlert size={16} className="text-[#FF4500]" />
+              Automated site checks
+            </h3>
+            {kickEveryone ? (
+              <button
+                type="button"
+                data-ceo-kick-sessions
+                disabled={kickEveryone.busy}
+                onClick={kickEveryone.onKick}
+                className="px-3 py-2 rounded-md border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                {kickEveryone.busy ? "Signing everyone out…" : "Force everyone out"}
+              </button>
+            ) : null}
+          </div>
           <p className="text-zinc-500 text-xs mb-4 max-w-3xl">
             Live HTTP / secrets / Groq / Stripe / GitHub from the process serving right now.
             A GitHub “deploy” can mint a named revision while traffic stays pinned — keep{" "}
