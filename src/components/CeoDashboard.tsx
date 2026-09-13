@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download } from 'lucide-react';
+import { Search, Activity, Users, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -158,6 +158,7 @@ export default function CeoDashboard() {
   const [siteDoctorLoading, setSiteDoctorLoading] = useState(false);
   const [siteDoctorError, setSiteDoctorError] = useState<string | null>(null);
   const [siteDoctorBusy, setSiteDoctorBusy] = useState(false);
+  const [kickBusy, setKickBusy] = useState(false);
 
   const { user, userProfile } = useAuth();
   const founderOk = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
@@ -454,6 +455,33 @@ export default function CeoDashboard() {
     await runResetMemberPassword('dawnhobson@aol.com');
   };
 
+  const kickEveryoneOut = async () => {
+    const ok = window.confirm(
+      'Sign every member out of their current login cookie?\n\nAccounts stay in Firestore. Nobody is deleted. Open tabs must refresh, then they log in again. You stay signed in on this CEO screen.',
+    );
+    if (!ok) return;
+    setKickBusy(true);
+    setConvertMsg(null);
+    try {
+      const headers = await founderApiHeaders();
+      const res = await fetch('/api/admin/auth/kick-sessions', {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: '{}',
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || `Kick failed (${res.status})`);
+      setConvertMsg(
+        `Signed everyone else out. Cookies dropped: ${body.sessionsDeleted ?? 0} (${body.sessionStore || 'unknown'}). Accounts deleted: ${body.accountsDeleted ?? 0}. Ask the room to refresh, then log back in.`,
+      );
+    } catch (err: any) {
+      setConvertMsg(err?.message || 'Could not sign everyone out.');
+    } finally {
+      setKickBusy(false);
+    }
+  };
+
   const downloadDisasterBackup = async () => {
     setConvertBusy(true);
     setConvertMsg(null);
@@ -719,7 +747,7 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
-        Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Source ZIP · Site Doctor
+        Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
@@ -904,6 +932,16 @@ export default function CeoDashboard() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-teal-500/40 bg-teal-500/10 text-teal-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-teal-500/20 disabled:opacity-50"
               >
                 Download disaster backup
+              </button>
+              <button
+                type="button"
+                data-ceo-kick-sessions
+                onClick={() => void kickEveryoneOut()}
+                disabled={kickBusy || convertBusy}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-mono uppercase tracking-widest font-black hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                <LogOut size={14} aria-hidden="true" />
+                {kickBusy ? 'Signing everyone out…' : 'Force everyone out'}
               </button>
               <a
                 href={GITHUB_SOURCE_ZIP_URL}

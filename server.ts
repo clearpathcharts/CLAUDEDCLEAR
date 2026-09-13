@@ -110,6 +110,14 @@ import {
 } from './src/server/passwordResetStore';
 import { createSessionStore } from './src/server/firestoreSessionStore';
 import {
+  applyGrantedSession,
+  dropStaleAuthSession,
+  getAuthKickStatus,
+  getAuthSessionGeneration,
+  kickAllMemberSessions,
+  loadDurableAuthGeneration,
+} from './src/server/authSessionGeneration';
+import {
   aiChatLimiter,
   authForgotPasswordLimiter,
   authLoginLimiter,
@@ -631,6 +639,26 @@ async function startServer() {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Drop cookies minted before the current AUTH_SESSION_GENERATION.
+  app.use((req, _res, next) => {
+    const sess = req.session as {
+      privateUser?: unknown;
+      boardAccess?: unknown;
+      authGeneration?: unknown;
+      destroy?: (cb?: (err?: unknown) => void) => void;
+    } | undefined;
+    if (!sess || dropStaleAuthSession(sess) !== 'dropped') {
+      next();
+      return;
+    }
+    if (typeof sess.destroy === 'function') {
+      sess.destroy(() => next());
+      return;
+    }
+    next();
+  });
+  void loadDurableAuthGeneration();
+
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
 
@@ -733,6 +761,7 @@ async function startServer() {
         secretConfigured: sessionSecretConfigured || Boolean(getStripeSecretKey()),
         // Ephemeral only when neither SESSION_SECRET nor Stripe-derived secret is available.
         ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
+        generation: getAuthSessionGeneration(),
       },
     });
   });
@@ -805,7 +834,7 @@ async function startServer() {
         console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
       }
       const sessionUser = buildClientSessionUser(user);
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -842,7 +871,7 @@ async function startServer() {
       }
 
       const sessionUser = buildClientSessionUser(result.user);
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -869,7 +898,7 @@ async function startServer() {
 
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
-        (req.session as any).privateUser = sessionUser;
+        applyGrantedSession(req.session as any, sessionUser);
         try {
           ensureAffiliateMember(result.user.uid);
         } catch {
@@ -1042,7 +1071,7 @@ async function startServer() {
       boardAccess: true,
     };
     (req.session as any).boardAccess = true;
-    (req.session as any).privateUser = sessionUser;
+    applyGrantedSession(req.session as any, sessionUser);
     res.json({ ok: true, user: sessionUser });
   });
 
@@ -1591,7 +1620,7 @@ async function startServer() {
         emailVerified: true,
         privateAccount: true,
       };
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({
         ok: true,
         user: sessionUser,
@@ -1828,6 +1857,36 @@ async function startServer() {
         res.status(500).json({ error: error?.message || 'Backup download failed' });
       }
     }
+  );
+
+  /** Founder-only: drop every login cookie. Does not delete Firestore member accounts. */
+  app.get('/api/admin/auth/kick-sessions', requireFounderOrCatalogAdmin, (_req, res) => {
+    res.json({ ok: true, ...getAuthKickStatus(), accountsDeleted: 0 });
+  });
+  app.post(
+    '/api/admin/auth/kick-sessions',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const sessionUser = (req.session as { privateUser?: { email?: string } } | undefined)?.privateUser;
+        const result = await kickAllMemberSessions({
+          kickedBy: sessionUser?.email || 'ceo-dashboard',
+        });
+        if (sessionUser) {
+          applyGrantedSession(req.session as Record<string, unknown>, sessionUser);
+        }
+        res.json({
+          ok: true,
+          ...result,
+          keptFounderSession: Boolean(sessionUser),
+          note: 'Login cookies were dropped. Firestore member accounts were not deleted. Open tabs must refresh, then people log in again.',
+        });
+      } catch (error: any) {
+        console.error('[admin/auth/kick-sessions] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Could not sign everyone out.' });
+      }
+    },
   );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
