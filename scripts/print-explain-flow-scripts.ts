@@ -1,14 +1,14 @@
 /**
- * Print Google Flow production scripts for Explain Mode (one 30–45s film per tab).
+ * Print Google Flow production scripts for Explain Mode (one 45–60s film per tab).
  *
  *   npm run explain-flow:print
  *   npm run explain-flow:print -- --write-docs
  *   npm run explain-flow:print -- --write-vtt
  *
  * Workflow:
- * 1) Generate four ~8–10s shots in Google Flow / Veo using each FLOW PROMPT
- * 2) Stitch in order to the listed target length
- * 3) Record NARRATION once over the stitch (or use the per-shot lines)
+ * 1) Generate SIX ~8–10s shots in Google Flow / Veo using each FLOW PROMPT
+ * 2) Stitch in order to the listed target length — never ship a single 3s clip
+ * 3) Record NARRATION once over the stitch (fifth-grade, slow)
  * 4) Export 16:9 H.264 MP4 → public/explain-videos/{id}.mp4
  */
 import fs from 'node:fs';
@@ -33,14 +33,16 @@ function renderMarkdown(scripts: ExplainFlowScript[]): string {
   const lines: string[] = [
     '# Explain Mode — Google Flow scripts',
     '',
-    'One **30–45 second** film per nav pill. People who do not yet understand the site tap **Need extra understanding**, then the little play badge beside a tab.',
+    'One **45–60 second** film per nav pill. Fifth-grade voice. Name the color. Say “click.” Assume they have never used a website.',
+    '',
+    'People tap **Need extra understanding**, then the little play badge beside a tab.',
     '',
     '## How to produce',
     '',
-    '1. Open Google Flow (Veo). Aspect **16:9**. Quiet educational motion.',
-    '2. Generate **four shots** per tab (Flow still likes ~8–10 seconds each).',
-    '3. Stitch them in numbered order to the listed target length.',
-    '4. Record the **continuous narration** once over the stitch. Calm adult voice. About 130–140 words per minute.',
+    '1. Open Google Flow (Veo). Aspect **16:9**. Very colorful museum lighting. Giant cartoon cursor.',
+    '2. Generate **six shots** per tab (Flow still likes ~8–10 seconds each).',
+    '3. Stitch them in numbered order to the listed target length. **Do not ship one 3-second clip.**',
+    '4. Record the **continuous narration** once over the stitch. Fifth-grade. About 110 words per minute. Pause after every sentence.',
     '5. Export H.264 MP4 at 1280×720 or 1920×1080.',
     '6. Drop the file at `public/explain-videos/{id}.mp4`. Optional poster `{id}.jpg`. Captions `{id}.vtt` (this script can write them).',
     '',

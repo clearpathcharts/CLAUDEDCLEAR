@@ -1,3 +1,5 @@
+import { EXPLAIN_FLOW_SCRIPTS } from './flowScripts';
+
 export interface QuizOption {
   id: string;
   text: string;
@@ -21,35 +23,31 @@ export interface ExplainContent {
   quiz: QuizQuestion[];
 }
 
+function vo(id: keyof typeof EXPLAIN_FLOW_SCRIPTS): string {
+  return EXPLAIN_FLOW_SCRIPTS[id].narrationScript;
+}
+
 /**
- * CONTENT RULE: every entry describes what a screen does and how to read it.
+ * Fifth-grade overlay copy = the same voice-over as the 45–60s Flow film.
  * Never tell the user what to buy, sell, or do with their money.
- * That line is what keeps this feature education, not advice.
- *
- * Colors match the nav-tab video-badge mock (Home purple, Y.W.C. pink,
- * Charts orange, Memberships gold, learn desks cyan).
- *
- * Google Flow: drop 16:9 MP4s at public/explain-videos/{id}.mp4
- * (see explainMedia.ts + flowScripts.ts). Leave videoUrl empty unless the clip lives elsewhere.
  */
 export const explainContentLibrary: Record<string, ExplainContent> = {
   home: {
     id: 'home',
     title: 'Home',
     color: '#6C5CE7',
-    text:
-      'Home is the front door of ClearPath Trader. The greeting is just a map. Every glowing card is a real door: Charts, INDACREATOR, Y.W.C., News, Education, Memberships, and C.P.T. Buddy. Choose Your Path opens four study desks — Institutional, Fundamental, Retail, and Neurodivergent. Those desks show information. They do not place trades. Read the line under a card, then tap when you are ready. You can always come back here from the top nav. Home is a map, not a to-do list, and not a broker.',
+    text: vo('home'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is Home for?',
+        prompt: 'What is the purple HOME button?',
         options: [
-          { id: 'a', text: 'A map to the rest of ClearPath' },
-          { id: 'b', text: 'A place that buys and sells for you' },
+          { id: 'a', text: 'The front door of this website' },
+          { id: 'b', text: 'A button that buys things for you' },
           { id: 'c', text: 'A password reset page' },
         ],
         correctOptionId: 'a',
-        explanation: 'Home is the starting map. You choose where to go next.',
+        explanation: 'HOME is the front door. You can always click it if you get lost.',
       },
     ],
   },
@@ -58,19 +56,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'ywc',
     title: 'Y.W.C. — Your World Connected',
     color: '#FF2E9A',
-    text:
-      'Y.W.C. means Your World Connected. It is one lava desk for news sections, magazines, and a live chart so you are not jumping between apps. Use the section chips — World, Sports, Finance, Magazines, Relief — one at a time. Expand a story to read it. Your personal chart stays nearby. Media Pantry and social tools are optional. This is a workspace, not a signal service. Some feeds here are editorial. The News tab is the live wire. When the noise rises, leave. The chart will still be here.',
+    text: vo('ywc'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does Y.W.C. try to do?',
+        prompt: 'What is the Y.W.C. room for?',
         options: [
-          { id: 'a', text: 'Keep news, feeds, and a chart in one place' },
-          { id: 'b', text: 'Auto-trade your account' },
-          { id: 'c', text: 'Replace your bank' },
+          { id: 'a', text: 'Stories, magazines, and a price picture on one page' },
+          { id: 'b', text: 'Buying and selling for you' },
+          { id: 'c', text: 'Replacing your bank' },
         ],
         correctOptionId: 'a',
-        explanation: 'It gathers things you already check during the day onto one desk.',
+        explanation: 'It is one room so you do not open ten other websites. It does not tell you what to buy.',
       },
     ],
   },
@@ -79,19 +76,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'indacreator',
     title: 'INDACREATOR',
     color: '#00E5FF',
-    text:
-      'INDACREATOR is the workshop for indicator code — sometimes still called The River. Upload a Pine file, paste code, or start with the Gold Bar example. Press compile. If something cannot run, you will see a real error, not a fake overlay. Read the honest limits and the inputs. River Genie can draft or fix a script, but you still choose when to apply. Apply to All Charts puts the study on your charts. Then open CHARTS to look at it. This studio does not place trades. Compile first. Apply when you are ready.',
+    text: vo('indacreator'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does INDACREATOR do?',
+        prompt: 'What does Compile mean here?',
         options: [
-          { id: 'a', text: 'Helps you import or build a custom indicator' },
-          { id: 'b', text: 'Places trades automatically' },
-          { id: 'c', text: 'Deletes your account' },
+          { id: 'a', text: 'Please check this recipe' },
+          { id: 'b', text: 'Buy something now' },
+          { id: 'c', text: 'Delete the website' },
         ],
         correctOptionId: 'a',
-        explanation: 'It compiles indicator instructions and can attach them to charts — nothing else.',
+        explanation: 'Compile just checks the recipe. A red error means fix the words — you did not break the site.',
       },
     ],
   },
@@ -100,20 +96,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'charts',
     title: 'Charts',
     color: '#FF7B00',
-    text:
-      'This is Charts — ClearPath’s live market desk. Each candle is one block of time. A green (or up-color) candle means price finished higher than it started; a red (or down-color) candle means it finished lower. Search a symbol. Pick a timeframe. Neuro-Adaptive Profiles change colors, spacing, and motion so different brains can read the same data more comfortably. They never change the price. Pattern Scanner and drawing tools are for study. Blackout Mode hides extra chrome when you want a quieter dual-chart view. ClearPath is not a broker. Start with Calm Focus if you are unsure.',
+    text: vo('charts'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does a green (up) candle mean?',
+        prompt: 'What does a green-ish candle block mean?',
         options: [
-          { id: 'a', text: 'Price went up during that time' },
-          { id: 'b', text: 'Price went down during that time' },
-          { id: 'c', text: 'The market is closed' },
+          { id: 'a', text: 'The price finished higher in that chunk of time' },
+          { id: 'b', text: 'The price finished lower in that chunk of time' },
+          { id: 'c', text: 'The store is closed' },
         ],
         correctOptionId: 'a',
-        explanation:
-          'Green / up means the price ended higher than where it started for that block of time.',
+        explanation: 'Green-ish means finished higher. Red-ish means finished lower. Still not a buy button.',
       },
     ],
   },
@@ -122,19 +116,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'news',
     title: 'News',
     color: '#4D6FFF',
-    text:
-      'News is the live reading wire. The header tells you if it is live, empty, or offline. Honest status beats fake urgency. Each card shows source, category, date, title, and a short description. Refresh when you want a fresh pull. Open a headline to read the publisher. If the vendor is down, ClearPath leaves the list empty. We never invent a story. Headlines are context, not instructions. Skim, then close the tab.',
+    text: vo('news'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'How should you treat a news headline here?',
+        prompt: 'If the News list is empty, what does that mean?',
         options: [
-          { id: 'a', text: 'As context to read, not as a trade order' },
-          { id: 'b', text: 'As a guaranteed price prediction' },
-          { id: 'c', text: 'As a button that buys for you' },
+          { id: 'a', text: 'We did not make up fake stories' },
+          { id: 'b', text: 'You must buy something' },
+          { id: 'c', text: 'The headlines are secret orders' },
         ],
         correctOptionId: 'a',
-        explanation: 'Headlines are information. They are not orders.',
+        explanation: 'Empty is honest. Making up news would be lying. Headlines are posters, not orders.',
       },
     ],
   },
@@ -143,19 +136,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'memberships',
     title: 'Memberships',
     color: '#FFE600',
-    text:
-      'Memberships is the plan sheet. Public checkout is off, so looking at this tab does not charge a card. Compare what each tier includes — charts, indicators, education, INDACREATOR, blackout, and more. Accuracy dots tell you what is enforced versus still on the sheet. Affiliate rewards, if you have them, show as discount or credit. Upgrade only if a feature clearly helps you learn. This tab is not investment advice, and it is not a store right now.',
+    text: vo('memberships'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'Does opening Memberships charge your card right now?',
+        prompt: 'Does opening the gold MEMBERSHIPS page charge your card right now?',
         options: [
-          { id: 'a', text: 'No — public checkout is off on this site' },
-          { id: 'b', text: 'Yes, it always charges immediately' },
+          { id: 'a', text: 'No — looking does not charge a card' },
+          { id: 'b', text: 'Yes, it always charges right away' },
           { id: 'c', text: 'It trades the market for you' },
         ],
         correctOptionId: 'a',
-        explanation: 'You can look at the membership desk without a live public checkout.',
+        explanation: 'Checkout is off. Gold is just a color, not a prize timer.',
       },
     ],
   },
@@ -164,19 +156,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'profile',
     title: 'Profile',
     color: '#FF2E9A',
-    text:
-      'Profile is your account space — how you appear on ClearPath. Set a display name, a public handle for a /u/ link if you want one, a bio, and an avatar or cover. Social links and password live here too. You can keep the profile private. Saving settings does not place a trade. If you use a broker connect panel, that is your licensed broker — ClearPath does not hold your money. Update only what you want others to see. Then head back to Home or Charts.',
+    text: vo('profile'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What lives on Profile?',
+        prompt: 'What is the pink PROFILE room?',
         options: [
-          { id: 'a', text: 'Your account details and settings' },
-          { id: 'b', text: 'Live order tickets' },
+          { id: 'a', text: 'Your locker — name, photo, save' },
+          { id: 'b', text: 'A place that buys things' },
           { id: 'c', text: 'Other people’s bank logins' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is your desk identity, not a trading ticket.',
+        explanation: 'It is your locker. Saving a name is not shopping.',
       },
     ],
   },
@@ -185,19 +176,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'affiliate',
     title: 'Affiliate',
     color: '#FF2E9A',
-    text:
-      'Affiliate is the referral desk. Private accounts get a personal /r/ code. The link stays dormant until you accept the Affiliate Program Agreement. Then you can copy a share URL. The ledger shows signups, discount or credit, and badge progress in plain numbers. The sidebar cockpit has extra rooms — feeds, guilds, ranks, compliance. Those are extras. This is not a brokerage payout from the market, and it does not place anyone’s trades. Activate only when you are ready to share calmly. Rewards only apply when the product’s affiliate rules say they do.',
+    text: vo('affiliate'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is the Affiliate tab for?',
+        prompt: 'What is the AFFILIATE room for?',
         options: [
-          { id: 'a', text: 'Sharing your referral link / code' },
+          { id: 'a', text: 'Sharing a special /r/ link if you want to' },
           { id: 'b', text: 'Placing other people’s trades' },
-          { id: 'c', text: 'Hiding the education pages' },
+          { id: 'c', text: 'Hiding the school pages' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is a referral desk, not a trading desk.',
+        explanation: 'Sharing is optional. Copy means the computer remembers the words. Not a market game.',
       },
     ],
   },
@@ -206,19 +196,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'ceo',
     title: 'CEO dashboard',
     color: '#FF2E9A',
-    text:
-      'This tab is CEO — the founder console. Only the person who runs ClearPath sees it. Daily Ops is a calm checklist for the site, marketing, and the end of the day. Site Doctor shows whether the platform is healthy. Members holds invites, account lists, and a disaster backup download, because Cloud Run forgets files when a container restarts. Choose Your Path still opens the four study desks. Nothing here changes anyone else’s charts, and nothing here is a trade. If you do not see CEO, you are not supposed to.',
+    text: vo('ceo'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'Who is the CEO dashboard for?',
+        prompt: 'Who is the hot-pink CEO button for?',
         options: [
-          { id: 'a', text: 'The founder running the site' },
+          { id: 'a', text: 'Only the person who built this website' },
           { id: 'b', text: 'Every visitor' },
-          { id: 'c', text: 'A broker that executes trades' },
+          { id: 'c', text: 'A store that buys and sells' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is an ops desk for the person who owns the product.',
+        explanation: 'Most people will not see it. That is normal. Click purple HOME and keep going.',
       },
     ],
   },
@@ -227,19 +216,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'cinema',
     title: 'ClearPath cinema',
     color: '#00E5FF',
-    text:
-      'ClearPath Cinema is the in-terminal theater. Browse category shelves. Start a featured title or pick a thumbnail. Videos play in ClearPath’s own player — seek, volume, fullscreen — using direct streams, not a YouTube embed. Continue Watching keeps recent titles close. If a live stream is down, the player says so. Founder media tools stay out of the way. Choose one title, watch with full attention, then return to Charts or Education. These are product and education clips, not a room that tells you what to buy.',
+    text: vo('cinema'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is Cinema for?',
+        prompt: 'What is the cyan CINEMA room?',
         options: [
-          { id: 'a', text: 'Video and app viewing for ClearPath' },
-          { id: 'b', text: 'A live broker chat that places orders' },
-          { id: 'c', text: 'Deleting encyclopedias' },
+          { id: 'a', text: 'A movie theater inside the website' },
+          { id: 'b', text: 'A chat that buys things for you' },
+          { id: 'c', text: 'A button that deletes school' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is a watch / install desk, not a trade blotter.',
+        explanation: 'Click a picture. A player is a box that shows the movie. Movies teach. They do not tell you what to buy.',
       },
     ],
   },
@@ -248,19 +236,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'education',
     title: 'ClearPath education',
     color: '#00E5FF',
-    text:
-      'ClearPath Education is structured learning. Pick a school — Crypto, Stocks, Forex, and more. Open an unlocked unit. Read the lessons like a calm textbook. At the end, a short quiz checks understanding. Passing unlocks the next unit. Progress is saved. Passing does not mean you should trade. It means you understood that page. From here you can also open three libraries: Encyclopedia of Finance, Encyclopedia of Indicators, and Literacy OS. One unit at a time.',
+    text: vo('education'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does finishing an Education lesson mean?',
+        prompt: 'What does passing a school quiz mean?',
         options: [
-          { id: 'a', text: 'You practiced the idea on that page' },
-          { id: 'b', text: 'ClearPath will trade for you now' },
-          { id: 'c', text: 'You must buy a membership' },
+          { id: 'a', text: 'You understood that page' },
+          { id: 'b', text: 'The website will spend money for you now' },
+          { id: 'c', text: 'You must buy a gold plan' },
         ],
         correctOptionId: 'a',
-        explanation: 'Lessons are study. They are not a license to trade.',
+        explanation: 'A quiz is practice. One lesson, then rest. Not a license to spend.',
       },
     ],
   },
@@ -269,19 +256,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'literacy',
     title: 'Literacy OS',
     color: '#00E5FF',
-    text:
-      'Literacy OS is your personal market-science desk. Morning Brief is a gentle landing — it shows what you have archived, not what you must do. Use the room chips to move. Thesis Vault holds your theses. Concept Wiki holds ideas in plain language. Source Sentinel helps you notice page changes. Other rooms wait until you need them — media, listening, pins, Pattern Studio. It is education only — not brokerage, not advice.',
+    text: vo('literacy'),
     quiz: [
       {
         id: 'q1',
         prompt: 'What is Literacy OS?',
         options: [
-          { id: 'a', text: 'A personal learning desk' },
-          { id: 'b', text: 'A live order-entry platform' },
+          { id: 'a', text: 'A notebook desk with rooms for ideas' },
+          { id: 'b', text: 'A live store for buying' },
           { id: 'c', text: 'A bank wire screen' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is study infrastructure, not a broker.',
+        explanation: 'Notebook desk. Save one idea. Then rest. Not a store.',
       },
     ],
   },
@@ -290,19 +276,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'encyclopedia',
     title: 'Encyclopedia of finance',
     color: '#00E5FF',
-    text:
-      'The Encyclopedia of Finance is ClearPath’s deep knowledge library — a calm file-browser for markets. The left sidebar is your index. Pick one topic. Choose a reading level — Beginner through Economist — so the same idea can meet you where you are. You will see an article or a lab in the main stage. Open the Scholar Tutor only when a term still feels foggy. Cards are teaching pages, not a researched list of every company on earth. One topic, one level, then step back.',
+    text: vo('encyclopedia'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'How should you read an encyclopedia card?',
+        prompt: 'How should you read a library card here?',
         options: [
-          { id: 'a', text: 'As a study page, not a research report on every company' },
-          { id: 'b', text: 'As a guaranteed list of 9,586 issuers' },
-          { id: 'c', text: 'As a buy ticket' },
+          { id: 'a', text: 'As a teaching page, like a chapter in a book' },
+          { id: 'b', text: 'As a list of companies you must buy' },
+          { id: 'c', text: 'As a buy button' },
         ],
         correctOptionId: 'a',
-        explanation: 'These are teaching cards. They are not a complete issuer database.',
+        explanation: 'It is a library of money words. Beginner means easy words. Not a shopping list.',
       },
     ],
   },
@@ -311,19 +296,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'indicators',
     title: 'Encyclopedia of indicators',
     color: '#00E5FF',
-    text:
-      'The Encyclopedia of Indicators explains chart studies — RSI, moving averages, and more — with a picture, a formula, how to read it, and typical settings. Use the left filters to search or pick a category. Open a card for the study article. A live-overlay badge means that model can sit on Charts. An indicator describes past price. It does not promise the next move. Overlaying a study still does not place a trade. Read the limitations. Then go back to the terminal desktop.',
+    text: vo('indicators'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is an indicator here?',
+        prompt: 'What is a chart helper here?',
         options: [
-          { id: 'a', text: 'A study of past price, for reading a chart' },
-          { id: 'b', text: 'A guaranteed next-price machine' },
-          { id: 'c', text: 'A broker order' },
+          { id: 'a', text: 'A picture of prices that already happened' },
+          { id: 'b', text: 'A machine that promises tomorrow' },
+          { id: 'c', text: 'A buy button' },
         ],
         correctOptionId: 'a',
-        explanation: 'Indicators describe. They do not order.',
+        explanation: 'Helpers talk about yesterday. They cannot promise tomorrow. They do not buy or sell.',
       },
     ],
   },
@@ -332,19 +316,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'explain',
     title: 'Need extra understanding',
     color: '#00E5FF',
-    text:
-      'This pill says Need extra understanding. Tap it once and it becomes Explain on. Small play badges appear next to every tab. Tap a badge to open a short cinema overlay — a Google Flow clip, plain words, and one quiet quiz question. If a clip is not uploaded yet, you will see a storyboard, not a fake video. This is extra explanation for people who want a slower walkthrough. It is not trading advice. Tap the pill again to hide the badges. You can leave Explain on as long as it helps.',
+    text: vo('explain'),
     quiz: [
       {
         id: 'q1',
         prompt: 'What do the little play badges do?',
         options: [
-          { id: 'a', text: 'Open a slower how-this-tab-works guide' },
-          { id: 'b', text: 'Place a trade for you' },
-          { id: 'c', text: 'Delete your account' },
+          { id: 'a', text: 'Open a help movie and easy words for that button' },
+          { id: 'b', text: 'Buy something for you' },
+          { id: 'c', text: 'Delete your name' },
         ],
         correctOptionId: 'a',
-        explanation: 'Each badge opens a short explanation of that tab. It is optional, not advice.',
+        explanation: 'Click the tiny play picture, not the big word. You cannot fail your account.',
       },
     ],
   },
@@ -353,19 +336,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'exit',
     title: 'Exit',
     color: '#FF4D4D',
-    text:
-      'EXIT is the red pill on the second nav row. It signs you out of your ClearPath session. It does not close a broker account you connected elsewhere. It does not delete your profile. It does not place a last trade. Tap it when you are done for now. Next visit, sign in again from the usual door. If you only wanted another tab, use Home or Charts instead. EXIT means leave this session — calmly, completely, and only for this site.',
+    text: vo('exit'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does EXIT do?',
+        prompt: 'What does the red EXIT button do?',
         options: [
-          { id: 'a', text: 'Signs you out of this ClearPath session' },
-          { id: 'b', text: 'Closes your broker account forever' },
-          { id: 'c', text: 'Places one last trade' },
+          { id: 'a', text: 'Hangs up — the website forgets you are signed in' },
+          { id: 'b', text: 'Deletes your name forever' },
+          { id: 'c', text: 'Buys one last thing' },
         ],
         correctOptionId: 'a',
-        explanation: 'EXIT only ends the ClearPath session. Your profile and any external broker stay where they were.',
+        explanation: 'Like hanging up a phone. Your name stays. If you wanted pictures, click orange CHARTS instead.',
       },
     ],
   },

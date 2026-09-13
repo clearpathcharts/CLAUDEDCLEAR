@@ -3,8 +3,9 @@
   "aspect": "16:9",
   "recommended": {
     "size": "1280x720 or 1920x1080",
-    "lengthSeconds": "30-45",
-    "shotsPerFilm": 4,
+    "lengthSeconds": "45-60",
+    "shotsPerFilm": 6,
+    "voice": "fifth-grade, name the color, say click",
     "shotLengthSeconds": "8-10",
     "format": "H.264 MP4",
     "audio": "record the continuous narration once over the stitch; keep captions in a matching .vtt",

@@ -1,6 +1,6 @@
 /**
  * Extra-understanding overlays: every live nav tab has copy, no advice,
- * plus a 30–45s Google Flow script (four stitchable shots).
+ * plus a 45–60s Google Flow script (six stitchable shots, fifth-grade VO).
  * Run: npm run test:explain-nav
  */
 import assert from 'node:assert/strict';
@@ -76,14 +76,19 @@ assert.equal(EXPLAIN_FLOW_NAV_ORDER.length, 13);
 for (const id of EXPLAIN_FLOW_SLOT_IDS) {
   const script = EXPLAIN_FLOW_SCRIPTS[id];
   assert.ok(script, `missing Flow script for ${id}`);
-  assert.equal(script.shots.length, EXPLAIN_FLOW_SHOT_COUNT, `${id} needs 4 shots`);
+  assert.equal(script.shots.length, EXPLAIN_FLOW_SHOT_COUNT, `${id} needs 6 shots`);
   assert.ok(
     script.targetSeconds >= EXPLAIN_FLOW_TARGET_MIN &&
       script.targetSeconds <= EXPLAIN_FLOW_TARGET_MAX,
-    `${id} targetSeconds ${script.targetSeconds} is not 30–45`,
+    `${id} targetSeconds ${script.targetSeconds} is not 45–60`,
   );
   const words = wordCount(script.narrationScript);
-  assert.ok(words >= 70 && words <= 140, `${id} narration is ${words} words (want 70–140)`);
+  assert.ok(words >= 110 && words <= 220, `${id} narration is ${words} words (want 110–220)`);
+  assert.match(
+    script.narrationScript,
+    /click|Click|button|Button/,
+    `${id} must tell a fifth grader to click a button`,
+  );
   assert.equal(
     /buy now|sell now|guaranteed profit|last chance/i.test(script.narrationScript),
     false,

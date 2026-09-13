@@ -1,19 +1,21 @@
 # Explain Mode — Google Flow scripts
 
-One **30–45 second** film per nav pill. People who do not yet understand the site tap **Need extra understanding**, then the little play badge beside a tab.
+One **45–60 second** film per nav pill. Fifth-grade voice. Name the color. Say “click.” Assume they have never used a website.
+
+People tap **Need extra understanding**, then the little play badge beside a tab.
 
 ## How to produce
 
-1. Open Google Flow (Veo). Aspect **16:9**. Quiet educational motion.
-2. Generate **four shots** per tab (Flow still likes ~8–10 seconds each).
-3. Stitch them in numbered order to the listed target length.
-4. Record the **continuous narration** once over the stitch. Calm adult voice. About 130–140 words per minute.
+1. Open Google Flow (Veo). Aspect **16:9**. Very colorful museum lighting. Giant cartoon cursor.
+2. Generate **six shots** per tab (Flow still likes ~8–10 seconds each).
+3. Stitch them in numbered order to the listed target length. **Do not ship one 3-second clip.**
+4. Record the **continuous narration** once over the stitch. Fifth-grade. About 110 words per minute. Pause after every sentence.
 5. Export H.264 MP4 at 1280×720 or 1920×1080.
 6. Drop the file at `public/explain-videos/{id}.mp4`. Optional poster `{id}.jpg`. Captions `{id}.vtt` (this script can write them).
 
-**Look:** ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens.
+**Look:** FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling.
 
-**Never on screen:** No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+**Never on screen:** No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 
 These films are extra explanation, not trading advice. ClearPath is not a broker.
 
@@ -25,59 +27,79 @@ These films are extra explanation, not trading advice. ClearPath is not a broker
 |---|---|
 | Slot / filename | `ceo.mp4` |
 | Accent | `#FF2E9A` |
-| Length | **40 seconds** |
-| Logline | Founder-only ops — Daily Ops, backups, members. Not on your chart. |
-| Music | Very low analog pad, no beat drop. Room tone. Leave space after each sentence. |
-| Captions | Burn-in optional. Prefer a matching .vtt so reduced-motion users can read. |
+| Length | **54 seconds** |
+| Logline | The hot-pink button only the website builder sees. |
+| Music | Soft pink-pad, like a night-light. Leave a full breath after every sentence. |
+| Captions | Huge words. Color the word PINK whenever you say pink. |
 
 ### Continuous narration (record once)
 
-> This tab is CEO — the founder console. Only the person who runs ClearPath sees it. Daily Ops is a calm checklist for the site, marketing, and the end of the day. Site Doctor shows whether the platform is healthy. Members holds invites, account lists, and a disaster backup download, because Cloud Run forgets files when a container restarts. Choose Your Path still opens the four study desks. Nothing here changes anyone else’s charts, and nothing here is a trade. If you do not see CEO, you are not supposed to.
+> Look at the very top of the screen. See the row of colorful buttons? Find the hot-pink one that says CEO. Most people will not see this button. It is only for the person who built this website. If you see it, move your mouse — that is the little arrow — onto the pink button and click. You will see pink checklists and a list of members. There is a teal button that saves a backup copy, like making a photocopy of important papers. This pink room does not buy anything. It does not sell anything. It does not change other people’s pictures. If you do not see a pink CEO button, that is normal. Click the purple HOME button and keep going.
 
-_91 words._
+_124 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 40-second quiet tour of a magenta founder console labeled CEO Dashboard. Camera glides from the glowing header, across a Daily Ops checklist and a calm Site Doctor pulse, then a Members table with a disaster-backup download, then four Choose Your Path study-desk cards. Educational, private, never a trading floor. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A full 54-second colorful museum tour of a hot-pink CEO button and a magenta control room. Giant cursor. Sixth-grade-slow. Six shots. Never a 3-second flash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-console · 0–10s · Founder console
+### Shot 01-find-pink · 0–9s · Find the pink button
 
-On-screen super (optional, ≤6 words): **Founder console**
+On-screen super (optional, ≤6 words): **Hot-pink button**
 
-**VO on this shot:** This tab is CEO — the founder console. Only the person who runs ClearPath sees it.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Opening shot: dark #09090b terminal. Magenta #FF00FF header reads “CEO Dashboard — Founder Console” with a soft glow, not a rave. Slow push-in past glass panels. No other people. Private ops room energy. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-daily-ops · 10–20s · Daily Ops and Site Doctor
-
-
-**VO on this shot:** Daily Ops is a calm checklist for the site, marketing, and the end of the day. Site Doctor shows whether the platform is healthy.
+**VO on this shot:** Look at the very top of the screen. See the row of colorful buttons? Find the hot-pink one that says CEO.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Daily Ops desk: checklist groups labeled Site, Marketing, Outreach, Business, Personal, End of day — human checkboxes, no gamified streaks. Cut to Site Doctor — Hourly Pulse with calm green / amber / red dots. Serious, slow, readable type. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Extreme close-up of the top row of candy-colored pills. A giant white-glove cursor slowly slides to a glowing hot-pink CEO pill. The rest of the row dims. Color wash of magenta fills the frame. Kid-museum lighting. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-members-backup · 20–30s · Members and backup
+### Shot 02-who · 9–18s · Only the builder
 
 
-**VO on this shot:** Members holds invites, account lists, and a disaster backup download, because Cloud Run forgets files when a container restarts.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Members / All Users table on glass: email column, display name, joined date — no password strings visible. Soft highlight on a teal button “Download disaster backup”. Tiny readable note: Cloud Run disk is ephemeral. Trust-first, never panic red. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-desks-close · 30–40s · Study desks, then still
-
-On-screen super (optional, ≤6 words): **Not a trading desk**
-
-**VO on this shot:** Choose Your Path still opens the four study desks. Nothing here changes anyone else’s charts, and nothing here is a trade. If you do not see CEO, you are not supposed to.
+**VO on this shot:** Most people will not see this button. It is only for the person who built this website.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Choose Your Path row: Institutional, Fundamental, Retail, Neurodivergent — study-desk cards, not brokerage tickets. Pull back to the full CEO console. End on stillness. Soft caption energy: Founder ops. Not a trading desk. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. The pink CEO pill sparkles once, then a simple picture: one person at a desk, everyone else faded out. Friendly, not scary. Giant caption energy: only the builder. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-click · 18–27s · Click the pink one
+
+On-screen super (optional, ≤6 words): **Mouse = little arrow**
+
+**VO on this shot:** If you see it, move your mouse — that is the little arrow — onto the pink button and click.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant cursor clicks the squishy pink pill. The screen blooms into a magenta founder console. Slow. Satisfying click sound implied, no explosion. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-see · 27–36s · Checklists and members
+
+
+**VO on this shot:** You will see pink checklists and a list of members. There is a teal button that saves a backup copy, like making a photocopy of important papers.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Bright checklist boxes in pink glass, then a simple member table. A teal “Download disaster backup” button glows like a stamp machine. Photocopy metaphor: papers stacking safely. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-not-a-store · 36–45s · Not a store
+
+On-screen super (optional, ≤6 words): **Not a store**
+
+**VO on this shot:** This pink room does not buy anything. It does not sell anything. It does not change other people’s pictures.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Three big kid cards fade in with simple icons: no shopping cart, no money flying, no other kids’ charts changing. Soft, clear, colorful. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-go-home · 45–54s · No pink? Go Home
+
+On-screen super (optional, ≤6 words): **No pink? Click HOME**
+
+**VO on this shot:** If you do not see a pink CEO button, that is normal. Click the purple HOME button and keep going.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. If the pink pill is missing, the purple HOME pill pulses happily. Giant cursor clicks HOME. Warm front-door light. End still on the colorful row. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -88,59 +110,80 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `home.mp4` |
 | Accent | `#6C5CE7` |
-| Length | **40 seconds** |
-| Logline | The front door. Every glowing card is a real door. |
-| Music | Warm low drone, faint vinyl air. No percussion hits on card highlights. |
-| Captions | Keep supers to the card names already on screen. Do not add slogan bursts. |
+| Length | **56 seconds** |
+| Logline | The purple front door. Every card is another room. |
+| Music | Warm welcome hum. No beat drops when a card lights up. |
+| Captions | Point at PURPLE. Spell HOME on screen in huge letters. |
 
 ### Continuous narration (record once)
 
-> This is Home — the front door of ClearPath Trader. The greeting is just a map. Every glowing card is a real door: Charts, INDACREATOR, Y.W.C., News, Education, Memberships, and C.P.T. Buddy. Choose Your Path opens four study desks — Institutional, Fundamental, Retail, and Neurodivergent. Those desks show information. They do not place trades. Read the line under a card, then tap when you are ready. You can always come back here from the top nav. Home is a map, not a to-do list, and not a broker.
+> Look at the top of the screen. That row of colorful buttons is how you walk around this website. Find the purple one that says HOME. Purple HOME is the front door of the house. Click it. You will see big glowing cards — purple, orange, gold, cyan. Each card is a door to another room. Read the tiny sentence under a card. Then click the card you want. You do not have to click every card. Nothing on this page spends your money. If you get lost later, come back here. Click the purple HOME button again. You can always return to the front door. Remember: purple button, top of the screen, click. Take your time.
 
-_88 words._
+_117 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 40-second walk through ClearPath Home: lava-soft dark hub, a quiet greeting, Choose Your Path desk cards, then a grid of doors labeled Charts, INDACREATOR, Y.W.C., News, Education, Memberships, C.P.T. Buddy. One card highlights. Nothing feels like a to-do list or a store. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 56-second purple front-door tour. Giant cursor, glowing home cards, lava-soft color. Slow enough for a fifth grader who has never clicked a website. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-hub · 0–10s · What Home is
+### Shot 01-row · 0–9s · The colorful row
 
-On-screen super (optional, ≤6 words): **Every card is a door**
+On-screen super (optional, ≤6 words): **Buttons at the top**
 
-**VO on this shot:** This is Home — the front door of ClearPath Trader. The greeting is just a map.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. HOME / Discovery hub fills the frame — dark glass, pink/orange/cyan lava blurs in the corners, a badge “ClearPath Home”, a short greeting. Uncluttered. Slow establishing move, no text overload. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-choose-path · 10–20s · Choose Your Path
-
-
-**VO on this shot:** Choose Your Path opens four study desks — Institutional, Fundamental, Retail, and Neurodivergent. Those desks show information. They do not place trades.
+**VO on this shot:** Look at the top of the screen. That row of colorful buttons is how you walk around this website.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Choose Your Path row: three path cards plus a Neurodivergent banner. Labels: Institutional Trader, Fundamental Trader, Retail Trader, Neurodivergent Traders. Soft cyan outlines. Educational study energy — no order tickets, no “start trading now”. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Wide shot of the whole candy-button nav row on a dark sky — violet, pink, orange, gold, cyan, red — each pill glowing like a night-light. Slow pan left to right. Giant caption: these buttons move you around. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-grid · 20–30s · Nav cards
+### Shot 02-purple · 9–18s · Find purple HOME
 
+On-screen super (optional, ≤6 words): **Purple = front door**
 
-**VO on this shot:** Every glowing card is a real door: Charts, INDACREATOR, Y.W.C., News, Education, Memberships, and C.P.T. Buddy.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Camera glides across hub tiles: Charts, INDACREATOR, Y.W.C., News, Board, ClearPath Education, Memberships, C.P.T. Personal Buddy. Each tile has a one-line subtitle. Soft accent glows. One tile gently highlights. Calm click, no urgency. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-choose · 30–40s · Read, then choose
-
-On-screen super (optional, ≤6 words): **Take your time**
-
-**VO on this shot:** Read the line under a card, then tap when you are ready. You can always come back here from the top nav. Home is a map, not a to-do list, and not a broker.
+**VO on this shot:** Find the purple one that says HOME. Purple HOME is the front door of the house.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Soft focus ring on the line under the Charts card, then a gentle tap hint. Brief peek toward the Charts workspace, then a reversible return to the Home grid. End still. Quiet. Map, not a checklist. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant white-glove cursor travels to the glowing violet HOME pill with a little house icon. The pill blooms brighter. Purple color wash. Kid-friendly front-door illustration behind it. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-click · 18–27s · Click it
+
+
+**VO on this shot:** Click it. You will see big glowing cards — purple, orange, gold, cyan.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cursor clicks. The pill squishes. The Home hub explodes softly into colorful lava-corner cards — not fireworks, more like opening a toy box of glowing doors. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-cards · 27–36s · Cards are doors
+
+On-screen super (optional, ≤6 words): **One card = one room**
+
+**VO on this shot:** Each card is a door to another room. Read the tiny sentence under a card. Then click the card you want.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Camera glides across huge readable cards: Charts, INDACREATOR, Y.W.C., News, Education, Memberships, C.P.T. Buddy. Each one lights its own color. A tiny sentence under each card is readable. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-safe · 36–46s · You can skip cards
+
+On-screen super (optional, ≤6 words): **No money leaves**
+
+**VO on this shot:** You do not have to click every card. Nothing on this page spends your money.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Most cards stay un-clicked. A soft “you can skip” feeling. No shopping cart. A crossed-out money icon, friendly not scary. Choose Your Path four colorful desk cards sit quietly. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-lost · 46–56s · Lost? Purple again
+
+On-screen super (optional, ≤6 words): **Lost? Click HOME**
+
+**VO on this shot:** If you get lost later, come back here. Click the purple HOME button again. You can always return to the front door.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A kid-simple maze resolves as the purple HOME pill pulses. Cursor clicks it again. Front door. Stillness. End on the colorful row. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -151,59 +194,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `ywc.mp4` |
 | Accent | `#FF2E9A` |
-| Length | **42 seconds** |
-| Logline | News, magazines, and a chart on one lava desk — a workspace, not signals. |
-| Music | Soft analog warmth, slightly pink. No news-stinger brass. |
-| Captions | Do not put “BREAKING” on screen. Section chip names are enough. |
+| Length | **56 seconds** |
+| Logline | The lava-pink room: stories, magazines, and a price picture together. |
+| Music | Warm lava-pink pad. No news horns. |
+| Captions | Write Your World Connected in big letters once. |
 
 ### Continuous narration (record once)
 
-> Y.W.C. means Your World Connected. It is one lava desk for news sections, magazines, and a live chart so you are not jumping between apps. Use the section chips — World, Sports, Finance, Magazines, Relief — one at a time. Expand a story to read it. Your personal chart stays nearby. Media Pantry and social tools are optional. This is a workspace, not a signal service. Some feeds here are editorial. The News tab is the live wire. When the noise rises, leave. The chart will still be here.
+> Find the warm orange-pink button that says Y.W.C. Those letters mean Your World Connected. Click it. This room puts stories, magazines, and a price picture on one page so you do not have to open ten other websites. See the colorful chips? Those are filters — like sorting crayons by color. Click one chip. Try Sports, or Magazines, or Relief. Then click a story to read it. The little chart on the side is only a picture of prices. This room does not tell you what to buy. If the page feels loud or busy, that is okay. Click the purple HOME button and leave. Remember: orange-pink button, click a chip, read one story. Take your time.
 
-_89 words._
+_117 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 42-second tour of Your World Connected: warm lava-pink glass desk, section chips, a story reader, a personal chart tucked on the side, optional Media Pantry. Inclusive, calm, never a signal service or panic newsroom. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 56-second lava-pink tour of Your World Connected. Colorful filter chips, a story book opening, a little chart on the side. Fifth-grade slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-desk · 0–10s · What Y.W.C. is
+### Shot 01-find · 0–9s · Find Y.W.C.
 
 On-screen super (optional, ≤6 words): **Your World Connected**
 
-**VO on this shot:** Y.W.C. means Your World Connected. It is one lava desk for news sections, magazines, and a live chart so you are not jumping between apps.
+**VO on this shot:** Find the warm orange-pink button that says Y.W.C. Those letters mean Your World Connected.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Y.W.C. lava-styled desk — magenta #FF0080 and orange #FF4500 glass bentos, brand mark “Your World Connected”. Warm community energy without noise. Inclusive, calm. A quiet live chart peeks at the edge. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Top row. Giant cursor finds the lava orange-pink Y.W.C. pill. People-icon. Magenta and orange glow like sunset candy. Slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 02-filters · 10–21s · Section chips
+### Shot 02-click · 9–18s · Click into the lava room
 
 
-**VO on this shot:** Use the section chips — World, Sports, Finance, Magazines, Relief — one at a time.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Section filter chips highlight one at a time: ALL NEWS, WORLD SPORTS, WORLD HUB, RELIEF / HUMANITARIAN, GLOBAL FINANCE, CRYPTO, MAGAZINE EDITS. Soft selection. No clutter pile-up. Readable labels on dark glass. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 03-reader-chart · 21–32s · Story and chart
-
-
-**VO on this shot:** Expand a story to read it. Your personal chart stays nearby.
+**VO on this shot:** Click it. This room puts stories, magazines, and a price picture on one page so you do not have to open ten other websites.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A hero story card opens into a calm reader modal. Then focus shifts to YwcPersonalCharts — a live educational chart nestled in the desk, soft cyan crosshair, no trade arrows. Context and price structure share one screen. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Click. The desk blooms into hot pink, orange, and lime glass boxes. Inclusive, colorful, not a panic newsroom. Brand mark readable. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 04-optional · 32–42s · Optional extras, then leave
+### Shot 03-chips · 18–27s · Colorful filter chips
 
-On-screen super (optional, ≤6 words): **Leave when it is loud**
+On-screen super (optional, ≤6 words): **Chips = crayon sorts**
 
-**VO on this shot:** Media Pantry and social tools are optional. This is a workspace, not a signal service. Some feeds here are editorial. The News tab is the live wire. When the noise rises, leave. The chart will still be here.
+**VO on this shot:** See the colorful chips? Those are filters — like sorting crayons by color. Click one chip. Try Sports, or Magazines, or Relief.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Brief, quiet look at CPMS Media Pantry and optional social connect chips — labeled as optional, no notification spam. Pull back to the full lava desk. Soft fade. End on stillness. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Huge filter chips light one at a time like piano keys: Sports, World, Finance, Magazines, Relief — each a different bright color. Cursor clicks Magazines. Soft. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-story · 27–36s · Open a story
+
+
+**VO on this shot:** Then click a story to read it. The little chart on the side is only a picture of prices.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A story card opens like a picture book. Calm reading light. Then a small live chart on the side with a soft cyan crosshair — a picture, not a game. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-not-signals · 36–46s · Not a buy room
+
+On-screen super (optional, ≤6 words): **Stories, not orders**
+
+**VO on this shot:** This room does not tell you what to buy.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Friendly crossed-out megaphone / no shopping cart. Media Pantry and social icons sit in a “optional toys” box on the side. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-leave · 46–56s · Too loud? Leave
+
+On-screen super (optional, ≤6 words): **Too loud? HOME**
+
+**VO on this shot:** If the page feels loud or busy, that is okay. Click the purple HOME button and leave.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. The lava desk stays, but the purple HOME pill pulses at the top. Cursor clicks HOME. Quiet front door. End still. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -214,59 +277,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `indacreator.mp4` |
 | Accent | `#00E5FF` |
-| Length | **42 seconds** |
-| Logline | A Pine workshop. Compile honestly. Apply when you are ready. |
-| Music | Clean digital bed, very quiet. A single soft confirmation tone on compile — not a fanfare. |
-| Captions | Show real UI words: Compile, Apply to All Charts, River Genie. No “signals unlocked”. |
+| Length | **58 seconds** |
+| Logline | The workshop that draws helpers on your price pictures. |
+| Music | Clean cyan tone. One soft ding on compile — a school bell, not a jackpot. |
+| Captions | Show the real words Compile and Apply to All Charts in huge type. |
 
 ### Continuous narration (record once)
 
-> INDACREATOR is the workshop for indicator code — sometimes still called The River. Upload a Pine file, paste code, or start with the Gold Bar example. Press compile. If something cannot run, you will see a real error, not a fake overlay. Read the honest limits and the inputs. River Genie can draft or fix a script, but you still choose when to apply. Apply to All Charts puts the study on your charts. Then open CHARTS to look at it. This studio does not place trades. Compile first. Apply when you are ready.
+> Find the button that says INDACREATOR. That is a long word. It means indicator creator — a workshop that draws helper lines on your price pictures. Click it. You can drop a file into the box, or paste words, or try the Gold Bar example. Then click Compile. Compile means please check this recipe. If the recipe is broken, you will see a red error. That is okay. You did not break the website. A helper named River Genie can fix the words. When you are ready, click Apply to All Charts. Then click the orange CHARTS button to see the drawing. This workshop never spends money. Remember: long-word button, click Compile, then click orange CHARTS. Take your time.
 
-_94 words._
+_119 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 42-second studio tour: code editor and chart side by side on dark glass, an upload zone, a compile glow, honest-limits cards, River Genie on the right, then a calm overlay appearing on charts. Technical and empowering. Not a hacker movie. Not a signal service. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 58-second cyan workshop tour. File drops like a paper into a box, a check-the-recipe button, a helper robot, then drawings on a chart. Fifth grade. Colorful. Slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-studio · 0–10s · What it is
+### Shot 01-find · 0–9s · The long word
 
-On-screen super (optional, ≤6 words): **A studio, not a signal**
+On-screen super (optional, ≤6 words): **Workshop button**
 
-**VO on this shot:** INDACREATOR is the workshop for indicator code — sometimes still called The River.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. INDACREATOR workstation establishing shot — code editor and chart side by side on #050505 glass, cyan #00D9FF accents. Technical, empowering, not flashy hacker tropes. Title readable: INDACREATOR. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-upload-compile · 10–21s · Upload and compile
-
-
-**VO on this shot:** Upload a Pine file, paste code, or start with the Gold Bar example. Press compile. If something cannot run, you will see a real error, not a fake overlay.
+**VO on this shot:** Find the button that says INDACREATOR. That is a long word. It means indicator creator — a workshop that draws helper lines on your price pictures.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Upload / paste / drag-drop zone for a .pine file highlights. A small file icon drops into the editor. Compile button soft-press; cyan success glow; an inputs panel and honest notes appear. No confetti. If showing failure, show a calm line-numbered error — never a fake overlay. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant cursor on a glowing cyan INDACREATOR pill. The letters are huge. A simple workshop / toolbox icon. Cyan wash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-genie · 21–32s · River Genie
+### Shot 02-click · 9–18s · Open the workshop
 
 
-**VO on this shot:** Read the honest limits and the inputs. River Genie can draft or fix a script, but you still choose when to apply.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. River Genie co-pilot panel on the right — a short chat drafting Pine in a code block, then a quiet path back to compile. Helpful, not pushy. Honest-limits bento cards visible: what River can and cannot do. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-apply · 32–42s · Apply, then study
-
-On-screen super (optional, ≤6 words): **Compile first**
-
-**VO on this shot:** Apply to All Charts puts the study on your charts. Then open CHARTS to look at it. This studio does not place trades. Compile first. Apply when you are ready.
+**VO on this shot:** Click it. You can drop a file into the box, or paste words, or try the Gold Bar example.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Apply to All Charts — gold-quiet CTA, not neon hard-sell. Indicator overlays fade onto a chart. Chart remains the focus. End still on the workstation. Soft line: compile first, apply when ready. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Click. Split screen: a colorful code notebook on the left, a chart on the right, like an art desk beside a window. Kid-maker space, not a hacker movie. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-compile · 18–28s · Compile = check the recipe
+
+On-screen super (optional, ≤6 words): **Compile = check recipe**
+
+**VO on this shot:** Then click Compile. Compile means please check this recipe. If the recipe is broken, you will see a red error. That is okay. You did not break the website.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A paper-airplane file drops into a glowing box. A big friendly Compile button. Cyan check, or a calm red “oops” on one line. No fake drawing if it failed. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-genie · 28–38s · River Genie helps
+
+
+**VO on this shot:** A helper named River Genie can fix the words.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A friendly cyan helper panel named River Genie — more lamp-genie cute than corporate AI. It writes in a notebook, then points back to Compile. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-apply · 38–48s · Apply, then Charts
+
+On-screen super (optional, ≤6 words): **Then click CHARTS**
+
+**VO on this shot:** When you are ready, click Apply to All Charts. Then click the orange CHARTS button to see the drawing.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Gold-quiet Apply to All Charts. Soft colorful lines fade onto a chart like stickers. Then the orange CHARTS pill lights up at the top. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-no-money · 48–58s · No money
+
+On-screen super (optional, ≤6 words): **Never spends money**
+
+**VO on this shot:** This workshop never spends money.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Workshop still. Crossed-out shopping cart in a friendly kid icon. End on the cyan pill. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -277,59 +360,80 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `charts.mp4` |
 | Accent | `#FF7B00` |
-| Length | **44 seconds** |
-| Logline | Live market structure, comfort profiles, study tools — not a broker. |
-| Music | Almost silent. A distant room tone. Let candle motion be the only rhythm. |
-| Captions | If a candle is labeled, say “one block of time” — never “buy this”. |
+| Length | **58 seconds** |
+| Logline | The orange room of building-block candles. School, not a store. |
+| Music | Almost none. Soft orange air. Speak even slower on the candle colors. |
+| Captions | Show a green-ish block and a red-ish block with kid labels: finished higher / finished lower. |
 
 ### Continuous narration (record once)
 
-> This is Charts — ClearPath’s live market desk. Each candle is one block of time. Search a symbol. Pick a timeframe. Neuro-Adaptive Profiles change colors, spacing, and motion so different brains can read the same data more comfortably. They never change the price. Pattern Scanner and drawing tools are for study. Blackout Mode hides extra chrome when you want a quieter dual-chart view. The footer is clear: visualization, not advice. ClearPath is not a broker. Start with Calm Focus if you are unsure. Take your time.
+> Find the bright orange button that says CHARTS. Click it. You will see boxes that look like building blocks. Grown-ups call them candles. Each block is one chunk of time. A green-ish block means the price finished higher. A red-ish block means it finished lower. At the top, click the search box and type a name if you want a different picture. The colorful profile buttons change colors and spacing so the picture is easier on your eyes. They do not change the real price. Drawing tools are like crayons on the picture. This is school, not a store. You cannot buy or sell from this page. If the screen feels too busy, try the Calm Focus colors, or click purple HOME.
 
-_86 words._
+_122 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 44-second educational tour of the MARKET TERMINAL: multi-slot candlesticks on dark glass, a neuro-profile picker cycling looks while price structure stays identical, a timeframe bar, pattern tools labeled as study, then a quieter Blackout dual-chart. No signal arrows. Footer legal energy without shouting. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 58-second orange market-picture tour. Candles as colorful building blocks. A giant search box. Color-theme buttons. Fifth grade. Very colorful. Very slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-terminal · 0–11s · What Charts is
+### Shot 01-orange · 0–9s · Find orange CHARTS
 
-On-screen super (optional, ≤6 words): **Study, not brokerage**
+On-screen super (optional, ≤6 words): **Orange = pictures**
 
-**VO on this shot:** This is Charts — ClearPath’s live market desk. Each candle is one block of time.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Wide shot of MARKET TERMINAL — multi-slot candlestick charts on dark glass, orange timeframe accents. Educational market structure, no signal arrows, no P&L. Soft establishing push. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-symbol-time · 11–22s · Symbol and timeframe
-
-
-**VO on this shot:** Search a symbol. Pick a timeframe.
+**VO on this shot:** Find the bright orange button that says CHARTS. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Focus ring on symbol search “Search your chart…”, then on the timeframe bar from 1m toward YTD. Calm pointer. Candles redraw after a timeframe change. Quiet, technical, no flashing CTAs. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant lava-orange CHARTS pill with a bar-chart icon, glowing like a sunset candy. Cursor approaches slowly. Orange wash across the dark sky. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-neuro · 22–33s · Neuro-Adaptive Profiles
+### Shot 02-blocks · 9–19s · Building-block candles
 
+On-screen super (optional, ≤6 words): **Blocks of time**
 
-**VO on this shot:** Neuro-Adaptive Profiles change colors, spacing, and motion so different brains can read the same data more comfortably. They never change the price.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Close on Neuro-Adaptive Chart Profiles picker. Softly cycle three looks — Calm Focus cyan, Low Stimulation muted gray, Standard red/green — while the same price structure stays identical. Presentation-only. No medical imagery. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-tools-blackout · 33–44s · Study tools and Blackout
-
-On-screen super (optional, ≤6 words): **Profiles never change prices**
-
-**VO on this shot:** Pattern Scanner and drawing tools are for study. Blackout Mode hides extra chrome when you want a quieter dual-chart view. The footer is clear: visualization, not advice. ClearPath is not a broker. Start with Calm Focus if you are unsure. Take your time.
+**VO on this shot:** You will see boxes that look like building blocks. Grown-ups call them candles. Each block is one chunk of time. A green-ish block means the price finished higher. A red-ish block means it finished lower.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Left rail: Pattern Scanner and drawing tools, labeled as study tools not advice. Then UI chrome softens into Blackout Mode — dual charts, quieter chrome, more chart area. End on a still candle silhouette and a tiny legal-footer feel: visualization, not advice. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Huge colorful candlesticks as toy building blocks on dark glass. One green-mint block labeled “finished higher.” One coral-red block labeled “finished lower.” Educational, playful, not a signal arrow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-search · 19–29s · The search box
+
+
+**VO on this shot:** At the top, click the search box and type a name if you want a different picture.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A giant friendly search box. Cursor types slowly. The picture changes to another colorful chart. No urgency. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-colors · 29–39s · Color buttons for your eyes
+
+On-screen super (optional, ≤6 words): **Colors, not prices**
+
+**VO on this shot:** The colorful profile buttons change colors and spacing so the picture is easier on your eyes. They do not change the real price.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A rainbow of profile buttons. Cycle Calm Focus cyan, Low Stimulation gray, Standard red-green. Same block shapes, different clothes. Eyes-friendly. No medical crosses. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-crayons · 39–49s · Crayons, not shopping
+
+On-screen super (optional, ≤6 words): **School, not a store**
+
+**VO on this shot:** Drawing tools are like crayons on the picture. This is school, not a store. You cannot buy or sell from this page.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Drawing tools as a crayon box on the left. Pattern tools as study stickers. Then a crossed-out store / no shopping cart. Blackout Mode quietly dims extra chrome. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-too-busy · 49–58s · Too busy? Calm or Home
+
+On-screen super (optional, ≤6 words): **Too busy? HOME**
+
+**VO on this shot:** If the screen feels too busy, try the Calm Focus colors, or click purple HOME.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Calm Focus button glows softly, or the purple HOME pill pulses. Viewer choice. Slow fade on a still orange chart. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -340,59 +444,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `news.mp4` |
 | Accent | `#4D6FFF` |
-| Length | **36 seconds** |
-| Logline | The live wire. If the vendor is down, the list stays empty. |
-| Music | None, or a faint paper-room tone. No news-music stabs. |
-| Captions | Do not invent a real headline on screen. Use generic placeholder titles. |
+| Length | **54 seconds** |
+| Logline | The blue list of real headlines. Empty means we did not make stuff up. |
+| Music | None. Soft paper rustle at most. No news stingers. |
+| Captions | Never invent a real headline. Use “Sample story” if you must show a title. |
 
 ### Continuous narration (record once)
 
-> News is the live reading wire. The header tells you if it is live, empty, or offline. Honest status beats fake urgency. Each card shows source, category, date, title, and a short description. Refresh when you want a fresh pull. Open a headline to read the publisher. If the vendor is down, ClearPath leaves the list empty. We never invent a story. Headlines are context, not instructions. Skim, then close the tab.
+> Find the blue-purple button that says NEWS. Click it. This page is a list of real headlines from the internet. Look at the very top. A little light will say if the list is working, empty, or turned off. If it is empty, we did not make up fake stories. Making up news would be lying. Each card shows who wrote it, the date, and a short bit. Click a title if you want the whole story on their website. Headlines are just information, like a poster on a wall. They are not orders. They do not tell you what to buy. When you are done reading, click the purple HOME button.
 
-_72 words._
+_112 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 36-second walk through a dark-terminal news wire: honest status pill, a Refresh control, readable headline cards with source · category · date, then a brief empty-state that tells the truth. Serious journalism energy, never breaking-news panic. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second blue news-list tour. Honest status light. Kid-simple cards. No sirens. Colorful but calm. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-wire · 0–9s · What News is
+### Shot 01-find · 0–9s · Find blue NEWS
 
-On-screen super (optional, ≤6 words): **Live wire**
+On-screen super (optional, ≤6 words): **Blue = headlines**
 
-**VO on this shot:** News is the live reading wire.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. News feed UI on a dark terminal — clean headlines, timestamps, soft cyan/blue rules. Header: News · Live wire. Serious journalism energy, not panic red or sirens. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-status · 9–18s · Honest status
-
-
-**VO on this shot:** The header tells you if it is live, empty, or offline. Honest status beats fake urgency. Refresh when you want a fresh pull.
+**VO on this shot:** Find the blue-purple button that says NEWS. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Header status pill shows “12 items”, then calmly “Empty”, then “Offline” — no red sirens. Refresh control highlights; last-updated stamp visible. Soft press animation. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant blue-purple NEWS pill with a newspaper icon, glowing softly. Cursor travels. Blue wash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-cards · 18–27s · How to read a card
+### Shot 02-list · 9–18s · A list, not a siren
 
 
-**VO on this shot:** Each card shows source, category, date, title, and a short description. Open a headline to read the publisher.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Headline list scrolls slowly: source · category · date · title · short description. Readable typography. One headline soft-focuses as if opening externally. Stay calm. No tab-explosion montage. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-empty · 27–36s · Empty is honest
-
-On-screen super (optional, ≤6 words): **Context, not orders**
-
-**VO on this shot:** If the vendor is down, ClearPath leaves the list empty. We never invent a story. Headlines are context, not instructions. Skim, then close the tab.
+**VO on this shot:** This page is a list of real headlines from the internet.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Honest empty state on glass: “News feed unavailable” / headlines are never fabricated. Return to a still headline list. Soft fade. No crisis colors. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A clean colorful list of cards on dark glass. Serious but not panic-red. Header: News. Kid museum of papers. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-light · 18–27s · The status light
+
+On-screen super (optional, ≤6 words): **Empty = we did not lie**
+
+**VO on this shot:** Look at the very top. A little light will say if the list is working, empty, or turned off. If it is empty, we did not make up fake stories. Making up news would be lying.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A big traffic-light style pill: working (soft green), empty (soft gray), turned off (soft blue). No sirens. Refresh button as a circular arrow a kid would understand. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-card · 27–36s · How to read a card
+
+
+**VO on this shot:** Each card shows who wrote it, the date, and a short bit. Click a title if you want the whole story on their website.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. One card zooms: who wrote it, date, title, short bit — each in a different pastel chip. Cursor clicks the title. A gentle “goes to their website” door. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-poster · 36–45s · A poster, not an order
+
+On-screen super (optional, ≤6 words): **Posters, not orders**
+
+**VO on this shot:** Headlines are just information, like a poster on a wall. They are not orders. They do not tell you what to buy.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Headline cards turn into wall posters. No shopping cart. Kid-simple: information on a wall. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-home · 45–54s · Done? Purple HOME
+
+On-screen super (optional, ≤6 words): **Done? Click HOME**
+
+**VO on this shot:** When you are done reading, click the purple HOME button.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Purple HOME pill pulses. Cursor clicks. Front door. Still. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -403,59 +527,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `memberships.mp4` |
 | Accent | `#FFE600` |
-| Length | **38 seconds** |
-| Logline | Read the plan sheet. Checkout is off. This is not a store right now. |
-| Music | Soft gold air. No cash-register hits. |
-| Captions | Do not put dollar amounts on screen. The live product has billing removed. |
+| Length | **54 seconds** |
+| Logline | The gold trophy page. Looking does not charge a card. |
+| Music | Soft gold air. No cash register. |
+| Captions | Do not put dollar signs on screen. |
 
 ### Continuous narration (record once)
 
-> Memberships is the plan sheet. Public checkout is off, so looking at this tab does not charge a card. Compare what each tier includes — charts, indicators, education, INDACREATOR, blackout, and more. Accuracy dots tell you what is enforced versus still on the sheet. Affiliate rewards, if you have them, show as discount or credit. Upgrade only if a feature clearly helps you learn. This tab is not investment advice, and it is not a store right now. Take your time, then go back to the desk.
+> Find the shiny gold button that says MEMBERSHIPS. Gold like a trophy, not like a race. Click it. This page is a big chart of what each plan includes — how many pictures, school lessons, and tools. Public checkout is turned off. That means clicking here will not charge a credit card. You can look. You do not have to pick anything. The little dots tell you what is really working versus what is only written on the paper. Gold is just a color. It is not a prize timer. When you are done looking, click Back to the desk, or click the purple HOME button. Remember: gold button, looking is free, no card gets charged. Take your time.
 
-_87 words._
+_119 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 38-second calm walk across a gold-outlined membership sheet: billing-off banner, a comparison table of feature rows, Basic through Platinum, no prices flashing, no countdown. Decision energy without pressure. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second gold plan-sheet tour. Trophy gold, no prices, no countdown. Fifth grade. Colorful comparison boxes. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-sheet · 0–9s · What it is
+### Shot 01-gold · 0–9s · Find gold MEMBERSHIPS
 
-On-screen super (optional, ≤6 words): **Checkout is off**
+On-screen super (optional, ≤6 words): **Gold = plan chart**
 
-**VO on this shot:** Memberships is the plan sheet. Public checkout is off, so looking at this tab does not charge a card.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Memberships layout on glass — gold #FFD700 outlines, emerald shield hero. Banner energy that billing is removed / education and charts only. Calm decision room. No flashing timers. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-table · 9–19s · Compare rows
-
-
-**VO on this shot:** Compare what each tier includes — charts, indicators, education, INDACREATOR, blackout, and more. Accuracy dots tell you what is enforced versus still on the sheet.
+**VO on this shot:** Find the shiny gold button that says MEMBERSHIPS. Gold like a trophy, not like a race. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Slow pan across a comparison table: charts per window, indicators, drawing tools, neuro layouts, blackout, education, encyclopedia, IndaCreator. Accuracy dots are quiet and readable. No FOMO badges, no “most popular” explosions. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Giant trophy-gold MEMBERSHIPS pill with a crown, glowing warmly. Cursor. Gold wash. No countdown numbers. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-tiers · 19–29s · Tiers without pressure
+### Shot 02-sheet · 9–18s · A chart of features
 
 
-**VO on this shot:** Affiliate rewards, if you have them, show as discount or credit. Upgrade only if a feature clearly helps you learn.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Pan across Basic, Silver, Gold, Platinum column headers. Basic highlighted as already useful. No list prices. No checkout button pulsing. Soft gold light only. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-leave · 29–38s · Leave when ready
-
-On-screen super (optional, ≤6 words): **Take your time**
-
-**VO on this shot:** This tab is not investment advice, and it is not a store right now. Take your time, then go back to the desk.
+**VO on this shot:** This page is a big chart of what each plan includes — how many pictures, school lessons, and tools.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Still comparison layout. Soft “Back to the desk” control. End card energy: not advice, not a store right now. Fade out. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A colorful comparison sheet: columns like crayons — Basic, Silver, Gold, Platinum. Rows of simple icons for pictures, lessons, tools. Kid-readable. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-no-charge · 18–27s · Looking is free
+
+On-screen super (optional, ≤6 words): **Looking is free**
+
+**VO on this shot:** Public checkout is turned off. That means clicking here will not charge a credit card. You can look. You do not have to pick anything.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A giant friendly sign: checkout is off. A credit card with a soft X. No prices. Relief, not shame. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-dots · 27–36s · The little dots
+
+
+**VO on this shot:** The little dots tell you what is really working versus what is only written on the paper.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Accuracy dots as quiet colorful stickers on rows. One sticker means “this really works,” another means “only on the paper.” Slow, readable. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-not-a-timer · 36–45s · Not a prize timer
+
+On-screen super (optional, ≤6 words): **Not a timer**
+
+**VO on this shot:** Gold is just a color. It is not a prize timer.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Gold glow stays still. A crossed-out stopwatch. No FOMO badges. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-leave · 45–54s · Back to the desk
+
+On-screen super (optional, ≤6 words): **Done looking? HOME**
+
+**VO on this shot:** When you are done looking, click Back to the desk, or click the purple HOME button.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Back to the desk control, or purple HOME pulses. Cursor chooses HOME. Front door. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -466,59 +610,81 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `explain.mp4` |
 | Accent | `#00E5FF` |
-| Length | **36 seconds** |
-| Logline | Turn the play badges on. Short clips, plain words, one quiet question. |
-| Music | Soft cyan shimmer, then silence under the overlay shot. |
-| Captions | Show the real labels: Need extra understanding / Explain on. |
+| Length | **56 seconds** |
+| Logline | The cyan play button turns on extra help movies. |
+| Music | Soft cyan shimmer. Long pauses so a kid can find the badge. |
+| Captions | Show the two real labels: Need extra understanding / Explain on. |
 
 ### Continuous narration (record once)
 
-> This pill says Need extra understanding. Tap it once and it becomes Explain on. Small play badges appear next to every tab. Tap a badge to open a short cinema overlay — a Google Flow clip, plain words, and one quiet quiz question. If a clip is not uploaded yet, you will see a storyboard, not a fake video. This is extra explanation for people who want a slower walkthrough. It is not trading advice. Tap the pill again to hide the badges. You can leave Explain on as long as it helps.
+> See the bright cyan button that looks like a tiny movie play square? It says Need extra understanding. Click it one time. Now it says Explain on. Little play badges appear next to every colorful button — like tiny TVs. Those badges are extra help movies. Click a tiny play badge — not the big word, the little play picture beside it. A big card pops up. Inside you get a movie, easy words, and one quiz question. A quiz here is just practice. You cannot fail your account. If the movie is not ready yet, you still get the words. Click the same cyan button again to hide the badges. You can leave the help on as long as you want.
 
-_93 words._
+_122 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 36-second how-to for Explain Mode: the top-nav pill “Need extra understanding” becomes “Explain on”, tiny YouTube-style play badges appear beside tab pills, a cinema overlay opens with a 16:9 stage, plain text, and one quiz. Missing clip shows a storyboard frame, never a fake video. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 56-second cyan how-to for the play badges. Extremely visual: badges popping on like Christmas lights, one at a time. Fifth grade. Full minute energy, not a 3-second flash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-toggle · 0–9s · The pill
+### Shot 01-cyan · 0–9s · The tiny movie button
+
+On-screen super (optional, ≤6 words): **Cyan play square**
+
+**VO on this shot:** See the bright cyan button that looks like a tiny movie play square? It says Need extra understanding.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Extreme close-up of the cyan play-rectangle pill. It looks like a little TV. Glowing #00E5FF. Cursor hovers. Huge readable words: Need extra understanding. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 02-on · 9–18s · Click once: Explain on
 
 On-screen super (optional, ≤6 words): **Explain on**
 
-**VO on this shot:** This pill says Need extra understanding. Tap it once and it becomes Explain on.
+**VO on this shot:** Click it one time. Now it says Explain on.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Desktop ClearNav primary row. A cyan-outlined pill with a tiny play-rectangle icon reads “Need extra understanding”. A calm tap. The pill becomes “Explain on” with a soft cyan fill. No other motion. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cursor clicks. The pill fills with cyan and the words change to Explain on. Satisfying, slow. No other motion yet. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 02-badges · 9–18s · Play badges
+### Shot 03-badges · 18–28s · Tiny TVs appear
 
+On-screen super (optional, ≤6 words): **Tiny TVs = help**
 
-**VO on this shot:** Small play badges appear next to every tab.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Tiny play-badge icons fade in beside HOME, Y.W.C., INDACREATOR, CHARTS, NEWS, MEMBERSHIPS — matching each pill’s color. Slow pan. Educational, not a row of ads. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 03-overlay · 18–27s · The cinema overlay
-
-
-**VO on this shot:** Tap a badge to open a short cinema overlay — a Google Flow clip, plain words, and one quiet quiz question. If a clip is not uploaded yet, you will see a storyboard, not a fake video.
+**VO on this shot:** Little play badges appear next to every colorful button — like tiny TVs. Those badges are extra help movies.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A cinema-style overlay: dark blur backdrop, 16:9 stage with film-corner brackets, title “How Charts works”, a short paragraph, and a Quick check question. Quiet. Then a matching empty stage that says the clip is coming — storyboard, not a fake player. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Tiny colorful play badges pop in one by one beside HOME, Y.W.C., INDACREATOR, CHARTS, NEWS, MEMBERSHIPS — each badge matches that pill’s color, like Christmas lights turning on slowly. Not a strobe. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 04-off · 27–36s · Leave it on or off
+### Shot 04-click-badge · 28–38s · Click the little play
 
-On-screen super (optional, ≤6 words): **Optional, not advice**
+On-screen super (optional, ≤6 words): **Click the tiny play**
 
-**VO on this shot:** This is extra explanation for people who want a slower walkthrough. It is not trading advice. Tap the pill again to hide the badges. You can leave Explain on as long as it helps.
+**VO on this shot:** Click a tiny play badge — not the big word, the little play picture beside it. A big card pops up. Inside you get a movie, easy words, and one quiz question.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Return to the nav. The pill toggles back toward “Need extra understanding” and badges fade. End still on the cyan play icon. Soft, optional, never required. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cursor carefully clicks the tiny play beside CHARTS, not the CHARTS word. A big colorful card pops up: 16:9 movie stage, easy words, one quiz. Museum-slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-quiz-safe · 38–47s · Quiz is practice
+
+On-screen super (optional, ≤6 words): **Practice, not a test**
+
+**VO on this shot:** A quiz here is just practice. You cannot fail your account. If the movie is not ready yet, you still get the words.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. The quiz looks like a school worksheet with three big buttons. A gold star for trying, not a failing grade. Storyboard frame if no movie yet. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-off · 47–56s · Turn it off anytime
+
+On-screen super (optional, ≤6 words): **On or off is okay**
+
+**VO on this shot:** Click the same cyan button again to hide the badges. You can leave the help on as long as you want.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cyan pill clicks again. Badges fade away like lights-out at a museum. Optional. End still on the play square. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -529,59 +695,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `profile.mp4` |
 | Accent | `#FF2E9A` |
-| Length | **38 seconds** |
-| Logline | Your account space. Identity, not an order ticket. |
-| Music | Quiet pink pad. Intimate, not glamorous. |
-| Captions | Do not show a real email or password field filled in. |
+| Length | **54 seconds** |
+| Logline | The pink locker with your name and photo. |
+| Music | Quiet pink night-light pad. |
+| Captions | Do not show a real email or a filled password. |
 
 ### Continuous narration (record once)
 
-> Profile is your account space — how you appear on ClearPath. Set a display name, a public handle for a /u/ link if you want one, a bio, and an avatar or cover. Social links and password live here too. You can keep the profile private. Saving settings does not place a trade. If you use a broker connect panel, that is your licensed broker — ClearPath does not hold your money. Update only what you want others to see. Then head back to Home or Charts.
+> Find the pink button that says PROFILE. Click it. This room is your locker. Type the name you want people to see. You can add a photo of your face, or skip the photo. You can write a short bio — that means two or three sentences about you. You can keep the locker private so strangers do not see it. When you are done, click the Save button. Saving your name does not buy anything. It does not sell anything. Then click the purple HOME button or the orange CHARTS button to go back to the other rooms. Remember: pink locker, type a name, click Save. Photo is optional. Take your time.
 
-_87 words._
+_113 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 38-second respectful tour of a private profile control room: avatar sidebar, display name, handle, bio, save confirmation. Pink accents. No public-leaderboard flex. No trade blotter. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second pink locker tour. Name, photo, save. Fifth grade. Colorful form fields that light up one at a time. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-room · 0–9s · What Profile is
+### Shot 01-pink · 0–9s · Find pink PROFILE
 
-On-screen super (optional, ≤6 words): **Your account space**
+On-screen super (optional, ≤6 words): **Pink = your locker**
 
-**VO on this shot:** Profile is your account space — how you appear on ClearPath.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Profile / biography control room — avatar sidebar, calm form fields, pink #FF1493 accents. Private, respectful, simple. Title energy: your account space. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-fields · 9–19s · What you can edit
-
-
-**VO on this shot:** Set a display name, a public handle for a /u/ link if you want one, a bio, and an avatar or cover. Social links and password live here too.
+**VO on this shot:** Find the pink button that says PROFILE. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Fields highlight in turn: display name, profile URL / handle, Instagram type, publish status, bio. Avatar and banner upload controls soft-glow. Gentle file-pick hint. No celebrity montage. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Second row of pills. Giant cursor finds glowing pink PROFILE. Locker / nametag icon. Pink wash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-save · 19–29s · Save and privacy
+### Shot 02-locker · 9–18s · Your locker
 
 
-**VO on this shot:** You can keep the profile private. Saving settings does not place a trade.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Save Profile Settings press; soft confirmation. A short readable compliance note. Publish status sits on Private. Quiet. No confetti. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-broker-leave · 29–38s · Broker note, then leave
-
-On-screen super (optional, ≤6 words): **Not an order ticket**
-
-**VO on this shot:** If you use a broker connect panel, that is your licensed broker — ClearPath does not hold your money. Update only what you want others to see. Then head back to Home or Charts.
+**VO on this shot:** This room is your locker. Type the name you want people to see.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A small Broker Connect panel labeled as an external licensed broker — ClearPath is the interface, not the custodian. Then a soft handoff back toward Home / Charts. Still fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A colorful locker opens: empty nametag, empty photo circle. Friendly. Kid bedroom desk energy, not a dating app. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-photo-bio · 18–27s · Photo and bio are optional
+
+On-screen super (optional, ≤6 words): **Photo is optional**
+
+**VO on this shot:** You can add a photo of your face, or skip the photo. You can write a short bio — that means two or three sentences about you.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Photo circle glows, then a skip stamp. Bio box lights up with three short lines. Optional stickers. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-private · 27–36s · You can stay private
+
+
+**VO on this shot:** You can keep the locker private so strangers do not see it.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A publish switch sits on Private. A little curtain closes. Safe, colorful. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-save · 36–45s · Click Save
+
+On-screen super (optional, ≤6 words): **Save ≠ shopping**
+
+**VO on this shot:** When you are done, click the Save button. Saving your name does not buy anything. It does not sell anything.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Huge Save button. Soft confirmation star. No confetti cannon. Crossed-out shopping cart in the corner. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-leave · 45–54s · Back to other rooms
+
+On-screen super (optional, ≤6 words): **Then HOME or CHARTS**
+
+**VO on this shot:** Then click the purple HOME button or the orange CHARTS button to go back to the other rooms.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Purple HOME and orange CHARTS pulse. Cursor picks HOME. Front door. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -592,59 +778,80 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `affiliate.mp4` |
 | Accent | `#FF2E9A` |
-| Length | **40 seconds** |
-| Logline | Your /r/ code when you are ready. Referrals, not market payouts. |
-| Music | Low lava warmth. No trap beat, no cash sound. |
-| Captions | Show /r/CODE as a generic pattern, not a real member code. |
+| Length | **56 seconds** |
+| Logline | The pink share-a-link room. Optional. Not a market game. |
+| Music | Low lava warmth. No cash, no trap beat. |
+| Captions | Show /r/CODE as a cartoon pattern, not a real code. No yachts. |
 
 ### Continuous narration (record once)
 
-> Affiliate is the referral desk. Private accounts get a personal /r/ code. The link stays dormant until you accept the Affiliate Program Agreement. Then you can copy a share URL. The ledger shows signups, discount or credit, and badge progress in plain numbers. The sidebar cockpit has extra rooms — feeds, guilds, ranks, compliance. Those are extras. This is not a brokerage payout from the market, and it does not place anyone’s trades. Activate only when you are ready to share calmly.
+> Find the pink button that says AFFILIATE. Click it. This room is for sharing a special link with friends if you want to. The link looks like /r/ and then some letters. The link stays asleep until you read the rules and click yes. Then you can copy the link. Copy means the computer remembers the words so you can paste them somewhere else later. The numbers on the page are just counts, like tally marks. They are not a video game. This room does not buy or sell in the market. If you do not want to share, that is fine. Click the purple HOME button and leave. Remember: pink share button, rules first, sharing is optional. Take your time.
 
-_82 words._
+_121 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 40-second trust-first tour of the Affiliate terminal: a dormant then live share URL, an agreement activate control, plain metric numbers, a lava sidebar of extra rooms. No get-rich imagery. No yacht. No “passive income” stamp. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 56-second lava-pink share-link tour. A sleeping link wakes up after a yes. Fifth grade. No get-rich pictures. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-desk · 0–10s · What it is
+### Shot 01-find · 0–9s · Find pink AFFILIATE
 
-On-screen super (optional, ≤6 words): **Referral desk**
+On-screen super (optional, ≤6 words): **Pink share room**
 
-**VO on this shot:** Affiliate is the referral desk. Private accounts get a personal /r/ code.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Affiliate Network dashboard — share URL, gentle rewards ladder, lava-orange #ff5a1f and pink glass, dark #0a0c16. Trust-first. No get-rich imagery, no cars, no yachts. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-activate · 10–20s · Agreement, then copy
-
-
-**VO on this shot:** The link stays dormant until you accept the Affiliate Program Agreement. Then you can copy a share URL.
+**VO on this shot:** Find the pink button that says AFFILIATE. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Affiliate Program Agreement activate control highlights. Link visually “DORMANT” until accepted, then “LIVE”. Copy share link button soft-press; brief “copied” confirmation. No fireworks. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Second-row pink AFFILIATE pill with a network / share icon. Lava glow. Cursor. No money piles. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-ledger · 20–30s · Plain numbers
+### Shot 02-link · 9–18s · A special link
 
 
-**VO on this shot:** The ledger shows signups, discount or credit, and badge progress in plain numbers.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Metrics row: referral code, share URL, month signups, discount or credit, badge progress — calm numbers, no slot-machine spin. Education-first caption energy. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-cockpit · 30–40s · Extras, then still
-
-On-screen super (optional, ≤6 words): **Share calmly**
-
-**VO on this shot:** The sidebar cockpit has extra rooms — feeds, guilds, ranks, compliance. Those are extras. This is not a brokerage payout from the market, and it does not place anyone’s trades. Activate only when you are ready to share calmly.
+**VO on this shot:** This room is for sharing a special link with friends if you want to. The link looks like /r/ and then some letters.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Sidebar cockpit chips: Desk Feed, Guilds, Live Rooms, Chart Desks, Ranks, Compliance, Settings — overview only. Pull back to the still affiliate desk. Trust-first end card. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A big friendly /r/CODE block, sleeping with Zzz. Kid-simple. Dark colorful cockpit around it. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-wake · 18–28s · Rules, then yes
+
+On-screen super (optional, ≤6 words): **Asleep until yes**
+
+**VO on this shot:** The link stays asleep until you read the rules and click yes.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A rules card. Cursor clicks yes. The link wakes up — DORMANT to LIVE — like a lamp turning on. Soft. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-copy · 28–37s · Copy means remember
+
+On-screen super (optional, ≤6 words): **Copy = remember**
+
+**VO on this shot:** Then you can copy the link. Copy means the computer remembers the words so you can paste them somewhere else later.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Copy button. A little paper duplicate flies into a pocket. Kid metaphor for clipboard. Brief “copied” star. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-tally · 37–46s · Numbers are tallies
+
+On-screen super (optional, ≤6 words): **Tallies, not a game**
+
+**VO on this shot:** The numbers on the page are just counts, like tally marks. They are not a video game. This room does not buy or sell in the market.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Plain colorful tally marks, not spinning slots. Crossed-out game controller / no yacht. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-skip · 46–56s · Skipping is fine
+
+On-screen super (optional, ≤6 words): **Sharing is optional**
+
+**VO on this shot:** If you do not want to share, that is fine. Click the purple HOME button and leave.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Purple HOME pulses. Cursor leaves the lava room. Front door. Relief. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -655,59 +862,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `cinema.mp4` |
 | Accent | `#00E5FF` |
-| Length | **38 seconds** |
-| Logline | In-terminal theater. Direct streams. Not a buy-room. |
-| Music | Soft theatre hush. A distant projector air. No trailer-voice boom. |
-| Captions | Player chrome only. No fake “live P&L” overlay on the film. |
+| Length | **54 seconds** |
+| Logline | The cyan movie theater inside the website. |
+| Music | Theatre hush. Soft amber. No trailer boom. |
+| Captions | No YouTube logo. No fake live P&L on the film. |
 
 ### Continuous narration (record once)
 
-> ClearPath Cinema is the in-terminal theater. Browse category shelves. Start a featured title or pick a thumbnail. Videos play in ClearPath’s own player — seek, volume, fullscreen — using direct streams, not a YouTube embed. Continue Watching keeps recent titles close. If a live stream is down, the player says so. Founder media tools stay out of the way. Choose one title, watch with full attention, then return to Charts or Education. These are product and education clips, not a room that tells you what to buy.
+> Find the cyan button that says CLEARPATH CINEMA. Click it. This room is a movie theater inside the website. You will see rows of pictures, like shelves of movies. Click one picture. A player opens. Player means a box that shows the movie. You can drag the little bar at the bottom to skip ahead. You can make it full screen so the movie is big. These movies teach. They do not tell you what to buy. If a live show is broken, the page will say so in plain words. Watch one movie. Then click the cyan EDUCATION button or the orange CHARTS button. Remember: cyan theater, click one picture, watch one movie. Take your time.
 
-_87 words._
+_117 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 38-second cinema tour: amber italic CLEARPATH CINEMA header, category shelves, a featured play, an in-app player with seek and fullscreen, Continue Watching. Theatre dark. No YouTube chrome. No live trading chat. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second cyan-amber theater tour. Shelves of glowing posters. A simple player. Fifth grade. Colorful dark theater. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-library · 0–9s · What Cinema is
+### Shot 01-find · 0–9s · Find cyan CINEMA
 
-On-screen super (optional, ≤6 words): **In-terminal theater**
+On-screen super (optional, ≤6 words): **Cyan = theater**
 
-**VO on this shot:** ClearPath Cinema is the in-terminal theater. Browse category shelves.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. ClearPath Cinema library — amber italic header, pantry shelf of titles, soft ambient cyan/amber. Large video-stage energy. Dark theatre, not a brokerage. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-pick · 9–19s · Pick a title
-
-
-**VO on this shot:** Start a featured title or pick a thumbnail.
+**VO on this shot:** Find the cyan button that says CLEARPATH CINEMA. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Featured hero soft-highlights Play. Thumbnail shelves wait below — Finance TV, Indicator TV style rows. A+/A− text scale controls visible. Calm browsing. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cyan CLEARPATH CINEMA pill, amber italic glow, little TV icon. Cursor. Cyan-amber wash like theater lights dimming. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-player · 19–29s · The player
+### Shot 02-shelves · 9–18s · Shelves of pictures
 
 
-**VO on this shot:** Videos play in ClearPath’s own player — seek, volume, fullscreen — using direct streams, not a YouTube embed. If a live stream is down, the player says so.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Full in-app player — seek bar, volume, fullscreen. Direct stream / HLS feel. No YouTube iframe chrome. If showing an error, a calm “Live stream temporarily unavailable” on glass. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-continue · 29–38s · One title, then return
-
-On-screen super (optional, ≤6 words): **Watch, then return**
-
-**VO on this shot:** Continue Watching keeps recent titles close. Founder media tools stay out of the way. Choose one title, watch with full attention, then return to Charts or Education. These are product and education clips, not a room that tells you what to buy.
+**VO on this shot:** This room is a movie theater inside the website. You will see rows of pictures, like shelves of movies.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Continue Watching row. Tiny note that Media Cabinet is founder tooling. Still player fading to black with soft cyan residual. End. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Rows of colorful movie posters on dark shelves. Kid video-store joy. Readable titles. No blood, no hype stamps. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-player · 18–27s · Click a picture
+
+On-screen super (optional, ≤6 words): **Player = movie box**
+
+**VO on this shot:** Click one picture. A player opens. Player means a box that shows the movie. You can drag the little bar at the bottom to skip ahead. You can make it full screen so the movie is big.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cursor clicks a poster. A big player box opens. Seek bar as a simple crayon line. Fullscreen corners glow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-teach · 27–36s · Movies that teach
+
+
+**VO on this shot:** These movies teach. They do not tell you what to buy.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A calm educational still on the player. Crossed-out shopping cart. Friendly. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-broken · 36–45s · If it is broken
+
+On-screen super (optional, ≤6 words): **Broken? It will say so**
+
+**VO on this shot:** If a live show is broken, the page will say so in plain words.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Honest glass sign: this show is not working right now. Pick another poster. No angry red siren. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-next · 45–54s · Then school or pictures
+
+On-screen super (optional, ≤6 words): **One movie, then go**
+
+**VO on this shot:** Watch one movie. Then click the cyan EDUCATION button or the orange CHARTS button.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cyan EDUCATION and orange CHARTS pulse. Cursor may pick either. End still. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -718,59 +945,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `education.mp4` |
 | Accent | `#00E5FF` |
-| Length | **42 seconds** |
-| Logline | Schools, units, lessons, a short quiz — then the libraries if you want depth. |
-| Music | Warm educator piano, very low. No level-up chime that sounds like a slot. |
-| Captions | School names on cards are enough. No “you are now a trader” stamp. |
+| Length | **58 seconds** |
+| Logline | The cyan school. One lesson. Then a tiny quiz. Then rest. |
+| Music | Warm classroom piano, very low. No level-up slot chime. |
+| Captions | No “you are a trader now” stamp. |
 
 ### Continuous narration (record once)
 
-> ClearPath Education is structured learning. Pick a school — Crypto, Stocks, Forex, and more. Open an unlocked unit. Read the lessons like a calm textbook. At the end, a short quiz checks understanding. Passing unlocks the next unit. Progress is saved. Passing does not mean you should trade. It means you understood that page. From here you can also open three libraries: Encyclopedia of Finance, Encyclopedia of Indicators, and Literacy OS. One unit at a time. Then come back when you want the next door.
+> Find the cyan button that says CLEARPATH EDUCATION. Click it. This is school inside the website. You will see subject cards — Crypto, Stocks, Forex, and more — like classroom doors. Click one subject. Then click a lesson that is unlocked. Unlocked means the door is open. Read it like a short book. At the end there is a tiny quiz. A quiz is just to see if the words made sense. Passing does not mean you should spend money. It only means you understood that page. There are also three libraries for extra reading. Do one lesson. Then rest. If your brain is tired, click the purple HOME button.
 
-_85 words._
+_110 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 42-second educator’s tour: school grid on dark glass, a unit list with lock/unlock, a lesson reader, a gentle quiz pass, then three library doors — Encyclopedia of Finance, Encyclopedia of Indicators, Literacy OS. Warm, academic, no streak pressure. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 58-second cyan school tour. Subject cards like classroom doors. A book. A three-question quiz with a sticker, not a slot. Fifth grade. Very colorful. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-schools · 0–10s · What Education is
+### Shot 01-find · 0–9s · Find cyan EDUCATION
 
-On-screen super (optional, ≤6 words): **One school at a time**
+On-screen super (optional, ≤6 words): **Cyan = school**
 
-**VO on this shot:** ClearPath Education is structured learning. Pick a school — Crypto, Stocks, Forex, and more.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. ClearPath Education school grid on dark #0A0E14 glass — Crypto, Stocks, Forex, Futures, Commodities, Bonds, Options, Funds, Indices, Economic Indicators. Cyan headings. Warm educator presence. No gamified streak rings. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-unit · 10–21s · Units and lessons
-
-
-**VO on this shot:** Open an unlocked unit. Read the lessons like a calm textbook.
+**VO on this shot:** Find the cyan button that says CLEARPATH EDUCATION. Click it.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Open a school into a unit list with lock/unlock and pass states shown calmly. Then a lesson reader with breadcrumb navigation and comfortable reading typography. Soft page turn. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Cyan CLEARPATH EDUCATION pill with a book icon, glowing like a classroom night-light. Cursor. Cyan wash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-quiz · 21–31s · Quiz, not a license
+### Shot 02-doors · 9–19s · Classroom doors
 
+On-screen super (optional, ≤6 words): **Cards = classroom doors**
 
-**VO on this shot:** At the end, a short quiz checks understanding. Passing unlocks the next unit. Progress is saved. Passing does not mean you should trade. It means you understood that page.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. QuizEngine — one simple question, a teal check on pass, a gentle unlock glow on the next unit. Not a slot machine. Academic warmth. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-libraries · 31–42s · Three libraries
-
-On-screen super (optional, ≤6 words): **Study, then rest**
-
-**VO on this shot:** From here you can also open three libraries: Encyclopedia of Finance, Encyclopedia of Indicators, and Literacy OS. One unit at a time. Then come back when you want the next door.
+**VO on this shot:** This is school inside the website. You will see subject cards — Crypto, Stocks, Forex, and more — like classroom doors.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Three desk cards: Encyclopedia of Finance, Encyclopedia of Indicators, Literacy OS. Soft cyan outlines. Return to the school grid. Soft fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A grid of colorful subject doors: Crypto, Stocks, Forex, Futures, Commodities, Bonds, Options, Funds, Indices, Economic Indicators. Each door a different candy color. Kid school hallway. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-lesson · 19–29s · Open an unlocked door
+
+
+**VO on this shot:** Click one subject. Then click a lesson that is unlocked. Unlocked means the door is open. Read it like a short book.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. An unlocked padlock turns teal. A short book opens with huge readable type and a breadcrumb trail of big crumbs. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-quiz · 29–39s · Tiny quiz
+
+On-screen super (optional, ≤6 words): **Quiz = did the words click?**
+
+**VO on this shot:** At the end there is a tiny quiz. A quiz is just to see if the words made sense. Passing does not mean you should spend money. It only means you understood that page.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Three giant answer buttons. A teal sticker star on pass. Next door unlocks gently. Not a slot machine. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-libraries · 39–49s · Three extra libraries
+
+
+**VO on this shot:** There are also three libraries for extra reading.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Three glowing library doors: Encyclopedia of Finance, Encyclopedia of Indicators, Literacy OS. Optional. Soft. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-rest · 49–58s · One lesson, then rest
+
+On-screen super (optional, ≤6 words): **One lesson, then rest**
+
+**VO on this shot:** Do one lesson. Then rest. If your brain is tired, click the purple HOME button.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. School grid dims to rest. Purple HOME pulses. Cursor may leave. Kind ending. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -781,59 +1028,80 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `exit.mp4` |
 | Accent | `#FF4D4D` |
-| Length | **32 seconds** |
-| Logline | One tap signs you out of ClearPath. Nothing else. |
-| Music | None. A single soft door-close air at the end, not a slam. |
-| Captions | Red is the brand of the pill, not an emergency. Keep it quiet. |
+| Length | **52 seconds** |
+| Logline | The red stop-sign button. It hangs up. It does not delete you. |
+| Music | None. One soft door-close at the end. No slam. No alarm. |
+| Captions | Red is a stop sign, not an emergency siren. |
 
 ### Continuous narration (record once)
 
-> EXIT is the red pill on the second nav row. It signs you out of your ClearPath session. It does not close a broker account you connected elsewhere. It does not delete your profile. It does not place a last trade. Tap it when you are done for now. Next visit, sign in again from the usual door. If you only wanted another tab, use Home or Charts instead. EXIT means leave this session — calmly, completely, and only for this site.
+> Look at the second row of buttons, under the first row. The last button is red. It says EXIT. Red means stop, like a stop sign on the street. Click EXIT only when you want to leave this website for now. EXIT logs you out. That means the website forgets you are signed in, like hanging up a phone. It does not delete your name. It does not close a bank. It does not buy or sell anything. If you meant to look at pictures, do not click EXIT. Click the orange CHARTS button instead. If you meant the front door, click purple HOME. Remember: red is stop. Only click it when you are done for now.
 
-_82 words._
+_117 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 32-second calm explanation of the red EXIT pill on the second nav row: it signs out of this session only. It does not close a broker, delete a profile, or place a last trade. End on a still signed-out door, not a slam. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 52-second red stop-sign tour of EXIT. Second row. Very clear. Fifth grade. Colorful warning without panic strobe. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-pill · 0–8s · Find EXIT
+### Shot 01-second-row · 0–8s · Look under the first row
 
-On-screen super (optional, ≤6 words): **EXIT**
+On-screen super (optional, ≤6 words): **Second row, last button**
 
-**VO on this shot:** EXIT is the red pill on the second nav row.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Secondary ClearNav row on black: PROFILE, AFFILIATE, CLEARPATH CINEMA, CLEARPATH EDUCATION, then a red-outlined pill EXIT with a small logout icon. Slow push to the red pill. No alarm strobe. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-what-it-does · 8–16s · What it does
-
-
-**VO on this shot:** It signs you out of your ClearPath session.
+**VO on this shot:** Look at the second row of buttons, under the first row. The last button is red. It says EXIT.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A calm tap on EXIT. The terminal chrome fades toward a signed-out door / login greeting. No data-shred animation. No skull icons. Quiet. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Camera drops from the colorful top row to the second row. PROFILE pink, AFFILIATE pink, CINEMA cyan, EDUCATION cyan, then stop-sign red EXIT. Slow. Giant cursor. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-what-it-does-not · 16–24s · What it does not
+### Shot 02-stop · 8–17s · Red = stop sign
 
+On-screen super (optional, ≤6 words): **Red = stop**
 
-**VO on this shot:** It does not close a broker account you connected elsewhere. It does not delete your profile. It does not place a last trade.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Three quiet glass cards fade in: does not close a broker account / does not delete your profile / does not place a last trade. Readable. Then they fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-choose · 24–32s · Leave or stay
-
-On-screen super (optional, ≤6 words): **Only this session**
-
-**VO on this shot:** Tap it when you are done for now. Next visit, sign in again from the usual door. If you only wanted another tab, use Home or Charts instead. EXIT means leave this session — calmly, completely, and only for this site.
+**VO on this shot:** Red means stop, like a stop sign on the street. Click EXIT only when you want to leave this website for now.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. If the pointer hesitates, HOME and CHARTS pills glow softly as the alternative. Then EXIT remains. End still. Calm, complete, only this site. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. The red EXIT pill becomes a friendly street stop sign, then back to a pill. No blood. No skull. Kid-safety poster. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-hang-up · 17–26s · Like hanging up a phone
+
+On-screen super (optional, ≤6 words): **Hang up, not delete**
+
+**VO on this shot:** EXIT logs you out. That means the website forgets you are signed in, like hanging up a phone.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A simple colorful phone hangs up. The website fades to a signed-out door. Calm. No shredder. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-not-these · 26–35s · It does not do these
+
+On-screen super (optional, ≤6 words): **Name stays**
+
+**VO on this shot:** It does not delete your name. It does not close a bank. It does not buy or sell anything.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Three kid cards: nametag stays, bank stays, no shopping. Bright icons. Clear. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-wrong-button · 35–44s · If you wanted pictures
+
+
+**VO on this shot:** If you meant to look at pictures, do not click EXIT. Click the orange CHARTS button instead.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Orange CHARTS and purple HOME glow as the “oops I meant these” choices. Cursor hovers, does not click EXIT. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-home · 44–52s · Or go to the front door
+
+On-screen super (optional, ≤6 words): **Or click HOME**
+
+**VO on this shot:** If you meant the front door, click purple HOME.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Purple HOME pulses. Still colorful row. End. Choice stays with the viewer. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -844,59 +1112,78 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `literacy.mp4` |
 | Accent | `#00E5FF` |
-| Length | **40 seconds** |
-| Logline | A personal market-science desk. Rooms for notes, sources, and study. |
+| Length | **54 seconds** |
+| Logline | A cyan notebook desk with rooms for ideas. |
 | Music | Dawn-cyan air. Slow. |
-| Captions | Room chip names on screen are the lesson. |
+| Captions | Room names on chips are the lesson. |
 
 ### Continuous narration (record once)
 
-> Literacy OS is your personal market-science desk. Morning Brief is a gentle landing — it shows what you have archived, not what you must do. Use the room chips to move. Thesis Vault holds your theses. Concept Wiki holds ideas in plain language. Source Sentinel helps you notice page changes. Other rooms wait until you need them — media, listening, pins, Pattern Studio. This is education only. Archive what you learn before you chase a new tab.
+> Literacy OS is a notebook desk you open from school. Click the cyan Literacy OS card. Morning Brief is the first page. It shows what you already saved. It is not a to-do list that yells at you. The colorful chips are rooms. Click Thesis Vault to keep your big ideas. Click Concept Wiki for words explained in easy language. Click Source Sentinel to notice when a page on the internet changes. Other rooms can wait. This desk is school. It is not a store. Save one idea. Then rest. Purple HOME is always at the top if you want out. Remember: cyan notebook, one room, one idea. Take your time.
 
-_77 words._
+_111 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 40-second walk through Literacy OS: Morning Brief stats, room chips, Thesis Vault and Concept Wiki, a peek at Source Sentinel. Education lab, not brokerage. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second cyan notebook-desk tour. Room chips like classroom stations. Fifth grade. Colorful. Slow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-brief · 0–10s · What it is
+### Shot 01-door · 0–9s · Open from school
 
-On-screen super (optional, ≤6 words): **Learning desk**
+On-screen super (optional, ≤6 words): **Notebook desk**
 
-**VO on this shot:** Literacy OS is your personal market-science desk. Morning Brief is a gentle landing — it shows what you have archived, not what you must do.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Literacy OS desk establishing shot — “ClearPath Literacy OS / Market science for learners”. Morning Brief with quiet stats for vault, lessons, sentinel, wiki. Soft dawn-cyan light. Education lab, not brokerage. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-rooms · 10–20s · Room chips
-
-
-**VO on this shot:** Use the room chips to move.
+**VO on this shot:** Literacy OS is a notebook desk you open from school. Click the cyan Literacy OS card.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Tab chips highlight: Thesis Vault, Concept Wiki, Source Sentinel, Neuro LMS, Media Pantry, Listen→Learn. Soft selection. Not overwhelming. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. From the cyan Education grid, a Literacy OS door glows. Cursor clicks. Notebook-desk color wash. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-vault-wiki · 20–30s · Vault, Wiki, Sentinel
+### Shot 02-brief · 9–18s · Morning Brief
 
 
-**VO on this shot:** Thesis Vault holds your theses. Concept Wiki holds ideas in plain language. Source Sentinel helps you notice page changes.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Thesis Vault notes, then Concept Wiki cards, then Source Sentinel page-diff view. Calm archival energy. Lab aesthetic. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-more · 30–40s · More rooms, then still
-
-On-screen super (optional, ≤6 words): **Patience first**
-
-**VO on this shot:** Other rooms wait until you need them — media, listening, pins, Pattern Studio. This is education only. Archive what you learn before you chase a new tab.
+**VO on this shot:** Morning Brief is the first page. It shows what you already saved. It is not a to-do list that yells at you.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Quick calm montage: Media Pantry, Listen→Learn, Idea Pins, Pattern Studio, Encyclopedia bridge. Soft dissolves. Return to Morning Brief. Fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Morning Brief with quiet colorful stat stickers. Dawn light. No yelling checklist. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-chips · 18–27s · Rooms as chips
+
+
+**VO on this shot:** The colorful chips are rooms. Click Thesis Vault to keep your big ideas. Click Concept Wiki for words explained in easy language.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Candy chips light one at a time: Thesis Vault, Concept Wiki, Source Sentinel. Kid stations in a classroom. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-sentinel · 27–36s · Source Sentinel
+
+
+**VO on this shot:** Click Source Sentinel to notice when a page on the internet changes.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Two page pictures with a gentle “this part changed” highlight. Detective-kid energy, not spyware scary. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-wait · 36–45s · Other rooms can wait
+
+On-screen super (optional, ≤6 words): **School, not a store**
+
+**VO on this shot:** Other rooms can wait. This desk is school. It is not a store.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. More chips stay dim on purpose. Crossed-out store. Soft. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-rest · 45–54s · Save one idea
+
+On-screen super (optional, ≤6 words): **One idea, then rest**
+
+**VO on this shot:** Save one idea. Then rest. Purple HOME is always at the top if you want out.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. One note saved. Purple HOME pulses. Rest. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -907,59 +1194,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `encyclopedia.mp4` |
 | Accent | `#00E5FF` |
-| Length | **40 seconds** |
-| Logline | A calm file-browser for markets. Teaching pages, not a buy list. |
-| Music | Library hush. Distant page air. |
-| Captions | Do not stamp “10,000 issuers verified”. Teaching library only. |
+| Length | **54 seconds** |
+| Logline | A cyan library of money words. Teaching pages, not a shopping list. |
+| Music | Library hush with a hint of cyan. |
+| Captions | Do not stamp “thousands of real companies verified.” |
 
 ### Continuous narration (record once)
 
-> The Encyclopedia of Finance is ClearPath’s deep knowledge library — a calm file-browser for markets. The left sidebar is your index. Pick one topic. Choose a reading level — Beginner through Economist — so the same idea can meet you where you are. You will see an article or a lab in the main stage. Open the Scholar Tutor only when a term still feels foggy. Cards are teaching pages, not a researched list of every company on earth. One topic, one level, then step back.
+> The Encyclopedia of Finance is a library of money words. Open it from school. The list on the left is the index — like the contents page in a book. Click one topic. Then pick a reading level. Beginner is the easy words. You can climb later. The middle of the screen is the article, like a chapter. If a word still feels foggy, open the Scholar Tutor and ask in regular English. These cards are for learning. They are not a list of companies you must buy. Read one topic. Then click back, or click purple HOME. Remember: left list, one topic, Beginner first. Then stop. Take your time.
 
-_86 words._
+_110 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 40-second library tour: glass shelves, a left sidebar of topics, Beginner through Economist tabs, a long-form article, a Scholar Tutor corner. Academic, not flashy. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second cyan library tour. Bookshelves, a level picker like reading levels, a tutor. Fifth grade. Colorful academic. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-library · 0–10s · What it is
+### Shot 01-library · 0–9s · A library
 
-On-screen super (optional, ≤6 words): **Study library**
+On-screen super (optional, ≤6 words): **Library of money words**
 
-**VO on this shot:** The Encyclopedia of Finance is ClearPath’s deep knowledge library — a calm file-browser for markets.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Encyclopedia of Finance — glass library shelves with soft cyan index labels. Academic, cinematic, not flashy. Establishing wide shot. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-sidebar · 10–20s · Index and level
-
-
-**VO on this shot:** The left sidebar is your index. Pick one topic. Choose a reading level — Beginner through Economist — so the same idea can meet you where you are.
+**VO on this shot:** The Encyclopedia of Finance is a library of money words. Open it from school.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Left sidebar topics: Home, Markets, Stocks, Forex, Crypto, Economy, Labs, Glossary. Then pedagogy tabs: Beginner / Trader / Analyst / Economist — soft underline selection. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Glass bookshelves with cyan labels. Kid library wonder. Establishing wide shot. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-article · 20–30s · Article or lab
+### Shot 02-index · 9–18s · The left list
 
 
-**VO on this shot:** You will see an article or a lab in the main stage.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Main article / lab surface with a back/exit HUD. Readable long-form. Brief calm peek at a lab labeled education only. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-tutor · 30–40s · Tutor, then leave
-
-On-screen super (optional, ≤6 words): **Depth without overwhelm**
-
-**VO on this shot:** Open the Scholar Tutor only when a term still feels foggy. Cards are teaching pages, not a researched list of every company on earth. One topic, one level, then step back.
+**VO on this shot:** The list on the left is the index — like the contents page in a book. Click one topic.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. ClearPath Scholar Tutor slide-out — plain-English Q&A. Quiet helper, not a hype bot. Return to sidebar + article. Soft fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Left sidebar lights: Markets, Stocks, Forex, Crypto, Economy — each a color. Contents-page metaphor. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-levels · 18–27s · Reading levels
+
+On-screen super (optional, ≤6 words): **Beginner = easy words**
+
+**VO on this shot:** Then pick a reading level. Beginner is the easy words. You can climb later.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Tabs: Beginner / Trader / Analyst / Economist as reading-level stickers. Beginner glows first. Same book, easier words. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-chapter · 27–36s · The chapter
+
+
+**VO on this shot:** The middle of the screen is the article, like a chapter.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A long-form page with huge type. Back button as a big arrow. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-tutor · 36–45s · Ask the tutor
+
+On-screen super (optional, ≤6 words): **Ask in easy words**
+
+**VO on this shot:** If a word still feels foggy, open the Scholar Tutor and ask in regular English. These cards are for learning. They are not a list of companies you must buy.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A friendly tutor corner. Speech bubble in plain English. Not a hype robot. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-back · 45–54s · One topic, then back
+
+On-screen super (optional, ≤6 words): **One topic, then stop**
+
+**VO on this shot:** Read one topic. Then click back, or click purple HOME.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Back arrow or purple HOME. Still library. End. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
@@ -970,59 +1277,79 @@ ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cya
 |---|---|
 | Slot / filename | `indicators.mp4` |
 | Accent | `#00E5FF` |
-| Length | **38 seconds** |
-| Logline | What a study is, how to read it, what it cannot promise. |
-| Music | Quiet teal tone. Technical, not hype. |
-| Captions | SVG chart illustrations only — no fake live videos on the cards. |
+| Length | **54 seconds** |
+| Logline | A teal picture-book of chart helpers. They describe yesterday, not tomorrow. |
+| Music | Quiet teal tone. |
+| Captions | SVG pictures only. No fake live videos on the cards. |
 
 ### Continuous narration (record once)
 
-> The Encyclopedia of Indicators explains chart studies — RSI, moving averages, and more — with a picture, a formula, how to read it, and typical settings. Use the left filters to search or pick a category. Open a card for the study article. A live-overlay badge means that model can sit on Charts. An indicator describes past price. It does not promise the next move. Overlaying a study still does not place a trade. Read the limitations. Then go back to the terminal desktop.
+> The Encyclopedia of Indicators is a picture book of chart helpers. Helpers have names like RSI or moving average. Open it from school. Use the filters on the left to search, like picking a flavor. Click a card. You will see a picture, a recipe, how to read it, and what it cannot do. A live-overlay badge means you can stick that helper on CHARTS. A helper only talks about prices that already happened. It cannot promise tomorrow. Sticking a helper on a picture still does not buy or sell. Read the “what it cannot do” part. Then go back to the terminal desktop, or click orange CHARTS. Remember: pick a flavor, click a card, read what it cannot do.
 
-_84 words._
+_120 words._
 
 ### Master Flow prompt
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. A 38-second directory tour: filter rail, SVG indicator cards, a detail article with formula and limitations, a live-overlay badge that still is not a trade. Teal #00FFD1. Honest. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A 54-second teal directory tour. SVG picture cards. A formula as a recipe card. Fifth grade. Colorful. Honest. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 01-grid · 0–9s · What it is
+### Shot 01-book · 0–9s · A picture book
 
-On-screen super (optional, ≤6 words): **Studies of past price**
+On-screen super (optional, ≤6 words): **Picture book of helpers**
 
-**VO on this shot:** The Encyclopedia of Indicators explains chart studies — RSI, moving averages, and more — with a picture, a formula, how to read it, and typical settings.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Encyclopedia of Indicators card grid on a dark directory — teal #00FFD1 accents, standard SVG chart illustrations, no videos. Establishing shot. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 02-filters · 9–19s · Filters
-
-
-**VO on this shot:** Use the left filters to search or pick a category.
+**VO on this shot:** The Encyclopedia of Indicators is a picture book of chart helpers. Helpers have names like RSI or moving average. Open it from school.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Left rail: search, category chips, max complexity slider, live-overlay toggle, sort. Soft, readable, not a slot panel. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Teal card grid of simple SVG chart pictures. Kid picture-book energy. Establishing. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
-### Shot 03-article · 19–28s · Open a card
+### Shot 02-filters · 9–18s · Filters on the left
 
 
-**VO on this shot:** Open a card for the study article. A live-overlay badge means that model can sit on Charts. An indicator describes past price. It does not promise the next move.
-
-```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Detail panel: description, formula, how to read, limitations, typical settings. Live overlay badge if chart-addable. Academic. Honest limitations paragraph in focus. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
-```
-
-### Shot 04-back · 28–38s · Back to the desk
-
-On-screen super (optional, ≤6 words): **Describe, do not order**
-
-**VO on this shot:** Overlaying a study still does not place a trade. Read the limitations. Then go back to the terminal desktop.
+**VO on this shot:** Use the filters on the left to search, like picking a flavor.
 
 ```
-ClearPath Trader aesthetic: calm dark terminal, black glass panels, electric cyan #00E5FF, magenta #FF1493, gold #FFD700, orange #FF6A00, violet #4D00FF. Cinzel serif labels, readable large UI, cinematic but quiet, neurodivergent-friendly pacing, soft fade in and out. 16:9 landscape. No casino neon chaos, no countdown timers, no FOMO badges, no buy/sell arrows, no guaranteed-profit text, no order tickets, no flashing sirens. Back to Terminal Desktop control. Optional soft handoff toward Charts with an overlay already on — still no order ticket. Fade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout.
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Left rail as ice-cream flavor picks: search, category chips, a simple slider. Playful, not a slot panel. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 03-card · 18–27s · Open a card
+
+
+**VO on this shot:** Click a card. You will see a picture, a recipe, how to read it, and what it cannot do.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Detail page: picture, recipe card, how-to, limitations in a yellow “cannot do” box. Honest. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 04-sticker · 27–36s · A sticker for Charts
+
+On-screen super (optional, ≤6 words): **Sticker, not a purchase**
+
+**VO on this shot:** A live-overlay badge means you can stick that helper on CHARTS.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Live-overlay badge as a sticker. It flies toward the orange CHARTS pill. Cute. Not a trade. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 05-yesterday · 36–45s · Yesterday, not tomorrow
+
+On-screen super (optional, ≤6 words): **Yesterday only**
+
+**VO on this shot:** A helper only talks about prices that already happened. It cannot promise tomorrow. Sticking a helper on a picture still does not buy or sell.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. A calendar on yesterday circled. Tomorrow is gray. Crossed-out crystal ball. Crossed-out shopping cart. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
+```
+
+### Shot 06-back · 45–54s · Back or Charts
+
+On-screen super (optional, ≤6 words): **Read “cannot do”**
+
+**VO on this shot:** Read the “what it cannot do” part. Then go back to the terminal desktop, or click orange CHARTS.
+
+```
+FIFTH-GRADE FIELD TRIP through ClearPath Trader: VERY colorful glowing candy-button pills on a dark night sky — electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a white glove. Huge easy words. One thing lights up at a time like a kids science museum. Saturated color washes. Slow. Joyful. 16:9. Soft sparkles are museum glitter, not a casino. No strobe, no sirens, no gambling. Back to Terminal Desktop, or orange CHARTS. End still. Avoid: No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer pointing at candles, no fake breaking-news siren, no invented ticker prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut montage that skips the lesson.
 ```
 
 ---
