@@ -419,19 +419,37 @@ export function resetInvestorCatalogCache(): void {
   catalogCache = null;
 }
 
-/** Hand-tuned seeds first, then the public US roster, then founder overlay. A–Z by name. */
+function normalizeFirmName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function mergeIntoExisting(existing: InvestorSeed, incoming: InvestorSeed): void {
+  if (!existing.outreachEmail && incoming.outreachEmail) {
+    existing.outreachEmail = incoming.outreachEmail;
+    existing.outreachHint = existing.outreachHint || incoming.outreachHint;
+  }
+  if (!existing.linkedin && incoming.linkedin) existing.linkedin = incoming.linkedin;
+}
+
+/** Hand-tuned seeds first, then the public US roster, then founder overlay. A–Z by name. Identical name/site listings collapse; public email is kept. */
 export function getInvestorCatalog(): InvestorSeed[] {
   if (catalogCache) return catalogCache;
-  const seenIds = new Set<string>();
-  const seenSites = new Set<string>();
   const out: InvestorSeed[] = [];
   const add = (seed: InvestorSeed) => {
     const id = seed.id.toLowerCase();
     const site = catalogIdentityKey(seed.linkedin || seed.website);
-    if (seenIds.has(id) || (site && seenSites.has(site))) return;
-    seenIds.add(id);
-    if (site) seenSites.add(site);
-    out.push(seed);
+    const nameKey = normalizeFirmName(seed.name);
+    const existing = out.find(
+      (row) =>
+        row.id.toLowerCase() === id ||
+        (site && catalogIdentityKey(row.linkedin || row.website) === site) ||
+        (nameKey && normalizeFirmName(row.name) === nameKey)
+    );
+    if (existing) {
+      mergeIntoExisting(existing, seed);
+      return;
+    }
+    out.push({ ...seed });
   };
   for (const seed of INVESTOR_SEED) add(seed);
   for (const row of US_INVESTOR_ROSTER) add(rosterRowToSeed(row));
@@ -448,12 +466,23 @@ export function catalogKindCounts(list = getInvestorCatalog()): {
   accelerator: number;
   ib: number;
   linkedin: number;
+  withEmail: number;
   total: number;
 } {
-  const counts = { vc: 0, seed: 0, angel: 0, accelerator: 0, ib: 0, linkedin: 0, total: list.length };
+  const counts = {
+    vc: 0,
+    seed: 0,
+    angel: 0,
+    accelerator: 0,
+    ib: 0,
+    linkedin: 0,
+    withEmail: 0,
+    total: list.length,
+  };
   for (const seed of list) {
     counts[seed.kind] += 1;
     if (seed.linkedin) counts.linkedin += 1;
+    if (seed.outreachEmail) counts.withEmail += 1;
   }
   return counts;
 }

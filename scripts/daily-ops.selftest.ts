@@ -18,6 +18,7 @@ import {
   buildInvestorDraftLetter,
   getInvestorCatalog,
   catalogKindCounts,
+  catalogIdentityKey,
 } from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
@@ -95,6 +96,14 @@ assert.ok(findInvestorSeed("jasoncalacanis")?.linkedin?.includes("linkedin.com")
 assert.ok(findInvestorSeed("pearvc") || findInvestorSeed("Pear VC"));
 assert.ok(findInvestorSeed("hustlefund") || findInvestorSeed("Hustle Fund"));
 assert.equal(catalog.map((s) => s.id).length, new Set(catalog.map((s) => s.id)).size);
+const siteKeys = catalog.map((s) => catalogIdentityKey(s.linkedin || s.website));
+assert.equal(siteKeys.length, new Set(siteKeys).size, "identical website listings must be collapsed");
+const nameKeys = catalog.map((s) => s.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
+assert.equal(nameKeys.length, new Set(nameKeys).size, "identical firm-name listings must be collapsed");
+assert.ok(kinds.withEmail >= 150, `findfunding public emails missing, got ${kinds.withEmail}`);
+assert.ok(findInvestorSeed("8VC")?.outreachEmail || findInvestorSeed("ff_8vc")?.outreachEmail);
+assert.ok(findInvestorSeed("Cowboy Ventures")?.outreachEmail);
+assert.equal(catalog.some((s) => (s.outreachEmail || "").startsWith("name@")), false);
 
 const pipeline = findInvestorSeed("pipeline");
 assert.ok(pipeline, "Pipeline Angels must be in the catalog");

@@ -7,6 +7,7 @@
  * kind = vc | seed | angel | accelerator | ib
  */
 import { SEED_ANGEL_CSV } from "./usInvestorRosterSeedAngels";
+import { FINDFUNDING_VC_CSV } from "./usInvestorRosterFindfunding";
 export type RosterKind = "vc" | "seed" | "angel" | "accelerator" | "ib";
 
 export type InvestorRosterRow = {
@@ -295,5 +296,5 @@ function applyKnownLinkedin(rows: InvestorRosterRow[]): InvestorRosterRow[] {
 }
 
 export const US_INVESTOR_ROSTER: InvestorRosterRow[] = applyKnownLinkedin(
-  parseInvestorRosterCsv(`${ROSTER_CSV}\n${SEED_ANGEL_CSV}`)
+  parseInvestorRosterCsv(`${ROSTER_CSV}\n${SEED_ANGEL_CSV}\n${FINDFUNDING_VC_CSV}`)
 );
