@@ -31,7 +31,7 @@ import {
   researchInvestorForDate,
   readPipeline,
   updatePipeline,
-  INVESTOR_SEED,
+  getInvestorCatalog,
   type InvestorResearch,
   type InvestorSeed,
   type PipelineRow,
@@ -108,7 +108,7 @@ function withCatalog(report: DailyOpsReport): DailyOpsReport {
     ...report,
     siteStatus: report.siteStatus || overallOf(auto),
     failingAuto: report.failingAuto || failingAutoNames(auto),
-    investorCatalog: INVESTOR_SEED.map((s) => ({
+    investorCatalog: getInvestorCatalog().map((s) => ({
       id: s.id,
       name: s.name,
       kind: s.kind,

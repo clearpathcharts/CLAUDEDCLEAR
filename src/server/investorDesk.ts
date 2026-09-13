@@ -12,6 +12,7 @@ import { PRODUCT_LEGAL_NAME, PRODUCT_NAME, PRODUCT_URL } from "../content/produc
 import { TRADER_DESK_IDS, TRADER_DESKS, type TraderDeskId } from "../lib/traderDesks";
 import { getGroqApiKey } from "./secrets";
 import { pacificDateKey } from "./dailyOpsCatalog";
+import { US_INVESTOR_ROSTER, type InvestorRosterRow, type RosterKind } from "./usInvestorRoster";
 
 /** One-line desk blurbs for founder outreach. Facts only — no invented data rooms. */
 const DESK_LETTER_LINES: Record<TraderDeskId, string> = {
@@ -41,6 +42,8 @@ export type InvestorSeed = {
   linkedin?: string;
   /** Founder-only how-to-reach. Not copied into the outbound draft. */
   outreachHint?: string;
+  /** Public firm inbox only — never a harvested personal address. */
+  outreachEmail?: string;
   stage: string;
   thesis: string;
   whyClearPath: string;
@@ -341,17 +344,145 @@ export const INVESTOR_SEED: InvestorSeed[] = [
   },
 ];
 
+const OVERLAY_FILE = path.join(DIR, "investor-catalog-overlay.json");
+
+let catalogCache: InvestorSeed[] | null = null;
+
+/** LinkedIn / Wellfound profiles must not collapse to one host. */
+export function catalogIdentityKey(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+    if (
+      host === "linkedin.com" ||
+      host.endsWith(".linkedin.com") ||
+      host === "angel.co" ||
+      host === "wellfound.com" ||
+      host === "x.com" ||
+      host === "twitter.com"
+    ) {
+      return `${host}${parsed.pathname.replace(/\/$/, "").toLowerCase()}`;
+    }
+    return host;
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+function stageForKind(kind: RosterKind): string {
+  if (kind === "ib") return "Investment bank / placement";
+  if (kind === "angel") return "Angel / angel network";
+  if (kind === "accelerator") return "Accelerator";
+  if (kind === "seed") return "Pre-seed / seed";
+  return "Venture capital";
+}
+
+export function rosterRowToSeed(row: InvestorRosterRow): InvestorSeed {
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    website: row.website,
+    linkedin: row.linkedin,
+    outreachEmail: row.outreachEmail,
+    outreachHint: row.outreachEmail
+      ? `Public inbox ${row.outreachEmail}`
+      : row.linkedin
+        ? `Public LinkedIn ${row.linkedin}`
+        : undefined,
+    stage: stageForKind(row.kind),
+    thesis: `US ${stageForKind(row.kind).toLowerCase()} with a public firm page. We do not invent AUM, partners, or interest.`,
+    whyClearPath:
+      "Educational market-intelligence terminal with four live desks (institutional, fundamental, retail, neurodivergent). Not a brokerage.",
+    suggestedAngle:
+      "ClearPath Trader is live educational software with dedicated Institutional, Fundamental, Retail, and Neurodivergent sites — not a brokerage and not trade advice.",
+  };
+}
+
+export function loadOverlayRows(): InvestorRosterRow[] {
+  try {
+    if (!fs.existsSync(OVERLAY_FILE)) return [];
+    const raw = JSON.parse(fs.readFileSync(OVERLAY_FILE, "utf8"));
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveOverlayRows(rows: InvestorRosterRow[]): void {
+  if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
+  fs.writeFileSync(OVERLAY_FILE, JSON.stringify(rows, null, 2), "utf8");
+  catalogCache = null;
+}
+
+export function resetInvestorCatalogCache(): void {
+  catalogCache = null;
+}
+
+/** Hand-tuned seeds first, then the public US roster, then founder overlay. A–Z by name. */
+export function getInvestorCatalog(): InvestorSeed[] {
+  if (catalogCache) return catalogCache;
+  const seenIds = new Set<string>();
+  const seenSites = new Set<string>();
+  const out: InvestorSeed[] = [];
+  const add = (seed: InvestorSeed) => {
+    const id = seed.id.toLowerCase();
+    const site = catalogIdentityKey(seed.linkedin || seed.website);
+    if (seenIds.has(id) || (site && seenSites.has(site))) return;
+    seenIds.add(id);
+    if (site) seenSites.add(site);
+    out.push(seed);
+  };
+  for (const seed of INVESTOR_SEED) add(seed);
+  for (const row of US_INVESTOR_ROSTER) add(rosterRowToSeed(row));
+  for (const row of loadOverlayRows()) add(rosterRowToSeed(row));
+  out.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  catalogCache = out;
+  return out;
+}
+
+export function catalogKindCounts(list = getInvestorCatalog()): {
+  vc: number;
+  seed: number;
+  angel: number;
+  accelerator: number;
+  ib: number;
+  linkedin: number;
+  total: number;
+} {
+  const counts = { vc: 0, seed: 0, angel: 0, accelerator: 0, ib: 0, linkedin: 0, total: list.length };
+  for (const seed of list) {
+    counts[seed.kind] += 1;
+    if (seed.linkedin) counts.linkedin += 1;
+  }
+  return counts;
+}
+
 export function findInvestorSeed(query: string): InvestorSeed | undefined {
   const q = query.trim().toLowerCase();
   if (!q) return undefined;
-  const exact = INVESTOR_SEED.find((s) => s.id.toLowerCase() === q);
+  const catalog = getInvestorCatalog();
+  const exact = catalog.find((s) => s.id.toLowerCase() === q);
   if (exact) return exact;
-  return INVESTOR_SEED.find(
-    (s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.id.replace(/_/g, " ").includes(q) ||
-      (s.linkedin && s.linkedin.toLowerCase().includes(q))
-  );
+  const handTuned = new Set(INVESTOR_SEED.map((s) => s.id));
+  let best: InvestorSeed | undefined;
+  let bestScore = 0;
+  for (const seed of catalog) {
+    const name = seed.name.toLowerCase();
+    const id = seed.id.replace(/_/g, " ");
+    let score = 0;
+    if (name === q || id === q) score = 100;
+    else if (name.startsWith(q) || id.startsWith(q)) score = 80;
+    else if (name.includes(q) || id.includes(q)) score = 40;
+    else if (seed.linkedin && seed.linkedin.toLowerCase().includes(q)) score = 20;
+    else continue;
+    if (handTuned.has(seed.id)) score += 10;
+    if (score > bestScore) {
+      bestScore = score;
+      best = seed;
+    }
+  }
+  return best;
 }
 
 type PipelineFile = { rows: PipelineRow[] };
@@ -404,8 +535,9 @@ function pickInvestor(dateKey: string, investorId?: string): InvestorSeed {
   const contacted = new Set(
     pipeline.filter((r) => r.status === "contacted" || r.status === "skipped").map((r) => r.investorId)
   );
-  const remaining = INVESTOR_SEED.filter((s) => !contacted.has(s.id));
-  const pool = remaining.length ? remaining : INVESTOR_SEED;
+  const catalog = getInvestorCatalog();
+  const remaining = catalog.filter((s) => !contacted.has(s.id));
+  const pool = remaining.length ? remaining : catalog;
   const n = dateKey.split("-").reduce((a, p) => a + Number(p), 0);
   return pool[n % pool.length];
 }
@@ -517,6 +649,7 @@ export function buildInvestorDraftLetter(inv: InvestorSeed): string {
     ``,
     `${inv.suggestedAngle.replace(/[.!?]*$/, "")}.`,
     ``,
+    ...(inv.linkedin ? [`Public profile: ${inv.linkedin}`, ``] : []),
     `If a brief conversation would be useful, I would be glad to walk through all four desks in about ten minutes.`,
     ``,
     `Sincerely,`,

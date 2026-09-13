@@ -12,7 +12,13 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED, findInvestorSeed, buildInvestorDraftLetter } from "../src/server/investorDesk";
+import {
+  INVESTOR_SEED,
+  findInvestorSeed,
+  buildInvestorDraftLetter,
+  getInvestorCatalog,
+  catalogKindCounts,
+} from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
@@ -76,6 +82,19 @@ assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`))
 
 assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
 assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
+
+const catalog = getInvestorCatalog();
+const kinds = catalogKindCounts(catalog);
+assert.ok(kinds.total >= 300, `catalog too thin: ${kinds.total}`);
+assert.ok(kinds.vc >= 80, `need more VCs, got ${kinds.vc}`);
+assert.ok(kinds.seed >= 40, `need more seed funds, got ${kinds.seed}`);
+assert.ok(kinds.angel >= 80, `need more angels, got ${kinds.angel}`);
+assert.ok(kinds.linkedin >= 80, `need public LinkedIn rows, got ${kinds.linkedin}`);
+assert.ok(findInvestorSeed("naval")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("jasoncalacanis")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("pearvc") || findInvestorSeed("Pear VC"));
+assert.ok(findInvestorSeed("hustlefund") || findInvestorSeed("Hustle Fund"));
+assert.equal(catalog.map((s) => s.id).length, new Set(catalog.map((s) => s.id)).size);
 
 const pipeline = findInvestorSeed("pipeline");
 assert.ok(pipeline, "Pipeline Angels must be in the catalog");
