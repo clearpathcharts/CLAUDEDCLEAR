@@ -12,7 +12,7 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED, findInvestorSeed } from "../src/server/investorDesk";
+import { INVESTOR_SEED, findInvestorSeed, buildInvestorDraftLetter } from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
@@ -76,6 +76,29 @@ assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`))
 
 assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
 assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
+
+const pipeline = findInvestorSeed("pipeline");
+assert.ok(pipeline, "Pipeline Angels must be in the catalog");
+const pipelineLetter = buildInvestorDraftLetter(pipeline!);
+assert.match(pipelineLetter, /^Dear Pipeline Angels,/);
+assert.match(buildInvestorDraftLetter(baird!), /^Dear Ryan,/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/institutional/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/retail/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/);
+assert.match(pipelineLetter, /not a brokerage/i);
+assert.match(pipelineLetter, /do not provide trade advice/i);
+assert.match(pipelineLetter, /Richard A\. Floyd/);
+assert.doesNotMatch(pipelineLetter, /\$700B|dry powder|we are raising/i);
+
+for (const seed of INVESTOR_SEED) {
+  const letter = buildInvestorDraftLetter(seed);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/institutional/, `${seed.id} letter must name Institutional`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/, `${seed.id} letter must name Fundamental`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/retail/, `${seed.id} letter must name Retail`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/, `${seed.id} letter must name Neurodivergent`);
+}
 
 const featured = featuredStocks(8);
 const jpm = featured.find((s: { ticker?: string }) => String(s.ticker).toUpperCase() === "JPM");
