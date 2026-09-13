@@ -12,11 +12,15 @@ import {
   TRADER_DESK_IDS,
   TRADER_DESKS,
   deskCanonicalPath,
+  deskIdFromHomeProfile,
   isDeskPaper,
   isDeskPath,
+  isMemberHomePath,
   isSessionOpen,
   isTraderDeskId,
+  memberHomeDeskHref,
   parseDeskPath,
+  shouldStayOnPublicHome,
 } from '../src/lib/traderDesks.ts';
 import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeStructure.ts';
 import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
@@ -51,6 +55,26 @@ assert.equal(isDeskPath('/desk/retail'), true);
 assert.equal(isDeskPath('/fundamental'), true);
 assert.equal(isTraderDeskId('retail'), true);
 assert.equal(isTraderDeskId('ceo'), false);
+
+assert.equal(isMemberHomePath('/'), true);
+assert.equal(isMemberHomePath('/login'), true);
+assert.equal(isMemberHomePath('/activate'), true);
+assert.equal(isMemberHomePath('/desk/retail'), false);
+assert.equal(shouldStayOnPublicHome('?choose=1'), true);
+assert.equal(shouldStayOnPublicHome('?home=1'), true);
+assert.equal(shouldStayOnPublicHome('?profile=calm_focus'), false);
+assert.equal(deskIdFromHomeProfile('calm_focus'), null);
+assert.equal(deskIdFromHomeProfile('autism_predictable'), 'neurodivergent');
+assert.equal(memberHomeDeskHref({}), '/desk/institutional');
+assert.equal(memberHomeDeskHref({ remembered: 'retail' }), '/desk/retail');
+assert.equal(
+  memberHomeDeskHref({ search: '?profile=autism_predictable', remembered: 'retail' }),
+  '/desk/neurodivergent?profile=autism_predictable',
+);
+assert.equal(
+  memberHomeDeskHref({ search: '?profile=calm_focus', remembered: 'fundamental' }),
+  '/desk/fundamental?profile=calm_focus',
+);
 
 assert.equal(isSessionOpen(8, 7, 16), true);
 assert.equal(isSessionOpen(16, 7, 16), false);
@@ -143,12 +167,17 @@ for (const rel of srcFiles) {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
     assert.match(text, /user \? <DeskRoute pathname=\{currentPath\} \/> : <Auth \/>/);
+    assert.match(text, /MemberDeskRedirect/);
+    assert.match(text, /isMemberHomePath/);
+    assert.match(text, /shouldStayOnPublicHome/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
   }
   if (rel === 'src/components/Auth.tsx') {
     assert.match(text, /rememberTraderDesk/);
     assert.match(text, /openPrivateLogin/);
+    assert.match(text, /navigateToDesk\(deskId\)/);
+    assert.match(text, /openMemberDesk/);
     assert.doesNotMatch(text, /enterChosenPath = \(profileId/);
     assert.match(text, /data-auth-chart-first/);
     assert.match(text, /order-1 md:order-2/);
@@ -364,6 +393,7 @@ for (const rel of srcFiles) {
     assert.match(text, /data-color-chart-toggle/);
     assert.match(text, /DeskScreensMenu/);
     assert.match(text, /Screens/);
+    assert.match(text, /\/\?choose=1/);
   }
   if (rel === 'src/components/desks/ColorChartPicker.tsx') {
     assert.match(text, /data-color-chart/);
@@ -434,6 +464,11 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/fmp\/lookup/);
   }
 }
+
+const desksLib = fs.readFileSync(path.join(root, 'src/lib/traderDesks.ts'), 'utf8');
+assert.match(desksLib, /function continueToRememberedDesk/);
+assert.match(desksLib, /openMemberDesk\(\)/);
+assert.doesNotMatch(desksLib, /assign\(pending \? TRADER_DESKS\[pending\]\.href : '\/'\)/);
 
 const inst = fs.readFileSync(path.join(root, 'src/components/desks/institutional/InstitutionalDashboard.tsx'), 'utf8');
 assert.match(inst, /does not evaluate|Not signals|Educational/i);

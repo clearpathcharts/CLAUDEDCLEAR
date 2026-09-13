@@ -58,7 +58,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <a
-            href="/"
+            href="/?choose=1"
             className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400 hover:text-white"
           >
             ClearPath
@@ -149,7 +149,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           );
         })}
         <a
-          href="/"
+          href="/?choose=1"
           className="ml-auto rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white"
         >
           Home
