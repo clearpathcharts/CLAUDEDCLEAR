@@ -431,7 +431,59 @@ export default function DailyOpsDesk({
             </button>
           </div>
           {report.investor ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <div>
+              <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block mb-1">
+                Outbound letter — this is the send
+              </span>
+              <p className="text-white/40 text-xs mb-2">
+                {report.investor.draftNote.trim().split(/\s+/).filter(Boolean).length} words · copy,
+                then send yourself. Not auto-sent.
+              </p>
+              <textarea
+                readOnly
+                value={report.investor.draftNote}
+                className="w-full min-h-[36rem] h-[40rem] bg-black/50 border border-white/15 rounded-md p-4 text-sm leading-relaxed text-zinc-100 whitespace-pre-wrap"
+              />
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(report.investor!.draftNote);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      setError("Clipboard blocked — copy from the box.");
+                    }
+                  }}
+                  className="px-3 py-2 rounded-md border border-[#00FFFF]/40 text-[#00FFFF] text-xs font-bold uppercase"
+                >
+                  {copied ? "Copied" : "Copy letter"}
+                </button>
+                <input
+                  value={investorNotes}
+                  onChange={(e) => setInvestorNotes(e.target.value)}
+                  placeholder="Your send notes (optional)"
+                  className="flex-1 min-w-[140px] bg-black/40 border border-white/15 rounded-md px-3 py-2 text-xs text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => void markInvestor("contacted")}
+                  className="px-3 py-2 rounded-md border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase"
+                >
+                  Mark sent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void markInvestor("skipped")}
+                  className="px-3 py-2 rounded-md border border-white/20 text-white/70 text-xs font-bold uppercase"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3 text-sm text-white/80">
               <p>
                 <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block">Website</span>
@@ -498,52 +550,15 @@ export default function DailyOpsDesk({
                 <p className="text-amber-300 font-mono text-xs">{report.investor.warnings.join(" · ")}</p>
               )}
             </div>
-            <div>
-              <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block mb-2">
-                Draft letter — copy, then send yourself
-              </span>
-              <textarea
-                readOnly
-                value={report.investor.draftNote}
-                className="w-full min-h-[28rem] h-[32rem] bg-black/50 border border-white/15 rounded-md p-3 text-xs font-mono text-zinc-200 whitespace-pre-wrap"
-              />
-              <div className="flex flex-wrap gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(report.investor!.draftNote);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    } catch {
-                      setError("Clipboard blocked — copy from the box.");
-                    }
-                  }}
-                  className="px-3 py-2 rounded-md border border-[#00FFFF]/40 text-[#00FFFF] text-xs font-bold uppercase"
-                >
-                  {copied ? "Copied" : "Copy letter"}
-                </button>
-                <input
-                  value={investorNotes}
-                  onChange={(e) => setInvestorNotes(e.target.value)}
-                  placeholder="Your send notes (optional)"
-                  className="flex-1 min-w-[140px] bg-black/40 border border-white/15 rounded-md px-3 py-2 text-xs text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => void markInvestor("contacted")}
-                  className="px-3 py-2 rounded-md border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase"
-                >
-                  Mark sent
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void markInvestor("skipped")}
-                  className="px-3 py-2 rounded-md border border-white/20 text-white/70 text-xs font-bold uppercase"
-                >
-                  Skip
-                </button>
-              </div>
+            <div className="space-y-3 text-sm text-white/70">
+              <p className="text-zinc-500 uppercase text-[10px] font-black tracking-widest">
+                Founder notes (not in the letter)
+              </p>
+              <p>
+                Suggested angle and skip rules stay here. The box above is the only copy that
+                should leave the building.
+              </p>
+            </div>
             </div>
           </div>
           ) : (

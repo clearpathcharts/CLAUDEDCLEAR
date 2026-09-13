@@ -14,13 +14,15 @@ import { getGroqApiKey } from "./secrets";
 import { pacificDateKey } from "./dailyOpsCatalog";
 import { US_INVESTOR_ROSTER, type InvestorRosterRow, type RosterKind } from "./usInvestorRoster";
 
-/** One-line desk blurbs for founder outreach. Facts only — no invented data rooms. */
+/** Full sentences for the outbound letter. Facts only — no invented data rooms. */
 const DESK_LETTER_LINES: Record<TraderDeskId, string> = {
-  institutional: "Information-first market command center (charts, flow, macro, and news).",
-  fundamental: "Company, statements, earnings, valuation, and macro research.",
-  retail: "Chart-first educational workstation for everyday traders.",
+  institutional:
+    "an information-first command center for charts, flow, macro, and news",
+  fundamental:
+    "a research desk for company statements, earnings, valuation, and what the business is actually doing",
+  retail: "a chart-first educational workstation for everyday traders",
   neurodivergent:
-    "Calm workstation with sensory UI profiles — a first-class site, not a marketing afterthought.",
+    "a first-class site — not a marketing skin — with sensory UI profiles I built because I needed them",
 };
 
 const DESK_LETTER_LABELS: Record<TraderDeskId, string> = {
@@ -652,33 +654,90 @@ function letterGreeting(inv: InvestorSeed): string {
   return `Dear ${inv.name},`;
 }
 
-function deskLetterBlock(): string {
-  return TRADER_DESK_IDS.map((id) => {
-    const href = `${PRODUCT_URL}${TRADER_DESKS[id].href}`;
-    return [`${DESK_LETTER_LABELS[id]}`, href, DESK_LETTER_LINES[id]].join("\n");
-  }).join("\n\n");
+function asSentence(text: string): string {
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  const capped = trimmed[0].toUpperCase() + trimmed.slice(1);
+  return /[.!?]$/.test(capped) ? capped : `${capped}.`;
 }
 
-/** Copy-ready outreach letter. Never auto-sent. */
+/** Founder scratch (skip / later / do-not-pitch / unverified AUM) must never appear in the send. */
+function isInternalOpsNote(text: string): boolean {
+  return /do not pitch|today'?s send|may be skip|\bskip\b|keep on radar|not today.?s check|not as today|be explicit|note them|apply only|otherwise skip|look for a current|do not repeat|\$700B|dry powder|too late-stage|future round|first check/i.test(
+    text
+  );
+}
+
+function publicSentence(text: string | undefined): string {
+  if (!text || isInternalOpsNote(text)) return "";
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  const hasVerb = /\b(is|are|was|were|built|looking|because|for|with|that)\b/i.test(trimmed);
+  if (trimmed.length < 70 && !hasVerb) return "";
+  if (trimmed.length < 50) return "";
+  return asSentence(trimmed);
+}
+
+function letterAddressee(inv: InvestorSeed): string {
+  if (inv.id === "baird_augustine") return "Baird Augustine";
+  return inv.name;
+}
+
+function kindIntroduction(inv: InvestorSeed): string {
+  const who = letterAddressee(inv);
+  if (inv.kind === "ib") {
+    return `I am writing ${who} as a founder introducing live software to an investment-banking / placement desk — not as a request for a seed-fund check.`;
+  }
+  if (inv.kind === "angel") {
+    return `I am writing ${who} because your network looks at early products, and I would rather you see a terminal that is already live than a promise of one.`;
+  }
+  if (inv.kind === "accelerator") {
+    return `I am writing ${who} as an introduction only. I apply only in a public open window; this letter is so you have the product in hand if a conversation is useful.`;
+  }
+  if (inv.kind === "seed") {
+    return `I am writing ${who} because I am still early and the product is already in production.`;
+  }
+  return `I am writing ${who} because I would rather a venture firm see four working desks than a summary of a company we have not built.`;
+}
+
+function whyThisRecipient(inv: InvestorSeed): string {
+  const parts = [kindIntroduction(inv)];
+  const why = publicSentence(inv.whyClearPath);
+  const angle = publicSentence(inv.suggestedAngle);
+  if (why) parts.push(why);
+  if (angle && angle !== why) parts.push(angle);
+  parts.push(
+    "I am not asking you to take a trade. I am not attaching assets under management or a raise I have not announced. I am asking you to look at working educational software and tell me whether fifteen minutes would be useful."
+  );
+  return parts.join(" ");
+}
+
+function desksParagraph(): string {
+  const items = TRADER_DESK_IDS.map((id) => {
+    const href = `${PRODUCT_URL}${TRADER_DESKS[id].href}`;
+    return `${DESK_LETTER_LABELS[id]} is ${DESK_LETTER_LINES[id]} (${href})`;
+  });
+  return `I organized the company as four first-class desks, each on its own URL, because different operators need different rooms — not one crowded dashboard with the chart buried. ${items[0]}. ${items[1]}. ${items[2]}. ${items[3]}.`;
+}
+
+/** Copy-ready outreach letter. Never auto-sent. Full paragraphs — not a link dump. */
 export function buildInvestorDraftLetter(inv: InvestorSeed): string {
+  const intro = `I am Richard A. Floyd, founder of ${PRODUCT_LEGAL_NAME}. I am writing to introduce ${PRODUCT_NAME}, the educational market-intelligence terminal we have already shipped at ${PRODUCT_URL}. I would rather put live software in front of you than send a deck about a product that does not exist.`;
+  const product = `${PRODUCT_NAME} is a browser-based terminal for stocks, forex, crypto, and commodities: live charts, technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, a macro desk, and thirteen neurodivergent accessibility profiles. C.P.T. Buddy lives inside the terminal to explain the product — it is not a website chatbot and it does not book appointments. We are not a brokerage, we do not custody money, and we do not provide trade advice. The system does not evaluate, alter, or advise on financial decisions.`;
+  const ask = `If a conversation would be useful, I can walk all four desks in fifteen minutes and answer plainly what the product is and is not. If it is not useful, I understand — thank you for reading.`;
   return [
+    `Subject: ${PRODUCT_NAME} — live educational market terminal (four desks)`,
+    ``,
     letterGreeting(inv),
     ``,
-    `I am Richard A. Floyd, founder of ${PRODUCT_LEGAL_NAME} (${PRODUCT_NAME}).`,
+    intro,
     ``,
-    `I am writing to introduce our live educational market-intelligence platform:`,
+    product,
     ``,
-    PRODUCT_URL,
+    desksParagraph(),
     ``,
-    `${PRODUCT_NAME} is charting and financial-education software. We are not a brokerage, and we do not provide trade advice.`,
+    whyThisRecipient(inv),
     ``,
-    `The product is four dedicated desks — each a first-class site on its own URL:`,
-    ``,
-    deskLetterBlock(),
-    ``,
-    `${inv.suggestedAngle.replace(/[.!?]*$/, "")}.`,
-    ``,
-    `If a brief conversation would be useful, I would be glad to walk through all four desks in about ten minutes.`,
+    ask,
     ``,
     `Sincerely,`,
     ``,
