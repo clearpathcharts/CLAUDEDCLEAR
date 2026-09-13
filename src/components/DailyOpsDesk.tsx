@@ -398,6 +398,16 @@ export default function DailyOpsDesk({
             {report.investor
               ? `${report.investor.investor.kind} · ${report.investor.investor.stage} · sources: ${report.investor.sources.join(", ")}`
               : "Pin a name from the catalog, or run today’s sweep."}
+            {report.investorCatalog?.length ? (
+              <>
+                {" "}
+                · roster {report.investorCatalog.length} (VC{" "}
+                {report.investorCatalog.filter((s) => s.kind === "vc").length} · seed{" "}
+                {report.investorCatalog.filter((s) => s.kind === "seed").length} · angel{" "}
+                {report.investorCatalog.filter((s) => s.kind === "angel").length} · IB{" "}
+                {report.investorCatalog.filter((s) => s.kind === "ib").length})
+              </>
+            ) : null}
           </p>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <select

@@ -12,7 +12,14 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED, findInvestorSeed, buildInvestorDraftLetter } from "../src/server/investorDesk";
+import {
+  INVESTOR_SEED,
+  findInvestorSeed,
+  buildInvestorDraftLetter,
+  getInvestorCatalog,
+  catalogKindCounts,
+  catalogIdentityKey,
+} from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
@@ -80,6 +87,34 @@ assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
 function letterWordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+
+const catalog = getInvestorCatalog();
+const kinds = catalogKindCounts(catalog);
+assert.ok(kinds.total >= 300, `catalog too thin: ${kinds.total}`);
+assert.ok(kinds.vc >= 80, `need more VCs, got ${kinds.vc}`);
+assert.ok(kinds.seed >= 40, `need more seed funds, got ${kinds.seed}`);
+assert.ok(kinds.angel >= 80, `need more angels, got ${kinds.angel}`);
+assert.ok(kinds.linkedin >= 80, `need public LinkedIn rows, got ${kinds.linkedin}`);
+assert.ok(findInvestorSeed("naval")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("jasoncalacanis")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("pearvc") || findInvestorSeed("Pear VC"));
+assert.ok(findInvestorSeed("hustlefund") || findInvestorSeed("Hustle Fund"));
+assert.equal(catalog.map((s) => s.id).length, new Set(catalog.map((s) => s.id)).size);
+const siteKeys = catalog.map((s) => catalogIdentityKey(s.linkedin || s.website));
+assert.equal(siteKeys.length, new Set(siteKeys).size, "identical website listings must be collapsed");
+const nameKeys = catalog.map((s) => s.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
+assert.equal(nameKeys.length, new Set(nameKeys).size, "identical firm-name listings must be collapsed");
+assert.ok(kinds.withEmail >= 150, `findfunding public emails missing, got ${kinds.withEmail}`);
+assert.ok(kinds.ib >= 140, `need more investment banks, got ${kinds.ib}`);
+assert.ok(findInvestorSeed("8VC")?.outreachEmail || findInvestorSeed("ff_8vc")?.outreachEmail);
+assert.ok(findInvestorSeed("Cowboy Ventures")?.outreachEmail);
+assert.ok(findInvestorSeed("Cantor Fitzgerald"));
+assert.ok(findInvestorSeed("BTIG"));
+assert.ok(findInvestorSeed("Leerink") || findInvestorSeed("Leerink Partners"));
+assert.ok(findInvestorSeed("Keefe Bruyette") || findInvestorSeed("KBW") || findInvestorSeed("Keefe Bruyette & Woods"));
+assert.ok(findInvestorSeed("Goldman Sachs"));
+assert.ok(findInvestorSeed("Robert W. Baird") || findInvestorSeed("bairdib"));
+assert.equal(catalog.some((s) => (s.outreachEmail || "").startsWith("name@")), false);
 
 const pipeline = findInvestorSeed("pipeline");
 assert.ok(pipeline, "Pipeline Angels must be in the catalog");
@@ -160,4 +195,6 @@ const rules = fs.readFileSync(path.join(process.cwd(), "firestore.rules"), "utf8
 assert.ok(rules.includes("vipStatus"));
 assert.ok(rules.includes("noClientPrivilegeKeys"));
 
-console.log(`daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} date=${date}`);
+console.log(
+  `daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} roster=${kinds.total} vc=${kinds.vc} seed=${kinds.seed} angel=${kinds.angel} ib=${kinds.ib} email=${kinds.withEmail} date=${date}`
+);
