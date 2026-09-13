@@ -1,6 +1,6 @@
 /**
  * Extra-understanding overlays: every live nav tab has copy, no advice,
- * plus a 45–60s Google Flow script (six stitchable shots, fifth-grade VO).
+ * plus twelve separate 8.00s Google Flow jobs (96s stitch, fifth-grade VO).
  * Run: npm run test:explain-nav
  */
 import assert from 'node:assert/strict';
@@ -16,11 +16,13 @@ import {
   isExplainFlowSlotId,
 } from '../src/components/explain/explainMedia.ts';
 import {
+  EXPLAIN_FLOW_CLIP_SECONDS,
   EXPLAIN_FLOW_NAV_ORDER,
   EXPLAIN_FLOW_SCRIPTS,
   EXPLAIN_FLOW_SHOT_COUNT,
   EXPLAIN_FLOW_TARGET_MAX,
   EXPLAIN_FLOW_TARGET_MIN,
+  explainFlowShotSeconds,
   explainFlowToVtt,
   wordCount,
 } from '../src/components/explain/flowScripts.ts';
@@ -76,14 +78,14 @@ assert.equal(EXPLAIN_FLOW_NAV_ORDER.length, 13);
 for (const id of EXPLAIN_FLOW_SLOT_IDS) {
   const script = EXPLAIN_FLOW_SCRIPTS[id];
   assert.ok(script, `missing Flow script for ${id}`);
-  assert.equal(script.shots.length, EXPLAIN_FLOW_SHOT_COUNT, `${id} needs 6 shots`);
+  assert.equal(script.shots.length, EXPLAIN_FLOW_SHOT_COUNT, `${id} needs 12 floating 8s Flow jobs`);
   assert.ok(
     script.targetSeconds >= EXPLAIN_FLOW_TARGET_MIN &&
       script.targetSeconds <= EXPLAIN_FLOW_TARGET_MAX,
-    `${id} targetSeconds ${script.targetSeconds} is not 45–60`,
+    `${id} targetSeconds ${script.targetSeconds} is not 96`,
   );
   const words = wordCount(script.narrationScript);
-  assert.ok(words >= 110 && words <= 220, `${id} narration is ${words} words (want 110–220)`);
+  assert.ok(words >= 250 && words <= 520, `${id} narration is ${words} words (want 250–520)`);
   assert.match(
     script.narrationScript,
     /click|Click|button|Button/,
@@ -101,6 +103,34 @@ for (const id of EXPLAIN_FLOW_SLOT_IDS) {
       script.shots[i].startSeconds,
       script.shots[i - 1].endSeconds,
       `${id} shot ${i} should start when the previous shot ends`,
+    );
+  }
+  for (const shot of script.shots) {
+    assert.equal(
+      explainFlowShotSeconds(shot),
+      EXPLAIN_FLOW_CLIP_SECONDS,
+      `${id} ${shot.id} must be exactly ${EXPLAIN_FLOW_CLIP_SECONDS}s`,
+    );
+    assert.ok(
+      shot.flowPrompt.toLowerCase().includes('eight'),
+      `${id} ${shot.id}: flowPrompt must lock eight seconds`,
+    );
+    assert.ok(
+      shot.flowPrompt.toLowerCase().includes('do not fade'),
+      `${id} ${shot.id}: flowPrompt must say do not fade`,
+    );
+    assert.ok(
+      shot.flowPrompt.toLowerCase().includes('floating'),
+      `${id} ${shot.id}: flowPrompt must say this job floats alone`,
+    );
+    assert.ok(
+      shot.flowPrompt.length >= 900,
+      `${id} ${shot.id}: flowPrompt too short (${shot.flowPrompt.length} chars)`,
+    );
+    const clipWords = wordCount(shot.narration);
+    assert.ok(
+      clipWords >= 18 && clipWords <= 55,
+      `${id} ${shot.id}: narration is ${clipWords} words (want 18–55 for one 8s idea)`,
     );
   }
   const vtt = explainFlowToVtt(script);

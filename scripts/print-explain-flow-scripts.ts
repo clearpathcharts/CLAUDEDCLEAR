@@ -1,15 +1,19 @@
 /**
- * Print Google Flow production scripts for Explain Mode (one 45–60s film per tab).
+ * Print Google Flow production scripts for Explain Mode.
+ *
+ * Each tab is TWELVE separate 8.00-second Flow jobs (96s when stitched).
+ * Overlay copy uses the same voiceover via vo().
  *
  *   npm run explain-flow:print
  *   npm run explain-flow:print -- --write-docs
  *   npm run explain-flow:print -- --write-vtt
  *
  * Workflow:
- * 1) Generate SIX ~8–10s shots in Google Flow / Veo using each FLOW PROMPT
- * 2) Stitch in order to the listed target length — never ship a single 3s clip
- * 3) Record NARRATION once over the stitch (fifth-grade, slow)
- * 4) Export 16:9 H.264 MP4 → public/explain-videos/{id}.mp4
+ * 1) Open Google Flow. Aspect 16:9. Duration 8 seconds — not 3.
+ * 2) Paste ONE clip prompt per job. Do not dump the whole film.
+ * 3) The prompt already says: hold the full eight seconds; do not fade early.
+ * 4) Record that clip’s VO, then stitch all twelve in order.
+ * 5) Export 16:9 H.264 MP4 → public/explain-videos/{id}.mp4
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,17 +37,19 @@ function renderMarkdown(scripts: ExplainFlowScript[]): string {
   const lines: string[] = [
     '# Explain Mode — Google Flow scripts',
     '',
-    'One **45–60 second** film per nav pill. Fifth-grade voice. Name the color. Say “click.” Assume they have never used a website.',
+    'Each film is **twelve separate 8.00-second Google Flow jobs** (96 seconds stitched).',
+    'Tell them little — one idea per clip. Fifth-grade voice. Name the color. Say “click.”',
+    'Assume they have **never used a website**. Overlay copy = this voiceover.',
     '',
     'People tap **Need extra understanding**, then the little play badge beside a tab.',
     '',
     '## How to produce',
     '',
-    '1. Open Google Flow (Veo). Aspect **16:9**. Very colorful museum lighting. Giant cartoon cursor.',
-    '2. Generate **six shots** per tab (Flow still likes ~8–10 seconds each).',
-    '3. Stitch them in numbered order to the listed target length. **Do not ship one 3-second clip.**',
-    '4. Record the **continuous narration** once over the stitch. Fifth-grade. About 110 words per minute. Pause after every sentence.',
-    '5. Export H.264 MP4 at 1280×720 or 1920×1080.',
+    '1. Open Google Flow (Veo). Aspect **16:9**. Duration **8 seconds**. Very colorful museum lighting. Giant cartoon cursor.',
+    '2. Generate **twelve floating jobs** per tab. Paste **one clip prompt** per job. Do not dump the whole film.',
+    '3. The prompt already says: hold the full eight seconds; do not fade at 3s.',
+    '4. Record that clip’s VO (slow, one tiny idea), then stitch all twelve in numbered order.',
+    '5. Export H.264 MP4 at 1280×720 or 1920×1080. **Do not ship one 3-second clip.**',
     '6. Drop the file at `public/explain-videos/{id}.mp4`. Optional poster `{id}.jpg`. Captions `{id}.vtt` (this script can write them).',
     '',
     `**Look:** ${EXPLAIN_FLOW_BRAND_LOOK}`,
@@ -67,7 +73,7 @@ function renderMarkdown(scripts: ExplainFlowScript[]): string {
     lines.push(`| Music | ${script.music} |`);
     lines.push(`| Captions | ${script.captionsNote} |`);
     lines.push(``);
-    lines.push(`### Continuous narration (record once)`);
+    lines.push(`### Continuous narration (record over the 12-clip stitch)`);
     lines.push(``);
     lines.push(`> ${script.narrationScript}`);
     lines.push(``);
@@ -81,7 +87,7 @@ function renderMarkdown(scripts: ExplainFlowScript[]): string {
     lines.push(``);
     for (const shot of script.shots) {
       lines.push(
-        `### Shot ${shot.id} · ${shot.startSeconds}–${shot.endSeconds}s · ${shot.title}`,
+        `### Clip ${shot.id} · ${shot.startSeconds}–${shot.endSeconds}s · ${shot.title} · paste into Flow alone`,
       );
       lines.push(``);
       if (shot.super) lines.push(`On-screen super (optional, ≤6 words): **${shot.super}**`);

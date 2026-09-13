@@ -107,7 +107,7 @@ function FlowScriptReadAlong({ contentId, color }: { contentId: string; color: s
         className="cursor-pointer text-[10px] font-black uppercase tracking-[0.16em]"
         style={{ color: hexToRgba(color, 0.85) }}
       >
-        Full {flow.targetSeconds}s walkthrough script · {flow.shots.length} Flow shots
+        Full {flow.targetSeconds}s walkthrough · {flow.shots.length} floating 8s Flow jobs
       </summary>
       <ol className="mt-3 mb-1 list-none space-y-3 p-0">
         {flow.shots.map((shot) => (
