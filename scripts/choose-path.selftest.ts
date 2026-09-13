@@ -26,7 +26,7 @@ assert.match(auth, /#choose-path/);
 assert.match(auth, /enterChosenPath/);
 assert.match(auth, /rememberTraderDesk/);
 assert.match(auth, /openPrivateLogin\('login'\)/);
-assert.doesNotMatch(auth, /navigateToDesk\(deskId\)/);
+assert.match(auth, /if \(user\) \{\s*navigateToDesk\(deskId\)/);
 assert.doesNotMatch(auth, /loginChosenPath/);
 assert.match(auth, /PublicLiveChart/);
 assert.match(auth, /#public-chart/);

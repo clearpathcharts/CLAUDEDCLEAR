@@ -13,7 +13,15 @@ import ChooseYourPath from './ChooseYourPath';
 import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import type { AdvancedProfileId } from '../lib/advanced/profiles';
 import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../content/chooseYourPath';
-import { isDeskPath, parseDeskPath, rememberTraderDesk, type TraderDeskId } from '../lib/traderDesks';
+import { useAuth } from '../contexts/FirebaseContext';
+import {
+  isDeskPath,
+  navigateToDesk,
+  openMemberDesk,
+  parseDeskPath,
+  rememberTraderDesk,
+  type TraderDeskId,
+} from '../lib/traderDesks';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 
@@ -154,6 +162,7 @@ const ParticleCanvas = () => {
 // 2. MAIN PORTAL & LANDING
 // ==========================================
 export default function Auth() {
+  const { user } = useAuth();
   const [boardModalOpen, setBoardModalOpen] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
@@ -187,6 +196,10 @@ export default function Auth() {
       window.dispatchEvent(new CustomEvent('clearpath-set-profile', { detail: profileId }));
     } catch {
       /* ignore */
+    }
+    if (user) {
+      navigateToDesk(deskId);
+      return;
     }
     openPrivateLogin('login');
   };
@@ -283,7 +296,7 @@ export default function Auth() {
         console.warn('Silent firebase sync lock failed, continuing with board session:', err);
       });
       setTimeout(() => {
-        window.location.reload();
+        openMemberDesk();
       }, 1000);
     } catch (err: any) {
       console.error('Board verify error:', err);
