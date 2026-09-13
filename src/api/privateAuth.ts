@@ -107,7 +107,7 @@ export async function fetchPrivateSession(): Promise<PrivateSessionUser | null> 
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       clearPrivateSession();
       return null;
     }

@@ -1252,7 +1252,8 @@ async function startServer() {
 
   app.get('/api/auth/private/me', async (req, res) => {
     const user = (req.session as any)?.privateUser;
-    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    // Guest probe: 200 + user:null so Inspect does not paint a red 401 on every public visit.
+    if (!user) return res.status(200).json({ user: null });
     try {
       // Private accounts only — board operator sessions skip identity gate.
       if (user.privateAccount) {

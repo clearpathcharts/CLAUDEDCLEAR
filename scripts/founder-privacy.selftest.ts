@@ -83,6 +83,16 @@ assert.match(app, /function isCeoPath/, '/ceo must not require a logged-in shell
 assert.match(app, /isCeoPath\(currentPath\)/, 'logged-out /ceo still mounts the CEO route');
 
 const server = read('server.ts');
+assert.match(
+  server,
+  /\/api\/auth\/private\/me[\s\S]{0,220}status\(200\)\.json\(\{ user: null \}\)/,
+  'Guest /me must be 200 so Inspect does not show a fake auth failure',
+);
+assert.doesNotMatch(
+  server,
+  /\/api\/auth\/private\/me[\s\S]{0,180}status\(401\).*Not signed in/,
+  'Guest session probe must not return 401',
+);
 const unlockIdx = server.indexOf("app.post('/api/admin/founder-unlock'");
 assert.ok(unlockIdx >= 0, 'founder-unlock route exists');
 const unlockBlock = server.slice(unlockIdx, unlockIdx + 2200);
