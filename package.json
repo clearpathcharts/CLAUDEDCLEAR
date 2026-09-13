@@ -43,6 +43,7 @@
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
     "test:ceo-desk-cleanup": "tsx scripts/ceo-desk-cleanup.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
+    "explain-flow:print": "tsx scripts/print-explain-flow-scripts.ts",
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
     "test:buddy-live-tools": "tsx scripts/buddy-live-tools.selftest.ts",
     "test:founder-backup": "tsx scripts/founder-backup.selftest.ts",

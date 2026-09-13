@@ -678,7 +678,6 @@ export function buildInvestorDraftLetter(inv: InvestorSeed): string {
     ``,
     `${inv.suggestedAngle.replace(/[.!?]*$/, "")}.`,
     ``,
-    ...(inv.linkedin ? [`Public profile: ${inv.linkedin}`, ``] : []),
     `If a brief conversation would be useful, I would be glad to walk through all four desks in about ten minutes.`,
     ``,
     `Sincerely,`,

@@ -2,7 +2,8 @@
  * Google Flow drop slots for explain overlays.
  *
  * Export from Flow as 16:9 landscape (1280×720 or 1920×1080), H.264 MP4,
- * ~5–8 seconds, no buy/sell text on screen. Optional still: same name .jpg.
+ * stitch six ~8–10s shots into one 45–60s film. Fifth-grade VO. No buy/sell text.
+ * Optional still: same name .jpg. Production bible: flowScripts.ts.
  *
  * Files (not committed — drop on the host / Cloud Run volume or rebuild):
  *   public/explain-videos/{id}.mp4
@@ -12,17 +13,19 @@
 export const EXPLAIN_VIDEO_PUBLIC_DIR = '/explain-videos';
 
 export const EXPLAIN_FLOW_SLOT_IDS = [
+  'ceo',
   'home',
   'ywc',
   'indacreator',
   'charts',
   'news',
   'memberships',
+  'explain',
   'profile',
   'affiliate',
-  'ceo',
   'cinema',
   'education',
+  'exit',
   'literacy',
   'encyclopedia',
   'indicators',
