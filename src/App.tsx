@@ -2,7 +2,13 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import DeskRoute from './components/desks/DeskRoute';
-import { isDeskPath } from './lib/traderDesks';
+import {
+  isDeskPath,
+  isMemberHomePath,
+  memberHomeDeskHref,
+  readRememberedTraderDesk,
+  shouldStayOnPublicHome,
+} from './lib/traderDesks';
 import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
@@ -38,6 +44,28 @@ function AuthenticatedShell({
     <div className="clearpath-glass-root">
       <Dashboard profile={profile} onProfileChange={onProfileChange} />
       <CptBuddyWidget />
+    </div>
+  );
+}
+
+/** Logged-in `/` must not mount the old Dashboard — send the session to a desk. */
+function MemberDeskRedirect() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const href = memberHomeDeskHref({
+      search: window.location.search,
+      remembered: readRememberedTraderDesk(),
+    });
+    const here = `${window.location.pathname}${window.location.search}`;
+    if (here === href) return;
+    window.history.replaceState({}, '', href);
+    window.dispatchEvent(new Event('clearpath-location'));
+  }, []);
+  return (
+    <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
+      <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-[0.3em]">
+        Opening trader desk...
+      </p>
     </div>
   );
 }
@@ -185,6 +213,12 @@ export default function App() {
     }
     return '/';
   });
+  const [currentSearch, setCurrentSearch] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.search;
+    }
+    return '';
+  });
   const [currentProfileId, setCurrentProfileId] = useState(() => {
     // 1. Check URL query parameters
     if (typeof window !== 'undefined') {
@@ -257,6 +291,7 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
         setCurrentPath(window.location.pathname);
+        setCurrentSearch(window.location.search);
       };
       window.addEventListener('popstate', handleLocationChange);
       window.addEventListener('clearpath-location', handleLocationChange);
@@ -324,7 +359,9 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
-  } else if (!user) {
+  } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
+    content = <MemberDeskRedirect />;
+  } else if (!user || shouldStayOnPublicHome(currentSearch)) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
       content = (
