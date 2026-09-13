@@ -3,11 +3,12 @@
  * No invented emails. No personal inboxes. Overlay imports can grow this
  * without a new image (Firestore + local overlay).
  *
- * Format per line: id|name|kind|website|linkedin
+ * Format per line: id|name|kind|website|linkedin|outreachEmail
  * kind = vc | seed | angel | accelerator | ib
  */
 import { SEED_ANGEL_CSV } from "./usInvestorRosterSeedAngels";
 import { FINDFUNDING_VC_CSV } from "./usInvestorRosterFindfunding";
+import { ADVISORY_IB_CSV, IB_CSV } from "./usInvestorRosterIb";
 export type RosterKind = "vc" | "seed" | "angel" | "accelerator" | "ib";
 
 export type InvestorRosterRow = {
@@ -296,5 +297,7 @@ function applyKnownLinkedin(rows: InvestorRosterRow[]): InvestorRosterRow[] {
 }
 
 export const US_INVESTOR_ROSTER: InvestorRosterRow[] = applyKnownLinkedin(
-  parseInvestorRosterCsv(`${ROSTER_CSV}\n${SEED_ANGEL_CSV}\n${FINDFUNDING_VC_CSV}`)
+  parseInvestorRosterCsv(
+    `${ROSTER_CSV}\n${SEED_ANGEL_CSV}\n${FINDFUNDING_VC_CSV}\n${IB_CSV}\n${ADVISORY_IB_CSV}`
+  )
 );

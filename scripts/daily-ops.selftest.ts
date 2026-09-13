@@ -101,8 +101,15 @@ assert.equal(siteKeys.length, new Set(siteKeys).size, "identical website listing
 const nameKeys = catalog.map((s) => s.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
 assert.equal(nameKeys.length, new Set(nameKeys).size, "identical firm-name listings must be collapsed");
 assert.ok(kinds.withEmail >= 150, `findfunding public emails missing, got ${kinds.withEmail}`);
+assert.ok(kinds.ib >= 140, `need more investment banks, got ${kinds.ib}`);
 assert.ok(findInvestorSeed("8VC")?.outreachEmail || findInvestorSeed("ff_8vc")?.outreachEmail);
 assert.ok(findInvestorSeed("Cowboy Ventures")?.outreachEmail);
+assert.ok(findInvestorSeed("Cantor Fitzgerald"));
+assert.ok(findInvestorSeed("BTIG"));
+assert.ok(findInvestorSeed("Leerink") || findInvestorSeed("Leerink Partners"));
+assert.ok(findInvestorSeed("Keefe Bruyette") || findInvestorSeed("KBW") || findInvestorSeed("Keefe Bruyette & Woods"));
+assert.ok(findInvestorSeed("Goldman Sachs"));
+assert.ok(findInvestorSeed("Robert W. Baird") || findInvestorSeed("bairdib"));
 assert.equal(catalog.some((s) => (s.outreachEmail || "").startsWith("name@")), false);
 
 const pipeline = findInvestorSeed("pipeline");
@@ -164,4 +171,6 @@ const rules = fs.readFileSync(path.join(process.cwd(), "firestore.rules"), "utf8
 assert.ok(rules.includes("vipStatus"));
 assert.ok(rules.includes("noClientPrivilegeKeys"));
 
-console.log(`daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} date=${date}`);
+console.log(
+  `daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} roster=${kinds.total} vc=${kinds.vc} seed=${kinds.seed} angel=${kinds.angel} ib=${kinds.ib} email=${kinds.withEmail} date=${date}`
+);
