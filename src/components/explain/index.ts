@@ -16,4 +16,11 @@ export {
   explainVideoSrc,
   explainPosterSrc,
 } from './explainMedia';
+export {
+  EXPLAIN_FLOW_SCRIPTS,
+  EXPLAIN_FLOW_NAV_ORDER,
+  getExplainFlowScript,
+  explainFlowToVtt,
+} from './flowScripts';
 export type { ExplainContent, QuizQuestion, QuizOption } from './explainContent';
+export type { ExplainFlowScript, ExplainFlowShot } from './flowScripts';

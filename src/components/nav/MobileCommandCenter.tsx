@@ -309,8 +309,9 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
           </button>
         )}
         </div>
-        <div className="flex justify-center pt-2">
+        <div className="flex justify-center items-center gap-1 pt-2">
           <ExplainModeToggle compact />
+          <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
         </div>
       </div>
 
@@ -342,8 +343,9 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               <span className="block text-[#AAAAAA] text-xs mt-1 px-2 leading-snug">
                 Social, video, magazines — and a movable chart on the same screen. No more waiting on every app.
               </span>
-              <div className="mt-3 flex justify-center">
+              <div className="mt-3 flex justify-center items-center gap-1">
                 <ExplainModeToggle compact />
+                <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
               </div>
               <button
                 type="button"
@@ -398,6 +400,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             ))}
 
             {onLogout && (
+              <div className="flex items-center gap-1 mb-2">
               <button
                 type="button"
                 onClick={() => {
@@ -405,8 +408,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
                   onLogout();
                 }}
                 className="
-                  flex items-center w-full min-h-[52px] rounded-xl border
-                  border-red-500/30 text-red-500 px-4 mb-2
+                  flex items-center flex-1 min-h-[52px] rounded-xl border
+                  border-red-500/30 text-red-500 px-4
                   hover:bg-red-500 hover:text-white
                   transition-all duration-200 active:scale-[0.98]
                 "
@@ -417,6 +420,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
                   EXIT
                 </span>
               </button>
+              <ExplainTrigger contentId="Exit" color={explainColorForNavTab("Exit")} />
+              </div>
             )}
           </div>
         </>
