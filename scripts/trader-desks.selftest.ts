@@ -316,6 +316,9 @@ for (const rel of srcFiles) {
     assert.match(text, /CeoAlwaysOnMonitor/);
     assert.match(text, /userProfile\?\.email/);
     assert.match(text, /\/ceo/);
+    assert.match(text, /data-ceo-kick-sessions/);
+    assert.match(text, /\/api\/admin\/auth\/kick-sessions/);
+    assert.match(text, /Force everyone out/);
     assert.doesNotMatch(text, /Pattern Scanner/);
   }
   if (rel === 'src/components/desks/retail/RetailSlideStrip.tsx') {

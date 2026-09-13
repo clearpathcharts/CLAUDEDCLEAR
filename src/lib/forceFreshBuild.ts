@@ -6,6 +6,7 @@
 
 export const ORIGIN_REVISION_KEY = 'cp_origin_revision';
 export const RELOADED_SESSION_KEY = 'cp_build_reloaded';
+export const AUTH_GENERATION_KEY = 'cp_auth_generation';
 export const CACHE_BUST_PARAM = 'cpb';
 
 export function shouldForceReload(args: {
@@ -21,6 +22,17 @@ export function shouldForceReload(args: {
   const already = String(args.alreadyReloadedFor || '').trim();
   if (already === origin) return false;
   return true;
+}
+
+export function shouldForceSessionKick(args: {
+  originGeneration: number | null | undefined;
+  seenGeneration: number | null | undefined;
+}): boolean {
+  const origin = Number(args.originGeneration);
+  if (!Number.isFinite(origin) || origin <= 0) return false;
+  const seen = Number(args.seenGeneration);
+  if (!Number.isFinite(seen) || seen <= 0) return false;
+  return seen !== origin;
 }
 
 export function withCacheBustParam(href: string, revision: string): string {
@@ -51,6 +63,7 @@ export async function nukeClientCaches(): Promise<void> {
 type HealthPayload = {
   cloudRun?: { revision?: string | null };
   build?: { gitSha?: string | null };
+  session?: { generation?: number | null };
 };
 
 function originToken(payload: HealthPayload): string {
@@ -80,7 +93,7 @@ export async function runForceFreshBuild(opts?: {
   }
 
   const origin = originToken(payload);
-  if (!origin) return 'skipped';
+  const generation = Number(payload.session?.generation);
 
   const storage =
     opts?.storage || (typeof localStorage !== 'undefined' ? localStorage : undefined);
@@ -88,22 +101,35 @@ export async function runForceFreshBuild(opts?: {
     opts?.session || (typeof sessionStorage !== 'undefined' ? sessionStorage : undefined);
   if (!storage || !session) return 'skipped';
 
-  const seen = storage.getItem(ORIGIN_REVISION_KEY);
-  storage.setItem(ORIGIN_REVISION_KEY, origin);
-  if (
-    !shouldForceReload({
-      originRevision: origin,
-      seenRevision: seen,
-      alreadyReloadedFor: session.getItem(RELOADED_SESSION_KEY),
-    })
-  ) {
-    return seen ? 'skipped' : 'stored';
+  const seen = origin ? storage.getItem(ORIGIN_REVISION_KEY) : null;
+  if (origin) storage.setItem(ORIGIN_REVISION_KEY, origin);
+  const seenGeneration = storage.getItem(AUTH_GENERATION_KEY);
+  if (Number.isFinite(generation) && generation > 0) {
+    storage.setItem(AUTH_GENERATION_KEY, String(generation));
   }
 
-  session.setItem(RELOADED_SESSION_KEY, origin);
+  const revisionReload = Boolean(
+    origin &&
+      shouldForceReload({
+        originRevision: origin,
+        seenRevision: seen,
+        alreadyReloadedFor: session.getItem(RELOADED_SESSION_KEY),
+      }),
+  );
+  const sessionKick = shouldForceSessionKick({
+    originGeneration: generation,
+    seenGeneration: seenGeneration ? Number(seenGeneration) : null,
+  });
+
+  if (!revisionReload && !sessionKick) {
+    if (origin) return seen ? 'skipped' : 'stored';
+    return seenGeneration ? 'skipped' : 'stored';
+  }
+
+  if (origin && revisionReload) session.setItem(RELOADED_SESSION_KEY, origin);
   await nukeClientCaches();
   const href = opts?.href || (typeof location !== 'undefined' ? location.href : '/');
-  const next = withCacheBustParam(href, origin);
+  const next = origin ? withCacheBustParam(href, origin) : href;
   if (opts?.reload) {
     opts.reload(next);
   } else if (typeof location !== 'undefined') {
@@ -122,4 +148,7 @@ export function scheduleForceFreshBuild(): void {
     /* web */
   }
   void runForceFreshBuild();
+  window.setInterval(() => {
+    void runForceFreshBuild();
+  }, 60_000);
 }
