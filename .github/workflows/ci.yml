@@ -57,6 +57,9 @@ jobs:
       - name: Section guide video catalog self-test
         run: npm run test:section-guides
 
+      - name: Explain Mode Flow scripts self-test
+        run: npm run test:explain-nav
+
       - name: CEO desk cleanup (ticker interval, no contacts rail)
         run: npm run test:ceo-desk-cleanup
 
