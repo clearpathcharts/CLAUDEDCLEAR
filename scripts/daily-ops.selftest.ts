@@ -77,11 +77,16 @@ assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`))
 assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
 assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
 
+function letterWordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 const pipeline = findInvestorSeed("pipeline");
 assert.ok(pipeline, "Pipeline Angels must be in the catalog");
 const pipelineLetter = buildInvestorDraftLetter(pipeline!);
-assert.match(pipelineLetter, /^Dear Pipeline Angels,/);
-assert.match(buildInvestorDraftLetter(baird!), /^Dear Ryan,/);
+assert.match(pipelineLetter, /^Subject:/);
+assert.match(pipelineLetter, /Dear Pipeline Angels,/);
+assert.match(buildInvestorDraftLetter(baird!), /Dear Ryan,/);
 assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com/);
 assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/institutional/);
 assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/);
@@ -89,15 +94,34 @@ assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/retail/);
 assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/);
 assert.match(pipelineLetter, /not a brokerage/i);
 assert.match(pipelineLetter, /do not provide trade advice/i);
+assert.match(pipelineLetter, /does not evaluate, alter, or advise on financial decisions/i);
 assert.match(pipelineLetter, /Richard A\. Floyd/);
+assert.match(pipelineLetter, /Clear Path Markets Science/);
+assert.doesNotMatch(pipelineLetter, /Market Sciences/);
 assert.doesNotMatch(pipelineLetter, /\$700B|dry powder|we are raising/i);
+assert.ok(letterWordCount(pipelineLetter) >= 280, `Pipeline letter too thin: ${letterWordCount(pipelineLetter)} words`);
+assert.ok((pipelineLetter.match(/\n\n/g) || []).length >= 5, "letter must be full paragraphs, not a stub");
+
+const ribbit = INVESTOR_SEED.find((s) => s.id === "ribbit");
+assert.ok(ribbit);
+assert.doesNotMatch(
+  buildInvestorDraftLetter(ribbit!),
+  /do not pitch|today'?s send|may be skip|keep on radar/i,
+  "internal skip notes must not appear in the outbound letter"
+);
 
 for (const seed of INVESTOR_SEED) {
   const letter = buildInvestorDraftLetter(seed);
+  assert.ok(letterWordCount(letter) >= 250, `${seed.id} letter too thin: ${letterWordCount(letter)} words`);
   assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/institutional/, `${seed.id} letter must name Institutional`);
   assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/, `${seed.id} letter must name Fundamental`);
   assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/retail/, `${seed.id} letter must name Retail`);
   assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/, `${seed.id} letter must name Neurodivergent`);
+  assert.doesNotMatch(
+    letter,
+    /today'?s send|may be skip|keep on radar|do not pitch|\$700B|dry powder|too late-stage|future round/i,
+    `${seed.id} leaked an internal note`
+  );
 }
 
 const featured = featuredStocks(8);
