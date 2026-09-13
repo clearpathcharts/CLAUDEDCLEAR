@@ -746,16 +746,43 @@ export default function CeoDashboard() {
       <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-2">
         CEO Dashboard — Founder Console
       </h1>
-      <p className="mb-6 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
+      <p className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
         Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
       </p>
 
+      <div
+        data-ceo-kick-bar
+        className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3"
+      >
+        <p className="m-0 text-xs font-bold uppercase tracking-widest text-amber-100">
+          Stale logins still open the old Dashboard. This signs every member out so the next login is a desk. Accounts stay.
+        </p>
+        <button
+          type="button"
+          data-ceo-kick-sessions
+          disabled={kickBusy}
+          onClick={() => void kickEveryoneOut()}
+          className="inline-flex items-center gap-2 shrink-0 px-4 py-2 rounded-lg border border-amber-500/50 bg-amber-500/20 text-amber-50 text-xs font-mono uppercase tracking-widest font-black hover:bg-amber-500/30 disabled:opacity-50"
+        >
+          <LogOut size={14} aria-hidden="true" />
+          {kickBusy ? 'Signing everyone out…' : 'Force everyone out'}
+        </button>
+      </div>
+      {convertMsg ? (
+        <p className="mb-6 text-sm font-mono text-white bg-black/50 border border-zinc-700 rounded-lg px-3 py-3 whitespace-pre-wrap">
+          {convertMsg}
+        </p>
+      ) : null}
+
       <ChooseYourPath onChoosePath={navigateToDesk} />
 
       <CeoAlwaysOnMonitor />
-      <DailyOpsDesk getHeaders={founderApiHeaders} />
+            <DailyOpsDesk
+                getHeaders={founderApiHeaders}
+                kickEveryone={{ busy: kickBusy, message: convertMsg, onKick: () => void kickEveryoneOut() }}
+            />
       <DailyPatternReviewDesk getHeaders={founderApiHeaders} />
 
       {/* CEO Micro-Tabs */}
