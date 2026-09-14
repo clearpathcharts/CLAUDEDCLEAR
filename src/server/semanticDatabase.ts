@@ -274,7 +274,7 @@ export const GENERAL_FAQS = [
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: `ClearPathTrader is one free market intelligence and education terminal with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
+    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
   },
   {
     question: "Is ClearPathTrader a brokerage?",
@@ -386,13 +386,13 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
   if (pathClean === '/') {
     title = PRODUCT_HOME_TITLE;
     description = PRODUCT_META_DESCRIPTION;
-    keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, market intelligence terminal, trading charts, financial encyclopedia, neurodivergent trading UI, not a chatbot, Clear Path Markets Science`;
+    keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, educational financial markets site, trading charts, financial encyclopedia, neurodivergent trading UI, not a chatbot, Clear Path Markets Science`;
     schemas.push({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "ClearPath Trader",
       "applicationCategory": "FinanceApplication",
-      "applicationSubCategory": "Market intelligence and education terminal",
+      "applicationSubCategory": "Educational financial markets site",
       "operatingSystem": "Web",
       "url": baseUrl,
       "description": PRODUCT_WHAT_IT_IS,
@@ -416,7 +416,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
-    description = `ClearPath Trader is one education terminal with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. Charts, encyclopedias, and accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.`;
+    description = `ClearPath Trader is one educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. Charts, encyclopedias, and accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.`;
     keywords = `about ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility`;
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
@@ -1419,7 +1419,7 @@ ${hreflangTags}
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
         <p><strong>${escAttr(PRODUCT_HOME_H1)}</strong></p>
         <p>${safeHomeDesc}</p>
-        <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One education terminal — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-terminal mentor — it does not greet visitors, capture leads, or book appointments.</p>
+        <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One educational financial markets site — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-app mentor — it does not greet visitors, capture leads, or book appointments.</p>
         <p><a href="/desk">Four trader desks</a> · <a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;

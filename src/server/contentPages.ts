@@ -252,12 +252,12 @@ function renderShell(
       : cta || {
           chartTitle: 'Put this knowledge on a live chart',
           chartBody:
-            'ClearPath Trader is a free market intelligence terminal: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
-          launchLabel: 'Launch the terminal',
+            'ClearPath Trader is a free educational financial markets site: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
+          launchLabel: 'Open the site',
           educationLabel: 'Start education',
           waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'There is no waitlist. Create an account with email + password on the terminal. That email lives in Firestore and survives Cloud Run redeploys.',
+            'There is no waitlist. Create an account with email + password on the site. That email lives in Firestore and survives Cloud Run redeploys.',
           firstNameLabel: 'First name',
           emailLabel: 'Email (updates only)',
           countryLabel: 'Country',
