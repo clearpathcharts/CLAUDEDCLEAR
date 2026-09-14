@@ -13,13 +13,24 @@ import {
   sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
 import {
+  AUTH_GENERATION_KEY,
   CACHE_BUST_PARAM,
   ORIGIN_REVISION_KEY,
   RELOADED_SESSION_KEY,
   runForceFreshBuild,
   shouldForceReload,
+  shouldForceSessionKick,
   withCacheBustParam,
 } from '../src/lib/forceFreshBuild';
+import {
+  DEFAULT_AUTH_SESSION_GENERATION,
+  applyGrantedSession,
+  dropStaleAuthSession,
+  getAuthSessionGeneration,
+  kickAllMemberSessions,
+  resetAuthSessionGenerationForTests,
+  sessionMatchesGeneration,
+} from '../src/server/authSessionGeneration';
 
 assert.equal(HTML_NO_STORE_HEADERS['Cache-Control'].includes('no-store'), true);
 assert.equal(HTML_NO_STORE_HEADERS['CDN-Cache-Control'], 'no-store');
@@ -93,6 +104,30 @@ assert.equal(
   false,
 );
 
+assert.equal(shouldForceSessionKick({ originGeneration: 2, seenGeneration: 1 }), true);
+assert.equal(shouldForceSessionKick({ originGeneration: 2, seenGeneration: 2 }), false);
+assert.equal(shouldForceSessionKick({ originGeneration: 2, seenGeneration: null }), false);
+
+assert.equal(DEFAULT_AUTH_SESSION_GENERATION, 2);
+{
+  const prevGen = process.env.AUTH_SESSION_GENERATION;
+  delete process.env.AUTH_SESSION_GENERATION;
+  assert.equal(getAuthSessionGeneration(), 2);
+  const stale = { privateUser: { uid: 'old' }, boardAccess: true };
+  assert.equal(dropStaleAuthSession(stale), 'dropped');
+  assert.equal(stale.privateUser, undefined);
+  const granted: Record<string, unknown> = {};
+  applyGrantedSession(granted, { uid: 'new' });
+  assert.equal(granted.authGeneration, 2);
+  assert.equal(sessionMatchesGeneration(granted), true);
+  assert.equal(dropStaleAuthSession(granted), 'ok');
+  process.env.AUTH_SESSION_GENERATION = '9';
+  assert.equal(getAuthSessionGeneration(), 9);
+  if (prevGen === undefined) delete process.env.AUTH_SESSION_GENERATION;
+  else process.env.AUTH_SESSION_GENERATION = prevGen;
+  resetAuthSessionGenerationForTests();
+}
+
 const busted = withCacheBustParam('https://clearpathtrader.com/desk/retail?foo=1#charts', 'rev-b');
 assert.equal(busted.includes(`${CACHE_BUST_PARAM}=rev-b`), true);
 assert.equal(busted.includes('foo=1'), true);
@@ -142,6 +177,30 @@ const firstVisit = await runForceFreshBuild({
 });
 assert.equal(firstVisit, 'stored');
 
+{
+  let kickedTo = '';
+  const kickStore = memoryStore({
+    [ORIGIN_REVISION_KEY]: 'same-rev',
+    [AUTH_GENERATION_KEY]: '1',
+  });
+  const kickResult = await runForceFreshBuild({
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({ cloudRun: { revision: 'same-rev' }, session: { generation: 2 } }),
+        { status: 200 },
+      ),
+    storage: kickStore,
+    session: memoryStore(),
+    href: 'https://clearpathtrader.com/desk/retail',
+    reload: (url) => {
+      kickedTo = url;
+    },
+  });
+  assert.equal(kickResult, 'reloaded');
+  assert.equal(kickStore.data[AUTH_GENERATION_KEY], '2');
+  assert.equal(kickedTo.includes('/desk/retail'), true);
+}
+
 const prevK = process.env.K_REVISION;
 const prevS = process.env.K_SERVICE;
 process.env.K_SERVICE = 'clear-path-markets-science';
@@ -187,5 +246,37 @@ const serverSrc = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(serverSrc, /applyHtmlNoStore/);
 assert.match(serverSrc, /sendUncachedHtml/);
 assert.match(serverSrc, /readLiveBuildIdentity/);
+assert.match(serverSrc, /dropStaleAuthSession/);
+assert.match(serverSrc, /applyGrantedSession/);
+assert.match(serverSrc, /generation: getAuthSessionGeneration\(\)/);
+assert.match(serverSrc, /\/api\/admin\/auth\/kick-sessions/);
+assert.match(serverSrc, /kickAllMemberSessions/);
+assert.match(serverSrc, /keptFounderSession/);
+
+{
+  resetAuthSessionGenerationForTests();
+  const before = getAuthSessionGeneration();
+  const kicked = await kickAllMemberSessions({ kickedBy: 'selftest' });
+  assert.equal(kicked.accountsDeleted, 0);
+  assert.equal(kicked.generation, before + 1);
+  assert.equal(getAuthSessionGeneration(), before + 1);
+  const staleAfterKick = { privateUser: { uid: 'old' }, authGeneration: before };
+  assert.equal(dropStaleAuthSession(staleAfterKick), 'dropped');
+  resetAuthSessionGenerationForTests();
+  try {
+    fs.unlinkSync(path.join(root, 'data', 'auth-session-generation.json'));
+  } catch {
+    /* optional */
+  }
+}
+
+const genSrc = fs.readFileSync(path.join(root, 'src/server/authSessionGeneration.ts'), 'utf8');
+assert.match(genSrc, /purgeExpressSessionCookiesOnly/);
+assert.match(genSrc, /accountsDeleted: 0/);
+assert.doesNotMatch(genSrc, /private_accounts.*delete|collection\('private_accounts'\)\.doc/);
+
+const storeSrc = fs.readFileSync(path.join(root, 'src/server/firestoreSessionStore.ts'), 'utf8');
+assert.match(storeSrc, /EXPRESS_SESSIONS_COLLECTION = 'express_sessions'/);
+assert.match(storeSrc, /Never touches private_accounts/);
 
 console.log('force-fresh-build.selftest: ok');

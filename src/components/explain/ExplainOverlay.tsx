@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getExplainContent } from './explainContent';
+import { getExplainFlowScript } from './flowScripts';
 import { hexToRgba } from './explainMedia';
 import { ExplainVideoStage } from './ExplainVideoStage';
 import { QuizCheck } from './QuizCheck';
@@ -86,10 +87,39 @@ export function ExplainOverlay({ contentId, onClose }: ExplainOverlayProps) {
 
         <p className="m-0 text-[15px] leading-relaxed text-zinc-200">{content.text}</p>
 
+        <FlowScriptReadAlong contentId={content.id} color={content.color} />
+
         <QuizCheck questions={content.quiz} accent={content.color} />
       </div>
     </div>
   );
 
   return createPortal(node, document.body);
+}
+
+function FlowScriptReadAlong({ contentId, color }: { contentId: string; color: string }) {
+  const flow = getExplainFlowScript(contentId);
+  if (!flow) return null;
+
+  return (
+    <details className="mt-4 rounded-2xl border border-white/10 bg-black/30 px-3 py-2">
+      <summary
+        className="cursor-pointer text-[10px] font-black uppercase tracking-[0.16em]"
+        style={{ color: hexToRgba(color, 0.85) }}
+      >
+        Full {flow.targetSeconds}s walkthrough · {flow.shots.length} floating 8s Flow jobs
+      </summary>
+      <ol className="mt-3 mb-1 list-none space-y-3 p-0">
+        {flow.shots.map((shot) => (
+          <li key={shot.id} className="text-[13px] leading-relaxed text-zinc-300">
+            <p className="m-0 mb-1 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+              {shot.startSeconds}–{shot.endSeconds}s · {shot.title}
+              {shot.super ? ` · “${shot.super}”` : ''}
+            </p>
+            <p className="m-0">{shot.narration}</p>
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
 }

@@ -1,3 +1,5 @@
+import { EXPLAIN_FLOW_SCRIPTS } from './flowScripts';
+
 export interface QuizOption {
   id: string;
   text: string;
@@ -21,35 +23,31 @@ export interface ExplainContent {
   quiz: QuizQuestion[];
 }
 
+function vo(id: keyof typeof EXPLAIN_FLOW_SCRIPTS): string {
+  return EXPLAIN_FLOW_SCRIPTS[id].narrationScript;
+}
+
 /**
- * CONTENT RULE: every entry describes what a screen does and how to read it.
+ * Fifth-grade overlay copy = the same voice-over as the twelve 8s Flow clips.
  * Never tell the user what to buy, sell, or do with their money.
- * That line is what keeps this feature education, not advice.
- *
- * Colors match the nav-tab video-badge mock (Home purple, Y.W.C. pink,
- * Charts orange, Memberships gold, learn desks cyan).
- *
- * Google Flow: drop 16:9 MP4s at public/explain-videos/{id}.mp4
- * (see explainMedia.ts). Leave videoUrl empty unless the clip lives elsewhere.
  */
 export const explainContentLibrary: Record<string, ExplainContent> = {
   home: {
     id: 'home',
     title: 'Home',
     color: '#6C5CE7',
-    text:
-      'Home is the front door of ClearPath. From here you can open charts, learning desks, community, and your profile without hunting through hidden menus. Nothing on Home places a trade. It is a map of the rest of the site.',
+    text: vo('home'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is Home for?',
+        prompt: 'What is the purple HOME button?',
         options: [
-          { id: 'a', text: 'A map to the rest of ClearPath' },
-          { id: 'b', text: 'A place that buys and sells for you' },
+          { id: 'a', text: 'The front door of this website' },
+          { id: 'b', text: 'A button that buys things for you' },
           { id: 'c', text: 'A password reset page' },
         ],
         correctOptionId: 'a',
-        explanation: 'Home is the starting map. You choose where to go next.',
+        explanation: 'HOME is the front door. You can always click it if you get lost.',
       },
     ],
   },
@@ -58,19 +56,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'ywc',
     title: 'Y.W.C. — Your World Connected',
     color: '#FF2E9A',
-    text:
-      'Y.W.C. is a hub for news, social feeds, and a live chart on the same screen so you do not have to jump between apps. It is a workspace, not a signal service. You pick what to pin.',
+    text: vo('ywc'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does Y.W.C. try to do?',
+        prompt: 'What is the Y.W.C. room for?',
         options: [
-          { id: 'a', text: 'Keep news, feeds, and a chart in one place' },
-          { id: 'b', text: 'Auto-trade your account' },
-          { id: 'c', text: 'Replace your bank' },
+          { id: 'a', text: 'Stories, magazines, and a price picture on one page' },
+          { id: 'b', text: 'Buying and selling for you' },
+          { id: 'c', text: 'Replacing your bank' },
         ],
         correctOptionId: 'a',
-        explanation: 'It gathers things you already check during the day onto one desk.',
+        explanation: 'It is one room so you do not open ten other websites. It does not tell you what to buy.',
       },
     ],
   },
@@ -79,19 +76,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'indacreator',
     title: 'INDACREATOR',
     color: '#00E5FF',
-    text:
-      'INDACREATOR (also called The River) is a workshop for indicator code. You can paste or upload Pine-style instructions, compile them, and attach the result to a chart. It does not place trades. If the code cannot compile, you will see an error instead of a fake overlay.',
+    text: vo('indacreator'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does INDACREATOR do?',
+        prompt: 'What does Compile mean here?',
         options: [
-          { id: 'a', text: 'Helps you import or build a custom indicator' },
-          { id: 'b', text: 'Places trades automatically' },
-          { id: 'c', text: 'Deletes your account' },
+          { id: 'a', text: 'Please check this recipe' },
+          { id: 'b', text: 'Buy something now' },
+          { id: 'c', text: 'Delete the website' },
         ],
         correctOptionId: 'a',
-        explanation: 'It compiles indicator instructions and can attach them to charts — nothing else.',
+        explanation: 'Compile just checks the recipe. A red error means fix the words — you did not break the site.',
       },
     ],
   },
@@ -100,20 +96,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'charts',
     title: 'Charts',
     color: '#FF7B00',
-    text:
-      'This screen shows price moving over time. Each candle is one block of time. A green (or up-color) candle means price finished higher than it started. A red (or down-color) candle means price finished lower. You can change how much time each candle covers. Charts here are for study. They are not a broker and they do not tell you what to trade.',
+    text: vo('charts'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does a green (up) candle mean?',
+        prompt: 'What does a green-ish candle block mean?',
         options: [
-          { id: 'a', text: 'Price went up during that time' },
-          { id: 'b', text: 'Price went down during that time' },
-          { id: 'c', text: 'The market is closed' },
+          { id: 'a', text: 'The price finished higher in that chunk of time' },
+          { id: 'b', text: 'The price finished lower in that chunk of time' },
+          { id: 'c', text: 'The store is closed' },
         ],
         correctOptionId: 'a',
-        explanation:
-          'Green / up means the price ended higher than where it started for that block of time.',
+        explanation: 'Green-ish means finished higher. Red-ish means finished lower. Still not a buy button.',
       },
     ],
   },
@@ -122,19 +116,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'news',
     title: 'News',
     color: '#4D6FFF',
-    text:
-      'News is a feed of headlines and market-related stories. Read it as context, not as a command. A headline can be late, incomplete, or wrong. ClearPath does not turn news into a buy or sell instruction.',
+    text: vo('news'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'How should you treat a news headline here?',
+        prompt: 'If the News list is empty, what does that mean?',
         options: [
-          { id: 'a', text: 'As context to read, not as a trade order' },
-          { id: 'b', text: 'As a guaranteed price prediction' },
-          { id: 'c', text: 'As a button that buys for you' },
+          { id: 'a', text: 'We did not make up fake stories' },
+          { id: 'b', text: 'You must buy something' },
+          { id: 'c', text: 'The headlines are secret orders' },
         ],
         correctOptionId: 'a',
-        explanation: 'Headlines are information. They are not orders.',
+        explanation: 'Empty is honest. Making up news would be lying. Headlines are posters, not orders.',
       },
     ],
   },
@@ -143,19 +136,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'memberships',
     title: 'Memberships',
     color: '#FFE600',
-    text:
-      'Memberships describes ClearPath plan options. Public checkout is currently off, so you can read the desk without being charged on this site. If billing is restored later, it will say so clearly. This tab is not investment advice.',
+    text: vo('memberships'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'Does opening Memberships charge your card right now?',
+        prompt: 'Does opening the gold MEMBERSHIPS page charge your card right now?',
         options: [
-          { id: 'a', text: 'No — public checkout is off on this site' },
-          { id: 'b', text: 'Yes, it always charges immediately' },
+          { id: 'a', text: 'No — looking does not charge a card' },
+          { id: 'b', text: 'Yes, it always charges right away' },
           { id: 'c', text: 'It trades the market for you' },
         ],
         correctOptionId: 'a',
-        explanation: 'You can look at the membership desk without a live public checkout.',
+        explanation: 'Checkout is off. Gold is just a color, not a prize timer.',
       },
     ],
   },
@@ -164,19 +156,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'profile',
     title: 'Profile',
     color: '#FF2E9A',
-    text:
-      'Profile is your account page: name, photo, and settings that belong to you. It is not a public leaderboard unless you choose to share a public /u/ link. Changing a password or photo here does not place a trade.',
+    text: vo('profile'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What lives on Profile?',
+        prompt: 'What is the pink PROFILE room?',
         options: [
-          { id: 'a', text: 'Your account details and settings' },
-          { id: 'b', text: 'Live order tickets' },
+          { id: 'a', text: 'Your locker — name, photo, save' },
+          { id: 'b', text: 'A place that buys things' },
           { id: 'c', text: 'Other people’s bank logins' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is your desk identity, not a trading ticket.',
+        explanation: 'It is your locker. Saving a name is not shopping.',
       },
     ],
   },
@@ -185,19 +176,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'affiliate',
     title: 'Affiliate',
     color: '#FF2E9A',
-    text:
-      'Affiliate is ClearPath’s referral desk. Private accounts can share a personal /r/ code. If someone you invited later joins, the desk can track that relationship. It is not a brokerage payout from the market. Rewards only apply when the product’s affiliate rules say they do.',
+    text: vo('affiliate'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is the Affiliate tab for?',
+        prompt: 'What is the AFFILIATE room for?',
         options: [
-          { id: 'a', text: 'Sharing your referral link / code' },
+          { id: 'a', text: 'Sharing a special /r/ link if you want to' },
           { id: 'b', text: 'Placing other people’s trades' },
-          { id: 'c', text: 'Hiding the education pages' },
+          { id: 'c', text: 'Hiding the school pages' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is a referral desk, not a trading desk.',
+        explanation: 'Sharing is optional. Copy means the computer remembers the words. Not a market game.',
       },
     ],
   },
@@ -206,19 +196,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'ceo',
     title: 'CEO dashboard',
     color: '#FF2E9A',
-    text:
-      'The CEO dashboard is founder-only operations: backups, invites, site health. If you do not see this tab, you are not supposed to. It does not change anyone else’s charts.',
+    text: vo('ceo'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'Who is the CEO dashboard for?',
+        prompt: 'Who is the hot-pink CEO button for?',
         options: [
-          { id: 'a', text: 'The founder running the site' },
+          { id: 'a', text: 'Only the person who built this website' },
           { id: 'b', text: 'Every visitor' },
-          { id: 'c', text: 'A broker that executes trades' },
+          { id: 'c', text: 'A store that buys and sells' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is an ops desk for the person who owns the product.',
+        explanation: 'Most people will not see it. That is normal. Click purple HOME and keep going.',
       },
     ],
   },
@@ -227,19 +216,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'cinema',
     title: 'ClearPath cinema',
     color: '#00E5FF',
-    text:
-      'ClearPath Cinema is the video / APK desk for watching and installing the app experience. Videos here are product or education clips, not live trading rooms that tell you what to buy.',
+    text: vo('cinema'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is Cinema for?',
+        prompt: 'What is the cyan CINEMA room?',
         options: [
-          { id: 'a', text: 'Video and app viewing for ClearPath' },
-          { id: 'b', text: 'A live broker chat that places orders' },
-          { id: 'c', text: 'Deleting encyclopedias' },
+          { id: 'a', text: 'A movie theater inside the website' },
+          { id: 'b', text: 'A chat that buys things for you' },
+          { id: 'c', text: 'A button that deletes school' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is a watch / install desk, not a trade blotter.',
+        explanation: 'Click a picture. A player is a box that shows the movie. Movies teach. They do not tell you what to buy.',
       },
     ],
   },
@@ -248,19 +236,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'education',
     title: 'ClearPath education',
     color: '#00E5FF',
-    text:
-      'ClearPath Education is structured lessons and quizzes about how markets and this site work. Finish a lesson at your own pace. Passing a quiz does not mean you should trade. It means you understood the words on that page.',
+    text: vo('education'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What does finishing an Education lesson mean?',
+        prompt: 'What does passing a school quiz mean?',
         options: [
-          { id: 'a', text: 'You practiced the idea on that page' },
-          { id: 'b', text: 'ClearPath will trade for you now' },
-          { id: 'c', text: 'You must buy a membership' },
+          { id: 'a', text: 'You understood that page' },
+          { id: 'b', text: 'The website will spend money for you now' },
+          { id: 'c', text: 'You must buy a gold plan' },
         ],
         correctOptionId: 'a',
-        explanation: 'Lessons are study. They are not a license to trade.',
+        explanation: 'A quiz is practice. One lesson, then rest. Not a license to spend.',
       },
     ],
   },
@@ -269,19 +256,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'literacy',
     title: 'Literacy OS',
     color: '#00E5FF',
-    text:
-      'Literacy OS is a personal study desk: notes, sources, briefs, and practice tools. It is built for people who want extra time and extra explanation. It is education only — not brokerage, not advice.',
+    text: vo('literacy'),
     quiz: [
       {
         id: 'q1',
         prompt: 'What is Literacy OS?',
         options: [
-          { id: 'a', text: 'A personal learning desk' },
-          { id: 'b', text: 'A live order-entry platform' },
+          { id: 'a', text: 'A notebook desk with rooms for ideas' },
+          { id: 'b', text: 'A live store for buying' },
           { id: 'c', text: 'A bank wire screen' },
         ],
         correctOptionId: 'a',
-        explanation: 'It is study infrastructure, not a broker.',
+        explanation: 'Notebook desk. Save one idea. Then rest. Not a store.',
       },
     ],
   },
@@ -290,19 +276,18 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'encyclopedia',
     title: 'Encyclopedia of finance',
     color: '#00E5FF',
-    text:
-      'This encyclopedia is a study library of finance ideas, markets, and labs. Cards are teaching pages. Generated stock cards are not a researched list of thousands of real issuers. Read a card, then decide for yourself whether you need another source.',
+    text: vo('encyclopedia'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'How should you read an encyclopedia card?',
+        prompt: 'How should you read a library card here?',
         options: [
-          { id: 'a', text: 'As a study page, not a research report on every company' },
-          { id: 'b', text: 'As a guaranteed list of 9,586 issuers' },
-          { id: 'c', text: 'As a buy ticket' },
+          { id: 'a', text: 'As a teaching page, like a chapter in a book' },
+          { id: 'b', text: 'As a list of companies you must buy' },
+          { id: 'c', text: 'As a buy button' },
         ],
         correctOptionId: 'a',
-        explanation: 'These are teaching cards. They are not a complete issuer database.',
+        explanation: 'It is a library of money words. Beginner means easy words. Not a shopping list.',
       },
     ],
   },
@@ -311,19 +296,58 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     id: 'indicators',
     title: 'Encyclopedia of indicators',
     color: '#00E5FF',
-    text:
-      'This encyclopedia explains chart studies (RSI, moving averages, and more) with a picture, a formula, how to read it, and typical settings. An indicator describes past price. It does not promise the next move. Overlaying a study on a live chart still does not place a trade.',
+    text: vo('indicators'),
     quiz: [
       {
         id: 'q1',
-        prompt: 'What is an indicator here?',
+        prompt: 'What is a chart helper here?',
         options: [
-          { id: 'a', text: 'A study of past price, for reading a chart' },
-          { id: 'b', text: 'A guaranteed next-price machine' },
-          { id: 'c', text: 'A broker order' },
+          { id: 'a', text: 'A picture of prices that already happened' },
+          { id: 'b', text: 'A machine that promises tomorrow' },
+          { id: 'c', text: 'A buy button' },
         ],
         correctOptionId: 'a',
-        explanation: 'Indicators describe. They do not order.',
+        explanation: 'Helpers talk about yesterday. They cannot promise tomorrow. They do not buy or sell.',
+      },
+    ],
+  },
+
+  explain: {
+    id: 'explain',
+    title: 'Need extra understanding',
+    color: '#00E5FF',
+    text: vo('explain'),
+    quiz: [
+      {
+        id: 'q1',
+        prompt: 'What do the little play badges do?',
+        options: [
+          { id: 'a', text: 'Open a help movie and easy words for that button' },
+          { id: 'b', text: 'Buy something for you' },
+          { id: 'c', text: 'Delete your name' },
+        ],
+        correctOptionId: 'a',
+        explanation: 'Click the tiny play picture, not the big word. You cannot fail your account.',
+      },
+    ],
+  },
+
+  exit: {
+    id: 'exit',
+    title: 'Exit',
+    color: '#FF4D4D',
+    text: vo('exit'),
+    quiz: [
+      {
+        id: 'q1',
+        prompt: 'What does the red EXIT button do?',
+        options: [
+          { id: 'a', text: 'Hangs up — the website forgets you are signed in' },
+          { id: 'b', text: 'Deletes your name forever' },
+          { id: 'c', text: 'Buys one last thing' },
+        ],
+        correctOptionId: 'a',
+        explanation: 'Like hanging up a phone. Your name stays. If you wanted pictures, click orange CHARTS instead.',
       },
     ],
   },
@@ -345,6 +369,8 @@ export const NAV_TAB_EXPLAIN_IDS: Record<string, string> = {
   LiteracyOS: 'literacy',
   Encyclopedia: 'encyclopedia',
   EncyclopediaOfIndicators: 'indicators',
+  ExplainMode: 'explain',
+  Exit: 'exit',
 };
 
 const ALIASES: Record<string, string> = {
@@ -353,6 +379,9 @@ const ALIASES: Record<string, string> = {
   the_river: 'indacreator',
   strictlycharts: 'charts',
   home: 'home',
+  explain_on: 'explain',
+  'need extra understanding': 'explain',
+  logout: 'exit',
 };
 
 export function getExplainContent(id: string): ExplainContent | undefined {

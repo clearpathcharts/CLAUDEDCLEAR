@@ -303,13 +303,26 @@ export function aggregateCandles(
 
 const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
 
+export type HistoricalFetchOptions = {
+  /** YYYY-MM-DD — optional Twelve Data start_date window. */
+  startDate?: string;
+  /** YYYY-MM-DD — optional Twelve Data end_date window. */
+  endDate?: string;
+  /** Override tier candle cap (still clamped to 5000). */
+  limit?: number;
+};
+
 export const fetchTieredHistoricalData = async (
   symbol: string,
   interval: string,
-  userTier: string
+  userTier: string,
+  options?: HistoricalFetchOptions,
 ): Promise<NormalizedCandle[]> => {
   const plan = resolveTimeframePlan(interval);
-  const tierCap = Math.min(getCandleLimit(userTier), TWELVEDATA_MAX_OUTPUTSIZE);
+  const tierCap = Math.min(
+    options?.limit ?? getCandleLimit(userTier),
+    TWELVEDATA_MAX_OUTPUTSIZE,
+  );
   const desiredFinal = plan.visibleBars
     ? Math.min(plan.visibleBars, tierCap)
     : tierCap;
@@ -318,11 +331,15 @@ export const fetchTieredHistoricalData = async (
     Math.max(plan.aggregateBars, desiredFinal * plan.aggregateBars)
   );
 
-  const proxyUrl =
-    `/api/market/history` +
-    `?symbol=${encodeURIComponent(symbol)}` +
-    `&interval=${encodeURIComponent(plan.fetchInterval)}` +
-    `&limit=${encodeURIComponent(String(fetchLimit))}`;
+  const params = new URLSearchParams({
+    symbol,
+    interval: plan.fetchInterval,
+    limit: String(fetchLimit),
+  });
+  if (options?.startDate) params.set('startDate', options.startDate);
+  if (options?.endDate) params.set('endDate', options.endDate);
+
+  const proxyUrl = `/api/market/history?${params.toString()}`;
 
   let response: Response;
   try {
@@ -381,7 +398,7 @@ export const fetchTieredHistoricalData = async (
 
   candles = aggregateCandles(candles, plan.aggregateBars);
 
-  if (plan.visibleBars && candles.length > plan.visibleBars) {
+  if (plan.visibleBars && candles.length > plan.visibleBars && !options?.startDate && !options?.endDate) {
     candles = candles.slice(candles.length - plan.visibleBars);
   }
 

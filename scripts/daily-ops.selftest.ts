@@ -12,7 +12,14 @@ import {
   SHIPPED_AS_OF_2026_08_18,
   OPEN_SITE_WORK,
 } from "../src/server/dailyOpsCatalog";
-import { INVESTOR_SEED, findInvestorSeed } from "../src/server/investorDesk";
+import {
+  INVESTOR_SEED,
+  findInvestorSeed,
+  buildInvestorDraftLetter,
+  getInvestorCatalog,
+  catalogKindCounts,
+  catalogIdentityKey,
+} from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
 import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
@@ -77,6 +84,81 @@ assert.ok(/not a (seed|broker)/i.test(`${baird?.stage} ${baird?.whyClearPath}`))
 assert.equal(findInvestorSeed("Ryan Baird")?.id, "baird_augustine");
 assert.equal(findInvestorSeed("baird")?.id, "baird_augustine");
 
+function letterWordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+const catalog = getInvestorCatalog();
+const kinds = catalogKindCounts(catalog);
+assert.ok(kinds.total >= 300, `catalog too thin: ${kinds.total}`);
+assert.ok(kinds.vc >= 80, `need more VCs, got ${kinds.vc}`);
+assert.ok(kinds.seed >= 40, `need more seed funds, got ${kinds.seed}`);
+assert.ok(kinds.angel >= 80, `need more angels, got ${kinds.angel}`);
+assert.ok(kinds.linkedin >= 80, `need public LinkedIn rows, got ${kinds.linkedin}`);
+assert.ok(findInvestorSeed("naval")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("jasoncalacanis")?.linkedin?.includes("linkedin.com"));
+assert.ok(findInvestorSeed("pearvc") || findInvestorSeed("Pear VC"));
+assert.ok(findInvestorSeed("hustlefund") || findInvestorSeed("Hustle Fund"));
+assert.equal(catalog.map((s) => s.id).length, new Set(catalog.map((s) => s.id)).size);
+const siteKeys = catalog.map((s) => catalogIdentityKey(s.linkedin || s.website));
+assert.equal(siteKeys.length, new Set(siteKeys).size, "identical website listings must be collapsed");
+const nameKeys = catalog.map((s) => s.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
+assert.equal(nameKeys.length, new Set(nameKeys).size, "identical firm-name listings must be collapsed");
+assert.ok(kinds.withEmail >= 150, `findfunding public emails missing, got ${kinds.withEmail}`);
+assert.ok(kinds.ib >= 140, `need more investment banks, got ${kinds.ib}`);
+assert.ok(findInvestorSeed("8VC")?.outreachEmail || findInvestorSeed("ff_8vc")?.outreachEmail);
+assert.ok(findInvestorSeed("Cowboy Ventures")?.outreachEmail);
+assert.ok(findInvestorSeed("Cantor Fitzgerald"));
+assert.ok(findInvestorSeed("BTIG"));
+assert.ok(findInvestorSeed("Leerink") || findInvestorSeed("Leerink Partners"));
+assert.ok(findInvestorSeed("Keefe Bruyette") || findInvestorSeed("KBW") || findInvestorSeed("Keefe Bruyette & Woods"));
+assert.ok(findInvestorSeed("Goldman Sachs"));
+assert.ok(findInvestorSeed("Robert W. Baird") || findInvestorSeed("bairdib"));
+assert.equal(catalog.some((s) => (s.outreachEmail || "").startsWith("name@")), false);
+
+const pipeline = findInvestorSeed("pipeline");
+assert.ok(pipeline, "Pipeline Angels must be in the catalog");
+const pipelineLetter = buildInvestorDraftLetter(pipeline!);
+assert.match(pipelineLetter, /^Subject:/);
+assert.match(pipelineLetter, /Dear Pipeline Angels,/);
+assert.match(buildInvestorDraftLetter(baird!), /Dear Ryan,/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/institutional/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/retail/);
+assert.match(pipelineLetter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/);
+assert.match(pipelineLetter, /not a brokerage/i);
+assert.match(pipelineLetter, /do not provide trade advice/i);
+assert.match(pipelineLetter, /does not evaluate, alter, or advise on financial decisions/i);
+assert.match(pipelineLetter, /Richard A\. Floyd/);
+assert.match(pipelineLetter, /Clear Path Markets Science/);
+assert.doesNotMatch(pipelineLetter, /Market Sciences/);
+assert.doesNotMatch(pipelineLetter, /\$700B|dry powder|we are raising/i);
+assert.ok(letterWordCount(pipelineLetter) >= 280, `Pipeline letter too thin: ${letterWordCount(pipelineLetter)} words`);
+assert.ok((pipelineLetter.match(/\n\n/g) || []).length >= 5, "letter must be full paragraphs, not a stub");
+
+const ribbit = INVESTOR_SEED.find((s) => s.id === "ribbit");
+assert.ok(ribbit);
+assert.doesNotMatch(
+  buildInvestorDraftLetter(ribbit!),
+  /do not pitch|today'?s send|may be skip|keep on radar/i,
+  "internal skip notes must not appear in the outbound letter"
+);
+
+for (const seed of INVESTOR_SEED) {
+  const letter = buildInvestorDraftLetter(seed);
+  assert.ok(letterWordCount(letter) >= 250, `${seed.id} letter too thin: ${letterWordCount(letter)} words`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/institutional/, `${seed.id} letter must name Institutional`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/fundamental/, `${seed.id} letter must name Fundamental`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/retail/, `${seed.id} letter must name Retail`);
+  assert.match(letter, /https:\/\/clearpathtrader\.com\/desk\/neurodivergent/, `${seed.id} letter must name Neurodivergent`);
+  assert.doesNotMatch(
+    letter,
+    /today'?s send|may be skip|keep on radar|do not pitch|\$700B|dry powder|too late-stage|future round/i,
+    `${seed.id} leaked an internal note`
+  );
+}
+
 const featured = featuredStocks(8);
 const jpm = featured.find((s: { ticker?: string }) => String(s.ticker).toUpperCase() === "JPM");
 assert.ok(jpm, "featured stocks should include JPM");
@@ -113,4 +195,6 @@ const rules = fs.readFileSync(path.join(process.cwd(), "firestore.rules"), "utf8
 assert.ok(rules.includes("vipStatus"));
 assert.ok(rules.includes("noClientPrivilegeKeys"));
 
-console.log(`daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} date=${date}`);
+console.log(
+  `daily-ops.selftest ok · catalog=${CATALOG.length} today=${today.length} investors=${INVESTOR_SEED.length} roster=${kinds.total} vc=${kinds.vc} seed=${kinds.seed} angel=${kinds.angel} ib=${kinds.ib} email=${kinds.withEmail} date=${date}`
+);

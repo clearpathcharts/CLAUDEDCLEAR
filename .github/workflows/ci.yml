@@ -57,6 +57,9 @@ jobs:
       - name: Section guide video catalog self-test
         run: npm run test:section-guides
 
+      - name: Explain Mode Flow scripts self-test
+        run: npm run test:explain-nav
+
       - name: CEO desk cleanup (ticker interval, no contacts rail)
         run: npm run test:ceo-desk-cleanup
 
@@ -77,6 +80,9 @@ jobs:
 
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
+
+      - name: Daily Ops catalog + investor letter
+        run: npm run test:daily-ops
 
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
@@ -119,6 +125,9 @@ jobs:
 
       - name: Trader desk SEO metadata
         run: npm run test:desk-seo
+
+      - name: Homepage H1 and four-desk SERP copy
+        run: npm run test:homepage-h1
 
       - name: Company directory catalog
         run: npm run test:company-catalog

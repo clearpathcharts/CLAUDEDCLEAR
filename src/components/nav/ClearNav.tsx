@@ -290,7 +290,10 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             {primaryNavItems.map((item, index) =>
               renderNavButton(item, index, false)
             )}
-            <ExplainModeToggle />
+            <div className="flex items-center gap-1 shrink-0 snap-start">
+              <ExplainModeToggle />
+              <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
+            </div>
           </div>
         </div>
 
@@ -337,6 +340,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             )}
 
             {onLogout && (
+              <div className="flex items-center gap-1 shrink-0 snap-start">
               <button
                 type="button"
                 onClick={onLogout}
@@ -380,6 +384,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
                 <LogOut className="w-3 h-3 md:w-4 md:h-4" />
                 <span>EXIT</span>
               </button>
+              <ExplainTrigger contentId="Exit" color={explainColorForNavTab("Exit")} />
+              </div>
             )}
           </div>
         </div>
