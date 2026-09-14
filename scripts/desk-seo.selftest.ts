@@ -7,8 +7,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
-import { renderStaticContentPage, isSearchEngineBot } from '../src/server/contentPages.ts';
+import {
+  isSearchEngineBot,
+  renderStaticContentPage,
+  renderStaticHomeForBots,
+} from '../src/server/contentPages.ts';
 import { DESK_INDEX_SEO, DESK_SEO } from '../src/content/traderDesksCopy.ts';
+import {
+  PRODUCT_FOUR_DESKS,
+  PRODUCT_HOME_TITLE,
+  PRODUCT_META_DESCRIPTION,
+} from '../src/content/productIdentity.ts';
 import {
   TRADER_DESK_IDS,
   TRADER_DESKS,
@@ -126,5 +135,17 @@ assert.match(sitemapChunk, /path: '\/desk\/institutional'/);
 assert.match(sitemapChunk, /path: '\/desk\/fundamental'/);
 assert.match(sitemapChunk, /path: '\/desk\/retail'/);
 assert.match(sitemapChunk, /path: '\/desk\/neurodivergent'/);
+
+assert.equal(PRODUCT_FOUR_DESKS.length, 4);
+assert.ok(PRODUCT_HOME_TITLE.length <= 60);
+assert.ok(PRODUCT_META_DESCRIPTION.length >= 140 && PRODUCT_META_DESCRIPTION.length <= 160);
+const homeHtml = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+assert.equal(grab(homeHtml, /<title>([^<]*)<\/title>/i), PRODUCT_HOME_TITLE);
+assert.equal(grab(homeHtml, /<meta\s+name="description"\s+content="([^"]*)"/i), PRODUCT_META_DESCRIPTION);
+for (const desk of PRODUCT_FOUR_DESKS) {
+  assert.match(homeHtml, new RegExp(desk));
+  assert.match(homeHtml, new RegExp(`href="/desk/${desk.toLowerCase()}"`));
+}
+assert.match(homeHtml, /Does ClearPath Trader have four trader desks/);
 
 console.log('desk-seo.selftest: ok');

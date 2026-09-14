@@ -126,6 +126,9 @@ jobs:
       - name: Trader desk SEO metadata
         run: npm run test:desk-seo
 
+      - name: Homepage H1 and four-desk SERP copy
+        run: npm run test:homepage-h1
+
       - name: Company directory catalog
         run: npm run test:company-catalog
 
