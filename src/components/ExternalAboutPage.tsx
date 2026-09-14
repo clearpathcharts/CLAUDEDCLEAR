@@ -53,7 +53,7 @@ export default function ExternalAboutPage() {
               About <span className="lava-hot-text">ClearPath Trader</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-400 font-sans max-w-3xl mx-auto leading-relaxed">
-              ClearPath Trader is a <strong className="text-indigo-400 font-normal">full market intelligence and education terminal</strong> — live charts, pattern scans, encyclopedias, Literacy OS, a macro desk, custom indicators, and 13 accessibility profiles. It is <strong className="text-white font-normal">not</strong> a website chatbot, not a receptionist bot, and not aiclearpath.com.
+              ClearPath Trader is one <strong className="text-indigo-400 font-normal">education terminal with four trader desks</strong> — Institutional, Fundamental, Retail, and Neurodivergent — plus live charts, encyclopedias, Literacy OS, a macro desk, custom indicators, and accessibility profiles. It is <strong className="text-white font-normal">not</strong> four brokerages, not a website chatbot, and not aiclearpath.com.
             </p>
           </header>
 

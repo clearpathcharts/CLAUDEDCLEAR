@@ -2,6 +2,8 @@ import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import {
   PRODUCT_DISAMBIGUATION,
   PRODUCT_FEATURE_LIST,
+  PRODUCT_FOUR_DESKS_PHRASE,
+  PRODUCT_HOME_H1,
   PRODUCT_NOT_LIST,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
@@ -1644,8 +1646,17 @@ function renderHomeForBots(): string {
   const features = PRODUCT_FEATURE_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
   const nots = PRODUCT_NOT_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
   return `${breadcrumbHtml([{ name: 'Home' }])}
-<h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
+<h1>${escapeHtml(PRODUCT_HOME_H1)}</h1>
 <p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
+<h2>Four trader desks on one website</h2>
+<p>One educational terminal. Four workstations for four kinds of traders — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four brokerages and not four ways to place trades.</p>
+<ul>
+<li><a href="/desk/institutional">Institutional Trader</a> — flow, liquidity, options, macro, and news around a multi-chart workspace.</li>
+<li><a href="/desk/fundamental">Fundamental Trader</a> — statements, earnings, valuation, peers, filings, and FRED macro.</li>
+<li><a href="/desk/retail">Retail Trader</a> — large chart, watchlist, news, economic wire, and plain-English education.</li>
+<li><a href="/desk/neurodivergent">Neurodivergent Trader</a> — the same market data with calm-focus, ADHD, autism-predictable, and low-stim profiles.</li>
+</ul>
+<p><a href="/desk">See all four desks</a></p>
 <h2>What is in the terminal</h2>
 <ul>${features}</ul>
 <h2>What this is not</h2>
