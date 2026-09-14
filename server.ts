@@ -763,6 +763,11 @@ async function startServer() {
         ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
         generation: getAuthSessionGeneration(),
       },
+      // Env presence only — this route never calls Twelve Data / FMP (no credit burn).
+      marketData: {
+        twelveDataConfigured: Boolean(getCleanTwelveDataApiKey()),
+        fmpConfigured: Boolean(getFmpApiKey()),
+      },
     });
   });
 
@@ -2900,6 +2905,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const presence = getTwelveDataKeyPresence();
     res.json({
       ...twelvedataHealth,
+      status: hasKeys ? twelvedataHealth.status : 'OFFLINE',
       apiKeyPresent: hasKeys,
       activeSource: presence.activeSource,
       keyLength: presence.keyLength,

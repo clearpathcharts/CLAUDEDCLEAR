@@ -480,6 +480,9 @@ for (const rel of srcFiles) {
     assert.match(text, /\/desk\/:deskId\/screen\/:pane/);
     assert.match(text, /isDeskRoute/);
     assert.match(text, /\/api\/fmp\/lookup/);
+    assert.match(text, /marketData: \{/);
+    assert.match(text, /twelveDataConfigured/);
+    assert.match(text, /hasKeys \? twelvedataHealth\.status : 'OFFLINE'/);
   }
 }
 
