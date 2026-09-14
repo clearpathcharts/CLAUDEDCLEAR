@@ -2,10 +2,12 @@ import { SEMANTIC_RECORDS, GENERAL_FAQS } from './semanticDatabase';
 import {
   PRODUCT_DISAMBIGUATION,
   PRODUCT_FEATURE_LIST,
+  PRODUCT_FOUR_DESKS_PHRASE,
+  PRODUCT_HOME_H1,
   PRODUCT_NOT_LIST,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
-import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import { GUIDE_RECORDS } from './contentData';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { getLessonBody } from '../education/lessonContent';
 import {
@@ -31,13 +33,28 @@ import {
   featuredCommodities,
   allIndicators,
   catalogCounts,
+  lookupCompany,
+  lookupLiteracyTrack,
+  lookupLiteracyLesson,
+  lookupLiteracyWiki,
 } from './crawlCatalog';
+import { featuredCompanies, relatedCompanies, COMPANY_DIRECTORY_DISCLAIMER, companyIndexPage, companyIndexPageCount } from '../lib/companyCatalog';
+import {
+  getGlossaryCatalog,
+  glossaryCatalogCounts,
+  glossaryLetters,
+  glossaryLetterEntries,
+  lookupGlossary,
+  relatedGlossary,
+  GLOSSARY_DISCLAIMER,
+} from '../lib/glossaryCatalog';
+import { knowledgeItemForHub, knowledgeItemForPath, standaloneKnowledgeRoutes } from '../lib/knowledgeBaseRoutes';
 import { buildIndicators } from '../components/indicatorsData';
 import { ENCYCLOPEDIA_KNOWLEDGE_BASE } from '../components/encyclopedia/KnowledgeBaseData';
 import { CURRICULUM } from '../education/curriculumData';
 import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
-import { DESK_SEO } from '../content/traderDesksCopy';
+import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { TRADER_DESK_IDS, TRADER_DESKS, isTraderDeskId } from '../lib/traderDesks';
 
 // ==========================================
@@ -207,12 +224,6 @@ const PAGE_CSS = `
   .alpha-block a.chip:hover { border-color: rgba(0,229,255,0.5); }
   aside.cta a.btn { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
   aside.cta .cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; }
-  aside.cta form.waitlist { display: grid; gap: 0.65rem; max-width: 28rem; }
-  aside.cta form.waitlist label { display: grid; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
-  aside.cta form.waitlist input, aside.cta form.waitlist select { background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; padding: 0.55rem 0.7rem; font-size: 0.9rem; }
-  aside.cta form.waitlist button { background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.7rem 1.1rem; border: 0; border-radius: 8px; cursor: pointer; }
-  aside.cta form.waitlist .status { font-size: 0.85rem; min-height: 1.2em; color: #00E5FF; }
-  aside.cta form.waitlist .status.err { color: #ff6b8a; }
   .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 0 0 1.5rem; }
   .meta-grid div { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.03); }
   .meta-grid .k { display: block; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 0.25rem; }
@@ -246,7 +257,7 @@ function renderShell(
           educationLabel: 'Start education',
           waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'Create an account with email + password on the terminal (Private Login). Optional: leave your email below for launch notes only — this is not a login password.',
+            'There is no waitlist. Create an account with email + password on the terminal. That email lives in Firestore and survives Cloud Run redeploys.',
           firstNameLabel: 'First name',
           emailLabel: 'Email (updates only)',
           countryLabel: 'Country',
@@ -268,26 +279,11 @@ function renderShell(
         </div>
         <h2 style="margin-top:0.5rem">${escapeHtml(c.waitlistTitle)}</h2>
         <p>${escapeHtml(c.waitlistBody)}</p>
-        <form class="waitlist" id="cpt-waitlist" novalidate>
-          <label>${escapeHtml(c.firstNameLabel)}<input name="firstName" required maxlength="200" autocomplete="given-name" /></label>
-          <label>${escapeHtml(c.emailLabel)}<input name="emailAddress" type="email" required maxlength="320" autocomplete="email" /></label>
-          <label>${escapeHtml(c.countryLabel)}<input name="country" required maxlength="120" autocomplete="country-name" placeholder="${escapeHtml(c.countryPlaceholder)}" /></label>
-          <label>${escapeHtml(c.experienceLabel)}
-            <select name="experienceLevel">
-              <option>Beginner</option>
-              <option>Intermediate</option>
-              <option>Advanced</option>
-              <option>Professional</option>
-            </select>
-          </label>
-          <button type="submit">${escapeHtml(c.submitLabel)}</button>
-          <div class="status" id="cpt-waitlist-status" aria-live="polite"></div>
-        </form>
+        <div class="cta-actions">
+          <a class="btn" href="/?login=1">Open Private Login</a>
+        </div>
       </aside>`
     : '';
-
-  const submitMsg = c?.submittingMsg || 'Submitting…';
-  const successMsg = c?.successMsg || 'You are on the waitlist. Check your email for confirmation.';
 
   return `<!doctype html>
 <html lang="${htmlLang}">
@@ -330,46 +326,6 @@ ${ctaHtml}
         <a href="/disclaimer.html">Disclaimer</a>
       </div>
     </footer>
-    <script>
-      (function () {
-        var form = document.getElementById('cpt-waitlist');
-        if (!form) return;
-        var status = document.getElementById('cpt-waitlist-status');
-        var submittingMsg = ${JSON.stringify(submitMsg)};
-        var successMsg = ${JSON.stringify(successMsg)};
-        form.addEventListener('submit', function (e) {
-          e.preventDefault();
-          status.className = 'status';
-          status.textContent = submittingMsg;
-          var data = new FormData(form);
-          var body = {
-            firstName: String(data.get('firstName') || ''),
-            emailAddress: String(data.get('emailAddress') || ''),
-            country: String(data.get('country') || ''),
-            experienceLevel: String(data.get('experienceLevel') || 'Beginner')
-          };
-          fetch('/api/registrations/waitlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          }).then(function (res) {
-            return res.json().then(function (j) { return { ok: res.ok, j: j }; });
-          }).then(function (r) {
-            if (r.ok) {
-              status.className = 'status';
-              status.textContent = successMsg;
-              form.reset();
-            } else {
-              status.className = 'status err';
-              status.textContent = (r.j && (r.j.message || r.j.error)) || 'Could not join waitlist.';
-            }
-          }).catch(function () {
-            status.className = 'status err';
-            status.textContent = 'Network error — try again in a moment.';
-          });
-        });
-      })();
-    </script>
   </body>
 </html>`;
 }
@@ -440,13 +396,98 @@ ${faqSectionHtml(guide.faqs)}`;
 }
 
 function renderGlossary(): string {
-  const entries = GLOSSARY_TERMS.map(
-    (t) => `<dt>${escapeHtml(t.term)}</dt>\n<dd>${escapeHtml(t.definition)}</dd>`
-  ).join('\n');
+  const counts = glossaryCatalogCounts();
+  const letters = glossaryLetters()
+    .map(
+      (l) =>
+        `<li><a class="card" href="/glossary/letter/${l.letter}"><h2>${l.letter === '0' ? '#' : l.letter.toUpperCase()}</h2><p>${l.count.toLocaleString()} terms</p></a></li>`
+    )
+    .join('\n');
+  const coreTerms = getGlossaryCatalog()
+    .filter((t) => t.source === 'core')
+    .slice(0, 24)
+    .map(
+      (t) =>
+        `<li><a class="card" href="/glossary/${t.slug}"><h2>${escapeHtml(t.term)}</h2><p>${escapeHtml(t.seoDescription)}</p></a></li>`
+    )
+    .join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Glossary' }])}
 <h1>Financial Glossary</h1>
-<p class="lead">Precise, plain-language definitions of the trading and market-structure vocabulary used across ClearPath Trader.</p>
-<article><dl class="glossary">${entries}</dl></article>`;
+<p class="lead">${counts.total.toLocaleString()} educational terms: ${counts.core} core practitioner definitions, ${counts.seed.toLocaleString()} dictionary seeds, and ${counts.procedural.toLocaleString()} unique vocabulary-study nodes. ${GLOSSARY_DISCLAIMER}</p>
+<article>
+<h2>Browse A–Z</h2>
+<ul class="card-list">${letters}</ul>
+<h2>Core practitioner terms</h2>
+<ul class="card-list">${coreTerms}</ul>
+</article>`;
+}
+
+function renderGlossaryLetter(letter: string): string | null {
+  const key = letter.toLowerCase() === '#' ? '0' : letter.toLowerCase();
+  const rows = glossaryLetterEntries(key);
+  if (!rows.length) return null;
+  const label = key === '0' ? '#' : key.toUpperCase();
+  const cards = rows
+    .map(
+      (t) =>
+        `<li><a class="card" href="/glossary/${t.slug}"><h2>${escapeHtml(t.term)}</h2><p>${escapeHtml(t.source)} · ${escapeHtml(t.category)}</p></a></li>`
+    )
+    .join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Glossary', url: '/glossary' },
+    { name: label },
+  ])}
+<h1>Glossary · ${escapeHtml(label)}</h1>
+<p class="lead">${rows.length.toLocaleString()} educational terms. ${GLOSSARY_DISCLAIMER}</p>
+<article>
+<ul class="card-list">${cards}</ul>
+<p><a href="/glossary">← Glossary hub</a></p>
+</article>`;
+}
+
+function renderGlossaryTerm(slug: string): string | null {
+  const rec = lookupGlossary(slug);
+  if (!rec) return null;
+  const related = relatedGlossary(rec, 4);
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Glossary', url: '/glossary' },
+    { name: rec.term },
+  ])}
+<h1>${escapeHtml(rec.term)}</h1>
+<p class="lead">${escapeHtml(rec.definition)}</p>
+${metaGrid([
+  { k: 'Category', v: rec.category },
+  { k: 'Source', v: rec.source },
+  { k: 'Letter', v: rec.letter === '0' ? '#' : rec.letter.toUpperCase() },
+])}
+<article>
+<p>${escapeHtml(GLOSSARY_DISCLAIMER)}</p>
+<h2>How to use this term</h2>
+<p>Treat “${escapeHtml(rec.term)}” as vocabulary for reading charts, filings, and lessons. It is not a live quote, not a trade idea, and not a brokerage definition of a product you can buy here.</p>
+${faqSectionHtml([
+  {
+    question: `Is ${rec.term} a live data field?`,
+    answer:
+      'No. This is an educational glossary entry. Missing vendor cells stay DATA UNAVAILABLE.',
+  },
+  {
+    question: 'Where should I study next?',
+    answer:
+      'Open the Learn library, ClearPath Education, and the Indicator encyclopedia. Regional desks stay on /desk — this page is vocabulary only.',
+  },
+])}
+${relatedLinksSection(
+  'Related terms',
+  related.map((r) => ({
+    href: `/glossary/${r.slug}`,
+    label: r.term,
+    blurb: r.category,
+  }))
+)}
+<p><a href="/glossary/letter/${rec.letter}">← Letter ${rec.letter === '0' ? '#' : rec.letter.toUpperCase()}</a> · <a href="/glossary">Glossary</a> · <a href="/learn">Learn</a></p>
+</article>`;
 }
 
 function renderFaqPage(): string {
@@ -565,8 +606,8 @@ function renderTraderDesksIndex(): string {
     return `<li><a class="card" href="${desk.href}"><h2>${escapeHtml(desk.title)}</h2><p>${escapeHtml(seo.lead)}</p></a></li>`;
   }).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Trader desks' }])}
-<h1>ClearPath Trader desks</h1>
-<p class="lead">Four distinct interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Study tools and data visualization only — not a brokerage and not financial advice.</p>
+<h1>${escapeHtml(DESK_INDEX_SEO.h1)}</h1>
+<p class="lead">${escapeHtml(DESK_INDEX_SEO.description)}</p>
 <article><ul class="card-list">${cards}</ul></article>`;
 }
 
@@ -648,7 +689,16 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <li><a class="card" href="/crypto"><h2>Crypto</h2><p>${counts.crypto.toLocaleString()} coins and protocols explained for literacy, not hype.</p></a></li>
 <li><a class="card" href="/forex"><h2>Forex</h2><p>${counts.forex.toLocaleString()} currency pairs with macro drivers.</p></a></li>
 <li><a class="card" href="/commodities"><h2>Commodities</h2><p>${counts.commodities} metals, energy, and agriculture profiles.</p></a></li>
-<li><a class="card" href="/companies"><h2>Companies</h2><p>Issuer directory linked to equity encyclopedia entries.</p></a></li>
+<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} educational listings — ${counts.companyPages.toLocaleString()} crawlable subsidiary study pages plus public issuers on stock profiles.</p></a></li>
+<li><a class="card" href="/markets/bonds"><h2>Bonds</h2><p>Authored knowledge article on fixed income — education, not a live yield feed.</p></a></li>
+</ul>
+<h2>Sectors</h2>
+<ul class="card-list">
+<li><a class="card" href="/sectors/ai"><h2>AI</h2></a></li>
+<li><a class="card" href="/sectors/semiconductors"><h2>Semiconductors</h2></a></li>
+<li><a class="card" href="/sectors/energy"><h2>Energy</h2></a></li>
+<li><a class="card" href="/sectors/biotech"><h2>Biotech</h2></a></li>
+<li><a class="card" href="/sectors/banking"><h2>Banking sector</h2></a></li>
 </ul>
 <h2>Economy &amp; macro concepts</h2>
 <ul class="card-list">${economyCards}</ul>
@@ -656,9 +706,19 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <ul>
 <li><a href="/indicators">Encyclopedia of Indicators</a> — ${counts.indicators} visual explainers</li>
 <li><a href="/education">ClearPath Education</a> — ${counts.education} school/unit/lesson pages</li>
-<li><a href="/learn">Learn library</a> · <a href="/guides">Guides</a> · <a href="/glossary">Glossary</a></li>
+<li><a href="/glossary">Glossary</a> — ${counts.glossary.toLocaleString()} crawlable terms</li>
+<li><a href="/literacy">Literacy OS</a> — ${counts.literacy} track, lesson, and wiki pages</li>
+<li><a href="/learn">Learn library</a> · <a href="/guides">Guides</a></li>
 </ul>
 </article>`;
+}
+
+function kbHubIntro(hub: '/stocks' | '/crypto' | '/forex' | '/commodities'): string {
+  const kb = knowledgeItemForHub(hub);
+  if (!kb) return '';
+  return `<h2>${escapeHtml(kb.title)}</h2>
+<p>${escapeHtml(kb.definition)}</p>
+<p>${escapeHtml(kb.simplifiedExplanation)}</p>`;
 }
 
 function renderStocksHub(): string {
@@ -679,6 +739,7 @@ function renderStocksHub(): string {
 <p class="lead">${counts.stocks.toLocaleString()} equity profiles for education — sector, industry, and what tends to move each name. Not brokerage quotes.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+${kbHubIntro('/stocks')}
 <h2>Featured equities</h2>
 <ul class="card-list">${cards}</ul>
 <p>Every ticker in the catalog has its own URL under <code>/stocks/{ticker}</code> and is listed in <a href="/sitemap-stocks.xml">sitemap-stocks.xml</a> for crawlers.</p>
@@ -704,6 +765,7 @@ function renderCryptoHub(): string {
 <p class="lead">${counts.crypto.toLocaleString()} digital-asset profiles — ledgers, DeFi, and protocol categories explained in plain language.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+${kbHubIntro('/crypto')}
 <ul class="card-list">${cards}</ul>
 <p><a href="/education/crypto">Crypto school</a> · <a href="/guides/leverage-risk">Leverage &amp; risk</a> · <a href="/learn/microstructure">Microstructure</a></p>
 </article>`;
@@ -727,6 +789,7 @@ function renderForexHub(): string {
 <p class="lead">${counts.forex.toLocaleString()} currency pairs with type, drivers, and study links into macro education.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+${kbHubIntro('/forex')}
 <ul class="card-list">${cards}</ul>
 <p><a href="/education/forex">Forex school</a> · <a href="/learn/correlations">Intermarket correlations</a> · <a href="/guides/macro-spreads">Macro spreads</a></p>
 </article>`;
@@ -749,18 +812,20 @@ function renderCommoditiesHub(): string {
 <p class="lead">Metals, energy, agriculture, and livestock — physical markets that still set the tone for inflation and risk appetite.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+${kbHubIntro('/commodities')}
 <ul class="card-list">${cards}</ul>
 <p><a href="/education/commodities">Commodities school</a> · <a href="/economy/inflation">Inflation</a></p>
 </article>`;
 }
 
 function renderCompaniesHub(): string {
-  const featured = featuredStocks(16);
+  const counts = catalogCounts();
+  const featured = featuredCompanies(12);
   const cards = featured
-    .map(
-      (s) =>
-        `<li><a class="card" href="/stocks/${String(s.ticker).toLowerCase()}"><h2>${escapeHtml(s.company)}</h2><p>Ticker ${escapeHtml(String(s.ticker).toUpperCase())} · ${escapeHtml(s.sector || '')}</p></a></li>`
-    )
+    .map((c) => {
+      const href = c.status === 'Public' && c.ticker ? `/stocks/${c.ticker.toLowerCase()}` : `/companies/${c.slug}`;
+      return `<li><a class="card" href="${href}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.status)}${c.ticker ? ' · ' + escapeHtml(c.ticker) : ''} · ${escapeHtml(c.sector || '')}</p></a></li>`;
+    })
     .join('\n');
   return `${breadcrumbHtml([
     { name: 'Home', url: '/' },
@@ -768,12 +833,87 @@ function renderCompaniesHub(): string {
     { name: 'Companies' },
   ])}
 <h1>Company Directory</h1>
-<p class="lead">Issuers behind ClearPath equity encyclopedia entries. Start here, then open the matching stock profile for market context.</p>
+<p class="lead">${counts.companies.toLocaleString()} educational listings: ${counts.stocks.toLocaleString()} public issuers (canonical on stock profiles) and ${counts.companyPages.toLocaleString()} subsidiary study pages. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
+<h2>Featured public issuers</h2>
 <ul class="card-list">${cards}</ul>
-<p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a></p>
+<p>Every subsidiary study page has its own URL under <code>/companies/{slug}</code> and is listed in <a href="/sitemap-companies.xml">sitemap-companies.xml</a>. Browse the crawlable index at <a href="/companies/page/1">/companies/page/1</a>. Public tickers 301 to <code>/stocks/{ticker}</code>.</p>
+<p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a> · <a href="/desk/fundamental">Fundamental trader desk</a></p>
 </article>`;
+}
+
+function renderCompanyProfile(slug: string): string | null {
+  const rec = lookupCompany(slug);
+  if (!rec || rec.status !== 'Subsidiary') return null;
+  const parentHref = rec.parentTicker ? `/stocks/${rec.parentTicker.toLowerCase()}` : '/stocks';
+  const peers = relatedCompanies(rec, 4);
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Companies', url: '/companies' },
+    { name: rec.name },
+  ])}
+<h1>${escapeHtml(rec.name)}</h1>
+<p class="lead">${escapeHtml(rec.description)}</p>
+${metaGrid([
+  { k: 'Status', v: rec.status },
+  { k: 'Parent issuer', v: rec.parentCompany || '' },
+  { k: 'Parent ticker', v: rec.parentTicker || '' },
+  { k: 'Study unit', v: rec.unitLabel || '' },
+  { k: 'Sector', v: rec.sector || '' },
+  { k: 'Industry', v: rec.industry || '' },
+  { k: 'Capital tier', v: rec.capitalTier || '' },
+])}
+<article>
+<h2>How to read this listing</h2>
+<p>${escapeHtml(rec.name)} is a ClearPath educational study node, not a live company filing and not a trade idea. Use it to connect a corporate-tree role (${escapeHtml(rec.unitLabel || 'subsidiary')}) to the parent issuer’s stock encyclopedia page.</p>
+<p><strong>DATA UNAVAILABLE</strong> for live revenue, filings, and quotes on this page. Open the parent stock profile for any vendor-backed cells.</p>
+<h2>Parent issuer</h2>
+<p><a href="${parentHref}">${escapeHtml(rec.parentCompany || rec.parentTicker || 'Stock profile')}</a> — educational equity encyclopedia entry.</p>
+<h2>Study path</h2>
+<ol>
+<li>Read the parent <a href="${parentHref}">stock profile</a>.</li>
+<li>Walk <a href="/learn/valuation">valuation</a> and <a href="/education/stocks">Stocks school</a>.</li>
+<li>Open the <a href="/desk/fundamental">Fundamental trader desk</a> for statements when vendor data exists.</li>
+</ol>
+${faqSectionHtml([
+  {
+    question: `Is ${rec.name} a real SEC filer?`,
+    answer:
+      'This URL is an educational corporate-tree listing in the ClearPath encyclopedia. It is not a live filing, not a brokerage research note, and not investment advice. Missing financials stay DATA UNAVAILABLE.',
+  },
+  {
+    question: 'Where is the public issuer?',
+    answer: rec.parentTicker
+      ? `The public issuer is ${rec.parentCompany} (${rec.parentTicker}). Its crawlable encyclopedia page is /stocks/${rec.parentTicker.toLowerCase()}.`
+      : 'Open the stock encyclopedia hub at /stocks.',
+  },
+])}
+${relatedLinksSection(
+  'Related listings',
+  peers.map((p) => ({
+    href: p.status === 'Public' && p.ticker ? `/stocks/${p.ticker.toLowerCase()}` : `/companies/${p.slug}`,
+    label: p.name,
+    blurb: p.status === 'Public' ? `Public issuer ${p.ticker}` : p.unitLabel,
+  }))
+)}
+<p><a href="/companies">← Company directory</a> · <a href="/stocks">Stocks</a> · <a href="/encyclopedia">Encyclopedia</a></p>
+</article>`;
+}
+
+export function renderUnknownCompanyNotFound(reqPath: string): string {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const slug = pathClean.split('/').filter(Boolean)[1] || '';
+  const body = `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Companies', url: '/companies' },
+    { name: 'Not found' },
+  ])}
+<h1>Company listing not found</h1>
+<p class="lead">No educational directory record matches <code>${escapeHtml(slug)}</code>.</p>
+<p><a href="/companies">← Company directory</a> · <a href="/stocks">Stock encyclopedia</a></p>`;
+  return renderShell(pathClean, body, 'en', null, 'noindex, follow');
 }
 
 function renderIndicatorsHub(): string {
@@ -821,15 +961,189 @@ ${liveDeskCta('/education', 'Open interactive classroom')}
 </article>`;
 }
 
+function kbArticleHtml(kb: (typeof ENCYCLOPEDIA_KNOWLEDGE_BASE)[string]): string {
+  return `
+<p><em>${escapeHtml(kb.tagline)}</em></p>
+<p>${escapeHtml(kb.definition)}</p>
+<p>${escapeHtml(kb.simplifiedExplanation)}</p>
+<h2>Academic framing</h2>
+<p>${escapeHtml(kb.academicDeconstruction)}</p>
+<h2>Causal chain</h2>
+<ol>
+${kb.relationshipDiagram.map((r) => `<li><strong>${escapeHtml(r.label)}:</strong> ${escapeHtml(r.explanation)}</li>`).join('\n')}
+</ol>
+<h2>Historical markers</h2>
+<ul>
+${kb.timeline.map((t) => `<li><strong>${escapeHtml(t.year)} — ${escapeHtml(t.title)}:</strong> ${escapeHtml(t.desc)}</li>`).join('\n')}
+</ul>
+<p><strong>Key takeaway:</strong> ${escapeHtml(kb.keyTakeaway)}</p>
+${faqSectionHtml(kb.detailsDisclosures.map((d) => ({ question: d.q, answer: d.a })))}
+`;
+}
+
+function renderKnowledgeStandalone(pathClean: string): string | null {
+  const kb = knowledgeItemForPath(pathClean);
+  if (!kb) return null;
+  const parent = pathClean.startsWith('/sectors/') ? 'Sectors' : 'Markets';
+  const siblings = standaloneKnowledgeRoutes()
+    .filter((r) => r.path !== pathClean && r.path.startsWith(pathClean.startsWith('/sectors/') ? '/sectors/' : '/markets/'))
+    .slice(0, 5);
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: parent, url: '/encyclopedia' },
+    { name: kb.title },
+  ])}
+<h1>${escapeHtml(kb.title)}</h1>
+<p class="lead">${escapeHtml(kb.definition)}</p>
+<article>
+${kbArticleHtml(kb)}
+<p>Live market cells on desks stay <strong>DATA UNAVAILABLE</strong> unless a vendor fills them. This article is education, not a filing or a trade.</p>
+${relatedLinksSection(
+  'Related encyclopedia articles',
+  siblings.map((r) => ({
+    href: r.path,
+    label: r.crumb,
+  }))
+)}
+<p><a href="/encyclopedia">← Encyclopedia</a> · <a href="/education">Education</a> · <a href="/glossary">Glossary</a></p>
+</article>`;
+}
+
+function renderLiteracyTrack(trackId: string): string | null {
+  const track = lookupLiteracyTrack(trackId);
+  if (!track) return null;
+  const cards = track.lessons
+    .map(
+      (l) =>
+        `<li><a class="card" href="/literacy/${track.id}/${l.id}"><h2>${escapeHtml(l.title)}</h2><p>${l.minutes} min · ${escapeHtml(l.neuroHint)}</p></a></li>`
+    )
+    .join('\n');
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Literacy OS', url: '/literacy' },
+    { name: track.title },
+  ])}
+<h1>${escapeHtml(track.title)}</h1>
+<p class="lead">${escapeHtml(track.summary)}</p>
+${liveDeskCta('/literacy', 'Open Literacy OS')}
+<article>
+<ul class="card-list">${cards}</ul>
+<p><a href="/literacy">← Literacy OS</a> · <a href="/education">ClearPath Education</a></p>
+</article>`;
+}
+
+function renderLiteracyLesson(trackId: string, lessonId: string): string | null {
+  const hit = lookupLiteracyLesson(trackId, lessonId);
+  if (!hit) return null;
+  const { track, lesson } = hit;
+  const wikiCards = lesson.unlocksWikiIds
+    .map((id) => lookupLiteracyWiki(id.replace(/^wiki_/, '')))
+    .filter((w): w is NonNullable<typeof w> => Boolean(w))
+    .map((w) => ({
+      href: `/literacy/wiki/${w.id.replace(/^wiki_/, '')}`,
+      label: w.title,
+      blurb: w.summary,
+    }));
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Literacy OS', url: '/literacy' },
+    { name: track.title, url: `/literacy/${track.id}` },
+    { name: lesson.title },
+  ])}
+<h1>${escapeHtml(lesson.title)}</h1>
+<p class="lead">${escapeHtml(lesson.body)}</p>
+${metaGrid([
+  { k: 'Track', v: track.title },
+  { k: 'Minutes', v: String(lesson.minutes) },
+  { k: 'Neuro hint', v: lesson.neuroHint },
+])}
+<article>
+<h2>How to study this</h2>
+<p>${escapeHtml(lesson.body)}</p>
+<p>${escapeHtml(lesson.neuroHint)}</p>
+<p>This is a literacy drill, not a trade signal. Missing vendor cells stay DATA UNAVAILABLE.</p>
+${relatedLinksSection('Concept wiki', wikiCards)}
+<p><a href="/literacy/${track.id}">← ${escapeHtml(track.title)}</a> · <a href="/literacy">Literacy OS</a></p>
+</article>`;
+}
+
+function renderLiteracyWiki(slug: string): string | null {
+  const node = lookupLiteracyWiki(slug);
+  if (!node) return null;
+  const links = (node.links || [])
+    .map((id) => lookupLiteracyWiki(String(id).replace(/^wiki_/, '')))
+    .filter((w): w is NonNullable<typeof w> => Boolean(w))
+    .map((w) => ({
+      href: `/literacy/wiki/${w.id.replace(/^wiki_/, '')}`,
+      label: w.title,
+      blurb: w.summary,
+    }));
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Literacy OS', url: '/literacy' },
+    { name: 'Wiki' },
+    { name: node.title },
+  ])}
+<h1>${escapeHtml(node.title)}</h1>
+<p class="lead">${escapeHtml(node.summary)}</p>
+<article>
+<p>${escapeHtml(node.body)}</p>
+<p>Concept wiki for study only — not a live data field. Missing quotes stay DATA UNAVAILABLE.</p>
+${relatedLinksSection('Linked concepts', links)}
+<p><a href="/literacy">← Literacy OS</a> · <a href="/education">Education</a> · <a href="/glossary">Glossary</a></p>
+</article>`;
+}
+
+function renderCompaniesIndexPage(pageRaw: string): string | null {
+  const n = Number(pageRaw);
+  if (!Number.isFinite(n) || n < 1) return null;
+  const { page, pages, rows } = companyIndexPage(n);
+  if (page !== n && n > pages) return null;
+  const cards = rows
+    .map(
+      (c) =>
+        `<li><a class="card" href="/companies/${c.slug}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.status)} · ${escapeHtml(c.unitLabel || '')} · ${escapeHtml(c.parentTicker || '')}</p></a></li>`
+    )
+    .join('\n');
+  const prev = page > 1 ? `<a href="/companies/page/${page - 1}">← Previous</a>` : '';
+  const next = page < pages ? `<a href="/companies/page/${page + 1}">Next →</a>` : '';
+  return `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: 'Encyclopedia', url: '/encyclopedia' },
+    { name: 'Companies', url: '/companies' },
+    { name: `Page ${page}` },
+  ])}
+<h1>Company study pages · ${page} / ${pages}</h1>
+<p class="lead">Crawlable index of subsidiary study nodes (${companyIndexPageCount().toLocaleString()} pages). ${COMPANY_DIRECTORY_DISCLAIMER}</p>
+<article>
+<ul class="card-list">${cards}</ul>
+<p>${prev} ${next}</p>
+<p><a href="/companies">← Company directory</a></p>
+</article>`;
+}
+
+export function renderUnknownEncyclopediaNotFound(kind: string, slug: string, hubHref: string, hubLabel: string): string {
+  const body = `${breadcrumbHtml([
+    { name: 'Home', url: '/' },
+    { name: hubLabel, url: hubHref },
+    { name: 'Not found' },
+  ])}
+<h1>${escapeHtml(kind)} listing not found</h1>
+<p class="lead">No educational encyclopedia record matches <code>${escapeHtml(slug)}</code>.</p>
+<p><a href="${hubHref}">← ${escapeHtml(hubLabel)}</a> · <a href="/encyclopedia">Encyclopedia</a></p>`;
+  return renderShell(hubHref, body, 'en', null, 'noindex, follow');
+}
+
 function renderLiteracyHub(): string {
   const tracks = LITERACY_TRACKS.map(
     (t) =>
-      `<li><a class="card" href="/literacy?live=1"><h2>${escapeHtml(t.title)}</h2><p>${escapeHtml(t.summary)} · ${t.lessons.length} lessons</p></a></li>`
+      `<li><a class="card" href="/literacy/${t.id}"><h2>${escapeHtml(t.title)}</h2><p>${escapeHtml(t.summary)} · ${t.lessons.length} lessons</p></a></li>`
   ).join('\n');
   const wiki = SEED_WIKI.slice(0, 8)
     .map(
       (w) =>
-        `<li><a class="card" href="/literacy?live=1"><h2>${escapeHtml(w.title)}</h2><p>${escapeHtml(w.summary)}</p></a></li>`
+        `<li><a class="card" href="/literacy/wiki/${w.id.replace(/^wiki_/, '')}"><h2>${escapeHtml(w.title)}</h2><p>${escapeHtml(w.summary)}</p></a></li>`
     )
     .join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Literacy OS' }])}
@@ -980,7 +1294,7 @@ ${metaGrid([
   { k: 'Exchange', v: String(stock.exchange || '') },
   { k: 'Sector', v: String(stock.sector || '') },
   { k: 'Industry', v: String(stock.industry || '') },
-  { k: 'Market cap', v: String(stock.marketCap || '') },
+  { k: 'Market cap', v: 'DATA UNAVAILABLE' },
   { k: 'Founded', v: stock.founded != null ? String(stock.founded) : '' },
   { k: 'Headquarters', v: String(stock.headquarters || '') },
 ])}
@@ -990,7 +1304,7 @@ ${metaGrid([
     stock.exchange || 'a major exchange'
   )} in the ${escapeHtml(stock.sector || 'equity')} sector${
     stock.industry ? `, specifically ${escapeHtml(stock.industry)}` : ''
-  }. ClearPath profiles equities for education — this page is not a brokerage quote or trade recommendation.</p>
+  }. ClearPath profiles equities for education — this page is not a brokerage quote or trade recommendation. Live market cap stays <strong>DATA UNAVAILABLE</strong> unless a vendor cell is filled.</p>
 ${
   whatMoves.length
     ? `<h2>What tends to move the stock</h2>
@@ -1332,8 +1646,17 @@ function renderHomeForBots(): string {
   const features = PRODUCT_FEATURE_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
   const nots = PRODUCT_NOT_LIST.map((f) => `<li>${escapeHtml(f)}</li>`).join('\n');
   return `${breadcrumbHtml([{ name: 'Home' }])}
-<h1>ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>
+<h1>${escapeHtml(PRODUCT_HOME_H1)}</h1>
 <p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
+<h2>Four trader desks on one website</h2>
+<p>One educational terminal. Four workstations for four kinds of traders — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four brokerages and not four ways to place trades.</p>
+<ul>
+<li><a href="/desk/institutional">Institutional Trader</a> — flow, liquidity, options, macro, and news around a multi-chart workspace.</li>
+<li><a href="/desk/fundamental">Fundamental Trader</a> — statements, earnings, valuation, peers, filings, and FRED macro.</li>
+<li><a href="/desk/retail">Retail Trader</a> — large chart, watchlist, news, economic wire, and plain-English education.</li>
+<li><a href="/desk/neurodivergent">Neurodivergent Trader</a> — the same market data with calm-focus, ADHD, autism-predictable, and low-stim profiles.</li>
+</ul>
+<p><a href="/desk">See all four desks</a></p>
 <h2>What is in the terminal</h2>
 <ul>${features}</ul>
 <h2>What this is not</h2>
@@ -1378,6 +1701,8 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/guides') body = renderGuidesIndex();
   else if (pathClean.startsWith('/guides/')) body = renderGuide(pathClean.slice('/guides/'.length));
   else if (pathClean === '/glossary') body = renderGlossary();
+  else if (parts[0] === 'glossary' && parts[1] === 'letter' && parts.length === 3) body = renderGlossaryLetter(parts[2]);
+  else if (parts[0] === 'glossary' && parts.length === 2) body = renderGlossaryTerm(parts[1]);
   else if (pathClean === '/faq') body = renderFaqPage();
   else if (pathClean === '/accessibility') body = renderAccessibilityPage();
   else if (pathClean === '/regions') body = renderRegionsIndex();
@@ -1388,6 +1713,10 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/forex') body = renderForexHub();
   else if (pathClean === '/commodities') body = renderCommoditiesHub();
   else if (pathClean === '/companies') body = renderCompaniesHub();
+  else if (parts[0] === 'companies' && parts[1] === 'page' && parts.length === 3) body = renderCompaniesIndexPage(parts[2]);
+  else if (parts[0] === 'companies' && parts.length === 2) body = renderCompanyProfile(parts[1]);
+  else if (parts[0] === 'markets' && parts.length === 2) body = renderKnowledgeStandalone(pathClean);
+  else if (parts[0] === 'sectors' && parts.length === 2) body = renderKnowledgeStandalone(pathClean);
   else if (pathClean === '/indicators' || pathClean === '/encyclopedia-of-indicators') body = renderIndicatorsHub();
   else if (parts[0] === 'indicators' && parts.length === 2) body = renderIndicatorDetail(parts[1]);
   else if (pathClean === '/education' || pathClean === '/clearpath-education') body = renderEducationHub();
@@ -1396,6 +1725,9 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (parts[0] === 'education' && parts.length === 4) {
     body = renderEducationLesson(parts[1], parts[2], parts[3]);
   } else if (pathClean === '/literacy' || pathClean === '/literacy-os') body = renderLiteracyHub();
+  else if (parts[0] === 'literacy' && parts[1] === 'wiki' && parts.length === 3) body = renderLiteracyWiki(parts[2]);
+  else if (parts[0] === 'literacy' && parts.length === 2) body = renderLiteracyTrack(parts[1]);
+  else if (parts[0] === 'literacy' && parts.length === 3) body = renderLiteracyLesson(parts[1], parts[2]);
   else if (pathClean === '/ui') body = renderUiIndex();
   else if (pathClean === '/desk') body = renderTraderDesksIndex();
   else if (parts[0] === 'desk' && parts.length === 2) body = renderTraderDesk(parts[1]);

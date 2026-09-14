@@ -13,7 +13,7 @@ export type PlatformMeta = {
 
 /**
  * Full ClearPath-owned channel catalog.
- * No Buffer / Zapier / Hootsuite — each network is reached by our adapter.
+ * Each network is reached by our adapter.
  */
 export const PLATFORM_CATALOG: PlatformMeta[] = [
   // —— Top social / video ——

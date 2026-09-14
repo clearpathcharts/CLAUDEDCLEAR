@@ -11,12 +11,16 @@ import {
   IDENTITY_FAQS,
   PRODUCT_DISAMBIGUATION,
   PRODUCT_FEATURE_LIST,
+  PRODUCT_FOUR_DESKS_PHRASE,
+  PRODUCT_HOME_H1,
+  PRODUCT_HOME_TITLE,
   PRODUCT_KNOWS_ABOUT,
   PRODUCT_META_DESCRIPTION,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
-import { GUIDE_RECORDS, GLOSSARY_TERMS } from './contentData';
+import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
+import { injectBuildStamp } from './htmlCacheHeaders';
 import {
   lookupStock,
   lookupCrypto,
@@ -27,11 +31,18 @@ import {
   lookupEconomy,
   getLessonSeo,
   PROFILE_SEO,
+  lookupCompany,
+  lookupGlossary,
+  lookupLiteracyTrack,
+  lookupLiteracyLesson,
+  lookupLiteracyWiki,
 } from './crawlCatalog';
+import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
+import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
-import { DESK_SEO } from '../content/traderDesksCopy';
-import { isTraderDeskId, TRADER_DESKS } from '../lib/traderDesks';
+import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
+import { deskCanonicalPath, isTraderDeskId, TRADER_DESK_IDS, TRADER_DESKS } from '../lib/traderDesks';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -263,7 +274,7 @@ export const GENERAL_FAQS = [
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: "ClearPathTrader is a free market intelligence terminal and education platform. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital."
+    answer: `ClearPathTrader is one free market intelligence and education terminal with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
   },
   {
     question: "Is ClearPathTrader a brokerage?",
@@ -321,13 +332,14 @@ const CANONICAL_ALIASES: Record<string, string> = {
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
-  let title = "ClearPath Trader | Market Intelligence & Education Terminal";
+  let title = PRODUCT_HOME_TITLE;
   let description = PRODUCT_META_DESCRIPTION;
-  let keywords = "ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks";
+  let keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks`;
   let robotsMeta =
     'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   const baseUrl = "https://clearpathtrader.com";
-  const canonicalPath = CANONICAL_ALIASES[pathClean] ?? pathClean;
+  const canonicalPath =
+    deskCanonicalPath(pathClean) ?? CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
 
   // Organization + WebSite schema (brand trust — no personal founder attribution)
@@ -372,9 +384,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
-    title = "ClearPath Trader | Market Intelligence & Education Terminal";
+    title = PRODUCT_HOME_TITLE;
     description = PRODUCT_META_DESCRIPTION;
-    keywords = "ClearPath Trader, market intelligence terminal, trading charts, financial encyclopedia, chart patterns, neurodivergent trading UI, not a chatbot, Clear Path Markets Science";
+    keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, market intelligence terminal, trading charts, financial encyclopedia, neurodivergent trading UI, not a chatbot, Clear Path Markets Science`;
     schemas.push({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
@@ -404,8 +416,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
-    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.";
-    keywords = "about ClearPath Trader, market intelligence terminal, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility";
+    description = `ClearPath Trader is one education terminal with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. Charts, encyclopedias, and accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.`;
+    keywords = `about ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility`;
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "About", url: "/about" }
@@ -513,8 +525,9 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: "Guides", url: "/guides" }
     ]));
   } else if (pathClean === '/glossary') {
+    const gCounts = glossaryCatalogCounts();
     title = "Financial Glossary: Trading Terms Defined | ClearPathTrader";
-    description = `Plain-language definitions of ${GLOSSARY_TERMS.length}+ trading terms: leverage, liquidity, margin, order books, spreads, volatility, and more.`;
+    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus unique vocabulary-study nodes. Not a live data feed.`;
     keywords = "financial glossary, trading terms, leverage, liquidity, margin, volatility, order book";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
@@ -526,13 +539,42 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       "@id": `${canonicalUrl}#glossary`,
       "name": "ClearPathTrader Financial Glossary",
       "url": canonicalUrl,
-      "hasDefinedTerm": GLOSSARY_TERMS.map(t => ({
-        "@type": "DefinedTerm",
-        "name": t.term,
-        "description": t.definition,
-        "inDefinedTermSet": `${canonicalUrl}#glossary`
-      }))
+      "numberOfItems": gCounts.total,
     });
+  } else if (pathClean.startsWith('/glossary/letter/')) {
+    const letter = pathClean.slice('/glossary/letter/'.length);
+    const label = letter === '0' ? '#' : letter.toUpperCase();
+    title = `Glossary ${label} | ClearPathTrader`;
+    description = `Educational glossary terms beginning with ${label}. Not a live vendor feed — missing cells stay DATA UNAVAILABLE.`;
+    schemas.push(makeBreadcrumb([
+      { name: "Home", url: "" },
+      { name: "Glossary", url: "/glossary" },
+      { name: label, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/glossary/')) {
+    const rec = lookupGlossary(pathClean.slice('/glossary/'.length));
+    if (!rec) {
+      title = 'Glossary term not found | ClearPathTrader';
+      description = 'No educational glossary record matches this slug.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = rec.seoTitle;
+      description = rec.seoDescription;
+      keywords = [rec.term, rec.category, 'glossary', 'ClearPath Trader'].join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: "Home", url: "" },
+        { name: "Glossary", url: "/glossary" },
+        { name: rec.term, url: pathClean },
+      ]));
+      schemas.push({
+        "@context": "https://schema.org",
+        "@type": "DefinedTerm",
+        name: rec.term,
+        description: rec.definition,
+        inDefinedTermSet: "https://clearpathtrader.com/glossary",
+        url: canonicalUrl,
+      });
+    }
   } else if (pathClean === '/faq') {
     title = "FAQ: What ClearPath Trader Is (and Isn't) | ClearPathTrader";
     description = "Answers on what ClearPathTrader does, whether it is a brokerage, valuation basics, and accessibility support for disabled users.";
@@ -840,7 +882,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       },
       '/companies': {
         title: 'Company Directory | ClearPathTrader Encyclopedia',
-        description: 'Company directory for the ClearPath financial encyclopedia — explore issuers behind listed equities.',
+        description:
+          'Educational company directory: public issuers on stock profiles plus subsidiary study pages. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
         crumb: 'Companies',
       },
     };
@@ -852,9 +895,56 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       { name: 'Encyclopedia', url: '/encyclopedia' },
       { name: hub.crumb, url: pathClean },
     ]));
+  } else if (pathClean.startsWith('/companies/page/')) {
+    const n = pathClean.slice('/companies/page/'.length);
+    title = `Company study index ${n} | ClearPathTrader`;
+    description =
+      'Educational company-directory index. Not a live filing database — missing cells stay DATA UNAVAILABLE.';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Companies', url: '/companies' },
+      { name: `Page ${n}`, url: pathClean },
+    ]));
+  } else if (pathClean.startsWith('/companies/')) {
+    const slug = pathClean.slice('/companies/'.length);
+    const rec = lookupCompany(slug);
+    if (!rec) {
+      title = 'Company listing not found | ClearPathTrader';
+      description = 'No educational directory record matches this slug. Browse the company directory or stock encyclopedia.';
+      robotsMeta = 'noindex, follow';
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: 'Not found', url: pathClean },
+      ]));
+    } else {
+      title = rec.seoTitle;
+      description = rec.seoDescription;
+      keywords = [rec.name, rec.parentTicker, rec.sector, 'company directory', 'ClearPath Trader'].filter(Boolean).join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Companies', url: '/companies' },
+        { name: rec.name, url: rec.status === 'Public' && rec.ticker ? `/stocks/${rec.ticker.toLowerCase()}` : pathClean },
+      ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': rec.status === 'Public' ? 'Corporation' : 'Organization',
+        name: rec.name,
+        description: rec.description,
+        url: canonicalUrl,
+        ...(rec.parentTicker
+          ? { parentOrganization: { '@type': 'Corporation', name: rec.parentCompany, tickerSymbol: rec.parentTicker } }
+          : {}),
+      });
+    }
   } else if (pathClean.startsWith('/stocks/')) {
     const symbol = pathClean.slice('/stocks/'.length);
     const stock = lookupStock(symbol);
+    if (!stock) {
+      title = 'Stock listing not found | ClearPathTrader';
+      description = 'No educational equity profile matches this ticker.';
+      robotsMeta = 'noindex, follow';
+    } else {
     const ticker = (stock?.ticker || symbol).toUpperCase();
     const company = stock?.company || ticker;
     title = `${ticker} Stock Profile — ${company} | ClearPathTrader`;
@@ -871,23 +961,94 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       '@type': 'Corporation',
       name: company,
       tickerSymbol: ticker,
-      description,
+      description: description,
       url: canonicalUrl,
     });
+    }
   } else if (pathClean.startsWith('/crypto/')) {
     const symbol = pathClean.slice('/crypto/'.length);
     const coin = lookupCrypto(symbol);
-    const sym = (coin?.symbol || symbol).toUpperCase();
-    const name = coin?.name || sym;
-    title = `${name} (${sym}) Crypto Profile | ClearPathTrader`;
-    description = coin?.description
-      || `${name} (${sym}) cryptocurrency profile — category, market context, and educational overview in ClearPath.`;
-    keywords = [sym, name, coin?.category, 'crypto', 'digital asset'].filter(Boolean).join(', ');
-    schemas.push(makeBreadcrumb([
-      { name: 'Home', url: '' },
-      { name: 'Crypto', url: '/crypto' },
-      { name: name, url: pathClean },
-    ]));
+    if (!coin) {
+      title = 'Crypto listing not found | ClearPathTrader';
+      description = 'No educational crypto profile matches this symbol.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      const sym = String(coin.symbol || symbol).toUpperCase();
+      const name = coin.name || sym;
+      title = `${name} (${sym}) Crypto Profile | ClearPathTrader`;
+      description = coin.description
+        || `${name} (${sym}) cryptocurrency profile — category, market context, and educational overview in ClearPath.`;
+      keywords = [sym, name, coin.category, 'crypto', 'digital asset'].filter(Boolean).join(', ');
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Crypto', url: '/crypto' },
+        { name: name, url: pathClean },
+      ]));
+    }
+  } else if (pathClean.startsWith('/literacy/wiki/')) {
+    const node = lookupLiteracyWiki(pathClean.slice('/literacy/wiki/'.length));
+    if (!node) {
+      title = 'Literacy wiki not found | ClearPathTrader';
+      description = 'No concept-wiki node matches this slug.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = `${node.title} | Literacy OS | ClearPathTrader`;
+      description = node.summary;
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Literacy OS', url: '/literacy' },
+        { name: node.title, url: pathClean },
+      ]));
+    }
+  } else if (pathClean.startsWith('/literacy/')) {
+    const parts = pathClean.split('/').filter(Boolean);
+    if (parts.length === 3) {
+      const hit = lookupLiteracyLesson(parts[1], parts[2]);
+      if (!hit) {
+        title = 'Literacy lesson not found | ClearPathTrader';
+        description = 'No Literacy OS lesson matches this path.';
+        robotsMeta = 'noindex, follow';
+      } else {
+        title = `${hit.lesson.title} | ${hit.track.title} | ClearPathTrader`;
+        description = fitMetaDescription(hit.lesson.body);
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Literacy OS', url: '/literacy' },
+          { name: hit.track.title, url: `/literacy/${hit.track.id}` },
+          { name: hit.lesson.title, url: pathClean },
+        ]));
+      }
+    } else {
+      const track = lookupLiteracyTrack(parts[1] || '');
+      if (!track) {
+        title = 'Literacy track not found | ClearPathTrader';
+        description = 'No Literacy OS track matches this path.';
+        robotsMeta = 'noindex, follow';
+      } else {
+        title = `${track.title} | Literacy OS | ClearPathTrader`;
+        description = track.summary;
+        schemas.push(makeBreadcrumb([
+          { name: 'Home', url: '' },
+          { name: 'Literacy OS', url: '/literacy' },
+          { name: track.title, url: pathClean },
+        ]));
+      }
+    }
+  } else if (pathClean.startsWith('/markets/') || pathClean.startsWith('/sectors/')) {
+    const kb = knowledgeItemForPath(pathClean);
+    if (!kb) {
+      title = 'Encyclopedia article not found | ClearPathTrader';
+      description = 'No authored knowledge article matches this path.';
+      robotsMeta = 'noindex, follow';
+    } else {
+      title = `${kb.title} | ClearPathTrader Encyclopedia`;
+      description = fitMetaDescription(kb.definition);
+      schemas.push(makeBreadcrumb([
+        { name: 'Home', url: '' },
+        { name: 'Encyclopedia', url: '/encyclopedia' },
+        { name: kb.title, url: pathClean },
+      ]));
+    }
   } else if (pathClean.startsWith('/forex/')) {
     const pairKey = pathClean.slice('/forex/'.length);
     const enrich = getRegionalFxEnrichment(pairKey);
@@ -1083,27 +1244,67 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       });
     }
   } else if (pathClean === '/desk') {
-    title = 'Trader Desks | ClearPathTrader';
-    description =
-      'Four ClearPathTrader interfaces: Institutional, Fundamental, Retail, and Neurodivergent. Educational market desks — not a brokerage.';
+    title = DESK_INDEX_SEO.title;
+    description = DESK_INDEX_SEO.description;
+    keywords = DESK_INDEX_SEO.keywords;
     schemas.push(makeBreadcrumb([
       { name: 'Home', url: '' },
       { name: 'Trader desks', url: '/desk' },
     ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: DESK_INDEX_SEO.h1,
+      description: DESK_INDEX_SEO.description,
+      hasPart: TRADER_DESK_IDS.map((id) => ({
+        '@type': 'WebApplication',
+        name: DESK_SEO[id].h1,
+        url: `${baseUrl}${TRADER_DESKS[id].href}`,
+        applicationCategory: 'FinanceApplication',
+      })),
+    });
   } else if (pathClean === '/fundamental' || pathClean.startsWith('/fundamental/') || pathClean.startsWith('/desk/')) {
     const id = pathClean.includes('fundamental')
       ? 'fundamental'
       : pathClean.slice('/desk/'.length).split('/')[0];
     if (isTraderDeskId(id)) {
       const seo = DESK_SEO[id];
+      const deskHref = TRADER_DESKS[id].href;
       title = seo.title;
       description = seo.description;
-      keywords = [TRADER_DESKS[id].title, 'ClearPath Trader desk', 'market intelligence'].join(', ');
+      keywords = seo.keywords;
+      if (/\/desk\/[^/]+\/screen\//.test(pathClean)) {
+        robotsMeta = 'noindex, follow';
+      }
       schemas.push(makeBreadcrumb([
         { name: 'Home', url: '' },
         { name: 'Trader desks', url: '/desk' },
-        { name: TRADER_DESKS[id].title, url: pathClean },
+        { name: TRADER_DESKS[id].title, url: deskHref },
       ]));
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        '@id': `${canonicalUrl}#webpage`,
+        name: seo.h1,
+        applicationCategory: 'FinanceApplication',
+        applicationSubCategory: `${TRADER_DESKS[id].title} educational desk`,
+        operatingSystem: 'Web',
+        url: canonicalUrl,
+        description: seo.description,
+        isPartOf: { '@id': `${baseUrl}/#organization` },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      });
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: seo.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+        })),
+      });
     }
   }
 
@@ -1160,6 +1361,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       ? getRegionalMarket(canonicalPath.slice('/regions/'.length))
       : null;
   const noindexPage = robotsMeta.startsWith('noindex');
+  const unknownRegionHub = Boolean(pathClean.startsWith('/regions/') && !regionalMarket);
   const hreflangTags = noindexPage
     ? ''
     : regionalHreflangHints(canonicalUrl, {
@@ -1169,7 +1371,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
         .join('\n');
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
-  const shareUrl = noindexPage ? `${baseUrl}/regions` : canonicalUrl;
+  const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
   const ogTags = `
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${primaryLocale}" />
@@ -1178,7 +1380,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${shareUrl}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
-    <meta property="og:image:alt" content="ClearPath Trader — market intelligence terminal" />
+    <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="ClearPathTrader" />
@@ -1186,7 +1388,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:title" content="${escAttr(title)}" />
     <meta name="twitter:description" content="${escAttr(description)}" />
     <meta name="twitter:image" content="${baseUrl}/og-image.png" />
-    <meta name="twitter:image:alt" content="ClearPath Trader — market intelligence terminal" />
+    <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
     <link rel="canonical" href="${shareUrl}" />
@@ -1202,7 +1404,7 @@ ${hreflangTags}
     if (!/<h1[\s>]/i.test(html)) {
       const homeHeader =
         '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;text-align:center">' +
-        '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
+        `<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">${escAttr(PRODUCT_HOME_H1)}</h1>` +
         '</header>';
       if (html.includes('<div id="root">')) {
         html = html.replace('<div id="root">', `${homeHeader}\n    <div id="root">`);
@@ -1215,10 +1417,10 @@ ${hreflangTags}
     const noscriptHome = `
     <noscript>
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
-        <p><strong>ClearPath Trader — Market Intelligence &amp; Education Terminal</strong></p>
+        <p><strong>${escAttr(PRODUCT_HOME_H1)}</strong></p>
         <p>${safeHomeDesc}</p>
-        <p>Not a website chatbot. Not aiclearpath.com. Live charts, unlimited indicators, automatic pattern scans, financial and indicator encyclopedias, Literacy OS, a macro desk, INDACREATOR, and 13 accessibility chart profiles. C.P.T. Buddy is an in-terminal mentor — it does not greet visitors, capture leads, or book appointments.</p>
-        <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
+        <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One education terminal — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-terminal mentor — it does not greet visitors, capture leads, or book appointments.</p>
+        <p><a href="/desk">Four trader desks</a> · <a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
     // Always replace any existing noscript so an older deploy's <h1> inside noscript cannot linger.
@@ -1280,7 +1482,7 @@ ${hreflangTags}
   }
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
-  return injectFirebaseClientConfig(html);
+  return injectBuildStamp(injectFirebaseClientConfig(html));
 }
 
 // Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.

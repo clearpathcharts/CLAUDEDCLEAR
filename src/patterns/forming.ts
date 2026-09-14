@@ -14,6 +14,8 @@ export interface FormingPossibility {
   probability: number;
   status: 'forming' | 'possible' | 'watch';
   detail: string;
+  scale?: 'major' | 'nested';
+  startIndex?: number;
 }
 
 export interface FormingClock {
@@ -149,9 +151,16 @@ function possibilitiesFromMeasured(patterns: DetectedPattern[]): FormingPossibil
       probability: p.confidence,
       status: (p.confidence >= 0.62 ? 'forming' : p.confidence >= 0.5 ? 'possible' : 'watch') as FormingPossibility['status'],
       detail: p.detail || `${p.label} measured on latest candles.`,
+      scale: p.scale ?? 'major',
+      startIndex: p.startIndex,
     }))
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, 4);
+    .sort((a, b) => {
+      const aMajor = a.scale === 'nested' ? 0 : 1;
+      const bMajor = b.scale === 'nested' ? 0 : 1;
+      if (aMajor !== bMajor) return bMajor - aMajor;
+      return b.probability - a.probability;
+    })
+    .slice(0, 6);
 }
 
 /** Restore 4-up / 3-down methodology watches even when geometry scan is quiet. */
@@ -249,7 +258,7 @@ function buildNarrative(
   } else {
     for (const p of brief.possibilities) {
       lines.push(
-        `Measured ${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`,
+        `Measured ${p.scale === 'nested' ? 'nested ' : ''}${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`,
       );
     }
   }
@@ -299,13 +308,18 @@ export function analyzeFormingStructure(
   // Measured geometry first, then methodology watches fill gaps on any symbol.
   const merged = new Map<string, FormingPossibility>();
   for (const p of [...measured, ...impulse]) {
-    const key = `${p.id}:${p.label}`;
+    const key = `${p.id}:${p.scale ?? 'major'}:${p.startIndex ?? 'impulse'}:${p.label}`;
     const prev = merged.get(key);
     if (!prev || p.probability > prev.probability) merged.set(key, p);
   }
   const possibilities = [...merged.values()]
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, 5);
+    .sort((a, b) => {
+      const aMajor = a.scale === 'nested' ? 0 : 1;
+      const bMajor = b.scale === 'nested' ? 0 : 1;
+      if (aMajor !== bMajor) return bMajor - aMajor;
+      return b.probability - a.probability;
+    })
+    .slice(0, 6);
 
   const normalizedTf = normalizeTimeframe(timeframe);
   const base = {

@@ -1,4 +1,4 @@
-/** ClearPath Social OS — site-owned direct publishing (no Buffer / Zapier / Make). */
+/** ClearPath Social OS — site-owned direct publishing. */
 
 export type SocialPlatform =
   // Top social / video

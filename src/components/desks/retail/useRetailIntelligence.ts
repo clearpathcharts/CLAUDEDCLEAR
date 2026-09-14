@@ -5,6 +5,7 @@ import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
 import { fetchTieredHistoricalData } from '../../../services/marketData';
 import { fetchEconomicNews, type EconomicNewsItem } from '../../../services/economicService';
 import type { Candle } from '../../../types/indicators';
+import { LruMap } from '../../../lib/lruMap';
 
 export const RETAIL_RIBBON: { symbol: string; label: string }[] = [
   { symbol: 'SPX', label: 'S&P 500' },
@@ -58,7 +59,7 @@ function toCandle(c: {
 }
 
 async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQuote>> {
-  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 24);
+  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 80);
   const out: Record<string, RetailQuote> = {};
   if (unique.length === 0) return out;
   const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(unique.join(','))}`);
@@ -87,7 +88,8 @@ async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQu
   return out;
 }
 
-const histCache = new Map<string, { at: number; candles: Candle[] }>();
+const HIST_CACHE_MAX = 48;
+const histCache = new LruMap<string, { at: number; candles: Candle[] }>(HIST_CACHE_MAX);
 
 async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]> {
   const key = `${symbol}:${timeframe}`;
@@ -111,6 +113,17 @@ function emptyQuote(symbol: string): RetailQuote {
     latency: asset ? LATENCY_LABEL[asset.latencyClass] : 'UNKNOWN',
   };
 }
+
+export type RetailIntelligencePollOptions = {
+  /** Periodic candle refresh for workspace slots (default true). */
+  pollWorkspace?: boolean;
+  pollRibbon?: boolean;
+  pollWatchlist?: boolean;
+  pollMovers?: boolean;
+  pollNews?: boolean;
+  pollEcon?: boolean;
+  pollFundamentals?: boolean;
+};
 
 export function retailWorkspaceSlots(
   primary: string,
@@ -146,7 +159,17 @@ export function useRetailIntelligence(
   layout: 1 | 2 | 4,
   slotOverrides: Partial<Record<number, { symbol: string; timeframe: string }>>,
   ribbonMarkets: { symbol: string; label: string }[] = RETAIL_RIBBON,
+  pollOptions: RetailIntelligencePollOptions = {},
 ) {
+  const {
+    pollWorkspace = true,
+    pollRibbon = true,
+    pollWatchlist = true,
+    pollMovers = true,
+    pollNews = true,
+    pollEcon = true,
+    pollFundamentals = true,
+  } = pollOptions;
   const [candlesByKey, setCandlesByKey] = useState<Record<string, Candle[]>>({});
   const [candleError, setCandleError] = useState<string | null>(null);
   const [ribbon, setRibbon] = useState<RetailQuote[]>([]);
@@ -195,7 +218,11 @@ export function useRetailIntelligence(
     void loadWorkspace();
   }, [loadWorkspace]);
 
-  usePageAutoUpdate(loadWorkspace, { intervalMs: 60_000, immediate: false });
+  usePageAutoUpdate(loadWorkspace, {
+    intervalMs: 60_000,
+    immediate: false,
+    enabled: pollWorkspace,
+  });
 
   usePageAutoUpdate(
     async () => {
@@ -206,7 +233,7 @@ export function useRetailIntelligence(
         setRibbon(ribbonSpec.map((m) => emptyQuote(m.symbol)));
       }
     },
-    { intervalMs: 20_000 },
+    { intervalMs: 20_000, enabled: pollRibbon },
   );
 
   const loadWatch = useCallback(async () => {
@@ -227,7 +254,11 @@ export function useRetailIntelligence(
     void loadWatch();
   }, [loadWatch]);
 
-  usePageAutoUpdate(loadWatch, { intervalMs: 20_000, immediate: false });
+  usePageAutoUpdate(loadWatch, {
+    intervalMs: 20_000,
+    immediate: false,
+    enabled: pollWatchlist,
+  });
 
   /** Movers from live quotes of a curated retail universe — never fabricated ranks. */
   usePageAutoUpdate(
@@ -261,7 +292,7 @@ export function useRetailIntelligence(
         setMoversStatus('unavailable');
       }
     },
-    { intervalMs: 30_000 },
+    { intervalMs: 30_000, enabled: pollMovers },
   );
 
   usePageAutoUpdate(
@@ -321,7 +352,7 @@ export function useRetailIntelligence(
         setNewsError(e instanceof Error ? e.message : 'News offline');
       }
     },
-    { intervalMs: 60_000 },
+    { intervalMs: 60_000, enabled: pollNews },
   );
 
   usePageAutoUpdate(
@@ -339,11 +370,24 @@ export function useRetailIntelligence(
         setEconError(e instanceof Error ? e.message : 'Economic wire unavailable');
       }
     },
-    { intervalMs: 60_000 },
+    { intervalMs: 60_000, enabled: pollEcon },
   );
 
   useEffect(() => {
     let cancelled = false;
+    if (!pollFundamentals) {
+      setFundamentals({
+        marketCap: null,
+        pe: null,
+        eps: null,
+        revenueGrowth: null,
+        dividend: null,
+        debt: null,
+        fcf: null,
+        status: 'n/a',
+      });
+      return;
+    }
     const asset = ASSET_REGISTRY.find((a) => a.symbol === primarySymbol.toUpperCase());
     const isEquity = asset?.category === 'stocks';
     if (!isEquity) {
@@ -436,7 +480,7 @@ export function useRetailIntelligence(
     return () => {
       cancelled = true;
     };
-  }, [primarySymbol]);
+  }, [primarySymbol, pollFundamentals]);
 
   const primaryKey = `${primarySymbol}:${primaryTimeframe}`;
   const primaryCandles = candlesByKey[primaryKey] ?? [];

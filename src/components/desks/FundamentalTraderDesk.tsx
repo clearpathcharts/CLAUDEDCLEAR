@@ -1,7 +1,7 @@
 import React from 'react';
 import FundamentalDashboard from '../fundamental/FundamentalDashboard';
 import { DeskHoldScope } from './DeskHoldScope';
-import { FUNDAMENTAL_CHART_FIRST_HELD, FUNDAMENTAL_HELD_META } from './heldMeta';
+import { FUNDAMENTAL_HELD_META, FUNDAMENTAL_CHART_FIRST_HELD } from './heldMeta';
 
 /**
  * Fundamental Trader Door — research workstation.
@@ -11,11 +11,11 @@ export default function FundamentalTraderDesk({ initialSymbol }: { initialSymbol
   return (
     <DeskHoldScope
       desk="fundamental"
-      storageKey="clearpath_held_fundamental_v2"
+      storageKey="clearpath_held_fundamental_v4"
       meta={FUNDAMENTAL_HELD_META}
       defaultHeld={FUNDAMENTAL_CHART_FIRST_HELD}
     >
-      <div className="flex min-h-0 flex-1 flex-col" data-fundamental-door="true">
+      <div className="flex w-full flex-col" data-fundamental-door="true">
         <FundamentalDashboard initialSymbol={initialSymbol || 'NVDA'} />
       </div>
     </DeskHoldScope>

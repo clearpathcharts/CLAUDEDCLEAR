@@ -18,7 +18,9 @@ import { RetailEducationBento } from './RetailEducationBento';
 import { RetailSlideStrip } from './RetailSlideStrip';
 import { AssetColorControls } from './AssetColorControls';
 import { PatternScannerPanel } from '../../charts/PatternScannerPanel';
+import { DeskChartFill } from '../DeskChartFill';
 import { useMembership } from '../../../hooks/useMembership';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   loadAssetColorMap,
   resolveAssetColors,
@@ -45,6 +47,7 @@ import {
   type RetailWatchlist,
 } from './retailStore';
 import type { Candle } from '../../../types/indicators';
+import PassThroughTradePanel from '../../broker/PassThroughTradePanel';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
 const CHART_TYPES: { id: PriceSeriesType; label: string }[] = [
@@ -250,6 +253,7 @@ export default function RetailDashboard() {
   const { hasFeature } = useMembership();
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState('1h');
+  useDeskMonitorSync('retail', symbol, timeframe, setSymbol, setTimeframe);
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [chartType, setChartType] = useState<PriceSeriesType>('candlestick');
   const [chartProfileId, setChartProfileId] = useState(readChartProfileId);
@@ -289,7 +293,29 @@ export default function RetailDashboard() {
   const activeWl = watchlists.find((w) => w.id === activeWlId) ?? watchlists[0];
   const watchSymbols = activeWl?.symbols ?? [];
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, layout, slotOverrides);
+  const hold = useDeskHold();
+  const hideSecondary = focusMode || blackout;
+  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
+  const scanHeld = hideSecondary || (hold?.isHeld('scanner') ?? false);
+  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
+  const showSlide = !hideSecondary && deskSectionOpen(hold?.isHeld, ['context', 'volume', 'movers']);
+  const showBelow = !hideSecondary && deskSectionOpen(hold?.isHeld, [
+    'news',
+    'calendar',
+    'alerts',
+    'changed',
+    'education',
+    'fundamental',
+    'simulation',
+  ]);
+
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, layout, slotOverrides, RETAIL_RIBBON, {
+    pollWatchlist: !watchHeld,
+    pollMovers: showSlide,
+    pollNews: deskSectionOpen(hold?.isHeld, ['news']),
+    pollEcon: deskSectionOpen(hold?.isHeld, ['calendar']),
+    pollFundamentals: deskSectionOpen(hold?.isHeld, ['fundamental']),
+  });
   const candles = intel.primaryCandles;
   const snap = useMemo(() => daySnapshot(candles), [candles]);
   const structure = useMemo(
@@ -414,12 +440,7 @@ export default function RetailDashboard() {
   const togglePanel = (id: string) =>
     setOpenPanels((s) => ({ ...s, [id]: s[id] === false ? true : false }));
 
-  const hideSecondary = focusMode || blackout;
   const denseBlackout = blackout;
-  const hold = useDeskHold();
-  const watchHeld = hideSecondary || (hold?.isHeld('watchlist') ?? false);
-  const scanHeld = hideSecondary || (hold?.isHeld('scanner') ?? false);
-  const snapHeld = hideSecondary || (hold?.isHeld('snapshot') ?? false);
   const retailChartCols = [
     watchHeld ? null : '240px',
     'minmax(0,1.5fr)',
@@ -428,16 +449,6 @@ export default function RetailDashboard() {
   ]
     .filter(Boolean)
     .join(' ');
-  const showSlide = !hideSecondary && deskSectionOpen(hold?.isHeld, ['context', 'volume', 'movers']);
-  const showBelow = !hideSecondary && deskSectionOpen(hold?.isHeld, [
-    'news',
-    'calendar',
-    'alerts',
-    'changed',
-    'education',
-    'fundamental',
-    'simulation',
-  ]);
 
   const gainers = [...intel.moverQuotes].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)).slice(0, 4);
   const decliners = [...intel.moverQuotes].sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)).slice(0, 4);
@@ -459,7 +470,7 @@ export default function RetailDashboard() {
     candles.length >= 2 ? Math.min(...candles.slice(-Math.min(candles.length, 24), -1).map((c) => c.low)) : null;
 
   return (
-    <div data-retail-door className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+    <div data-retail-door className="flex w-full flex-col gap-3 overflow-visible p-3">
       {/* Header */}
       {!denseBlackout && (
         <section data-retail-bento className="retail-bento flex flex-wrap items-end justify-between gap-3">
@@ -802,7 +813,7 @@ export default function RetailDashboard() {
             }`}
           >
             {intel.slots.map((slot, i) => (
-              <div key={`${slot.symbol}-${slot.timeframe}-${i}`} className="relative min-h-[280px]">
+              <DeskChartFill key={`${slot.symbol}-${slot.timeframe}-${i}`} tall={layout === 1}>
                 {layout > 1 ? (
                   <div className="absolute left-1 top-1 z-10 flex flex-wrap gap-1 rounded border border-[var(--desk-border)] bg-black/70 px-1 py-0.5">
                     <input
@@ -844,17 +855,18 @@ export default function RetailDashboard() {
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
-                  fillParent={layout === 1}
-                  height={layout === 1 ? 420 : layout === 2 ? 280 : 220}
+                  fillParent
+                  height={layout === 1 ? 640 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
                   useDedicatedPatternPanel={layout === 1 && i === 0}
                   hidePatternOverlays={!(layout === 1 && i === 0)}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
-              </div>
+              </DeskChartFill>
             ))}
           </div>
+          {layout === 1 ? <PassThroughTradePanel symbol={symbol} /> : null}
           <p className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-sm font-bold uppercase tracking-wider text-[var(--desk-muted)]">
             Chart tools: use the chart toolbar for crosshair, zoom, pan, reset, drawings, and fullscreen.
             Default chart stays clean — indicators are opt-in.

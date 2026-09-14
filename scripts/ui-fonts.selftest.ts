@@ -45,6 +45,11 @@ const linkHref = indexHtml.match(
 assert.ok(linkHref, 'must have a single Google Fonts css2 stylesheet link');
 assert.match(linkHref[1], /family=Inter/);
 assert.match(linkHref[1], /family=IBM\+Plex\+Mono/);
+assert.match(
+  linkHref[1],
+  /family=Orbitron:wght@400;700/,
+  'same Google Fonts css2 link must include Orbitron for Private Login',
+);
 
 assert.match(indexCss, /--font-ui:\s*"Inter"/);
 assert.match(indexCss, /--font-mono:\s*"IBM Plex Mono"/);
@@ -81,7 +86,7 @@ assert.match(
   /fontFamily:\s*'"IBM Plex Mono"/,
   'Lightweight Charts axis/crosshair text must use IBM Plex Mono',
 );
-assert.match(candles, /CHART-BUILD-2026-09-01-CLEAN/, 'stamp must mark the current chart build');
+assert.match(candles, /CHART-BUILD-2026-09-04-MOBILE/, 'stamp must mark the current chart build');
 assert.match(
   liveChart,
   /fontFamily:\s*'"IBM Plex Mono"/,

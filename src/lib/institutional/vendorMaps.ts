@@ -6,10 +6,14 @@
 
 import { getRegistryAsset } from '../../constants/assetRegistry';
 
-/** Twelve Data has no clean SPX/NDX index quote (NDX resolves to Nordex ADR). */
+/** Twelve Data has no clean SPX/NDX/DJI cash-index quote (NDX resolves to Nordex ADR). */
 export const HISTORY_ALIAS: Record<string, { provider: string; note: string }> = {
   SPX: { provider: 'SPY', note: 'SPY ETF proxy for S&P 500' },
   NDX: { provider: 'QQQ', note: 'QQQ ETF proxy for Nasdaq 100' },
+  DJI: { provider: 'DIA', note: 'DIA ETF proxy for Dow Jones' },
+  US10Y: { provider: 'TNX', note: 'CBOE 10-year yield index' },
+  US30Y: { provider: 'TYX', note: 'CBOE 30-year yield index' },
+  VIX: { provider: 'VIX', note: 'CBOE volatility index' },
 };
 
 /**

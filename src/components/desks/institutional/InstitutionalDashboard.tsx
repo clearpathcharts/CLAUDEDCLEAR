@@ -16,8 +16,10 @@ import {
   scenarioPrices,
 } from '../../../lib/institutional/marketMath';
 import { Bento, Unavail, KV, Bar } from './Bento';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
+import { DeskChartFill } from '../DeskChartFill';
 import {
   cotFeedChip,
   formatCotAgeLabel,
@@ -105,6 +107,7 @@ function heatColor(r: number | null): string {
 export default function InstitutionalDashboard() {
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
   const [timeframe, setTimeframe] = useState<string>('1h');
+  useDeskMonitorSync('institutional', symbol, timeframe, setSymbol, setTimeframe);
   const [layout, setLayout] = useState<1 | 2 | 4>(1);
   const [universeTab, setUniverseTab] = useState('equities');
   const [open, setOpen] = useState<Record<string, boolean>>({
@@ -113,7 +116,16 @@ export default function InstitutionalDashboard() {
   });
   const [focus, setFocus] = useState<string | null>(null);
 
-  const intel = useInstitutionalIntelligence(symbol, timeframe, layout, universeTab);
+  const hold = useDeskHold();
+  const intel = useInstitutionalIntelligence(symbol, timeframe, layout, universeTab, {
+    pollUniverse: !(hold?.isHeld('universe') ?? false),
+    pollNews: deskSectionOpen(hold?.isHeld, ['news']),
+    pollEcon: deskSectionOpen(hold?.isHeld, ['calendar']),
+    pollMacro: deskSectionOpen(hold?.isHeld, ['macro']),
+    pollCorr: deskSectionOpen(hold?.isHeld, ['corr']),
+    pollCot: deskSectionOpen(hold?.isHeld, ['positioning']),
+    pollEarnings: deskSectionOpen(hold?.isHeld, ['earnings']),
+  });
   const primaryCandles = intel.candlesBySymbol[symbol] ?? [];
   const report = useMemo(
     () => (primaryCandles.length ? analyzeInstitutionalStructure(primaryCandles) : null),
@@ -148,7 +160,6 @@ export default function InstitutionalDashboard() {
   const sellPct = totalFlow > 0 ? (flow.sell / totalFlow) * 100 : 0;
 
   const toggle = (id: string) => setOpen((s) => ({ ...s, [id]: s[id] === false ? true : false }));
-  const hold = useDeskHold();
   const universeHeld = hold?.isHeld('universe') ?? false;
   const flowHeld = hold?.isHeld('flow') ?? false;
   const liqHeld = hold?.isHeld('liq') ?? false;
@@ -171,7 +182,7 @@ export default function InstitutionalDashboard() {
   return (
     <div
       data-institutional-door
-      className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2"
+      className="flex w-full flex-col gap-2 overflow-visible p-2"
     >
       <Bento holdId="ribbon" title="Global Markets" status="environment" className="shrink-0">
         <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-7">
@@ -297,7 +308,7 @@ export default function InstitutionalDashboard() {
             {intel.slots.map((s) => {
               const data = intel.candlesBySymbol[s] ?? [];
               return (
-                <div key={s} className="relative min-h-[180px] overflow-hidden rounded border border-[var(--desk-border)]">
+                <DeskChartFill key={s} tall={layout === 1}>
                   <p className="absolute left-2 top-1 z-10 font-mono text-[10px] font-black uppercase tracking-wider text-[var(--desk-cyan)]">
                     {s}
                   </p>
@@ -307,12 +318,13 @@ export default function InstitutionalDashboard() {
                     profileId="focus_mode"
                     timeframe={timeframe}
                     fillParent
-                    height={layout === 1 ? 420 : 200}
+                    height={layout === 1 ? 640 : 280}
                     embedMode
                     hideChartToolbar
-                    activeIndicators={intel.cot.status === 'ok' ? ['COT'] : []}
+                    hidePatternOverlays={s !== symbol}
+                    activeIndicators={s === symbol && intel.cot.status === 'ok' ? ['COT'] : []}
                   />
-                </div>
+                </DeskChartFill>
               );
             })}
           </div>
@@ -565,7 +577,7 @@ export default function InstitutionalDashboard() {
             </table>
           </div>
           <p className="mt-1 text-[8px] uppercase text-[var(--desk-muted)]">
-            VIX series not in the live registry — those cells stay unavailable. Missing series are never filled with 1.0.
+            Missing correlation series stay unavailable. Empty cells are never filled with 1.0.
           </p>
         </Bento>
 

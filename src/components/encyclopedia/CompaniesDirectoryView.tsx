@@ -4,6 +4,7 @@ import {
   Building2, Search, Filter, Globe, Landmark, ChevronRight, 
   ArrowRight, Activity, Award, Cpu, ShieldCheck, Database, FileText
 } from 'lucide-react';
+import { getCompanyCatalog, companyCatalogCounts } from '../../lib/companyCatalog';
 
 interface CompaniesDirectoryViewProps {
   selectFileNode: (fileName: string) => void;
@@ -283,6 +284,11 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
   const [activeLetter, setActiveLetter] = useState<string>('ALL');
   const [selectedCorp, setSelectedCorp] = useState<Corporation | null>(REGISTERED_CORPORATIONS[0]);
+  const [catalogQuery, setCatalogQuery] = useState('');
+  const [catalogPage, setCatalogPage] = useState(0);
+  const catalog = useMemo(() => getCompanyCatalog(), []);
+  const catalogTotals = useMemo(() => companyCatalogCounts(), []);
+  const PAGE = 40;
 
   // Available filters
   const sectors = useMemo(() => {
@@ -310,6 +316,21 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
     });
   }, [search, selectedSector, selectedCountry, activeLetter]);
 
+  const catalogHits = useMemo(() => {
+    const q = catalogQuery.trim().toLowerCase();
+    if (!q) return catalog;
+    return catalog.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.ticker || '').toLowerCase().includes(q) ||
+        (c.parentTicker || '').toLowerCase().includes(q) ||
+        (c.unitLabel || '').toLowerCase().includes(q),
+    );
+  }, [catalog, catalogQuery]);
+  const catalogPageCount = Math.max(1, Math.ceil(catalogHits.length / PAGE));
+  const safePage = Math.min(catalogPage, catalogPageCount - 1);
+  const pageRows = catalogHits.slice(safePage * PAGE, safePage * PAGE + PAGE);
+
   return (
     <div className="companies-directory-layout flex flex-col gap-6 animate-fadeIn min-h-screen text-white text-left selection:bg-cyan-500/30">
       
@@ -328,8 +349,9 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base max-w-4xl leading-relaxed">
             The Library of Alexandria for corporate blueprints. This sector acts as a searchable matrix cataloging 
-            more than <strong className="text-[#00D9FF] font-bold">60,000+ public and private sovereign corporations</strong> defining human manufacturing, 
-            microprocessor logic, banking clearing pathways, and physical resource logistics.
+            more than <strong className="text-[#00D9FF] font-bold">{catalogTotals.total.toLocaleString()} educational listings</strong>
+            {' '}({catalogTotals.publicIssuers.toLocaleString()} public issuers on stock profiles, {catalogTotals.subsidiaries.toLocaleString()} subsidiary study pages).
+            Not a live filing database.
           </p>
         </div>
 
@@ -337,19 +359,19 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10 font-mono text-xs sm:text-sm">
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
             <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Catalog Entries</span>
-            <span className="text-white font-black text-sm sm:text-base mt-1.5 block">62,541 Active Records</span>
+            <span className="text-white font-black text-sm sm:text-base mt-1.5 block">{catalogTotals.total.toLocaleString()} listings</span>
           </div>
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Capital Coverage</span>
-            <span className="text-white font-black text-sm sm:text-base mt-1.5 block">$120+ Trillion USD</span>
+            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Public issuers</span>
+            <span className="text-white font-black text-sm sm:text-base mt-1.5 block">{catalogTotals.publicIssuers.toLocaleString()} on /stocks</span>
           </div>
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Global Exchanger Index</span>
-            <span className="text-[#00D9FF] font-black text-sm sm:text-base mt-1.5 block">12 Main Interconnections</span>
+            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Study pages</span>
+            <span className="text-[#00D9FF] font-black text-sm sm:text-base mt-1.5 block">{catalogTotals.subsidiaries.toLocaleString()} crawlable</span>
           </div>
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
             <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Data Source Toggles</span>
-            <span className="text-purple-400 font-black text-sm sm:text-base mt-1.5 block">Static Library Backbone</span>
+            <span className="text-purple-400 font-black text-sm sm:text-base mt-1.5 block">Educational directory</span>
           </div>
         </div>
       </div>
@@ -475,8 +497,8 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
 
                     <div className="flex items-center gap-3 self-stretch sm:self-auto justify-end pt-3 sm:pt-0 border-t sm:border-t-0 border-white/10 shrink-0">
                       <div className="flex flex-col items-end leading-none">
-                        <span className="font-mono text-xs sm:text-sm text-white font-extrabold">{corp.marketCap}</span>
-                        <span className="font-mono text-[9px] sm:text-[10px] text-zinc-400 uppercase mt-1">{corp.marketCapRank}</span>
+                        <span className="font-mono text-xs sm:text-sm text-white font-extrabold">DATA UNAVAILABLE</span>
+                        <span className="font-mono text-[9px] sm:text-[10px] text-zinc-400 uppercase mt-1">Educational listing</span>
                       </div>
                       <ChevronRight className={`w-5 h-5 transition-transform ${isSelected ? 'text-cyan-400 translate-x-1.5' : 'text-zinc-500'}`} />
                     </div>
@@ -485,21 +507,64 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
               })
             )}
 
-            {/* EXTENSION FILLER TO STATE THE 60,000+ REAL LIFE INDEX DATA */}
-            <div className="p-5 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] flex flex-col gap-3.5 font-mono leading-relaxed">
+            {/* FULL EDUCATIONAL CATALOG (paginated — do not mount 60k DOM nodes) */}
+            <div className="p-5 rounded-2xl border border-white/15 bg-white/[0.02] flex flex-col gap-3.5 font-mono leading-relaxed">
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                <span className="text-zinc-400 font-bold text-xs uppercase">Simulation Register Terminal</span>
-                <span className="text-zinc-500 text-[9px]">COMPUTING INDEX LAYER</span>
+                <span className="text-zinc-200 font-bold text-xs uppercase">Full educational catalog</span>
+                <span className="text-zinc-500 text-[9px]">{catalogHits.length.toLocaleString()} matches</span>
               </div>
-              <p className="text-zinc-300 text-xs sm:text-sm">
-                The rest of the <strong className="text-zinc-100">62,541 sovereign registered entities</strong> are aggregated via real-time static search indexes inside the <strong>Symbol Database</strong> (Master Index). Check the Search at the top or click <strong>SYMBOL DATABASE</strong> in the sidebar to search any US ticker!
-              </p>
-              <div className="flex justify-end">
+              <input
+                type="text"
+                value={catalogQuery}
+                onChange={(e) => {
+                  setCatalogQuery(e.target.value);
+                  setCatalogPage(0);
+                }}
+                placeholder="Search all issuers and study nodes…"
+                className="w-full bg-[#050916] border border-white/15 rounded-xl py-2 px-3 text-xs text-white placeholder-zinc-500"
+              />
+              <ul className="flex flex-col gap-1 max-h-[240px] overflow-y-auto">
+                {pageRows.map((row) => (
+                  <li key={row.slug}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (row.status === 'Public' && row.ticker) {
+                          const t = row.ticker.toLowerCase();
+                          selectFileNode(
+                            `encyclopedia/stocks/${t === 'aapl' ? 'apple' : t === 'tsla' ? 'tesla' : t === 'nvda' ? 'nvidia' : t === 'msft' ? 'microsoft' : t === 'amzn' ? 'amazon' : t}.html`,
+                          );
+                        } else {
+                          selectFileNode(`encyclopedia/companies/${row.slug}.html`);
+                        }
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded hover:bg-white/10 text-xs text-zinc-200"
+                    >
+                      <span className="text-white font-bold">{row.name}</span>
+                      <span className="text-zinc-500"> · {row.status}{row.ticker ? ` ${row.ticker}` : ''}{row.parentTicker ? ` / ${row.parentTicker}` : ''}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center justify-between text-[10px] text-zinc-400">
                 <button
-                  onClick={() => selectFileNode('master-index.html')}
-                  className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs text-cyan-400 font-black cursor-pointer transition-all"
+                  type="button"
+                  disabled={safePage <= 0}
+                  onClick={() => setCatalogPage((p) => Math.max(0, p - 1))}
+                  className="px-2 py-1 border border-white/15 rounded disabled:opacity-40"
                 >
-                  LOAD MASTER INDEX SYMBOL FINDER ➔
+                  Prev
+                </button>
+                <span>
+                  Page {safePage + 1} / {catalogPageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= catalogPageCount - 1}
+                  onClick={() => setCatalogPage((p) => p + 1)}
+                  className="px-2 py-1 border border-white/15 rounded disabled:opacity-40"
+                >
+                  Next
                 </button>
               </div>
             </div>
@@ -542,11 +607,11 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
                 <div className="grid grid-cols-2 gap-4 font-mono text-xs sm:text-sm bg-black/40 p-4 rounded-xl border border-white/10">
                   <div>
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Market Cap Tier</span>
-                    <span className="text-white font-black mt-1 block text-sm sm:text-base">{selectedCorp.marketCap}</span>
+                    <span className="text-white font-black mt-1 block text-sm sm:text-base">DATA UNAVAILABLE</span>
                   </div>
                   <div>
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Cap Position</span>
-                    <span className="text-cyan-400 font-black mt-1 block text-sm sm:text-base">{selectedCorp.marketCapRank}</span>
+                    <span className="text-cyan-400 font-black mt-1 block text-sm sm:text-base">Educational listing</span>
                   </div>
                   <div className="pt-2.5 border-t border-white/10">
                     <span className="text-zinc-450 block text-[9px] sm:text-[10px] uppercase">Founded Year</span>

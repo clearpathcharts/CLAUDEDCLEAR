@@ -1,6 +1,5 @@
 /**
  * Direct platform API adapters — ClearPath → network.
- * No Buffer, Zapier, Hootsuite, or other middlemen.
  */
 import { isPlatformConfigured } from '../platforms';
 import type { SocialPlatform } from '../types';

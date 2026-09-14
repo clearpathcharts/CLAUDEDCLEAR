@@ -5,6 +5,24 @@ import { findSwingPoints, pricesNear } from './swings';
 import { attachChartGeometry } from './geometry';
 import { clamp01, fitLineThroughPivots, lineValueAt, roundConfidence } from './lineFit';
 
+const STRUCTURE_IDS = new Set<ChartPatternId>([
+  'rising_wedge',
+  'falling_wedge',
+  'ascending_triangle',
+  'descending_triangle',
+  'symmetrical_triangle',
+  'broadening_formation',
+]);
+
+/** Sliding windows that re-run the same wedge/triangle fit inside a parent. */
+const NESTED_WINDOW_SIZES = [12, 16, 20, 28];
+const MIN_NESTED_BARS = 10;
+const MIN_PARENT_SPAN = 20;
+const MAX_NESTED_VS_PARENT = 0.55;
+const NESTED_OVERLAP_DEDUP = 0.45;
+const FLOOR_DISTINCT_PCT = 0.0012;
+const MAX_NESTED_EMIT = 6;
+
 type ChartPatternDraft = Omit<DetectedPattern, 'patternGroup' | 'geometry'> & { id: ChartPatternId };
 
 /** Normalized slope vs avg price across the structure span — works for any asset class. */
@@ -255,6 +273,142 @@ function detectCupAndHandle(
   return found;
 }
 
+function remapPattern(pattern: DetectedPattern, offset: number): DetectedPattern {
+  return {
+    ...pattern,
+    startIndex: pattern.startIndex + offset,
+    endIndex: pattern.endIndex + offset,
+    geometry: pattern.geometry
+      ? {
+          ...pattern.geometry,
+          markerIndex:
+            pattern.geometry.markerIndex != null
+              ? pattern.geometry.markerIndex + offset
+              : undefined,
+          lines: pattern.geometry.lines.map((line) => ({
+            ...line,
+            from: { ...line.from, index: line.from.index + offset },
+            to: { ...line.to, index: line.to.index + offset },
+          })),
+        }
+      : undefined,
+  };
+}
+
+function lowerMidPrice(pattern: DetectedPattern): number | null {
+  const line =
+    pattern.geometry?.lines.find((l) => l.role === 'lower')
+    ?? pattern.geometry?.lines.find((l) => l.role === 'horizontal');
+  if (!line) return null;
+  return (line.from.price + line.to.price) / 2;
+}
+
+function overlapRatio(a: DetectedPattern, b: DetectedPattern): number {
+  const start = Math.max(a.startIndex, b.startIndex);
+  const end = Math.min(a.endIndex, b.endIndex);
+  if (end < start) return 0;
+  const overlap = end - start + 1;
+  const denom = Math.min(a.endIndex - a.startIndex + 1, b.endIndex - b.startIndex + 1);
+  return denom > 0 ? overlap / denom : 0;
+}
+
+function isInteriorNested(child: DetectedPattern, parent: DetectedPattern): boolean {
+  const parentSpan = parent.endIndex - parent.startIndex;
+  const childSpan = child.endIndex - child.startIndex;
+  if (childSpan < MIN_NESTED_BARS || parentSpan < MIN_PARENT_SPAN) return false;
+  if (child.startIndex < parent.startIndex || child.endIndex > parent.endIndex) return false;
+  if (childSpan / parentSpan > MAX_NESTED_VS_PARENT) return false;
+  const insetStart = child.startIndex - parent.startIndex;
+  const insetEnd = parent.endIndex - child.endIndex;
+  if (insetStart < 2 && insetEnd < 2) return false;
+  return true;
+}
+
+function floorDistinctFromParent(
+  child: DetectedPattern,
+  parent: DetectedPattern,
+  avgPrice: number,
+): boolean {
+  const childFloor = lowerMidPrice(child);
+  const parentFloor = lowerMidPrice(parent);
+  if (childFloor == null || parentFloor == null) return true;
+  return Math.abs(childFloor - parentFloor) / avgPrice >= FLOOR_DISTINCT_PCT;
+}
+
+function scanStructuresOnSlice(slice: Candle[], lookback: number): DetectedPattern[] {
+  if (slice.length < MIN_NESTED_BARS) return [];
+  const avgPrice = slice.reduce((s, c) => s + c.close, 0) / slice.length;
+  if (!Number.isFinite(avgPrice) || avgPrice <= 0) return [];
+  const swings = findSwingPoints(slice, lookback, lookback);
+  return detectWedgesAndTriangles(swings, slice, avgPrice);
+}
+
+/**
+ * Re-run the same least-squares triangle/wedge math on smaller interior windows.
+ * Nested hits are not cropped copies of the parent lines — local floor must differ.
+ */
+export function detectNestedStructures(
+  candles: Candle[],
+  parents: DetectedPattern[],
+): DetectedPattern[] {
+  if (!Array.isArray(candles) || candles.length < MIN_PARENT_SPAN) return [];
+
+  const avgPrice = candles.reduce((s, c) => s + c.close, 0) / candles.length;
+  if (!Number.isFinite(avgPrice) || avgPrice <= 0) return [];
+
+  const structureParents = parents.filter(
+    (p) =>
+      p.category === 'chart'
+      && STRUCTURE_IDS.has(p.id as ChartPatternId)
+      && (p.scale ?? 'major') === 'major'
+      && p.endIndex - p.startIndex >= MIN_PARENT_SPAN,
+  );
+  if (structureParents.length === 0) return [];
+
+  const found: DetectedPattern[] = [];
+
+  for (const parent of structureParents) {
+    const parentSpan = parent.endIndex - parent.startIndex;
+    for (const winSize of NESTED_WINDOW_SIZES) {
+      if (winSize > Math.floor(parentSpan * MAX_NESTED_VS_PARENT)) continue;
+      if (winSize < MIN_NESTED_BARS) continue;
+      const step = Math.max(3, Math.floor(winSize / 4));
+      const lookback = winSize <= 14 ? 1 : 2;
+
+      for (let start = parent.startIndex; start + winSize <= parent.endIndex; start += step) {
+        const slice = candles.slice(start, start + winSize + 1);
+        const hits = scanStructuresOnSlice(slice, lookback);
+        for (const hit of hits) {
+          const remapped = remapPattern(hit, start);
+          if (!isInteriorNested(remapped, parent)) continue;
+          if (!floorDistinctFromParent(remapped, parent, avgPrice)) continue;
+          if (!remapped.geometry?.lines.length) continue;
+          found.push({
+            ...remapped,
+            scale: 'nested',
+            detail: `${remapped.detail ?? remapped.label} Nested inside ${parent.label} — same geometry, smaller window.`,
+          });
+        }
+      }
+    }
+  }
+
+  const ranked = found.sort((a, b) => {
+    const aSame = structureParents.some((p) => p.id === a.id) ? 1 : 0;
+    const bSame = structureParents.some((p) => p.id === b.id) ? 1 : 0;
+    if (aSame !== bSame) return bSame - aSame;
+    return b.endIndex - a.endIndex || b.confidence - a.confidence;
+  });
+
+  const kept: DetectedPattern[] = [];
+  for (const p of ranked) {
+    if (kept.length >= MAX_NESTED_EMIT) break;
+    if (kept.some((k) => overlapRatio(k, p) > NESTED_OVERLAP_DEDUP)) continue;
+    kept.push(p);
+  }
+  return kept;
+}
+
 /** Major OHLC chart patterns — wedges, triangles, doubles, cup & handle. No harmonics. */
 export function scanChartPatterns(candles: Candle[]): DetectedPattern[] {
   if (!Array.isArray(candles) || candles.length < 25) return [];
@@ -265,13 +419,15 @@ export function scanChartPatterns(candles: Candle[]): DetectedPattern[] {
   const lookback = candles.length >= 120 ? 4 : 3;
   const swings = findSwingPoints(candles, lookback, lookback);
 
-  const results = [
+  const major = [
     ...detectWedgesAndTriangles(swings, candles, avgPrice),
     ...detectDoubleTopsAndBottoms(swings, candles, avgPrice, lookback),
     ...detectCupAndHandle(candles, swings, avgPrice),
-  ];
+  ].map((p) => ({ ...p, scale: p.scale ?? ('major' as const) }));
 
-  return results.sort((a, b) => b.confidence - a.confidence);
+  const nested = detectNestedStructures(candles, major);
+
+  return [...major, ...nested].sort((a, b) => b.confidence - a.confidence);
 }
 
 export { findSwingPoints };

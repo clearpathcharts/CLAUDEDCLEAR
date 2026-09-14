@@ -176,11 +176,16 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false, locked
                 const Icon = DIRECTION_ICON[p.direction];
                 return (
                   <div
-                    key={`${group}-${p.id}-${p.time}-${i}`}
+                    key={`${group}-${p.id}-${p.startIndex}-${p.time}-${i}`}
                     className="flex items-center gap-2 rounded-lg border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-3 py-2 text-sm"
                   >
-                    <Icon size={14} className="text-[#FF1493] shrink-0" />
+                    <Icon size={14} className={`shrink-0 ${p.scale === 'nested' ? 'text-[#00D9FF]' : 'text-[#FF1493]'}`} />
                     <span className="flex-1 text-white/90 leading-snug">{p.label}</span>
+                    {p.scale === 'nested' && (
+                      <span className="rounded border border-[#00D9FF]/50 px-1 text-[8px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                        Nested
+                      </span>
+                    )}
                     <span className="text-[#9D00FF] text-xs font-bold">{Math.round(p.confidence * 100)}%</span>
                   </div>
                 );
@@ -285,12 +290,17 @@ export function PatternScannerPanel({ symbol, timeframe, compact = false, locked
             <p className="text-xs text-white/45">Scanning structure for early setups…</p>
           ) : (
             <div className="space-y-1.5">
-              {forming.possibilities.map((p) => (
-                <div key={p.id} className={`rounded-lg border px-3 py-2 text-xs ${FORMING_STATUS[p.status]}`}>
+              {forming.possibilities.map((p, i) => (
+                <div key={`${p.id}-${p.scale ?? 'major'}-${p.startIndex ?? i}`} className={`rounded-lg border px-3 py-2 text-xs ${FORMING_STATUS[p.status]}`}>
                   <div className="flex items-center gap-1.5">
                     <ChevronRight size={12} />
                     <span className="font-bold uppercase">{p.status}</span>
                     <span className="flex-1 truncate">{p.label}</span>
+                    {p.scale === 'nested' && (
+                      <span className="rounded border border-[#00D9FF]/50 px-1 text-[8px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                        Nested
+                      </span>
+                    )}
                     <span>{Math.round(p.probability * 100)}%</span>
                   </div>
                   <p className="mt-1 pl-4 text-[11px] text-white/50 leading-snug">{p.detail}</p>

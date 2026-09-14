@@ -91,7 +91,7 @@ export function writePublishPackage(
   };
 }
 
-/** Optional ClearPath-owned outbound webhook (your endpoint — not Buffer/Zapier). */
+/** Optional ClearPath-owned outbound webhook. */
 export async function tryPlatformWebhook(
   platform: SocialPlatform,
   post: SocialPost,

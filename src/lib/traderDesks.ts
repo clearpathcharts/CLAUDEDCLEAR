@@ -61,6 +61,14 @@ export function parseDeskPath(pathname: string): TraderDeskId | null {
   return isTraderDeskId(id) ? id : null;
 }
 
+/** Hub URL crawlers should index. Aliases and satellite screens collapse here. */
+export function deskCanonicalPath(pathname: string): string | null {
+  const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  if (p === '/desk') return '/desk';
+  const id = parseDeskPath(p);
+  return id ? TRADER_DESKS[id].href : null;
+}
+
 export function isDeskPath(pathname: string): boolean {
   const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   return p === '/desk' || p.startsWith('/desk/') || p === '/fundamental' || p.startsWith('/fundamental/');
@@ -95,6 +103,80 @@ export function navigateToDesk(id: TraderDeskId): void {
   const next = TRADER_DESKS[id].href;
   window.history.pushState({}, '', next);
   window.dispatchEvent(new Event('clearpath-location'));
+}
+
+/** Logged-in `/` used to mount the old Dashboard. These paths now open a desk. */
+export function isMemberHomePath(pathname: string): boolean {
+  const p = pathname.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  return p === '/' || p === '/login' || p === '/activate' || p === '/join' || p === '/home';
+}
+
+/** Desk chrome Home uses this so logged-in members can still see Choose Your Path. */
+export function shouldStayOnPublicHome(search: string): boolean {
+  const raw = search.startsWith('?') ? search.slice(1) : search;
+  const params = new URLSearchParams(raw);
+  return params.get('choose') === '1' || params.get('home') === '1';
+}
+
+/**
+ * Explicit neuro/UI deep links. Do not include calm_focus — App injects that
+ * default onto every URL, which would trap everyone on the neuro desk.
+ */
+const NEURO_HOME_DEEP_LINK_PROFILES = new Set([
+  'low_stim_emergency',
+  'dyslexia_readable',
+  'dyscalculia_numeric_relief',
+  'visual_processing_safe',
+  'apd_assist',
+  'executive_function_support',
+  'motor_friendly',
+  'adhd_dopamine_balanced',
+  'adhd_hyperfocus',
+  'autism_predictable',
+  'tourette_tic_friendly',
+  'standard_red_green',
+  'focus_mode',
+  'lava_hot',
+]);
+
+export function deskIdFromHomeProfile(profile: string | null | undefined): TraderDeskId | null {
+  if (!profile) return null;
+  return NEURO_HOME_DEEP_LINK_PROFILES.has(profile) ? 'neurodivergent' : null;
+}
+
+/** Where a logged-in member on `/` should land instead of the old Dashboard. */
+export function memberHomeDeskHref(args: {
+  search?: string;
+  remembered?: TraderDeskId | null;
+}): string {
+  const raw = (args.search || '').replace(/^\?/, '');
+  const params = new URLSearchParams(raw);
+  const profile = params.get('profile');
+  const desk = deskIdFromHomeProfile(profile) ?? args.remembered ?? 'institutional';
+  const next = new URLSearchParams();
+  if (profile) next.set('profile', profile);
+  const qs = next.toString();
+  return qs ? `${TRADER_DESKS[desk].href}?${qs}` : TRADER_DESKS[desk].href;
+}
+
+/** Full navigation after login/register so the next document is a desk, not `/`. */
+export function openMemberDesk(search?: string): void {
+  if (typeof window === 'undefined') return;
+  const href = memberHomeDeskHref({
+    search: search ?? window.location.search,
+    remembered: readRememberedTraderDesk(),
+  });
+  window.location.assign(href);
+}
+
+/** After Private Login, open a desk — never `/`, which still mounts the old Dashboard. */
+export function continueToRememberedDesk(options?: { founder?: boolean }): void {
+  if (typeof window === 'undefined') return;
+  if (options?.founder) {
+    window.location.assign('/ceo');
+    return;
+  }
+  openMemberDesk();
 }
 
 /** FX session windows in UTC hours (inclusive start, exclusive end, wrapping midnight). */

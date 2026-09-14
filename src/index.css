@@ -281,6 +281,28 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Trader desks grow with their bentos. Force a classic page track so Windows
+   overlay scrollbars cannot hide Liquidity / Structure / Research below the fold.
+   Styling ::-webkit-scrollbar disables Chrome overlay mode. */
+html:has(.desk-shell) {
+  overflow-y: scroll !important;
+  scrollbar-width: auto;
+  scrollbar-color: var(--scroll-page) var(--lava-track);
+  scrollbar-gutter: stable;
+}
+html:has(.desk-shell)::-webkit-scrollbar {
+  width: 16px;
+}
+html:has(.desk-shell)::-webkit-scrollbar-track {
+  background: #14000a;
+  border-left: 1px solid rgba(255, 0, 255, 0.35);
+}
+html:has(.desk-shell)::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ffaaff 0%, #ff00ff 50%, #ff00c8 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 0, 255, 0.55);
+}
+
 /* Blackout is a fixed overlay. Without this, the page scrollbar still shows
    and looks like it should move the charts — it only scrolls the hidden page. */
 html.blackout-scroll-lock,
@@ -854,6 +876,22 @@ input, textarea, select {
 :focus-visible {
   outline: 3px solid #00e5ff;
   outline-offset: 2px;
+}
+
+details.relative summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Phone chart-first: keep the crawlable H1 visible but tiny so candles get ~70vh. */
+@media (max-width: 767px) {
+  #seo-document-header {
+    padding: 0.35rem 0.75rem 0.2rem !important;
+  }
+  #seo-document-h1 {
+    font-size: 0.72rem !important;
+    line-height: 1.2 !important;
+    max-width: 100% !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

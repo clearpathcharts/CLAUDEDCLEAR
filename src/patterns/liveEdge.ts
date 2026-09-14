@@ -21,6 +21,16 @@ export function filterLivePatterns(
 
   return patterns
     .filter((p) => {
+      if (p.scale === 'nested' && p.category === 'chart') {
+        if (p.endIndex >= chartMin) return true;
+        return patterns.some((parent) => (
+          parent.category === 'chart'
+          && parent.scale !== 'nested'
+          && parent.endIndex >= liveTip
+          && p.startIndex >= parent.startIndex
+          && p.endIndex <= parent.endIndex
+        ));
+      }
       // Active structures that extend to the latest bars always stay.
       if (p.category === 'chart' && p.endIndex >= liveTip) return true;
       if (p.category === 'chart') return p.endIndex >= chartMin;

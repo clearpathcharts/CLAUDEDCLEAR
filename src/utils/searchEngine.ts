@@ -920,8 +920,8 @@ export function getProceduralGlossary(): any[] {
 
   const categories = ["Macroeconomics", "Corporate Finance", "Forex Mechanisms", "Algorithmic Arbitrage", "Options Derivatives", "Bond Physics", "Crypto Mathematics", "Venture Portfolios", "Ecosystem Strategy"];
   
-  const vocabPrefix = ["Bilateral", "Leveraged", "Sovereign", "Quantitative", "Systemic", "Dynamic", "Structural", "Asymmetric", "Macro", "Micro", "Algorithmic", "Consolidated", "Amortized", "Stochastic", "Arbitrage", "Deleveraged", "High-Velocity", "Collateralized", "Hedging", "Liquidity", "Inverted", "Disinflationary", "Yield-Weighted", "Baseload", "Frictionless", "Bespoke", "Locked", "EUV-Wiped", "Synthetic", "Annuity", "Hyper"];
-  const vocabCore = ["Easing", "Tightening", "Cap Rate", "Indexation", "Velocity", "Spread", "Bond Duration", "Glow-Weight", "Collateral", "Options Delta", "Gamma Squeeze", "Carry Trade", "BPS Interval", "Refinement Layer", "Asset Exposure", "Toll Capture", "Hedge Ratio", "Market Ingress", "Premium Lock", "Mining Halving", "Gas Burn Rate", "Spot Premium", "Volatility Skew", "Black-Scholes Wave", "Yield Curve Flip", "Credit Facility", "Liquidation Threshold", "Margin Sweep", "T-Bill Bidding", "Repo Auction"];
+  const vocabPrefix = ["Bilateral", "Leveraged", "Sovereign", "Quantitative", "Systemic", "Dynamic", "Structural", "Asymmetric", "Macro", "Micro", "Algorithmic", "Consolidated", "Amortized", "Stochastic", "Arbitrage", "Deleveraged", "High-Velocity", "Collateralized", "Hedging", "Liquidity", "Inverted", "Disinflationary", "Yield-Weighted", "Baseload", "Frictionless", "Bespoke", "Locked", "EUV-Wiped", "Synthetic", "Annuity", "Hyper", "Implied", "Realized", "Overnight", "Intraday", "Cross-Asset", "Idiosyncratic", "Seasonal", "Unsecured", "Callable", "Convertible", "Contingent", "Net", "Gross"];
+  const vocabCore = ["Easing", "Tightening", "Cap Rate", "Indexation", "Velocity", "Spread", "Bond Duration", "Glow-Weight", "Collateral", "Options Delta", "Gamma Squeeze", "Carry Trade", "BPS Interval", "Refinement Layer", "Asset Exposure", "Toll Capture", "Hedge Ratio", "Market Ingress", "Premium Lock", "Mining Halving", "Gas Burn Rate", "Spot Premium", "Volatility Skew", "Black-Scholes Wave", "Yield Curve Flip", "Credit Facility", "Liquidation Threshold", "Margin Sweep", "T-Bill Bidding", "Repo Auction", "Convexity", "Open Interest", "Free Float", "Sharpe Ratio", "Max Drawdown", "Contango", "Backwardation", "Basis Point", "Rollover", "Settlement"];
 
   // Generate 12,020 items
   for (let i = 1; i <= 12050; i++) {
@@ -931,12 +931,13 @@ export function getProceduralGlossary(): any[] {
     const term = `${p} ${c}`;
 
     if (existingTermsSet.has(term.toLowerCase())) continue;
+    existingTermsSet.add(term.toLowerCase());
 
     const cat = categories[Math.floor(seededRandom(seed + 2) * categories.length)];
 
     list.push({
       term,
-      definition: `A financial dynamic or mechanism describing ${term.toLowerCase()} inside high-altitude operational environments, calculating transactional yields.`,
+      definition: `${term} is an educational ${cat} vocabulary node combining “${p}” with “${c}”. Practice the phrase on ClearPath — it is not a live vendor print. Missing quotes stay DATA UNAVAILABLE.`,
       category: cat,
       related: [
         vocabCore[Math.floor(seededRandom(seed + 3) * vocabCore.length)],

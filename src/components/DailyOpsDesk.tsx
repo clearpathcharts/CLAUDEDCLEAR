@@ -88,8 +88,14 @@ function badge(ok: boolean, severity: string) {
 
 export default function DailyOpsDesk({
   getHeaders,
+  kickEveryone,
 }: {
   getHeaders: () => Promise<Record<string, string>>;
+  kickEveryone?: {
+    busy: boolean;
+    message: string | null;
+    onKick: () => void;
+  };
 }) {
   const [report, setReport] = useState<DailyOpsReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -247,7 +253,18 @@ export default function DailyOpsDesk({
               (Belgium). Do not Edit & deploy clearpath-voice-os unless you mean Ava.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {kickEveryone ? (
+              <button
+                type="button"
+                data-ceo-kick-sessions
+                disabled={kickEveryone.busy}
+                onClick={kickEveryone.onKick}
+                className="px-3 py-2 rounded-md border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                {kickEveryone.busy ? "Signing everyone out…" : "Force everyone out"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setSurvivalOnly((v) => !v)}
@@ -279,6 +296,9 @@ export default function DailyOpsDesk({
           </div>
         </div>
 
+        {kickEveryone?.message ? (
+          <p className="text-amber-100 text-sm mb-3 font-mono whitespace-pre-wrap">{kickEveryone.message}</p>
+        ) : null}
         {error && <p className="text-amber-300 text-sm mb-3 font-mono">{error}</p>}
 
         {loading && !report ? (
@@ -315,10 +335,23 @@ export default function DailyOpsDesk({
 
       {report && (
         <div className="bg-[#1a1a2e] p-6 rounded-lg border border-white/10">
-          <h3 className="text-white font-black uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
-            <ShieldAlert size={16} className="text-[#FF4500]" />
-            Automated site checks
-          </h3>
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
+            <h3 className="text-white font-black uppercase tracking-widest text-sm flex items-center gap-2">
+              <ShieldAlert size={16} className="text-[#FF4500]" />
+              Automated site checks
+            </h3>
+            {kickEveryone ? (
+              <button
+                type="button"
+                data-ceo-kick-sessions
+                disabled={kickEveryone.busy}
+                onClick={kickEveryone.onKick}
+                className="px-3 py-2 rounded-md border border-amber-500/50 bg-amber-500/15 text-amber-100 text-xs font-bold uppercase tracking-wider hover:bg-amber-500/25 disabled:opacity-50"
+              >
+                {kickEveryone.busy ? "Signing everyone out…" : "Force everyone out"}
+              </button>
+            ) : null}
+          </div>
           <p className="text-zinc-500 text-xs mb-4 max-w-3xl">
             Live HTTP / secrets / Groq / Stripe / GitHub from the process serving right now.
             A GitHub “deploy” can mint a named revision while traffic stays pinned — keep{" "}
@@ -365,6 +398,16 @@ export default function DailyOpsDesk({
             {report.investor
               ? `${report.investor.investor.kind} · ${report.investor.investor.stage} · sources: ${report.investor.sources.join(", ")}`
               : "Pin a name from the catalog, or run today’s sweep."}
+            {report.investorCatalog?.length ? (
+              <>
+                {" "}
+                · roster {report.investorCatalog.length} (VC{" "}
+                {report.investorCatalog.filter((s) => s.kind === "vc").length} · seed{" "}
+                {report.investorCatalog.filter((s) => s.kind === "seed").length} · angel{" "}
+                {report.investorCatalog.filter((s) => s.kind === "angel").length} · IB{" "}
+                {report.investorCatalog.filter((s) => s.kind === "ib").length})
+              </>
+            ) : null}
           </p>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <select
@@ -388,7 +431,59 @@ export default function DailyOpsDesk({
             </button>
           </div>
           {report.investor ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <div>
+              <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block mb-1">
+                Outbound letter — this is the send
+              </span>
+              <p className="text-white/40 text-xs mb-2">
+                {report.investor.draftNote.trim().split(/\s+/).filter(Boolean).length} words · copy,
+                then send yourself. Not auto-sent.
+              </p>
+              <textarea
+                readOnly
+                value={report.investor.draftNote}
+                className="w-full min-h-[36rem] h-[40rem] bg-black/50 border border-white/15 rounded-md p-4 text-sm leading-relaxed text-zinc-100 whitespace-pre-wrap"
+              />
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(report.investor!.draftNote);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      setError("Clipboard blocked — copy from the box.");
+                    }
+                  }}
+                  className="px-3 py-2 rounded-md border border-[#00FFFF]/40 text-[#00FFFF] text-xs font-bold uppercase"
+                >
+                  {copied ? "Copied" : "Copy letter"}
+                </button>
+                <input
+                  value={investorNotes}
+                  onChange={(e) => setInvestorNotes(e.target.value)}
+                  placeholder="Your send notes (optional)"
+                  className="flex-1 min-w-[140px] bg-black/40 border border-white/15 rounded-md px-3 py-2 text-xs text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => void markInvestor("contacted")}
+                  className="px-3 py-2 rounded-md border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase"
+                >
+                  Mark sent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void markInvestor("skipped")}
+                  className="px-3 py-2 rounded-md border border-white/20 text-white/70 text-xs font-bold uppercase"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3 text-sm text-white/80">
               <p>
                 <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block">Website</span>
@@ -455,52 +550,15 @@ export default function DailyOpsDesk({
                 <p className="text-amber-300 font-mono text-xs">{report.investor.warnings.join(" · ")}</p>
               )}
             </div>
-            <div>
-              <span className="text-zinc-500 uppercase text-[10px] font-black tracking-widest block mb-2">
-                Draft note — copy, then send yourself
-              </span>
-              <textarea
-                readOnly
-                value={report.investor.draftNote}
-                className="w-full h-56 bg-black/50 border border-white/15 rounded-md p-3 text-xs font-mono text-zinc-200"
-              />
-              <div className="flex flex-wrap gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(report.investor!.draftNote);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    } catch {
-                      setError("Clipboard blocked — copy from the box.");
-                    }
-                  }}
-                  className="px-3 py-2 rounded-md border border-[#00FFFF]/40 text-[#00FFFF] text-xs font-bold uppercase"
-                >
-                  {copied ? "Copied" : "Copy draft"}
-                </button>
-                <input
-                  value={investorNotes}
-                  onChange={(e) => setInvestorNotes(e.target.value)}
-                  placeholder="Your send notes (optional)"
-                  className="flex-1 min-w-[140px] bg-black/40 border border-white/15 rounded-md px-3 py-2 text-xs text-white"
-                />
-                <button
-                  type="button"
-                  onClick={() => void markInvestor("contacted")}
-                  className="px-3 py-2 rounded-md border border-emerald-400/40 text-emerald-300 text-xs font-bold uppercase"
-                >
-                  Mark sent
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void markInvestor("skipped")}
-                  className="px-3 py-2 rounded-md border border-white/20 text-white/70 text-xs font-bold uppercase"
-                >
-                  Skip
-                </button>
-              </div>
+            <div className="space-y-3 text-sm text-white/70">
+              <p className="text-zinc-500 uppercase text-[10px] font-black tracking-widest">
+                Founder notes (not in the letter)
+              </p>
+              <p>
+                Suggested angle and skip rules stay here. The box above is the only copy that
+                should leave the building.
+              </p>
+            </div>
             </div>
           </div>
           ) : (

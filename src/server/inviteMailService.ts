@@ -318,7 +318,7 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
       email,
       sendStatus: 'error',
       smtpConfigured: true,
-      message: 'No Private Login account for this email. Release waitlist / restore members first.',
+      message: 'No Private Login account for this email. Restore members first.',
     };
   }
 

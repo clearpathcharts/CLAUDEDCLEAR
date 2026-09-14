@@ -57,3 +57,21 @@ Cloud Shell, traffic only:
 gcloud run services update-traffic clear-path-markets-science \
   --region=europe-west1 --project=gen-lang-client-0282858983 --to-latest
 ```
+
+## The world still sees the old site — do not ask them to clear history
+
+If **you** see the new charts after a trigger or Edit & deploy, and people in other countries send photos of the old UI, they are not failing to refresh. Do not tell customers to wipe Google history or reinstall the browser.
+
+Two different things can pin the old product:
+
+1. **The public hostname is still on an old Cloud Run revision.** The newest row in Revisions can be 0% traffic. You are looking at that row (or a `*.run.app` preview). Australia / China / Canada hitting `clearpathtrader.com` still get the named revision that owns 100% traffic. Fix: Revisions → **100% LATEST**, then `GET https://clearpathtrader.com/api/health` — `cloudRun.revision` must match the newest ready revision and `uptime` must be minutes. View-source on the homepage must contain `<!-- clearpath-build clear-path-markets-science <that-revision> -->`.
+2. **A leftover service worker or Google Frontend cache of the HTML shell.** Older `/learn/` and `/tv/` workers cache-first'd HTML on `clearpathtrader.com` while skipping `*.run.app` (so founder previews looked new). The site now serves kill-switch workers at the same URLs, sends `CDN-Cache-Control: no-store` on HTML, and reloads **once** when `/api/health` reports a new revision. Visitors do not need to clear anything.
+
+Prove the public origin, not the console preview:
+
+```bash
+curl -sS https://clearpathtrader.com/api/health
+curl -sS https://clearpathtrader.com/ | grep -o 'clearpath-build[^<]*'
+```
+
+If that revision is old, moving traffic to LATEST is the only fix. Cache-busting cannot change an origin that is still serving yesterday's container.

@@ -1,7 +1,7 @@
 /**
  * ClearPath Automation Console
  * In-house queue + direct publisher backend.
- * NO Zapier / Buffer / Make / CrewAI — ClearPath-owned sends only.
+ * ClearPath-owned sends only.
  * file:// opens talk to local publisher; Cloud Run uses same-origin /api.
  */
 
@@ -551,7 +551,7 @@ function renderQueue() {
                           r.ok
                             ? `✓ ${r.channel} sent`
                             : r.skipped
-                            ? `→ ${r.channel} via ClearPath package (no Zapier)`
+                            ? `→ ${r.channel} via ClearPath package`
                             : `✗ ${r.channel}: ${escapeHtml(String(r.error || "failed"))}`,
                         )
                         .join(" · ")}</p>`

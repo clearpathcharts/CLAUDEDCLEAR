@@ -1,0 +1,303 @@
+/**
+ * Visual language adapted from "Futuristic Sci-Fi Login Form"
+ * CodePen https://codepen.io/Puma-Murca/pen/gbOMMXp
+ * Copyright (c) 2026 Puma Murca — MIT License
+ * Full text: legal/third-party/puma-murca-scifi-login-MIT.txt
+ *
+ * Scoped to .cp-scifi-login so it cannot restyle the rest of the terminal.
+ * Hover glow only — the original CodePen enlarge-on-hover is omitted for a11y.
+ */
+
+.cp-scifi-login {
+  --scifi-cyan: #0ff;
+  --scifi-blue: #00f;
+  font-family: "Orbitron", var(--font-mono, "IBM Plex Mono"), ui-monospace, sans-serif;
+}
+
+.cp-scifi-login *,
+.cp-scifi-login *::before,
+.cp-scifi-login *::after {
+  box-sizing: border-box;
+}
+
+.cp-scifi-login-backdrop {
+  background: radial-gradient(circle at center, #001f3f 0%, #000 72%);
+}
+
+.cp-scifi-login-panel {
+  background: rgba(0, 0, 0, 0.92);
+  padding: 2.25rem 1.35rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 0 20px var(--scifi-cyan);
+  text-align: center;
+  position: relative;
+  animation: cp-scifi-flicker 1.5s infinite alternate;
+  width: min(100%, 26rem);
+  margin-top: 1.75rem;
+  overflow: visible;
+}
+
+@keyframes cp-scifi-flicker {
+  0% {
+    box-shadow: 0 0 20px var(--scifi-cyan);
+  }
+  100% {
+    box-shadow: 0 0 30px var(--scifi-blue), 0 0 40px var(--scifi-cyan);
+  }
+}
+
+.cp-scifi-login-glitch {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--scifi-cyan);
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  text-shadow: 2px 2px var(--scifi-blue);
+  animation: cp-scifi-glitch 0.8s infinite alternate;
+}
+
+@keyframes cp-scifi-glitch {
+  0% {
+    text-shadow: 2px 2px var(--scifi-blue);
+  }
+  100% {
+    text-shadow: -2px -2px var(--scifi-cyan);
+  }
+}
+
+.cp-scifi-login-panel h2 {
+  margin: 0 0 0.35rem;
+  color: var(--scifi-cyan);
+  text-shadow: 0 0 10px var(--scifi-cyan);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.cp-scifi-login-sub {
+  color: #7dd3fc;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 1.1rem;
+}
+
+.cp-scifi-login-body {
+  overflow-y: auto;
+  max-height: min(78vh, 38rem);
+  padding-top: 2px;
+}
+
+
+.cp-scifi-login-field {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.cp-scifi-login-field > span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #67e8f9;
+  margin-bottom: 6px;
+}
+
+.cp-scifi-login-panel input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--scifi-cyan);
+  background: transparent;
+  color: var(--scifi-cyan);
+  font-size: 16px;
+  text-align: center;
+  outline: none;
+  transition: box-shadow 0.3s;
+  font-family: inherit;
+  border-radius: 2px;
+}
+
+.cp-scifi-login-panel input:focus {
+  box-shadow: 0 0 10px var(--scifi-cyan);
+}
+
+.cp-scifi-login-panel input::placeholder {
+  color: #155e75;
+}
+
+.cp-scifi-login-input-wrap {
+  position: relative;
+}
+
+.cp-scifi-login-input-wrap input {
+  padding-right: 42px;
+}
+
+.cp-scifi-login-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--scifi-cyan);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 0;
+}
+
+.cp-scifi-login-toggle:hover {
+  color: #fff;
+}
+
+.cp-scifi-login-submit {
+  width: 100%;
+  background: linear-gradient(45deg, #0ff, #00f);
+  color: #000;
+  padding: 10px 20px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.3s, box-shadow 0.3s;
+  animation: cp-scifi-neon 1s infinite alternate;
+  font-family: inherit;
+}
+
+.cp-scifi-login-submit:hover:not(:disabled) {
+  background: #00cccc;
+  box-shadow: 0 0 24px var(--scifi-cyan);
+}
+
+.cp-scifi-login-submit:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+@keyframes cp-scifi-neon {
+  0% {
+    box-shadow: 0 0 10px var(--scifi-cyan);
+  }
+  100% {
+    box-shadow: 0 0 20px var(--scifi-cyan), 0 0 30px var(--scifi-blue);
+  }
+}
+
+.cp-scifi-login-ghost {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--scifi-cyan);
+  color: var(--scifi-cyan);
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 10px;
+  font-family: inherit;
+}
+
+.cp-scifi-login-ghost:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.12);
+}
+
+.cp-scifi-login-ghost:disabled {
+  opacity: 0.5;
+}
+
+.cp-scifi-login-alt {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #67e8f9;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  margin-top: 10px;
+  font-family: inherit;
+}
+
+.cp-scifi-login-alt:hover {
+  color: #fff;
+  text-shadow: 0 0 8px var(--scifi-cyan);
+}
+
+.cp-scifi-login-danger {
+  color: #fb7185;
+}
+
+.cp-scifi-login-note {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #7dd3fc;
+  text-align: left;
+  margin: 0 0 14px;
+}
+
+.cp-scifi-login-banner {
+  font-size: 11px;
+  color: var(--scifi-cyan);
+  border: 1px solid var(--scifi-cyan);
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.cp-scifi-login-error {
+  font-size: 11px;
+  color: #fb7185;
+  border: 1px solid #fb7185;
+  padding: 8px 10px;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.cp-scifi-login-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: 1px solid var(--scifi-cyan);
+  color: var(--scifi-cyan);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cp-scifi-login-close:hover {
+  background: rgba(0, 255, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-scifi-login-panel,
+  .cp-scifi-login-glitch,
+  .cp-scifi-login-submit {
+    animation: none;
+  }
+}
+
+html[data-reduced-sensory="true"] .cp-scifi-login-panel,
+html[data-reduced-sensory="true"] .cp-scifi-login-glitch,
+html[data-reduced-sensory="true"] .cp-scifi-login-submit {
+  animation: none;
+}
+
+html[data-reduced-sensory="true"] .cp-scifi-login-panel {
+  box-shadow: 0 0 8px var(--scifi-cyan);
+}
+
+html[data-reduced-sensory="true"] .cp-scifi-login-panel h2,
+html[data-reduced-sensory="true"] .cp-scifi-login-glitch {
+  text-shadow: none;
+}

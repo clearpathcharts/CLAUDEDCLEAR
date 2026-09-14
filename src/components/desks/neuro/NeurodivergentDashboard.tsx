@@ -9,6 +9,7 @@ import { themeProfiles, type ThemeProfileId } from '../../../lib/theme/profiles'
 import { Bento, Unavail, KV } from '../institutional/Bento';
 import { useDeskHold } from '../DeskHoldScope';
 import { deskSectionOpen } from '../heldMeta';
+import { DeskChartFill } from '../DeskChartFill';
 import { RetailEducationBento } from '../retail/RetailEducationBento';
 import { useRetailIntelligence, type RetailQuote } from '../retail/useRetailIntelligence';
 import {
@@ -19,6 +20,7 @@ import {
   type RetailWatchlist,
 } from '../retail/retailStore';
 import { useOptionalDeskAppearance } from '../DeskAppearanceContext';
+import { useDeskMonitorSync } from '../../../hooks/useDeskMonitorSync';
 import {
   NEURO_DEFAULT_SYMBOL,
   NEURO_DEFAULT_WATCHLISTS,
@@ -27,7 +29,7 @@ import {
   NEURO_RIBBON,
   applyNeuroProfile,
   prefersReducedChrome,
-  readStoredNeuroProfile,
+  readInitialNeuroProfile,
 } from './neuroProfile';
 
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
@@ -88,11 +90,12 @@ function QuoteRow({
 }
 
 export default function NeurodivergentDashboard() {
-  const [profileId, setProfileId] = useState<ThemeProfileId>(() => readStoredNeuroProfile());
+  const [profileId, setProfileId] = useState<ThemeProfileId>(() => readInitialNeuroProfile());
   const [showProfiles, setShowProfiles] = useState(false);
   const [symbol, setSymbol] = useState(NEURO_DEFAULT_SYMBOL);
   const [timeframe, setTimeframe] = useState('1h');
-  const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readStoredNeuroProfile()));
+  useDeskMonitorSync('neurodivergent', symbol, timeframe, setSymbol, setTimeframe);
+  const [focusMode, setFocusMode] = useState(() => prefersReducedChrome(readInitialNeuroProfile()));
   const [blackout, setBlackout] = useState(false);
   const [watchlists, setWatchlists] = useState<RetailWatchlist[]>(() => loadNeuroWatchlists());
   const [activeWlId, setActiveWlId] = useState(() => {
@@ -133,7 +136,16 @@ export default function NeurodivergentDashboard() {
     'simulation',
   ]);
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON);
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON, {
+    // One history fetch on mount; chart live-tick handles quotes. Avoids duplicate 5k-bar fetch + rebuild.
+    pollWorkspace: false,
+    pollRibbon: !hideSecondary,
+    pollWatchlist: !hideSecondary && !watchHeld,
+    pollMovers: false,
+    pollNews: showBelow,
+    pollEcon: showBelow,
+    pollFundamentals: false,
+  });
   const candles = intel.primaryCandles;
   const last = candles.length ? candles[candles.length - 1] : null;
   const quote =
@@ -191,7 +203,7 @@ export default function NeurodivergentDashboard() {
     <div
       data-neuro-door
       data-neuro-workstation
-      className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-3"
+      className="flex w-full flex-col gap-3 overflow-visible p-3"
       style={{
         background: deskVisual?.overrides.background
           ? deskVisual.cssVars['--desk-user-bg']
@@ -492,17 +504,28 @@ export default function NeurodivergentDashboard() {
               <p className="font-mono text-sm text-rose-400">{intel.candleError}</p>
             ) : null}
           </header>
-          <div className="relative min-h-[300px] flex-1">
-            <LightweightCandles
-              symbol={symbol}
-              profileId={profileId}
-              timeframe={timeframe}
-              fillParent
-              height={420}
-              hidePatternOverlays
-              publishDrawingSession
-            />
-          </div>
+          <DeskChartFill tall>
+            {candles.length === 0 ? (
+              <div
+                className="flex h-full min-h-[320px] items-center justify-center font-mono text-sm text-zinc-500"
+                role="status"
+                aria-live="polite"
+              >
+                {intel.candleError || 'Loading chart…'}
+              </div>
+            ) : (
+              <LightweightCandles
+                symbol={symbol}
+                profileId={profileId}
+                timeframe={timeframe}
+                data={candles}
+                fillParent
+                height={640}
+                hidePatternOverlays
+                publishDrawingSession
+              />
+            )}
+          </DeskChartFill>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution
           </p>
@@ -537,7 +560,7 @@ export default function NeurodivergentDashboard() {
       </div>
 
       {showBelow ? (
-        <div className="max-h-[32vh] shrink-0 space-y-3 overflow-auto">
+        <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Bento holdId="news" title="News" status={intel.newsError ? 'offline' : `${intel.news.length} items`} className="retail-bento min-h-[160px]">
               {intel.news.length === 0 ? (

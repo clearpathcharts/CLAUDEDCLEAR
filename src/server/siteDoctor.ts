@@ -9,7 +9,7 @@
  *
  * This module is ClearPath's "detect + report to CEO" layer:
  *   - runs once per hour
- *   - checks auth durability, market data, sessions, waitlist wiring, plan integrity
+ *   - checks auth durability, market data, sessions, Private Login store, plan integrity
  *   - writes data/site-doctor/latest.json
  *   - exposed to founder CEO Dashboard
  *
@@ -25,7 +25,8 @@ import { getMarketCandles } from "./marketDataGateway";
 import { getAdminFirestore, getFirebaseAdminStatus } from "./firebaseAdmin";
 import { resolveTimeframePlan } from "../services/marketData";
 import { getLatestTimeframeVerifyReport } from "./timeframeAccuracyVerifier";
-import { getPrivateStorageMeta } from "./privateAuthService";
+import { getPrivateStorageMeta, hasDurablePrivateStore } from "./privateAuthService";
+import { stripePrivateStoreConfigured } from "./stripePrivateAccountStore";
 
 // UI timeframes list duplicated lightly to avoid circular import issues if any
 const UI_TFS = [
@@ -179,34 +180,42 @@ function checkSessionSecret(): SiteDoctorCheck {
 function checkFirebaseAdmin(): SiteDoctorCheck {
   const st = getFirebaseAdminStatus();
   const db = getAdminFirestore();
-  const ok = Boolean(st.firestore || db);
+  const firestoreOk = Boolean(st.firestore || db);
   const isProd = process.env.NODE_ENV === "production";
+  const stripeDurable = stripePrivateStoreConfigured() || hasDurablePrivateStore();
+  // Firestore offline is not a site outage when Stripe holds private accounts.
+  const ok = firestoreOk || !isProd || (isProd && stripeDurable);
+  const severity: SiteDoctorCheck["severity"] = firestoreOk
+    ? "info"
+    : stripeDurable
+      ? "warn"
+      : isProd
+        ? "critical"
+        : "warn";
+  const detail = firestoreOk
+    ? `mode=${st.mode} firestore=${st.firestore}`
+    : stripeDurable
+      ? `Firestore Admin offline — Stripe durable private store active (${st.reason || "no Firestore"})`
+      : st.reason || "Firebase Admin not connected";
   return {
     id: "firebase_admin",
     label: "Firebase Admin / Firestore",
-    ok: ok || !isProd,
-    severity: ok ? "info" : isProd ? "critical" : "warn",
-    detail: ok
-      ? `mode=${st.mode} firestore=${st.firestore}`
-      : st.reason || "Firebase Admin not connected",
+    ok,
+    severity,
+    detail,
   };
 }
 
-function checkWaitlistWiring(): SiteDoctorCheck {
-  const appwrite = Boolean(
-    process.env.VITE_APPWRITE_PROJECT_ID &&
-      process.env.VITE_APPWRITE_PROJECT_ID !== "YOUR_PROJECT_ID"
-  );
+function checkWaitlistConversion(): SiteDoctorCheck {
   const fsOk = Boolean(getAdminFirestore());
-  const ok = appwrite || fsOk;
   return {
-    id: "waitlist",
-    label: "Waitlist backend",
-    ok,
-    severity: ok ? "info" : "warn",
-    detail: ok
-      ? `appwrite=${appwrite} firestore=${fsOk}`
-      : "Neither Appwrite nor Firestore waitlist configured",
+    id: "waitlist_convert",
+    label: "Waitlist → Firestore convert",
+    ok: fsOk,
+    severity: fsOk ? "info" : "warn",
+    detail: fsOk
+      ? "Boot converts leftover site_registrations into private_accounts (no password reset)"
+      : "Firestore Admin offline — leftover waitlist emails cannot convert on this process",
   };
 }
 
@@ -284,7 +293,7 @@ export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
     checks.push(checkSecretsPresence());
     checks.push(checkFirebaseAdmin());
     checks.push(await checkPrivateStorage());
-    checks.push(checkWaitlistWiring());
+    checks.push(checkWaitlistConversion());
     checks.push(checkTimeframePlans());
     checks.push(checkTimeframeVerifyFreshness());
     checks.push(await checkTwelveData());

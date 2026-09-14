@@ -8,12 +8,25 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GITHUB_SOURCE_ZIP_URL } from '../src/lib/sourceRepo.ts';
 
 const root = path.resolve('.');
 
 function read(rel: string): string {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
+
+const clearNav = read('src/components/nav/ClearNav.tsx');
+assert.match(clearNav, /label: "CEO"/, 'Founder desktop primary nav pins a CEO chip');
+assert.doesNotMatch(
+  clearNav,
+  /label: "CEO DASHBOARD"/,
+  'CEO is the short top-bar label, not buried as CEO DASHBOARD',
+);
+
+const mobileNav = read('src/components/nav/MobileCommandCenter.tsx');
+assert.match(mobileNav, /<span>CEO<\/span>/, 'Founder mobile top bar pins a CEO chip');
+assert.match(mobileNav, /isFounder \? \(/, 'Mobile CEO chip is founder-gated');
 
 const dashboard = read('src/components/Dashboard.tsx');
 assert.doesNotMatch(
@@ -52,7 +65,34 @@ assert.doesNotMatch(
   'Locked CEO screen must not hard-code the founder login',
 );
 
+assert.match(ceo, /Download source ZIP/, 'CEO Dashboard has a one-tap source ZIP control');
+assert.match(ceo, /GITHUB_SOURCE_ZIP_URL/, 'CEO Dashboard uses the shared GitHub main ZIP URL');
+assert.match(ceo, /Website source ZIP/, 'CEO Dashboard explains the source ZIP vs disaster backup');
+assert.doesNotMatch(ceo, /Waitlist \/ registrations/, 'CEO Members no longer shows a waitlist table');
+assert.doesNotMatch(ceo, /RELEASE waitlist/i, 'CEO Members no longer has a RELEASE waitlist button');
+assert.doesNotMatch(ceo, /EMPTY WAITLIST/, 'CEO Members no longer has EMPTY WAITLIST');
+
+assert.equal(
+  GITHUB_SOURCE_ZIP_URL,
+  'https://github.com/clearpathcharts/CLAUDEDCLEAR/archive/refs/heads/main.zip',
+  'resolved source ZIP URL is the GitHub main archive',
+);
+
+const app = read('src/App.tsx');
+assert.match(app, /function isCeoPath/, '/ceo must not require a logged-in shell');
+assert.match(app, /isCeoPath\(currentPath\)/, 'logged-out /ceo still mounts the CEO route');
+
 const server = read('server.ts');
+assert.match(
+  server,
+  /\/api\/auth\/private\/me[\s\S]{0,220}status\(200\)\.json\(\{ user: null \}\)/,
+  'Guest /me must be 200 so Inspect does not show a fake auth failure',
+);
+assert.doesNotMatch(
+  server,
+  /\/api\/auth\/private\/me[\s\S]{0,180}status\(401\).*Not signed in/,
+  'Guest session probe must not return 401',
+);
 const unlockIdx = server.indexOf("app.post('/api/admin/founder-unlock'");
 assert.ok(unlockIdx >= 0, 'founder-unlock route exists');
 const unlockBlock = server.slice(unlockIdx, unlockIdx + 2200);

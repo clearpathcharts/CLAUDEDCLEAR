@@ -1,7 +1,7 @@
 import React from 'react';
 import { Scan, TrendingUp, TrendingDown, Minus, X } from 'lucide-react';
 import type { PatternScanResult, PatternGroup } from '../../patterns';
-import { PATTERN_GROUP_LABELS } from '../../patterns';
+import { PATTERN_GROUP_LABELS, chartPatternDismissKey } from '../../patterns';
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
@@ -20,25 +20,35 @@ interface ChartPatternHudProps {
   symbol: string;
   scan: PatternScanResult | null;
   onClose?: () => void;
+  onDismissPattern?: (key: string) => void;
+  /** Inline = document flow off the candles (phones). Overlay = on-canvas card (desktop). */
+  placement?: 'overlay' | 'inline';
 }
 
 /** Per-chart pattern panel — always mounted beside the chart that produced the scan. */
-export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps) {
-  if (!scan) return null;
+export function ChartPatternHud({ symbol, scan, onClose, onDismissPattern, placement = 'overlay' }: ChartPatternHudProps) {
+  if (!scan && placement === 'overlay') return null;
 
-  const chartPatterns = scan.patterns.filter((p) => p.category === 'chart');
-  const candlePatterns = scan.patterns.filter((p) => p.category === 'candlestick');
-  const total = scan.patterns.length;
+  const chartPatterns = scan?.patterns.filter((p) => p.category === 'chart') ?? [];
+  const candlePatterns = scan?.patterns.filter((p) => p.category === 'candlestick') ?? [];
+  const total = scan?.patterns.length ?? 0;
 
   const byGroup = GROUP_ORDER.map((group) => ({
     group,
     items: chartPatterns.filter((p) => p.patternGroup === group),
   })).filter((g) => g.items.length > 0);
 
+  const inline = placement === 'inline';
+
   return (
     <div
-      className="absolute bottom-3 left-3 z-[55] w-72 max-h-64 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto"
+      className={
+        inline
+          ? 'relative z-10 w-full max-h-36 overflow-y-auto rounded-xl border border-[#FF1493]/40 bg-black/92 p-2.5 pt-3 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto'
+          : 'absolute bottom-3 left-3 z-[55] w-72 max-h-64 overflow-visible rounded-xl border border-[#FF1493]/40 bg-black/92 p-3 pt-4 font-mono shadow-[0_0_28px_rgba(255,20,147,0.25)] backdrop-blur-md pointer-events-auto'
+      }
       id={`pattern-hud-${symbol}`}
+      data-pattern-hud-placement={placement}
     >
       {onClose && (
         <button
@@ -61,7 +71,9 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
       </div>
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
-        {total > 0
+        {!scan
+          ? 'Loading candles… pattern scan runs as soon as bars arrive.'
+          : total > 0
           ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
           : `Scanned ${scan.scannedBars.toLocaleString()} bars · nothing forming on the latest candles`}
       </p>
@@ -75,10 +87,30 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
             {items.map((p, i) => {
               const Icon = DIRECTION_ICON[p.direction];
               return (
-                <div key={`${group}-${p.id}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
-                  <Icon size={10} className="text-[#FF1493]" />
+                <div key={`${group}-${p.id}-${p.startIndex}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
+                  <Icon size={10} className={p.scale === 'nested' ? 'text-[#00D9FF]' : 'text-[#FF1493]'} />
                   <span className="flex-1 truncate text-white/90">{p.label}</span>
+                  {p.scale === 'nested' && (
+                    <span className="rounded border border-[#00D9FF]/50 px-1 text-[7px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                      Nested
+                    </span>
+                  )}
                   <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
+                  {onDismissPattern ? (
+                    <button
+                      type="button"
+                      data-pattern-dismiss={chartPatternDismissKey(p)}
+                      aria-label={`Remove ${p.label} from this chart`}
+                      title="Remove this pattern"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDismissPattern(chartPatternDismissKey(p));
+                      }}
+                      className="flex h-4 w-4 items-center justify-center rounded-full border border-[#FF1493]/60 text-[#FF1493] hover:bg-[#FF1493] hover:text-white"
+                    >
+                      <X size={9} strokeWidth={3} />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}

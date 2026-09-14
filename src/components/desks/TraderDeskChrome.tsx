@@ -7,22 +7,23 @@ import {
   type TraderDeskId,
 } from '../../lib/traderDesks';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
+import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
 import { clampOpacity } from '../../lib/deskColorChart';
 import ColorChartPicker from './ColorChartPicker';
-import { useAuth } from '../../contexts/FirebaseContext';
-import { isFounderEmail } from '../../lib/founder';
-import { auth } from '../../firebase';
+import DeskScreensMenu from './DeskScreensMenu';
+import { DESK_SCREEN_PANE_LABEL, type DeskScreenPane } from '../../lib/deskMonitorTree';
 
 type Props = {
   active: TraderDeskId;
+  satellitePane?: DeskScreenPane | null;
 };
 
 function utcHourFrom(date: Date): number {
   return date.getUTCHours();
 }
 
-export default function TraderDeskChrome({ active }: Props) {
+export default function TraderDeskChrome({ active, satellitePane = null }: Props) {
   const meta = TRADER_DESKS[active];
   const {
     paper,
@@ -43,7 +44,6 @@ export default function TraderDeskChrome({ active }: Props) {
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
-  const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -53,16 +53,12 @@ export default function TraderDeskChrome({ active }: Props) {
 
   const hour = utcHourFrom(now);
   const utcStamp = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const founderOk =
-    isFounderEmail(user?.email) ||
-    isFounderEmail(auth.currentUser?.email);
-
   return (
     <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <a
-            href="/"
+            href="/?choose=1"
             className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400 hover:text-white"
           >
             ClearPath
@@ -82,18 +78,22 @@ export default function TraderDeskChrome({ active }: Props) {
                     : meta.title}
             </p>
             <p className="truncate font-mono text-sm font-bold uppercase tracking-wider text-zinc-500">
-              {active === 'institutional'
-                ? 'Market Intelligence Platform'
-                : active === 'fundamental'
-                  ? 'Equity Research Workstation'
-                  : active === 'neurodivergent'
-                    ? 'Calm retail + crypto · sensory UI'
-                    : meta.tagline}
+              {satellitePane
+                ? `Satellite · ${DESK_SCREEN_PANE_LABEL[satellitePane]}`
+                : active === 'institutional'
+                  ? 'Market Intelligence Platform'
+                  : active === 'fundamental'
+                    ? 'Equity Research Workstation'
+                    : active === 'neurodivergent'
+                      ? 'Calm retail + crypto · sensory UI'
+                      : meta.tagline}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <BrokerDeskChip />
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
+          <DeskScreensMenu deskId={active} accent={meta.accent} paper={paper} />
           <button
             type="button"
             onClick={() => setPickerOpen(!pickerOpen)}
@@ -148,17 +148,8 @@ export default function TraderDeskChrome({ active }: Props) {
             </button>
           );
         })}
-        {founderOk ? (
-          <a
-            href="/ceo"
-            data-ceo-ops-link
-            className="rounded-md border border-amber-400/50 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-amber-300 hover:bg-amber-400/10"
-          >
-            CEO Ops
-          </a>
-        ) : null}
         <a
-          href="/"
+          href="/?choose=1"
           className="ml-auto rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white"
         >
           Home

@@ -68,9 +68,14 @@ export default function DeskHeldFile({
       </header>
       <p className="rt-held-file__hint">
         {held.length === 0
-          ? 'Click the red X on any box to hold it here. The chart uses the space you free.'
-          : 'These boxes are off the desk so the chart can use the space. Restore any of them when you want them back.'}
+          ? 'Click the red X on any box to hold it here. The page scrollbar reaches every box you leave on the desk.'
+          : 'These boxes are off the desk. Restore them, then scroll the page to reach them.'}
       </p>
+      {held.length > 1 ? (
+        <button type="button" className="rt-held-file__all" onClick={onRestoreAll}>
+          Restore all
+        </button>
+      ) : null}
       {held.length === 0 ? (
         <p className="rt-held-file__empty">Nothing held yet</p>
       ) : (
@@ -94,11 +99,6 @@ export default function DeskHeldFile({
           })}
         </ul>
       )}
-      {held.length > 1 ? (
-        <button type="button" className="rt-held-file__all" onClick={onRestoreAll}>
-          Restore all
-        </button>
-      ) : null}
     </aside>
   );
 }

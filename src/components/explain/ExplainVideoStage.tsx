@@ -166,7 +166,7 @@ export function ExplainVideoStage({
             : 'No clip for this tab yet. The words below explain the same thing.'}
           {showSlotHint && state === 'empty' ? (
             <span className="mt-1 block font-mono text-[9px] text-zinc-600">
-              Google Flow drop: public/explain-videos/{id}.mp4 (16:9, ~8s)
+              Google Flow drop: public/explain-videos/{id}.mp4 (16:9, 45–60s, six shots)
             </span>
           ) : null}
         </p>
@@ -219,8 +219,8 @@ function EmptyFlowFrame({
         How {title} works
       </p>
       <p className="m-0 max-w-sm text-[11px] leading-relaxed text-zinc-500">
-        A Google Flow clip sits here — same play badge as the tab, 16:9 landscape, quiet
-        motion, no trade calls on screen.
+        A 45–60s Google Flow film sits here — six colorful shots, fifth-grade words,
+        same play badge as the tab. No trade calls on screen.
       </p>
     </div>
   );

@@ -19,6 +19,7 @@ import { DataRibbon } from './primitives';
 import { DeskReplayPanel } from '../replay/DeskReplayPanel';
 import './bento.css';
 import type { ResearchSection } from '../../fundamental/types';
+import { useDeskMonitorSync } from '../../hooks/useDeskMonitorSync';
 
 function HeaderBar() {
   const { lastUpdatedAt, settingsOpen, setSettingsOpen, noticesOpen, setNoticesOpen, alerts, bundle } = useFundamental();
@@ -276,11 +277,11 @@ function FundamentalShell() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { symbol } = useFundamental();
   return (
-    <div className="fund-shell flex min-h-0 flex-1 flex-col">
+    <div className="fund-shell flex w-full flex-col">
       <HeaderBar />
       <CompanyIdentity />
       <ResearchRail />
-      <div className="scrollbar-panel min-h-0 flex-1 overflow-auto">
+      <div className="overflow-visible">
         <BentoWorkspace
           expandedId={expandedId}
           onExpand={(id) => setExpandedId(id ? id : null)}
@@ -295,9 +296,17 @@ function FundamentalShell() {
   );
 }
 
+function FundamentalMonitorBridge() {
+  const { symbol, setSymbol } = useFundamental();
+  const [timeframe, setTimeframe] = useState('1d');
+  useDeskMonitorSync('fundamental', symbol, timeframe, setSymbol, setTimeframe);
+  return null;
+}
+
 export default function FundamentalDashboard({ initialSymbol = 'NVDA' }: { initialSymbol?: string }) {
   return (
     <FundamentalProvider initialSymbol={initialSymbol}>
+      <FundamentalMonitorBridge />
       <FundamentalShell />
     </FundamentalProvider>
   );

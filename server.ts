@@ -9,7 +9,6 @@ import net from 'node:net';
 import crypto from 'node:crypto';
 import dnsPromises from 'node:dns/promises';
 import RSSParser from 'rss-parser';
-import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -37,8 +36,9 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
+import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
   resolveIndexNowKey,
   submitIndexNow,
@@ -59,14 +59,25 @@ import {
   cryptoEntries,
   forexEntries,
   commodityEntries,
+  companyEntries,
+  companyIndexEntries,
   economyEntries,
   indicatorEntries,
   educationEntries,
   uiProfileEntries,
   encyclopediaHubEntries,
+  glossaryEntries,
+  literacyEntries,
+  knowledgeBaseEntries,
   catalogCounts,
   sitemapLastmod,
   lookupStock,
+  lookupCrypto,
+  lookupForex,
+  lookupCommodity,
+  lookupIndicator,
+  lookupCompany,
+  lookupGlossary,
 } from './src/server/crawlCatalog';
 import { registerWaitlist, registerIdentity, RegistrationError } from './src/server/registrationService';
 import { getAuth } from 'firebase-admin/auth';
@@ -92,7 +103,30 @@ import {
   isValidProfileUsername,
   normalizeProfileUsername,
 } from './src/lib/profileUsername';
-import { consumePasswordResetToken, mintPasswordResetToken } from './src/server/passwordResetStore';
+import {
+  consumePasswordResetToken,
+  hydratePasswordResetsFromFirestore,
+  mintPasswordResetToken,
+} from './src/server/passwordResetStore';
+import { createSessionStore } from './src/server/firestoreSessionStore';
+import {
+  applyGrantedSession,
+  dropStaleAuthSession,
+  getAuthKickStatus,
+  getAuthSessionGeneration,
+  kickAllMemberSessions,
+  loadDurableAuthGeneration,
+} from './src/server/authSessionGeneration';
+import {
+  aiChatLimiter,
+  authForgotPasswordLimiter,
+  authLoginLimiter,
+  authRegisterLimiter,
+  frontendErrorLimiter,
+} from './src/server/routeRateLimit';
+import { appendFrontendError } from './src/server/frontendErrorLog';
+import { createBrokerRouter } from './src/server/broker/brokerRoutes';
+import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
@@ -128,7 +162,6 @@ import {
   searchPodcastsByTerm,
 } from './src/server/podcastService';
 import {
-  forwardIntelligenceToMake,
   getIntelligenceBriefing,
   ingestIntelligenceWebhook,
   listIntelligenceBriefings,
@@ -153,8 +186,16 @@ import {
   startDailyOpsScheduler,
 } from './src/server/dailyOpsService';
 import {
+  getLatestDailyPatternReview,
+  runDailyPatternSweep,
+  markDailyPatternReviewed,
+  publishDailyPatternReview,
+  startDailyPatternReviewScheduler,
+} from './src/server/dailyPatternReviewService';
+import {
   fireDueSubscriptions,
   getChartPulseDeliveryStatus,
+  hydrateChartPulseFromFirestore,
   isPulseInterval,
   listSubscriptionsForOwner,
   removeSubscription,
@@ -252,6 +293,7 @@ import {
   buildFmpStableSymbolUrl,
 } from './src/server/secrets';
 import { fetchCftcLegacyHistory } from './src/server/cftcCot';
+import { fetchFmpDeskNews, fetchFmpEconomicWire } from './src/server/fmpNewsWire';
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
@@ -386,8 +428,7 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const isProd = process.env.NODE_ENV === 'production';
 
-  // Enable trust proxy for Cloud Run environments
-  // This allows express-rate-limit to see the real client IP
+  // Enable trust proxy for Cloud Run (real client IP behind the load balancer).
   app.set('trust proxy', 1);
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
@@ -545,96 +586,9 @@ async function startServer() {
     next();
   });
 
-  // 2. RATE LIMITING (Crucial for 25k users)
-  // Protects the institutional data streams from being overwhelmed.
-  // Market/news paths have dedicated limiters below — do NOT also count them
-  // against this global bucket. A ticker retry storm was burning the global
-  // 900/15min ceiling and returning "Too many requests from this institutional
-  // terminal" on /api/market/history, blanking StrictlyCharts.
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3000,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests from this institutional terminal. Please wait 15 minutes.' },
-    skip: (req) => {
-      const url = String(req.originalUrl || req.url || '').split('?')[0];
-      return /^\/api\/(quote|candles|market\/|newsdata|twelvedata|fred|fmp)\b/.test(url);
-    },
-  });
-  app.set('trust proxy', 1);
-  app.use('/api/', limiter);
-
-  const registrationLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many registration attempts from this address. Please try again in an hour.' },
-  });
-
-  const aiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'AI rate limit reached. Please wait before sending more prompts.' },
-  });
-
-  // Charts poll /api/quote on a live tick (server quote cache is ~5s). Signed-in
-  // members keep a high ceiling; anonymous traffic gets a tight budget so open
-  // proxies cannot burn TwelveData credits.
-  const marketLimiterAuthed = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 2400,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
-    skip: (req) => !getPrivateSessionUser(req),
-  });
-  const marketLimiterAnon = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 90,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
-    skip: (req) => Boolean(getPrivateSessionUser(req)),
-  });
-  const marketLimiter = [marketLimiterAnon, marketLimiterAuthed];
-
-  const quoteLimiterAuthed = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 3600,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Please wait a few minutes.' },
-    skip: (req) => !getPrivateSessionUser(req),
-  });
-  const quoteLimiterAnon = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 180,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Market data rate limit reached. Sign in for higher limits.' },
-    skip: (req) => Boolean(getPrivateSessionUser(req)),
-  });
-  const quoteLimiter = [quoteLimiterAnon, quoteLimiterAuthed];
-
-  const newsLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'News rate limit reached. Please wait a few minutes.' },
-  });
-
-  const logErrorLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 60,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many error reports.' },
-  });
+  // Vendor credits (Twelve Data / FMP / Groq) are the only budget.
+  // Express rate-limit 429s were blanking desks (yellow DATA UNAVAILABLE) while
+  // the Venture 610 dashboard still had credits.
 
   // Initialize WebSockets
   setupWebSockets(server);
@@ -668,6 +622,7 @@ async function startServer() {
   }
   app.use(session({
     secret: sessionSecret,
+    store: createSessionStore(),
     resave: false,
     saveUninitialized: false,
     name: 'cpt.sid',
@@ -683,6 +638,26 @@ async function startServer() {
 
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Drop cookies minted before the current AUTH_SESSION_GENERATION.
+  app.use((req, _res, next) => {
+    const sess = req.session as {
+      privateUser?: unknown;
+      boardAccess?: unknown;
+      authGeneration?: unknown;
+      destroy?: (cb?: (err?: unknown) => void) => void;
+    } | undefined;
+    if (!sess || dropStaleAuthSession(sess) !== 'dropped') {
+      next();
+      return;
+    }
+    if (typeof sess.destroy === 'function') {
+      sess.destroy(() => next());
+      return;
+    }
+    next();
+  });
+  void loadDurableAuthGeneration();
 
   passport.serializeUser((user, done) => done(null, user));
   passport.deserializeUser((obj: any, done) => done(null, obj));
@@ -753,6 +728,9 @@ async function startServer() {
     const adminDb = getAdminFirestore();
     const privateMeta = getPrivateStorageMeta();
     const sessionSecretConfigured = Boolean(getSessionSecret() && getSessionSecret().length >= 32);
+    res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('CDN-Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
     res.json({ 
       status: privateMeta.productionHardFail ? 'degraded' : 'healthy', 
       version: '5.0.0-institutional',
@@ -762,6 +740,7 @@ async function startServer() {
         service: process.env.K_SERVICE || null,
         revision: process.env.K_REVISION || null,
       },
+      build: readLiveBuildIdentity(),
       waitlist: {
         firestoreAdmin: Boolean(adminDb),
         appwriteConfigured: Boolean(
@@ -782,6 +761,7 @@ async function startServer() {
         secretConfigured: sessionSecretConfigured || Boolean(getStripeSecretKey()),
         // Ephemeral only when neither SESSION_SECRET nor Stripe-derived secret is available.
         ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
+        generation: getAuthSessionGeneration(),
       },
     });
   });
@@ -793,7 +773,7 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/lookup', async (req, res) => {
     try {
       const result = await lookupPrivateUser(req.body?.email || '');
       res.json(result);
@@ -803,7 +783,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/register', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/register', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerPrivateUser({
         email: req.body?.email || '',
@@ -854,7 +834,7 @@ async function startServer() {
         console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
       }
       const sessionUser = buildClientSessionUser(user);
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -865,7 +845,9 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/login', registrationLimiter, async (req, res) => {
+  app.use('/api/broker', createBrokerRouter());
+
+  app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {
       const result = await loginPrivateUser({
         email: req.body?.email || '',
@@ -889,7 +871,7 @@ async function startServer() {
       }
 
       const sessionUser = buildClientSessionUser(result.user);
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -901,7 +883,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resubmit', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/resubmit', async (req, res) => {
     try {
       const result = await resubmitIdentity({
         currentEmail: req.body?.currentEmail || req.body?.email || '',
@@ -916,7 +898,7 @@ async function startServer() {
 
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
-        (req.session as any).privateUser = sessionUser;
+        applyGrantedSession(req.session as any, sessionUser);
         try {
           ensureAffiliateMember(result.user.uid);
         } catch {
@@ -973,7 +955,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/decline', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/decline', async (req, res) => {
     try {
       await declineIdentity({
         email: req.body?.email || '',
@@ -994,7 +976,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resend', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/identity/resend', async (req, res) => {
     try {
       const reminted = await remintIdentityChallenge({
         email: req.body?.email || '',
@@ -1063,7 +1045,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', registrationLimiter, (req, res) => {
+  app.post('/api/auth/board/verify', (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1089,7 +1071,7 @@ async function startServer() {
       boardAccess: true,
     };
     (req.session as any).boardAccess = true;
-    (req.session as any).privateUser = sessionUser;
+    applyGrantedSession(req.session as any, sessionUser);
     res.json({ ok: true, user: sessionUser });
   });
 
@@ -1102,7 +1084,16 @@ async function startServer() {
       return res.status(401).json({ error: 'Sign in to load your profile.' });
     }
     try {
-      // Pull the durable copy first — another instance may have newer data.
+      const local = readProfile(uid);
+      const localAgeMs = local?.updatedAt ? Date.now() - Date.parse(local.updatedAt) : Infinity;
+      if (localAgeMs < 60_000) {
+        const profile =
+          applyPendingContractorBadges(uid, sessionUser?.email) ||
+          local ||
+          { uid, displayName: sessionUser?.displayName || '' };
+        return res.json({ ok: true, profile });
+      }
+      // Pull the durable copy — another instance may have newer data.
       await refreshProfileFromDurable(uid);
       const profile =
         applyPendingContractorBadges(uid, sessionUser?.email) ||
@@ -1176,7 +1167,7 @@ async function startServer() {
     res.json({ ok: true, profile: publicProfile });
   });
 
-  app.post('/api/auth/private/change-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/change-password', async (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
     if (!sessionUser?.email || !sessionUser.privateAccount) {
       return res.status(401).json({ error: 'Sign in to change your password.' });
@@ -1217,13 +1208,13 @@ async function startServer() {
     });
   });
 
-  app.post('/api/auth/private/forgot-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/forgot-password', authForgotPasswordLimiter, async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     try {
       if (email.includes('@')) {
         const user = await findPrivateUserByEmail(email);
         if (user?.uid && user.email) {
-          const { rawToken } = mintPasswordResetToken({ uid: user.uid, email: user.email });
+          const { rawToken } = await mintPasswordResetToken({ uid: user.uid, email: user.email });
           const resetUrl = `${publicSiteOrigin(req)}/reset-password?token=${encodeURIComponent(rawToken)}`;
           await sendPasswordResetEmail({
             to: user.email,
@@ -1239,14 +1230,14 @@ async function startServer() {
     return res.json({ ok: true });
   });
 
-  app.post('/api/auth/private/reset-password', registrationLimiter, async (req, res) => {
+  app.post('/api/auth/private/reset-password', async (req, res) => {
     const token = String(req.body?.token || '');
     const newPassword = String(req.body?.newPassword || req.body?.password || '');
     const confirmPassword = String(req.body?.confirmPassword || '');
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ error: 'New password and confirmation do not match.' });
     }
-    const record = consumePasswordResetToken(token);
+    const record = await consumePasswordResetToken(token);
     if (!record) {
       return res.status(400).json({ error: 'That reset link is invalid or expired. Request a new one from Private Login.' });
     }
@@ -1261,7 +1252,8 @@ async function startServer() {
 
   app.get('/api/auth/private/me', async (req, res) => {
     const user = (req.session as any)?.privateUser;
-    if (!user) return res.status(401).json({ error: 'Not signed in.' });
+    // Guest probe: 200 + user:null so Inspect does not paint a red 401 on every public visit.
+    if (!user) return res.status(200).json({ user: null });
     try {
       // Private accounts only — board operator sessions skip identity gate.
       if (user.privateAccount) {
@@ -1302,14 +1294,6 @@ async function startServer() {
     return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
   };
 
-  const chartPulseLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 60,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many chart pulse changes. Please wait and try again.' },
-  });
-
   app.get('/api/chart-pulse/status', (req, res) => {
     const user = getPrivateSessionUser(req);
     res.json({
@@ -1319,7 +1303,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', chartPulseLimiter, (req, res) => {
+  app.post('/api/chart-pulse/subscribe', (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
     const sessionEmail = getPrivateSessionUser(req)?.email;
@@ -1353,7 +1337,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', chartPulseLimiter, (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
@@ -1444,7 +1428,7 @@ async function startServer() {
   });
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
-  app.post('/api/stripe/create-checkout-session', registrationLimiter, async (req, res) => {
+  app.post('/api/stripe/create-checkout-session', async (req, res) => {
     if (!PAYMENTS_ENABLED) {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
     }
@@ -1637,7 +1621,7 @@ async function startServer() {
         emailVerified: true,
         privateAccount: true,
       };
-      (req.session as any).privateUser = sessionUser;
+      applyGrantedSession(req.session as any, sessionUser);
       res.json({
         ok: true,
         user: sessionUser,
@@ -1654,7 +1638,8 @@ async function startServer() {
   });
 
   /**
-   * Founder / catalog-admin only — private login members + waitlist (safe fields).
+   * Founder / catalog-admin only — private login members (safe fields).
+   * Leftover site_registrations rows are listed for ops/backup only.
    * Auth: Bearer Firebase ID token for forexanarchy@gmail.com, private founder session,
    * or x-catalog-admin-secret. Never public.
    */
@@ -1707,7 +1692,10 @@ async function startServer() {
   app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
-      const result = await convertWaitlistToPrivateAccounts({ dryRun });
+      const result = await convertWaitlistToPrivateAccounts({
+        dryRun,
+        resetExisting: Boolean(req.body?.resetExisting),
+      });
       res.json(result);
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1870,6 +1858,36 @@ async function startServer() {
         res.status(500).json({ error: error?.message || 'Backup download failed' });
       }
     }
+  );
+
+  /** Founder-only: drop every login cookie. Does not delete Firestore member accounts. */
+  app.get('/api/admin/auth/kick-sessions', requireFounderOrCatalogAdmin, (_req, res) => {
+    res.json({ ok: true, ...getAuthKickStatus(), accountsDeleted: 0 });
+  });
+  app.post(
+    '/api/admin/auth/kick-sessions',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const sessionUser = (req.session as { privateUser?: { email?: string } } | undefined)?.privateUser;
+        const result = await kickAllMemberSessions({
+          kickedBy: sessionUser?.email || 'ceo-dashboard',
+        });
+        if (sessionUser) {
+          applyGrantedSession(req.session as Record<string, unknown>, sessionUser);
+        }
+        res.json({
+          ok: true,
+          ...result,
+          keptFounderSession: Boolean(sessionUser),
+          note: 'Login cookies were dropped. Firestore member accounts were not deleted. Open tabs must refresh, then people log in again.',
+        });
+      } catch (error: any) {
+        console.error('[admin/auth/kick-sessions] Failed:', error);
+        res.status(500).json({ error: error?.message || 'Could not sign everyone out.' });
+      }
+    },
   );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
@@ -2140,7 +2158,7 @@ async function startServer() {
   });
 
   // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  app.post('/api/river/genie/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2170,17 +2188,17 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/waitlist', registrationLimiter, async (req, res) => {
+  app.post('/api/registrations/waitlist', async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
       res.json(result);
     } catch (error: any) {
       const status = error instanceof RegistrationError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Waitlist registration failed.' });
+      res.status(status).json({ error: error.message || 'Private Login registration failed.' });
     }
   });
 
-  app.post('/api/registrations/identity', registrationLimiter, async (req, res) => {
+  app.post('/api/registrations/identity', async (req, res) => {
     try {
       const result = await registerIdentity(req.body || {});
       res.json(result);
@@ -2365,7 +2383,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/log_error', logErrorLimiter, (req, res) => {
+  app.post('/api/log_error', frontendErrorLimiter, (req, res) => {
     try {
       const raw = JSON.stringify(req.body ?? {});
       if (raw.length > 4000) {
@@ -2375,7 +2393,7 @@ async function startServer() {
       const sanitized = raw
         .replace(/("?(?:api[_-]?key|apikey|secret|token|authorization|password)"?\s*[:=]\s*")([^"]{4,})(")/gi, '$1[REDACTED]$3')
         .replace(/(Bearer\s+)[A-Za-z0-9._\-]{8,}/gi, '$1[REDACTED]');
-      fs.appendFileSync('frontend_errors.log', sanitized + '\n');
+      appendFrontendError(sanitized);
       console.log('\n[FRONTEND ERROR]', sanitized.slice(0, 500), '\n');
       res.json({ ok: true });
     } catch {
@@ -2588,7 +2606,7 @@ async function startServer() {
   });
 
   // Standalone Encyclopedia AI Tutor proxy route
-  app.post('/api/encyclopedia/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/encyclopedia/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question } = req.body;
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
@@ -2637,7 +2655,7 @@ Frame your explanation with advanced professional rigor, making it scannable, st
   });
 
   // C.P.T. Buddy — platonic companion + trading educator (Groq / Llama)
-  app.post('/api/mentor/chat', requirePrivateSession, aiLimiter, moderateBodyFields('question'), async (req, res) => {
+  app.post('/api/mentor/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question'), async (req, res) => {
     const { question, userName, skillLevel, conversationHistory, memoryFacts, conversationBullets, chartContext, bondProfile, pagePath } =
       req.body;
     if (!question || typeof question !== 'string') {
@@ -2910,7 +2928,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, registrationLimiter, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -3015,6 +3033,77 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   );
 
+  app.get('/api/admin/daily-pattern-review', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      const report = await getLatestDailyPatternReview();
+      if (!report) {
+        return res.status(404).json({
+          error: 'NO_REPORT',
+          message: 'No briefing yet — auto sweeps Sun–Fri at NYSE close (4 PM ET) and 1 AM ET, or tap Run now.',
+        });
+      }
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_LOAD_FAILED',
+        message: e?.message || 'Could not load overnight structure review',
+      });
+    }
+  });
+
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (req, res) => {
+    try {
+      const slot =
+        req.body?.slot === 'overnight' || req.body?.slot === 'market_close' ? req.body.slot : 'market_close';
+      const report = await runDailyPatternSweep({ force: true, slot });
+      res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'DAILY_PATTERN_REVIEW_FAILED',
+        message: e?.message || 'Overnight structure review failed',
+      });
+    }
+  });
+
+  app.post(
+    '/api/admin/daily-pattern-review/review',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const rowId = String(req.body?.rowId || '');
+        const reviewed = Boolean(req.body?.reviewed);
+        const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
+        const reportId = typeof req.body?.reportId === 'string' ? req.body.reportId : undefined;
+        const report = await markDailyPatternReviewed(rowId, reviewed, note, reportId);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_PATTERN_REVIEW_SAVE_FAILED',
+          message: e?.message || 'Could not save review flag',
+        });
+      }
+    }
+  );
+
+  app.post(
+    '/api/admin/daily-pattern-review/publish',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
+      try {
+        const reportId = typeof req.body?.reportId === 'string' ? req.body.reportId : undefined;
+        const report = await publishDailyPatternReview(reportId);
+        res.json(report);
+      } catch (e: any) {
+        res.status(400).json({
+          error: 'DAILY_PATTERN_REVIEW_PUBLISH_FAILED',
+          message: e?.message || 'Could not publish briefing',
+        });
+      }
+    }
+  );
+
   app.post(
     '/api/admin/daily-ops/investor',
     requireFounderOrCatalogAdmin,
@@ -3070,13 +3159,13 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   };
 
   // Twelve Data Proxy for Quotes
-  app.get('/api/quote', ...quoteLimiter, async (req, res) => {
+  app.get('/api/quote', async (req, res) => {
     const { symbol } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3104,18 +3193,18 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Batch quotes — one upstream credit path for ticker (cap 12 symbols).
-  app.get('/api/quotes', ...quoteLimiter, async (req, res) => {
+  // Batch quotes — Twelve Data then FMP. Cap 80 covers the Venture registry + typed tickers.
+  app.get('/api/quotes', async (req, res) => {
     const raw = req.query.symbols;
     if (!raw || typeof raw !== 'string') {
-      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 12.' });
+      return res.status(400).json({ error: 'symbols required', message: 'Pass comma-separated symbols, max 80.' });
     }
-    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 12);
+    const symbols = raw.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 80);
     if (symbols.length === 0) {
       return res.status(400).json({ error: 'symbols required' });
     }
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3130,7 +3219,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Twelve Data Proxy for Candles
-  app.get('/api/candles', ...marketLimiter, async (req, res) => {
+  app.get('/api/candles', async (req, res) => {
     const { symbol, interval } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -3139,7 +3228,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
     );
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3161,7 +3250,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Twelve Data Proxy transforming to [timestamp, open, high, low, close] array for high-performance chart
-  app.get('/api/market/history', ...marketLimiter, async (req, res) => {
+  app.get('/api/market/history', async (req, res) => {
     const { symbol, interval, limit, startDate, endDate } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
@@ -3172,7 +3261,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     );
 
     const apiKey = getCleanTwelveDataApiKey();
-    if (!apiKey) {
+    if (!apiKey && !getFmpApiKey()) {
       return res.status(503).json({ error: 'Data Unavailable', message: 'Twelve Data API Key not configured.' });
     }
 
@@ -3233,7 +3322,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // NewsData Live Ingress API with fallback
-  app.get('/api/newsdata/latest', newsLimiter, async (req, res) => {
+  app.get('/api/newsdata/latest', async (req, res) => {
     try {
       const apiKey = getNewsDataApiKey();
       const isKeyValid = apiKey && apiKey.trim() !== '' && apiKey.length > 8 && !apiKey.toLowerCase().includes('placeholder') && !apiKey.toLowerCase().includes('your_');
@@ -3275,6 +3364,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         }
         console.info('[NewsData Info] Utilizing local news fallbacks.');
       }
+
+      const fmpNews = await fetchFmpDeskNews();
+      if (fmpNews.length) return res.json(fmpNews);
 
       // Fallback: Union of news_data.json and master_news.json
       const newsList: any[] = [];
@@ -3320,9 +3412,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Economic news — same NewsData vendor, economy/macro query. No fabricated calendar rows.
-  app.get('/api/economic/news', newsLimiter, async (req, res) => {
+  // Economic wire — FMP timed calendar first, then NewsData headlines. No fabricated CPI/NFP rows.
+  app.get('/api/economic/news', async (req, res) => {
     try {
+      const calendar = await fetchFmpEconomicWire();
+      if (calendar.length) return res.json(calendar);
+
       const apiKey = getNewsDataApiKey();
       const isKeyValid =
         apiKey &&
@@ -3366,6 +3461,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
           }
         }
       }
+
+      const fmpHeadlines = await fetchFmpDeskNews();
+      if (fmpHeadlines.length) return res.json(fmpHeadlines);
 
       // Fallback: filter local curated news files for economy-related titles (if present)
       const newsList: any[] = [];
@@ -3525,7 +3623,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/literacy/truth-search', requirePrivateSession, ...marketLimiter, moderateBodyFields('query'), async (req, res) => {
+  app.post('/api/literacy/truth-search', requirePrivateSession, moderateBodyFields('query'), async (req, res) => {
     const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
     if (!query) {
       return res.status(400).json({ error: 'query required' });
@@ -3595,7 +3693,6 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   app.post(
     '/api/ywc/translate',
-    ...marketLimiter,
     moderateBodyFields('storyId', 'lang'),
     async (req, res) => {
       const storyId = String(req.body?.storyId || '').slice(0, 200);
@@ -3711,7 +3808,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
-  app.get('/api/cot/history', ...marketLimiter, async (req, res) => {
+  app.get('/api/cot/history', async (req, res) => {
     const symbol = String(req.query.symbol || '');
     if (!/^[A-Za-z0-9.^\-]{1,32}$/.test(symbol)) {
       return res.status(400).json({ error: 'Invalid symbol' });
@@ -3732,7 +3829,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
-  app.get('/api/fred/observations', ...marketLimiter, async (req, res) => {
+  app.get('/api/fred/observations', async (req, res) => {
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3761,7 +3858,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
-  app.get('/api/fmp/lookup', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/lookup', async (req, res) => {
     const kind = String(req.query.kind || '');
     if (!FMP_LOOKUP_KINDS.has(kind)) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
@@ -3795,7 +3892,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
-  app.get('/api/fmp/:endpoint/:symbol', ...marketLimiter, async (req, res) => {
+  app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
     const { endpoint, symbol } = req.params;
     const { limit, period } = req.query;
     if (!symbol || !endpoint) {
@@ -3852,7 +3949,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', requirePrivateSession, aiLimiter, async (req, res) => {
+  app.get('/api/news/search', requirePrivateSession, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
@@ -4021,6 +4118,10 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
       if (isCapitalized) {
         cleanPath = cleanPath.toLowerCase();
       }
+      // Fold the /fundamental alias into the canonical desk URL in the same hop.
+      if (cleanPath === '/fundamental' || cleanPath.startsWith('/fundamental/')) {
+        cleanPath = `/desk${cleanPath}`;
+      }
       
       const protocol = req.secure || (req.headers['x-forwarded-proto'] === 'https') ? 'https' : 'http';
       const redirectUrl = `${protocol}://${canonicalHost}${cleanPath}${req.url.slice(req.path.length)}`;
@@ -4074,6 +4175,10 @@ ${entries.map(e => `  <url>
     'sitemap-crypto.xml',
     'sitemap-forex.xml',
     'sitemap-commodities.xml',
+    'sitemap-companies.xml',
+    'sitemap-glossary.xml',
+    'sitemap-literacy.xml',
+    'sitemap-knowledge.xml',
     'sitemap-economy.xml',
     'sitemap-indicators.xml',
     'sitemap-education.xml',
@@ -4216,6 +4321,22 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.header('Content-Type', 'application/xml');
     res.send(cachedUrlset('commodities', commodityEntries));
   });
+  app.get('/sitemap-companies.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
+  });
+  app.get('/sitemap-glossary.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('glossary', glossaryEntries));
+  });
+  app.get('/sitemap-literacy.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('literacy', literacyEntries));
+  });
+  app.get('/sitemap-knowledge.xml', (_req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
+  });
   app.get('/sitemap-economy.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
     res.send(cachedUrlset('economy', economyEntries));
@@ -4250,7 +4371,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(GENERAL_FAQS);
   });
 
-  // CrewAI / Make.com intelligence briefing webhook receiver
+  // Intelligence briefing webhook receiver (ClearPath-owned ingest only)
   app.post('/api/intelligence/webhook', async (req, res) => {
     const secretHeader = req.get('x-intelligence-webhook-secret') || undefined;
     if (!verifyIntelligenceWebhookSecret(secretHeader)) {
@@ -4259,11 +4380,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
     try {
       const record = await ingestIntelligenceWebhook(req.body);
-      const shouldForward =
-        req.query.forward === 'make' || req.query.forward === '1' || req.query.forward === 'true';
-      const forwardResult = shouldForward
-        ? await forwardIntelligenceToMake(record)
-        : { forwarded: false };
 
       res.status(201).json({
         success: true,
@@ -4272,7 +4388,6 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         publishMode: record.publishMode,
         hasBriefing: Boolean(record.briefingMarkdown),
         hasLocalizedBriefing: Boolean(record.localizedBriefingMarkdown),
-        makeForward: forwardResult,
       });
     } catch (error: any) {
       console.error('[Intelligence Webhook Error]', error);
@@ -4322,23 +4437,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       if (!wantLiveSpa && pathClean === '/about' && isSearchEngineBot(req.get('user-agent'))) {
         const enriched = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
         const enriched = enrichHtmlWithMetadata(renderUnknownRegionNotFound(req.path), req.path);
-        res.status(404);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched, 404);
       }
       const isDeskRoute =
         pathClean === '/desk' ||
@@ -4351,8 +4459,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
         const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
-        res.setHeader('Content-Type', 'text/html');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       }
 
       if (isDev) {
@@ -4364,24 +4471,15 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         }
         
         const enriched = enrichHtmlWithMetadata(html, req.path);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        // Never let browsers/CDNs pin an old SPA shell — hashed JS/CSS can cache long.
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        return res.send(enriched);
+        return sendUncachedHtml(res, enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = safeReadTextFile(destIndexPath);
           const enriched = enrichHtmlWithMetadata(html, req.path);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          return res.send(enriched);
+          return sendUncachedHtml(res, enriched);
         } else {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          applyHtmlNoStore(res);
           return res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
         }
       }
@@ -4394,10 +4492,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           ? path.resolve(process.cwd(), 'index.html')
           : path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(fallbackPath)) {
-          res.status(200);
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          return res.send(safeReadTextFile(fallbackPath));
+          return sendUncachedHtml(res, safeReadTextFile(fallbackPath));
         }
       } catch (fallbackErr) {
         console.error('[SEO Page Interceptor fallback failed]', fallbackErr);
@@ -4420,6 +4515,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/guides',
     '/guides/:slug',
     '/glossary',
+    '/glossary/letter/:letter',
+    '/glossary/:slug',
     '/faq',
     '/accessibility',
     '/regions',
@@ -4437,6 +4534,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/encyclopedia-of-indicators',
     '/literacy',
     '/literacy-os',
+    '/literacy/wiki/:id',
+    '/literacy/:trackId',
+    '/literacy/:trackId/:lessonId',
+    '/markets/:slug',
+    '/sectors/:slug',
     '/market-universe',
     '/stocks',
     '/stocks/:symbol',
@@ -4447,32 +4549,80 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/commodities',
     '/commodities/:commodity',
     '/companies',
-    // /companies/:slug → 301 to /stocks/:ticker (see redirect below); not a separate thin indexable surface
+    '/companies/page/:n',
+    '/companies/:slug',
     '/economy/:topic',
     '/ui',
     '/ui/:profileId',
     '/desk',
     '/desk/:deskId',
-    '/fundamental',
-    '/fundamental/:symbol',
+    '/desk/:deskId/screen/:pane',
     '/tools',
     '/tools/position-size',
     '/u/:username',
     '/reset-password',
   ];
 
-  SEO_PAGES.forEach(pagePath => {
-    app.get(pagePath, handlePageServing);
+  // Public issuers canonical to /stocks/{ticker}. Unknown slugs 404. Subsidiaries fall through to SSR.
+  app.get('/companies/:slug', (req, res, next) => {
+    const rec = lookupCompany(String(req.params.slug || ''));
+    if (rec?.status === 'Public' && rec.ticker) {
+      return res.redirect(301, `/stocks/${String(rec.ticker).toLowerCase()}`);
+    }
+    if (!rec) {
+      const enriched = enrichHtmlWithMetadata(renderUnknownCompanyNotFound(req.path), req.path);
+      return sendUncachedHtml(res, enriched, 404);
+    }
+    return next();
   });
 
-  // Company slugs are not a separate encyclopedia tree — canonical lives under /stocks/:ticker.
-  app.get('/companies/:slug', (req, res) => {
-    const slug = String(req.params.slug || '').toLowerCase();
-    const stock = lookupStock(slug);
-    if (stock?.ticker) {
-      return res.redirect(301, `/stocks/${String(stock.ticker).toLowerCase()}`);
-    }
-    return res.redirect(301, '/companies');
+  // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).
+  app.get(['/fundamental', '/fundamental/:symbol'], (req, res) => {
+    const raw = typeof req.params.symbol === 'string' ? req.params.symbol : '';
+    const symbol = raw.replace(/[^A-Za-z0-9.^-]/g, '');
+    const dest = symbol ? `/desk/fundamental/${symbol}` : '/desk/fundamental';
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `${dest}${query}`);
+  });
+
+  const sendEncyclopedia404 = (res: any, kind: string, slug: string, hub: string, label: string, reqPath: string) => {
+    const enriched = enrichHtmlWithMetadata(
+      renderUnknownEncyclopediaNotFound(kind, slug, hub, label),
+      reqPath,
+    );
+    return sendUncachedHtml(res, enriched, 404);
+  };
+
+  app.get('/stocks/:symbol', (req, res, next) => {
+    if (lookupStock(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Stock', String(req.params.symbol || ''), '/stocks', 'Stocks', req.path);
+  });
+  app.get('/crypto/:symbol', (req, res, next) => {
+    if (lookupCrypto(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Crypto', String(req.params.symbol || ''), '/crypto', 'Crypto', req.path);
+  });
+  app.get('/forex/:pair', (req, res, next) => {
+    if (lookupForex(String(req.params.pair || ''))) return next();
+    return sendEncyclopedia404(res, 'Forex', String(req.params.pair || ''), '/forex', 'Forex', req.path);
+  });
+  app.get('/commodities/:symbol', (req, res, next) => {
+    if (lookupCommodity(String(req.params.symbol || ''))) return next();
+    return sendEncyclopedia404(res, 'Commodity', String(req.params.symbol || ''), '/commodities', 'Commodities', req.path);
+  });
+  app.get('/indicators/:slug', (req, res, next) => {
+    if (lookupIndicator(String(req.params.slug || ''))) return next();
+    return sendEncyclopedia404(res, 'Indicator', String(req.params.slug || ''), '/indicators', 'Indicators', req.path);
+  });
+  app.get('/glossary/:slug', (req, res, next) => {
+    const slug = String(req.params.slug || '');
+    if (slug === 'letter') return next();
+    if (lookupGlossary(slug)) return next();
+    return sendEncyclopedia404(res, 'Glossary', slug, '/glossary', 'Glossary', req.path);
+  });
+
+  SEO_PAGES.forEach(pagePath => {
+    app.get(pagePath, handlePageServing);
   });
 
   // TikTok for Developers — URL prefix verification (terms.html/ and site root)
@@ -4511,12 +4661,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('sw.js') || filePath.endsWith('index.html')) {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          if (filePath.endsWith('sw.js')) {
-            res.setHeader('X-Service-Worker-Version', '4.0.0-firmware-val');
+        if (
+          filePath.endsWith('sw.js') ||
+          filePath.endsWith('service-worker.js') ||
+          filePath.endsWith('index.html')
+        ) {
+          applyHtmlNoStore(res);
+          if (filePath.endsWith('sw.js') || filePath.endsWith('service-worker.js')) {
+            res.setHeader('X-Service-Worker-Version', '5.0.0-kill-switch');
           }
           return;
         }
@@ -4560,6 +4712,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       startDailyOpsScheduler();
     } catch (e: any) {
       console.warn('[STARTUP] Daily Ops scheduler failed to start:', e?.message || e);
+    }
+
+    try {
+      startDailyPatternReviewScheduler();
+    } catch (e: any) {
+      console.warn('[STARTUP] Daily pattern review scheduler failed to start:', e?.message || e);
     }
 
     try {
@@ -4622,6 +4780,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             console.warn('[STARTUP] Emergency known-member seed skipped:', seedErr?.message || seedErr);
           }
           try {
+            const waitlistMoved = await convertWaitlistToPrivateAccounts({ resetExisting: false });
+            console.log(
+              `[STARTUP] Waitlist → Firestore private_accounts → created=${waitlistMoved.created} already=${waitlistMoved.already} errors=${waitlistMoved.errors} candidates=${waitlistMoved.candidates}`
+            );
+          } catch (wlErr: any) {
+            console.warn('[STARTUP] Waitlist → private accounts skipped:', wlErr?.message || wlErr);
+          }
+          try {
             await bootPersistFounderBackupSnapshot();
           } catch (backupErr: any) {
             console.warn('[STARTUP] Founder backup snapshot skipped:', backupErr?.message || backupErr);
@@ -4655,6 +4821,24 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.warn('[STARTUP] Pending grants hydrate skipped:', e?.message || e);
       }
       try {
+        const resets = await hydratePasswordResetsFromFirestore();
+        console.log(`[STARTUP] Password reset tokens hydrated from Firestore → count=${resets}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Password reset hydrate skipped:', e?.message || e);
+      }
+      try {
+        const pulse = await hydrateChartPulseFromFirestore();
+        console.log(`[STARTUP] Chart pulse subscriptions hydrated from Firestore → count=${pulse}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Chart pulse hydrate skipped:', e?.message || e);
+      }
+      try {
+        const brokers = await hydrateBrokerConnectionsFromFirestore();
+        console.log(`[STARTUP] Broker OAuth connections hydrated from Firestore → count=${brokers}`);
+      } catch (e: any) {
+        console.warn('[STARTUP] Broker connections hydrate skipped:', e?.message || e);
+      }
+      try {
         const seeded = await seedIndependentContractorBadges();
         const summary = seeded.results
           .map((r) => `${r.email}:${r.status}`)
@@ -4682,6 +4866,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       void submitIndexNow([
         'https://clearpathtrader.com/',
         'https://clearpathtrader.com/about',
+        'https://clearpathtrader.com/glossary',
+        'https://clearpathtrader.com/literacy',
+        'https://clearpathtrader.com/markets/bonds',
+        'https://clearpathtrader.com/companies',
+        'https://clearpathtrader.com/encyclopedia',
         ...regionalIndexNowUrls(),
       ]).then((r) => {
         if (r.skipped) {

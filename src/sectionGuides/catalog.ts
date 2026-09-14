@@ -149,11 +149,11 @@ export const SECTION_GUIDES: Record<SectionGuideId, SectionGuideEntry> = {
           'You will jump into that section. Use the side nav anytime to come back to Home.',
       },
       {
-        id: '06-appealing-additions',
-        title: 'Practice sandboxes',
-        flow: 'Brief glance at Appealing Additions sandboxes — budget, cash-flow, concept flask — labeled as practice, not brokerage. Soft educational lab vibe.',
+        id: '06-home-map',
+        title: 'Home is a map',
+        flow: 'Hold on the Home card grid — Charts, INDACREATOR, Education, Literacy OS. No extra promo shelves. Calm, uncluttered map of doors.',
         narration:
-          'Below the doors, practice sandboxes let you explore ideas without pressure. They are learning tools, not brokerage.',
+          'Home is just the map. The cards are the doors. Education and Literacy OS stay in their own rooms — not extra boxes on this desk.',
       },
       {
         id: '07-calm-tip',

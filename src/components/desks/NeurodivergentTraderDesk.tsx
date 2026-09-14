@@ -1,7 +1,7 @@
 import React from 'react';
 import NeurodivergentDashboard from './neuro/NeurodivergentDashboard';
 import { DeskHoldScope } from './DeskHoldScope';
-import { NEURO_CHART_FIRST_HELD, NEURO_HELD_META } from './heldMeta';
+import { NEURO_HELD_META, NEURO_CHART_FIRST_HELD } from './heldMeta';
 
 /**
  * Neurodivergent Market desk — calm retail + crypto workstation with
@@ -12,7 +12,7 @@ export default function NeurodivergentTraderDesk() {
   return (
     <DeskHoldScope
       desk="neurodivergent"
-      storageKey="clearpath_held_neuro_v2"
+      storageKey="clearpath_held_neuro_v4"
       meta={NEURO_HELD_META}
       defaultHeld={NEURO_CHART_FIRST_HELD}
     >
