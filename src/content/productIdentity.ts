@@ -32,7 +32,9 @@ export const PRODUCT_META_DESCRIPTION =
 export const PRODUCT_DISAMBIGUATION =
   "ClearPath Trader (clearpathtrader.com) is not the same product as unrelated businesses that also use the name ClearPath. It is not a website chatbot, not a 24/7 receptionist, and it does not greet visitors, capture phone leads, or book appointments for small businesses.";
 
-export const PRODUCT_WHAT_IT_IS = `${PRODUCT_NAME} is one browser-based market intelligence and education terminal with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. One website — four workstations for four kinds of traders, not four brokerages and not four ways to place trades. Live charts for stocks, forex, crypto, and commodities, unlimited technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, and a macro desk. The Neurodivergent desk uses the same market data with 13 accessibility / sensory chart profiles. In-app C.P.T. Buddy is a platonic mentor that explains the terminal and markets — not a lead-capture widget. Optional pass-through broker connect (OAuth to your own licensed partner such as Alpaca) lets the terminal route orders you authorize to that broker — ClearPath is the interface, not the broker-dealer. Without a connected broker, analytics and learning only. Not investment advice.`;
+export const PRODUCT_KIND = "educational financial markets site";
+
+export const PRODUCT_WHAT_IT_IS = `${PRODUCT_NAME} is one browser-based ${PRODUCT_KIND} with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. One website — four workstations for four kinds of traders, not four brokerages and not four ways to place trades. Live charts for stocks, forex, crypto, and commodities, unlimited technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, and a macro desk. The Neurodivergent desk uses the same market data with 13 accessibility / sensory chart profiles. In-app C.P.T. Buddy is a platonic mentor that explains the site and markets — not a lead-capture widget. Optional pass-through broker connect (OAuth to your own licensed partner such as Alpaca) lets the site route orders you authorize to that broker — ClearPath is the interface, not the broker-dealer. Without a connected broker, analytics and learning only. Not investment advice.`;
 
 export const PRODUCT_FEATURE_LIST = [
   `Four trader desks on one website: ${PRODUCT_FOUR_DESKS_PHRASE}`,
@@ -48,7 +50,7 @@ export const PRODUCT_FEATURE_LIST = [
   "Macro desk (yields, central banks, sovereign context)",
   "13 accessibility / neurodivergent UI profiles (ADHD, autism, dyslexia, low-stim, and more)",
   "INDACREATOR / River Genie — build and explain custom indicators",
-  "In-terminal C.P.T. Buddy mentor (education and navigation, not lead-gen)",
+  "In-app C.P.T. Buddy mentor (education and navigation, not lead-gen)",
   "News, research, and social context beside the chart — not a separate chatbot site",
 ];
 
@@ -65,7 +67,7 @@ export const PRODUCT_KNOWS_ABOUT = [
   "Fundamental trader desk",
   "Retail trader desk",
   "Neurodivergent trader desk",
-  "market intelligence terminal",
+  "educational financial markets site",
   "technical analysis charts",
   "chart pattern recognition",
   "financial education",
@@ -90,7 +92,7 @@ export const IDENTITY_FAQS: Array<{ question: string; answer: string }> = [
   },
   {
     question: "Is ClearPath Trader a website chatbot or the same as ClearPath AI?",
-    answer: `${PRODUCT_DISAMBIGUATION} The optional in-app companion (C.P.T. Buddy) lives inside the trading terminal to help you learn charts, indicators, and navigation. It does not run on third-party business websites as a receptionist or booking bot.`,
+    answer: `${PRODUCT_DISAMBIGUATION} The optional in-app companion (C.P.T. Buddy) lives inside this educational financial markets site to help you learn charts, indicators, and navigation. It does not run on third-party business websites as a receptionist or booking bot.`,
   },
   {
     question: "What does ClearPath Trader include besides charts?",
