@@ -2,7 +2,7 @@
  * Google Flow drop slots for explain overlays.
  *
  * Export from Flow as 16:9 landscape (1280×720 or 1920×1080), H.264 MP4,
- * stitch six ~8–10s shots into one 45–60s film. Fifth-grade VO. No buy/sell text.
+ * twelve separate 8.00s jobs stitched into one 96s film. Fifth-grade VO. No buy/sell text.
  * Optional still: same name .jpg. Production bible: flowScripts.ts.
  *
  * Files (not committed — drop on the host / Cloud Run volume or rebuild):

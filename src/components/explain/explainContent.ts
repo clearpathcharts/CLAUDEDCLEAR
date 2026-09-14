@@ -28,7 +28,7 @@ function vo(id: keyof typeof EXPLAIN_FLOW_SCRIPTS): string {
 }
 
 /**
- * Fifth-grade overlay copy = the same voice-over as the 45–60s Flow film.
+ * Fifth-grade overlay copy = the same voice-over as the twelve 8s Flow clips.
  * Never tell the user what to buy, sell, or do with their money.
  */
 export const explainContentLibrary: Record<string, ExplainContent> = {
