@@ -24,7 +24,7 @@ const ROWS: { label: string; accuracy: FeatureAccuracy; value: (id: CanonicalPla
   { label: 'No platform manipulation', accuracy: FEATURE_ACCURACY.noPlatformManipulation, value: (id) => PLAN_CATALOG[id].flags.noPlatformManipulation ? 'Yes' : '—' },
   { label: 'Real-time news', accuracy: FEATURE_ACCURACY.realTimeNews, value: (id) => PLAN_CATALOG[id].flags.realTimeNews ? 'Yes' : '—' },
   { label: 'Paper trading', accuracy: FEATURE_ACCURACY.paperTrading, value: (id) => PLAN_CATALOG[id].flags.paperTrading ? 'Yes' : '—' },
-  { label: 'Market replay', accuracy: FEATURE_ACCURACY.marketReplay, value: (id) => PLAN_CATALOG[id].flags.marketReplay ? 'Planned' : '—' },
+  { label: 'Market replay', accuracy: FEATURE_ACCURACY.marketReplay, value: (id) => PLAN_CATALOG[id].flags.marketReplay ? 'Yes' : '—' },
   { label: 'Blackout mode', accuracy: FEATURE_ACCURACY.blackoutMode, value: (id) => PLAN_CATALOG[id].flags.blackoutMode ? 'Yes' : '—' },
   { label: 'No ads', accuracy: FEATURE_ACCURACY.noAds, value: (id) => PLAN_CATALOG[id].flags.noAds ? 'Yes' : '—' },
   { label: 'Custom dashboard', accuracy: FEATURE_ACCURACY.customDashboard, value: (id) => PLAN_CATALOG[id].flags.customDashboard ? 'Yes' : '—' },

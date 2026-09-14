@@ -297,7 +297,7 @@ export const FEATURE_ACCURACY: Record<keyof PlanFlags | keyof PlanLimits, Featur
   noPlatformManipulation: 'enforced',
   realTimeNews: 'partial',
   paperTrading: 'partial',
-  marketReplay: 'planned',
+  marketReplay: 'partial',
   blackoutMode: 'enforced',
   noAds: 'enforced',
   customDashboard: 'partial',

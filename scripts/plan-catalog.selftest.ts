@@ -81,7 +81,7 @@ assert.equal(PLAN_CATALOG.gold.flags.indaCreator, true);
 assert.equal(PLAN_CATALOG.platinum.flags.aiPatternScanner, true);
 assert.equal(PLAN_CATALOG.gold.flags.aiPatternScanner, false);
 assert.equal(PLAN_CATALOG.platinum.flags.bots, true);
-assert.equal(FEATURE_ACCURACY.marketReplay, 'planned');
+assert.equal(FEATURE_ACCURACY.marketReplay, 'partial');
 
 assert.equal(canonicalizePlanId('pro'), 'silver');
 assert.equal(canonicalizePlanId('proplus'), 'gold');
