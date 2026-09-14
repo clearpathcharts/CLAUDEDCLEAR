@@ -415,7 +415,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
       }))
     });
   } else if (pathClean === '/about') {
-    title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
+    title = "About ClearPath Trader | Educational Financial Markets Site";
     description = `ClearPath Trader is one educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. Charts, encyclopedias, and accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.`;
     keywords = `about ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility`;
     schemas.push(makeBreadcrumb([
