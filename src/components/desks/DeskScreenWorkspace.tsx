@@ -17,6 +17,7 @@ import {
 } from '../../lib/deskMonitorTree';
 import { useDeskMonitorSync } from '../../hooks/useDeskMonitorSync';
 import { useMembership } from '../../hooks/useMembership';
+import { resolveQuotePrice } from '../../lib/resolveQuotePrice';
 import { useVisibilityPause } from '../../hooks/useVisibilityPause';
 import {
   loadActiveWatchlistId,
@@ -100,9 +101,8 @@ function SatelliteWatchlist({
         setRows(
           watch.map((s) => {
             const data = map[s];
-            const priceRaw = parseFloat(String(data?.price ?? data?.close ?? ''));
+            const price = resolveQuotePrice(data);
             const pctRaw = parseFloat(String(data?.percent_change ?? ''));
-            const price = Number.isFinite(priceRaw) ? priceRaw : null;
             return {
               symbol: s,
               price,

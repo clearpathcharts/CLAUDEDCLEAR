@@ -1,11 +1,20 @@
+import { resolveQuotePrice } from "../lib/resolveQuotePrice";
+
 export const DataRouter = {
   async fetchQuote(resolved: any) {
     const r = await fetch(`/api/quote?symbol=${encodeURIComponent(resolved.providerSymbol)}`);
     const data = await r.json();
+    if (!r.ok || data?.error) {
+      throw new Error(data?.message || `Quote proxy failed with status ${r.status}`);
+    }
+    const last = resolveQuotePrice(data);
+    if (last == null) {
+      throw new Error(`Quote had no usable price for ${resolved.providerSymbol}`);
+    }
     return {
-      price: parseFloat(data.close || data.price || 0),
-      close: parseFloat(data.close || 0),
-      symbol: data.symbol
+      price: last,
+      close: last,
+      symbol: data.symbol || resolved.providerSymbol,
     };
   },
 

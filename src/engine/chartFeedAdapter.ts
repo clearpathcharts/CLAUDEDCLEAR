@@ -4,6 +4,7 @@ import {
   resolveTimeframePlan,
   type NormalizedCandle,
 } from "../services/marketData";
+import { resolveQuotePrice } from "../lib/resolveQuotePrice";
 
 export type Candle = {
   time: number;
@@ -60,10 +61,9 @@ export const ChartFeedAdapter = {
 
   async getLiveQuote(symbol: string) {
     const quote = await MarketEngine.getQuote(symbol);
-
     return {
       time: Math.floor(Date.now() / 1000),
-      price: Number(quote?.close || quote?.price || 0),
+      price: resolveQuotePrice(quote) ?? 0,
     };
   },
 };

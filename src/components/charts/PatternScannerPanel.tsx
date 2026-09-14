@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Scan, TrendingUp, TrendingDown, Minus, Radio, ChevronRight, ChevronUp, ChevronDown } from "lucide-react";
 import {
-  getActivePatternScan,
-  getPatternScan,
+  resolvePanelScan,
   subscribePatternScan,
   PATTERN_GROUP_LABELS,
   getFormingBrief,
@@ -13,14 +12,6 @@ import {
 import type { FormingPossibility } from "../../patterns/forming";
 import { describeBarWindow } from "../../patterns/forming";
 import { getLatencyClass, LATENCY_LABEL, type LatencyClass } from "../../constants/assetRegistry";
-
-function resolvePanelScan(symbol: string, timeframe: string): PatternScanResult | null {
-  if (symbol && symbol !== "—") {
-    const keyed = getPatternScan(symbol, timeframe);
-    if (keyed?.scan) return keyed.scan;
-  }
-  return getActivePatternScan();
-}
 
 const DIRECTION_ICON = {
   bullish: TrendingUp,
