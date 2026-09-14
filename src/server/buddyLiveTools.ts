@@ -7,6 +7,7 @@ import { getTwelveDataApiKey } from './secrets';
 import { fetchCftcLegacyHistory } from './cftcCot';
 import { parseDeskPath, isDeskPath, TRADER_DESKS } from '../lib/traderDesks';
 import { searchEncyclopedia } from './encyclopediaSearch';
+import { resolveQuotePrice } from '../lib/resolveQuotePrice';
 
 export type BuddyToolContext = {
   chartContext: string;
@@ -156,10 +157,10 @@ export function describeClearPathLocation(pathname: string): {
 }
 
 function compactQuote(symbol: string, data: Record<string, unknown>): Record<string, unknown> {
-  const price = Number(data.price ?? data.close);
+  const price = resolveQuotePrice(data);
   const prev = Number(data.previous_close);
   const pct = Number(data.percent_change ?? data.change_percent);
-  if (!Number.isFinite(price) || price <= 0) {
+  if (price == null) {
     return { ok: false, error: 'Quote had no usable price', symbol };
   }
   return {

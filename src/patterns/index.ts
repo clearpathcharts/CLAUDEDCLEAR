@@ -23,6 +23,7 @@ export {
 } from './patternMeta';
 export type { PatternGroup } from './patternMeta';
 export { setActivePatternScan, getActivePatternScan, getRecentPatterns, subscribePatternScan, getAllPatternScans, clearPatternScan, getPatternScan } from './activeScan';
+export { resolvePanelScan } from './resolvePanelScan';
 export type { ChartPatternScan } from './activeScan';
 export { analyzeFormingStructure, formatFormingBriefForChat, formatAllFormingBriefsForChat, normalizeTimeframe, describeBarWindow } from './forming';
 export { formatChartVisionForMentor } from './mentorVision';

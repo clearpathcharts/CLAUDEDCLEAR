@@ -11,6 +11,7 @@ import { getTwelveDataApiKey } from './secrets';
 import { getMarketQuote } from './marketDataGateway';
 import { getAdminFirestore } from './firebaseAdmin';
 import { tryAcquireSchedulerLock } from './durableLeaderLock';
+import { resolveQuotePrice } from '../lib/resolveQuotePrice';
 
 export const CHART_PULSE_INTERVALS = [5, 10, 15, 30] as const;
 export type ChartPulseInterval = (typeof CHART_PULSE_INTERVALS)[number];
@@ -274,9 +275,8 @@ export type PulseFireDeps = {
 };
 
 function formatQuoteLine(symbol: string, quote: { price?: number | string; close?: number | string } | null): string {
-  const raw = quote?.price ?? quote?.close;
-  const num = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(num) || num <= 0) {
+  const num = resolveQuotePrice(quote);
+  if (num == null) {
     return `${symbol} — live quote unavailable on this pulse`;
   }
   return `${symbol} last ${num}`;

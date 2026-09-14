@@ -108,6 +108,9 @@ jobs:
       - name: Twelve Data 401 retry + circuit breaker
         run: npm run test:twelvedata-gateway-auth
 
+      - name: Quote last-print resolution (close over stale price)
+        run: npm run test:quote-price-resolve
+
       - name: FMP second-layer quotes and candles
         run: npm run test:fmp-market-fallback
 

@@ -763,6 +763,11 @@ async function startServer() {
         ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
         generation: getAuthSessionGeneration(),
       },
+      // Env presence only — this route never calls Twelve Data / FMP (no credit burn).
+      marketData: {
+        twelveDataConfigured: Boolean(getCleanTwelveDataApiKey()),
+        fmpConfigured: Boolean(getFmpApiKey()),
+      },
     });
   });
 
@@ -2900,6 +2905,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const presence = getTwelveDataKeyPresence();
     res.json({
       ...twelvedataHealth,
+      status: hasKeys ? twelvedataHealth.status : 'OFFLINE',
       apiKeyPresent: hasKeys,
       activeSource: presence.activeSource,
       keyLength: presence.keyLength,
@@ -3179,10 +3185,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       // here (that falsely tripped "duplicate constant quotes" on quiet markets).
 
       // Normalize so all clients (ticker strip, charts, adapters) share one price field.
-      // Twelve Data's /quote payload uses `close`; some UI only read `price`.
+      // Twelve Data's /quote payload uses `close`; leftover `price` must not win.
+      const last = data.close ?? data.price;
       const normalized = {
         ...data,
-        price: data.price ?? data.close,
+        close: data.close ?? last,
+        price: last,
         percent_change: data.percent_change ?? data.change_percent,
       };
       res.json(normalized);
