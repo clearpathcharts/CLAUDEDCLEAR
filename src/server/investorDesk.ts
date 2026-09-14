@@ -8,8 +8,29 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { PRODUCT_LEGAL_NAME, PRODUCT_NAME, PRODUCT_URL } from "../content/productIdentity";
+import { TRADER_DESK_IDS, TRADER_DESKS, type TraderDeskId } from "../lib/traderDesks";
 import { getGroqApiKey } from "./secrets";
 import { pacificDateKey } from "./dailyOpsCatalog";
+import { US_INVESTOR_ROSTER, type InvestorRosterRow, type RosterKind } from "./usInvestorRoster";
+
+/** Full sentences for the outbound letter. Facts only — no invented data rooms. */
+const DESK_LETTER_LINES: Record<TraderDeskId, string> = {
+  institutional:
+    "an information-first command center for charts, flow, macro, and news",
+  fundamental:
+    "a research desk for company statements, earnings, valuation, and what the business is actually doing",
+  retail: "a chart-first educational workstation for everyday traders",
+  neurodivergent:
+    "a first-class site — not a marketing skin — with sensory UI profiles I built because I needed them",
+};
+
+const DESK_LETTER_LABELS: Record<TraderDeskId, string> = {
+  institutional: "Institutional",
+  fundamental: "Fundamental",
+  retail: "Retail",
+  neurodivergent: "Neurodivergent",
+};
 
 export type InvestorKind = "vc" | "seed" | "angel" | "accelerator" | "ib";
 
@@ -23,6 +44,8 @@ export type InvestorSeed = {
   linkedin?: string;
   /** Founder-only how-to-reach. Not copied into the outbound draft. */
   outreachHint?: string;
+  /** Public firm inbox only — never a harvested personal address. */
+  outreachEmail?: string;
   stage: string;
   thesis: string;
   whyClearPath: string;
@@ -302,7 +325,8 @@ export const INVESTOR_SEED: InvestorSeed[] = [
     stage: "Angel",
     thesis: "Women and non-binary angel network.",
     whyClearPath: "Angel check + network; accessibility/education story travels.",
-    suggestedAngle: "Educational product with a founder who built for his own nervous system.",
+    suggestedAngle:
+      "Pipeline Angels’ network of women and non-binary angels is a natural home for an educational product I built for my own nervous system, with dedicated Institutional, Fundamental, Retail, and Neurodivergent sites already live.",
   },
   {
     id: "baird_augustine",
@@ -322,17 +346,174 @@ export const INVESTOR_SEED: InvestorSeed[] = [
   },
 ];
 
+const OVERLAY_FILE = path.join(DIR, "investor-catalog-overlay.json");
+
+let catalogCache: InvestorSeed[] | null = null;
+
+/** LinkedIn / Wellfound profiles must not collapse to one host. */
+export function catalogIdentityKey(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+    if (
+      host === "linkedin.com" ||
+      host.endsWith(".linkedin.com") ||
+      host === "angel.co" ||
+      host === "wellfound.com" ||
+      host === "x.com" ||
+      host === "twitter.com"
+    ) {
+      return `${host}${parsed.pathname.replace(/\/$/, "").toLowerCase()}`;
+    }
+    return host;
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+function stageForKind(kind: RosterKind): string {
+  if (kind === "ib") return "Investment bank / placement";
+  if (kind === "angel") return "Angel / angel network";
+  if (kind === "accelerator") return "Accelerator";
+  if (kind === "seed") return "Pre-seed / seed";
+  return "Venture capital";
+}
+
+export function rosterRowToSeed(row: InvestorRosterRow): InvestorSeed {
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    website: row.website,
+    linkedin: row.linkedin,
+    outreachEmail: row.outreachEmail,
+    outreachHint: row.outreachEmail
+      ? `Public inbox ${row.outreachEmail}`
+      : row.linkedin
+        ? `Public LinkedIn ${row.linkedin}`
+        : undefined,
+    stage: stageForKind(row.kind),
+    thesis: `US ${stageForKind(row.kind).toLowerCase()} with a public firm page. We do not invent AUM, partners, or interest.`,
+    whyClearPath:
+      "Educational market-intelligence terminal with four live desks (institutional, fundamental, retail, neurodivergent). Not a brokerage.",
+    suggestedAngle:
+      "ClearPath Trader is live educational software with dedicated Institutional, Fundamental, Retail, and Neurodivergent sites — not a brokerage and not trade advice.",
+  };
+}
+
+export function loadOverlayRows(): InvestorRosterRow[] {
+  try {
+    if (!fs.existsSync(OVERLAY_FILE)) return [];
+    const raw = JSON.parse(fs.readFileSync(OVERLAY_FILE, "utf8"));
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveOverlayRows(rows: InvestorRosterRow[]): void {
+  if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
+  fs.writeFileSync(OVERLAY_FILE, JSON.stringify(rows, null, 2), "utf8");
+  catalogCache = null;
+}
+
+export function resetInvestorCatalogCache(): void {
+  catalogCache = null;
+}
+
+function normalizeFirmName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function mergeIntoExisting(existing: InvestorSeed, incoming: InvestorSeed): void {
+  if (!existing.outreachEmail && incoming.outreachEmail) {
+    existing.outreachEmail = incoming.outreachEmail;
+    existing.outreachHint = existing.outreachHint || incoming.outreachHint;
+  }
+  if (!existing.linkedin && incoming.linkedin) existing.linkedin = incoming.linkedin;
+}
+
+/** Hand-tuned seeds first, then the public US roster, then founder overlay. A–Z by name. Identical name/site listings collapse; public email is kept. */
+export function getInvestorCatalog(): InvestorSeed[] {
+  if (catalogCache) return catalogCache;
+  const out: InvestorSeed[] = [];
+  const add = (seed: InvestorSeed) => {
+    const id = seed.id.toLowerCase();
+    const site = catalogIdentityKey(seed.linkedin || seed.website);
+    const nameKey = normalizeFirmName(seed.name);
+    const existing = out.find(
+      (row) =>
+        row.id.toLowerCase() === id ||
+        (site && catalogIdentityKey(row.linkedin || row.website) === site) ||
+        (nameKey && normalizeFirmName(row.name) === nameKey)
+    );
+    if (existing) {
+      mergeIntoExisting(existing, seed);
+      return;
+    }
+    out.push({ ...seed });
+  };
+  for (const seed of INVESTOR_SEED) add(seed);
+  for (const row of US_INVESTOR_ROSTER) add(rosterRowToSeed(row));
+  for (const row of loadOverlayRows()) add(rosterRowToSeed(row));
+  out.sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+  catalogCache = out;
+  return out;
+}
+
+export function catalogKindCounts(list = getInvestorCatalog()): {
+  vc: number;
+  seed: number;
+  angel: number;
+  accelerator: number;
+  ib: number;
+  linkedin: number;
+  withEmail: number;
+  total: number;
+} {
+  const counts = {
+    vc: 0,
+    seed: 0,
+    angel: 0,
+    accelerator: 0,
+    ib: 0,
+    linkedin: 0,
+    withEmail: 0,
+    total: list.length,
+  };
+  for (const seed of list) {
+    counts[seed.kind] += 1;
+    if (seed.linkedin) counts.linkedin += 1;
+    if (seed.outreachEmail) counts.withEmail += 1;
+  }
+  return counts;
+}
+
 export function findInvestorSeed(query: string): InvestorSeed | undefined {
   const q = query.trim().toLowerCase();
   if (!q) return undefined;
-  const exact = INVESTOR_SEED.find((s) => s.id.toLowerCase() === q);
+  const catalog = getInvestorCatalog();
+  const exact = catalog.find((s) => s.id.toLowerCase() === q);
   if (exact) return exact;
-  return INVESTOR_SEED.find(
-    (s) =>
-      s.name.toLowerCase().includes(q) ||
-      s.id.replace(/_/g, " ").includes(q) ||
-      (s.linkedin && s.linkedin.toLowerCase().includes(q))
-  );
+  const handTuned = new Set(INVESTOR_SEED.map((s) => s.id));
+  let best: InvestorSeed | undefined;
+  let bestScore = 0;
+  for (const seed of catalog) {
+    const name = seed.name.toLowerCase();
+    const id = seed.id.replace(/_/g, " ");
+    let score = 0;
+    if (name === q || id === q) score = 100;
+    else if (name.startsWith(q) || id.startsWith(q)) score = 80;
+    else if (name.includes(q) || id.includes(q)) score = 40;
+    else if (seed.linkedin && seed.linkedin.toLowerCase().includes(q)) score = 20;
+    else continue;
+    if (handTuned.has(seed.id)) score += 10;
+    if (score > bestScore) {
+      bestScore = score;
+      best = seed;
+    }
+  }
+  return best;
 }
 
 type PipelineFile = { rows: PipelineRow[] };
@@ -385,8 +566,9 @@ function pickInvestor(dateKey: string, investorId?: string): InvestorSeed {
   const contacted = new Set(
     pipeline.filter((r) => r.status === "contacted" || r.status === "skipped").map((r) => r.investorId)
   );
-  const remaining = INVESTOR_SEED.filter((s) => !contacted.has(s.id));
-  const pool = remaining.length ? remaining : INVESTOR_SEED;
+  const catalog = getInvestorCatalog();
+  const remaining = catalog.filter((s) => !contacted.has(s.id));
+  const pool = remaining.length ? remaining : catalog;
   const n = dateKey.split("-").reduce((a, p) => a + Number(p), 0);
   return pool[n % pool.length];
 }
@@ -467,18 +649,101 @@ async function groqFit(inv: InvestorSeed, corpus: string): Promise<string | unde
   return data.choices?.[0]?.message?.content?.trim();
 }
 
-function draftNote(inv: InvestorSeed): string {
+function letterGreeting(inv: InvestorSeed): string {
+  if (inv.id === "baird_augustine") return "Dear Ryan,";
+  return `Dear ${inv.name},`;
+}
+
+function asSentence(text: string): string {
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  if (!trimmed) return "";
+  const capped = trimmed[0].toUpperCase() + trimmed.slice(1);
+  return /[.!?]$/.test(capped) ? capped : `${capped}.`;
+}
+
+/** Founder scratch (skip / later / do-not-pitch / unverified AUM) must never appear in the send. */
+function isInternalOpsNote(text: string): boolean {
+  return /do not pitch|today'?s send|may be skip|\bskip\b|keep on radar|not today.?s check|not as today|be explicit|note them|apply only|otherwise skip|look for a current|do not repeat|\$700B|dry powder|too late-stage|future round|first check/i.test(
+    text
+  );
+}
+
+function publicSentence(text: string | undefined): string {
+  if (!text || isInternalOpsNote(text)) return "";
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  const hasVerb = /\b(is|are|was|were|built|looking|because|for|with|that)\b/i.test(trimmed);
+  if (trimmed.length < 70 && !hasVerb) return "";
+  if (trimmed.length < 50) return "";
+  return asSentence(trimmed);
+}
+
+function letterAddressee(inv: InvestorSeed): string {
+  if (inv.id === "baird_augustine") return "Baird Augustine";
+  return inv.name;
+}
+
+function kindIntroduction(inv: InvestorSeed): string {
+  const who = letterAddressee(inv);
+  if (inv.kind === "ib") {
+    return `I am writing ${who} as a founder introducing live software to an investment-banking / placement desk — not as a request for a seed-fund check.`;
+  }
+  if (inv.kind === "angel") {
+    return `I am writing ${who} because your network looks at early products, and I would rather you see a terminal that is already live than a promise of one.`;
+  }
+  if (inv.kind === "accelerator") {
+    return `I am writing ${who} as an introduction only. I apply only in a public open window; this letter is so you have the product in hand if a conversation is useful.`;
+  }
+  if (inv.kind === "seed") {
+    return `I am writing ${who} because I am still early and the product is already in production.`;
+  }
+  return `I am writing ${who} because I would rather a venture firm see four working desks than a summary of a company we have not built.`;
+}
+
+function whyThisRecipient(inv: InvestorSeed): string {
+  const parts = [kindIntroduction(inv)];
+  const why = publicSentence(inv.whyClearPath);
+  const angle = publicSentence(inv.suggestedAngle);
+  if (why) parts.push(why);
+  if (angle && angle !== why) parts.push(angle);
+  parts.push(
+    "I am not asking you to take a trade. I am not attaching assets under management or a raise I have not announced. I am asking you to look at working educational software and tell me whether fifteen minutes would be useful."
+  );
+  return parts.join(" ");
+}
+
+function desksParagraph(): string {
+  const items = TRADER_DESK_IDS.map((id) => {
+    const href = `${PRODUCT_URL}${TRADER_DESKS[id].href}`;
+    return `${DESK_LETTER_LABELS[id]} is ${DESK_LETTER_LINES[id]} (${href})`;
+  });
+  return `I organized the company as four first-class desks, each on its own URL, because different operators need different rooms — not one crowded dashboard with the chart buried. ${items[0]}. ${items[1]}. ${items[2]}. ${items[3]}.`;
+}
+
+/** Copy-ready outreach letter. Never auto-sent. Full paragraphs — not a link dump. */
+export function buildInvestorDraftLetter(inv: InvestorSeed): string {
+  const intro = `I am Richard A. Floyd, founder of ${PRODUCT_LEGAL_NAME}. I am writing to introduce ${PRODUCT_NAME}, the educational market-intelligence terminal we have already shipped at ${PRODUCT_URL}. I would rather put live software in front of you than send a deck about a product that does not exist.`;
+  const product = `${PRODUCT_NAME} is a browser-based terminal for stocks, forex, crypto, and commodities: live charts, technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, a macro desk, and thirteen neurodivergent accessibility profiles. C.P.T. Buddy lives inside the terminal to explain the product — it is not a website chatbot and it does not book appointments. We are not a brokerage, we do not custody money, and we do not provide trade advice. The system does not evaluate, alter, or advise on financial decisions.`;
+  const ask = `If a conversation would be useful, I can walk all four desks in fifteen minutes and answer plainly what the product is and is not. If it is not useful, I understand — thank you for reading.`;
   return [
-    `Hi — I'm Richard Floyd, founder of ClearPath Market Sciences (ClearPath Trader).`,
+    `Subject: ${PRODUCT_NAME} — live educational market terminal (four desks)`,
     ``,
-    `We built a charting and financial-education platform with neurodivergent accessibility as a core interface (13 chart profiles), not a marketing afterthought. We are educational software — not a broker, not trade advice.`,
+    letterGreeting(inv),
     ``,
-    `Why ${inv.name}: ${inv.suggestedAngle}`,
+    intro,
     ``,
-    `If useful, I'm happy to send a 10-minute product walk-through (charts + education + accessibility modes).`,
+    product,
+    ``,
+    desksParagraph(),
+    ``,
+    whyThisRecipient(inv),
+    ``,
+    ask,
+    ``,
+    `Sincerely,`,
     ``,
     `Richard A. Floyd`,
-    `clearpathtrader.com`,
+    `Founder, ${PRODUCT_LEGAL_NAME}`,
+    PRODUCT_URL,
   ].join("\n");
 }
 
@@ -551,7 +816,7 @@ export async function researchInvestorForDate(
     siteDescription,
     groqFit: groqSummary,
     sources,
-    draftNote: draftNote(investor),
+    draftNote: buildInvestorDraftLetter(investor),
     warnings,
   };
 }

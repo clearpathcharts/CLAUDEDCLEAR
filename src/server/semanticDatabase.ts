@@ -11,6 +11,9 @@ import {
   IDENTITY_FAQS,
   PRODUCT_DISAMBIGUATION,
   PRODUCT_FEATURE_LIST,
+  PRODUCT_FOUR_DESKS_PHRASE,
+  PRODUCT_HOME_H1,
+  PRODUCT_HOME_TITLE,
   PRODUCT_KNOWS_ABOUT,
   PRODUCT_META_DESCRIPTION,
   PRODUCT_WHAT_IT_IS,
@@ -271,7 +274,7 @@ export const GENERAL_FAQS = [
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: "ClearPathTrader is a free market intelligence terminal and education platform. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital."
+    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
   },
   {
     question: "Is ClearPathTrader a brokerage?",
@@ -329,9 +332,9 @@ const CANONICAL_ALIASES: Record<string, string> = {
 export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
-  let title = "ClearPath Trader | Market Intelligence & Education Terminal";
+  let title = PRODUCT_HOME_TITLE;
   let description = PRODUCT_META_DESCRIPTION;
-  let keywords = "ClearPath Trader, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks";
+  let keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, market intelligence, trading charts, financial education, technical indicators, forex, crypto, stocks`;
   let robotsMeta =
     'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   const baseUrl = "https://clearpathtrader.com";
@@ -381,15 +384,15 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 
   // Map route paths to titles, descriptions, and custom JSON-LD schemas
   if (pathClean === '/') {
-    title = "ClearPath Trader | Market Intelligence & Education Terminal";
+    title = PRODUCT_HOME_TITLE;
     description = PRODUCT_META_DESCRIPTION;
-    keywords = "ClearPath Trader, market intelligence terminal, trading charts, financial encyclopedia, chart patterns, neurodivergent trading UI, not a chatbot, Clear Path Markets Science";
+    keywords = `ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, educational financial markets site, trading charts, financial encyclopedia, neurodivergent trading UI, not a chatbot, Clear Path Markets Science`;
     schemas.push({
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "ClearPath Trader",
       "applicationCategory": "FinanceApplication",
-      "applicationSubCategory": "Market intelligence and education terminal",
+      "applicationSubCategory": "Educational financial markets site",
       "operatingSystem": "Web",
       "url": baseUrl,
       "description": PRODUCT_WHAT_IT_IS,
@@ -413,8 +416,8 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
     });
   } else if (pathClean === '/about') {
     title = "About ClearPath Trader | Market Intelligence Terminal (Not a Chatbot)";
-    description = "Some people see patterns. Some people need structure. Some people learn visually. ClearPath Trader is a market intelligence terminal — charts, encyclopedias, education, accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.";
-    keywords = "about ClearPath Trader, market intelligence terminal, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility";
+    description = `ClearPath Trader is one educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. Charts, encyclopedias, and accessibility — not a brokerage, not a website chatbot, not aiclearpath.com.`;
+    keywords = `about ClearPath Trader, four trader desks, ${PRODUCT_FOUR_DESKS_PHRASE}, not a chatbot, not ClearPath AI, trading education, financial encyclopedia, accessibility`;
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "About", url: "/about" }
@@ -1377,7 +1380,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${shareUrl}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
-    <meta property="og:image:alt" content="ClearPath Trader — market intelligence terminal" />
+    <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="ClearPathTrader" />
@@ -1385,7 +1388,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:title" content="${escAttr(title)}" />
     <meta name="twitter:description" content="${escAttr(description)}" />
     <meta name="twitter:image" content="${baseUrl}/og-image.png" />
-    <meta name="twitter:image:alt" content="ClearPath Trader — market intelligence terminal" />
+    <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
     <link rel="canonical" href="${shareUrl}" />
@@ -1401,7 +1404,7 @@ ${hreflangTags}
     if (!/<h1[\s>]/i.test(html)) {
       const homeHeader =
         '<header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;text-align:center">' +
-        '<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">ClearPath Trader — Market Intelligence &amp; Education Terminal</h1>' +
+        `<h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800">${escAttr(PRODUCT_HOME_H1)}</h1>` +
         '</header>';
       if (html.includes('<div id="root">')) {
         html = html.replace('<div id="root">', `${homeHeader}\n    <div id="root">`);
@@ -1414,10 +1417,10 @@ ${hreflangTags}
     const noscriptHome = `
     <noscript>
       <article style="max-width:48rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;color:#e5e5e5;background:#0a0a0a">
-        <p><strong>ClearPath Trader — Market Intelligence &amp; Education Terminal</strong></p>
+        <p><strong>${escAttr(PRODUCT_HOME_H1)}</strong></p>
         <p>${safeHomeDesc}</p>
-        <p>Not a website chatbot. Not aiclearpath.com. Live charts, unlimited indicators, automatic pattern scans, financial and indicator encyclopedias, Literacy OS, a macro desk, INDACREATOR, and 13 accessibility chart profiles. C.P.T. Buddy is an in-terminal mentor — it does not greet visitors, capture leads, or book appointments.</p>
-        <p><a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
+        <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One educational financial markets site — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-app mentor — it does not greet visitors, capture leads, or book appointments.</p>
+        <p><a href="/desk">Four trader desks</a> · <a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
     // Always replace any existing noscript so an older deploy's <h1> inside noscript cannot linger.

@@ -121,7 +121,7 @@ for (const path of toCheck) {
 
   // Entity pages must not use the default homepage title
   if (/^\/(stocks|crypto|forex|commodities|economy)\//.test(path)) {
-    if (/Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—|Accessibility/.test(title)) {
+    if (/Four Trader Desks on One Site|Market Intelligence & Education Terminal|Financial Intelligence Platform/.test(title) && !/Stock Profile|Crypto Profile|Forex|Commodity|Economy|—|Accessibility/.test(title)) {
       problems.push('entity page still has default title');
     }
     if (!html.includes('/?login=1') && !html.includes('Private Login')) {

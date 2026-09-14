@@ -23,5 +23,12 @@ assert.match(aboutPage, /ABOUT_MANIFESTO_LEAD/);
 assert.match(aboutPage, /ABOUT_MANIFESTO_CLOSER/);
 assert.match(aboutPage, /id="about-manifesto"/);
 assert.match(aboutPage, /canonical="https:\/\/clearpathtrader.com\/about"/);
+assert.match(aboutPage, /educational financial markets site/);
+assert.doesNotMatch(aboutPage, /trading terminal/i);
+assert.doesNotMatch(aboutPage, /Back to Terminal/);
+
+const identity = fs.readFileSync(path.resolve('src/content/productIdentity.ts'), 'utf8');
+assert.match(identity, /educational financial markets site/);
+assert.doesNotMatch(identity, /trading terminal/i);
 
 console.log('about-manifesto.selftest: ok');
