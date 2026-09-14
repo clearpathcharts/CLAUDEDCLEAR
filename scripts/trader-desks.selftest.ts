@@ -285,6 +285,8 @@ for (const rel of srcFiles) {
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /PassThroughTradePanel/);
+    assert.match(text, /useDedicatedPatternPanel=\{i === 0\}/);
+    assert.match(text, /hidePatternOverlays=\{i !== 0\}/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
   }
@@ -444,6 +446,10 @@ for (const rel of srcFiles) {
     assert.match(text, /FUNDAMENTAL_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /FundamentalsPanel/);
     assert.doesNotMatch(text, /LightweightCandles/);
+  }
+  if (rel === 'src/components/desks/DeskScreenWorkspace.tsx') {
+    assert.match(text, /resolveQuotePrice/);
+    assert.doesNotMatch(text, /data\?\.price \?\? data\?\.close/);
   }
   if (rel === 'src/components/desks/DeskRoute.tsx') {
     assert.match(text, /desk-shell/);

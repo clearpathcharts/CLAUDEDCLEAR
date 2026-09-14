@@ -20,6 +20,7 @@ import { resolveProviderSymbol } from "../constants/assetRegistry";
 import { historySymbol } from "../lib/institutional/vendorMaps";
 import { fetchFmpCandles, fetchFmpQuote, fetchFmpQuotes } from "./fmpMarketFallback";
 import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
+import { resolveQuotePrice, withTapePrice } from "../lib/resolveQuotePrice";
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -690,7 +691,7 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
     const data = await pendingRequests[cacheKey]
 
     // Live Data Enforcement Engine Validation BEFORE caching
-    const priceVal = parseFloat(data?.price || data?.close || '0');
+    const priceVal = resolveQuotePrice(data) ?? 0;
     const validation = LiveDataEnforcementEngine.validateTick({
       symbol,
       price: priceVal,
@@ -705,10 +706,9 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
       logHealthEvent('WARNING', `Quote integrity soft-fail ${symbol}: ${validation.message}`);
     }
 
-    // Always expose `price` alongside Twelve Data's `close` so ticker UI and
-    // chart adapters stay in sync (MarketTicker historically only read `price`).
+    // Always expose `price` from last print (`close` wins over a leftover `price`).
     const normalized = data && typeof data === 'object'
-      ? { ...data, price: data.price ?? data.close }
+      ? withTapePrice(data)
       : data;
 
     marketCache[cacheKey] = {
@@ -789,7 +789,7 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
   for (const row of needFetch) {
     const item = pick(row.provider);
     if (item && item.status !== 'error' && (item.close || item.price)) {
-      const normalized = { ...item, price: item.price ?? item.close, symbol: row.original };
+      const normalized = withTapePrice({ ...item, symbol: row.original });
       marketCache[`quote:${row.provider}`] = { data: normalized, timestamp: Date.now() };
       out[row.original] = normalized;
     } else {

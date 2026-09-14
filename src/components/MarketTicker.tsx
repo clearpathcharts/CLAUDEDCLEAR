@@ -2,6 +2,9 @@
 import React, { useState, useRef } from "react";
 import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 import { getTickerAssets } from "../constants/assetRegistry";
+import { resolveQuotePrice } from "../lib/resolveQuotePrice";
+
+export { resolveQuotePrice } from "../lib/resolveQuotePrice";
 
 interface MarketAsset {
   symbol: string;
@@ -22,15 +25,6 @@ const TICKER_SYMBOLS: { symbol: string; name: string }[] = getTickerAssets(8).ma
   symbol: a.symbol,
   name: a.display,
 }));
-
-/** Same resolution as ChartFeedAdapter / DataRouter — Twelve Data quotes expose `close`, not always `price`. */
-export function resolveQuotePrice(data: { price?: string | number; close?: string | number; error?: unknown } | null | undefined): number | null {
-  if (!data || data.error) return null;
-  const raw = data.close ?? data.price;
-  if (raw === undefined || raw === null || raw === "") return null;
-  const n = typeof raw === "number" ? raw : parseFloat(String(raw));
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
 
 export default function MarketTicker({ profile = {} }: MarketTickerProps) {
   // Start with no price — never flash stale hardcoded levels (e.g. gold @ 2382 while charts @ ~4022).

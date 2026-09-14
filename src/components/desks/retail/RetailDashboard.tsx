@@ -859,8 +859,8 @@ export default function RetailDashboard() {
                   height={layout === 1 ? 640 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
-                  useDedicatedPatternPanel={layout === 1 && i === 0}
-                  hidePatternOverlays={!(layout === 1 && i === 0)}
+                  useDedicatedPatternPanel={i === 0}
+                  hidePatternOverlays={i !== 0}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
               </DeskChartFill>
