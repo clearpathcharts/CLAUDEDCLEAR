@@ -65,3 +65,12 @@ export function injectBuildStamp(html: string): string {
   }
   return `${snippet}${html}`;
 }
+
+/** Helmet prod CSP is nonce-only; stamp every inline <script> including boot + Firebase inject. */
+export function applyCspNonceToScripts(html: string, nonce: string): string {
+  const safe = nonce.replace(/[^A-Za-z0-9+/=_-]/g, '');
+  if (!safe) return html;
+  let out = html.replace(/<script(?![^>]*\bnonce=)/gi, `<script nonce="${safe}"`);
+  out = out.replace(/<meta[^>]*http-equiv=["']Content-Security-Policy["'][^>]*>/i, '');
+  return out;
+}

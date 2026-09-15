@@ -9,6 +9,7 @@ import {
   applyHtmlNoStore,
   HTML_NO_STORE_HEADERS,
   injectBuildStamp,
+  applyCspNonceToScripts,
   readLiveBuildIdentity,
   sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
@@ -212,6 +213,13 @@ try {
   const stamped = injectBuildStamp('<html><head></head><body></body></html>');
   assert.match(stamped, /clearpath-build clear-path-markets-science clear-path-markets-science-00555-abc/);
   assert.match(stamped, /window\.__CLEARPATH_BUILD__/);
+  const withMeta = applyCspNonceToScripts(
+    `${stamped}<meta http-equiv="Content-Security-Policy" content="script-src *"><script>window.x=1</script>`,
+    'abc123',
+  );
+  assert.match(withMeta, /<script nonce="abc123">window\.__CLEARPATH_BUILD__/);
+  assert.match(withMeta, /<script nonce="abc123">window\.x=1/);
+  assert.doesNotMatch(withMeta, /http-equiv="Content-Security-Policy"/);
 } finally {
   if (prevK === undefined) delete process.env.K_REVISION;
   else process.env.K_REVISION = prevK;

@@ -427,19 +427,28 @@ async function startServer() {
   const server = createServer(app);
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const isProd = process.env.NODE_ENV === 'production';
+  const enrichHtml = (html: string, reqPath: string, res: express.Response) =>
+    enrichHtmlWithMetadata(html, reqPath, isProd ? { cspNonce: String(res.locals.cspNonce || '') } : undefined);
 
   // Enable trust proxy for Cloud Run (real client IP behind the load balancer).
   app.set('trust proxy', 1);
 
   // 1. SECURITY & PERFORMANCE MIDDLEWARE
-  // Dev: CSP off so Vite HMR works. Prod: enforce CSP + HSTS + framing defenses.
+  // Dev: CSP off so Vite HMR works. Prod: nonce'd inline boot/config scripts + HSTS.
+  app.use((req, res, next) => {
+    res.locals.cspNonce = crypto.randomBytes(16).toString('hex');
+    next();
+  });
   app.use(helmet({
     contentSecurityPolicy: isProd
       ? {
           useDefaults: true,
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
+            scriptSrc: [
+              "'self'",
+              (_req, res) => `'nonce-${String((res as express.Response).locals.cspNonce || '')}'`,
+            ],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
             fontSrc: ["'self'", 'data:', 'https:', 'https://fonts.gstatic.com'],
@@ -763,10 +772,13 @@ async function startServer() {
         ephemeral: !(sessionSecretConfigured || Boolean(getStripeSecretKey())) && isProd,
         generation: getAuthSessionGeneration(),
       },
-      // Env presence only — this route never calls Twelve Data / FMP (no credit burn).
+      // Env presence vs live quotes — configured is not the same as a live print.
       marketData: {
         twelveDataConfigured: Boolean(getCleanTwelveDataApiKey()),
         fmpConfigured: Boolean(getFmpApiKey()),
+        twelveDataStatus: twelvedataHealth.status,
+        twelveDataLiveQuotes:
+          twelvedataHealth.status === 'HEALTHY' && twelvedataHealth.successfulRequests > 0,
       },
     });
   });
@@ -4444,16 +4456,16 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       const pathClean = (req.path || '/').toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
       // Bing/Google homepage audits need a real in-flow <h1> — serve static HTML to crawlers.
       if (!wantLiveSpa && pathClean === '/' && isSearchEngineBot(req.get('user-agent'))) {
-        const enriched = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
+        const enriched = enrichHtml(renderStaticHomeForBots(), '/', res);
         return sendUncachedHtml(res, enriched);
       }
       if (!wantLiveSpa && pathClean === '/about' && isSearchEngineBot(req.get('user-agent'))) {
-        const enriched = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
+        const enriched = enrichHtml(renderStaticAboutForBots(), '/about', res);
         return sendUncachedHtml(res, enriched);
       }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
-        const enriched = enrichHtmlWithMetadata(renderUnknownRegionNotFound(req.path), req.path);
+        const enriched = enrichHtml(renderUnknownRegionNotFound(req.path), req.path, res);
         return sendUncachedHtml(res, enriched, 404);
       }
       const isDeskRoute =
@@ -4466,7 +4478,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           ? null
           : renderStaticContentPage(req.path);
       if (staticContentHtml !== null) {
-        const enriched = enrichHtmlWithMetadata(staticContentHtml, req.path);
+        const enriched = enrichHtml(staticContentHtml, req.path, res);
         return sendUncachedHtml(res, enriched);
       }
 
@@ -4478,13 +4490,13 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           html = await vite.transformIndexHtml(req.url, html);
         }
         
-        const enriched = enrichHtmlWithMetadata(html, req.path);
+        const enriched = enrichHtml(html, req.path, res);
         return sendUncachedHtml(res, enriched);
       } else {
         const destIndexPath = path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(destIndexPath)) {
           const html = safeReadTextFile(destIndexPath);
-          const enriched = enrichHtmlWithMetadata(html, req.path);
+          const enriched = enrichHtml(html, req.path, res);
           return sendUncachedHtml(res, enriched);
         } else {
           applyHtmlNoStore(res);
@@ -4500,7 +4512,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           ? path.resolve(process.cwd(), 'index.html')
           : path.resolve(process.cwd(), 'dist', 'index.html');
         if (fs.existsSync(fallbackPath)) {
-          return sendUncachedHtml(res, safeReadTextFile(fallbackPath));
+          return sendUncachedHtml(res, enrichHtml(safeReadTextFile(fallbackPath), req.path, res));
         }
       } catch (fallbackErr) {
         console.error('[SEO Page Interceptor fallback failed]', fallbackErr);
@@ -4578,7 +4590,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return res.redirect(301, `/stocks/${String(rec.ticker).toLowerCase()}`);
     }
     if (!rec) {
-      const enriched = enrichHtmlWithMetadata(renderUnknownCompanyNotFound(req.path), req.path);
+      const enriched = enrichHtml(renderUnknownCompanyNotFound(req.path), req.path, res);
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
@@ -4595,9 +4607,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   });
 
   const sendEncyclopedia404 = (res: any, kind: string, slug: string, hub: string, label: string, reqPath: string) => {
-    const enriched = enrichHtmlWithMetadata(
+    const enriched = enrichHtml(
       renderUnknownEncyclopediaNotFound(kind, slug, hub, label),
       reqPath,
+      res,
     );
     return sendUncachedHtml(res, enriched, 404);
   };

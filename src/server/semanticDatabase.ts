@@ -20,7 +20,7 @@ import {
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
-import { injectBuildStamp } from './htmlCacheHeaders';
+import { applyCspNonceToScripts, injectBuildStamp } from './htmlCacheHeaders';
 import {
   lookupStock,
   lookupCrypto,
@@ -329,7 +329,11 @@ const CANONICAL_ALIASES: Record<string, string> = {
   '/literacy-os': '/literacy',
 };
 
-export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
+export function enrichHtmlWithMetadata(
+  originalHtml: string,
+  reqPath: string,
+  options?: { cspNonce?: string },
+): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
   let title = PRODUCT_HOME_TITLE;
@@ -1482,7 +1486,12 @@ ${hreflangTags}
   }
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
-  return injectBuildStamp(injectFirebaseClientConfig(html));
+  // Production CSP is nonce-only, so inline boot + inject scripts must carry the request nonce.
+  let stamped = injectBuildStamp(injectFirebaseClientConfig(html));
+  if (options?.cspNonce) {
+    stamped = applyCspNonceToScripts(stamped, options.cspNonce);
+  }
+  return stamped;
 }
 
 // Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.
