@@ -656,13 +656,13 @@ export const LightweightCandles = memo(function LightweightCandles({
         const allowedLimit = getCandleLimit(userTier);
 
         const incoming = dataRef.current;
-        if (Array.isArray(incoming)) {
+        // Parent-fed desks (Institutional) mount with `data={[]}` before history
+        // arrives. An empty array is "not ready", not a terminal miss — fetch
+        // via the shared cache so ticks/indicators/vision still start. Later
+        // parent candles update in place through the live setData effect.
+        const parentHasBars = Array.isArray(incoming) && incoming.length > 0;
+        if (parentHasBars) {
           if (!active || disposedRef.current) return;
-          if (incoming.length === 0) {
-            setError('CHART DATA UNAVAILABLE');
-            setIsLoading(false);
-            return;
-          }
           displayData = incoming;
         } else {
           let fetched: Candle[] | null = null;

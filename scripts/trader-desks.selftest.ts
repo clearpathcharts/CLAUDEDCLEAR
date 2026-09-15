@@ -393,6 +393,8 @@ for (const rel of srcFiles) {
     assert.match(text, /disposedRef/);
     assert.match(text, /lockVisibleTimeRangeOnResize/);
     assert.match(text, /isEmptyVisibleRange/);
+    assert.match(text, /parentHasBars/);
+    assert.doesNotMatch(text, /incoming\.length === 0[\s\S]{0,80}CHART DATA UNAVAILABLE/);
   }
   if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
     assert.match(text, /readInitialNeuroProfile/);
