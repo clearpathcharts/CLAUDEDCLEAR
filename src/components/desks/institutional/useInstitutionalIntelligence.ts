@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ASSET_REGISTRY, LATENCY_LABEL, getEnabledAssets, type AssetCategory } from '../../../constants/assetRegistry';
 import { resolveQuotePrice } from '../../MarketTicker';
 import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
+import { fetchQuotesMap } from '../../../lib/clientMarketCache';
 import { fetchTieredHistoricalData } from '../../../services/marketData';
 import { fetchEconomicNews, type EconomicNewsItem } from '../../../services/economicService';
 import { classifyNewsCategory } from '../../../fundamental/format';
@@ -91,10 +92,10 @@ async function fetchQuoteMap(symbols: string[]): Promise<Record<string, QuoteRow
   const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 80);
   const out: Record<string, QuoteRow> = {};
   if (unique.length === 0) return out;
-  const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(unique.join(','))}`);
-  if (!res.ok) throw new Error(`Quotes HTTP ${res.status}`);
-  const body = await res.json();
-  const map = (body?.quotes || {}) as Record<string, { close?: string; price?: string; percent_change?: string }>;
+  const map = (await fetchQuotesMap(unique)) as Record<
+    string,
+    { close?: string; price?: string; percent_change?: string }
+  >;
   for (const symbol of unique) {
     const data = map[symbol];
     const price = resolveQuotePrice(data);

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ASSET_REGISTRY, LATENCY_LABEL } from '../../../constants/assetRegistry';
 import { resolveQuotePrice } from '../../MarketTicker';
 import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
+import { fetchQuotesMap } from '../../../lib/clientMarketCache';
 import { fetchTieredHistoricalData } from '../../../services/marketData';
 import { fetchEconomicNews, type EconomicNewsItem } from '../../../services/economicService';
 import type { Candle } from '../../../types/indicators';
@@ -47,6 +48,8 @@ export type RetailFundamentalSnap = {
   status: 'ok' | 'unavailable' | 'unconfigured' | 'n/a';
 };
 
+const EMPTY_CANDLES: Candle[] = [];
+
 function toCandle(c: {
   time: number;
   open: number;
@@ -62,10 +65,7 @@ async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQu
   const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 80);
   const out: Record<string, RetailQuote> = {};
   if (unique.length === 0) return out;
-  const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(unique.join(','))}`);
-  if (!res.ok) throw new Error(`Quotes HTTP ${res.status}`);
-  const body = await res.json();
-  const map = (body?.quotes || {}) as Record<
+  const map = (await fetchQuotesMap(unique)) as Record<
     string,
     { close?: string; price?: string; percent_change?: string; volume?: string }
   >;
@@ -236,8 +236,9 @@ export function useRetailIntelligence(
     { intervalMs: 20_000, enabled: pollRibbon },
   );
 
+  const watchKey = watchlistSymbols.map((s) => s.toUpperCase()).join(',');
   const loadWatch = useCallback(async () => {
-    const symbols = [...new Set(watchlistSymbols.map((s) => s.toUpperCase()))].slice(0, 24);
+    const symbols = [...new Set(watchKey.split(',').filter(Boolean))].slice(0, 24);
     if (symbols.length === 0) {
       setWatchQuotes([]);
       return;
@@ -248,7 +249,7 @@ export function useRetailIntelligence(
     } catch {
       setWatchQuotes((prev) => prev.map((q) => ({ ...q, live: false })));
     }
-  }, [watchlistSymbols]);
+  }, [watchKey]);
 
   useEffect(() => {
     void loadWatch();
@@ -483,7 +484,7 @@ export function useRetailIntelligence(
   }, [primarySymbol, pollFundamentals]);
 
   const primaryKey = `${primarySymbol}:${primaryTimeframe}`;
-  const primaryCandles = candlesByKey[primaryKey] ?? [];
+  const primaryCandles = candlesByKey[primaryKey] ?? EMPTY_CANDLES;
 
   return {
     slots,

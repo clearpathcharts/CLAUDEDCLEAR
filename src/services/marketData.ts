@@ -1,4 +1,5 @@
 import { getCandleLimit } from "../config/tierLimits";
+import { createSharedFetcher } from "../lib/clientMarketCache";
 
 /**
  * Historical market data service.
@@ -312,12 +313,33 @@ export type HistoricalFetchOptions = {
   limit?: number;
 };
 
+const sharedHistory = createSharedFetcher<NormalizedCandle[]>({ ttlMs: 20_000, max: 48 });
+
 export const fetchTieredHistoricalData = async (
   symbol: string,
   interval: string,
   userTier: string,
   options?: HistoricalFetchOptions,
 ): Promise<NormalizedCandle[]> => {
+  const cacheKey = [
+    symbol,
+    interval,
+    userTier,
+    options?.startDate || "",
+    options?.endDate || "",
+    options?.limit ?? "",
+  ].join("|");
+  return sharedHistory(cacheKey, () =>
+    fetchTieredHistoricalDataUncached(symbol, interval, userTier, options),
+  );
+};
+
+async function fetchTieredHistoricalDataUncached(
+  symbol: string,
+  interval: string,
+  userTier: string,
+  options?: HistoricalFetchOptions,
+): Promise<NormalizedCandle[]> {
   const plan = resolveTimeframePlan(interval);
   const tierCap = Math.min(
     options?.limit ?? getCandleLimit(userTier),

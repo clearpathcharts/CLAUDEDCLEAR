@@ -7,6 +7,7 @@ import EconomicCalendar from '../EconomicCalendar';
 import { DEFAULT_MARKET_SYMBOLS } from '../../constants/chartLayout';
 import { advancedProfiles } from '../../lib/advanced/profiles';
 import { formatStructurePrice } from '../../lib/institutional/analyzeStructure';
+import { fetchQuotesMap } from '../../lib/clientMarketCache';
 import { fetchTieredHistoricalData } from '../../services/marketData';
 import { scheduleChartVisionImmediate } from '../../patterns';
 import {
@@ -83,16 +84,7 @@ function SatelliteWatchlist({
     let cancelled = false;
     const run = async () => {
       try {
-        const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(watch.join(','))}`);
-        if (!res.ok) {
-          if (!cancelled) {
-            setRows(watch.map((s) => ({ symbol: s, price: null, pct: null, live: false })));
-            setError(`Quotes unavailable (HTTP ${res.status}).`);
-          }
-          return;
-        }
-        const body = await res.json();
-        const map = (body?.quotes || {}) as Record<
+        const map = (await fetchQuotesMap(watch)) as Record<
           string,
           { close?: string; price?: string; percent_change?: string }
         >;
