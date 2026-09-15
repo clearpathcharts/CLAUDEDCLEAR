@@ -20,7 +20,7 @@ import {
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
-import { applyCspNonceToScripts, injectBuildStamp } from './htmlCacheHeaders';
+import { applyCspNonceToScripts, injectBuildStamp, jsonForInlineScript } from './htmlCacheHeaders';
 import {
   lookupStock,
   lookupCrypto,
@@ -1325,7 +1325,7 @@ export function enrichHtmlWithMetadata(
 
   // Construct final Schema script blocks to inject
   const schemaScripts = schemas.map(schema => {
-    return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
+    return `<script type="application/ld+json">\n${jsonForInlineScript(schema)}\n</script>`;
   }).join('\n');
 
   // Perform surgical replacements of metadata placeholders in standard index.html template
@@ -1372,7 +1372,7 @@ export function enrichHtmlWithMetadata(
         marketId: regionalMarket?.id,
         regionalIndex: canonicalPath === '/regions',
       })
-        .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+        .map((h) => `    <link rel="alternate" hreflang="${escAttr(h.hreflang)}" href="${escAttr(h.href)}" />`)
         .join('\n');
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
@@ -1382,7 +1382,7 @@ export function enrichHtmlWithMetadata(
 ${noindexPage ? '' : localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
-    <meta property="og:url" content="${shareUrl}" />
+    <meta property="og:url" content="${escAttr(shareUrl)}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
     <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
@@ -1395,7 +1395,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
-    <link rel="canonical" href="${shareUrl}" />
+    <link rel="canonical" href="${escAttr(shareUrl)}" />
 ${hreflangTags}
   `;
 

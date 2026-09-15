@@ -10,9 +10,11 @@ import {
   HTML_NO_STORE_HEADERS,
   injectBuildStamp,
   applyCspNonceToScripts,
+  jsonForInlineScript,
   readLiveBuildIdentity,
   sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
+import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase';
 import {
   AUTH_GENERATION_KEY,
   CACHE_BUST_PARAM,
@@ -218,8 +220,22 @@ try {
     'abc123',
   );
   assert.match(withMeta, /<script nonce="abc123">window\.__CLEARPATH_BUILD__/);
-  assert.match(withMeta, /<script nonce="abc123">window\.x=1/);
+  assert.doesNotMatch(withMeta, /<script nonce="abc123">window\.x=1/);
+  assert.match(withMeta, /<script>window\.x=1<\/script>/);
   assert.doesNotMatch(withMeta, /http-equiv="Content-Security-Policy"/);
+  assert.equal(
+    jsonForInlineScript({ url: 'https://clearpathtrader.com/</script><script>alert(1)' }),
+    '{\n  "url": "https://clearpathtrader.com/\\u003c/script>\\u003cscript>alert(1)"\n}',
+  );
+  const poisoned = enrichHtmlWithMetadata(
+    '<html><head><title>x</title></head><body></body></html>',
+    '/"><script>alert(1)</script>',
+    { cspNonce: 'deadbeef' },
+  );
+  assert.doesNotMatch(poisoned, /<script nonce="deadbeef">alert\(1\)/);
+  assert.match(poisoned, /og:url" content="[^"]*&quot;/);
+  assert.match(poisoned, /rel="canonical" href="[^"]*&quot;/);
+  assert.doesNotMatch(poisoned, /<script>alert\(1\)<\/script>/);
 } finally {
   if (prevK === undefined) delete process.env.K_REVISION;
   else process.env.K_REVISION = prevK;
