@@ -74,6 +74,7 @@ export function jsonForInlineScript(value: unknown): string {
 const FIRST_PARTY_INLINE_SCRIPT = [
   /window\.__CLEARPATH_BUILD__/,
   /window\.__CLEARPATH_FIREBASE_CONFIG__/,
+  /window\.__CLEARPATH_POSITION_SIZE__/,
   /cp_a11y_high_contrast/,
   /\[Purge\] Unregistered SW/,
   /window\.__CP_BOOT_OK/,

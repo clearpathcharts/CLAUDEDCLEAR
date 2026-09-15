@@ -15,6 +15,7 @@ import {
   sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase';
+import { renderStaticContentPage } from '../src/server/contentPages';
 import {
   AUTH_GENERATION_KEY,
   CACHE_BUST_PARAM,
@@ -236,6 +237,15 @@ try {
   assert.match(poisoned, /og:url" content="[^"]*&quot;/);
   assert.match(poisoned, /rel="canonical" href="[^"]*&quot;/);
   assert.doesNotMatch(poisoned, /<script>alert\(1\)<\/script>/);
+  const calc = applyCspNonceToScripts(
+    '<script>window.__CLEARPATH_POSITION_SIZE__=1;(function(){calc()})()</script>',
+    'abc123',
+  );
+  assert.match(calc, /<script nonce="abc123">window\.__CLEARPATH_POSITION_SIZE__/);
+  const posPage = renderStaticContentPage('/tools/position-size');
+  assert.ok(posPage);
+  const posHtml = enrichHtmlWithMetadata(posPage, '/tools/position-size', { cspNonce: 'abc123' });
+  assert.match(posHtml, /<script nonce="abc123">[\s\S]*window\.__CLEARPATH_POSITION_SIZE__/);
 } finally {
   if (prevK === undefined) delete process.env.K_REVISION;
   else process.env.K_REVISION = prevK;
