@@ -238,7 +238,8 @@ for (const rel of srcFiles) {
     assert.doesNotMatch(text, /104\.82/);
   }
   if (rel === 'src/components/desks/institutional/useInstitutionalIntelligence.ts') {
-    assert.match(text, /\/api\/quotes/);
+    assert.match(text, /fetchQuotesMap/);
+    assert.match(text, /clientMarketCache/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /\/api\/fred\/observations/);
     assert.match(text, /\/api\/cot\/history/);
@@ -344,7 +345,8 @@ for (const rel of srcFiles) {
     assert.match(text, /BOS|CHoCH|FVG/);
   }
   if (rel === 'src/components/desks/retail/useRetailIntelligence.ts') {
-    assert.match(text, /\/api\/quotes/);
+    assert.match(text, /fetchQuotesMap/);
+    assert.match(text, /clientMarketCache/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /fetchEconomicNews/);
   }
@@ -380,12 +382,17 @@ for (const rel of srcFiles) {
     assert.match(text, /holdId=/);
     assert.match(text, /showBelow/);
     assert.match(text, /min-h-\[70vh\]/);
+    assert.match(text, /WatchlistAddForm/);
+    assert.match(text, /ChartSymbolSearch/);
     assert.doesNotMatch(text, /You should buy|Place order|broker routing/i);
     assert.doesNotMatch(text, /href=\{`\/\?profile=/);
   }
   if (rel === 'src/components/charts/LightweightCandles.tsx') {
     assert.match(text, /hidePatternOverlaysRef/);
     assert.match(text, /hidePatternOverlaysRef\.current/);
+    assert.match(text, /disposedRef/);
+    assert.match(text, /lockVisibleTimeRangeOnResize/);
+    assert.match(text, /isEmptyVisibleRange/);
   }
   if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
     assert.match(text, /readInitialNeuroProfile/);
@@ -482,6 +489,8 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/fmp\/lookup/);
     assert.match(text, /marketData: \{/);
     assert.match(text, /twelveDataConfigured/);
+    assert.match(text, /twelveDataLiveQuotes/);
+    assert.match(text, /twelveDataStatus/);
     assert.match(text, /hasKeys \? twelvedataHealth\.status : 'OFFLINE'/);
   }
 }
@@ -543,5 +552,18 @@ assert.match(buddyCss, /font-size:\s*16px/);
 assert.match(buddyCss, /min-height:\s*44px/);
 const androidManifest = fs.readFileSync(path.join(root, 'android/app/src/main/AndroidManifest.xml'), 'utf8');
 assert.match(androidManifest, /adjustResize/);
+
+const assetSearch = fs.readFileSync(path.join(root, 'src/components/charts/ChartSymbolSearch.tsx'), 'utf8');
+assert.match(assetSearch, /SUGGESTION_CAP = 25/);
+assert.match(assetSearch, /useDeferredValue/);
+assert.match(assetSearch, /searchEnabledAssets/);
+assert.match(assetSearch, /data-asset-search/);
+assert.doesNotMatch(assetSearch, /getProceduralStocks/);
+assert.doesNotMatch(assetSearch, /searchAllData/);
+
+const gatewaySrc = fs.readFileSync(path.join(root, 'src/server/marketDataGateway.ts'), 'utf8');
+assert.match(gatewaySrc, /function markStale/);
+assert.match(gatewaySrc, /stale: true/);
+assert.match(gatewaySrc, /status: 'OFFLINE'/);
 
 console.log('trader-desks.selftest: ok');

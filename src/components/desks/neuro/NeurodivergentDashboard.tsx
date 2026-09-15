@@ -54,6 +54,47 @@ function loadNeuroWatchlists(): RetailWatchlist[] {
   return NEURO_DEFAULT_WATCHLISTS.map((w) => ({ ...w, symbols: [...w.symbols] }));
 }
 
+const EMPTY_WATCH: string[] = [];
+
+/** Local query until Add — never lift keystrokes into desk/chart state. */
+function WatchlistAddForm({
+  borderA,
+  text,
+  onAdd,
+}: {
+  borderA: string;
+  text: string;
+  onAdd: (raw: string) => void;
+}) {
+  const [addSymbol, setAddSymbol] = useState('');
+  return (
+    <form
+      className="mb-2 flex gap-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!addSymbol.trim()) return;
+        onAdd(addSymbol.trim());
+        setAddSymbol('');
+      }}
+    >
+      <input
+        value={addSymbol}
+        onChange={(e) => setAddSymbol(e.target.value)}
+        placeholder="Add asset"
+        className="min-w-0 flex-1 rounded-lg border bg-black/30 px-2 py-2 font-mono text-sm"
+        style={{ borderColor: `${borderA}40`, color: text }}
+      />
+      <button
+        type="submit"
+        className="rounded-lg border px-3 py-2 text-sm font-black uppercase"
+        style={{ borderColor: borderA, color: borderA }}
+      >
+        Add
+      </button>
+    </form>
+  );
+}
+
 function QuoteRow({
   row,
   on,
@@ -106,12 +147,11 @@ export default function NeurodivergentDashboard() {
     }
   });
   const [alerts, setAlerts] = useState(() => loadAlerts());
-  const [addSymbol, setAddSymbol] = useState('');
 
   const deskVisual = useOptionalDeskAppearance();
   const theme = themeProfiles[profileId] ?? themeProfiles.calm_focus;
   const activeWl = watchlists.find((w) => w.id === activeWlId) ?? watchlists[0];
-  const watchSymbols = activeWl?.symbols ?? [];
+  const watchSymbols = activeWl?.symbols ?? EMPTY_WATCH;
   const reduced = prefersReducedChrome(profileId) || focusMode || blackout;
   const hideSecondary = reduced;
   const hold = useDeskHold();
@@ -421,36 +461,20 @@ export default function NeurodivergentDashboard() {
                 </button>
               ))}
             </div>
-            <form
-              className="mb-2 flex gap-1"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!addSymbol.trim() || !activeWl) return;
-                const resolved = resolveMarketAsset(addSymbol.trim()).value.toUpperCase();
+            <WatchlistAddForm
+              borderA={theme.borderA}
+              text={theme.text}
+              onAdd={(raw) => {
+                if (!activeWl) return;
+                const resolved = resolveMarketAsset(raw).value.toUpperCase();
                 if (activeWl.symbols.includes(resolved)) return;
                 persistWl(
                   watchlists.map((w) =>
                     w.id === activeWl.id ? { ...w, symbols: [...w.symbols, resolved] } : w,
                   ),
                 );
-                setAddSymbol('');
               }}
-            >
-              <input
-                value={addSymbol}
-                onChange={(e) => setAddSymbol(e.target.value)}
-                placeholder="Add asset"
-                className="min-w-0 flex-1 rounded-lg border bg-black/30 px-2 py-2 font-mono text-sm"
-                style={{ borderColor: `${theme.borderA}40`, color: theme.text }}
-              />
-              <button
-                type="submit"
-                className="rounded-lg border px-3 py-2 text-sm font-black uppercase"
-                style={{ borderColor: theme.borderA, color: theme.borderA }}
-              >
-                Add
-              </button>
-            </form>
+            />
             <ul>
               {(activeWl?.symbols ?? []).map((sym) => {
                 const row =
