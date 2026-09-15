@@ -24,6 +24,9 @@ assert.equal(formatSymbolForTwelveData('SPX'), 'SPY');
 assert.equal(formatSymbolForTwelveData('NDX'), 'QQQ');
 assert.equal(formatSymbolForTwelveData('XAUUSD'), 'XAU/USD');
 assert.equal(formatSymbolForTwelveData('EURUSD'), 'EUR/USD');
+assert.equal(formatSymbolForTwelveData('ETH'), 'ETH/USD');
+assert.equal(formatSymbolForTwelveData('BTC'), 'BTC/USD');
+assert.equal(formatSymbolForTwelveData('SOL'), 'SOL/USD');
 
 assert.equal(fmpQuoteSymbol('SPX'), 'SPY');
 assert.equal(fmpQuoteSymbol('VIX'), '^VIX');

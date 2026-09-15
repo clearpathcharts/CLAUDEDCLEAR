@@ -20,7 +20,7 @@ import {
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
-import { injectBuildStamp } from './htmlCacheHeaders';
+import { applyCspNonceToScripts, injectBuildStamp, jsonForInlineScript } from './htmlCacheHeaders';
 import {
   lookupStock,
   lookupCrypto,
@@ -329,7 +329,11 @@ const CANONICAL_ALIASES: Record<string, string> = {
   '/literacy-os': '/literacy',
 };
 
-export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): string {
+export function enrichHtmlWithMetadata(
+  originalHtml: string,
+  reqPath: string,
+  options?: { cspNonce?: string },
+): string {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
   
   let title = PRODUCT_HOME_TITLE;
@@ -1321,7 +1325,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 
   // Construct final Schema script blocks to inject
   const schemaScripts = schemas.map(schema => {
-    return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
+    return `<script type="application/ld+json">\n${jsonForInlineScript(schema)}\n</script>`;
   }).join('\n');
 
   // Perform surgical replacements of metadata placeholders in standard index.html template
@@ -1368,7 +1372,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
         marketId: regionalMarket?.id,
         regionalIndex: canonicalPath === '/regions',
       })
-        .map((h) => `    <link rel="alternate" hreflang="${h.hreflang}" href="${h.href}" />`)
+        .map((h) => `    <link rel="alternate" hreflang="${escAttr(h.hreflang)}" href="${escAttr(h.href)}" />`)
         .join('\n');
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
@@ -1378,7 +1382,7 @@ export function enrichHtmlWithMetadata(originalHtml: string, reqPath: string): s
 ${noindexPage ? '' : localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
-    <meta property="og:url" content="${shareUrl}" />
+    <meta property="og:url" content="${escAttr(shareUrl)}" />
     <meta property="og:image" content="${baseUrl}/og-image.png" />
     <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
@@ -1391,7 +1395,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
-    <link rel="canonical" href="${shareUrl}" />
+    <link rel="canonical" href="${escAttr(shareUrl)}" />
 ${hreflangTags}
   `;
 
@@ -1482,7 +1486,12 @@ ${hreflangTags}
   }
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
-  return injectBuildStamp(injectFirebaseClientConfig(html));
+  // Production CSP is nonce-only, so inline boot + inject scripts must carry the request nonce.
+  let stamped = injectBuildStamp(injectFirebaseClientConfig(html));
+  if (options?.cspNonce) {
+    stamped = applyCspNonceToScripts(stamped, options.cspNonce);
+  }
+  return stamped;
 }
 
 // Fallback SEO assets — warns in production; writes tiny dev placeholders only when missing.

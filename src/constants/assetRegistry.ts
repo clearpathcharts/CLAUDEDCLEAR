@@ -533,10 +533,27 @@ export function normalizeAppSymbol(symbol: string): string {
   return symbol.trim().toUpperCase().replace(/\s+/g, "").replace(/\//g, "");
 }
 
+/**
+ * Bare crypto (ETH, BTC, SOL) must resolve to the USD spot pair, never a
+ * namesake equity/ETF ticker (Grayscale ETH ~$24).
+ */
+function resolveBareCryptoUsd(compact: string): RegistryAsset | undefined {
+  if (!compact || compact.includes("USD") || compact.length > 6) return undefined;
+  const usd = bySymbol.get(`${compact}USD`);
+  if (usd?.category === "crypto" && usd.base?.toUpperCase() === compact) return usd;
+  return undefined;
+}
+
 export function getRegistryAsset(symbol: string): RegistryAsset | undefined {
   const raw = symbol.trim().toUpperCase().replace(/\s+/g, "");
   if (!raw) return undefined;
-  return bySymbol.get(raw.replace(/\//g, "")) || byProvider.get(raw) || bySymbol.get(raw);
+  const compact = raw.replace(/\//g, "");
+  return (
+    bySymbol.get(compact) ||
+    byProvider.get(raw) ||
+    bySymbol.get(raw) ||
+    resolveBareCryptoUsd(compact)
+  );
 }
 
 export function getEnabledAssets(): RegistryAsset[] {

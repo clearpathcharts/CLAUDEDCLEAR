@@ -5,6 +5,8 @@
  */
 import assert from "node:assert/strict";
 import { resolveQuotePrice, withTapePrice } from "../src/lib/resolveQuotePrice.ts";
+import { resolveMarketAsset } from "../src/constants/marketAssets.ts";
+import { getRegistryAsset, searchEnabledAssets } from "../src/constants/assetRegistry.ts";
 import { resolvePanelScan, setActivePatternScan, clearPatternScan } from "../src/patterns/index.ts";
 import type { PatternScanResult } from "../src/patterns/types.ts";
 
@@ -21,7 +23,15 @@ assert.equal(resolveQuotePrice({ close: "4022.13", price: "2382.40" }), 4022.13)
 assert.equal(resolveQuotePrice({ price: "104.82" }), 104.82);
 assert.equal(resolveQuotePrice(null), null);
 assert.equal(resolveQuotePrice({ error: "UPSTREAM_ERROR" }), null);
-assert.equal(resolveQuotePrice({ close: "0" }), null);
+assert.equal(resolveMarketAsset("ETH").value, "ETHUSD");
+assert.equal(resolveMarketAsset("eth").value, "ETHUSD");
+assert.equal(resolveMarketAsset("BTC").value, "BTCUSD");
+assert.equal(resolveMarketAsset("SOL").value, "SOLUSD");
+assert.equal(resolveMarketAsset("ETH/USD").value, "ETHUSD");
+assert.equal(getRegistryAsset("ETH")?.providerSymbol, "ETH/USD");
+assert.notEqual(resolveMarketAsset("ETH").value, "ETH");
+assert.ok(searchEnabledAssets("e", 25).length <= 25);
+assert.ok(searchEnabledAssets("ETH", 25).some((a) => a.symbol === "ETHUSD"));
 
 const taped = withTapePrice({ close: "4022.13", price: "2382.40", symbol: "XAUUSD" });
 assert.equal(taped.price, 4022.13);

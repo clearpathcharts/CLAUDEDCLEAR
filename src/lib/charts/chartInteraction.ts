@@ -29,7 +29,8 @@ export const CHART_PRICE_SCALE_GESTURE = {
 export const CHART_TIME_SCALE_GESTURE = {
   timeVisible: true,
   secondsVisible: false,
-  lockVisibleTimeRangeOnResize: true,
+  // false: a 0-size flex mount must not lock an empty window until the user scrolls.
+  lockVisibleTimeRangeOnResize: false,
   minBarSpacing: 0.5,
   rightOffset: 4,
 } as const;

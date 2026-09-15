@@ -1210,6 +1210,7 @@ ${faqSectionHtml([
 <p><a href="/guides/leverage-risk">Leverage guide</a> · <a href="/education">Education</a> · <a href="/ui">UI modes</a></p>
 </article>
 <script>
+window.__CLEARPATH_POSITION_SIZE__=1;
 (function(){
   function n(id){ var el=document.getElementById(id); return el ? parseFloat(el.value) : NaN; }
   function money(x){ return isFinite(x) ? x.toLocaleString(undefined,{style:'currency',currency:'USD',maximumFractionDigits:2}) : '—'; }

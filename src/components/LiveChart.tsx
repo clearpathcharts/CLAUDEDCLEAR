@@ -144,8 +144,15 @@ export default function LiveChart({
     fetchHistory();
 
     const handleResize = () => {
-      if (isMounted && chartContainerRef.current) {
+      if (!isMounted || !chartContainerRef.current) return;
+      try {
         chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+        const range = chart.timeScale().getVisibleLogicalRange();
+        if (!range || !Number.isFinite(range.from) || range.to <= range.from) {
+          chart.timeScale().fitContent();
+        }
+      } catch {
+        /* chart may already be disposed */
       }
     };
 
@@ -159,7 +166,11 @@ export default function LiveChart({
       isMounted = false;
       detachShiftWheel();
       window.removeEventListener('resize', handleResize);
-      chart.remove();
+      try {
+        chart.remove();
+      } catch {
+        /* already disposed */
+      }
     };
   }, [symbol, interval, upColor, downColor, accent, background, textColor]);
 
