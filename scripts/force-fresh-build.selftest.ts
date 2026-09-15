@@ -9,9 +9,13 @@ import {
   applyHtmlNoStore,
   HTML_NO_STORE_HEADERS,
   injectBuildStamp,
+  applyCspNonceToScripts,
+  jsonForInlineScript,
   readLiveBuildIdentity,
   sendUncachedHtml,
 } from '../src/server/htmlCacheHeaders';
+import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase';
+import { renderStaticContentPage } from '../src/server/contentPages';
 import {
   AUTH_GENERATION_KEY,
   CACHE_BUST_PARAM,
@@ -212,6 +216,36 @@ try {
   const stamped = injectBuildStamp('<html><head></head><body></body></html>');
   assert.match(stamped, /clearpath-build clear-path-markets-science clear-path-markets-science-00555-abc/);
   assert.match(stamped, /window\.__CLEARPATH_BUILD__/);
+  const withMeta = applyCspNonceToScripts(
+    `${stamped}<meta http-equiv="Content-Security-Policy" content="script-src *"><script>window.x=1</script>`,
+    'abc123',
+  );
+  assert.match(withMeta, /<script nonce="abc123">window\.__CLEARPATH_BUILD__/);
+  assert.doesNotMatch(withMeta, /<script nonce="abc123">window\.x=1/);
+  assert.match(withMeta, /<script>window\.x=1<\/script>/);
+  assert.doesNotMatch(withMeta, /http-equiv="Content-Security-Policy"/);
+  assert.equal(
+    jsonForInlineScript({ url: 'https://clearpathtrader.com/</script><script>alert(1)' }),
+    '{\n  "url": "https://clearpathtrader.com/\\u003c/script>\\u003cscript>alert(1)"\n}',
+  );
+  const poisoned = enrichHtmlWithMetadata(
+    '<html><head><title>x</title></head><body></body></html>',
+    '/"><script>alert(1)</script>',
+    { cspNonce: 'deadbeef' },
+  );
+  assert.doesNotMatch(poisoned, /<script nonce="deadbeef">alert\(1\)/);
+  assert.match(poisoned, /og:url" content="[^"]*&quot;/);
+  assert.match(poisoned, /rel="canonical" href="[^"]*&quot;/);
+  assert.doesNotMatch(poisoned, /<script>alert\(1\)<\/script>/);
+  const calc = applyCspNonceToScripts(
+    '<script>window.__CLEARPATH_POSITION_SIZE__=1;(function(){calc()})()</script>',
+    'abc123',
+  );
+  assert.match(calc, /<script nonce="abc123">window\.__CLEARPATH_POSITION_SIZE__/);
+  const posPage = renderStaticContentPage('/tools/position-size');
+  assert.ok(posPage);
+  const posHtml = enrichHtmlWithMetadata(posPage, '/tools/position-size', { cspNonce: 'abc123' });
+  assert.match(posHtml, /<script nonce="abc123">[\s\S]*window\.__CLEARPATH_POSITION_SIZE__/);
 } finally {
   if (prevK === undefined) delete process.env.K_REVISION;
   else process.env.K_REVISION = prevK;

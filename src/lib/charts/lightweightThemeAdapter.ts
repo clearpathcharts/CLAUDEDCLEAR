@@ -49,7 +49,7 @@ export function lightweightThemeAdapter(profile: ThemeProfile) {
       borderColor: profile.grid,
       timeVisible: true,
       secondsVisible: false,
-      lockVisibleTimeRangeOnResize: true,
+      lockVisibleTimeRangeOnResize: false,
       minBarSpacing: 0.5,
       rightOffset: 4,
     },

@@ -44,7 +44,7 @@ export interface HealthEvent {
 }
 
 export const twelvedataHealth: TwelveDataHealth = {
-  status: 'HEALTHY',
+  status: 'OFFLINE',
   lastChecked: new Date().toISOString(),
   apiKeyPresent: false,
   rateLimitLimit: 'Unlimited',
@@ -103,6 +103,13 @@ async function candlesWithFmpFallback(
     return fmp;
   }
   throw tdErr;
+}
+
+function markStale<T>(data: T): T {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return { ...(data as Record<string, unknown>), stale: true } as T;
+  }
+  return data;
 }
 
 type CacheEntry = {
@@ -586,7 +593,7 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
   }
   if (cached && isTwelveDataCoolingDown()) {
     console.log(`[Gateway] QUOTE STALE DURING TD COOLDOWN: ${canon}`)
-    return cached.data
+    return markStale(cached.data)
   }
 
   if (pendingRequests[cacheKey]) {
@@ -759,8 +766,10 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
   for (const row of plain) {
     const cacheKey = `quote:${row.provider}`;
     const cached = marketCache[cacheKey];
-    if (cached && (now - cached.timestamp < CACHE_TTL_QUOTE || isTwelveDataCoolingDown())) {
+  if (cached && now - cached.timestamp < CACHE_TTL_QUOTE) {
       out[row.original] = cached.data;
+    } else if (cached && isTwelveDataCoolingDown()) {
+      out[row.original] = markStale(cached.data);
     } else {
       needFetch.push(row);
     }
@@ -811,7 +820,7 @@ export async function getMarketQuotes(symbols: string[], apiKey: string): Promis
       }
       const stale = marketCache[`quote:${row.provider}`];
       if (stale) {
-        out[row.original] = stale.data;
+        out[row.original] = markStale(stale.data);
       } else {
         out[row.original] = {
           error: true,
@@ -858,7 +867,7 @@ export async function getMarketCandles(
   }
   if (cached && isTwelveDataCoolingDown()) {
     console.log(`[Gateway] CANDLES STALE DURING TD COOLDOWN: ${canon} (${interval})`)
-    return cached.data
+    return markStale(cached.data)
   }
 
   if (pendingRequests[cacheKey]) {

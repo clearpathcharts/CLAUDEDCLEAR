@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, memo } from "react";
 import { createChart, ColorType, Time, CandlestickData, CandlestickSeries, BarSeries, BaselineSeries, CrosshairMode, LineSeries, LineStyle, LineType, AreaSeries, HistogramSeries, createSeriesMarkers, SeriesMarker, type IChartApi, type ISeriesApi, type SeriesType } from "lightweight-charts";
 import { IndicatorEngine } from "../../core/engine/IndicatorEngine";
 import { calculateCOT, fetchCotReportsForChart } from "../../indicators/sentiment/COT";
@@ -39,6 +39,7 @@ import {
 import { Crosshair, Scan, Radio, Focus, Maximize2, Minimize2 } from "lucide-react";
 import { useVisibilityPause } from "../../hooks/useVisibilityPause";
 import { focusRecentBars, visibleBarTarget } from "../../lib/charts/chartZoom";
+import { isChartDisposedError, isEmptyVisibleRange } from "../../lib/charts/chartLifecycle";
 import {
   attachShiftWheelPriceScale,
   chartHandleScroll,
@@ -249,7 +250,7 @@ function toPriceSeriesUpdate(
   };
 }
 
-export function LightweightCandles({
+export const LightweightCandles = memo(function LightweightCandles({
   data,
   symbol = "UNKNOWN",
   profileId,
@@ -336,6 +337,13 @@ export function LightweightCandles({
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const disposedRef = useRef(false);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const dataSig = !replayMode && Array.isArray(data) && data.length
+    ? `${data.length}:${data[0]?.time}:${data[data.length - 1]?.time}`
+    : "";
+  const candleColorsRef = useRef({ up: "#00E5FF", down: "#FF1493" });
   const layoutRef = useRef({ isExpanded, fillParent });
   layoutRef.current = { isExpanded, fillParent };
   const candleSeriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
@@ -515,6 +523,7 @@ export function LightweightCandles({
     if (!containerRef.current) return;
 
     let active = true;
+    disposedRef.current = false;
 
     const initialWidth = containerRef.current.clientWidth || 500;
     const initialHeight = containerRef.current.clientHeight || height || 450;
@@ -595,6 +604,7 @@ export function LightweightCandles({
       rawCandleColors,
       activeCustomTheme ? 1.05 : 0,
     );
+    candleColorsRef.current = { up: vividCandles.upColor, down: vividCandles.downColor };
 
     const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
     candleSeriesRef.current = series;
@@ -645,14 +655,15 @@ export function LightweightCandles({
 
         const allowedLimit = getCandleLimit(userTier);
 
-        if (Array.isArray(data)) {
-          if (!active) return;
-          if (data.length === 0) {
-            setError('CHART DATA UNAVAILABLE');
-            setIsLoading(false);
-            return;
-          }
-          displayData = data;
+        const incoming = dataRef.current;
+        // Parent-fed desks (Institutional) mount with `data={[]}` before history
+        // arrives. An empty array is "not ready", not a terminal miss — fetch
+        // via the shared cache so ticks/indicators/vision still start. Later
+        // parent candles update in place through the live setData effect.
+        const parentHasBars = Array.isArray(incoming) && incoming.length > 0;
+        if (parentHasBars) {
+          if (!active || disposedRef.current) return;
+          displayData = incoming;
         } else {
           let fetched: Candle[] | null = null;
           let lastFetchError: string | null = null;
@@ -1183,9 +1194,14 @@ export function LightweightCandles({
               low: Math.min(lastCandle.close, newClose),
               close: newClose,
             };
-            if (!active) return;
+            if (!active || disposedRef.current) return;
             if (!isBrickTransform(seriesStyle)) {
-              series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+              try {
+                series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+              } catch (err) {
+                if (isChartDisposedError(err)) return;
+                throw err;
+              }
             }
             lastCandle = { ...updateObj, time: currentTime };
             return;
@@ -1202,7 +1218,7 @@ export function LightweightCandles({
             return;
           }
 
-          if (!active) return;
+          if (!active || disposedRef.current) return;
 
           const updateObj = {
             time: lastCandle.time,
@@ -1212,7 +1228,12 @@ export function LightweightCandles({
             close: newClose,
           };
 
-          series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+          try {
+            series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+          } catch (err) {
+            if (isChartDisposedError(err)) return;
+            throw err;
+          }
           lastCandle = { ...updateObj, time: lastCandle.time };
         }, tickDelay);
         } // end !replayMode live ticks
@@ -1236,23 +1257,39 @@ export function LightweightCandles({
     });
 
     const resizeObserver = new ResizeObserver((entries) => {
-      if (!active || !entries || entries.length === 0) return;
-      if (chart.autoSizeActive()) return;
-      const { width, height: rectHeight } = entries[0].contentRect;
-      const next = nextChartPixelSize(width, rectHeight);
-      if (!next) return;
-      chart.applyOptions(next);
+      if (!active || disposedRef.current || !entries || entries.length === 0) return;
+      try {
+        if (!chart.autoSizeActive()) {
+          const { width, height: rectHeight } = entries[0].contentRect;
+          const next = nextChartPixelSize(width, rectHeight);
+          if (next) chart.applyOptions(next);
+        }
+        const range = chart.timeScale().getVisibleLogicalRange();
+        if (isEmptyVisibleRange(range) && barCountRef.current > 0) {
+          const isMobileViewport =
+            typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+          focusRecentBars(
+            chart.timeScale(),
+            barCountRef.current,
+            visibleBarTarget(isMobileViewport, layoutRef.current.isExpanded),
+          );
+        }
+      } catch (err) {
+        if (isChartDisposedError(err)) return;
+        console.warn("[LightweightCandles] resize skipped", err);
+      }
     });
 
     resizeObserver.observe(containerRef.current);
 
     const detachShiftWheel = attachShiftWheelPriceScale(
       containerRef.current,
-      () => (active ? chart : null),
+      () => (active && !disposedRef.current ? chart : null),
     );
 
     return () => {
       active = false;
+      disposedRef.current = true;
       detachShiftWheel();
       chartRef.current = null;
       candleSeriesRef.current = null;
@@ -1266,11 +1303,48 @@ export function LightweightCandles({
       }
       if (interval) clearInterval(interval);
       resizeObserver.disconnect();
-      chart.remove();
+      try {
+        chart.remove();
+      } catch (err) {
+        if (!isChartDisposedError(err)) {
+          console.warn("[LightweightCandles] chart.remove skipped", err);
+        }
+      }
     };
-  // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
-  // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [replayMode ? null : data, replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+  // NOTE: `data` is read via dataRef so parent array identity (quotes/search
+  // re-renders) cannot remount the chart. `error` is also omitted — re-running
+  // the effect on error changes caused a chart-rebuild/refetch loop.
+  }, [replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+
+  // Live parent candles: update series in place — never remount the chart.
+  useEffect(() => {
+    if (replayMode) return;
+    if (disposedRef.current) return;
+    const incoming = dataRef.current;
+    const series = candleSeriesRef.current;
+    const chart = chartRef.current;
+    if (!series || !chart || !Array.isArray(incoming) || incoming.length === 0) return;
+    try {
+      const rawBars = uniqueAscendingTimes(trimTrailingStagnantBars(incoming)) as PriceBar[];
+      const plotBars = transformOhlc(rawBars, seriesStyle);
+      series.setData(toPriceSeriesData(plotBars, seriesStyle, candleColorsRef.current) as any);
+      barCountRef.current = rawBars.length;
+      setError(null);
+      const range = chart.timeScale().getVisibleLogicalRange();
+      if (isEmptyVisibleRange(range)) {
+        const isMobileViewport =
+          typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+        focusRecentBars(
+          chart.timeScale(),
+          rawBars.length,
+          visibleBarTarget(isMobileViewport, isExpanded),
+        );
+      }
+    } catch (err) {
+      if (isChartDisposedError(err)) return;
+      console.warn("[LightweightCandles] live setData skipped", err);
+    }
+  }, [replayMode, dataSig, chartReadyKey, seriesStyle, isExpanded]);
 
   // Market Replay: push newly revealed candles without rebuilding the chart (no look-ahead).
   useEffect(() => {
@@ -1290,32 +1364,41 @@ export function LightweightCandles({
         focusRecentBars(chart.timeScale(), mapped.length, Math.min(120, mapped.length));
       }
     } catch (err) {
+      if (isChartDisposedError(err)) return;
       console.warn('[LightweightCandles] replay setData skipped', err);
     }
   }, [replayMode, data, chartReadyKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) return;
-    chart.applyOptions({
-      handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
-    });
+    if (!chart || disposedRef.current) return;
+    try {
+      chart.applyOptions({
+        handleScroll: chartHandleScroll(Boolean(isExpanded || !fillParent)),
+      });
+    } catch (err) {
+      if (isChartDisposedError(err)) return;
+    }
   }, [isExpanded, fillParent, chartReadyKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) return;
-    chart.applyOptions({
-      layout: {
-        background: { type: ColorType.Solid, color: paint.background },
-        textColor: paint.text,
-        fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
-      },
-      grid: {
-        vertLines: { color: paint.grid },
-        horzLines: { color: paint.grid },
-      },
-    });
+    if (!chart || disposedRef.current) return;
+    try {
+      chart.applyOptions({
+        layout: {
+          background: { type: ColorType.Solid, color: paint.background },
+          textColor: paint.text,
+          fontFamily: '"IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace',
+        },
+        grid: {
+          vertLines: { color: paint.grid },
+          horzLines: { color: paint.grid },
+        },
+      });
+    } catch (err) {
+      if (isChartDisposedError(err)) return;
+    }
   }, [paint, chartReadyKey]);
 
   useEffect(() => {
@@ -1324,7 +1407,7 @@ export function LightweightCandles({
     const candles = scanCandlesRef.current;
 
     const clearOverlays = () => {
-      if (!chart) return;
+      if (!chart || disposedRef.current) return;
       for (const overlaySeries of patternOverlaySeriesRef.current) {
         try {
           chart.removeSeries(overlaySeries);
@@ -1335,7 +1418,7 @@ export function LightweightCandles({
       patternOverlaySeriesRef.current = [];
     };
 
-    if (!chart || !series || hidePatternOverlays || !candles || !patternScan) {
+    if (disposedRef.current || !chart || !series || hidePatternOverlays || !candles || !patternScan) {
       clearOverlays();
       return;
     }
@@ -1364,24 +1447,29 @@ export function LightweightCandles({
       ];
       createSeriesMarkers(series, candleMarkers as any);
     } catch (overlayErr) {
+      if (isChartDisposedError(overlayErr)) return;
       console.warn('[LightweightCandles] Pattern overlay draw skipped:', overlayErr);
     }
   }, [patternScan, dismissedPatternKeys, chartReadyKey, hidePatternOverlays]);
 
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart) return;
-    chart.applyOptions({
-      crosshair: {
-        ...defaultTheme.crosshair,
-        mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
-      },
-    });
+    if (!chart || disposedRef.current) return;
+    try {
+      chart.applyOptions({
+        crosshair: {
+          ...defaultTheme.crosshair,
+          mode: crosshairEnabled ? CrosshairMode.Normal : CrosshairMode.Hidden,
+        },
+      });
+    } catch (err) {
+      if (isChartDisposedError(err)) return;
+    }
   }, [crosshairEnabled, defaultTheme.crosshair, chartReadyKey]);
 
   const handleFocusRecent = () => {
     const chart = chartRef.current;
-    if (!chart || barCountRef.current <= 0) return;
+    if (!chart || disposedRef.current || barCountRef.current <= 0) return;
     const isMobileViewport =
       typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
     focusRecentBars(
@@ -1653,7 +1741,7 @@ export function LightweightCandles({
       ) : null}
     </div>
   );
-}
+});
 
 function addStyledPriceSeries(
   chart: IChartApi,

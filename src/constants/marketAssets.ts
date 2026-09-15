@@ -13,6 +13,7 @@ export const MARKET_ASSETS: MarketAsset[] = getEnabledAssets().map((a) => ({
 }));
 
 export function resolveMarketAsset(symbol: string): MarketAsset {
+  // Registry maps bare crypto (ETH/BTC/SOL) to *USD so Load never hits ETF namesakes.
   const asset = getRegistryAsset(symbol);
   if (asset) return { label: asset.display, value: asset.symbol };
   const sym = symbol.toUpperCase().trim().replace(/\//g, "");

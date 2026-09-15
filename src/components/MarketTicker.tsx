@@ -2,6 +2,7 @@
 import React, { useState, useRef } from "react";
 import { usePageAutoUpdate } from "../hooks/usePageAutoUpdate";
 import { getTickerAssets } from "../constants/assetRegistry";
+import { fetchQuotesMap } from "../lib/clientMarketCache";
 import { resolveQuotePrice } from "../lib/resolveQuotePrice";
 
 export { resolveQuotePrice } from "../lib/resolveQuotePrice";
@@ -47,27 +48,16 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
   // One batch request — never Promise.all fan-out across symbols.
   const fetchQuotes = async () => {
     try {
-      const symbols = assetsRef.current.map((a) => a.symbol).join(",");
-      const url = `/api/quotes?symbols=${encodeURIComponent(symbols)}`;
-      const response = await fetch(url);
-      if (response.status === 429) {
-        noteRateLimitedRef.current(90_000);
-        console.error("[MarketTicker] rate limited on batch quotes");
-        setAssets((prev) => prev.map((a) => ({ ...a, isLive: false })));
-        return;
-      }
-      if (!response.ok) {
-        throw new Error(`HTTP Error ${response.status}`);
-      }
-      const body = await response.json();
-      const quotes = (body?.quotes || {}) as Record<string, any>;
+      const quotes = await fetchQuotesMap(assetsRef.current.map((a) => a.symbol));
 
       const updated = assetsRef.current.map((asset) => {
-        const data = quotes[asset.symbol];
+        const data = quotes[asset.symbol] as
+          | { error?: boolean; message?: string; percent_change?: string; change_percent?: string; percentChange?: string }
+          | undefined;
         const livePrice = resolveQuotePrice(data);
         if (livePrice !== null) {
           const changePct = parseFloat(
-            data.percent_change ?? data.change_percent ?? data.percentChange ?? "0"
+            data?.percent_change ?? data?.change_percent ?? data?.percentChange ?? "0"
           );
           return {
             ...asset,
@@ -85,6 +75,13 @@ export default function MarketTicker({ profile = {} }: MarketTickerProps) {
       });
       setAssets(updated);
     } catch (globalError) {
+      const msg = String(globalError);
+      if (msg.includes('429')) {
+        noteRateLimitedRef.current(90_000);
+        console.error("[MarketTicker] rate limited on batch quotes");
+        setAssets((prev) => prev.map((a) => ({ ...a, isLive: false })));
+        return;
+      }
       console.error("[MarketTicker] Failed quotes polling entirely:", globalError);
     }
   };

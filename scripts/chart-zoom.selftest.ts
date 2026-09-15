@@ -4,6 +4,18 @@
  */
 import assert from 'node:assert/strict';
 import { nextCenteredRange } from '../src/lib/charts/chartZoom.ts';
+import { isEmptyVisibleRange, isChartDisposedError } from '../src/lib/charts/chartLifecycle.ts';
+import { CHART_TIME_SCALE_GESTURE } from '../src/lib/charts/chartInteraction.ts';
+import { lightweightThemeAdapter } from '../src/lib/charts/lightweightThemeAdapter.ts';
+import { themeProfiles } from '../src/lib/theme/profiles.ts';
+
+assert.equal(CHART_TIME_SCALE_GESTURE.lockVisibleTimeRangeOnResize, false);
+assert.equal(lightweightThemeAdapter(themeProfiles.calm_focus).timeScale.lockVisibleTimeRangeOnResize, false);
+assert.equal(isEmptyVisibleRange(null), true);
+assert.equal(isEmptyVisibleRange({ from: 0, to: 0 }), true);
+assert.equal(isEmptyVisibleRange({ from: 10, to: 80 }), false);
+assert.equal(isChartDisposedError(new Error('Object is disposed')), true);
+assert.equal(isChartDisposedError(new Error('network')), false);
 
 const wider = nextCenteredRange({ from: 0, to: 100 }, 0.78);
 assert.ok(wider.to - wider.from < 100, 'wider time window shows fewer bars');
