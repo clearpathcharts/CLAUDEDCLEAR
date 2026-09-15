@@ -151,6 +151,17 @@ const OSCILLATOR_INDICATORS = new Set([
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
 
+/**
+ * Parent desks often pass a new `data` array with the same bars.
+ * Chart create/remove must key off content, not array identity.
+ */
+function candleDataFingerprint(data?: Candle[] | null): string | null {
+  if (!data) return null;
+  if (data.length === 0) return "empty";
+  const last = data[data.length - 1];
+  return `${data.length}:${last.time}:${last.close}`;
+}
+
 function uniqueAscendingTimes<T extends { time: number }>(candles: T[]): T[] {
   const out: T[] = [];
   for (const c of candles) {
@@ -335,6 +346,7 @@ export function LightweightCandles({
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const liveQuoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const layoutRef = useRef({ isExpanded, fillParent });
   layoutRef.current = { isExpanded, fillParent };
@@ -391,6 +403,7 @@ export function LightweightCandles({
   }, []);
   const visible = useVisibilityPause();
   const sym = useMemo(() => (symbol || "UNKNOWN").toUpperCase(), [symbol]);
+  const dataFingerprint = replayMode ? null : candleDataFingerprint(data);
 
   useEffect(() => {
     setDismissedPatternKeys(new Set());
@@ -633,7 +646,6 @@ export function LightweightCandles({
 
     let displayData: Candle[] = [];
     let lastCandle: Candle | null = null;
-    let interval: any;
 
     async function load() {
       try {
@@ -1147,7 +1159,12 @@ export function LightweightCandles({
         else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;
 
         if (!replayMode) {
-        interval = setInterval(async () => {
+        if (!active) return;
+        if (liveQuoteIntervalRef.current != null) {
+          clearInterval(liveQuoteIntervalRef.current);
+          liveQuoteIntervalRef.current = null;
+        }
+        const tickId = setInterval(async () => {
           if (!active || !lastCandle) return;
 
           let livePrice: number | null = null;
@@ -1161,7 +1178,7 @@ export function LightweightCandles({
           }
 
           // No real price available — do nothing this tick. Do NOT fabricate movement.
-          if (livePrice === null) return;
+          if (!active || livePrice === null) return;
 
           const nowRaw = Math.floor(Date.now() / 1000);
           const currentTime = nowRaw - (nowRaw % stepSeconds);
@@ -1184,10 +1201,18 @@ export function LightweightCandles({
               close: newClose,
             };
             if (!active) return;
-            if (!isBrickTransform(seriesStyle)) {
-              series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+            try {
+              if (!isBrickTransform(seriesStyle)) {
+                series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+              }
+              lastCandle = { ...updateObj, time: currentTime };
+            } catch {
+              // series/chart already removed — stop updating a disposed object
+              if (liveQuoteIntervalRef.current != null) {
+                clearInterval(liveQuoteIntervalRef.current);
+                liveQuoteIntervalRef.current = null;
+              }
             }
-            lastCandle = { ...updateObj, time: currentTime };
             return;
           }
 
@@ -1212,9 +1237,22 @@ export function LightweightCandles({
             close: newClose,
           };
 
-          series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
-          lastCandle = { ...updateObj, time: lastCandle.time };
+          try {
+            series.update(toPriceSeriesUpdate(updateObj, seriesStyle) as any);
+            lastCandle = { ...updateObj, time: lastCandle.time };
+          } catch {
+            // series/chart already removed — stop updating a disposed object
+            if (liveQuoteIntervalRef.current != null) {
+              clearInterval(liveQuoteIntervalRef.current);
+              liveQuoteIntervalRef.current = null;
+            }
+          }
         }, tickDelay);
+        if (!active) {
+          clearInterval(tickId);
+          return;
+        }
+        liveQuoteIntervalRef.current = tickId;
         } // end !replayMode live ticks
 
         if (active) setIsLoading(false);
@@ -1264,13 +1302,18 @@ export function LightweightCandles({
       if (takeSnapshotRef) {
         takeSnapshotRef.current = null;
       }
-      if (interval) clearInterval(interval);
+      if (liveQuoteIntervalRef.current != null) {
+        clearInterval(liveQuoteIntervalRef.current);
+        liveQuoteIntervalRef.current = null;
+      }
       resizeObserver.disconnect();
       chart.remove();
     };
   // NOTE: `error` is intentionally NOT a dependency — re-running the effect on
   // error changes caused a chart-rebuild/refetch loop whenever a fetch failed.
-  }, [replayMode ? null : data, replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+  // `dataFingerprint` (length + last bar time/close) replaces array identity so
+  // same-content `data` from the desk does not teardown/rebuild the chart.
+  }, [dataFingerprint, replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
 
   // Market Replay: push newly revealed candles without rebuilding the chart (no look-ahead).
   useEffect(() => {

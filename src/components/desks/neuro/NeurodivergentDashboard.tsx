@@ -35,6 +35,8 @@ import {
 const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
 const WL_KEY = 'clearpath_neuro_watchlists_v1';
 const WL_ACTIVE_KEY = 'clearpath_neuro_active_watchlist_v1';
+/** Module-scope identity: a fresh `{}` each render churns slots → loadWorkspace → 5k-bar refetch. */
+const EMPTY_SLOT_OVERRIDES: Partial<Record<number, { symbol: string; timeframe: string }>> = {};
 
 function pctClass(pct: number | null): string {
   if (pct == null) return 'text-[var(--desk-muted)]';
@@ -136,7 +138,7 @@ export default function NeurodivergentDashboard() {
     'simulation',
   ]);
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON, {
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, EMPTY_SLOT_OVERRIDES, NEURO_RIBBON, {
     // One history fetch on mount; chart live-tick handles quotes. Avoids duplicate 5k-bar fetch + rebuild.
     pollWorkspace: false,
     pollRibbon: !hideSecondary,

@@ -90,15 +90,47 @@ async function fetchQuoteMap(symbols: string[]): Promise<Record<string, RetailQu
 
 const HIST_CACHE_MAX = 48;
 const histCache = new LruMap<string, { at: number; candles: Candle[] }>(HIST_CACHE_MAX);
+/** One in-flight `/api/market/history` per symbol:timeframe — render churn must not stampede. */
+const histInflight = new Map<string, Promise<Candle[]>>();
+
+export function candlesEffectivelyEqual(a: Candle[] | undefined, b: Candle[] | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  if (a.length === 0) return true;
+  const la = a[a.length - 1];
+  const lb = b[b.length - 1];
+  return la.time === lb.time && la.close === lb.close;
+}
+
+function candlesByKeyUnchanged(
+  prev: Record<string, Candle[]>,
+  next: Record<string, Candle[]>,
+): boolean {
+  const nextKeys = Object.keys(next);
+  if (Object.keys(prev).length !== nextKeys.length) return false;
+  for (const key of nextKeys) {
+    if (!candlesEffectivelyEqual(prev[key], next[key])) return false;
+  }
+  return true;
+}
 
 async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]> {
   const key = `${symbol}:${timeframe}`;
   const hit = histCache.get(key);
   if (hit && Date.now() - hit.at < 45_000) return hit.candles;
-  const hist = await fetchTieredHistoricalData(symbol, timeframe, 'VIP');
-  const candles = hist.map(toCandle);
-  histCache.set(key, { at: Date.now(), candles });
-  return candles;
+  const pending = histInflight.get(key);
+  if (pending) return pending;
+  const request = (async () => {
+    const hist = await fetchTieredHistoricalData(symbol, timeframe, 'VIP');
+    const candles = hist.map(toCandle);
+    histCache.set(key, { at: Date.now(), candles });
+    return candles;
+  })().finally(() => {
+    histInflight.delete(key);
+  });
+  histInflight.set(key, request);
+  return request;
 }
 
 function emptyQuote(symbol: string): RetailQuote {
@@ -210,7 +242,7 @@ export function useRetailIntelligence(
         errors.push(`${slot.symbol}: ${e instanceof Error ? e.message : 'unavailable'}`);
       }
     }
-    setCandlesByKey(next);
+    setCandlesByKey((prev) => (candlesByKeyUnchanged(prev, next) ? prev : next));
     setCandleError(errors.length ? errors.join(' · ') : null);
   }, [slots]);
 

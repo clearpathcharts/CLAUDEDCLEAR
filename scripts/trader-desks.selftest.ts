@@ -25,6 +25,7 @@ import {
 import { analyzeInstitutionalStructure } from '../src/lib/institutional/analyzeStructure.ts';
 import { pearsonCorrelation, reconstructBarTape } from '../src/lib/institutional/marketMath.ts';
 import { parseHeldIds } from '../src/components/desks/deskHeldPanels.ts';
+import { candlesEffectivelyEqual } from '../src/components/desks/retail/useRetailIntelligence.ts';
 import {
   deskSectionOpen,
   NEURO_CHART_FIRST_HELD,
@@ -147,6 +148,7 @@ const srcFiles = [
   'src/components/DailyPatternReviewDesk.tsx',
   'src/components/desks/NeurodivergentTraderDesk.tsx',
   'src/components/desks/neuro/NeurodivergentDashboard.tsx',
+  'src/components/charts/LightweightCandles.tsx',
   'src/components/desks/neuro/neuroProfile.ts',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
@@ -347,6 +349,9 @@ for (const rel of srcFiles) {
     assert.match(text, /\/api\/quotes/);
     assert.match(text, /\/api\/newsdata\/latest/);
     assert.match(text, /fetchEconomicNews/);
+    assert.match(text, /histInflight/);
+    assert.match(text, /candlesEffectivelyEqual/);
+    assert.match(text, /candlesByKeyUnchanged/);
   }
   if (rel === 'src/components/desks/retail/retailStore.ts') {
     assert.match(text, /DEFAULT_WATCHLISTS/);
@@ -368,6 +373,8 @@ for (const rel of srcFiles) {
     assert.match(text, /DeskChartFill/);
     assert.match(text, /LightweightCandles/);
     assert.match(text, /readInitialNeuroProfile/);
+    assert.match(text, /EMPTY_SLOT_OVERRIDES/);
+    assert.doesNotMatch(text, /useRetailIntelligence\([^;]*1,\s*\{\s*\}/);
     assert.match(text, /pollWorkspace:\s*false/);
     assert.match(text, /pollMovers:\s*false/);
     assert.match(text, /data=\{candles\}/);
@@ -386,6 +393,9 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/charts/LightweightCandles.tsx') {
     assert.match(text, /hidePatternOverlaysRef/);
     assert.match(text, /hidePatternOverlaysRef\.current/);
+    assert.match(text, /liveQuoteIntervalRef/);
+    assert.match(text, /candleDataFingerprint/);
+    assert.match(text, /Object is disposed|already removed/);
   }
   if (rel === 'src/components/desks/neuro/neuroProfile.ts') {
     assert.match(text, /readInitialNeuroProfile/);
@@ -530,6 +540,20 @@ const tape = reconstructBarTape([
 ]);
 assert.equal(tape[0].side, 'BUY-SIDE');
 assert.equal(tape[0].reconstructed, true);
+
+const bar = (time: number, close: number): Candle => ({
+  time,
+  open: close,
+  high: close,
+  low: close,
+  close,
+});
+const sameBars = [bar(1, 10), bar(2, 11)];
+assert.equal(candlesEffectivelyEqual(sameBars, sameBars), true);
+assert.equal(candlesEffectivelyEqual(sameBars, [bar(1, 10), bar(2, 11)]), true);
+assert.equal(candlesEffectivelyEqual(sameBars, [bar(1, 10), bar(2, 12)]), false);
+assert.equal(candlesEffectivelyEqual(sameBars, [bar(1, 10)]), false);
+assert.equal(candlesEffectivelyEqual([], []), true);
 
 const buddyWidget = fs.readFileSync(path.join(root, 'src/components/CptBuddyWidget.tsx'), 'utf8');
 assert.match(buddyWidget, /CptBuddyOpenPanel/);
