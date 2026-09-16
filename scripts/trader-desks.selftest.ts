@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
 import {
+  CEO_DASHBOARD_HREF,
   DESK_PAPER_STORAGE_KEY,
   FX_SESSIONS,
   TRADER_DESK_IDS,
@@ -67,6 +68,10 @@ assert.equal(deskIdFromHomeProfile('calm_focus'), null);
 assert.equal(deskIdFromHomeProfile('autism_predictable'), 'neurodivergent');
 assert.equal(memberHomeDeskHref({}), '/desk/institutional');
 assert.equal(memberHomeDeskHref({ remembered: 'retail' }), '/desk/retail');
+assert.equal(CEO_DASHBOARD_HREF, '/ceo');
+assert.equal(memberHomeDeskHref({ founder: true }), '/ceo');
+assert.equal(memberHomeDeskHref({ founder: true, remembered: 'retail', search: '?profile=autism_predictable' }), '/ceo');
+assert.equal(memberHomeDeskHref({ founder: false, remembered: 'retail' }), '/desk/retail');
 assert.equal(
   memberHomeDeskHref({ search: '?profile=autism_predictable', remembered: 'retail' }),
   '/desk/neurodivergent?profile=autism_predictable',
@@ -171,6 +176,9 @@ for (const rel of srcFiles) {
     assert.match(text, /MemberDeskRedirect/);
     assert.match(text, /isMemberHomePath/);
     assert.match(text, /shouldStayOnPublicHome/);
+    // Founder on `/` lands on the CEO Dashboard, not a desk.
+    assert.match(text, /founder = isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /remembered: readRememberedTraderDesk\(\),\s*founder,/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
   }
@@ -409,14 +417,23 @@ for (const rel of srcFiles) {
     assert.match(text, /replace\(' Traders', ''\)\.replace\(' Trader', ''\)/);
     assert.match(text, /White screen/);
     assert.match(text, /togglePaper/);
-    assert.doesNotMatch(text, /data-ceo-ops-link/, 'CEO is not a fifth desk tab — founder uses /ceo from Home nav');
-    assert.doesNotMatch(text, /href="\/ceo"/);
-    assert.doesNotMatch(text, /isFounderSession/);
+    // Founder-only CEO pill: the old `/` Dashboard opened the CEO tab for the
+    // founder; the desks replaced `/`, so the chrome must offer the way in.
+    assert.match(text, /data-ceo-ops-link/);
+    assert.match(text, /href=\{CEO_DASHBOARD_HREF\}/);
+    assert.match(text, /isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /\{founder \? \(/);
+    // Home = institutional desk, in-app. `/?choose=1` rendered the public
+    // landing page for a signed-in member and read as a logout.
+    assert.match(text, /data-desk-home/);
+    assert.match(text, /goHomeFromDesk\(\)/);
+    assert.match(text, /href=\{homeHref\}/);
+    assert.doesNotMatch(text, /\/\?choose=1/);
+    assert.doesNotMatch(text, /href="\/"/);
     assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
     assert.match(text, /DeskScreensMenu/);
     assert.match(text, /Screens/);
-    assert.match(text, /\/\?choose=1/);
   }
   if (rel === 'src/components/desks/ColorChartPicker.tsx') {
     assert.match(text, /data-color-chart/);

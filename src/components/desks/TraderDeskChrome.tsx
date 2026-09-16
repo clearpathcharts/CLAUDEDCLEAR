@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
+  CEO_DASHBOARD_HREF,
   FX_SESSIONS,
   TRADER_DESKS,
+  goHomeFromDesk,
   isSessionOpen,
   navigateToDesk,
   type TraderDeskId,
 } from '../../lib/traderDesks';
+import { isFounderSession } from '../../lib/founder';
+import { useAuth } from '../../contexts/FirebaseContext';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
@@ -44,6 +48,8 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
+  const { user, userProfile } = useAuth();
+  const founder = isFounderSession(user?.email, userProfile?.email);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -53,12 +59,20 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
 
   const hour = utcHourFrom(now);
   const utcStamp = now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const homeHref = TRADER_DESKS.institutional.href;
+  const onHome = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Plain left-click stays in-app (no document reload, no auth re-hydration flash).
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    goHomeFromDesk();
+  };
   return (
     <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <a
-            href="/?choose=1"
+            href={homeHref}
+            onClick={onHome}
             className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400 hover:text-white"
           >
             ClearPath
@@ -148,9 +162,22 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
             </button>
           );
         })}
+        {founder ? (
+          <a
+            href={CEO_DASHBOARD_HREF}
+            data-ceo-ops-link
+            className="ml-auto rounded-md border px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest"
+            style={{ color: '#FF2E9A', borderColor: '#FF2E9A88', background: '#FF2E9A1a' }}
+            title="CEO Dashboard — founder only"
+          >
+            CEO
+          </a>
+        ) : null}
         <a
-          href="/?choose=1"
-          className="ml-auto rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white"
+          href={homeHref}
+          onClick={onHome}
+          data-desk-home
+          className={`${founder ? '' : 'ml-auto '}rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white`}
         >
           Home
         </a>
