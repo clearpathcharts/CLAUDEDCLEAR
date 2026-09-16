@@ -1,6 +1,5 @@
 import React from 'react';
 import { useBrokerConnection } from '../../hooks/useBrokerConnection';
-import { startAlpacaConnect } from '../../api/brokerConnect';
 import { NEVER_BROKER_DEALER } from '../../lib/passThroughBrokerModel';
 
 /** TradingView-style broker status chip — pass-through only, never ClearPath as broker. */
@@ -23,7 +22,7 @@ export default function BrokerDeskChip() {
   if (alpaca.connected) {
     return (
       <a
-        href="/?tab=Biography#Biography"
+        href="/brokers"
         className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 font-mono text-[10px] font-black uppercase tracking-wider text-emerald-200 hover:bg-emerald-500/20"
         title={`${NEVER_BROKER_DEALER} Connected: ${alpaca.label} (${alpaca.environment || 'paper'})`}
       >
@@ -34,23 +33,23 @@ export default function BrokerDeskChip() {
 
   if (!alpaca.configured) {
     return (
-      <span
+      <a
+        href="/brokers"
         className="rounded-md border border-amber-500/30 px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-200/80"
-        title="Broker OAuth keys not set on server — pass-through connect unavailable"
+        title="Open the United States broker connection directory"
       >
-        Broker · ops keys
-      </span>
+        Broker network
+      </a>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => startAlpacaConnect('/desk/retail')}
+    <a
+      href="/brokers"
       className="rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] font-black uppercase tracking-wider text-cyan-100 hover:bg-cyan-500/20"
-      title={`${NEVER_BROKER_DEALER} Connect your ${alpaca.label} account (OAuth).`}
+      title={`${NEVER_BROKER_DEALER} Open the broker connection directory.`}
     >
-      Connect {alpaca.label}
-    </button>
+      Broker network
+    </a>
   );
 }
