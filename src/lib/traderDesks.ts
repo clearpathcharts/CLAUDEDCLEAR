@@ -144,11 +144,20 @@ export function deskIdFromHomeProfile(profile: string | null | undefined): Trade
   return NEURO_HOME_DEEP_LINK_PROFILES.has(profile) ? 'neurodivergent' : null;
 }
 
-/** Where a logged-in member on `/` should land instead of the old Dashboard. */
+/** Founder ops screen. Reached from the desk chrome CEO pill and as the founder's landing. */
+export const CEO_DASHBOARD_HREF = '/ceo';
+
+/**
+ * Where a logged-in member on `/` should land instead of the old Dashboard.
+ * The founder lands on the CEO Dashboard, which is what the pre-desk `/` did
+ * (Dashboard opened the CEO tab for the founder account).
+ */
 export function memberHomeDeskHref(args: {
   search?: string;
   remembered?: TraderDeskId | null;
+  founder?: boolean;
 }): string {
+  if (args.founder) return CEO_DASHBOARD_HREF;
   const raw = (args.search || '').replace(/^\?/, '');
   const params = new URLSearchParams(raw);
   const profile = params.get('profile');
@@ -173,10 +182,19 @@ export function openMemberDesk(search?: string): void {
 export function continueToRememberedDesk(options?: { founder?: boolean }): void {
   if (typeof window === 'undefined') return;
   if (options?.founder) {
-    window.location.assign('/ceo');
+    window.location.assign(CEO_DASHBOARD_HREF);
     return;
   }
   openMemberDesk();
+}
+
+/**
+ * Desk chrome Home. In-app navigation to the institutional desk — never `/`,
+ * which for a signed-in member either bounces back to a desk or (with
+ * `?choose=1`) shows the public landing page and reads as a logout.
+ */
+export function goHomeFromDesk(): void {
+  navigateToDesk('institutional');
 }
 
 /** FX session windows in UTC hours (inclusive start, exclusive end, wrapping midnight). */
