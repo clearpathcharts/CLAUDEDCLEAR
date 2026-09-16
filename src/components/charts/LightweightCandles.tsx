@@ -816,6 +816,8 @@ export const LightweightCandles = memo(function LightweightCandles({
         let cotPack: Awaited<ReturnType<typeof fetchCotReportsForChart>> | null = null;
         if (activeIndicators.includes("COT")) {
           cotPack = await fetchCotReportsForChart(sym);
+          // The chart may have been removed while COT was in flight.
+          if (!active || disposedRef.current) return;
         }
 
         if (activeIndicators && activeIndicators.length > 0) {
@@ -1157,9 +1159,10 @@ export const LightweightCandles = memo(function LightweightCandles({
         if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 5000;
         else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;
 
-        if (!replayMode) {
+        // Never arm a live tick for a chart whose effect cleanup already ran.
+        if (!replayMode && active && !disposedRef.current) {
         interval = setInterval(async () => {
-          if (!active || !lastCandle) return;
+          if (!active || disposedRef.current || !lastCandle) return;
 
           let livePrice: number | null = null;
           try {

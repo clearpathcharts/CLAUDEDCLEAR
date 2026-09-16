@@ -20,6 +20,7 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { EducationDeskBar } from './education/EducationDeskBar';
 import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
 import { useAuth } from './contexts/FirebaseContext';
+import { isFounderSession } from './lib/founder';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import { PlanComparisonTable } from './components/PlanComparisonTable';
@@ -32,6 +33,7 @@ const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfI
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
+const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 
 function AuthenticatedShell({
   profile,
@@ -48,19 +50,25 @@ function AuthenticatedShell({
   );
 }
 
-/** Logged-in `/` must not mount the old Dashboard — send the session to a desk. */
+/**
+ * Logged-in `/` must not mount the old Dashboard — send the session to a desk.
+ * The founder goes to the CEO Dashboard, as the old `/` did for that account.
+ */
 function MemberDeskRedirect() {
+  const { user, userProfile } = useAuth();
+  const founder = isFounderSession(user?.email, userProfile?.email);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const href = memberHomeDeskHref({
       search: window.location.search,
       remembered: readRememberedTraderDesk(),
+      founder,
     });
     const here = `${window.location.pathname}${window.location.search}`;
     if (here === href) return;
     window.history.replaceState({}, '', href);
     window.dispatchEvent(new Event('clearpath-location'));
-  }, []);
+  }, [founder]);
   return (
     <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
       <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-[0.3em]">
@@ -147,6 +155,11 @@ function isFundamentalDeskPath(path: string): boolean {
 function isCeoPath(path: string): boolean {
   const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
   return p === '/ceo' || p === '/ceo-dashboard';
+}
+
+function isBrokerNetworkPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/brokers' || p === '/broker-connect';
 }
 
 function PublicLearnShell({
@@ -359,6 +372,18 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isBrokerNetworkPath(currentPath)) {
+    content = (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050d1c] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Opening broker network…
+          </div>
+        }
+      >
+        <UsBrokerNetworkPage />
+      </Suspense>
+    );
   } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
     content = <MemberDeskRedirect />;
   } else if (!user || shouldStayOnPublicHome(currentSearch)) {

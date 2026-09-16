@@ -24,6 +24,8 @@ export type DeskMonitorSnapshot = {
   symbol: string;
   timeframe: string;
   at: number;
+  /** Per-tab sender id so a tab never applies its own broadcast (no ping-pong). */
+  origin?: string;
 };
 
 export const DESK_MONITOR_STORAGE_KEY = 'clearpath_desk_monitor_v1';
