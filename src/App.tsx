@@ -23,7 +23,6 @@ import { useAuth } from './contexts/FirebaseContext';
 import { isFounderSession } from './lib/founder';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
-import { PlanComparisonTable } from './components/PlanComparisonTable';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
@@ -34,6 +33,7 @@ const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
 const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
+const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
 
 function AuthenticatedShell({
   profile,
@@ -384,6 +384,18 @@ export default function App() {
         <UsBrokerNetworkPage />
       </Suspense>
     );
+  } else if (isPlansPath(currentPath)) {
+    content = (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050505] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Opening packages…
+          </div>
+        }
+      >
+        <MembershipPricingPage />
+      </Suspense>
+    );
   } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
     content = <MemberDeskRedirect />;
   } else if (!user || shouldStayOnPublicHome(currentSearch)) {
@@ -398,18 +410,6 @@ export default function App() {
       content = (
         <PublicLearnShell>
           <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    } else if (isPlansPath(currentPath)) {
-      content = (
-        <PublicLearnShell>
-          <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
-            <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
-            <p className="text-zinc-400 text-sm">
-              Basic / Silver / Gold / Platinum feature unlocks as enforced in the product. List prices are not published here.
-            </p>
-            <PlanComparisonTable />
-          </div>
         </PublicLearnShell>
       );
     } else if (isEducationPath(currentPath)) {

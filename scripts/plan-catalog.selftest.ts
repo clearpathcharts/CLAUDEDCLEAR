@@ -34,8 +34,22 @@ import {
   createEmptyMarketSlots,
   MARKET_CHART_SLOT_COUNT_MAX,
 } from '../src/constants/chartLayout.ts';
+import {
+  ALL_ADDONS_CENTS,
+  MEMBERSHIP_PLANS,
+  PLATINUM_CENTS,
+  SILVER_ADDONS,
+  SILVER_BASE_CENTS,
+  SILVER_WITH_ALL_ADDONS_CENTS,
+} from '../src/content/membershipPricing.ts';
 
 assert.deepEqual([...CANONICAL_PLANS], ['basic', 'silver', 'gold', 'platinum']);
+assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [0, 599, 999, 2499]);
+assert.equal(SILVER_ADDONS.length, 7);
+assert.equal(ALL_ADDONS_CENTS, 4493);
+assert.equal(SILVER_BASE_CENTS, 599);
+assert.equal(SILVER_WITH_ALL_ADDONS_CENTS, 5092);
+assert.equal(PLATINUM_CENTS, 2499);
 
 for (const id of CANONICAL_PLANS) {
   const plan = PLAN_CATALOG[id] as Record<string, unknown>;
@@ -56,9 +70,9 @@ assert.equal(SILVER_INDICATOR_ABBRS.length, 15);
 
 assert.equal(PLAN_CATALOG.basic.limits.alerts, 3);
 assert.ok(isUnlimited(PLAN_CATALOG.silver.limits.alerts));
-assert.equal(PLAN_CATALOG.basic.limits.watchlists, 3);
-assert.equal(PLAN_CATALOG.silver.limits.watchlists, 8);
-assert.equal(PLAN_CATALOG.gold.limits.watchlists, 15);
+assert.equal(PLAN_CATALOG.basic.limits.watchlists, 5);
+assert.ok(isUnlimited(PLAN_CATALOG.silver.limits.watchlists));
+assert.ok(isUnlimited(PLAN_CATALOG.gold.limits.watchlists));
 assert.ok(isUnlimited(PLAN_CATALOG.platinum.limits.watchlists));
 
 assert.equal(PLAN_CATALOG.basic.limits.historicalYearsClaim, 7);
@@ -132,9 +146,15 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
 {
   const src = fs.readFileSync(new URL('../src/lib/planCatalog.ts', import.meta.url), 'utf8');
   const table = fs.readFileSync(new URL('../src/components/PlanComparisonTable.tsx', import.meta.url), 'utf8');
+  const page = fs.readFileSync(new URL('../src/components/membership/MembershipPricingPage.tsx', import.meta.url), 'utf8');
+  const app = fs.readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /label: 'Price'/);
+  assert.match(page, /Visual \+ legal review stage/);
+  assert.match(page, /Checkout remains disabled/);
+  assert.match(page, /SILVER_WITH_ALL_ADDONS_CENTS/);
+  assert.match(app, /<MembershipPricingPage \/>/);
 }
 
 console.log('plan-catalog.selftest: ok');
