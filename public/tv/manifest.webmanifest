@@ -1,0 +1,19 @@
+{
+  "name": "Clear Path Markets Science TV",
+  "short_name": "CPMS TV",
+  "description": "Stream institutional trade curriculums, live orderbook feeds, and market analyses in high-fidelity.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#FF4500",
+  "orientation": "any",
+  "categories": ["finance", "education", "utilities"],
+  "icons": [
+    {
+      "src": "./assets/1000231340.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

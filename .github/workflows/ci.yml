@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Never probe GCP ADC in Actions (lazy firebase-admin client crashes CI).
+      CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
+
+    steps:
+      # Pin third-party actions to full commit SHAs (Aikido / supply-chain)
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run lint
+
+      - name: Firebase mock safety (no black-screen regressions)
+        run: npm run test:firebase-mock
+
+      - name: Force-fresh public build (no user cache wipe)
+        run: npm run test:force-fresh-build
+
+      - name: Login choose-your-path images
+        run: npm run test:choose-path
+
+      - name: Private Login sci-fi restyle
+        run: npm run test:private-login-scifi
+
+      - name: About manifesto copy
+        run: npm run test:about-manifesto
+
+      - name: Affiliate rewards self-test
+        run: npm run test:affiliate
+
+      - name: Private accounts durable-store self-test
+        run: npm run test:private-durable
+
+      - name: Waitlist → Firestore private accounts
+        run: npm run test:waitlist-convert
+
+      - name: Section guide video catalog self-test
+        run: npm run test:section-guides
+
+      - name: Explain Mode Flow scripts self-test
+        run: npm run test:explain-nav
+
+      - name: CEO desk cleanup (ticker interval, no contacts rail)
+        run: npm run test:ceo-desk-cleanup
+
+      - name: C.P.T. Buddy affect / bond self-test
+        run: npm run test:buddy-affect
+
+      - name: C.P.T. Buddy live tools + encyclopedia search
+        run: npm run test:buddy-live-tools
+
+      - name: Founder disaster-backup self-test
+        run: npm run test:founder-backup
+
+      - name: Founder / member login privacy self-test
+        run: npm run test:founder-privacy
+
+      - name: Profile share URL + password reset self-test
+        run: npm run test:profile-share
+
+      - name: Founder-sheet plan catalog self-test
+        run: npm run test:plan-catalog
+
+      - name: Daily Ops catalog + investor letter
+        run: npm run test:daily-ops
+
+      - name: Third-party automation vendors absent from tree
+        run: npm run test:no-third-party-automation
+
+      - name: Chart axis stretch / lift-squish self-test
+        run: npm run test:chart-zoom
+
+      - name: Per-pattern dismiss X
+        run: npm run test:pattern-dismiss
+
+      - name: YWC magazine rack allowlist self-test
+        run: npm run test:magazine-rack
+
+      - name: YWC RSS discover self-test
+        run: npm run test:rss-discover
+
+      - name: YWC publication hub self-test
+        run: npm run test:publication-hub
+
+      - name: Twelve Data secret resolution
+        run: npm run test:twelvedata-secrets
+
+      - name: Twelve Data 401 retry + circuit breaker
+        run: npm run test:twelvedata-gateway-auth
+
+      - name: Quote last-print resolution (close over stale price)
+        run: npm run test:quote-price-resolve
+
+      - name: FMP second-layer quotes and candles
+        run: npm run test:fmp-market-fallback
+
+      - name: FMP desk news and economic calendar
+        run: npm run test:fmp-news-wire
+
+      - name: Multi-monitor desk tree
+        run: npm run test:desk-monitor-tree
+
+      - name: Overnight structure review
+        run: npm run test:daily-pattern-review
+
+      - name: Trader desk routing
+        run: npm run test:trader-desks
+
+      - name: Trader desk SEO metadata
+        run: npm run test:desk-seo
+
+      - name: Homepage H1 and four-desk SERP copy
+        run: npm run test:homepage-h1
+
+      - name: Company directory catalog
+        run: npm run test:company-catalog
+
+      - name: Generator domain legitimacy
+        run: npm run test:generator-legitimacy
+
+      - name: Build
+        env:
+          CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
+        run: npm run build

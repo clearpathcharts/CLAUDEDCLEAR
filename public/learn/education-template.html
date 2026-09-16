@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Educational Portal Template | ClearPath Learn</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/learn/assets/css/style.css">
+</head>
+<body>
+  <div class="financial-grid"></div>
+
+  <!-- Mobile sticky navigation bar -->
+  <header class="mobile-nav-bar">
+    <div class="brand">
+      <h1 class="brand-title">ClearPath Learn</h1>
+      <p class="brand-subtitle font-mono">Education System</p>
+    </div>
+    <button class="btn-hamburger" id="hamburgerBtn" aria-label="Toggle navigation menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+  </header>
+
+  <div class="layout-wrapper">
+    <!-- Left Sidebar Column - Grouped Navigation Structure -->
+    <nav class="sidebar" id="sidebar">
+      <div class="brand">
+        <h1 class="brand-title">ClearPath Learn</h1>
+        <p class="brand-subtitle font-mono">Public Encyclopedia</p>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="/learn/index.html">
+            <i class="fa-solid fa-square-poll-vertical text-[#00D9FF]"></i>
+            <span>Main Console</span>
+          </a>
+        </li>
+
+        <!-- MARKETS SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: rgba(0, 217, 255, 0.82); text-transform: uppercase;">
+          Markets
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=stocks_cat">
+            <i class="fa-solid fa-chart-line text-[#00D9FF]"></i>
+            <span>├ Stocks</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=forex_cat">
+            <i class="fa-solid fa-circle-nodes text-[#00D9FF]"></i>
+            <span>├ Forex</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=commodities_cat">
+            <i class="fa-solid fa-droplet text-[#00D9FF]"></i>
+            <span>├ Commodities</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=sectors_cat">
+            <i class="fa-solid fa-cubes text-[#00D9FF]"></i>
+            <span>└ Sectors</span>
+          </a>
+        </li>
+
+        <!-- ECONOMY SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: rgba(255, 0, 150, 0.82); text-transform: uppercase;">
+          Economy
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=economy_cat">
+            <i class="fa-solid fa-landmark text-[#7A3BFF]"></i>
+            <span>├ Inflation</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=rates_stocks">
+            <i class="fa-solid fa-percent text-[#7A3BFF]"></i>
+            <span>├ Interest Rates</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=banking_cat">
+            <i class="fa-solid fa-building-columns text-[#7A3BFF]"></i>
+            <span>├ Federal Reserve</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/education-template.html?topic=banking_cat">
+            <i class="fa-solid fa-vault text-[#7A3BFF]"></i>
+            <span>└ Banking</span>
+          </a>
+        </li>
+
+        <!-- LEARNING PLUG -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 950; letter-spacing: 2px; color: #a78bfa; text-transform: uppercase;">
+          Learning Link
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=beginner]').click(); return false;">
+            <i class="fa-solid fa-user-graduate text-green-400"></i>
+            <span>├ Beginner</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=highSchool]').click(); return false;">
+            <i class="fa-solid fa-school text-yellow-400"></i>
+            <span>├ High School</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=college]').click(); return false;">
+            <i class="fa-solid fa-graduation-cap text-[#00D9FF]"></i>
+            <span>├ College</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" onclick="document.querySelector('[data-mode=researcher]').click(); return false;">
+            <i class="fa-solid fa-flask text-[#FF00C8]"></i>
+            <span>└ Research</span>
+          </a>
+        </li>
+
+        <!-- DISCOVERY SECTION -->
+        <li style="margin: 0.9rem 0 0.25rem 0.6rem; font-family: 'Orbitron', sans-serif; font-size: 0.65rem; font-weight: 900; letter-spacing: 2px; color: #ef4444; text-transform: uppercase;">
+          Discovery
+        </li>
+        <li class="nav-item">
+          <a href="/learn/sector-template.html">
+            <i class="fa-solid fa-microchip text-teal-400"></i>
+            <span>├ Sector Maps</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/index.html">
+            <i class="fa-solid fa-earth-americas text-emerald-400"></i>
+            <span>├ Global Markets</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="/learn/glossary-template.html">
+            <i class="fa-solid fa-brain text-purple-400"></i>
+            <span>└ Market Psychology</span>
+          </a>
+        </li>
+
+        <li class="nav-item" style="margin-top: 1.5rem; opacity: 0.7;">
+          <a href="/" style="border: 1px dashed rgba(239, 68, 68, 0.4); color: #f87171;">
+            <i class="fa-solid fa-arrow-left-long"></i>
+            <span>Exit Learn Shell</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Toggle Cognitive Level -->
+      <div class="mode-controls">
+        <span class="mode-title">Cognitive Complexity</span>
+        <div class="mode-selector">
+          <button class="btn-mode active" data-mode="beginner"><span>Beginner Level</span></button>
+          <button class="btn-mode" data-mode="kids"><span>Kids mode 🎈</span></button>
+          <button class="btn-mode" data-mode="highSchool"><span>High School Level</span></button>
+          <button class="btn-mode" data-mode="college"><span>College Level</span></button>
+          <button class="btn-mode" data-mode="researcher"><span>Researcher Mode 🔬</span></button>
+          <button class="btn-mode" data-mode="accessible"><span>Accessible Mode</span></button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <div class="status-banner" id="offlineBanner" role="alert">
+        <div>
+          <i class="fa-solid fa-cloud-bolt-flash mr-2"></i>
+          <span><strong>Offline mode active.</strong> Loading local cached workspace files.</span>
+        </div>
+      </div>
+
+      <!-- Core Detail Header -->
+      <section class="hero" style="border-bottom: 1px solid rgba(255, 0, 200, 0.15); margin-bottom: 2.5rem;">
+        <span class="hero-sub font-mono">Topic Deep-Dive Module</span>
+        <h1 class="hero-title" id="moduleTitle" style="text-transform: uppercase; background: linear-gradient(135deg, #FFF, var(--color-neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">INTELLIGENCE BLUEPRINT</h1>
+        <p class="hero-desc" id="moduleDesc">
+          Select or toggle cognitive modes to inspect comparative economic indexes, real-world examples, and statistical equations.
+        </p>
+      </section>
+
+      <!-- Advanced Cognitive Level Comparison Terminal Widget -->
+      <div style="background: rgba(3,4,8,0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 2.5rem; margin-bottom: 3rem; backdrop-filter: blur(20px);" class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <h3 style="font-family: 'Orbitron', 'Inter', sans-serif; font-size: 1rem; letter-spacing: 1px; color: var(--color-neon-cyan);">ACTIVE INSTRUCTION BUFFER</h3>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; padding: 4px 10px; background: rgba(0,217,255,0.1); border: 1px solid var(--color-neon-cyan); border-radius: 6px; color: var(--color-neon-cyan);">ONLINE READY</span>
+        </div>
+
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; line-height: 1.8; color: rgba(255,255,255,0.85);" id="cognitiveDisplayArea">
+          Select a topic on the main page to explore real-world impacts or toggle complexity level.
+        </div>
+      </div>
+
+      <!-- Static Detail Grid -->
+      <div class="card-grid">
+        <article class="card">
+          <div class="card-header-flex">
+            <div class="card-icon"><i class="fa-solid fa-basket-shopping text-[#FF00C8]"></i></div>
+            <span class="card-tag">Real World: Groceries</span>
+          </div>
+          <h2 class="card-title">Supermarket Impact</h2>
+          <p class="card-desc">Inflation causes input commodity costs (like wheat, milk, and packaging transport) to swell, forcing supermarkets to mark up retail prices of daily groceries.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-header-flex">
+            <div class="card-icon"><i class="fa-solid fa-house text-[#00D9FF]"></i></div>
+            <span class="card-tag">Real World: Housing</span>
+          </div>
+          <h2 class="card-title">Property Squeezes</h2>
+          <p class="card-desc">When values scale upward rapid-fire, land appraisals and lease cost bands multiply, requiring renters to work longer hours to cover rent budgets.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-icon" style="margin-bottom: 1rem;"><i class="fa-solid fa-money-check-dollar"></i></div>
+          <h2 class="card-title">Wages vs Expenses</h2>
+          <p class="card-desc">If salaries remain fixed while retail products increase 8.5% year-over-year, employees experience a structural drop in real disposable wages.</p>
+        </article>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="/learn/assets/js/main.js"></script>
+</body>
+</html>

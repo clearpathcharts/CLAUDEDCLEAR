@@ -1,0 +1,85 @@
+import React from "react";
+import { Sliders, Check } from "lucide-react";
+import { SUPPORTED_CHART_INDICATORS } from "../../config/tradingViewIndicators";
+
+interface ChartIndicatorPickerProps {
+  activeIndicators: string[];
+  onToggle: (abbr: string) => void;
+  onClear: () => void;
+  compact?: boolean;
+  allowedAbbrs?: readonly string[] | 'all';
+  maxActive?: number;
+}
+
+/** Compact indicator toggles for the Charts / Market Terminal tab. */
+export function ChartIndicatorPicker({
+  activeIndicators,
+  onToggle,
+  onClear,
+  compact = false,
+  allowedAbbrs = 'all',
+  maxActive,
+}: ChartIndicatorPickerProps) {
+  return (
+    <div className={`rounded-2xl border border-white/10 bg-black/60 backdrop-blur-md ${compact ? "px-3 py-2 space-y-2" : "p-4 space-y-3"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[#00D9FF]">
+          <Sliders size={14} />
+          <span className="text-sm font-black uppercase tracking-widest text-white">
+            Indicators
+          </span>
+          <span className="text-xs font-mono text-zinc-500">
+            ({activeIndicators.length} active)
+          </span>
+        </div>
+        {activeIndicators.length > 0 && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs font-black uppercase tracking-wider text-zinc-500 hover:text-red-400 transition-colors"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {SUPPORTED_CHART_INDICATORS.map((ind) => {
+          const isActive = activeIndicators.includes(ind.abbr);
+          const locked = allowedAbbrs !== 'all' && !allowedAbbrs.includes(ind.abbr);
+          const atCap =
+            !isActive &&
+            typeof maxActive === 'number' &&
+            Number.isFinite(maxActive) &&
+            activeIndicators.length >= maxActive;
+          return (
+            <button
+              key={ind.abbr}
+              type="button"
+              disabled={locked || atCap}
+              onClick={() => onToggle(ind.abbr)}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                locked || atCap
+                  ? 'border-zinc-900 bg-black/20 text-zinc-700 cursor-not-allowed'
+                  : isActive
+                  ? "border-[#00D9FF]/50 bg-[#00D9FF]/10 text-[#00D9FF] shadow-[0_0_10px_rgba(0,217,255,0.2)]"
+                  : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              title={locked ? 'Locked on this plan' : atCap ? `Max ${maxActive} indicators on this plan` : ind.name}
+              style={isActive ? { borderLeftColor: ind.activeColor, borderLeftWidth: 3 } : undefined}
+            >
+              {isActive && <Check size={12} className="stroke-[3px]" />}
+              {ind.abbr}
+            </button>
+          );
+        })}
+      </div>
+
+      {compact ? null : (
+        <p className="text-xs text-zinc-500 font-mono">
+          Candle-math overlays compute locally. COT is ClearPath analytics on a cached CFTC.gov archive — browsers never hit CFTC.
+        </p>
+      )}
+    </div>
+  );
+}

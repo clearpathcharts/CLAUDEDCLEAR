@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 48" role="img" aria-label="U.S. Department of the Treasury">
+  <rect width="130" height="48" rx="4" fill="#1B365D"/>
+  <rect x="1" y="1" width="128" height="46" rx="3" fill="none" stroke="#C5A572" stroke-width="1.5"/>
+  <text x="65" y="20" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="12" font-weight="700" fill="#FFFFFF" letter-spacing="1">U.S. TREASURY</text>
+  <text x="65" y="36" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="5.5" fill="#C5A572" letter-spacing="0.8">TREASURY.GOV</text>
+</svg>

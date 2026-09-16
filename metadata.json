@@ -1,0 +1,8 @@
+{
+  "name": "Clear Path Markets Science",
+  "description": "A cinematic, living-world financial encyclopedia representing the systems of human trade, central banking, and economic constellations with interactive simulation modules.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

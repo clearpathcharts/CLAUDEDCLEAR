@@ -1,0 +1,16 @@
+[
+  {
+    "symbol": "SPY",
+    "name": "SPDR S&P 500 ETF",
+    "category": "Index ETF",
+    "tracks": "S&P 500",
+    "description": "Tracks the 500 largest U.S. companies."
+  },
+  {
+    "symbol": "QQQ",
+    "name": "Invesco QQQ Trust",
+    "category": "Technology ETF",
+    "tracks": "NASDAQ 100",
+    "description": "Tracks major technology and growth companies."
+  }
+]

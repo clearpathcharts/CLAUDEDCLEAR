@@ -1,0 +1,44 @@
+[
+  {
+    "source": "FED_REG",
+    "title": "Streamlining Federal Procurement Protocols",
+    "detail": "New rules for institutional procurement of high-velocity neural assets...",
+    "color": "text-blue-400",
+    "id": "2026-08421"
+  },
+  {
+    "source": "STATE_DEPT",
+    "title": "Travel Advisory: Red Sea Maritime Security",
+    "detail": "Official Travel Advisory Update regarding maritime corridors...",
+    "color": "text-orange-400",
+    "id": "TA-2026-012"
+  },
+  {
+    "source": "SEC_EDGAR",
+    "title": "Apple Inc. (AAPL) - Form 8-K",
+    "detail": "Current report regarding neural engine integration milestones...",
+    "color": "text-green-400",
+    "id": "CIK0000320193"
+  },
+  {
+    "source": "CA_LOCAL",
+    "title": "City Budget: Sacramento",
+    "detail": "Updated financial records for Fiscal Year 2026 showing infrastructure surplus.",
+    "color": "text-yellow-400",
+    "id": "SAC-2026-FIN"
+  },
+  {
+    "source": "CAISO_GRID",
+    "title": "Grid Stability: Normal Operations",
+    "detail": "Current Demand: 22,430 MW | Reserves: 3,419 MW | Renewable Mix: 82%",
+    "color": "text-green-400",
+    "id": "CAISO-LIVE"
+  },
+  {
+    "source": "DTSC_SAFETY",
+    "title": "Hazardous Waste Rulemaking Alert",
+    "detail": "Regulators reviewing transport manifests for public roads in San Diego sector.",
+    "color": "text-red-500",
+    "id": "DTSC-2026-REG"
+  }
+]

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Apply WCAG display prefs before paint (avoids neuro→high-contrast flash)
+      try {
+        var hc = localStorage.getItem('cp_a11y_high_contrast') === 'true';
+        var rs = localStorage.getItem('cp_a11y_reduced_sensory') === 'true';
+        var root = document.documentElement;
+        root.setAttribute('data-high-contrast', hc ? 'true' : 'false');
+        root.setAttribute('data-reduced-sensory', rs ? 'true' : 'false');
+        // CTA fills always use mid-tone WCAG-safe pink/orange
+        root.style.setProperty('--cpt-pink', '#d81b60');
+        root.style.setProperty('--cpt-orange', '#e65100');
+        root.style.setProperty('--cpt-cta-on-pink', '#ffffff');
+        root.style.setProperty('--cpt-cta-on-orange', '#ffffff');
+        root.style.setProperty('--cpt-text-pink', hc ? '#f9a8d4' : '#f472b6');
+        root.style.setProperty('--cpt-text-orange', hc ? '#fdba74' : '#fb923c');
+        root.style.setProperty('--cpt-text-purple', hc ? '#f3e8ff' : '#e9d5ff');
+      } catch (e) {}
+    </script>
+    <script>
+      // Drop stale service workers + Cache Storage so visitors are not stuck on an old shell.
+      try {
+        if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var i = 0; i < registrations.length; i++) {
+              registrations[i].unregister().then(function(success) {
+                if (success) console.log('[Purge] Unregistered SW');
+              });
+            }
+          });
+        }
+        if (typeof caches !== 'undefined' && caches.keys) {
+          caches.keys().then(function(keys) {
+            for (var c = 0; c < keys.length; c++) caches.delete(keys[c]);
+          });
+        }
+      } catch (e) {}
+    </script>
+    <script>
+      // Boot watchdog: if React never replaces the black loader, show recovery UI.
+      // Cleared when window.__CP_BOOT_OK is set by main.tsx / BootReadySignal.
+      (function () {
+        var BOOT_MS = 12000;
+        window.setTimeout(function () {
+          try {
+            if (window.__CP_BOOT_OK) return;
+            if (document.documentElement.getAttribute('data-cp-boot') === 'ok') return;
+            var root = document.getElementById('root');
+            if (!root) return;
+            // If React already rendered substantial UI, stand down.
+            if (root.querySelector('.clearpath-glass-root, [data-cp-app], main, #main-content')) {
+              window.__CP_BOOT_OK = true;
+              return;
+            }
+            var reason = window.__CP_BOOT_FAILED || 'App did not become ready in time';
+            root.innerHTML =
+              '<div role="alert" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1.5rem;background:#050505;color:#fff;font-family:system-ui,sans-serif;text-align:center">' +
+              '<p style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:#fb7185">ClearPath boot timeout</p>' +
+              '<p style="max-width:28rem;color:#a1a1aa;font-size:14px;line-height:1.5">The page stayed on the loading screen too long. This is usually a JavaScript crash or a blocked script — not an empty site. Try reload. If it keeps failing, check the browser console and Cloud Run client env (Firebase).</p>' +
+              '<pre style="max-width:36rem;overflow:auto;padding:1rem;border:1px solid #27272a;border-radius:12px;background:#000;color:#fecdd3;font-size:11px;text-align:left"></pre>' +
+              '<button type="button" style="padding:0.65rem 1.25rem;border-radius:999px;border:1px solid #22d3ee55;background:#083344;color:#a5f3fc;font-size:12px;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer">Reload</button>' +
+              '</div>';
+            var pre = root.querySelector('pre');
+            if (pre) pre.textContent = String(reason);
+            var btn = root.querySelector('button');
+            if (btn) btn.onclick = function () { location.reload(); };
+            document.documentElement.setAttribute('data-cp-boot', 'timeout');
+          } catch (e) {}
+        }, BOOT_MS);
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval'; img-src * data: blob: 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; connect-src * ws: wss: data: blob: http://0.0.0.0:3000; frame-src *; font-src * data:;" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>ClearPath Trader | Four Trader Desks on One Site</title>
+    <meta name="description" content="Four trader desks on one site: Institutional, Fundamental, Retail, and Neurodivergent. Analytics and education — not a brokerage or website chatbot." />
+    <meta name="keywords" content="ClearPath Trader, four trader desks, Institutional, Fundamental, Retail, Neurodivergent, market intelligence, trading charts, financial education, forex, crypto, stocks" />
+    <link rel="canonical" href="https://clearpathtrader.com/" />
+    <meta property="og:title" content="ClearPath Trader | Four Trader Desks on One Site" />
+    <meta property="og:description" content="Four trader desks on one site: Institutional, Fundamental, Retail, and Neurodivergent. Analytics and education — not a brokerage or website chatbot." />
+    <meta property="og:image" content="https://clearpathtrader.com/og-image.png" />
+    <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
+    <meta property="og:url" content="https://clearpathtrader.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="ClearPathTrader" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ClearPath Trader | Four Trader Desks on One Site" />
+    <meta name="twitter:description" content="Four trader desks on one site: Institutional, Fundamental, Retail, and Neurodivergent. Analytics and education — not a brokerage or website chatbot." />
+    <meta name="twitter:image" content="https://clearpathtrader.com/og-image.png" />
+    <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#0b0e11" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Visible document H1 for Bing/Google SEO audits (must NOT be clipped/hidden). -->
+    <header id="seo-document-header" style="margin:0;padding:1rem 1.25rem 0.25rem;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;text-align:center">
+      <h1 id="seo-document-h1" style="margin:0 auto;max-width:40rem;font-size:1.35rem;line-height:1.35;font-weight:800;letter-spacing:0.02em">ClearPath Trader — Four Trader Desks on One Site</h1>
+    </header>
+    <div id="root">
+      <div role="status" aria-live="polite" style="min-height:70vh;width:100vw;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'IBM Plex Mono',ui-monospace,'SF Mono',Consolas,monospace;font-weight:700;text-transform:uppercase;letter-spacing:4px;font-size:10px;gap:12px;padding:1.5rem;box-sizing:border-box">
+        <div style="display:flex;align-items:center">
+          <span aria-hidden="true" style="opacity: 0.5; margin-right: 10px;">[</span>
+          <div id="loader-text">Loading New Architecture...</div>
+          <span aria-hidden="true" style="opacity: 0.5; margin-left: 10px;">]</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

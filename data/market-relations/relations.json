@@ -1,0 +1,29 @@
+[
+  {
+    "asset": "Gold",
+    "connectedTo": [
+      "USD",
+      "Inflation",
+      "Bond Yields",
+      "Federal Reserve"
+    ]
+  },
+  {
+    "asset": "Oil",
+    "connectedTo": [
+      "OPEC",
+      "Inflation",
+      "Transportation",
+      "Wars"
+    ]
+  },
+  {
+    "asset": "Bitcoin",
+    "connectedTo": [
+      "Risk Appetite",
+      "Liquidity",
+      "ETF Flows",
+      "Federal Reserve"
+    ]
+  }
+]

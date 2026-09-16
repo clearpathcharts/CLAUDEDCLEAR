@@ -1,0 +1,457 @@
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import Dashboard from './components/Dashboard';
+import Auth from './components/Auth';
+import DeskRoute from './components/desks/DeskRoute';
+import {
+  isDeskPath,
+  isMemberHomePath,
+  memberHomeDeskHref,
+  readRememberedTraderDesk,
+  shouldStayOnPublicHome,
+} from './lib/traderDesks';
+import ExternalAboutPage from './components/ExternalAboutPage';
+import AffiliateTermsPage from './components/AffiliateTermsPage';
+import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PressKitPage from './components/PressKitPage';
+import SocialOsMovedPage from './components/SocialOsMovedPage';
+import PublicMemberProfile from './components/PublicMemberProfile';
+import ResetPasswordPage from './components/ResetPasswordPage';
+import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './content/tradingReimaginedLanding';
+import { EducationDeskBar } from './education/EducationDeskBar';
+import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
+import { useAuth } from './contexts/FirebaseContext';
+import { advancedProfiles } from './lib/advanced/profiles';
+import { CptBuddyWidget } from './components/CptBuddyWidget';
+import { PlanComparisonTable } from './components/PlanComparisonTable';
+import AppUpdateBanner from './components/AppUpdateBanner';
+import { AppShellProvider } from './contexts/AppShellContext';
+import { ExplainOverlay, getExplainContent } from './components/explain';
+
+const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
+const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
+const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
+const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
+const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
+
+function AuthenticatedShell({
+  profile,
+  onProfileChange,
+}: {
+  profile: (typeof advancedProfiles)[keyof typeof advancedProfiles];
+  onProfileChange: (id: string) => void;
+}) {
+  return (
+    <div className="clearpath-glass-root">
+      <Dashboard profile={profile} onProfileChange={onProfileChange} />
+      <CptBuddyWidget />
+    </div>
+  );
+}
+
+/** Logged-in `/` must not mount the old Dashboard — send the session to a desk. */
+function MemberDeskRedirect() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const href = memberHomeDeskHref({
+      search: window.location.search,
+      remembered: readRememberedTraderDesk(),
+    });
+    const here = `${window.location.pathname}${window.location.search}`;
+    if (here === href) return;
+    window.history.replaceState({}, '', href);
+    window.dispatchEvent(new Event('clearpath-location'));
+  }, []);
+  return (
+    <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
+      <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-[0.3em]">
+        Opening trader desk...
+      </p>
+    </div>
+  );
+}
+
+function ExplainDeepLink() {
+  const [id, setId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('explain');
+  });
+  if (!id || !getExplainContent(id)) return null;
+  return (
+    <ExplainOverlay
+      contentId={id}
+      onClose={() => {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('explain');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        } catch {
+          /* ignore */
+        }
+        setId(null);
+      }}
+    />
+  );
+}
+
+function isEncyclopediaPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return (
+    p === '/encyclopedia' ||
+    p === '/financial-encyclopedia' ||
+    p === '/stocks' ||
+    p.startsWith('/stocks/') ||
+    p.startsWith('/companies/') ||
+    p.startsWith('/crypto/') ||
+    p.startsWith('/forex/') ||
+    p.startsWith('/commodities/') ||
+    p.startsWith('/economy/') ||
+    p === '/crypto' ||
+    p === '/companies' ||
+    p === '/companies/' ||
+    p === '/forex' ||
+    p === '/commodities'
+  );
+}
+
+
+function isIndicatorsPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return (
+    p === '/indicators' ||
+    p === '/encyclopedia-of-indicators' ||
+    p.startsWith('/indicators/')
+  );
+}
+
+function isEducationPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  // Hub only — /education/:school/... is server-rendered static HTML for crawlability.
+  return p === '/education' || p === '/clearpath-education';
+}
+
+function isLiteracyPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/literacy' || p === '/literacy-os';
+}
+
+function isPlansPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/plans' || p === '/membership' || p === '/pricing';
+}
+
+function isFundamentalDeskPath(path: string): boolean {
+  const p = path.toLowerCase().trim();
+  return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
+}
+
+function isCeoPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/ceo' || p === '/ceo-dashboard';
+}
+
+function PublicLearnShell({
+  children,
+  deskTab = EDUCATION_TAB_ID,
+}: {
+  children: React.ReactNode;
+  deskTab?: string;
+}) {
+  return (
+    <div className="min-h-screen w-full bg-[#050505] text-white">
+      <a href="#learn-main" className="cp-skip-link">
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 backdrop-blur-xl px-4 py-3">
+        <nav aria-label="Learning desks" className="flex items-center justify-between gap-3">
+          <a
+            href="/"
+            className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            ← ClearPath Home
+          </a>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
+            <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
+            <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
+            <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
+            <a href="/indicators" className="text-[10px] font-black uppercase tracking-wider text-[#39FF14]/80 hover:text-[#39FF14]">Indicators</a>
+            <a href="/ui" className="text-[10px] font-black uppercase tracking-wider text-[#B026FF]/80 hover:text-[#B026FF]">UI Modes</a>
+            <a href="/desk/fundamental" className="text-[10px] font-black uppercase tracking-wider text-[#22d3ee]/80 hover:text-[#22d3ee]">Fundamental</a>
+          </div>
+        </nav>
+      </header>
+      <main id="learn-main" tabIndex={-1} className="outline-none">
+        <div className="px-4 pt-4 max-w-6xl mx-auto">
+          <EducationDeskBar
+            activeTab={deskTab}
+            onNavigate={(tabId) => {
+              if (tabId === EDUCATION_TAB_ID) window.location.assign('/education');
+              else openEducationDesk(tabId);
+            }}
+          />
+        </div>
+        <Suspense
+          fallback={
+            <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+              Loading learning desk...
+            </div>
+          }
+        >
+          {children}
+        </Suspense>
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  const { user, loading } = useAuth();
+  const [currentPath, setCurrentPath] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname;
+    }
+    return '/';
+  });
+  const [currentSearch, setCurrentSearch] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.search;
+    }
+    return '';
+  });
+  const [currentProfileId, setCurrentProfileId] = useState(() => {
+    // 1. Check URL query parameters
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlProfile = params.get('profile');
+        if (urlProfile && (advancedProfiles as any)[urlProfile]) {
+          return urlProfile;
+        }
+      } catch (e) {
+        console.error('Failed to parse URL query param:', e);
+      }
+    }
+    // 2. Check local storage
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const savedProfile = localStorage.getItem('clearpath_current_profile_id');
+        if (savedProfile && (advancedProfiles as any)[savedProfile]) {
+          return savedProfile;
+        }
+      } catch (e) {
+        console.error('Failed to load profile from localStorage:', e);
+      }
+    }
+    return 'calm_focus';
+  });
+  const handleProfileChange = (newProfileId: string) => {
+    setCurrentProfileId(newProfileId);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('clearpath_current_profile_id', newProfileId);
+      } catch (e) {
+        console.error('Failed to save profile to localStorage:', e);
+      }
+    }
+  };
+
+  // Path picker / neuro desk can set the chart profile without a full document reload
+  // (hard navigations to /?profile=… were remounting Auth and looking like a logout).
+  useEffect(() => {
+    const onSetProfile = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (typeof detail === 'string' && (advancedProfiles as any)[detail]) {
+        handleProfileChange(detail);
+      }
+    };
+    window.addEventListener('clearpath-set-profile', onSetProfile as EventListener);
+    return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
+  }, []);
+
+  // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (!ref || !/^[A-Za-z0-9]{4,16}$/.test(ref)) return;
+      void fetch('/api/affiliate/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: ref }),
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleLocationChange = () => {
+        setCurrentPath(window.location.pathname);
+        setCurrentSearch(window.location.search);
+      };
+      window.addEventListener('popstate', handleLocationChange);
+      window.addEventListener('clearpath-location', handleLocationChange);
+
+      // Patch history so in-app pushState/replaceState refreshes views immediately
+      const hist = window.history;
+      const originalPush = hist.pushState.bind(hist);
+      const originalReplace = hist.replaceState.bind(hist);
+      hist.pushState = (...args: Parameters<History['pushState']>) => {
+        originalPush(...args);
+        window.dispatchEvent(new Event('clearpath-location'));
+      };
+      hist.replaceState = (...args: Parameters<History['replaceState']>) => {
+        originalReplace(...args);
+        window.dispatchEvent(new Event('clearpath-location'));
+      };
+
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('profile') !== currentProfileId) {
+          params.set('profile', currentProfileId);
+          const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+          window.history.replaceState({ ...window.history.state }, '', newUrl);
+        }
+      } catch (e) {
+        console.error('Failed to sync profile query param:', e);
+      }
+      return () => {
+        window.removeEventListener('popstate', handleLocationChange);
+        window.removeEventListener('clearpath-location', handleLocationChange);
+        hist.pushState = originalPush;
+        hist.replaceState = originalReplace;
+      };
+    }
+  }, [currentProfileId]);
+  let content: React.ReactNode;
+  if (loading) {
+    content = (
+      <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
+        <p className="text-zinc-500 font-mono text-[9px] mt-4 uppercase tracking-[0.3em] animate-pulse">Initializing Neural Gateway...</p>
+      </div>
+    );
+  } else if (isCeoPath(currentPath)) {
+    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+    content = (
+      <AppShellProvider>
+        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+      </AppShellProvider>
+    );
+  } else if (isDeskPath(currentPath)) {
+    content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
+  } else if (currentPath === '/about') {
+    content = <ExternalAboutPage />;
+  } else if (currentPath === '/affiliate-terms') {
+    content = <AffiliateTermsPage />;
+  } else if (currentPath === '/press' || currentPath === '/press-kit') {
+    content = <PressKitPage />;
+  } else if (currentPath === '/ops/social' || currentPath === '/social-os') {
+    // Social OS runs on its own domain — not embedded in clearpathtrader.com
+    content = <SocialOsMovedPage />;
+  } else if (currentPath === '/reset-password') {
+    content = <ResetPasswordPage />;
+  } else if (currentPath.toLowerCase().startsWith('/u/')) {
+    content = <PublicMemberProfile />;
+  } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
+    content = <TradingReimaginedLanding />;
+  } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
+    content = <MemberDeskRedirect />;
+  } else if (!user || shouldStayOnPublicHome(currentSearch)) {
+    // Public learning desks when logged out (Auth marketing links + direct URLs)
+    if (isEncyclopediaPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <EncyclopediaLayout />
+        </PublicLearnShell>
+      );
+    } else if (isIndicatorsPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <EncyclopediaOfIndicators />
+        </PublicLearnShell>
+      );
+    } else if (isPlansPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
+            <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
+            <p className="text-zinc-400 text-sm">
+              Basic / Silver / Gold / Platinum feature unlocks as enforced in the product. List prices are not published here.
+            </p>
+            <PlanComparisonTable />
+          </div>
+        </PublicLearnShell>
+      );
+    } else if (isEducationPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <ClearPathEducation
+            onNavigate={(tabId) => {
+              if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'LiteracyOS') window.location.assign('/literacy');
+            }}
+          />
+        </PublicLearnShell>
+      );
+    } else if (isLiteracyPath(currentPath)) {
+      content = (
+        <PublicLearnShell>
+          <LiteracyOSPage
+            onNavigate={(tabId) => {
+              if (tabId === 'Encyclopedia') window.location.assign('/encyclopedia');
+              else if (tabId === 'EncyclopediaOfIndicators') window.location.assign('/indicators');
+              else if (tabId === 'ClearPathEducation') window.location.assign('/education');
+              else if (tabId === 'Yours') window.location.assign('/');
+            }}
+          />
+        </PublicLearnShell>
+      );
+    } else if (isFundamentalDeskPath(currentPath)) {
+      content = (
+        <div className="min-h-screen w-full bg-[#0c0b0a] text-[#f3ece2]">
+          <a href="#learn-main" className="cp-skip-link">Skip to research</a>
+          <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
+            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
+              ← ClearPath Home
+            </a>
+          </header>
+          <main id="learn-main" tabIndex={-1} className="outline-none">
+            <Suspense
+              fallback={
+                <div className="min-h-[50vh] flex items-center justify-center text-[#9a9186] font-mono text-xs uppercase tracking-widest">
+                  Opening research desk...
+                </div>
+              }
+            >
+              <FundamentalResearchDesk />
+            </Suspense>
+          </main>
+        </div>
+      );
+    } else {
+      content = <Auth />;
+    }
+  } else {
+    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+    content = (
+      <AppShellProvider>
+        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+      </AppShellProvider>
+    );
+  }
+
+  return (
+    <>
+      {content}
+      <ExplainDeepLink />
+      {/* Consent-first web/APK update prompt — never silent install */}
+      <AppUpdateBanner />
+    </>
+  );
+}

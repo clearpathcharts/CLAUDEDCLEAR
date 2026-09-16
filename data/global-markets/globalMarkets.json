@@ -1,0 +1,17 @@
+[
+  {
+    "market": "NYSE",
+    "country": "United States",
+    "description": "Largest stock exchange in the world."
+  },
+  {
+    "market": "NASDAQ",
+    "country": "United States",
+    "description": "Technology-heavy stock exchange."
+  },
+  {
+    "market": "Tokyo Stock Exchange",
+    "country": "Japan",
+    "description": "Major Asian equities exchange."
+  }
+]

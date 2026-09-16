@@ -1,0 +1,15 @@
+include ':app'
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
+
+apply from: 'capacitor.settings.gradle'
+
+// Reproducible Android builds (Aikido gradle lockfiles)
+dependencyResolutionManagement {
+    // Capacitor still uses buildscript repositories; keep PREFER_SETTINGS soft.
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}

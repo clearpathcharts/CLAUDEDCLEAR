@@ -1,0 +1,90 @@
+# Pin third-party actions to full commit SHAs (supply-chain / Aikido).
+name: PR Auto Updater
+
+on:
+  schedule:
+    # Every 6 hours — keep open PR branches current with main
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      merge_ready:
+        description: 'Also squash-merge MERGEABLE non-draft PRs (respects no-automerge label)'
+        type: boolean
+        default: false
+      include_drafts:
+        description: 'Include draft PRs in sync'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Print actions only (no push/merge)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-auto-updater
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+        with:
+          fetch-depth: 0
+          # Need a token that can push to PR branches in this repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup git identity
+        run: |
+          git config user.name "clearpath-pr-auto-updater"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup gh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status
+          gh repo view --json nameWithOwner --jq .nameWithOwner
+
+      - name: Run PR auto-updater
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_AUTO_BASE: main
+        run: |
+          set -euo pipefail
+          chmod +x scripts/pr-auto-updater.sh
+          ARGS=()
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS+=(--dry-run)
+          fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.include_drafts }}" == "true" ]]; then
+            ARGS+=(--include-drafts)
+          fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.merge_ready }}" == "true" ]]; then
+            ARGS+=(--merge-ready)
+          fi
+          # Scheduled runs: sync only (never squash-merge into main)
+          set +e
+          bash scripts/pr-auto-updater.sh "${ARGS[@]+"${ARGS[@]}"}"
+          code=$?
+          set -e
+          echo "Updater finished with exit $code"
+          # Exit 1 = conflicts/failures reported (soft). Exit >1 = plumbing error.
+          if [[ $code -gt 1 ]]; then exit $code; fi
+          exit 0
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pr-auto-updater-report
+          path: |
+            data/pr-auto-updater-report.md
+            data/pr-auto-updater.log
+          if-no-files-found: warn
+          retention-days: 14

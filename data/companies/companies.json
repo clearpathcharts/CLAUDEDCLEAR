@@ -1,0 +1,92 @@
+[
+  {
+    "ticker": "AAPL",
+    "name": "Apple Inc.",
+    "company": "Apple Inc.",
+    "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, accessories, and services worldwide.",
+    "sector": "Technology",
+    "industry": "Consumer Electronics",
+    "exchange": "NASDAQ",
+    "founded": 1976,
+    "headquarters": "Cupertino, California",
+    "marketCap": "3.2T",
+    "whatMoves": [
+      "iPhone unit shipment numbers",
+      "Consumer discretionary spending indices",
+      "TSMC manufacturing yields and sub-silicon allocations",
+      "Services segment subscription metrics and App Store margins"
+    ],
+    "competitors": [
+      "Samsung Electronics",
+      "Microsoft Corp.",
+      "Google LLC (Alphabet)"
+    ]
+  },
+  {
+    "ticker": "TSLA",
+    "name": "Tesla Inc.",
+    "company": "Tesla Inc.",
+    "description": "Tesla, Inc. designs, develops, manufactures, sells, and leases fully electric vehicles, energy generation systems, and storage systems.",
+    "sector": "Automotive",
+    "industry": "Electric Vehicles",
+    "exchange": "NASDAQ",
+    "founded": 2003,
+    "headquarters": "Austin, Texas",
+    "marketCap": "950B",
+    "whatMoves": [
+      "Battery grade lithium carbonate spot overheads",
+      "Quarterly delivery and production forecasts",
+      "Autopilot and Full Self-Driving neural net updates",
+      "Gigafactory production expansions in Texas, Shanghai, and Berlin"
+    ],
+    "competitors": [
+      "BYD Company",
+      "Ford Motor Company",
+      "General Motors"
+    ]
+  },
+  {
+    "ticker": "MSFT",
+    "name": "Microsoft Corp.",
+    "company": "Microsoft Corp.",
+    "description": "Microsoft Corp. develops and supports software, services, devices, and cloud-computing infrastructure.",
+    "sector": "Technology",
+    "industry": "Systems Software",
+    "exchange": "NASDAQ",
+    "founded": 1975,
+    "headquarters": "Redmond, Washington",
+    "marketCap": "3.1T",
+    "whatMoves": [
+      "Enterprise Azure cloud segment subscription growth",
+      "Copilot generative AI commercial license monetization",
+      "Commercial bookings size and PC consumer licensing"
+    ],
+    "competitors": [
+      "Amazon Web Services",
+      "Google Cloud Platform",
+      "Apple Inc."
+    ]
+  },
+  {
+    "ticker": "NVDA",
+    "name": "NVIDIA Corp.",
+    "company": "NVIDIA Corp.",
+    "description": "NVIDIA Corp. designs graphics processing units (GPUs) and AI computing platforms.",
+    "sector": "Technology",
+    "industry": "Semiconductors",
+    "exchange": "NASDAQ",
+    "founded": 1993,
+    "headquarters": "Santa Clara, California",
+    "marketCap": "2.9T",
+    "whatMoves": [
+      "Hyperscaler AI systems capital expenditure projections",
+      "CoWoS packaging capacity constraints at TSMC",
+      "Direct server shelf liquid cooling hardware cycles"
+    ],
+    "competitors": [
+      "Advanced Micro Devices (AMD)",
+      "Intel Corporation",
+      "Google TPU Team"
+    ]
+  }
+]

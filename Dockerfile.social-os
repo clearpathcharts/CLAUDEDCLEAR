@@ -1,0 +1,25 @@
+# ClearPath Social OS — standalone Cloud Run / VPS image (own domain)
+FROM node:22-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build:social-os
+
+FROM node:22-slim
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN groupadd --system --gid 10001 clearpath \
+  && useradd --system --uid 10001 --gid clearpath --home-dir /app --shell /usr/sbin/nologin clearpath
+
+COPY --from=build /app/social-os/dist ./social-os/dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package*.json ./
+
+RUN chown -R clearpath:clearpath /app
+USER clearpath
+
+EXPOSE 8080
+ENV PORT=8080
+CMD ["npm", "run", "start:social-os"]

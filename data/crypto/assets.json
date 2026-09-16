@@ -1,0 +1,62 @@
+[
+  {
+    "symbol": "BTC",
+    "name": "Bitcoin",
+    "category": "Store of Value",
+    "description": "Bitcoin is a decentralized digital monetary network.",
+    "founded": 2009,
+    "creator": "Satoshi Nakamoto",
+    "whatMoves": [
+      "ETF Flows",
+      "Federal Reserve",
+      "Risk Appetite",
+      "Liquidity"
+    ],
+    "relatedTopics": [
+      "Mining",
+      "Blockchain",
+      "Halving",
+      "Scarcity"
+    ]
+  },
+  {
+    "symbol": "ETH",
+    "name": "Ethereum",
+    "category": "Smart Contract Platform",
+    "description": "Ethereum powers decentralized applications and token systems.",
+    "whatMoves": [
+      "DeFi",
+      "Layer 2 Adoption",
+      "Gas Fees",
+      "Risk Markets"
+    ]
+  },
+  {
+    "symbol": "SOL",
+    "name": "Solana",
+    "category": "Smart Contract Platform",
+    "description": "Solana is an ultra high-speed parallel computing engine for digital payments and web3 protocols.",
+    "founded": 2020,
+    "creator": "Anatoly Yakovenko",
+    "whatMoves": [
+      "Meme Coin Velcoity",
+      "Network Uptime Indexes",
+      "Liquid Staking",
+      "DeFi Volume"
+    ]
+  },
+  {
+    "symbol": "USDT",
+    "name": "Tether USD",
+    "category": "Stablecoin",
+    "description": "Tether is an asset-backed fiat-pegged cryptocurrency facilitating instant exchange liquidity.",
+    "founded": 2014,
+    "creator": "Tether Limited",
+    "whatMoves": [
+      "U.S. Treasury Yields",
+      "Arbitrage Differentials",
+      "Reserve Disclosures",
+      "CEX Capital Runs"
+    ]
+  }
+]

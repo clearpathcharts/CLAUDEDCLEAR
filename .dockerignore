@@ -1,0 +1,29 @@
+# Docker build context — keep catalog JSON under data/ for Vite imports.
+node_modules
+dist
+.git
+.github
+.cursor
+.env
+.env.*
+!.env.example
+coverage
+tsc-out.txt
+build-local.txt
+*.log
+.vscode
+.idea
+/android
+/ios
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+
+# Runtime-only (not needed for image build)
+/data/registrations
+/data/intelligence
+/data/private_accounts
+/data/profiles
+/data/affiliate
+/data/badges
+/data/keep-alive.log

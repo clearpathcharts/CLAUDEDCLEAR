@@ -1,0 +1,40 @@
+[
+  {
+    "topic": "Inflation",
+    "description": "Inflation measures rising prices over time, eroding purchasing power and forcing central bank interest adjustments.",
+    "affectedAssets": [
+      "Gold",
+      "Bonds",
+      "USD",
+      "Stocks"
+    ]
+  },
+  {
+    "topic": "Interest Rates",
+    "description": "Interest rates represent the cost of borrowing capital and act as gravity for global asset valuations.",
+    "affectedAssets": [
+      "Housing",
+      "Stocks",
+      "Forex",
+      "Bonds"
+    ]
+  },
+  {
+    "topic": "Gross Domestic Product (GDP)",
+    "description": "The total monetary value of all goods and services produced within a nation's borders over a specific timeframe.",
+    "affectedAssets": [
+      "Equities Index",
+      "Bilateral Forex Flows",
+      "Sovereign Credit Ratings"
+    ]
+  },
+  {
+    "topic": "Quantitative Easing",
+    "description": "Unconventional expansionary monetary policy where a central bank purchases long-term securities to inject liquidity.",
+    "affectedAssets": [
+      "Venture Assets",
+      "Sovereign Debt Spreads",
+      "Cryptocurrency Markets"
+    ]
+  }
+]

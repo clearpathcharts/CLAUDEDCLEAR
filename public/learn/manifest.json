@@ -1,0 +1,26 @@
+{
+  "name": "ClearPath Public Financial Encyclopedia",
+  "short_name": "ClearPath Learn",
+  "description": "An immersive, cinematic visual learning platform containing interactive market dictionaries, central banking simulations, and asset guides.",
+  "start_url": "/learn/index.html",
+  "display": "standalone",
+  "background_color": "#030408",
+  "theme_color": "#00D9FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1280x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "1280x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "finance", "books"],
+  "screenshots": []
+}

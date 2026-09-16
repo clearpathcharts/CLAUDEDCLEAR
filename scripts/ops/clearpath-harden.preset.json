@@ -1,0 +1,40 @@
+{
+  "description": "Suggested grapheneX preset sketch for a ClearPath VPS/Docker host. Import/adapt into grapheneX modules.json after verifying each module name with `list` in your installed grapheneX version. Apply step-by-step — do not blind-run on production.",
+  "presets": [
+    {
+      "name": "ClearPath_Host_Baseline",
+      "target_os": "linux",
+      "notes": [
+        "Prefer running modules individually in the grapheneX UI first.",
+        "Confirm SSH + reverse proxy (80/443) + ClearPath PORT still work after Firewall changes.",
+        "Skip any module that disables SSH or blocks your admin IP."
+      ],
+      "modules": [
+        "Services/All",
+        "Filesystem/All",
+        "Kernel/All",
+        "User/All",
+        "Network/All",
+        "Other/All",
+        "Firewall/All"
+      ],
+      "recommended_manual_order": [
+        "Services (disable unused daemons)",
+        "Filesystem",
+        "Kernel",
+        "User",
+        "Network",
+        "Other",
+        "Firewall last — keep SSH + 80/443 (+ localhost app port)"
+      ]
+    }
+  ],
+  "clearpath_ports": {
+    "ssh": 22,
+    "http": 80,
+    "https": 443,
+    "app_behind_proxy": "3000 or $PORT on 127.0.0.1 only",
+    "graphenex_ui": "127.0.0.1:9090 via SSH tunnel"
+  },
+  "upstream": "https://github.com/grapheneX/grapheneX"
+}

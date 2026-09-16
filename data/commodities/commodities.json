@@ -1,0 +1,172 @@
+[
+  {
+    "symbol": "XAUUSD",
+    "name": "Gold",
+    "category": "Precious Metals",
+    "description": "Gold is a ancient monetary reserve asset, supreme safe-haven vehicle, and timeless inflation hedge trusted for millennia.",
+    "supplyChain": "Mined globally with main outputs from China, Russia, Australia, and Canada, then refined into high-purity bullion.",
+    "industrialUses": "Primarily jewelry, aerospace electronics, dentistry, and semiconductor connectivity components due to excellent conductivity.",
+    "inflationImpact": "Acts as the ultimate purchasing power protector, historically rising during high inflation or fiat currency debasement.",
+    "geopoliticalImpact": "Central banks aggressively hoard gold reserves to hedge sovereign risks, rising sharply in times of international tension.",
+    "historicalImportance": "The anchor of the classic Gold Standard and Bretton Woods systems, defining global money supplies until 1971.",
+    "affectedBy": [
+      "Real Interest Rates",
+      "U.S. Dollar Index (DXY)",
+      "Central Bank Reserves",
+      "Geopolitical Escalation"
+    ]
+  },
+  {
+    "symbol": "XAGUSD",
+    "name": "Silver",
+    "category": "Precious Metals",
+    "description": "Silver is a highly versatile dual-aspect commodity, acting both as an industrial superpower and precious monetary metal.",
+    "supplyChain": "Extracted majorly as a byproduct of lead, zinc, copper, and gold mining, primarily in Mexico, Peru, and China.",
+    "industrialUses": "Crucial for photovoltaic solar cells, electrical contacts, high-conductivity solders, and advanced medical equipment.",
+    "inflationImpact": "Tends to outperform gold during hyper-inflationary peaks due to lower nominal price and rapid industrial demands.",
+    "geopoliticalImpact": "Highly sensitive to green transition policies and global industrial development initiatives.",
+    "historicalImportance": "Used extensively as historical coinage (the Pieces of Eight, silver standards) in ancient trade routes and early empires.",
+    "affectedBy": [
+      "Solar Industrial Demand",
+      "Gold Spot Correlation",
+      "Mining Production Output",
+      "Monetary Real Yields"
+    ]
+  },
+  {
+    "symbol": "CL",
+    "name": "Crude Oil",
+    "category": "Energy",
+    "description": "Crude Oil is the lifeblood of global transportation, petrochemicals, and modern industrial civilizations.",
+    "supplyChain": "Extracted from deep underground reservoirs, transported via pipelines and supertankers, and refined into gasoline, diesel, and plastics.",
+    "industrialUses": "Combustion fuel, heavy lubricating oils, asphalt, and the universal raw base for synthetic plastics and fertilizers.",
+    "inflationImpact": "Directly drives the Consumer Price Index (CPI) since transport costs cascade into every retail product price.",
+    "geopoliticalImpact": "Underpins OPEC+ quotas, petrodollar recycling systems, and Middle Eastern geopolitical balances.",
+    "historicalImportance": "Sparks global energy resource conflicts; the 1970s Oil Shocks transformed the Federal Reserve's monetary strategy.",
+    "affectedBy": [
+      "OPEC+ Production Quotas",
+      "Global Industrial Demand",
+      "Shale Fracking Output",
+      "Geopolitical Transport Bottlenecks"
+    ]
+  },
+  {
+    "symbol": "HG",
+    "name": "Copper",
+    "category": "Industrial Metals",
+    "description": "Copper, nicknamed 'Doctor Copper' for its ability to gauge global macroeconomic health, is the premier infrastructure conductor.",
+    "supplyChain": "Predominantly mined in Chile, Peru, and China, requiring massive energy-intensive smelting and electrolytic refining.",
+    "industrialUses": "High-voltage transmission grids, residential electrical wiring, electric vehicle motors, generators, and plumbing.",
+    "inflationImpact": "Reflects broad demand-pull inflation, showing immediate price surges ahead of overall manufacturing cost increases.",
+    "geopoliticalImpact": "Highly vulnerable to Latin American labor strikes, Chilean mining royalties, and Chinese factory demand.",
+    "historicalImportance": "The foundational element of the Bronze Age, enabling early metallic tooling and currency systems.",
+    "affectedBy": [
+      "Electric Vehicle Production",
+      "Grid Infrastructure Initiatives",
+      "Latin American Labor Output",
+      "Global Macro GDP Expectations"
+    ]
+  },
+  {
+    "symbol": "ALM",
+    "name": "Aluminum",
+    "category": "Industrial Metals",
+    "description": "Aluminum is a lightweight, high-strength industrial metal critical for modern aviation, logistics, and structures.",
+    "supplyChain": "Refined from mined Bauxite ore using the energy-heavy Hall-Héroult smelting process, concentrated near cheap electricity.",
+    "industrialUses": "Aero-fuselages, vehicle engine blocks, carbonated beverage cans, power cable cores, and high-performance building frames.",
+    "inflationImpact": "Acts as a pass-through for global electricity pricing due to the extreme energy required for smelting.",
+    "geopoliticalImpact": "Susceptible to tariff barriers, carbon tax adjustments, and Siberian energy export constraints.",
+    "historicalImportance": "Once more precious than silver, it became an industrial powerhouse in the 20th century, enabling aviation.",
+    "affectedBy": [
+      "Electricity Grid Tariffs",
+      "Aerospace Capital Expense",
+      "Bauxite Export Restrictions",
+      "Global Shipping Rates"
+    ]
+  },
+  {
+    "symbol": "WHEAT",
+    "name": "Wheat",
+    "category": "Agriculture",
+    "description": "Wheat is a primary agricultural staple food source, feeding over one-third of the global human population.",
+    "supplyChain": "Grown in expansive temperate grain belts across North America, Russia, Ukraine, and the European Union, then milled into flour.",
+    "industrialUses": "Bread, flour, livestock feeds, industrial starch bases, and biofuel ethanol production.",
+    "inflationImpact": "Drives food-inflation indices directly, causing immediate cost-of-living distress when supply shrinks.",
+    "geopoliticalImpact": "Black Sea blockades or export bans quickly trigger global humanitarian and political friction.",
+    "historicalImportance": "The rise of agricultural empires (Rome, Egypt) was fundamentally built on securing wheat supply lines.",
+    "affectedBy": [
+      "El Niño Weather Patterns",
+      "Fertilizer Production Costs",
+      "Black Sea Shipping Safety",
+      "Global Wheat Reserve Balances"
+    ]
+  },
+  {
+    "symbol": "COFFEE",
+    "name": "Coffee",
+    "category": "Agriculture",
+    "description": "Coffee is one of the world's most traded tropical agricultural commodities, driving global beverage consumption.",
+    "supplyChain": "Cultivated by smallholders and expansive plantations in the equatorial 'Bean Belt' (Brazil, Vietnam, Colombia), then dry processed and exported.",
+    "industrialUses": "Caffeine extraction, food flavorings, cosmetics, and universal consumer beverage packs.",
+    "inflationImpact": "A discretionary bellwether, tracking retail consumer health and leisure spending patterns.",
+    "geopoliticalImpact": "Friction between fair-trade cooperatives, national labor rights, and international agribusiness cartels.",
+    "historicalImportance": "Spurred the European Enlightenment via London Coffee Houses, acting as centers of early financial exchanges.",
+    "affectedBy": [
+      "Brazilian Frost Occurrences",
+      "Vietnamese Robusta Weather",
+      "Global Shipping Container Rates",
+      "Discretionary Retail Inflows"
+    ]
+  },
+  {
+    "symbol": "NG",
+    "name": "Natural Gas",
+    "category": "Energy",
+    "description": "Natural Gas is a highly combustible hydrocarbon gas, serving as a primary thermal utility and chemical feedstock.",
+    "supplyChain": "Extracted from gas-bearing shale formations, liquefied at cryogenic temperatures (LNG), and shipped across specialized ocean tankers.",
+    "industrialUses": "Industrial power generation, municipal home heating systems, and the raw chemical feed for nitrogen fertilizers.",
+    "inflationImpact": "Directly influences winter electricity bills and national agricultural planting costs via fertilizer prices.",
+    "geopoliticalImpact": "Central to European pipeline dependencies and American LNG export geopolitical power play.",
+    "historicalImportance": "Evolved from a wasted oil-refinery byproduct of early drilling into a cleaner transitional fuel of the 21st century.",
+    "affectedBy": [
+      "Extreme Winter Weather",
+      "LNG Gasification Capacities",
+      "Pipeline Geopolitics",
+      "Industrial Fertilizer Demands"
+    ]
+  },
+  {
+    "symbol": "URAN",
+    "name": "Uranium",
+    "category": "Energy",
+    "description": "Uranium is an ultra-dense energy mineral, powering global nuclear fission reactors and zero-emission carbon-free base grids.",
+    "supplyChain": "Mined heavily in Kazakhstan, Canada, and Australia, requiring specialized isotopic enrichment centrifuges.",
+    "industrialUses": "Fission fuel rods in commercial nuclear power plants, medical radioisotopes, and military propulsion engines.",
+    "inflationImpact": "Provides extremely stable, long-term power pricing, decoupling baseload grids from short-term fossil fuel spikes.",
+    "geopoliticalImpact": "Highly guarded by nuclear non-proliferation treaties, strategic stockpiles, and East-West geopolitical alliances.",
+    "historicalImportance": "The catalyst of the Atomic Age, forever changing global safety alliances, defense doctrines, and power generation.",
+    "affectedBy": [
+      "Nuclear Plant Approvals",
+      "Kazakh Mining Bottlenecks",
+      "Sovereign Energy Independence",
+      "Enrichment Capacity Restraints"
+    ]
+  },
+  {
+    "symbol": "LITH",
+    "name": "Lithium",
+    "category": "Industrial Metals",
+    "description": "Lithium, the lightest metal, is the fundamental charge-carrier driving the modern global electrochemical energy transition.",
+    "supplyChain": "Extracted either from high-altitude salt flats brine in South America (the Lithium Triangle) or hard-rock spodumene ore in Australia.",
+    "industrialUses": "High-density Lithium-ion phone batteries, stationary energy storage grids, and electric vehicle battery packs.",
+    "inflationImpact": "Directly dictates the price feasibility of electric vehicles and consumer electronic rollouts.",
+    "geopoliticalImpact": "Intense global race to capture chemical refining factories, dominated heavily by China.",
+    "historicalImportance": "Previously a minor industrial chemical, it became a strategic commodity of high national security importance overnight.",
+    "affectedBy": [
+      "EV Battery Chemistry Shifts",
+      "South American Mining Royalties",
+      "Australian Spodumene Outputs",
+      "Environmental Water Regulations"
+    ]
+  }
+]

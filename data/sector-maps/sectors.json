@@ -1,0 +1,29 @@
+[
+  {
+    "sector": "Technology",
+    "companies": [
+      "Apple",
+      "Microsoft",
+      "NVIDIA",
+      "Meta"
+    ],
+    "affectedBy": [
+      "Interest Rates",
+      "AI Demand",
+      "Semiconductors"
+    ]
+  },
+  {
+    "sector": "Energy",
+    "companies": [
+      "Exxon",
+      "Chevron",
+      "Shell"
+    ],
+    "affectedBy": [
+      "Oil Prices",
+      "War",
+      "OPEC"
+    ]
+  }
+]

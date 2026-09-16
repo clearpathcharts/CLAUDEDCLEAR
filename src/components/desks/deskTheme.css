@@ -1,0 +1,413 @@
+.desk-shell {
+  --desk-border: rgba(255, 255, 255, 0.12);
+  --desk-panel: rgba(8, 8, 10, 0.88);
+  --desk-cyan: #00ffff;
+  --desk-indigo: #818cf8;
+  --desk-pink: #ff1493;
+  --desk-muted: #71717a;
+  --desk-text: #f4f4f5;
+  font-family: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.desk-shell :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, input) {
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.desk-shell :is(h1, h2, h3) {
+  font-weight: 800;
+}
+
+/* Tickers, prices, timestamps, OHLC readouts — institutional data face */
+.desk-shell :is(.font-mono, code, pre, kbd, samp),
+.desk-shell [data-ticker],
+.desk-shell [data-quote-price],
+.desk-shell .tabular-nums {
+  font-family: var(--font-mono, "IBM Plex Mono", "SF Mono", Consolas, monospace) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-shell .text-\[8px\],
+.desk-shell .text-\[9px\],
+.desk-shell .text-\[10px\],
+.desk-shell .text-xs {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-\[11px\],
+.desk-shell .text-sm {
+  font-size: 1.0625rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-base {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+}
+
+.desk-shell .text-lg {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell .text-xl,
+.desk-shell .text-2xl {
+  font-weight: 800 !important;
+}
+
+.desk-shell input,
+.desk-shell button {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Retail Market: neon indigo → hot pink (replaces emerald/cyan chrome) */
+.desk-shell [data-retail-door] {
+  --desk-border: rgba(255, 20, 147, 0.32);
+  --desk-panel: rgba(14, 8, 24, 0.96);
+  --desk-cyan: #818cf8;
+  --desk-indigo: #6366f1;
+  --desk-pink: #ff1493;
+  --desk-muted: #a1a1aa;
+  --desk-text: #f5f3ff;
+  font-family: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.5;
+  gap: 0.75rem;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(99, 102, 241, 0.28), transparent 55%),
+    radial-gradient(100% 70% at 100% 10%, rgba(255, 20, 147, 0.22), transparent 50%),
+    linear-gradient(165deg, #07041a 0%, #12081f 45%, #1a0620 100%);
+}
+
+.desk-shell [data-retail-door] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, select, option, pre, code, td, th) {
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] :is(h1, h2, h3, h4) {
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[8px\],
+.desk-shell [data-retail-door] .text-\[9px\] {
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[10px\],
+.desk-shell [data-retail-door] .text-xs {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-\[11px\],
+.desk-shell [data-retail-door] .text-\[12px\],
+.desk-shell [data-retail-door] .text-sm {
+  font-size: 1.1875rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-base {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] .text-lg {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] .text-xl,
+.desk-shell [data-retail-door] .text-2xl {
+  font-size: 1.75rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-retail-door] input,
+.desk-shell [data-retail-door] button,
+.desk-shell [data-retail-door] select {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-retail-door] > section,
+.desk-shell [data-retail-door] section.flex,
+.desk-shell [data-retail-door] [data-retail-bento],
+.desk-shell [data-retail-door] .retail-bento {
+  border: 1.5px solid transparent !important;
+  border-radius: 0.75rem !important;
+  background:
+    linear-gradient(180deg, rgba(16, 10, 28, 0.98), rgba(10, 6, 18, 0.98)) padding-box,
+    linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(255, 20, 147, 0.95)) border-box !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 24px rgba(99, 102, 241, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.desk-shell [data-retail-door] > section > header,
+.desk-shell [data-retail-door] section.flex > header,
+.desk-shell [data-retail-door] [data-retail-bento] > header,
+.desk-shell [data-retail-door] .retail-bento > header {
+  border-bottom: 1.5px solid rgba(255, 20, 147, 0.28) !important;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.14), rgba(255, 20, 147, 0.1));
+  padding: 0.65rem 0.85rem !important;
+}
+
+.desk-shell [data-retail-door] section.flex > div:last-child,
+.desk-shell [data-retail-door] [data-retail-bento] > .retail-bento-body,
+.desk-shell [data-retail-door] .retail-bento > .retail-bento-body {
+  padding: 0.75rem !important;
+}
+
+.desk-shell [data-retail-door] [data-retail-slide-strip] {
+  border: 1.5px solid transparent;
+  border-radius: 0.75rem;
+  background:
+    linear-gradient(180deg, rgba(14, 8, 24, 0.98), rgba(10, 6, 18, 0.98)) padding-box,
+    linear-gradient(90deg, #6366f1, #ff1493) border-box;
+}
+
+.desk-shell [data-retail-door] .retail-slide-handle {
+  border-color: rgba(255, 20, 147, 0.35) !important;
+  color: #e9d5ff;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.35), rgba(255, 20, 147, 0.28));
+}
+
+.desk-shell [data-retail-door] .retail-slide-handle button {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #f5f3ff;
+}
+
+.desk-shell [data-retail-door] .retail-slide-grip {
+  width: 2.75rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #ff1493);
+  box-shadow: 0 0 12px rgba(255, 20, 147, 0.45);
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] {
+  --desk-border: rgba(99, 102, 241, 0.35);
+  --desk-panel: #faf8ff;
+  --desk-cyan: #4f46e5;
+  --desk-indigo: #4338ca;
+  --desk-pink: #db2777;
+  --desk-muted: #52525b;
+  --desk-text: #111827;
+  background:
+    radial-gradient(100% 80% at 0% 0%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(255, 20, 147, 0.1), transparent 50%),
+    #f8f7ff;
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] > section,
+.desk-shell[data-desk-paper='white'] [data-retail-door] section.flex,
+.desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento],
+.desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(135deg, #6366f1, #ff1493) border-box !important;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.04);
+}
+
+.desk-shell[data-desk-paper='white'] [data-retail-door] > section > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] section.flex > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] [data-retail-bento] > header,
+.desk-shell[data-desk-paper='white'] [data-retail-door] .retail-bento > header {
+  border-bottom-color: rgba(219, 39, 119, 0.28) !important;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(255, 20, 147, 0.06));
+}
+
+/* Neurodivergent Market: same readability as retail, violet framing */
+.desk-shell [data-neuro-door] {
+  --desk-border: rgba(255, 255, 255, 0.22);
+  --desk-panel: rgba(12, 10, 18, 0.96);
+  font-family: var(--font-ui, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.5;
+  gap: 0.75rem;
+}
+
+.desk-shell [data-neuro-door] :is(p, span, li, button, a, dt, dd, strong, label, h1, h2, h3, h4, input, select, option, pre, code, td, th) {
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] :is(h1, h2, h3, h4) {
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[8px\],
+.desk-shell [data-neuro-door] .text-\[9px\] {
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[10px\],
+.desk-shell [data-neuro-door] .text-xs {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-\[11px\],
+.desk-shell [data-neuro-door] .text-\[12px\],
+.desk-shell [data-neuro-door] .text-sm {
+  font-size: 1.1875rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-base {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] .text-lg {
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] .text-xl,
+.desk-shell [data-neuro-door] .text-2xl {
+  font-size: 1.75rem !important;
+  font-weight: 900 !important;
+}
+
+.desk-shell [data-neuro-door] input,
+.desk-shell [data-neuro-door] button,
+.desk-shell [data-neuro-door] select {
+  font-size: 1.0625rem !important;
+  font-weight: 800 !important;
+}
+
+.desk-shell [data-neuro-door] > section,
+.desk-shell [data-neuro-door] section.flex,
+.desk-shell [data-neuro-door] [data-retail-bento],
+.desk-shell [data-neuro-door] .retail-bento {
+  border: 1.5px solid rgba(176, 38, 255, 0.35) !important;
+  border-radius: 0.75rem !important;
+  background: rgba(12, 8, 20, 0.98) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.desk-shell [data-neuro-door] > section > header,
+.desk-shell [data-neuro-door] section.flex > header,
+.desk-shell [data-neuro-door] [data-retail-bento] > header,
+.desk-shell [data-neuro-door] .retail-bento > header {
+  border-bottom: 1.5px solid rgba(176, 38, 255, 0.25) !important;
+  background: rgba(176, 38, 255, 0.06);
+  padding: 0.65rem 0.85rem !important;
+}
+
+.desk-shell [data-neuro-door] section.flex > div:last-child,
+.desk-shell [data-neuro-door] [data-retail-bento] > .retail-bento-body,
+.desk-shell [data-neuro-door] .retail-bento > .retail-bento-body {
+  padding: 0.75rem !important;
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] {
+  --desk-border: rgba(17, 17, 17, 0.28);
+  --desk-panel: #f7f4fb;
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] > section,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] section.flex,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] [data-retail-bento],
+.desk-shell[data-desk-paper='white'] [data-neuro-door] .retail-bento {
+  border-color: rgba(126, 34, 206, 0.4) !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.06);
+}
+
+.desk-shell[data-desk-paper='white'] [data-neuro-door] > section > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] section.flex > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] [data-retail-bento] > header,
+.desk-shell[data-desk-paper='white'] [data-neuro-door] .retail-bento > header {
+  border-bottom-color: rgba(126, 34, 206, 0.28) !important;
+  background: rgba(126, 34, 206, 0.06);
+}
+
+.desk-shell[data-desk-paper='white'] {
+  --desk-border: rgba(17, 17, 17, 0.16);
+  --desk-panel: #f4f4f5;
+  --desk-cyan: #0e7490;
+  --desk-indigo: #4338ca;
+  --desk-pink: #be185d;
+  --desk-muted: #3f3f46;
+  --desk-text: #111111;
+  background: #ffffff !important;
+  color: #111111;
+}
+
+.desk-shell[data-desk-paper='white'] header {
+  background: #ffffff !important;
+  border-color: rgba(17, 17, 17, 0.14) !important;
+}
+
+.desk-shell[data-desk-paper='white'] [class*='bg-black'],
+.desk-shell[data-desk-paper='white'] [class*='bg-[#050505]'] {
+  background-color: #ffffff !important;
+}
+
+.desk-shell[data-desk-paper='white'] [class*='border-white'] {
+  border-color: rgba(17, 17, 17, 0.16) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-white,
+.desk-shell[data-desk-paper='white'] .text-zinc-100,
+.desk-shell[data-desk-paper='white'] .text-zinc-200,
+.desk-shell[data-desk-paper='white'] .text-zinc-300 {
+  color: #111111 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-zinc-400,
+.desk-shell[data-desk-paper='white'] .text-zinc-500,
+.desk-shell[data-desk-paper='white'] .text-zinc-600 {
+  color: #3f3f46 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .hover\:text-white:hover {
+  color: #111111 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-emerald-300,
+.desk-shell[data-desk-paper='white'] .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-cyan-300,
+.desk-shell[data-desk-paper='white'] .text-cyan-400 {
+  color: #0e7490 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-fuchsia-300 {
+  color: #a21caf !important;
+}
+
+.desk-shell[data-desk-paper='white'] .text-amber-300 {
+  color: #b45309 !important;
+}
+
+.desk-shell[data-desk-paper='white'] .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.desk-shell[data-desk-paper='white'] .bg-zinc-600 {
+  background-color: #a1a1aa !important;
+}
+
+.desk-shell[data-desk-paper='white'] input {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(17, 17, 17, 0.22) !important;
+}

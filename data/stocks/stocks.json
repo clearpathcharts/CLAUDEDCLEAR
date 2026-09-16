@@ -1,0 +1,143 @@
+[
+  {
+    "ticker": "AAPL",
+    "company": "Apple Inc.",
+    "sector": "Technology",
+    "industry": "Consumer Electronics",
+    "exchange": "NASDAQ",
+    "marketCap": "3.2T",
+    "description": "Apple designs consumer electronics, software, and AI ecosystems.",
+    "founded": 1976,
+    "headquarters": "Cupertino, California",
+    "tags": [
+      "AI",
+      "iPhone",
+      "Cloud",
+      "Consumer Tech"
+    ],
+    "relatedMarkets": [
+      "Semiconductors",
+      "Consumer Spending",
+      "AI"
+    ],
+    "whatMoves": [
+      "Interest Rates",
+      "Consumer Demand",
+      "China Production",
+      "Earnings Reports"
+    ]
+  },
+  {
+    "ticker": "TSLA",
+    "company": "Tesla Inc.",
+    "sector": "Automotive",
+    "industry": "Electric Vehicles",
+    "exchange": "NASDAQ",
+    "marketCap": "950B",
+    "description": "Tesla develops electric vehicles, robotics, batteries, and AI systems.",
+    "founded": 2003,
+    "headquarters": "Austin, Texas",
+    "tags": [
+      "EV",
+      "AI",
+      "Robotics",
+      "Energy"
+    ],
+    "relatedMarkets": [
+      "Lithium",
+      "Auto",
+      "Solar",
+      "Robotics"
+    ],
+    "whatMoves": [
+      "EV Demand",
+      "Battery Prices",
+      "Interest Rates",
+      "China Manufacturing"
+    ]
+  },
+  {
+    "ticker": "NVDA",
+    "company": "NVIDIA Corporation",
+    "sector": "Semiconductors",
+    "industry": "Graphics Processing Units",
+    "exchange": "NASDAQ",
+    "marketCap": "3.0T",
+    "description": "NVIDIA is a pioneer in GPU computing, defining deep learning and artificial intelligence capabilities.",
+    "founded": 1993,
+    "headquarters": "Santa Clara, California",
+    "tags": [
+      "GPU",
+      "AI",
+      "Datacenter",
+      "Semiconductors"
+    ],
+    "relatedMarkets": [
+      "Lithium",
+      "Silicon",
+      "Server Hardware"
+    ],
+    "whatMoves": [
+      "AI Data Center Spend",
+      "Silicon Supply Chains",
+      "Hyperscaler Capex",
+      "Interest Rates"
+    ]
+  },
+  {
+    "ticker": "MSFT",
+    "company": "Microsoft Corporation",
+    "sector": "Technology",
+    "industry": "Systems Software",
+    "exchange": "NASDAQ",
+    "marketCap": "3.1T",
+    "description": "Microsoft develops software services, cloud architectures (Azure), and consumer computing ecosystems, leading OpenAI integrated applications.",
+    "founded": 1975,
+    "headquarters": "Redmond, Washington",
+    "tags": [
+      "Software",
+      "Cloud",
+      "AI",
+      "Enterprise"
+    ],
+    "relatedMarkets": [
+      "Cloud Infrastructure",
+      "AI Software",
+      "Personal Computing"
+    ],
+    "whatMoves": [
+      "Azure Cloud Inflows",
+      "CoPilot AI Adoption",
+      "Enterprise Spending",
+      "Fed Board Policies"
+    ]
+  },
+  {
+    "ticker": "AMZN",
+    "company": "Amazon.com Inc.",
+    "sector": "Consumer Discretionary",
+    "industry": "Broadline Retail",
+    "exchange": "NASDAQ",
+    "marketCap": "1.9T",
+    "description": "Amazon is an e-commerce, cloud platform services (AWS), and streaming advertising entity driving modern supply distribution systems globally.",
+    "founded": 1994,
+    "headquarters": "Seattle, Washington",
+    "tags": [
+      "Retail",
+      "Cloud",
+      "Logistics",
+      "AI"
+    ],
+    "relatedMarkets": [
+      "E-commerce",
+      "Server Chips",
+      "Consumer Spending"
+    ],
+    "whatMoves": [
+      "AWS Growth Indices",
+      "Retail Margins",
+      "Fuel Logistics Pricing",
+      "Consumer Confidence Index"
+    ]
+  }
+]

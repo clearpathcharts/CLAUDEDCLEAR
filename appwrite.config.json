@@ -1,0 +1,103 @@
+﻿{
+    "projectId":  "6a5ec0a3003089068048",
+    "endpoint":  "https://fra.cloud.appwrite.io/v1",
+    "tablesDB":  [
+                     {
+                         "$id":  "clearpath",
+                         "name":  "ClearPath",
+                         "enabled":  true
+                     }
+                 ],
+    "tables":  [
+                   {
+                       "$id":  "waitlist",
+                       "databaseId":  "clearpath",
+                       "name":  "Waitlist",
+                       "enabled":  true,
+                       "rowSecurity":  false,
+                       "$permissions":  [
+                                            "create(\"any\")",
+                                            "read(\"users\")"
+                                        ],
+                       "columns":  [
+                                       {
+                                           "key":  "firstName",
+                                           "type":  "varchar",
+                                           "size":  128,
+                                           "required":  true
+                                       },
+                                       {
+                                           "key":  "emailAddress",
+                                           "type":  "email",
+                                           "required":  true
+                                       },
+                                       {
+                                           "key":  "country",
+                                           "type":  "varchar",
+                                           "size":  128,
+                                           "required":  true
+                                       },
+                                       {
+                                           "key":  "experienceLevel",
+                                           "type":  "enum",
+                                           "elements":  [
+                                                            "Beginner",
+                                                            "Intermediate",
+                                                            "Advanced"
+                                                        ],
+                                           "required":  true
+                                       },
+                                       {
+                                           "key":  "status",
+                                           "type":  "enum",
+                                           "elements":  [
+                                                            "pending",
+                                                            "reserved",
+                                                            "upgraded",
+                                                            "cancelled"
+                                                        ],
+                                           "required":  true,
+                                           "default":  "pending"
+                                       },
+                                       {
+                                           "key":  "tier",
+                                           "type":  "enum",
+                                           "elements":  [
+                                                            "tier1",
+                                                            "tier2"
+                                                        ],
+                                           "required":  true,
+                                           "default":  "tier1"
+                                       },
+                                       {
+                                           "key":  "passcode",
+                                           "type":  "varchar",
+                                           "size":  64,
+                                           "required":  true
+                                       },
+                                       {
+                                           "key":  "registrationSource",
+                                           "type":  "varchar",
+                                           "size":  255,
+                                           "required":  false
+                                       }
+                                   ],
+                       "indexes":  [
+                                       {
+                                           "key":  "idx_email_unique",
+                                           "type":  "unique",
+                                           "attributes":  [
+                                                              "emailAddress"
+                                                          ]
+                                       },
+                                       {
+                                           "key":  "idx_country",
+                                           "type":  "key",
+                                           "attributes":  [
+                                                              "country"
+                                                          ]
+                                       }
+                                   ]
+                   }
+               ]
+}
