@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { ChartSymbolSearch } from '../../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../../charts/LightweightCandles';
@@ -55,6 +55,12 @@ function loadNeuroWatchlists(): RetailWatchlist[] {
 }
 
 const EMPTY_WATCH: string[] = [];
+/**
+ * Module-scope so the data hook's memo/callback/effect chain sees one identity.
+ * An inline `{}` here re-created `slots` → `loadWorkspace` → effect → setState on
+ * every render: the ~44 s per-keystroke freeze on this desk.
+ */
+const NO_SLOT_OVERRIDES: Partial<Record<number, { symbol: string; timeframe: string }>> = {};
 
 /** Local query until Add — never lift keystrokes into desk/chart state. */
 function WatchlistAddForm({
@@ -176,7 +182,7 @@ export default function NeurodivergentDashboard() {
     'simulation',
   ]);
 
-  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, {}, NEURO_RIBBON, {
+  const intel = useRetailIntelligence(symbol, timeframe, watchSymbols, 1, NO_SLOT_OVERRIDES, NEURO_RIBBON, {
     // One history fetch on mount; chart live-tick handles quotes. Avoids duplicate 5k-bar fetch + rebuild.
     pollWorkspace: false,
     pollRibbon: !hideSecondary,
@@ -223,6 +229,10 @@ export default function NeurodivergentDashboard() {
     };
     window.addEventListener('clearpath-set-profile', onSet as EventListener);
     return () => window.removeEventListener('clearpath-set-profile', onSet as EventListener);
+  }, []);
+
+  const handleSearchSubmit = useCallback((raw: string) => {
+    setSymbol(resolveMarketAsset(raw).value);
   }, []);
 
   const pickProfile = (id: ThemeProfileId) => {
@@ -398,7 +408,7 @@ export default function NeurodivergentDashboard() {
             <ChartSymbolSearch
               placeholder="Search BTC, ETH, EURUSD, gold, stocks…"
               activeSymbol={symbol}
-              onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
+              onSubmit={handleSearchSubmit}
             />
           </div>
           <div className="flex flex-wrap gap-2">

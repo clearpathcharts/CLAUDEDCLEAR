@@ -126,6 +126,9 @@ jobs:
       - name: Trader desk routing
         run: npm run test:trader-desks
 
+      - name: Neuro desk search keystroke render loop
+        run: npm run test:neuro-render-loop
+
       - name: Trader desk SEO metadata
         run: npm run test:desk-seo
 
