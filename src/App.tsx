@@ -33,6 +33,7 @@ const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfI
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
+const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 
 function AuthenticatedShell({
   profile,
@@ -154,6 +155,11 @@ function isFundamentalDeskPath(path: string): boolean {
 function isCeoPath(path: string): boolean {
   const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
   return p === '/ceo' || p === '/ceo-dashboard';
+}
+
+function isBrokerNetworkPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/brokers' || p === '/broker-connect';
 }
 
 function PublicLearnShell({
@@ -366,6 +372,18 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isBrokerNetworkPath(currentPath)) {
+    content = (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050d1c] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Opening broker network…
+          </div>
+        }
+      >
+        <UsBrokerNetworkPage />
+      </Suspense>
+    );
   } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
     content = <MemberDeskRedirect />;
   } else if (!user || shouldStayOnPublicHome(currentSearch)) {
