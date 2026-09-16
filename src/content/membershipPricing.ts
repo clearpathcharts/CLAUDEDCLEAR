@@ -1,5 +1,9 @@
 export type MembershipPlanId = 'basic' | 'silver' | 'gold' | 'platinum';
 
+export const FIRST_FREE_DAYS = 30;
+export const LAUNCH_ACCESS_DAYS = 15;
+export const PLAN_TRIAL_DAYS = 15;
+
 export type MembershipPlanPrice = {
   id: MembershipPlanId;
   name: string;

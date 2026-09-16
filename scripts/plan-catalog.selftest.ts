@@ -36,12 +36,19 @@ import {
 } from '../src/constants/chartLayout.ts';
 import {
   ALL_ADDONS_CENTS,
+  FIRST_FREE_DAYS,
+  LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
+  PLAN_TRIAL_DAYS,
   PLATINUM_CENTS,
   SILVER_ADDONS,
   SILVER_BASE_CENTS,
   SILVER_WITH_ALL_ADDONS_CENTS,
 } from '../src/content/membershipPricing.ts';
+import {
+  LAUNCH_TRIAL_DAYS as STRIPE_LAUNCH_TRIAL_DAYS,
+  PLAN_TRIAL_DAYS as STRIPE_PLAN_TRIAL_DAYS,
+} from '../src/server/stripeService.ts';
 
 assert.deepEqual([...CANONICAL_PLANS], ['basic', 'silver', 'gold', 'platinum']);
 assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [0, 599, 999, 2499]);
@@ -50,6 +57,10 @@ assert.equal(ALL_ADDONS_CENTS, 4493);
 assert.equal(SILVER_BASE_CENTS, 599);
 assert.equal(SILVER_WITH_ALL_ADDONS_CENTS, 5092);
 assert.equal(PLATINUM_CENTS, 2499);
+assert.equal(FIRST_FREE_DAYS, 30);
+assert.equal(LAUNCH_ACCESS_DAYS, STRIPE_LAUNCH_TRIAL_DAYS);
+assert.equal(PLAN_TRIAL_DAYS, STRIPE_PLAN_TRIAL_DAYS);
+assert.equal(LAUNCH_ACCESS_DAYS + PLAN_TRIAL_DAYS, FIRST_FREE_DAYS);
 
 for (const id of CANONICAL_PLANS) {
   const plan = PLAN_CATALOG[id] as Record<string, unknown>;
@@ -154,6 +165,7 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
   assert.match(page, /Visual \+ legal review stage/);
   assert.match(page, /Checkout remains disabled/);
   assert.match(page, /SILVER_WITH_ALL_ADDONS_CENTS/);
+  assert.match(page, /Your first \{FIRST_FREE_DAYS\} days are free/);
   assert.match(app, /<MembershipPricingPage \/>/);
 }
 

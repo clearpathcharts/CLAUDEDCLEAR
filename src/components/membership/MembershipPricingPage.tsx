@@ -13,7 +13,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
+  FIRST_FREE_DAYS,
+  LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
+  PLAN_TRIAL_DAYS,
   PLATINUM_CENTS,
   SILVER_ADDONS,
   SILVER_BASE_CENTS,
@@ -108,6 +111,14 @@ export default function MembershipPricingPage() {
               <a href="#custom-package" className="membership-secondary-button">
                 Build custom Silver
               </a>
+            </div>
+            <div className="membership-trial-callout">
+              <Sparkles size={18} aria-hidden="true" />
+              <span>
+                <strong>Your first {FIRST_FREE_DAYS} days are free.</strong>
+                {LAUNCH_ACCESS_DAYS} days of launch access + {PLAN_TRIAL_DAYS} days of plan trial before the first
+                charge.*
+              </span>
             </div>
           </div>
 
