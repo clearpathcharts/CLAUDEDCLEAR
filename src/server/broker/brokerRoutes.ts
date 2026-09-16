@@ -41,6 +41,7 @@ function safeBrokerReturnTo(raw: unknown): string {
   }
   if (/^\/(?:\?tab=[A-Za-z0-9_-]+)?(?:#[A-Za-z0-9_-]+)?$/.test(candidate)) return candidate;
   if (/^\/desk(?:\/[a-z-]+)?\/?$/.test(candidate)) return candidate;
+  if (/^\/(?:brokers|broker-connect)\/?$/.test(candidate)) return candidate;
   return '/?tab=Biography#Biography';
 }
 
