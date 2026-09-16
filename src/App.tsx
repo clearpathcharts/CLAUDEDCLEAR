@@ -21,6 +21,7 @@ import { EducationDeskBar } from './education/EducationDeskBar';
 import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
 import { useAuth } from './contexts/FirebaseContext';
 import { isFounderSession } from './lib/founder';
+import { auth } from './firebase';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
@@ -56,7 +57,7 @@ function AuthenticatedShell({
  */
 function MemberDeskRedirect() {
   const { user, userProfile } = useAuth();
-  const founder = isFounderSession(user?.email, userProfile?.email);
+  const founder = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const href = memberHomeDeskHref({

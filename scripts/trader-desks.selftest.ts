@@ -177,7 +177,7 @@ for (const rel of srcFiles) {
     assert.match(text, /isMemberHomePath/);
     assert.match(text, /shouldStayOnPublicHome/);
     // Founder on `/` lands on the CEO Dashboard, not a desk.
-    assert.match(text, /founder = isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /founder = isFounderSession\(user\?\.email, userProfile\?\.email, auth\.currentUser\?\.email\)/);
     assert.match(text, /remembered: readRememberedTraderDesk\(\),\s*founder,/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
@@ -421,8 +421,9 @@ for (const rel of srcFiles) {
     // founder; the desks replaced `/`, so the chrome must offer the way in.
     assert.match(text, /data-ceo-ops-link/);
     assert.match(text, /href=\{CEO_DASHBOARD_HREF\}/);
-    assert.match(text, /isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /isFounderSession\(user\?\.email, userProfile\?\.email, auth\.currentUser\?\.email\)/);
     assert.match(text, /\{founder \? \(/);
+    assert.match(text, /sticky top-0 z-\[100\]/);
     // Home = institutional desk, in-app. `/?choose=1` rendered the public
     // landing page for a signed-in member and read as a logout.
     assert.match(text, /data-desk-home/);
