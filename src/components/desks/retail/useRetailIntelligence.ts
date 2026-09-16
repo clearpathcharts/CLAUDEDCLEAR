@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ASSET_REGISTRY, LATENCY_LABEL } from '../../../constants/assetRegistry';
 import { resolveQuotePrice } from '../../MarketTicker';
 import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
@@ -101,6 +101,40 @@ async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]>
   return candles;
 }
 
+function sameCandles(a: Candle[], b: Candle[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  if (a.length === 0) return true;
+  const la = a[a.length - 1];
+  const lb = b[b.length - 1];
+  return a[0].time === b[0].time && la.time === lb.time && la.close === lb.close;
+}
+
+/** Structural compare so a refetch that returns identical bars does not re-render every consumer. */
+function sameCandleMap(prev: Record<string, Candle[]>, next: Record<string, Candle[]>): boolean {
+  const pk = Object.keys(prev);
+  const nk = Object.keys(next);
+  if (pk.length !== nk.length) return false;
+  for (const k of nk) {
+    const a = prev[k];
+    if (!a || !sameCandles(a, next[k])) return false;
+  }
+  return true;
+}
+
+function sameQuoteList(prev: RetailQuote[], next: RetailQuote[]): boolean {
+  if (prev === next) return true;
+  if (prev.length !== next.length) return false;
+  for (let i = 0; i < next.length; i++) {
+    const a = prev[i];
+    const b = next[i];
+    if (a.symbol !== b.symbol || a.price !== b.price || a.pct !== b.pct || a.live !== b.live || a.volume !== b.volume) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function emptyQuote(symbol: string): RetailQuote {
   const asset = ASSET_REGISTRY.find((a) => a.symbol === symbol);
   return {
@@ -193,12 +227,33 @@ export function useRetailIntelligence(
 
   const ribbonSpec = ribbonMarkets.length ? ribbonMarkets : RETAIL_RIBBON;
 
+  // Callers often pass `{}` / fresh literals for the overrides. Key on the
+  // serialised value so `slots` (and everything downstream) is referentially
+  // stable across unrelated parent renders — an object-identity dep here is a
+  // render → effect → setState → render loop.
+  const slotOverridesKey = JSON.stringify(slotOverrides ?? {});
   const slots = useMemo(
-    () => retailWorkspaceSlots(primarySymbol, layout, slotOverrides, primaryTimeframe),
-    [primarySymbol, layout, slotOverrides, primaryTimeframe],
+    () =>
+      retailWorkspaceSlots(
+        primarySymbol,
+        layout,
+        JSON.parse(slotOverridesKey) as Partial<Record<number, { symbol: string; timeframe: string }>>,
+        primaryTimeframe,
+      ),
+    [primarySymbol, layout, slotOverridesKey, primaryTimeframe],
   );
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const workspaceReqRef = useRef(0);
   const loadWorkspace = useCallback(async () => {
+    const reqId = ++workspaceReqRef.current;
     const next: Record<string, Candle[]> = {};
     const errors: string[] = [];
     for (const slot of slots) {
@@ -210,7 +265,9 @@ export function useRetailIntelligence(
         errors.push(`${slot.symbol}: ${e instanceof Error ? e.message : 'unavailable'}`);
       }
     }
-    setCandlesByKey(next);
+    // Ignore stale completions (symbol/timeframe changed mid-flight or unmounted).
+    if (!mountedRef.current || reqId !== workspaceReqRef.current) return;
+    setCandlesByKey((prev) => (sameCandleMap(prev, next) ? prev : next));
     setCandleError(errors.length ? errors.join(' · ') : null);
   }, [slots]);
 
@@ -237,17 +294,22 @@ export function useRetailIntelligence(
   );
 
   const watchKey = watchlistSymbols.map((s) => s.toUpperCase()).join(',');
+  const watchReqRef = useRef(0);
   const loadWatch = useCallback(async () => {
+    const reqId = ++watchReqRef.current;
     const symbols = [...new Set(watchKey.split(',').filter(Boolean))].slice(0, 24);
     if (symbols.length === 0) {
-      setWatchQuotes([]);
+      setWatchQuotes((prev) => (prev.length === 0 ? prev : []));
       return;
     }
     try {
       const map = await fetchQuoteMap(symbols);
-      setWatchQuotes(symbols.map((s) => map[s] ?? emptyQuote(s)));
+      if (!mountedRef.current || reqId !== watchReqRef.current) return;
+      const next = symbols.map((s) => map[s] ?? emptyQuote(s));
+      setWatchQuotes((prev) => (sameQuoteList(prev, next) ? prev : next));
     } catch {
-      setWatchQuotes((prev) => prev.map((q) => ({ ...q, live: false })));
+      if (!mountedRef.current || reqId !== watchReqRef.current) return;
+      setWatchQuotes((prev) => (prev.every((q) => !q.live) ? prev : prev.map((q) => ({ ...q, live: false }))));
     }
   }, [watchKey]);
 
