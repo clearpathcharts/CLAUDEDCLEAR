@@ -11,9 +11,10 @@ import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
 import { useFounderAccess } from '../hooks/useFounderAccess';
+import { logoutPrivateAccount } from '../api/privateAuth';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
 import ChooseYourPath from './ChooseYourPath';
-import { navigateToDesk } from '../lib/traderDesks';
+import { navigateToDesk, TRADER_DESK_STORAGE_KEY } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
   uid: string;
@@ -161,8 +162,31 @@ export default function CeoDashboard() {
   const [siteDoctorBusy, setSiteDoctorBusy] = useState(false);
   const [kickBusy, setKickBusy] = useState(false);
 
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, logout } = useAuth();
   const { founder: founderOk, resolving: founderResolving } = useFounderAccess();
+  const [relogBusy, setRelogBusy] = useState(false);
+
+  /** Stale member/board session in this browser hides CEO — sign out, wipe desk memory, reopen Private Login. */
+  const signOutAndRelogin = async () => {
+    setRelogBusy(true);
+    try {
+      try {
+        localStorage.removeItem(TRADER_DESK_STORAGE_KEY);
+        localStorage.removeItem('clearpath_active_tab');
+      } catch {
+        /* ignore */
+      }
+      try {
+        await auth.signOut?.();
+      } catch {
+        /* ignore */
+      }
+      await logoutPrivateAccount().catch(() => undefined);
+    } finally {
+      // Founder Private Login lands on /ceo via continueToRememberedDesk({ founder: true }).
+      window.location.assign('/?login=1&choose=1');
+    }
+  };
   const showsUnauthorized =
     /unauthorized|forbidden|founder auth|sign in|catalog admin/i.test(
       `${membersError || ''} ${convertMsg || ''}`
@@ -743,11 +767,21 @@ export default function CeoDashboard() {
           <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
           <h1 className="text-xl font-black uppercase tracking-widest text-white">CEO Dashboard Locked</h1>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            This console is restricted. Sign in with Private Login on the home page, then open{' '}
-            <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">
-              /ceo
-            </a>{' '}
-            again.
+            This console is restricted. If this browser is holding an older member or board
+            session, sign it out and use Private Login with the founder account.
+          </p>
+          <button
+            type="button"
+            data-ceo-relogin
+            disabled={relogBusy}
+            onClick={() => void signOutAndRelogin()}
+            className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-[#00FFFF]/50 bg-[#00FFFF]/10 text-[#00FFFF] text-xs font-mono uppercase tracking-widest font-black hover:bg-[#00FFFF]/20 disabled:opacity-50"
+          >
+            <LogOut size={14} aria-hidden="true" />
+            {relogBusy ? 'Signing out…' : 'Sign out this browser & Private Login'}
+          </button>
+          <p className="text-[11px] text-zinc-500 leading-relaxed">
+            Clears the remembered desk and stale login on this device only. Your account stays.
           </p>
         </div>
       </div>

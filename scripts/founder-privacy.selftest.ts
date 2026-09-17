@@ -53,7 +53,8 @@ assert.doesNotMatch(
 const ceo = read('src/components/CeoDashboard.tsx');
 const lockedIdx = ceo.indexOf('CEO Dashboard Locked');
 assert.ok(lockedIdx >= 0, 'CeoDashboard still has a locked gate');
-const lockedBlock = ceo.slice(lockedIdx, lockedIdx + 900);
+const lockedBlock = ceo.slice(lockedIdx, lockedIdx + 1600);
+assert.match(lockedBlock, /data-ceo-relogin/, 'Locked CEO screen offers sign-out + Private Login');
 assert.doesNotMatch(
   lockedBlock,
   /FOUNDER_EMAIL/,
