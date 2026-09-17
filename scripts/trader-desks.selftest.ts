@@ -499,8 +499,13 @@ for (const rel of srcFiles) {
     assert.match(text, /CeoDashboard/);
     assert.match(text, /path === '\/ceo'/);
     assert.match(text, /case 'CeoDashboard': return <CeoDashboard/);
-    assert.match(text, /nextTab === 'CeoDashboard' && !isFounder\(\)/);
-    assert.match(text, /activeTab === 'CeoDashboard' && !isFounder\(\)/);
+    assert.match(text, /isCeoUrlPath/);
+    assert.match(text, /Never bounce\/ceo|never bounce to a trader desk/i);
+    assert.doesNotMatch(
+      text,
+      /path === '\/ceo'[\s\S]{0,200}\/\?tab=StrictlyCharts/,
+      '/ceo must not redirect to /?tab=StrictlyCharts',
+    );
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

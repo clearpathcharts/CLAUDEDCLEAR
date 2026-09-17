@@ -56,10 +56,12 @@ function AuthenticatedShell({
  * The founder goes to the CEO Dashboard, as the old `/` did for that account.
  */
 function MemberDeskRedirect() {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const founder = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (loading || typeof window === 'undefined') return;
+    const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
+    if (path === '/ceo' || path === '/ceo-dashboard') return;
     const href = memberHomeDeskHref({
       search: window.location.search,
       remembered: readRememberedTraderDesk(),
@@ -69,7 +71,7 @@ function MemberDeskRedirect() {
     if (here === href) return;
     window.history.replaceState({}, '', href);
     window.dispatchEvent(new Event('clearpath-location'));
-  }, [founder]);
+  }, [founder, loading]);
   return (
     <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
       <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-[0.3em]">
