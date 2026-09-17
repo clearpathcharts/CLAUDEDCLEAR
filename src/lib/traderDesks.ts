@@ -119,6 +119,17 @@ export function shouldStayOnPublicHome(search: string): boolean {
 }
 
 /**
+ * `/?tab=Yours` is a deliberate Dashboard tab pick (the Dashboard nav pushes
+ * `/?tab=X#X` from `/ceo`). The member-home redirect must not fire on it, or
+ * the founder is bounced straight back to `/ceo` on every click.
+ */
+export function hasDashboardTabIntent(search: string): boolean {
+  const raw = search.startsWith('?') ? search.slice(1) : search;
+  const tab = new URLSearchParams(raw).get('tab');
+  return Boolean(tab && tab.trim());
+}
+
+/**
  * Explicit neuro/UI deep links. Do not include calm_focus — App injects that
  * default onto every URL, which would trap everyone on the neuro desk.
  */

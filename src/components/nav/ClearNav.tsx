@@ -5,6 +5,7 @@ import {
   Crown,
   BookOpen,
   Home,
+  Landmark,
   LogOut,
   Network,
   Newspaper,
@@ -33,6 +34,24 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
 }
+
+/** Standalone pages (not Dashboard tabs) — real links so they survive the tab router. */
+const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; classes: string; testId: string }[] = [
+  {
+    href: "/brokers",
+    icon: Landmark,
+    label: "BROKERS",
+    classes: "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    testId: "nav-brokers-link",
+  },
+  {
+    href: "/plans",
+    icon: Crown,
+    label: "PLANS",
+    classes: "text-[#FFD700] border border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    testId: "nav-plans-link",
+  },
+];
 
 export const ClearNav: React.FC<ClearNavProps> = ({
   activeTab,
@@ -338,6 +357,22 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             {secondaryNavItems.map((item, index) =>
               renderNavButton(item, index, true)
             )}
+
+            {PAGE_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  data-testid={link.testId}
+                  className={`shrink-0 snap-start flex items-center gap-2 rounded-full px-3 py-2 md:px-4 whitespace-nowrap text-[10px] md:text-xs font-black tracking-wider transition-all duration-200 active:scale-95 ${link.classes}`}
+                  style={{ fontFamily: "'Cinzel', serif", transform: "translateZ(0)" }}
+                >
+                  <Icon className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
+                  <span>{link.label}</span>
+                </a>
+              );
+            })}
 
             {onLogout && (
               <div className="flex items-center gap-1 shrink-0 snap-start">

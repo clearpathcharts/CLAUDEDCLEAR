@@ -8,8 +8,7 @@ import {
   navigateToDesk,
   type TraderDeskId,
 } from '../../lib/traderDesks';
-import { isFounderSession } from '../../lib/founder';
-import { useAuth } from '../../contexts/FirebaseContext';
+import { useFounderAccess } from '../../hooks/useFounderAccess';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
@@ -48,8 +47,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
-  const { user, userProfile } = useAuth();
-  const founder = isFounderSession(user?.email, userProfile?.email);
+  const { founder } = useFounderAccess();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -67,7 +65,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     goHomeFromDesk();
   };
   return (
-    <header className="shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-[100] shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <a

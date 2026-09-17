@@ -14,6 +14,7 @@ import {
   TRADER_DESKS,
   deskCanonicalPath,
   deskIdFromHomeProfile,
+  hasDashboardTabIntent,
   isDeskPaper,
   isDeskPath,
   isMemberHomePath,
@@ -64,6 +65,13 @@ assert.equal(isMemberHomePath('/desk/retail'), false);
 assert.equal(shouldStayOnPublicHome('?choose=1'), true);
 assert.equal(shouldStayOnPublicHome('?home=1'), true);
 assert.equal(shouldStayOnPublicHome('?profile=calm_focus'), false);
+// Founder on /ceo clicks Y.W.C. → Dashboard pushes /?tab=Yours#Yours. That must
+// render the tab, not re-trigger the founder→/ceo home redirect (CEO lock loop).
+assert.equal(hasDashboardTabIntent('?tab=Yours&profile=calm_focus'), true);
+assert.equal(hasDashboardTabIntent('tab=Discovery'), true);
+assert.equal(hasDashboardTabIntent('?profile=calm_focus'), false);
+assert.equal(hasDashboardTabIntent('?tab='), false);
+assert.equal(hasDashboardTabIntent(''), false);
 assert.equal(deskIdFromHomeProfile('calm_focus'), null);
 assert.equal(deskIdFromHomeProfile('autism_predictable'), 'neurodivergent');
 assert.equal(memberHomeDeskHref({}), '/desk/institutional');
@@ -176,8 +184,10 @@ for (const rel of srcFiles) {
     assert.match(text, /MemberDeskRedirect/);
     assert.match(text, /isMemberHomePath/);
     assert.match(text, /shouldStayOnPublicHome/);
+    assert.match(text, /!hasDashboardTabIntent\(currentSearch\)/);
+    assert.match(text, /if \(hasDashboardTabIntent\(window\.location\.search\)\) return;/);
     // Founder on `/` lands on the CEO Dashboard, not a desk.
-    assert.match(text, /founder = isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /useFounderAccess/);
     assert.match(text, /remembered: readRememberedTraderDesk\(\),\s*founder,/);
     assert.match(text, /<CptBuddyWidget \/>/);
     assert.doesNotMatch(text, /!isAppShell && <CptBuddyWidget/);
@@ -326,8 +336,11 @@ for (const rel of srcFiles) {
     assert.match(text, /DailyOpsDesk/);
     assert.match(text, /DailyPatternReviewDesk/);
     assert.match(text, /CeoAlwaysOnMonitor/);
-    assert.match(text, /userProfile\?\.email/);
+    assert.match(text, /useFounderAccess/);
     assert.match(text, /\/ceo/);
+    // Standalone pages must be reachable from the founder console.
+    assert.match(text, /data-ceo-brokers-link/);
+    assert.match(text, /data-ceo-plans-link/);
     assert.match(text, /data-ceo-kick-sessions/);
     assert.match(text, /data-ceo-kick-bar/);
     assert.match(text, /\/api\/admin\/auth\/kick-sessions/);
@@ -421,8 +434,9 @@ for (const rel of srcFiles) {
     // founder; the desks replaced `/`, so the chrome must offer the way in.
     assert.match(text, /data-ceo-ops-link/);
     assert.match(text, /href=\{CEO_DASHBOARD_HREF\}/);
-    assert.match(text, /isFounderSession\(user\?\.email, userProfile\?\.email\)/);
+    assert.match(text, /useFounderAccess/);
     assert.match(text, /\{founder \? \(/);
+    assert.match(text, /sticky top-0 z-\[100\]/);
     // Home = institutional desk, in-app. `/?choose=1` rendered the public
     // landing page for a signed-in member and read as a logout.
     assert.match(text, /data-desk-home/);
@@ -498,8 +512,13 @@ for (const rel of srcFiles) {
     assert.match(text, /CeoDashboard/);
     assert.match(text, /path === '\/ceo'/);
     assert.match(text, /case 'CeoDashboard': return <CeoDashboard/);
-    assert.match(text, /nextTab === 'CeoDashboard' && !isFounder\(\)/);
-    assert.match(text, /activeTab === 'CeoDashboard' && !isFounder\(\)/);
+    assert.match(text, /isCeoUrlPath/);
+    assert.match(text, /Never bounce\/ceo|never bounce to a trader desk/i);
+    assert.doesNotMatch(
+      text,
+      /path === '\/ceo'[\s\S]{0,200}\/\?tab=StrictlyCharts/,
+      '/ceo must not redirect to /?tab=StrictlyCharts',
+    );
   }
   if (rel === 'server.ts') {
     assert.match(text, /\/desk\/:deskId/);

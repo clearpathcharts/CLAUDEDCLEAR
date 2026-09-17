@@ -24,7 +24,11 @@ assert.doesNotMatch(
   'CEO is the short top-bar label, not buried as CEO DASHBOARD',
 );
 
+assert.match(clearNav, /href: "\/brokers"/, 'Desktop nav links to the US broker network page');
+assert.match(clearNav, /href: "\/plans"/, 'Desktop nav links to the plans page');
+
 const mobileNav = read('src/components/nav/MobileCommandCenter.tsx');
+assert.match(mobileNav, /href: "\/brokers"/, 'Mobile menu links to the US broker network page');
 assert.match(mobileNav, /<span>CEO<\/span>/, 'Founder mobile top bar pins a CEO chip');
 assert.match(mobileNav, /isFounder \? \(/, 'Mobile CEO chip is founder-gated');
 
@@ -53,7 +57,8 @@ assert.doesNotMatch(
 const ceo = read('src/components/CeoDashboard.tsx');
 const lockedIdx = ceo.indexOf('CEO Dashboard Locked');
 assert.ok(lockedIdx >= 0, 'CeoDashboard still has a locked gate');
-const lockedBlock = ceo.slice(lockedIdx, lockedIdx + 900);
+const lockedBlock = ceo.slice(lockedIdx, lockedIdx + 1600);
+assert.match(lockedBlock, /data-ceo-relogin/, 'Locked CEO screen offers sign-out + Private Login');
 assert.doesNotMatch(
   lockedBlock,
   /FOUNDER_EMAIL/,
@@ -83,6 +88,12 @@ assert.match(app, /function isCeoPath/, '/ceo must not require a logged-in shell
 assert.match(app, /isCeoPath\(currentPath\)/, 'logged-out /ceo still mounts the CEO route');
 
 const server = read('server.ts');
+assert.match(server, /\/api\/auth\/founder-session/, 'founder cookie probe for CEO routing');
+assert.doesNotMatch(
+  server,
+  /\/api\/auth\/founder-session[\s\S]{0,120}FOUNDER_EMAIL/,
+  'founder-session must not echo founder email',
+);
 assert.match(
   server,
   /\/api\/auth\/private\/me[\s\S]{0,220}status\(200\)\.json\(\{ user: null \}\)/,

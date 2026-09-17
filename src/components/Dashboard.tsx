@@ -65,6 +65,7 @@ import { BackToDashboard } from './nav/BackToDashboard';
 import { getClearState, subscribeToClearState } from '../lib/trading/clearState';
 import { isFounderSession } from '../lib/founder';
 import { auth } from '../firebase';
+import { useFounderAccess } from '../hooks/useFounderAccess';
 import { navigateToDesk } from '../lib/traderDesks';
 
 import BreakingNewsTicker from './BreakingNewsTicker';
@@ -512,6 +513,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     logout,
     purgeAuthCache
   } = useAuth();
+  const { founder: isFounderUser, resolving: founderResolving } = useFounderAccess();
   const [chatDockOpen, setChatDockOpen] = useState(false);
   const [activeTab, setActiveTab ] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -904,9 +906,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     userRole?.role === 'admin' ||
     isFounderSession(authUser?.email, userProfile?.email, auth.currentUser?.email) ||
     authUser?.email === 'creator@clearpatcharge.com';
-  /** CEO Dashboard — private session, profile, or live Google founder email. */
-  const isFounder = () =>
-    isFounderSession(authUser?.email, userProfile?.email, auth.currentUser?.email);
+  /** CEO Dashboard — client emails, Google, or httpOnly private session (see useFounderAccess). */
+  const isFounder = () => isFounderUser;
+  /** Deep-linked /ceo must stay on CEO (locked or unlocked) — never bounce to a trader desk. */
+  const isCeoUrlPath = () => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
+    return path === '/ceo' || path === '/ceo-dashboard';
+  };
   const isVerified = () => requireVerified();
 
   const menuItems = useMemo(() => {
@@ -934,19 +941,13 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   }, [userRole?.role, authUser?.email, userProfile?.email, profile?.vipStatus]);
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || founderResolving) return;
+    if (isCeoUrlPath()) {
+      setActiveTab('CeoDashboard');
+      return;
+    }
     if (activeTab === 'CeoDashboard' && !isFounder()) {
       setActiveTab('StrictlyCharts');
-      if (typeof window !== 'undefined') {
-        try {
-          const path = window.location.pathname.toLowerCase();
-          if (path === '/ceo' || path === '/ceo-dashboard') {
-            window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
-          }
-        } catch {
-          /* ignore */
-        }
-      }
       return;
     }
     if (!isFounder()) return;
@@ -963,7 +964,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         /* ignore */
       }
     }
-  }, [authLoading, authUser?.email, userProfile?.email]);
+  }, [authLoading, founderResolving, authUser?.email, userProfile?.email, isFounderUser]);
 
   const getSeoData = () => {
     switch (activeTab) {
@@ -983,10 +984,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const handleTabChange = (tabId: string) => {
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
-    if (nextTab === 'CeoDashboard' && authLoading) {
+    if (nextTab === 'CeoDashboard' && (authLoading || founderResolving)) {
       return;
     }
     if (nextTab === 'CeoDashboard' && !isFounder()) {
+      if (isCeoUrlPath()) {
+        setActiveTab('CeoDashboard');
+        return;
+      }
       setActiveTab('StrictlyCharts');
       if (typeof window !== 'undefined') {
         try {
@@ -1110,12 +1115,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           return;
         }
         if (path === '/ceo' || path === '/ceo-dashboard') {
-          if (isFounder()) {
-            setActiveTab('CeoDashboard');
-          } else {
-            setActiveTab('StrictlyCharts');
-            window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
-          }
+          setActiveTab('CeoDashboard');
           return;
         }
       }
@@ -1163,10 +1163,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     } else if (path === '/desk/fundamental' || path.startsWith('/desk/fundamental/')) {
       setActiveTab('Fundamentals');
     } else if (path === '/ceo' || path === '/ceo-dashboard') {
-      setActiveTab(isFounder() ? 'CeoDashboard' : 'StrictlyCharts');
-      if (!isFounder()) {
-        window.history.replaceState({ tabId: 'StrictlyCharts' }, '', '/?tab=StrictlyCharts');
-      }
+      setActiveTab('CeoDashboard');
     } else if (path === '/education' || path === '/clearpath-education') {
       setActiveTab('ClearPathEducation');
     } else {
