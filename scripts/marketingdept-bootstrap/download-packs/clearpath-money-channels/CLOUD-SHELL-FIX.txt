@@ -1,0 +1,34 @@
+CLEARPATH MARKETING CONSOLE — Cloud Shell
+
+Do NOT paste giant Raw files.
+
+────────────────────────────────────────
+A) Redeploy (upload fix + money-channel Dispatch code)
+────────────────────────────────────────
+
+cd ~
+rm -rf ~/CLAUDEDCLEAR-fix
+gh auth status || gh auth login
+gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
+
+────────────────────────────────────────
+B) Open money channels (YouTube / FB / IG / TikTok)
+────────────────────────────────────────
+
+Read:
+  cat ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/MONEY-CHANNELS.txt
+
+Fastest money channel = YouTube (set 3 Google OAuth vars):
+  YOUTUBE_CLIENT_ID=... YOUTUBE_CLIENT_SECRET=... YOUTUBE_REFRESH_TOKEN=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-YOUTUBE.sh
+
+Meta (Facebook + Instagram):
+  META_PAGE_ID=... META_PAGE_ACCESS_TOKEN=... META_IG_USER_ID=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-META.sh
+
+TikTok:
+  TIKTOK_ACCESS_TOKEN=... \
+    bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-TIKTOK.sh
+
+Discord is closed-circuit. It will not acquire paying students.

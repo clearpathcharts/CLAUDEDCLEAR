@@ -38,6 +38,13 @@ cp -f "$HERE/server.js" "$PUB/server.js"
 cp -f "$SRC/env.example" "$PUB/.env.example"
 cp -f "$SRC/dashboard/script.js" "$UI/script.js"
 cp -f "$SRC/dashboard/style.css" "$UI/style.css"
+if [[ -f "$SRC/dashboard/index.html" ]]; then
+  cp -f "$SRC/dashboard/index.html" "$UI/index.html"
+fi
+mkdir -p "$DEST/docs"
+if [[ -f "$HERE/CHANNEL_API_SETUP.md" ]]; then
+  cp -f "$HERE/CHANNEL_API_SETUP.md" "$DEST/docs/CHANNEL_API_SETUP.md"
+fi
 cp -f "$SRC/cloud-shell-media-upload.sh" "$DEST/scripts/cloud-shell-media-upload.sh"
 chmod +x "$DEST/scripts/cloud-shell-media-upload.sh"
 

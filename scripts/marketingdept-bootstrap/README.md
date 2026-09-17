@@ -1,8 +1,18 @@
 # MARKETINGDEPT team-auth + media-upload bootstrap (Cloud Shell)
 
 Use when `clearpathcharts/MARKETINGDEPT` cannot receive pushes, but you need
-private login + Brent/Dustin/Brian accounts on Cloud Run, and/or **ClearPath-hosted
-full file upload** (so posts do not require YouTube).
+private founder login on Cloud Run, and/or **ClearPath-hosted full file upload**
+(so posts do not require YouTube).
+
+## One login (owner only)
+
+```bash
+bash scripts/marketingdept-bootstrap/ONE-LOGIN-OWNER.sh
+# then redeploy UI if needed:
+bash scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
+```
+
+Set `TEAM_USERS=owner:YOUR_PASSWORD:owner` and `SESSION_SECRET` on Cloud Run.
 
 ## Team auth (private login)
 
