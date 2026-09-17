@@ -9,7 +9,8 @@ import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
 import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
-import { FOUNDER_EMAIL, isFounderEmail, isFounderSession } from '../lib/founder';
+import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
+import { useFounderAccess } from '../hooks/useFounderAccess';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
 import ChooseYourPath from './ChooseYourPath';
 import { navigateToDesk } from '../lib/traderDesks';
@@ -161,7 +162,7 @@ export default function CeoDashboard() {
   const [kickBusy, setKickBusy] = useState(false);
 
   const { user, userProfile } = useAuth();
-  const founderOk = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
+  const { founder: founderOk, resolving: founderResolving } = useFounderAccess();
   const showsUnauthorized =
     /unauthorized|forbidden|founder auth|sign in|catalog admin/i.test(
       `${membersError || ''} ${convertMsg || ''}`
@@ -726,6 +727,15 @@ export default function CeoDashboard() {
   });
 
   // CEO Dashboard is Rick Floyd founder-only — never render data for anyone else.
+  if (founderResolving) {
+    return (
+      <div className="min-h-full flex items-center justify-center p-8 font-sans" style={{ backgroundColor: '#09090b' }}>
+        <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.35em] animate-pulse">
+          Verifying founder session…
+        </p>
+      </div>
+    );
+  }
   if (!founderOk) {
     return (
       <div className="min-h-full flex items-center justify-center p-8 font-sans" style={{ backgroundColor: '#09090b' }}>
@@ -733,7 +743,11 @@ export default function CeoDashboard() {
           <Lock className="w-10 h-10 text-red-400 mx-auto" aria-hidden="true" />
           <h1 className="text-xl font-black uppercase tracking-widest text-white">CEO Dashboard Locked</h1>
           <p className="text-sm text-zinc-400 leading-relaxed">
-            This console is restricted. If you landed here by mistake, go back to Markets.
+            This console is restricted. Sign in with Private Login on the home page, then open{' '}
+            <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">
+              /ceo
+            </a>{' '}
+            again.
           </p>
         </div>
       </div>

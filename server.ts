@@ -1304,6 +1304,12 @@ async function startServer() {
     res.json({ user });
   });
 
+  /** Cookie-backed founder probe for CEO routing (no secrets, no email in response). */
+  app.get('/api/auth/founder-session', (req, res) => {
+    const sessionUser = getPrivateSessionUser(req);
+    res.json({ founder: Boolean(sessionUser && isFounderEmail(sessionUser.email)) });
+  });
+
   const chartPulseOwnerKey = (req: express.Request): string => {
     const user = getPrivateSessionUser(req);
     if (user?.uid) return `uid:${user.uid}`;

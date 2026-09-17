@@ -8,9 +8,7 @@ import {
   navigateToDesk,
   type TraderDeskId,
 } from '../../lib/traderDesks';
-import { isFounderSession } from '../../lib/founder';
-import { useAuth } from '../../contexts/FirebaseContext';
-import { auth } from '../../firebase';
+import { useFounderAccess } from '../../hooks/useFounderAccess';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
@@ -49,8 +47,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     savedAt,
     lastSaveScope,
   } = useDeskAppearance();
-  const { user, userProfile } = useAuth();
-  const founder = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
+  const { founder } = useFounderAccess();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {

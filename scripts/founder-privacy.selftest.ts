@@ -83,6 +83,12 @@ assert.match(app, /function isCeoPath/, '/ceo must not require a logged-in shell
 assert.match(app, /isCeoPath\(currentPath\)/, 'logged-out /ceo still mounts the CEO route');
 
 const server = read('server.ts');
+assert.match(server, /\/api\/auth\/founder-session/, 'founder cookie probe for CEO routing');
+assert.doesNotMatch(
+  server,
+  /\/api\/auth\/founder-session[\s\S]{0,120}FOUNDER_EMAIL/,
+  'founder-session must not echo founder email',
+);
 assert.match(
   server,
   /\/api\/auth\/private\/me[\s\S]{0,220}status\(200\)\.json\(\{ user: null \}\)/,

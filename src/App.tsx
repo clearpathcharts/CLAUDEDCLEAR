@@ -20,8 +20,7 @@ import { TRADING_REIMAGINED_PATH, TRADING_REIMAGINED_SHORT_PATH } from './conten
 import { EducationDeskBar } from './education/EducationDeskBar';
 import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks';
 import { useAuth } from './contexts/FirebaseContext';
-import { isFounderSession } from './lib/founder';
-import { auth } from './firebase';
+import { useFounderAccess } from './hooks/useFounderAccess';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
@@ -56,10 +55,10 @@ function AuthenticatedShell({
  * The founder goes to the CEO Dashboard, as the old `/` did for that account.
  */
 function MemberDeskRedirect() {
-  const { user, userProfile, loading } = useAuth();
-  const founder = isFounderSession(user?.email, userProfile?.email, auth.currentUser?.email);
+  const { loading } = useAuth();
+  const { founder, resolving } = useFounderAccess();
   useEffect(() => {
-    if (loading || typeof window === 'undefined') return;
+    if (loading || resolving || typeof window === 'undefined') return;
     const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
     if (path === '/ceo' || path === '/ceo-dashboard') return;
     const href = memberHomeDeskHref({
@@ -71,7 +70,7 @@ function MemberDeskRedirect() {
     if (here === href) return;
     window.history.replaceState({}, '', href);
     window.dispatchEvent(new Event('clearpath-location'));
-  }, [founder, loading]);
+  }, [founder, loading, resolving]);
   return (
     <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
       <p className="text-zinc-500 font-mono text-[9px] uppercase tracking-[0.3em]">
