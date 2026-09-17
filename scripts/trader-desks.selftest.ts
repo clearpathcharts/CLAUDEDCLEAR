@@ -14,6 +14,7 @@ import {
   TRADER_DESKS,
   deskCanonicalPath,
   deskIdFromHomeProfile,
+  hasDashboardTabIntent,
   isDeskPaper,
   isDeskPath,
   isMemberHomePath,
@@ -64,6 +65,13 @@ assert.equal(isMemberHomePath('/desk/retail'), false);
 assert.equal(shouldStayOnPublicHome('?choose=1'), true);
 assert.equal(shouldStayOnPublicHome('?home=1'), true);
 assert.equal(shouldStayOnPublicHome('?profile=calm_focus'), false);
+// Founder on /ceo clicks Y.W.C. → Dashboard pushes /?tab=Yours#Yours. That must
+// render the tab, not re-trigger the founder→/ceo home redirect (CEO lock loop).
+assert.equal(hasDashboardTabIntent('?tab=Yours&profile=calm_focus'), true);
+assert.equal(hasDashboardTabIntent('tab=Discovery'), true);
+assert.equal(hasDashboardTabIntent('?profile=calm_focus'), false);
+assert.equal(hasDashboardTabIntent('?tab='), false);
+assert.equal(hasDashboardTabIntent(''), false);
 assert.equal(deskIdFromHomeProfile('calm_focus'), null);
 assert.equal(deskIdFromHomeProfile('autism_predictable'), 'neurodivergent');
 assert.equal(memberHomeDeskHref({}), '/desk/institutional');
@@ -176,6 +184,8 @@ for (const rel of srcFiles) {
     assert.match(text, /MemberDeskRedirect/);
     assert.match(text, /isMemberHomePath/);
     assert.match(text, /shouldStayOnPublicHome/);
+    assert.match(text, /!hasDashboardTabIntent\(currentSearch\)/);
+    assert.match(text, /if \(hasDashboardTabIntent\(window\.location\.search\)\) return;/);
     // Founder on `/` lands on the CEO Dashboard, not a desk.
     assert.match(text, /useFounderAccess/);
     assert.match(text, /remembered: readRememberedTraderDesk\(\),\s*founder,/);

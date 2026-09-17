@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import DeskRoute from './components/desks/DeskRoute';
 import {
+  hasDashboardTabIntent,
   isDeskPath,
   isMemberHomePath,
   memberHomeDeskHref,
@@ -61,6 +62,7 @@ function MemberDeskRedirect() {
     if (loading || resolving || typeof window === 'undefined') return;
     const path = window.location.pathname.toLowerCase().replace(/\/$/, '') || '/';
     if (path === '/ceo' || path === '/ceo-dashboard') return;
+    if (hasDashboardTabIntent(window.location.search)) return;
     const href = memberHomeDeskHref({
       search: window.location.search,
       remembered: readRememberedTraderDesk(),
@@ -398,7 +400,12 @@ export default function App() {
         <MembershipPricingPage />
       </Suspense>
     );
-  } else if (user && isMemberHomePath(currentPath) && !shouldStayOnPublicHome(currentSearch)) {
+  } else if (
+    user &&
+    isMemberHomePath(currentPath) &&
+    !shouldStayOnPublicHome(currentSearch) &&
+    !hasDashboardTabIntent(currentSearch)
+  ) {
     content = <MemberDeskRedirect />;
   } else if (!user || shouldStayOnPublicHome(currentSearch)) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
