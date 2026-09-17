@@ -328,6 +328,9 @@ for (const rel of srcFiles) {
     assert.match(text, /CeoAlwaysOnMonitor/);
     assert.match(text, /useFounderAccess/);
     assert.match(text, /\/ceo/);
+    // Standalone pages must be reachable from the founder console.
+    assert.match(text, /data-ceo-brokers-link/);
+    assert.match(text, /data-ceo-plans-link/);
     assert.match(text, /data-ceo-kick-sessions/);
     assert.match(text, /data-ceo-kick-bar/);
     assert.match(text, /\/api\/admin\/auth\/kick-sessions/);

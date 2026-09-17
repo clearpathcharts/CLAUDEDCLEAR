@@ -5,6 +5,7 @@ import {
   Cpu,
   Crown,
   Home,
+  Landmark,
   LogOut,
   Network,
   Newspaper,
@@ -119,6 +120,22 @@ const ACCOUNT_ITEMS: NavItem[] = [
     label: "MEMBERSHIPS",
     colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
     glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
+  },
+];
+
+/** Standalone pages — full navigation, not Dashboard tabs. */
+const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; colorClass: string }[] = [
+  {
+    href: "/brokers",
+    icon: Landmark,
+    label: "US BROKER NETWORK",
+    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+  },
+  {
+    href: "/plans",
+    icon: Crown,
+    label: "PLANS & PRICING",
+    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
   },
 ];
 
@@ -355,6 +372,34 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               >
                 <X className="w-5 h-5" />
               </button>
+            </div>
+
+            <div className="mb-6">
+              <div
+                className="text-xs font-black tracking-[0.3em] pb-1.5 mb-2 border-b"
+                style={{
+                  color: SECTION_HEADER_COLORS.TRADE,
+                  borderColor: SECTION_HEADER_COLORS.TRADE,
+                  textShadow: `0 0 8px ${SECTION_HEADER_COLORS.TRADE}`,
+                  fontFamily: "'Cinzel', serif",
+                }}
+              >
+                PAGES
+              </div>
+              {PAGE_LINKS.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center w-full min-h-[52px] rounded-xl border px-4 mb-2 transition-all duration-200 active:scale-[0.98] bg-white/[0.03] ${link.colorClass}`}
+                    style={{ fontFamily: "'Cinzel', serif" }}
+                  >
+                    <Icon className="w-4 h-4 mr-3 shrink-0" />
+                    <span className="flex-1 text-left text-xs font-black tracking-wider">{link.label}</span>
+                  </a>
+                );
+              })}
             </div>
 
             {sections.map((section) => (

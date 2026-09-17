@@ -798,6 +798,10 @@ export default function CeoDashboard() {
         Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
+        <span className="mx-2 text-zinc-600">·</span>
+        Brokers <a href="/brokers" data-ceo-brokers-link className="text-[#00FFFF] underline-offset-2 hover:underline">/brokers</a>
+        <span className="mx-2 text-zinc-600">·</span>
+        Plans <a href="/plans" data-ceo-plans-link className="text-[#FFD700] underline-offset-2 hover:underline">/plans</a>
       </p>
 
       <div

@@ -24,7 +24,11 @@ assert.doesNotMatch(
   'CEO is the short top-bar label, not buried as CEO DASHBOARD',
 );
 
+assert.match(clearNav, /href: "\/brokers"/, 'Desktop nav links to the US broker network page');
+assert.match(clearNav, /href: "\/plans"/, 'Desktop nav links to the plans page');
+
 const mobileNav = read('src/components/nav/MobileCommandCenter.tsx');
+assert.match(mobileNav, /href: "\/brokers"/, 'Mobile menu links to the US broker network page');
 assert.match(mobileNav, /<span>CEO<\/span>/, 'Founder mobile top bar pins a CEO chip');
 assert.match(mobileNav, /isFounder \? \(/, 'Mobile CEO chip is founder-gated');
 
