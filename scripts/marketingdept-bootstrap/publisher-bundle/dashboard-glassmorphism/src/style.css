@@ -1100,6 +1100,33 @@ main .menu .expander {
   border-color: rgba(154, 160, 181, 0.35);
   background: rgba(154, 160, 181, 0.06);
 }
+.badge.blocked {
+  color: #ff8fab;
+  border-color: rgba(255, 143, 171, 0.45);
+  background: rgba(255, 143, 171, 0.08);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  white-space: normal;
+  max-width: 14rem;
+  text-align: center;
+  line-height: 1.25;
+}
+.api-order {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.55;
+}
+.api-steps {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.api-guide code {
+  font-size: 12px;
+  color: var(--cp-cyan);
+  word-break: break-word;
+}
 main .dashboard .cardcolumn.span-2 {
   grid-column: span 1;
 }
