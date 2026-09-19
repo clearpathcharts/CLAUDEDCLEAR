@@ -81,6 +81,9 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: Package offer + Stripe buy-button self-test
+        run: npm run test:membership-offer
+
       - name: Daily Ops catalog + investor letter
         run: npm run test:daily-ops
 

@@ -325,6 +325,72 @@
   line-height: 1.7;
 }
 
+.membership-plan-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.membership-plan-picker__tab {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 72px;
+  border: 1px solid rgba(128, 151, 180, 0.2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #9baabd;
+  background: rgba(7, 7, 11, 0.72);
+  cursor: pointer;
+  text-align: left;
+}
+
+.membership-plan-picker__tab strong {
+  color: #f4f7fc;
+  font-size: 20px;
+}
+
+.membership-plan-picker__tab span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 16px;
+}
+
+.membership-plan-picker__tab.is-active {
+  border-color: var(--plan-accent);
+  box-shadow: 0 0 0 1px var(--plan-accent);
+  color: #fff;
+}
+
+.membership-plan-card--offer {
+  max-width: 560px;
+}
+
+.membership-plan-card__included {
+  margin: 0 0 12px;
+  color: #74859b;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.membership-plan-card__button--link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #e4ebf4;
+  border-color: rgba(0, 229, 255, 0.35);
+}
+
+.membership-stripe-buy {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
 .membership-plan-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -657,6 +723,7 @@
 }
 
 @media (max-width: 1080px) {
+  .membership-plan-picker,
   .membership-plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -702,6 +769,7 @@
     font-size: clamp(43px, 14vw, 64px);
   }
 
+  .membership-plan-picker,
   .membership-plan-grid {
     grid-template-columns: 1fr;
   }
