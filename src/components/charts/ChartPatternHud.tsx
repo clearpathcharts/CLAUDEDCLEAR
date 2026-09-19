@@ -62,7 +62,7 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
 
       <p className="mb-2 text-[9px] leading-relaxed text-white/50">
         {total > 0
-          ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
+          ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only · nested cyan lines are retrace triangles along the same trendline`
           : `Scanned ${scan.scannedBars.toLocaleString()} bars · nothing forming on the latest candles`}
       </p>
 
@@ -72,16 +72,21 @@ export function ChartPatternHud({ symbol, scan, onClose }: ChartPatternHudProps)
             {PATTERN_GROUP_LABELS[group]}
           </p>
           <div className="mt-1 space-y-1">
-            {items.map((p, i) => {
-              const Icon = DIRECTION_ICON[p.direction];
-              return (
-                <div key={`${group}-${p.id}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
-                  <Icon size={10} className="text-[#FF1493]" />
-                  <span className="flex-1 truncate text-white/90">{p.label}</span>
-                  <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
-                </div>
-              );
-            })}
+              {items.map((p, i) => {
+                const Icon = DIRECTION_ICON[p.direction];
+                return (
+                  <div key={`${group}-${p.id}-${p.startIndex}-${p.time}-${i}`} className="flex items-center gap-1.5 rounded border border-[#FF00CC]/15 bg-[#BF00FF]/5 px-2 py-1 text-[10px]">
+                    <Icon size={10} className={p.scale === 'nested' ? 'text-[#00D9FF]' : 'text-[#FF1493]'} />
+                    <span className="flex-1 truncate text-white/90">{p.label}</span>
+                    {p.scale === 'nested' && (
+                      <span className="rounded border border-[#00D9FF]/50 px-1 text-[7px] font-bold uppercase tracking-widest text-[#00D9FF]">
+                        Nested
+                      </span>
+                    )}
+                    <span className="text-[#9D00FF]">{Math.round(p.confidence * 100)}%</span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       ))}

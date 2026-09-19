@@ -5,8 +5,9 @@ export { scheduleChartVision, scheduleChartVisionImmediate, cancelChartVision } 
 export { resolvePatternConflicts } from './conflicts';
 export { sanitizeCandles, analysisWindow, candleFingerprint, PATTERN_ANALYSIS_MAX_BARS } from './sanitize';
 export { scanCandlestickPatterns } from './candlesticks';
-export { scanChartPatterns } from './chartPatterns';
+export { scanChartPatterns, detectNestedStructures } from './chartPatterns';
 export { findSwingPoints } from './swings';
+export { resolveStructureBody } from './structureBody';
 export { buildPatternLineOverlays, buildCandlestickMarkers, buildPatternPeakMarkers } from './overlay';
 export {
   CHART_PATTERN_META,
@@ -37,4 +38,5 @@ export type {
   CandlestickPatternId,
   ChartPatternId,
   PatternCategory,
+  PatternScale,
 } from './types';

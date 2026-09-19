@@ -30,7 +30,13 @@ assert(window.length === 500, 'analysis window should cap at 500 bars');
 const sample = generateSampleCandles(120);
 const first = runChartVisionPipeline({ candles: sample, symbol: 'TEST', timeframe: '1h' }, { force: true });
 assert(first !== null, 'expected vision output');
-assert(first!.scan.patterns.every((p) => p.endIndex >= sample.length - 12), 'patterns should be live-edge');
+assert(
+  first!.scan.patterns.every((p) => (
+    p.scale === 'nested'
+    || p.endIndex >= sample.length - 12
+  )),
+  'major patterns should be live-edge',
+);
 
 const second = runChartVisionPipeline({ candles: sample, symbol: 'TEST', timeframe: '1h' });
 assert(second === null, 'unchanged fingerprint should skip re-scan');
@@ -38,8 +44,8 @@ assert(second === null, 'unchanged fingerprint should skip re-scan');
 publishChartVision(first!);
 
 const conflicts = resolvePatternConflicts(scanAllPatterns(sample).patterns);
-const structure = conflicts.filter((p) => p.category === 'chart');
-assert(structure.length <= 2, 'conflict resolver should cap chart patterns');
+const structure = conflicts.filter((p) => p.category === 'chart' && p.scale !== 'nested');
+assert(structure.length <= 2, 'conflict resolver should cap major chart patterns');
 
 console.log('PASS: Chart Vision Engine');
 console.log(`  patterns: ${first!.scan.patterns.map((p) => p.label).join(', ') || 'none'}`);

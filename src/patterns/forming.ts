@@ -14,6 +14,8 @@ export interface FormingPossibility {
   probability: number;
   status: 'forming' | 'possible' | 'watch';
   detail: string;
+  scale?: 'major' | 'nested';
+  startIndex?: number;
 }
 
 export interface FormingClock {
@@ -149,9 +151,16 @@ function possibilitiesFromMeasured(patterns: DetectedPattern[]): FormingPossibil
       probability: p.confidence,
       status: (p.confidence >= 0.62 ? 'forming' : p.confidence >= 0.5 ? 'possible' : 'watch') as FormingPossibility['status'],
       detail: p.detail || `${p.label} measured on latest candles.`,
+      scale: p.scale ?? 'major',
+      startIndex: p.startIndex,
     }))
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, 4);
+    .sort((a, b) => {
+      const aMajor = a.scale === 'nested' ? 0 : 1;
+      const bMajor = b.scale === 'nested' ? 0 : 1;
+      if (aMajor !== bMajor) return bMajor - aMajor;
+      return b.probability - a.probability;
+    })
+    .slice(0, 6);
 }
 
 /** Restore 4-up / 3-down methodology watches even when geometry scan is quiet. */
@@ -194,11 +203,13 @@ function possibilitiesFromImpulse(
 
   if (legs.retraceOpenedWithFourBearish) {
     out.push({
-      id: 'falling_wedge',
-      label: '4-Bar Bear Retrace Open',
+      id: trendBias === 'down' ? 'descending_triangle' : 'falling_wedge',
+      label: trendBias === 'down' ? '4-Bar Bear Retrace (Continuation)' : '4-Bar Bear Retrace Open',
       probability: 0.58,
       status: 'watch',
-      detail: 'Retrace opened with a full 4-bar bearish leg — map support and watch for 3-bar stall at the low.',
+      detail: trendBias === 'down'
+        ? 'Retrace opened with a full 4-bar bearish leg on a downtrend — map the descending triangle along the trend, not a bullish wedge.'
+        : 'Retrace opened with a full 4-bar bearish leg — map support and watch for 3-bar stall at the low.',
     });
   }
 
@@ -248,9 +259,7 @@ function buildNarrative(
     lines.push('No measured chart patterns in the latest window.');
   } else {
     for (const p of brief.possibilities) {
-      lines.push(
-        `Measured ${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`,
-      );
+      lines.push(`Measured ${p.scale === 'nested' ? 'nested ' : ''}${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`);
     }
   }
 
@@ -299,13 +308,18 @@ export function analyzeFormingStructure(
   // Measured geometry first, then methodology watches fill gaps on any symbol.
   const merged = new Map<string, FormingPossibility>();
   for (const p of [...measured, ...impulse]) {
-    const key = `${p.id}:${p.label}`;
+    const key = `${p.id}:${p.scale ?? 'major'}:${p.startIndex ?? 'impulse'}:${p.label}`;
     const prev = merged.get(key);
     if (!prev || p.probability > prev.probability) merged.set(key, p);
   }
   const possibilities = [...merged.values()]
-    .sort((a, b) => b.probability - a.probability)
-    .slice(0, 5);
+    .sort((a, b) => {
+      const aMajor = a.scale === 'nested' ? 0 : 1;
+      const bMajor = b.scale === 'nested' ? 0 : 1;
+      if (aMajor !== bMajor) return bMajor - aMajor;
+      return b.probability - a.probability;
+    })
+    .slice(0, 6);
 
   const normalizedTf = normalizeTimeframe(timeframe);
   const base = {
