@@ -162,9 +162,9 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
   assert.doesNotMatch(src, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /label: 'Price'/);
-  assert.match(page, /Visual \+ legal review stage/);
-  assert.match(page, /Checkout remains disabled/);
-  assert.match(page, /SILVER_WITH_ALL_ADDONS_CENTS/);
+  assert.match(page, /StripePlansBuyButton/);
+  assert.match(page, /Pay for the package you selected/);
+  assert.match(page, /data-testid="offered-package"/);
   assert.match(page, /Your first \{FIRST_FREE_DAYS\} days are free/);
   assert.match(app, /<MembershipPricingPage \/>/);
 }

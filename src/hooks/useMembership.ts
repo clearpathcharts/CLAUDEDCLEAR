@@ -7,7 +7,6 @@
  */
 import { useEffect, useState } from 'react';
 import { tierRankOf, hasFeatureForRank, type FeatureKey } from '../lib/entitlements';
-import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
 import {
   canonicalizePlanId,
   planOf,
@@ -35,13 +34,6 @@ const OFFLINE_BASIC: MembershipInfo = {
   tierRank: 0,
 };
 
-const PAYMENTS_OFF: MembershipInfo = {
-  active: true,
-  tier: 'platinum',
-  status: 'payments_disabled',
-  tierRank: 3,
-};
-
 let cache: MembershipInfo | null = null;
 let inflight: Promise<MembershipInfo> | null = null;
 const listeners = new Set<(m: MembershipInfo) => void>();
@@ -57,7 +49,6 @@ async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
       tierRank: plan.rank,
     };
   }
-  if (!PAYMENTS_ENABLED) return PAYMENTS_OFF;
   if (cache && !force) return cache;
   if (inflight && !force) return inflight;
   inflight = (async () => {
@@ -112,15 +103,13 @@ export function useMembership(_legacyProfile?: { vipStatus?: string; subscriptio
   const preview = readPlanPreview();
   const effectiveTier: CanonicalPlanId = preview
     ? preview
-    : PAYMENTS_ENABLED
-      ? canonicalizePlanId(membership?.active ? membership.tier : 'basic')
-      : 'platinum';
+    : canonicalizePlanId(membership?.active ? membership.tier : 'basic');
   const plan = planOf(effectiveTier);
   const tierRank = plan.rank;
 
   return {
     membership,
-    loading: membership === null && !preview && PAYMENTS_ENABLED,
+    loading: membership === null && !preview,
     tierRank,
     planId: plan.id,
     limits: plan.limits as PlanLimits,

@@ -55,6 +55,7 @@
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:no-third-party-automation": "tsx scripts/no-third-party-automation.selftest.ts",
     "test:plan-catalog": "tsx scripts/plan-catalog.selftest.ts",
+    "test:membership-offer": "tsx scripts/membership-offer.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",
     "test:market-replay": "tsx scripts/market-replay.selftest.ts",
     "test:clean-candles": "tsx scripts/clean-candles.selftest.ts",

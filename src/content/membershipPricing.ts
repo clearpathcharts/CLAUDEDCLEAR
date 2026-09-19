@@ -164,3 +164,19 @@ export function formatMembershipPrice(cents: number): string {
   return cents === 0 ? 'Free' : `$${(cents / 100).toFixed(2)}`;
 }
 
+/** Public Stripe Buy Button id issued for /plans. Publishable key is injected at HTML serve time. */
+export const STRIPE_PLANS_BUY_BUTTON_ID = 'buy_btn_1UHW1BGrAwpKZWrlh5sraF2b';
+
+export function membershipCheckoutRef(uid: string, planId: MembershipPlanId): string {
+  return `${uid}|${planId}`;
+}
+
+export function parseMembershipCheckoutRef(raw: string): { uid: string; planId?: MembershipPlanId } {
+  const [uid, plan] = String(raw || '').split('|').map((part) => part.trim());
+  const planId =
+    plan === 'silver' || plan === 'gold' || plan === 'platinum' || plan === 'basic'
+      ? plan
+      : undefined;
+  return { uid: uid || '', planId };
+}
+

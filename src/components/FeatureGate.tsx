@@ -1,8 +1,6 @@
 import React from 'react';
 import { Lock, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { TIER_LABEL, type PlanTier } from '../lib/entitlements';
-import { readPlanPreview } from '../lib/planCatalog';
-import { PAYMENTS_ENABLED } from '../lib/paymentsEnabled';
 
 const TIER_ACCENT: Record<Exclude<PlanTier, 'basic'>, string> = {
   silver: 'text-zinc-200 border-zinc-400/30 bg-zinc-400/10',
@@ -27,8 +25,7 @@ export default function FeatureGate({
   onUpgrade: () => void;
   children: React.ReactNode;
 }) {
-  const previewing = Boolean(readPlanPreview());
-  if ((PAYMENTS_ENABLED === false && !previewing) || allowed) return <>{children}</>;
+  if (allowed) return <>{children}</>;
 
   if (loading) {
     return (
