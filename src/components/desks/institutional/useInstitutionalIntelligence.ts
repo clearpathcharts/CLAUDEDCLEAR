@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ASSET_REGISTRY, LATENCY_LABEL, getEnabledAssets, type AssetCategory } from '../../../constants/assetRegistry';
 import { resolveQuotePrice } from '../../MarketTicker';
 import { usePageAutoUpdate } from '../../../hooks/usePageAutoUpdate';
@@ -254,7 +254,20 @@ export function useInstitutionalIntelligence(
 
   const slots = useMemo(() => workspaceSymbols(symbol, layout), [symbol, layout]);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Sequence workspace loads like useRetailIntelligence — without this, a slow
+  // response for the previous symbol/timeframe could land after a faster one
+  // for the current selection and paint stale candles over fresh ones.
+  const workspaceReqRef = useRef(0);
   const loadWorkspace = useCallback(async () => {
+    const reqId = ++workspaceReqRef.current;
     const next: Record<string, Candle[]> = {};
     const errors: string[] = [];
     for (const s of slots) {
@@ -265,6 +278,8 @@ export function useInstitutionalIntelligence(
         errors.push(`${s}: ${e instanceof Error ? e.message : 'unavailable'}`);
       }
     }
+    // Ignore stale completions (symbol/timeframe changed mid-flight or unmounted).
+    if (!mountedRef.current || reqId !== workspaceReqRef.current) return;
     setCandlesBySymbol(next);
     setCandleError(errors.length ? errors.join(' · ') : null);
   }, [slots, timeframe]);
