@@ -1,29 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import {
-  ArrowLeft,
-  Bot,
-  Check,
-  ChevronDown,
-  Layers3,
-  Scale,
-  ShieldCheck,
-  Sparkles,
-  WandSparkles,
-} from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
   FIRST_FREE_DAYS,
   LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
   PLAN_TRIAL_DAYS,
-  PLATINUM_CENTS,
-  SILVER_ADDONS,
-  SILVER_BASE_CENTS,
-  SILVER_WITH_ALL_ADDONS_CENTS,
-  formatMembershipPrice,
+  type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
+import { StripePlansBuyButton } from './StripePlansBuyButton';
 import './membershipPricing.css';
 
 const PLAN_ACCENT: Record<MembershipPlanPrice['id'], string> = {
@@ -33,40 +20,46 @@ const PLAN_ACCENT: Record<MembershipPlanPrice['id'], string> = {
   platinum: '#FF007F',
 };
 
+function readOfferedPlan(): MembershipPlanId {
+  if (typeof window === 'undefined') return 'basic';
+  try {
+    const q = new URLSearchParams(window.location.search).get('package');
+    if (q === 'basic' || q === 'silver' || q === 'gold' || q === 'platinum') return q;
+  } catch {
+    /* ignore */
+  }
+  return 'basic';
+}
+
 export default function MembershipPricingPage() {
   const { user } = useAuth();
-  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(
-    () => new Set(SILVER_ADDONS.map((addon) => addon.id)),
+  const [offeredId, setOfferedId] = useState<MembershipPlanId>(readOfferedPlan);
+  const offered = useMemo(
+    () => MEMBERSHIP_PLANS.find((plan) => plan.id === offeredId) ?? MEMBERSHIP_PLANS[0],
+    [offeredId],
   );
 
-  const customTotal = useMemo(
-    () =>
-      SILVER_BASE_CENTS +
-      SILVER_ADDONS.reduce(
-        (sum, addon) => sum + (selectedAddons.has(addon.id) ? addon.priceCents : 0),
-        0,
-      ),
-    [selectedAddons],
-  );
-
-  const toggleAddon = (id: string) => {
-    setSelectedAddons((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const choosePlan = (id: MembershipPlanId) => {
+    setOfferedId(id);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('package', id);
+      window.history.replaceState({ ...window.history.state }, '', `${url.pathname}${url.search}${url.hash}`);
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
     <div className="membership-pricing">
       <Helmet>
-        <title>ClearPath Packages | Membership Preview</title>
+        <title>ClearPath Packages | Choose what you pay for</title>
         <meta
           name="description"
-          content="Compare ClearPath Basic, Silver, Gold, and Platinum packages and preview a custom Silver configuration."
+          content="Choose Basic, Silver, Gold, or Platinum. You only see and unlock the features in the package you pay for."
         />
         <link rel="canonical" href="https://clearpathtrader.com/pricing" />
+        <script async src="https://js.stripe.com/v3/buy-button.js" />
       </Helmet>
 
       <a href="#membership-main" className="cp-skip-link">
@@ -78,7 +71,7 @@ export default function MembershipPricingPage() {
           <span className="membership-pricing__brand-mark">CP</span>
           <span>
             <strong>ClearPath Trader</strong>
-            <small>Package preview</small>
+            <small>Package offer</small>
           </span>
         </a>
         <a href={user ? '/desk/institutional' : '/'} className="membership-quiet-button">
@@ -97,19 +90,16 @@ export default function MembershipPricingPage() {
             <h1 id="membership-title">
               Pick your level.
               <br />
-              <span>Keep your path.</span>
+              <span>Pay for that path only.</span>
             </h1>
             <p>
-              Start with the market workspace you need today. Compare the founder-provided package sheet or shape a
-              custom Silver configuration before choosing the complete Platinum package.
+              Choose one package. This page shows only that package&apos;s features. After payment, desks unlock that
+              same list — not Gold or Platinum extras you did not buy.
             </p>
             <div className="membership-hero__actions">
               <a href="#packages" className="membership-primary-button">
-                Compare packages
+                Choose a package
                 <ChevronDown size={17} aria-hidden="true" />
-              </a>
-              <a href="#custom-package" className="membership-secondary-button">
-                Build custom Silver
               </a>
             </div>
             <div className="membership-trial-callout">
@@ -122,19 +112,19 @@ export default function MembershipPricingPage() {
             </div>
           </div>
 
-          <aside className="membership-review-card" aria-label="Pricing review status">
+          <aside className="membership-review-card" aria-label="Package checkout">
             <div className="membership-review-card__icon">
-              <Scale size={34} aria-hidden="true" />
+              <ShieldCheck size={34} aria-hidden="true" />
             </div>
-            <p>Package review</p>
-            <strong>Visual + legal review stage</strong>
+            <p>Stripe checkout</p>
+            <strong>Pay for the package you selected</strong>
             <span>
-              Checkout remains disabled. Prices shown reproduce the uploaded package sheet; billing cadence and final
-              sales language still require approval.
+              The Buy Button on this page is the Stripe checkout issued for ClearPath packages. Your desk then shows
+              only that package&apos;s features.
             </span>
             <div>
               <ShieldCheck size={15} aria-hidden="true" />
-              No payment will be collected on this page
+              You only unlock what you pay for
             </div>
           </aside>
         </section>
@@ -143,127 +133,73 @@ export default function MembershipPricingPage() {
           <div className="membership-section-heading">
             <p className="membership-kicker">
               <span aria-hidden="true" />
-              Four ways in
+              One package at a time
             </p>
             <h2 id="packages-title">Choose your package</h2>
-            <p>Package prices from the uploaded founder sheet. Billing period is pending legal and billing approval.</p>
+            <p>Select Basic, Silver, Gold, or Platinum. Only that package&apos;s features stay on screen.</p>
           </div>
 
-          <div className="membership-plan-grid">
+          <div className="membership-plan-picker" role="tablist" aria-label="Package choices">
             {MEMBERSHIP_PLANS.map((plan) => (
-              <article
-                className={`membership-plan-card ${plan.featured ? 'membership-plan-card--featured' : ''}`}
+              <button
                 key={plan.id}
+                type="button"
+                role="tab"
+                aria-selected={plan.id === offered.id}
+                className={`membership-plan-picker__tab ${plan.id === offered.id ? 'is-active' : ''}`}
                 style={{ '--plan-accent': PLAN_ACCENT[plan.id] } as React.CSSProperties}
+                onClick={() => choosePlan(plan.id)}
               >
-                {plan.featured ? <span className="membership-plan-card__best">Complete package</span> : null}
-                <p className="membership-plan-card__eyebrow">{plan.eyebrow}</p>
-                <h3>{plan.name}</h3>
-                <div className="membership-plan-card__price">
-                  {plan.priceLabel}
-                  {plan.priceCents > 0 ? <small>package price*</small> : <small>no charge</small>}
-                </div>
-                <div className="membership-plan-card__rule" />
-                <ul>
-                  {plan.features.map((feature) => (
-                    <li key={feature}>
-                      <Check size={13} aria-hidden="true" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button type="button" disabled className="membership-plan-card__button">
-                  Review only
-                </button>
-              </article>
+                <strong>{plan.name}</strong>
+                <span>{plan.priceLabel}</span>
+              </button>
             ))}
           </div>
-        </section>
 
-        <section id="custom-package" className="membership-custom" aria-labelledby="custom-title">
-          <div className="membership-custom__copy">
-            <p className="membership-kicker">
-              <span aria-hidden="true" />
-              Silver + add-ons
-            </p>
-            <h2 id="custom-title">Build a custom package</h2>
-            <p>
-              Silver is the base. Toggle individual upgrades to see the package total beside the complete Platinum
-              option.
-            </p>
-            <div className="membership-custom__base">
-              <Layers3 size={20} aria-hidden="true" />
-              <span>
-                <strong>Silver base</strong>
-                4 charts · 15 indicators · full drawing tools
-              </span>
-              <b>{formatMembershipPrice(SILVER_BASE_CENTS)}</b>
+          <article
+            className={`membership-plan-card membership-plan-card--offer ${offered.featured ? 'membership-plan-card--featured' : ''}`}
+            data-testid="offered-package"
+            data-package={offered.id}
+            style={{ '--plan-accent': PLAN_ACCENT[offered.id] } as React.CSSProperties}
+          >
+            {offered.featured ? <span className="membership-plan-card__best">Complete package</span> : null}
+            <p className="membership-plan-card__eyebrow">{offered.eyebrow}</p>
+            <h3>{offered.name}</h3>
+            <div className="membership-plan-card__price">
+              {offered.priceLabel}
+              {offered.priceCents > 0 ? <small>package price*</small> : <small>no charge</small>}
             </div>
-          </div>
-
-          <div className="membership-addon-builder">
-            <div className="membership-addon-builder__list">
-              {SILVER_ADDONS.map((addon) => {
-                const checked = selectedAddons.has(addon.id);
-                return (
-                  <label key={addon.id} className={checked ? 'is-selected' : ''}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleAddon(addon.id)}
-                    />
-                    <span className="membership-addon-builder__check">
-                      {checked ? <Check size={12} aria-hidden="true" /> : null}
-                    </span>
-                    <span>{addon.name}</span>
-                    <strong>{addon.priceLabel}</strong>
-                  </label>
-                );
-              })}
-            </div>
-            <div className="membership-addon-builder__total">
-              <span>
-                <small>Custom Silver total</small>
-                <strong>{formatMembershipPrice(customTotal)}</strong>
-                <small>
-                  Silver {formatMembershipPrice(SILVER_BASE_CENTS)} + {selectedAddons.size} add-on
-                  {selectedAddons.size === 1 ? '' : 's'}
-                </small>
-              </span>
-              <span className="membership-addon-builder__versus">vs</span>
-              <span>
-                <small>Platinum package</small>
-                <strong>{formatMembershipPrice(PLATINUM_CENTS)}</strong>
-                <small>Complete feature set</small>
-              </span>
-            </div>
-            {selectedAddons.size === SILVER_ADDONS.length ? (
-              <p className="membership-addon-builder__math">
-                <Sparkles size={15} aria-hidden="true" />
-                All add-ons: {formatMembershipPrice(SILVER_WITH_ALL_ADDONS_CENTS)} total. Platinum is{' '}
-                {formatMembershipPrice(SILVER_WITH_ALL_ADDONS_CENTS - PLATINUM_CENTS)} less.
-              </p>
-            ) : customTotal > PLATINUM_CENTS ? (
-              <p className="membership-addon-builder__math">
-                <WandSparkles size={15} aria-hidden="true" />
-                Platinum is {formatMembershipPrice(customTotal - PLATINUM_CENTS)} less than this selection.
-              </p>
+            <div className="membership-plan-card__rule" />
+            <p className="membership-plan-card__included">Included in {offered.name}</p>
+            <ul>
+              {offered.features.map((feature) => (
+                <li key={feature}>
+                  <Check size={13} aria-hidden="true" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            {offered.id === 'basic' ? (
+              <a href={user ? '/desk/institutional' : '/'} className="membership-plan-card__button membership-plan-card__button--link">
+                Continue with Basic
+              </a>
+            ) : user ? (
+              <StripePlansBuyButton planId={offered.id} uid={user.uid} />
             ) : (
-              <p className="membership-addon-builder__math">
-                <Bot size={15} aria-hidden="true" />
-                Add-ons are calculated from the prices in the uploaded package sheet.
-              </p>
+              <a href="/" className="membership-plan-card__button membership-plan-card__button--link">
+                Private Login to buy {offered.name}
+              </a>
             )}
-          </div>
+          </article>
         </section>
 
-        <section className="membership-footnote" aria-label="Package review notes">
+        <section className="membership-footnote" aria-label="Package notes">
           <ShieldCheck size={23} aria-hidden="true" />
           <div>
-            <strong>*Pricing preview only. Checkout and payment collection remain disabled.</strong>
+            <strong>*You only receive the features listed on the package you pay for.</strong>
             <p>
-              Package price cadence, taxes, cancellation language, feature delivery status, and final terms must be
-              approved before publication or sale. The current Stripe fallback amounts have not been changed.
+              Basic is free. Silver, Gold, and Platinum use the Stripe Buy Button on this page. After checkout, the
+              signed-in desk unlocks that package — not a higher tier.
             </p>
           </div>
         </section>
@@ -271,9 +207,8 @@ export default function MembershipPricingPage() {
 
       <footer className="membership-pricing__footer">
         <span>ClearPath Trader</span>
-        <span>Package review · no active checkout</span>
+        <span>Stripe package checkout · one package per member</span>
       </footer>
     </div>
   );
 }
-

@@ -460,9 +460,6 @@ async function startServer() {
   // Stripe webhook — MUST be mounted before express.json() because signature
   // verification needs the raw, unparsed request body. Auth = Stripe signature.
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
-    }
     const signature = req.get('stripe-signature') || '';
     if (!signature) {
       return res.status(400).json({ error: 'Missing stripe-signature header.' });
@@ -1295,22 +1292,6 @@ async function startServer() {
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      const pack = entitlementsFor('platinum');
-      return res.json({
-        ok: true,
-        membership: {
-          active: true,
-          tier: 'platinum',
-          status: 'payments_disabled',
-          tierRank: pack.plan.rank,
-          features: pack.features,
-          limits: jsonSafeLimits(pack.limits),
-          flags: pack.flags,
-          plan: pack.plan.id,
-        },
-      });
-    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });

@@ -66,6 +66,9 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: Package offer + Stripe buy-button self-test
+        run: npm run test:membership-offer
+
       - name: Chart axis stretch / lift-squish self-test
         run: npm run test:chart-zoom
 
