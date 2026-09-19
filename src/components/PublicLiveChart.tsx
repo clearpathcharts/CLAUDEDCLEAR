@@ -8,8 +8,7 @@ import {
   desktopStackedMarketChartHeight,
 } from '../constants/chartLayout';
 import { NARROW_CHART_MQ, isNarrowChartViewport } from '../lib/charts/chartOverlayPrefs';
-
-const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
+import { TimeframeMenu } from './charts/TimeframeMenu';
 
 export default function PublicLiveChart() {
   const [symbol, setSymbol] = useState<string>(DEFAULT_MARKET_SYMBOLS[0]);
@@ -55,35 +54,8 @@ export default function PublicLiveChart() {
             activeSymbol={symbol}
             onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
           />
-          <div className="flex flex-nowrap items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-nowrap gap-1 overflow-x-auto no-scrollbar" role="group" aria-label="Chart timeframe">
-              {TIMEFRAMES.map((tf) => {
-                const active = timeframe === tf;
-                return (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => setTimeframe(tf)}
-                    aria-pressed={active}
-                    className="shrink-0 px-2 sm:px-3 py-1 text-[10px] sm:text-xs rounded-md border uppercase font-sans cursor-pointer hover:opacity-90"
-                    style={{
-                      color: active ? '#ffffff' : 'rgba(255,255,255,0.7)',
-                      borderColor: active ? '#FF007F' : 'rgba(255,255,255,0.10)',
-                      background: active
-                        ? 'linear-gradient(135deg, #FF007F 0%, #FF4500 60%, #3a0000 100%)'
-                        : 'rgba(10, 10, 18, 0.5)',
-                      boxShadow: active
-                        ? '0 0 12px rgba(255, 0, 127, 0.6), inset 0 0 6px rgba(255, 69, 0, 0.7)'
-                        : 'none',
-                      fontWeight: active ? 900 : 500,
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    {tf.toUpperCase()}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <TimeframeMenu value={timeframe} onChange={setTimeframe} />
             {narrow ? null : <ChartBackgroundToggle />}
           </div>
         </div>

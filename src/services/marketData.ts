@@ -1,5 +1,10 @@
 import { getCandleLimit } from "../config/tierLimits";
 import { createSharedFetcher } from "../lib/clientMarketCache";
+import {
+  MONTH_TIMEFRAME_IDS,
+  YEAR_TIMEFRAME_IDS,
+  normalizeChartTimeframe,
+} from "../constants/chartTimeframes";
 
 /**
  * Historical market data service.
@@ -73,10 +78,40 @@ function estimateYtdTradingDays(): number {
  *   2h/3h → all were 2h (identical)
  *   1D/3M/6M/YTD → all were 1day with the same limit (identical)
  */
+function monthRangePlan(months: number): TimeframePlan {
+  return {
+    fetchInterval: "1day",
+    aggregateBars: 1,
+    visibleBars: Math.max(20, Math.round(months * 22)),
+    mode: "range",
+    note: `Daily bars · last ~${months} months`,
+  };
+}
+
+function yearRangePlan(years: number): TimeframePlan {
+  if (years <= 5) {
+    return {
+      fetchInterval: "1week",
+      aggregateBars: 1,
+      visibleBars: Math.min(5000, years * 52),
+      mode: "range",
+      note: `Weekly bars · last ~${years} years`,
+    };
+  }
+  return {
+    fetchInterval: "1month",
+    aggregateBars: 1,
+    visibleBars: Math.min(5000, years * 12),
+    mode: "range",
+    note: `Monthly bars · last ~${years} years`,
+  };
+}
+
 export function resolveTimeframePlan(interval: string): TimeframePlan {
   const raw = (interval || "").trim();
+  const n = normalizeChartTimeframe(raw);
 
-  if (raw === "1M") {
+  if (n === "1M") {
     return {
       fetchInterval: "1month",
       aggregateBars: 1,
@@ -84,26 +119,34 @@ export function resolveTimeframePlan(interval: string): TimeframePlan {
       note: "Twelve Data 1month",
     };
   }
-  if (raw === "3M") {
-    return {
-      fetchInterval: "1day",
-      aggregateBars: 1,
-      visibleBars: 66,
-      mode: "range",
-      note: "Daily bars · last ~3 months",
-    };
+  if (MONTH_TIMEFRAME_IDS.has(n) && n !== "1M") {
+    const months = Number(n.replace("M", ""));
+    return monthRangePlan(months);
   }
-  if (raw === "6M") {
+  if (YEAR_TIMEFRAME_IDS.has(n)) {
+    return yearRangePlan(Number(n.replace("Y", "")));
+  }
+
+  const sec = /^(\d+)s$/.exec(n);
+  if (sec) {
+    const seconds = Number(sec[1]);
+    if (seconds === 60) {
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 1,
+        mode: "native",
+        note: "60s → Twelve Data 1min",
+      };
+    }
     return {
-      fetchInterval: "1day",
+      fetchInterval: "1min",
       aggregateBars: 1,
-      visibleBars: 132,
-      mode: "range",
-      note: "Daily bars · last ~6 months",
+      mode: "native",
+      note: "Seconds requested — feed finest bar is 1min on this plan",
     };
   }
 
-  const v = raw.toLowerCase();
+  const v = n;
 
   switch (v) {
     case "1m":
@@ -138,6 +181,14 @@ export function resolveTimeframePlan(interval: string): TimeframePlan {
         mode: "native",
         note: "Twelve Data 5min",
       };
+    case "8m":
+    case "8min":
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 8,
+        mode: "aggregate",
+        note: "Built from 1min × 8",
+      };
     case "10m":
     case "10min":
       return {
@@ -146,6 +197,14 @@ export function resolveTimeframePlan(interval: string): TimeframePlan {
         mode: "aggregate",
         note: "Built from 5min × 2 (Twelve Data has no 10min)",
       };
+    case "13m":
+    case "13min":
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 13,
+        mode: "aggregate",
+        note: "Built from 1min × 13",
+      };
     case "15m":
     case "15min":
       return {
@@ -153,6 +212,30 @@ export function resolveTimeframePlan(interval: string): TimeframePlan {
         aggregateBars: 1,
         mode: "native",
         note: "Twelve Data 15min",
+      };
+    case "18m":
+    case "18min":
+      return {
+        fetchInterval: "1min",
+        aggregateBars: 18,
+        mode: "aggregate",
+        note: "Built from 1min × 18",
+      };
+    case "20m":
+    case "20min":
+      return {
+        fetchInterval: "5min",
+        aggregateBars: 4,
+        mode: "aggregate",
+        note: "Built from 5min × 4",
+      };
+    case "25m":
+    case "25min":
+      return {
+        fetchInterval: "5min",
+        aggregateBars: 5,
+        mode: "aggregate",
+        note: "Built from 5min × 5",
       };
     case "30m":
     case "30min":
@@ -199,12 +282,54 @@ export function resolveTimeframePlan(interval: string): TimeframePlan {
         mode: "native",
         note: "Twelve Data 4h",
       };
+    case "5h":
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 5,
+        mode: "aggregate",
+        note: "Built from 1h × 5",
+      };
+    case "6h":
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 6,
+        mode: "aggregate",
+        note: "Built from 1h × 6",
+      };
+    case "7h":
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 7,
+        mode: "aggregate",
+        note: "Built from 1h × 7",
+      };
     case "8h":
       return {
         fetchInterval: "8h",
         aggregateBars: 1,
         mode: "native",
         note: "Twelve Data 8h",
+      };
+    case "9h":
+      return {
+        fetchInterval: "1h",
+        aggregateBars: 9,
+        mode: "aggregate",
+        note: "Built from 1h × 9",
+      };
+    case "10h":
+      return {
+        fetchInterval: "2h",
+        aggregateBars: 5,
+        mode: "aggregate",
+        note: "Built from 2h × 5",
+      };
+    case "12h":
+      return {
+        fetchInterval: "4h",
+        aggregateBars: 3,
+        mode: "aggregate",
+        note: "Built from 4h × 3",
       };
     case "1d":
     case "day":

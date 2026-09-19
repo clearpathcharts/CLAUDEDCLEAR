@@ -26,8 +26,7 @@ import {
   type RetailWatchlist,
 } from './retail/retailStore';
 import type { TraderDeskId } from '../../lib/traderDesks';
-
-const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
+import { TimeframeMenu } from '../charts/TimeframeMenu';
 const NEURO_WL_KEY = 'clearpath_neuro_watchlists_v1';
 const NEURO_WL_ACTIVE = 'clearpath_neuro_active_watchlist_v1';
 
@@ -225,23 +224,7 @@ export default function DeskScreenWorkspace({
         <section className="flex min-h-0 flex-1 flex-col" data-desk-chart-room>
           <header className="shrink-0 flex flex-wrap items-center gap-2 border-b border-white/10 px-3 py-2">
             <ChartSymbolSearch compact activeSymbol={symbol} onSubmit={setSymbolCb} />
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Timeframe">
-              {TIMEFRAMES.map((tf) => (
-                <button
-                  key={tf}
-                  type="button"
-                  onClick={() => setTimeframeCb(tf)}
-                  aria-pressed={timeframe === tf}
-                  className="rounded-md border px-2 py-1 text-xs font-extrabold uppercase"
-                  style={{
-                    borderColor: timeframe === tf ? 'var(--desk-indigo, #818cf8)' : 'rgba(255,255,255,0.15)',
-                    color: timeframe === tf ? 'var(--desk-indigo, #818cf8)' : '#a1a1aa',
-                  }}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
+            <TimeframeMenu compact tone="desk" value={timeframe} onChange={setTimeframeCb} />
             <span className="ml-auto font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
               {symbol} · {timeframe}
             </span>

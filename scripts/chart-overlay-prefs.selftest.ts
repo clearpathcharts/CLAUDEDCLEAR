@@ -46,7 +46,7 @@ assert.match(lc, /data-chart-mobile-intel/);
 assert.match(lc, /data-chart-mobile-intel-panels/);
 assert.match(lc, /placement="inline"/);
 assert.match(lc, /placement="overlay"/);
-assert.match(lc, /CHART-BUILD-2026-09-04-MOBILE/);
+assert.match(lc, /CHART-BUILD-2026-09-19-TF-MENU/);
 assert.match(lc, /hidden md:block/);
 assert.doesNotMatch(lc, /cp_chart_pattern_hud_open"/);
 assert.doesNotMatch(lc, /localStorage\.getItem\("cp_chart_pattern_hud_open"\)/);

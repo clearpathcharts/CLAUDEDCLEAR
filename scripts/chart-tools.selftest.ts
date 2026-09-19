@@ -128,7 +128,7 @@ assert.match(lc, /heikin_ashi|seriesStyle/);
 assert.match(lc, /annotationText/);
 assert.match(lc, /PATTERN_HUD_OPEN_KEY/);
 assert.match(lc, /data-chart-mobile-intel/);
-assert.match(lc, /CHART-BUILD-2026-09-04-MOBILE/);
+assert.match(lc, /CHART-BUILD-2026-09-19-TF-MENU/);
 
 const toolbar = fs.readFileSync(path.join(root, "src/components/charts/drawings/ChartDrawingToolbar.tsx"), "utf8");
 assert.match(toolbar, /elliott_impulse/);
