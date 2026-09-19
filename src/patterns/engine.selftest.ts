@@ -45,7 +45,7 @@ publishChartVision(first!);
 
 const conflicts = resolvePatternConflicts(scanAllPatterns(sample).patterns);
 const structure = conflicts.filter((p) => p.category === 'chart' && p.scale !== 'nested');
-assert(structure.length <= 3, 'conflict resolver should cap major chart patterns');
+assert(structure.length <= 2, 'conflict resolver should cap major chart patterns');
 
 console.log('PASS: Chart Vision Engine');
 console.log(`  patterns: ${first!.scan.patterns.map((p) => p.label).join(', ') || 'none'}`);

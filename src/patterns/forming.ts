@@ -203,11 +203,13 @@ function possibilitiesFromImpulse(
 
   if (legs.retraceOpenedWithFourBearish) {
     out.push({
-      id: 'falling_wedge',
-      label: '4-Bar Bear Retrace Open',
+      id: trendBias === 'down' ? 'descending_triangle' : 'falling_wedge',
+      label: trendBias === 'down' ? '4-Bar Bear Retrace (Continuation)' : '4-Bar Bear Retrace Open',
       probability: 0.58,
       status: 'watch',
-      detail: 'Retrace opened with a full 4-bar bearish leg — map support and watch for 3-bar stall at the low.',
+      detail: trendBias === 'down'
+        ? 'Retrace opened with a full 4-bar bearish leg on a downtrend — map the descending triangle along the trend, not a bullish wedge.'
+        : 'Retrace opened with a full 4-bar bearish leg — map support and watch for 3-bar stall at the low.',
     });
   }
 
@@ -257,9 +259,7 @@ function buildNarrative(
     lines.push('No measured chart patterns in the latest window.');
   } else {
     for (const p of brief.possibilities) {
-      lines.push(
-        `Measured ${p.scale === 'nested' ? 'nested ' : ''}${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`,
-      );
+      lines.push(`Measured ${p.scale === 'nested' ? 'nested ' : ''}${p.label} (${Math.round(p.probability * 100)}% confidence) — ${p.detail}`);
     }
   }
 

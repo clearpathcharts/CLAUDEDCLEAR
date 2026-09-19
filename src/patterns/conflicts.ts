@@ -36,7 +36,7 @@ function isNested(p: DetectedPattern): boolean {
 
 /**
  * Prevent overlapping structure labels (e.g. wedge + triangle on the same bars).
- * Nested copies inside a kept parent are allowed — they do not compete with the parent.
+ * Keeps the highest-confidence, non-conflicting set for HUD + mentor.
  */
 export function resolvePatternConflicts(patterns: DetectedPattern[]): DetectedPattern[] {
   const chart = patterns
@@ -50,11 +50,19 @@ export function resolvePatternConflicts(patterns: DetectedPattern[]): DetectedPa
   const majorChart = chart.filter((p) => !isNested(p));
   const nestedChart = chart.filter((p) => isNested(p));
 
-  // Prefer continuation structures (triangles/wedges) over doubles when both fire.
+  // Prefer continuation structures over reversal wedges when both fire on the same bars.
+  const continuationIds = new Set<ChartPatternId>([
+    'ascending_triangle',
+    'descending_triangle',
+    'symmetrical_triangle',
+  ]);
   const ranked = [...majorChart].sort((a, b) => {
     const aStruct = isStructurePattern(a) ? 1 : 0;
     const bStruct = isStructurePattern(b) ? 1 : 0;
     if (aStruct !== bStruct) return bStruct - aStruct;
+    const aCont = continuationIds.has(a.id as ChartPatternId) ? 1 : 0;
+    const bCont = continuationIds.has(b.id as ChartPatternId) ? 1 : 0;
+    if (aCont !== bCont) return bCont - aCont;
     return b.confidence - a.confidence || b.endIndex - a.endIndex;
   });
 
@@ -82,13 +90,20 @@ export function resolvePatternConflicts(patterns: DetectedPattern[]): DetectedPa
   );
   for (const p of nestedRanked) {
     if (keptNested.length >= MAX_NESTED_CHART_PATTERNS) break;
-    const insideKeptParent = keptChart.some(
+    const insideKeptParent = keptChart.find(
       (parent) =>
         isStructurePattern(parent)
         && p.startIndex >= parent.startIndex
         && p.endIndex <= parent.endIndex,
     );
     if (!insideKeptParent) continue;
+    if (
+      insideKeptParent.direction !== 'neutral'
+      && p.direction !== 'neutral'
+      && p.direction !== insideKeptParent.direction
+    ) {
+      continue;
+    }
     if (keptNested.some((k) => overlapRatio(k, p) > NESTED_VS_NESTED_OVERLAP)) continue;
     keptNested.push(p);
   }
