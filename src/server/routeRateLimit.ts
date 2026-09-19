@@ -38,6 +38,49 @@ export const authForgotPasswordLimiter = rateLimit({
   message: { error: 'Too many password-reset requests. Wait a minute and try again.' },
 });
 
+/** Board / Founders access code — brute-force guard (no default code, but still throttle). */
+export const boardVerifyLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 6,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `board:${clientIp(req)}`,
+  message: { error: 'Too many access-code attempts. Wait a minute and try again.' },
+});
+
+/** Private-account email lookup — throttle account enumeration sweeps. */
+export const authLookupLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `lookup:${clientIp(req)}`,
+  message: { error: 'Too many lookups. Wait a minute and try again.' },
+});
+
+/** Password-reset token consumption — tokens are 192-bit, throttle anyway. */
+export const authResetPasswordLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `reset:${clientIp(req)}`,
+  message: { error: 'Too many reset attempts. Wait a minute and try again.' },
+});
+
+/** Chart pulse subscribe/unsubscribe — blocks scripted email-blast signups. */
+export const chartPulseSubscribeLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const uid = (req as any).session?.privateUser?.uid;
+    return uid ? `pulse:uid:${uid}` : `pulse:ip:${clientIp(req)}`;
+  },
+  message: { error: 'Too many alert changes. Wait a minute and try again.' },
+});
+
 export const aiChatLimiter = rateLimit({
   windowMs: 60_000,
   max: 24,

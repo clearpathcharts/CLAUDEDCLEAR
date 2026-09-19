@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import RSSParser from 'rss-parser';
 import { getPodcastIndexCredentials } from './secrets';
+import { fetchPublicTextNoRedirect } from './safeFeedFetch';
 
 const podcastParser = new RSSParser({
   customFields: {
@@ -45,7 +46,10 @@ function podcastIndexHeaders(): Record<string, string> | null {
 }
 
 export async function fetchEpisodesFromFeed(feedUrl: string, limit = 12): Promise<PodcastEpisode[]> {
-  const feed = await podcastParser.parseURL(feedUrl);
+  // No-redirect fetch — the route validated feedUrl with assertSafePublicUrl,
+  // and following redirects here would bypass that SSRF check.
+  const xml = await fetchPublicTextNoRedirect(feedUrl, { timeoutMs: 10_000 });
+  const feed = await podcastParser.parseString(xml);
   const items = (feed.items ?? []).slice(0, limit);
 
   return items
