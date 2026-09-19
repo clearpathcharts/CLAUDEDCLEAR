@@ -62,8 +62,8 @@
 .membership-pricing__brand-mark {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 52px;
+  height: 52px;
   border: 1px solid transparent;
   border-radius: 10px;
   color: var(--membership-cyan);
@@ -71,7 +71,7 @@
     linear-gradient(#050505, #050505) padding-box,
     linear-gradient(135deg, #5b00ff, #ff007f, #ff6a00) border-box;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 12px;
+  font-size: 24px;
   font-weight: 900;
 }
 
@@ -81,14 +81,14 @@
 }
 
 .membership-pricing__brand strong {
-  font-size: 14px;
+  font-size: 28px;
 }
 
 .membership-pricing__brand small {
   margin-top: 2px;
   color: #7b8597;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.17em;
   text-transform: uppercase;
@@ -104,10 +104,10 @@
   border: 1px solid var(--membership-line);
   border-radius: 9px;
   padding: 0 16px;
-  min-height: 42px;
+  min-height: 56px;
   color: #b7c7da;
   background: rgba(10, 15, 45, 0.5);
-  font-size: 11px;
+  font-size: 22px;
   font-weight: 800;
   text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
@@ -141,7 +141,7 @@
   margin: 0 0 17px;
   color: #899bb4;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -157,8 +157,8 @@
 .membership-hero h1 {
   margin: 0;
   font-size: clamp(50px, 6.4vw, 90px);
-  font-weight: 780;
-  letter-spacing: -0.06em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 0.98;
 }
 
@@ -173,7 +173,7 @@
   max-width: 700px;
   margin: 26px 0 0;
   color: #9baabd;
-  font-size: clamp(15px, 1.25vw, 18px);
+  font-size: clamp(30px, 2.5vw, 36px);
   line-height: 1.75;
 }
 
@@ -205,20 +205,20 @@
 
 .membership-trial-callout span {
   color: #8f9fb2;
-  font-size: 9px;
+  font-size: 18px;
   line-height: 1.55;
 }
 
 .membership-trial-callout strong {
   margin-bottom: 2px;
   color: #fff;
-  font-size: 12px;
+  font-size: 24px;
   letter-spacing: 0.015em;
 }
 
 .membership-primary-button,
 .membership-secondary-button {
-  min-height: 47px;
+  min-height: 64px;
   padding: 0 20px;
 }
 
@@ -267,7 +267,7 @@
   margin: 24px 0 6px;
   color: #7f90a6;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -275,14 +275,14 @@
 
 .membership-review-card > strong {
   display: block;
-  font-size: 20px;
+  font-size: 40px;
 }
 
 .membership-review-card > span {
   display: block;
   margin-top: 12px;
   color: #8b9baf;
-  font-size: 12px;
+  font-size: 24px;
   line-height: 1.7;
 }
 
@@ -294,7 +294,7 @@
   border-top: 1px solid var(--membership-line);
   padding-top: 18px;
   color: var(--membership-cyan);
-  font-size: 10px;
+  font-size: 20px;
 }
 
 .membership-packages {
@@ -313,7 +313,7 @@
 .membership-section-heading h2,
 .membership-custom h2 {
   margin: 0;
-  font-size: clamp(30px, 3.2vw, 44px);
+  font-size: clamp(36px, 3.6vw, 52px);
   letter-spacing: -0.04em;
 }
 
@@ -321,7 +321,7 @@
 .membership-custom__copy > p:not(.membership-kicker) {
   margin: 10px 0 0;
   color: #8394aa;
-  font-size: 12px;
+  font-size: 24px;
   line-height: 1.7;
 }
 
@@ -335,7 +335,7 @@
 .membership-plan-card {
   position: relative;
   display: flex;
-  min-height: 680px;
+  min-height: auto;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(128, 151, 180, 0.17);
@@ -367,7 +367,7 @@
   padding: 4px 7px;
   color: #ff7acb;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -377,7 +377,7 @@
   margin: 10px 0 5px;
   color: #74859b;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -386,13 +386,13 @@
 .membership-plan-card h3 {
   margin: 0;
   color: var(--plan-accent);
-  font-size: 21px;
+  font-size: 42px;
 }
 
 .membership-plan-card__price {
   margin-top: 12px;
   color: #fff;
-  font-size: 34px;
+  font-size: 68px;
   font-weight: 800;
   letter-spacing: -0.04em;
 }
@@ -402,7 +402,7 @@
   margin-top: 3px;
   color: #61748b;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -429,7 +429,7 @@
   align-items: flex-start;
   gap: 7px;
   color: #a2b0c0;
-  font-size: 9px;
+  font-size: 18px;
   line-height: 1.45;
 }
 
@@ -440,13 +440,13 @@
 }
 
 .membership-plan-card__button {
-  min-height: 38px;
+  min-height: 52px;
   margin-top: 20px;
   border: 1px solid rgba(135, 159, 187, 0.17);
   border-radius: 8px;
   color: #6f8198;
   background: rgba(255, 255, 255, 0.025);
-  font-size: 9px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -480,19 +480,19 @@
 .membership-custom__base span {
   flex: 1;
   color: #798ba1;
-  font-size: 9px;
+  font-size: 18px;
   line-height: 1.5;
 }
 
 .membership-custom__base strong {
   display: block;
   color: #e4ebf3;
-  font-size: 11px;
+  font-size: 22px;
 }
 
 .membership-custom__base b {
   color: white;
-  font-size: 17px;
+  font-size: 34px;
 }
 
 .membership-addon-builder {
@@ -511,13 +511,13 @@
   grid-template-columns: 20px 1fr auto;
   gap: 10px;
   align-items: center;
-  min-height: 49px;
+  min-height: 68px;
   border: 1px solid transparent;
   border-radius: 9px;
   padding: 0 12px;
   color: #95a5b8;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 22px;
 }
 
 .membership-addon-builder__list label:hover {
@@ -555,7 +555,7 @@
 .membership-addon-builder__list strong {
   color: #dce6f1;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 10px;
+  font-size: 20px;
 }
 
 .membership-addon-builder__total {
@@ -579,7 +579,7 @@
 
 .membership-addon-builder__total small {
   color: #77899f;
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -587,7 +587,7 @@
 
 .membership-addon-builder__total strong {
   margin: 5px 0;
-  font-size: 26px;
+  font-size: 52px;
 }
 
 .membership-addon-builder__total > span:last-child strong {
@@ -599,13 +599,13 @@
 .membership-addon-builder__versus {
   display: grid;
   place-items: center;
-  width: 29px;
-  height: 29px;
+  width: 40px;
+  height: 40px;
   border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 50%;
   color: var(--membership-cyan);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 8px;
+  font-size: 16px;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -620,7 +620,7 @@
   padding: 14px 18px;
   color: #ffb170;
   background: rgba(255, 106, 0, 0.055);
-  font-size: 10px;
+  font-size: 20px;
   text-align: center;
 }
 
@@ -636,13 +636,13 @@
 
 .membership-footnote strong {
   color: #dbe6f2;
-  font-size: 11px;
+  font-size: 22px;
 }
 
 .membership-footnote p {
   margin: 6px 0 0;
   color: #71849b;
-  font-size: 10px;
+  font-size: 20px;
   line-height: 1.65;
 }
 
@@ -650,7 +650,7 @@
   border-top: 1px solid var(--membership-line);
   color: #60738a;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -662,7 +662,7 @@
   }
 
   .membership-plan-card {
-    min-height: 650px;
+    min-height: auto;
   }
 }
 
