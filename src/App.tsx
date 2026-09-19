@@ -16,7 +16,6 @@ import { EDUCATION_TAB_ID, openEducationDesk } from './education/educationDesks'
 import { useAuth } from './contexts/FirebaseContext';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
-import { PlanComparisonTable } from './components/PlanComparisonTable';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
@@ -27,6 +26,7 @@ const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfI
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
+const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
 
 function AuthenticatedShell({
   profile,
@@ -314,6 +314,18 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isPlansPath(currentPath)) {
+    content = (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050505] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Opening packages…
+          </div>
+        }
+      >
+        <MembershipPricingPage />
+      </Suspense>
+    );
   } else if (!user) {
     // Public learning desks when logged out (Auth marketing links + direct URLs)
     if (isEncyclopediaPath(currentPath)) {
@@ -326,18 +338,6 @@ export default function App() {
       content = (
         <PublicLearnShell>
           <EncyclopediaOfIndicators />
-        </PublicLearnShell>
-      );
-    } else if (isPlansPath(currentPath)) {
-      content = (
-        <PublicLearnShell>
-          <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-4">
-            <h1 className="text-xl font-black uppercase tracking-widest">Membership sheet</h1>
-            <p className="text-zinc-400 text-sm">
-              Basic / Silver / Gold / Platinum feature unlocks as enforced in the product. List prices are not published here.
-            </p>
-            <PlanComparisonTable />
-          </div>
         </PublicLearnShell>
       );
     } else if (isEducationPath(currentPath)) {
