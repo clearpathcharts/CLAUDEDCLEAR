@@ -33,8 +33,7 @@ import {
   type QuoteRow,
 } from './useInstitutionalIntelligence';
 import type { Candle } from '../../../types/indicators';
-
-const TIMEFRAMES = ['5m', '15m', '1h', '4h', '1d'] as const;
+import { TimeframeMenu } from '../../charts/TimeframeMenu';
 
 function pctClass(pct: number | null): string {
   if (pct == null) return 'text-[var(--desk-muted)]';
@@ -266,22 +265,7 @@ export default function InstitutionalDashboard() {
                   <span className="ml-2 text-[var(--desk-cyan)]">{formatStructurePrice(mark)}</span>
                 )}
               </p>
-              <div className="flex flex-wrap gap-1">
-                {TIMEFRAMES.map((tf) => (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => setTimeframe(tf)}
-                    className="rounded border px-1.5 py-0.5 text-[9px] font-black uppercase"
-                    style={{
-                      borderColor: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-border)',
-                      color: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-muted)',
-                    }}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
+              <TimeframeMenu compact tone="desk" value={timeframe} onChange={setTimeframe} />
             </div>
             <ChartSymbolSearch
               placeholder="Load any market…"

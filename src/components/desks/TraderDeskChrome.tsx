@@ -15,6 +15,7 @@ import { isFounderSession } from '../../lib/founder';
 import { auth } from '../../firebase';
 import DeskScreensMenu from './DeskScreensMenu';
 import { DESK_SCREEN_PANE_LABEL, type DeskScreenPane } from '../../lib/deskMonitorTree';
+import { SessionLogoutButton } from '../session/SessionLogoutButton';
 
 type Props = {
   active: TraderDeskId;
@@ -96,6 +97,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <SessionLogoutButton />
           <p className="font-mono text-sm font-bold tabular-nums text-zinc-300">{utcStamp}</p>
           <DeskScreensMenu deskId={active} accent={meta.accent} paper={paper} />
           <button

@@ -46,6 +46,7 @@ import {
   CHART_TIME_SCALE_GESTURE,
 } from "../../lib/charts/chartInteraction";
 import { MARKET_CHART_DESKTOP_CANDLE_HEIGHT } from "../../constants/chartLayout";
+import { chartTimeframeStepSeconds } from "../../constants/chartTimeframes";
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
 import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
@@ -53,7 +54,7 @@ import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
 import type { DeskVisualPaint } from "../../lib/deskColorChart";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-01-CLEAN";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-19-TF-MENU";
 
 export type { PriceSeriesType };
 
@@ -68,26 +69,7 @@ type Candle = {
 
 /** Seconds per bar for live updates. Keep `1M` (month) distinct from `1m` (minute). */
 function timeframeStepSeconds(timeframe: string): number {
-  const raw = (timeframe || "1h").trim();
-  if (raw === "1M") return 30 * 86400;
-  const tf = raw.toLowerCase();
-  const stepMap: Record<string, number> = {
-    "1m": 60,
-    "2m": 120,
-    "3m": 180,
-    "5m": 300,
-    "10m": 600,
-    "15m": 900,
-    "30m": 1800,
-    "1h": 3600,
-    "2h": 7200,
-    "3h": 10800,
-    "4h": 14400,
-    "1d": 86400,
-    "1w": 604800,
-    ytd: 86400,
-  };
-  return stepMap[tf] || 3600;
+  return chartTimeframeStepSeconds(timeframe);
 }
 
 /** Minimum price change that counts as a real new bar (blocks weekend flat-bar spam). */
@@ -1105,9 +1087,10 @@ export function LightweightCandles({
         }
 
         // Live tick — align with server quote cache (CACHE_TTL_QUOTE ≈ 5s).
+        const stepSec = timeframeStepSeconds(timeframe);
         let tickDelay = 5000;
-        if (timeframe.toLowerCase().includes("m") && timeframe !== "1M") tickDelay = 5000;
-        else if (timeframe.includes("d") || timeframe.includes("w") || timeframe === "1M" || timeframe === "YTD") tickDelay = 10000;
+        if (stepSec <= 1800) tickDelay = 5000;
+        else if (stepSec >= 86400) tickDelay = 10000;
 
         interval = setInterval(async () => {
           if (!active || !lastCandle) return;

@@ -12,6 +12,7 @@
 
 import { SUPPORTED_CHART_INDICATORS } from '../config/tradingViewIndicators';
 import type { DrawingToolId } from '../components/charts/drawings/types';
+import { isMinuteOrSecondTimeframe } from '../constants/chartTimeframes';
 
 export const CANONICAL_PLANS = ['basic', 'silver', 'gold', 'platinum'] as const;
 export type CanonicalPlanId = (typeof CANONICAL_PLANS)[number];
@@ -54,7 +55,10 @@ export const BASIC_DRAWING_TOOLS: DrawingToolId[] = [
   'vertical',
 ];
 
-export const INTRADAY_TIMEFRAMES = ['1m', '2m', '3m', '5m', '10m', '15m', '30m'] as const;
+export const INTRADAY_TIMEFRAMES = [
+  '1s', '2s', '3s', '5s', '10s', '15s', '30s', '45s', '60s',
+  '1m', '2m', '3m', '5m', '8m', '10m', '13m', '15m', '18m', '20m', '25m', '30m', '45m',
+] as const;
 
 export type PlanLimits = {
   chartsPerWindow: number;
@@ -370,7 +374,7 @@ export function isDrawingToolAllowed(tier: PlanId | null | undefined, tool: Draw
 }
 
 export function isIntradayTimeframe(tf: string): boolean {
-  return (INTRADAY_TIMEFRAMES as readonly string[]).includes(tf);
+  return isMinuteOrSecondTimeframe(tf);
 }
 
 export function withinLimit(count: number, max: number): boolean {

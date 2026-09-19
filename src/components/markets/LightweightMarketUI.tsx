@@ -32,19 +32,14 @@ import {
   type ChartLayoutSlot,
 } from '../../constants/chartLayout';
 import { usePersistedLayout } from '../../hooks/useDraggablePosition';
-import { describeTimeframe } from '../../services/marketData';
 import { useMembership } from '../../hooks/useMembership';
 import {
   isIntradayTimeframe,
   isIndicatorAllowed,
   isUnlimited,
 } from '../../lib/planCatalog';
-
-const timeframesMapping: Record<string, string> = {
-  '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
-  '1H': '1h', '2H': '2h', '3H': '3h', '4H': '4h',
-  '1D': '1d', '1W': '1w', '1M': '1M', '3M': '3M', '6M': '6M', 'YTD': 'ytd'
-};
+import { TimeframeMenu } from '../charts/TimeframeMenu';
+import { normalizeChartTimeframe } from '../../constants/chartTimeframes';
 
 const CHART_LAYOUT_STORAGE_KEY = 'cpt-market-terminal-chart-layout';
 const EXPANDED_SLOT_STORAGE_KEY = 'cpt-market-terminal-expanded-slot';
@@ -124,7 +119,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     CHART_LAYOUT_STORAGE_KEY,
     loadMarketSlots
   );
-  const [activeTimeframe, setActiveTimeframe] = useState('1H');
+  const [activeTimeframe, setActiveTimeframe] = useState('1h');
   const [chartSeriesStyle, setChartSeriesStyle] = useChartSeriesStyle();
   const [activeIndicators, setActiveIndicators] = useState<string[]>([]);
   const [activeSlot, setActiveSlot] = useState(0);
@@ -216,7 +211,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
 
   useEffect(() => {
     if (!limits.intradayCharts && isIntradayTimeframe(activeTimeframe)) {
-      setActiveTimeframe('1H');
+      setActiveTimeframe('1h');
     }
   }, [limits.intradayCharts, activeTimeframe]);
 
@@ -225,7 +220,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
   const focusedSymbol = chartSlots[activeSlot]?.symbol ?? null;
   const patternPanelSymbol =
     focusedSymbol || chartSlots.find((s) => s.symbol)?.symbol || primarySymbol || '';
-  const patternTimeframe = timeframesMapping[activeTimeframe] || '1h';
+  const patternTimeframe = normalizeChartTimeframe(activeTimeframe);
 
   useEffect(() => {
     return TradingHaltController.subscribe((isHalted, reason) => {
@@ -471,27 +466,13 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                 />
                 <ChartDrawingToolsPanel compact allowedTools={limits.drawingTools} />
               </div>
-              <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar flex items-center justify-between gap-2">
-                <div>
-                  {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => {
-                    const locked = isIntradayTimeframe(tf) && !limits.intradayCharts;
-                    return (
-                    <button
-                      key={`${tf}-${idx}`}
-                      type="button"
-                      disabled={locked}
-                      title={locked ? 'Intraday charts start at Silver' : describeTimeframe(timeframesMapping[tf] || tf)}
-                      onClick={() => {
-                        if (locked) return;
-                        setActiveTimeframe(tf);
-                      }}
-                      className={`time-unit !py-1 !px-2 text-[10px] md:text-xs outline-none ${tf === activeTimeframe ? 'active' : ''} ${locked ? 'opacity-30 cursor-not-allowed' : ''}`}
-                    >
-                      {tf}
-                    </button>
-                    );
-                  })}
-                </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <TimeframeMenu
+                  value={activeTimeframe}
+                  onChange={setActiveTimeframe}
+                  isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+                  lockReason="Intraday charts start at Silver"
+                />
                 <ChartSeriesStylePicker compact value={chartSeriesStyle} onChange={setChartSeriesStyle} />
               </div>
 

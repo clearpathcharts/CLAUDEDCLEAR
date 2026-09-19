@@ -14,6 +14,7 @@ import { useAccessibleDialog } from '../hooks/useAccessibleDialog';
 import type { AdvancedProfileId } from '../lib/advanced/profiles';
 import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../content/chooseYourPath';
 import { navigateToDesk, type TraderDeskId } from '../lib/traderDesks';
+import { SessionLogoutButton } from './session/SessionLogoutButton';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 
@@ -441,6 +442,7 @@ export default function Auth() {
 
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <div className="flex items-center gap-2 shrink-0">
+            <SessionLogoutButton />
             <button
               type="button"
               onClick={() => openPrivateLogin('login')}
