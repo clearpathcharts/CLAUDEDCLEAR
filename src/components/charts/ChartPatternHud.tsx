@@ -74,7 +74,7 @@ export function ChartPatternHud({ symbol, scan, onClose, onDismissPattern, place
         {!scan
           ? 'Loading candles… pattern scan runs as soon as bars arrive.'
           : total > 0
-          ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only`
+          ? `${total} live hit${total === 1 ? '' : 's'} on latest candles · neon lines trace outside candles only · nested cyan lines are retrace triangles along the same trendline`
           : `Scanned ${scan.scannedBars.toLocaleString()} bars · nothing forming on the latest candles`}
       </p>
 

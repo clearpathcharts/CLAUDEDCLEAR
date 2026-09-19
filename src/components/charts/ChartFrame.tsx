@@ -5,12 +5,11 @@ import { ReactNode, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { ChartLocalTimeAndPulse } from "./ChartLocalTimeAndPulse";
+import { TimeframeMenu } from "./TimeframeMenu";
 import {
   themeProfiles,
   type ThemeProfileId,
 } from "../../lib/theme/profiles";
-
-const TIMEFRAMES = ["1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "1w", "1M", "YTD"];
 
 export function ChartFrame({
   title,
@@ -76,30 +75,11 @@ export function ChartFrame({
           <ChartLocalTimeAndPulse slotId={`frame-${title}`} symbol={title} />
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {TIMEFRAMES.map((tf) => (
-            <button
-              key={tf}
-              onClick={() => onTimeframeChange?.(tf)}
-              className="px-3 py-1 text-xs rounded-md border transition uppercase font-sans cursor-pointer hover:opacity-90"
-              style={{
-                color: timeframe === tf ? "#ffffff" : "rgba(255,255,255,0.7)",
-                borderColor: timeframe === tf ? "#FF007F" : "rgba(255,255,255,0.10)",
-                background:
-                  timeframe === tf
-                    ? "linear-gradient(135deg, #FF007F 0%, #FF4500 60%, #3a0000 100%)"
-                    : "rgba(10, 10, 18, 0.5)",
-                boxShadow:
-                  timeframe === tf
-                    ? "0 0 12px rgba(255, 0, 127, 0.6), inset 0 0 6px rgba(255, 69, 0, 0.7)"
-                    : "none",
-                fontWeight: timeframe === tf ? "900" : "500",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {tf.toUpperCase()}
-            </button>
-          ))}
+        <div className="mt-3">
+          <TimeframeMenu
+            value={timeframe || "1h"}
+            onChange={(tf) => onTimeframeChange?.(tf)}
+          />
         </div>
       </div>
 

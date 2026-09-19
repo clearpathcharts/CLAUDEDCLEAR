@@ -48,8 +48,8 @@ import {
 } from './retailStore';
 import type { Candle } from '../../../types/indicators';
 import PassThroughTradePanel from '../../broker/PassThroughTradePanel';
-
-const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'] as const;
+import { TimeframeMenu } from '../../charts/TimeframeMenu';
+import { ALL_CHART_TIMEFRAMES } from '../../../constants/chartTimeframes';
 const CHART_TYPES: { id: PriceSeriesType; label: string }[] = [
   { id: 'candlestick', label: 'Candles' },
   { id: 'line', label: 'Line' },
@@ -745,24 +745,7 @@ export default function RetailDashboard() {
                 ))}
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Timeframe">
-              {TIMEFRAMES.map((tf) => (
-                <button
-                  key={tf}
-                  type="button"
-                  onClick={() => setTimeframe(tf)}
-                  aria-pressed={timeframe === tf}
-                  className="rounded-lg border px-2.5 py-1 text-sm font-black uppercase"
-                  style={{
-                    borderColor: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-border)',
-                    color: timeframe === tf ? 'var(--desk-indigo)' : 'var(--desk-muted)',
-                    background: timeframe === tf ? 'rgba(129,140,248,0.15)' : 'transparent',
-                  }}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
+            <TimeframeMenu tone="desk" value={timeframe} onChange={setTimeframe} />
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-sm font-black uppercase tracking-wider text-[var(--desk-muted)]">
                 Type
@@ -843,9 +826,9 @@ export default function RetailDashboard() {
                       className="rounded border border-[var(--desk-border)] bg-black/80 px-1 text-[10px] text-[var(--desk-text)]"
                       title="Slot timeframe"
                     >
-                      {TIMEFRAMES.map((tf) => (
-                        <option key={tf} value={tf}>
-                          {tf}
+                      {ALL_CHART_TIMEFRAMES.map((tf) => (
+                        <option key={tf.id} value={tf.id}>
+                          {tf.label}
                         </option>
                       ))}
                     </select>

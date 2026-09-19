@@ -31,8 +31,7 @@ import {
   prefersReducedChrome,
   readInitialNeuroProfile,
 } from './neuroProfile';
-
-const TIMEFRAMES = ['15m', '1h', '4h', '1d'] as const;
+import { TimeframeMenu } from '../../charts/TimeframeMenu';
 const WL_KEY = 'clearpath_neuro_watchlists_v1';
 const WL_ACTIVE_KEY = 'clearpath_neuro_active_watchlist_v1';
 
@@ -517,23 +516,7 @@ export default function NeurodivergentDashboard() {
             <h2 className="text-sm font-black uppercase tracking-[0.16em]" style={{ color: theme.borderA }}>
               Primary Chart
             </h2>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Timeframe">
-              {TIMEFRAMES.map((tf) => (
-                <button
-                  key={tf}
-                  type="button"
-                  onClick={() => setTimeframe(tf)}
-                  className="rounded-lg border px-2.5 py-1 text-sm font-black uppercase"
-                  style={{
-                    borderColor: timeframe === tf ? theme.borderB : `${theme.borderA}40`,
-                    color: timeframe === tf ? theme.borderB : theme.text,
-                    background: timeframe === tf ? `${theme.borderB}22` : 'transparent',
-                  }}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
+            <TimeframeMenu tone="desk" value={timeframe} onChange={setTimeframe} />
             {intel.candleError ? (
               <p className="font-mono text-sm text-rose-400">{intel.candleError}</p>
             ) : null}

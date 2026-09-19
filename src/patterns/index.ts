@@ -7,6 +7,7 @@ export { sanitizeCandles, analysisWindow, candleFingerprint, PATTERN_ANALYSIS_MA
 export { scanCandlestickPatterns } from './candlesticks';
 export { scanChartPatterns, detectNestedStructures } from './chartPatterns';
 export { findSwingPoints } from './swings';
+export { resolveStructureBody } from './structureBody';
 export {
   buildPatternLineOverlays,
   buildCandlestickMarkers,

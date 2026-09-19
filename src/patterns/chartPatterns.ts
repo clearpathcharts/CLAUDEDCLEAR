@@ -1,9 +1,11 @@
 import { Candle } from '../types/indicators';
-import { ChartPatternId, DetectedPattern } from './types';
+import { ChartPatternId, DetectedPattern, PatternLineSegment } from './types';
 import { getChartPatternGroup } from './patternMeta';
 import { findSwingPoints, pricesNear } from './swings';
 import { attachChartGeometry } from './geometry';
 import { clamp01, fitLineThroughPivots, lineValueAt, roundConfidence } from './lineFit';
+import { resolveStructureBody, windowDirectionalEfficiency } from './structureBody';
+import { horizontalSegment, priceAtLine } from './trendlineFit';
 
 const STRUCTURE_IDS = new Set<ChartPatternId>([
   'rising_wedge',
@@ -69,10 +71,12 @@ function detectWedgesAndTriangles(
   avgPrice: number,
 ): DetectedPattern[] {
   const found: DetectedPattern[] = [];
-  // Use more pivots so consolidations on any symbol still resolve into triangles.
-  const highs = swings.filter((s) => s.kind === 'high').slice(-6);
-  const lows = swings.filter((s) => s.kind === 'low').slice(-6);
+  const body = resolveStructureBody(candles, swings, avgPrice);
+  let highs = body.highs;
+  let lows = body.lows;
 
+  if (highs.length < 2) highs = swings.filter((s) => s.kind === 'high').slice(-6);
+  if (lows.length < 2) lows = swings.filter((s) => s.kind === 'low').slice(-6);
   if (highs.length < 2 || lows.length < 2) return found;
 
   const upper = fitLineThroughPivots(highs);
@@ -81,12 +85,13 @@ function detectWedgesAndTriangles(
 
   const startIdx = Math.min(highs[0].index, lows[0].index);
   const endIdx = candles.length - 1;
-  const span = Math.max(endIdx - startIdx, 1);
+  const measureEnd = Math.max(startIdx + 1, Math.min(endIdx, body.bodyEndIndex));
+  const span = Math.max(measureEnd - startIdx, 1);
 
   const upperStart = lineValueAt(upper, startIdx);
-  const upperEnd = lineValueAt(upper, endIdx);
+  const upperEnd = lineValueAt(upper, measureEnd);
   const lowerStart = lineValueAt(lower, startIdx);
-  const lowerEnd = lineValueAt(lower, endIdx);
+  const lowerEnd = lineValueAt(lower, measureEnd);
 
   const gapStart = upperStart - lowerStart;
   const gapEnd = upperEnd - lowerEnd;
@@ -99,12 +104,19 @@ function detectWedgesAndTriangles(
   const confidence = wedgeTriangleConfidence(upper.r2, lower.r2, highs.length, lows.length);
   const endTime = candles[endIdx].time;
 
+  const anchors = {
+    highs,
+    lows,
+    bodyEndIndex: body.bodyEndIndex,
+  };
+
   const base = {
     category: 'chart' as const,
     startIndex: startIdx,
     endIndex: endIdx,
     time: endTime,
     confidence,
+    structureAnchors: anchors,
   };
 
   const h1 = highs[highs.length - 2];
@@ -117,24 +129,11 @@ function detectWedgesAndTriangles(
     Math.abs(upSlopeN) <= NEAR_FLAT_SLOPE_N && pricesNear(h1.price, h2.price, 0.04);
   const flatFloor =
     Math.abs(lowSlopeN) <= NEAR_FLAT_SLOPE_N && pricesNear(l1.price, l2.price, 0.04);
+  const lowerSteeperDown = lowSlopeN < upSlopeN - 0.012;
+  const continuationDown = body.trendBias === 'down' || body.brokeWithTrend;
+  const continuationUp = body.trendBias === 'up' && body.brokeWithTrend;
 
-  if (upSlopeN > FLAT_SLOPE_N && lowSlopeN > FLAT_SLOPE_N && converging) {
-    tryPush(found, {
-      ...base,
-      id: 'rising_wedge',
-      label: 'Rising Wedge',
-      direction: 'bearish',
-      detail: 'Both highs and lows are climbing while the lines squeeze together — often a tiring uptrend.',
-    }, swings, candles);
-  } else if (upSlopeN < -FLAT_SLOPE_N && lowSlopeN < -FLAT_SLOPE_N && converging) {
-    tryPush(found, {
-      ...base,
-      id: 'falling_wedge',
-      label: 'Falling Wedge',
-      direction: 'bullish',
-      detail: 'Both highs and lows are sliding down while the lines pinch together — often ends with a push back up.',
-    }, swings, candles);
-  } else if (flatCeiling && risingLows) {
+  if (flatCeiling && risingLows) {
     tryPush(found, {
       ...base,
       id: 'ascending_triangle',
@@ -142,13 +141,45 @@ function detectWedgesAndTriangles(
       direction: 'bullish',
       detail: 'Flat ceiling with rising lows — buyers pressing upward into resistance.',
     }, swings, candles);
-  } else if (flatFloor && fallingHighs) {
+  } else if (
+    fallingHighs
+    && (
+      flatFloor
+      || continuationDown
+      || (upSlopeN < -FLAT_SLOPE_N && lowSlopeN <= NEAR_FLAT_SLOPE_N)
+      || (upSlopeN < -FLAT_SLOPE_N && lowSlopeN < -FLAT_SLOPE_N && (continuationDown || !lowerSteeperDown))
+    )
+  ) {
     tryPush(found, {
       ...base,
       id: 'descending_triangle',
       label: 'Descending Triangle',
       direction: 'bearish',
-      detail: 'Flat floor with falling highs — sellers pressing downward into support.',
+      detail: continuationDown
+        ? 'Lower highs along the downtrend — retrace pauses are continuation triangles, not a reversal wedge.'
+        : 'Flat or slower floor with falling highs — sellers pressing downward into support.',
+    }, swings, candles);
+  } else if (
+    upSlopeN < -FLAT_SLOPE_N
+    && lowSlopeN < -FLAT_SLOPE_N
+    && converging
+    && lowerSteeperDown
+    && !continuationDown
+  ) {
+    tryPush(found, {
+      ...base,
+      id: 'falling_wedge',
+      label: 'Falling Wedge',
+      direction: 'bullish',
+      detail: 'Both lines slide down and the floor is steeper — a coil, not a breakdown. Reversal only if price is still inside.',
+    }, swings, candles);
+  } else if (upSlopeN > FLAT_SLOPE_N && lowSlopeN > FLAT_SLOPE_N && converging && !continuationUp) {
+    tryPush(found, {
+      ...base,
+      id: 'rising_wedge',
+      label: 'Rising Wedge',
+      direction: 'bearish',
+      detail: 'Both highs and lows are climbing while the lines squeeze together — often a tiring uptrend.',
     }, swings, candles);
   } else if (upSlopeN < -FLAT_SLOPE_N && lowSlopeN > FLAT_SLOPE_N && converging) {
     tryPush(found, {
@@ -273,28 +304,6 @@ function detectCupAndHandle(
   return found;
 }
 
-function remapPattern(pattern: DetectedPattern, offset: number): DetectedPattern {
-  return {
-    ...pattern,
-    startIndex: pattern.startIndex + offset,
-    endIndex: pattern.endIndex + offset,
-    geometry: pattern.geometry
-      ? {
-          ...pattern.geometry,
-          markerIndex:
-            pattern.geometry.markerIndex != null
-              ? pattern.geometry.markerIndex + offset
-              : undefined,
-          lines: pattern.geometry.lines.map((line) => ({
-            ...line,
-            from: { ...line.from, index: line.from.index + offset },
-            to: { ...line.to, index: line.to.index + offset },
-          })),
-        }
-      : undefined,
-  };
-}
-
 function lowerMidPrice(pattern: DetectedPattern): number | null {
   const line =
     pattern.geometry?.lines.find((l) => l.role === 'lower')
@@ -317,35 +326,166 @@ function isInteriorNested(child: DetectedPattern, parent: DetectedPattern): bool
   const childSpan = child.endIndex - child.startIndex;
   if (childSpan < MIN_NESTED_BARS || parentSpan < MIN_PARENT_SPAN) return false;
   if (child.startIndex < parent.startIndex || child.endIndex > parent.endIndex) return false;
-  if (childSpan / parentSpan > MAX_NESTED_VS_PARENT) return false;
+  const ratio = childSpan / parentSpan;
+  if (ratio > MAX_NESTED_VS_PARENT) return false;
   const insetStart = child.startIndex - parent.startIndex;
   const insetEnd = parent.endIndex - child.endIndex;
   if (insetStart < 2 && insetEnd < 2) return false;
   return true;
 }
 
-function floorDistinctFromParent(
-  child: DetectedPattern,
-  parent: DetectedPattern,
-  avgPrice: number,
-): boolean {
-  const childFloor = lowerMidPrice(child);
-  const parentFloor = lowerMidPrice(parent);
-  if (childFloor == null || parentFloor == null) return true;
-  return Math.abs(childFloor - parentFloor) / avgPrice >= FLOOR_DISTINCT_PCT;
+function parentTrendFamily(parent: DetectedPattern): 'down' | 'up' | null {
+  if (parent.id === 'descending_triangle') return 'down';
+  if (parent.id === 'ascending_triangle') return 'up';
+  if (parent.id === 'falling_wedge' && parent.direction === 'bearish') return 'down';
+  if (parent.id === 'rising_wedge' && parent.direction === 'bullish') return 'up';
+  if (parent.direction === 'bearish' && parent.id !== 'rising_wedge') return 'down';
+  if (parent.direction === 'bullish' && parent.id !== 'falling_wedge') return 'up';
+  return null;
 }
 
-function scanStructuresOnSlice(slice: Candle[], lookback: number): DetectedPattern[] {
-  if (slice.length < MIN_NESTED_BARS) return [];
-  const avgPrice = slice.reduce((s, c) => s + c.close, 0) / slice.length;
-  if (!Number.isFinite(avgPrice) || avgPrice <= 0) return [];
-  const swings = findSwingPoints(slice, lookback, lookback);
-  return detectWedgesAndTriangles(swings, slice, avgPrice);
+function clipSegment(
+  line: PatternLineSegment,
+  candles: Candle[],
+  start: number,
+  end: number,
+): PatternLineSegment {
+  return {
+    role: line.role,
+    from: {
+      index: start,
+      time: candles[start].time,
+      price: priceAtLine(line.from, line.to, start),
+    },
+    to: {
+      index: end,
+      time: candles[end].time,
+      price: priceAtLine(line.from, line.to, end),
+    },
+  };
+}
+
+function countLineTouches(
+  candles: Candle[],
+  start: number,
+  end: number,
+  line: PatternLineSegment,
+  avgPrice: number,
+  side: 'high' | 'low',
+): number {
+  const tol = avgPrice * 0.006;
+  let touches = 0;
+  for (let i = start; i <= end; i++) {
+    const px = priceAtLine(line.from, line.to, i);
+    const print = side === 'high' ? candles[i].high : candles[i].low;
+    if (Math.abs(print - px) <= tol) touches += 1;
+  }
+  return touches;
+}
+
+function windowHighsFall(candles: Candle[], start: number, end: number): boolean {
+  const span = end - start + 1;
+  const third = Math.max(2, Math.floor(span / 3));
+  let firstMax = -Infinity;
+  let lastMax = -Infinity;
+  for (let i = start; i <= start + third; i++) firstMax = Math.max(firstMax, candles[i].high);
+  for (let i = end - third; i <= end; i++) lastMax = Math.max(lastMax, candles[i].high);
+  return lastMax <= firstMax * 1.003;
+}
+
+function windowLowsRise(candles: Candle[], start: number, end: number): boolean {
+  const span = end - start + 1;
+  const third = Math.max(2, Math.floor(span / 3));
+  let firstMin = Infinity;
+  let lastMin = Infinity;
+  for (let i = start; i <= start + third; i++) firstMin = Math.min(firstMin, candles[i].low);
+  for (let i = end - third; i <= end; i++) lastMin = Math.min(lastMin, candles[i].low);
+  return lastMin >= firstMin * 0.997;
+}
+
+function triangleAlongParent(
+  parent: DetectedPattern,
+  candles: Candle[],
+  start: number,
+  end: number,
+  avgPrice: number,
+): DetectedPattern | null {
+  const family = parentTrendFamily(parent);
+  if (!family || !parent.geometry?.lines.length) return null;
+  if (end - start + 1 < MIN_NESTED_BARS) return null;
+  if (windowDirectionalEfficiency(candles, start, end) > 0.93) return null;
+
+  if (family === 'down') {
+    const parentUpper = parent.geometry.lines.find((l) => l.role === 'upper');
+    if (!parentUpper) return null;
+    if (!windowHighsFall(candles, start, end)) return null;
+    const upper = clipSegment(parentUpper, candles, start, end);
+    if (countLineTouches(candles, start, end, upper, avgPrice, 'high') < 2) return null;
+
+    let localFloor = Infinity;
+    for (let i = start; i <= end; i++) localFloor = Math.min(localFloor, candles[i].low);
+    if (!Number.isFinite(localFloor) || localFloor >= Math.min(upper.from.price, upper.to.price) * 0.999) {
+      return null;
+    }
+    const parentFloor = lowerMidPrice(parent);
+    if (parentFloor != null && Math.abs(localFloor - parentFloor) / avgPrice < FLOOR_DISTINCT_PCT) {
+      return null;
+    }
+
+    const lower = horizontalSegment(candles, start, end, localFloor, 'lower');
+    if (!lower) return null;
+    const lines = [upper, lower];
+    return {
+      id: 'descending_triangle',
+      category: 'chart',
+      label: 'Descending Triangle',
+      direction: 'bearish',
+      patternGroup: getChartPatternGroup('descending_triangle'),
+      startIndex: start,
+      endIndex: end,
+      time: candles[end].time,
+      confidence: roundConfidence(clamp01((parent.confidence ?? 0.6) * 0.92)),
+      detail: `Retrace triangle along the parent ${parent.label} — same descending resistance, local support.`,
+      scale: 'nested',
+      geometry: { lines, markerIndex: end, markerPrice: upper.to.price, candleSafe: true },
+    };
+  }
+
+  const parentLower =
+    parent.geometry.lines.find((l) => l.role === 'lower')
+    ?? parent.geometry.lines.find((l) => l.role === 'horizontal');
+  if (!parentLower) return null;
+  if (!windowLowsRise(candles, start, end)) return null;
+  const lower = clipSegment(parentLower, candles, start, end);
+  if (countLineTouches(candles, start, end, lower, avgPrice, 'low') < 2) return null;
+
+  let localCeil = -Infinity;
+  for (let i = start; i <= end; i++) localCeil = Math.max(localCeil, candles[i].high);
+  if (!Number.isFinite(localCeil) || localCeil <= Math.max(lower.from.price, lower.to.price) * 1.001) {
+    return null;
+  }
+
+  const upper = horizontalSegment(candles, start, end, localCeil, 'upper');
+  if (!upper) return null;
+  return {
+    id: 'ascending_triangle',
+    category: 'chart',
+    label: 'Ascending Triangle',
+    direction: 'bullish',
+    patternGroup: getChartPatternGroup('ascending_triangle'),
+    startIndex: start,
+    endIndex: end,
+    time: candles[end].time,
+    confidence: roundConfidence(clamp01((parent.confidence ?? 0.6) * 0.92)),
+    detail: `Retrace triangle along the parent ${parent.label} — same rising support, local ceiling.`,
+    scale: 'nested',
+    geometry: { lines: [upper, lower], markerIndex: end, markerPrice: lower.to.price, candleSafe: true },
+  };
 }
 
 /**
- * Re-run the same least-squares triangle/wedge math on smaller interior windows.
- * Nested hits are not cropped copies of the parent lines — local floor must differ.
+ * Nested hits ride the parent trendline. Independent least-squares triangles
+ * on 12-bar windows ignore the larger trend and draw the wrong shape.
  */
 export function detectNestedStructures(
   candles: Candle[],
@@ -361,7 +501,9 @@ export function detectNestedStructures(
       p.category === 'chart'
       && STRUCTURE_IDS.has(p.id as ChartPatternId)
       && (p.scale ?? 'major') === 'major'
-      && p.endIndex - p.startIndex >= MIN_PARENT_SPAN,
+      && p.endIndex - p.startIndex >= MIN_PARENT_SPAN
+      && !!p.geometry?.lines.length
+      && parentTrendFamily(p) != null,
   );
   if (structureParents.length === 0) return [];
 
@@ -373,22 +515,22 @@ export function detectNestedStructures(
       if (winSize > Math.floor(parentSpan * MAX_NESTED_VS_PARENT)) continue;
       if (winSize < MIN_NESTED_BARS) continue;
       const step = Math.max(3, Math.floor(winSize / 4));
-      const lookback = winSize <= 14 ? 1 : 2;
 
       for (let start = parent.startIndex; start + winSize <= parent.endIndex; start += step) {
-        const slice = candles.slice(start, start + winSize + 1);
-        const hits = scanStructuresOnSlice(slice, lookback);
-        for (const hit of hits) {
-          const remapped = remapPattern(hit, start);
-          if (!isInteriorNested(remapped, parent)) continue;
-          if (!floorDistinctFromParent(remapped, parent, avgPrice)) continue;
-          if (!remapped.geometry?.lines.length) continue;
-          found.push({
-            ...remapped,
-            scale: 'nested',
-            detail: `${remapped.detail ?? remapped.label} Nested inside ${parent.label} — same geometry, smaller window.`,
-          });
+        const end = start + winSize;
+        const probe: DetectedPattern = {
+          ...parent,
+          startIndex: start,
+          endIndex: end,
+          scale: 'nested',
+        };
+        if (!isInteriorNested(probe, parent)) continue;
+        const hit = triangleAlongParent(parent, candles, start, end, avgPrice);
+        if (!hit) continue;
+        if (hit.direction !== 'neutral' && parent.direction !== 'neutral' && hit.direction !== parent.direction) {
+          continue;
         }
+        found.push(hit);
       }
     }
   }
@@ -423,7 +565,7 @@ export function scanChartPatterns(candles: Candle[]): DetectedPattern[] {
     ...detectWedgesAndTriangles(swings, candles, avgPrice),
     ...detectDoubleTopsAndBottoms(swings, candles, avgPrice, lookback),
     ...detectCupAndHandle(candles, swings, avgPrice),
-  ].map((p) => ({ ...p, scale: p.scale ?? ('major' as const) }));
+  ].map((p) => ({ ...p, scale: p.scale ?? 'major' as const }));
 
   const nested = detectNestedStructures(candles, major);
 

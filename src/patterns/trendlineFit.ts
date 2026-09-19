@@ -114,29 +114,64 @@ export function fitHorizontalSupport(
   return level;
 }
 
+export function projectTrendline(
+  fitted: { from: LineAnchor; to: LineAnchor },
+  candles: Candle[],
+  startIndex: number,
+  endIndex: number,
+  role: PatternLineSegment['role'],
+): PatternLineSegment {
+  return {
+    role,
+    from: {
+      index: startIndex,
+      time: candles[startIndex].time,
+      price: priceAtLine(fitted.from, fitted.to, startIndex),
+    },
+    to: {
+      index: endIndex,
+      time: candles[endIndex].time,
+      price: priceAtLine(fitted.from, fitted.to, endIndex),
+    },
+  };
+}
+
 export function extendTrendlineToRange(
   fitted: { from: LineAnchor; to: LineAnchor },
   candles: Candle[],
   startIndex: number,
   endIndex: number,
   role: PatternLineSegment['role'],
+  opts?: { checkEndIndex?: number },
 ): PatternLineSegment | null {
-  const from = {
-    index: startIndex,
-    time: candles[startIndex].time,
-    price: priceAtLine(fitted.from, fitted.to, startIndex),
-  };
-  const to = {
-    index: endIndex,
-    time: candles[endIndex].time,
-    price: priceAtLine(fitted.from, fitted.to, endIndex),
-  };
-
-  if (countLineViolations(candles, from, to, startIndex, endIndex) > 0) {
+  const projected = projectTrendline(fitted, candles, startIndex, endIndex, role);
+  const checkEnd = Math.min(endIndex, opts?.checkEndIndex ?? endIndex);
+  if (countLineViolations(candles, projected.from, projected.to, startIndex, checkEnd) > 0) {
     return null;
   }
 
-  return { role, from, to };
+  return projected;
+}
+
+/** Walk the live edge back until the ray no longer cuts the breakout impulse. */
+export function extendWhileSafe(
+  fitted: { from: LineAnchor; to: LineAnchor },
+  candles: Candle[],
+  startIndex: number,
+  endIndex: number,
+  role: PatternLineSegment['role'],
+  minEndIndex: number,
+): PatternLineSegment {
+  let to = endIndex;
+  const floor = Math.max(startIndex + 1, minEndIndex);
+  while (to > floor) {
+    const candidate = projectTrendline(fitted, candles, startIndex, to, role);
+    if (countLineViolations(candles, candidate.from, candidate.to, startIndex, to) === 0) {
+      return candidate;
+    }
+    to -= 1;
+  }
+  return projectTrendline(fitted, candles, startIndex, floor, role);
 }
 
 export function horizontalSegment(

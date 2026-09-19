@@ -86,7 +86,7 @@ assert.match(
   /fontFamily:\s*'"IBM Plex Mono"/,
   'Lightweight Charts axis/crosshair text must use IBM Plex Mono',
 );
-assert.match(candles, /CHART-BUILD-2026-09-04-MOBILE/, 'stamp must mark the current chart build');
+assert.match(candles, /CHART-BUILD-2026-09-19-TF-MENU/, 'stamp must mark the current chart build');
 assert.match(
   liveChart,
   /fontFamily:\s*'"IBM Plex Mono"/,
