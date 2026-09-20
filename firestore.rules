@@ -22,8 +22,10 @@ service cloud.firestore {
     }
 
     // User profile + private subcollections
+    // Read is owner/founder only — any-signed-in read let every member dump
+    // all user docs (emails, profile PII) straight from the client SDK.
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isOwner(userId) || isFounder();
       allow create: if isOwner(userId) && noClientPrivilegeKeys(request.resource.data);
       allow update: if isOwner(userId)
                     && !request.resource.data.diff(resource.data).affectedKeys()

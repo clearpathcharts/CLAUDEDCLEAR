@@ -87,7 +87,7 @@ import {
   getFirebaseAdminStatus,
   probeAdminFirestore,
 } from './src/server/firebaseAdmin';
-import { FOUNDER_EMAIL, isFounderEmail } from './src/lib/founder';
+import { FOUNDER_EMAIL, isFounderEmail, isFounderFirebaseUid } from './src/lib/founder';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
@@ -121,9 +121,14 @@ import {
   aiChatLimiter,
   authForgotPasswordLimiter,
   authLoginLimiter,
+  authLookupLimiter,
   authRegisterLimiter,
+  authResetPasswordLimiter,
+  boardVerifyLimiter,
+  chartPulseSubscribeLimiter,
   frontendErrorLimiter,
 } from './src/server/routeRateLimit';
+import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
@@ -511,9 +516,6 @@ async function startServer() {
   // Stripe webhook — MUST be mounted before express.json() because signature
   // verification needs the raw, unparsed request body. Auth = Stripe signature.
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
-    }
     const signature = req.get('stripe-signature') || '';
     if (!signature) {
       return res.status(400).json({ error: 'Missing stripe-signature header.' });
@@ -790,7 +792,7 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', async (req, res) => {
+  app.post('/api/auth/private/lookup', authLookupLimiter, async (req, res) => {
     try {
       const result = await lookupPrivateUser(req.body?.email || '');
       res.json(result);
@@ -1062,7 +1064,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', (req, res) => {
+  app.post('/api/auth/board/verify', boardVerifyLimiter, (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1247,7 +1249,7 @@ async function startServer() {
     return res.json({ ok: true });
   });
 
-  app.post('/api/auth/private/reset-password', async (req, res) => {
+  app.post('/api/auth/private/reset-password', authResetPasswordLimiter, async (req, res) => {
     const token = String(req.body?.token || '');
     const newPassword = String(req.body?.newPassword || req.body?.password || '');
     const confirmPassword = String(req.body?.confirmPassword || '');
@@ -1326,7 +1328,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', (req, res) => {
+  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
     const sessionEmail = getPrivateSessionUser(req)?.email;
@@ -1360,7 +1362,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
@@ -1398,22 +1400,6 @@ async function startServer() {
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      const pack = entitlementsFor('platinum');
-      return res.json({
-        ok: true,
-        membership: {
-          active: true,
-          tier: 'platinum',
-          status: 'payments_disabled',
-          tierRank: pack.plan.rank,
-          features: pack.features,
-          limits: jsonSafeLimits(pack.limits),
-          flags: pack.flags,
-          plan: pack.plan.id,
-        },
-      });
-    }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
@@ -1629,7 +1615,10 @@ async function startServer() {
         });
       }
       const decoded = await getAuth().verifyIdToken(match[1].trim());
-      if (!isFounderEmail(decoded.email)) {
+      // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
+      // FOUNDER_FIREBASE_UID is set) the founder uid — email alone can be
+      // spoofed via federated providers that skip email verification.
+      if (!isFounderEmail(decoded.email) || !isFounderFirebaseUid(decoded.uid)) {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
@@ -3747,19 +3736,11 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       return res.status(400).json({ error: 'Requested URL is not permitted' });
     }
 
-    let timeoutId: NodeJS.Timeout | undefined;
     try {
-      // Add timeout to RSS fetches to prevent server hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('RSS Fetch Timeout')), 8000);
-      });
-
-      const feed = await Promise.race([
-        parser.parseURL(url),
-        timeoutPromise
-      ]) as any;
-
-      if (timeoutId) clearTimeout(timeoutId);
+      // Fetch without following redirects — parseURL follows redirects and
+      // would re-open the SSRF hole assertSafePublicUrl just closed.
+      const xml = await fetchPublicTextNoRedirect(url, { timeoutMs: 8000 });
+      const feed = (await parser.parseString(xml)) as any;
 
       const items = feed.items.map((item: any, index: number) => ({
         id: item.guid || index.toString(),
@@ -3771,7 +3752,6 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }));
       res.json(items);
     } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
       console.error('[RSS Proxy Error]', error);
       res.status(502).json({ error: 'Institutional RSS node timed out' });
     }

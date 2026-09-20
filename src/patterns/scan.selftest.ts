@@ -36,9 +36,15 @@ const oldHistory = generateSampleCandles(200);
 const oldScan = scanAllPatterns(oldHistory);
 assert(
   oldScan.patterns.every((p) => {
-    if (p.scale === 'nested') return true;
-    if (p.category === 'chart') return p.endIndex >= oldHistory.length - 64;
-    return p.endIndex >= oldHistory.length - 16;
+    if (p.scale === 'nested') {
+      return oldScan.patterns.some((parent) => (
+        parent.scale !== 'nested'
+        && parent.category === 'chart'
+        && p.startIndex >= parent.startIndex
+        && p.endIndex <= parent.endIndex
+      ));
+    }
+    return p.endIndex >= oldHistory.length - 12;
   }),
   'live-edge filter should drop historical pattern hits',
 );
@@ -131,11 +137,37 @@ assert(
   nestedHits.some((p) => p.id === 'descending_triangle' && p.scale === 'nested'),
   'expected nested descending triangle inside the larger descending triangle',
 );
+assert(
+  nestedHits.every((p) => p.direction === 'bearish'),
+  'nested retraces on a downtrend must stay bearish continuation — not bullish wedges',
+);
+const parentUpper = parentDesc.geometry!.lines.find((l) => l.role === 'upper')!;
+const parentSlope = (parentUpper.to.price - parentUpper.from.price) / (parentUpper.to.index - parentUpper.from.index);
+for (const nested of nestedHits) {
+  const nestedUpper = nested.geometry?.lines.find((l) => l.role === 'upper');
+  assert(!!nestedUpper, `${nested.id} nested hit needs an upper trendline`);
+  const nestedSlope = (nestedUpper!.to.price - nestedUpper!.from.price) / (nestedUpper!.to.index - nestedUpper!.from.index);
+  assert(
+    Math.abs(nestedSlope - parentSlope) / Math.max(Math.abs(parentSlope), 1e-6) < 0.08,
+    'nested upper must share the parent descending trendline — not an independent local triangle',
+  );
+}
 const nestedOverlays = buildPatternLineOverlays(fractalDesc, [...nestedHits, parentDesc]);
 assert(
   nestedOverlays.some((l) => l.color === '#00D9FF'),
   'nested geometry should draw in cyan',
 );
 console.log(`  nested hits: ${nestedHits.map((p) => `${p.id}@${p.startIndex}-${p.endIndex}`).join(', ')}`);
+
+const downtrendScan = scanAllPatterns(fractalDesc);
+const majorDown = downtrendScan.patterns.filter((p) => p.category === 'chart' && p.scale !== 'nested');
+assert(
+  !majorDown.some((p) => p.id === 'falling_wedge'),
+  'a stepped downtrend with retraces must not be labeled a bullish falling wedge',
+);
+assert(
+  majorDown.some((p) => p.id === 'descending_triangle'),
+  'expected descending triangle continuation on the stepped downtrend',
+);
 
 console.log('PASS: Pattern engine (candle-safe geometry)');

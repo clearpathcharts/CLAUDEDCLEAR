@@ -3,12 +3,14 @@ import { ChartPatternId, DetectedPattern, PatternGeometry, PatternLineSegment, S
 import {
   allSegmentsCandleSafe,
   extendTrendlineToRange,
+  extendWhileSafe,
   fitHorizontalResistance,
   fitHorizontalSupport,
   fitLowerTrendline,
   fitUpperTrendline,
   horizontalSegment,
 } from './trendlineFit';
+import { pricesNear } from './swings';
 
 const MAJOR_PATTERN_IDS = new Set<ChartPatternId>([
   'rising_wedge',
@@ -53,8 +55,16 @@ function wedgeOrTriangleGeometry(
 ): DetectedPattern {
   const start = pattern.startIndex;
   const end = pattern.endIndex;
-  const rangeHighs = swingsInRange(swings, start, end, 'high');
-  const rangeLows = swingsInRange(swings, start, end, 'low');
+  const bodyEnd = Math.min(
+    end,
+    Math.max(start + 1, pattern.structureAnchors?.bodyEndIndex ?? end),
+  );
+  const rangeHighs = pattern.structureAnchors?.highs?.length >= 2
+    ? pattern.structureAnchors.highs
+    : swingsInRange(swings, start, bodyEnd, 'high');
+  const rangeLows = pattern.structureAnchors?.lows?.length >= 2
+    ? pattern.structureAnchors.lows
+    : swingsInRange(swings, start, bodyEnd, 'low');
 
   if (rangeHighs.length < 2 || rangeLows.length < 2) {
     return { ...pattern, geometry: undefined };
@@ -67,24 +77,43 @@ function wedgeOrTriangleGeometry(
   const lines: PatternLineSegment[] = [];
 
   if (mode === 'ascending') {
-    const resistance = fitHorizontalResistance(candles, start, end, Math.max(h1.price, h2.price));
-    const upper = horizontalSegment(candles, start, end, resistance, 'upper');
-    const lowerFit = fitLowerTrendline(l1, l2, candles, start, end);
-    const lower = lowerFit ? extendTrendlineToRange(lowerFit, candles, start, end, 'lower') : null;
+    const resistance = fitHorizontalResistance(candles, start, bodyEnd, Math.max(h1.price, h2.price));
+    const upper = horizontalSegment(candles, start, bodyEnd, resistance, 'upper');
+    const lowerFit = fitLowerTrendline(l1, l2, candles, start, bodyEnd);
+    const lower = lowerFit
+      ? extendWhileSafe(lowerFit, candles, start, end, 'lower', Math.max(l2.index, bodyEnd))
+      : null;
     if (upper) lines.push(upper);
     if (lower) lines.push(lower);
   } else if (mode === 'descending') {
-    const support = fitHorizontalSupport(candles, start, end, Math.min(l1.price, l2.price));
-    const lower = horizontalSegment(candles, start, end, support, 'lower');
-    const upperFit = fitUpperTrendline(h1, h2, candles, start, end);
-    const upper = upperFit ? extendTrendlineToRange(upperFit, candles, start, end, 'upper') : null;
+    const upperFit = fitUpperTrendline(h1, h2, candles, start, bodyEnd);
+    const upper = upperFit
+      ? extendWhileSafe(upperFit, candles, start, end, 'upper', Math.max(h2.index, bodyEnd))
+      : null;
     if (upper) lines.push(upper);
-    if (lower) lines.push(lower);
+
+    if (pricesNear(l1.price, l2.price, 0.015)) {
+      const support = fitHorizontalSupport(candles, start, bodyEnd, Math.min(l1.price, l2.price));
+      const lower = horizontalSegment(candles, start, bodyEnd, support, 'lower');
+      if (lower) lines.push(lower);
+    } else {
+      const lowerFit = fitLowerTrendline(l1, l2, candles, start, bodyEnd);
+      const lower = lowerFit
+        ? extendTrendlineToRange(lowerFit, candles, start, bodyEnd, 'lower')
+          ?? extendWhileSafe(lowerFit, candles, start, bodyEnd, 'lower', l2.index)
+        : null;
+      if (lower) lines.push(lower);
+    }
   } else {
-    const upperFit = fitUpperTrendline(h1, h2, candles, start, end);
-    const lowerFit = fitLowerTrendline(l1, l2, candles, start, end);
-    const upper = upperFit ? extendTrendlineToRange(upperFit, candles, start, end, 'upper') : null;
-    const lower = lowerFit ? extendTrendlineToRange(lowerFit, candles, start, end, 'lower') : null;
+    const upperFit = fitUpperTrendline(h1, h2, candles, start, bodyEnd);
+    const lowerFit = fitLowerTrendline(l1, l2, candles, start, bodyEnd);
+    const upper = upperFit
+      ? extendWhileSafe(upperFit, candles, start, end, 'upper', Math.max(h2.index, bodyEnd))
+      : null;
+    const lower = lowerFit
+      ? extendTrendlineToRange(lowerFit, candles, start, bodyEnd, 'lower')
+        ?? extendWhileSafe(lowerFit, candles, start, bodyEnd, 'lower', l2.index)
+      : null;
     if (upper) lines.push(upper);
     if (lower) lines.push(lower);
   }

@@ -27,6 +27,7 @@ import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
+import { SessionLogoutButton } from './components/session/SessionLogoutButton';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -188,6 +189,7 @@ function PublicLearnShell({
             ← ClearPath Home
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <SessionLogoutButton />
             <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
@@ -353,12 +355,19 @@ export default function App() {
       </div>
     );
   } else if (isCeoPath(currentPath)) {
-    const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
-    content = (
-      <AppShellProvider>
-        <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
-      </AppShellProvider>
-    );
+    // Same login gate as the desks — anonymous visitors must not get the
+    // Dashboard shell (tab nav would open the member terminal without login).
+    // Founder Private Login sessions populate `user` via FirebaseContext.
+    if (user) {
+      const profile = (advancedProfiles as any)[currentProfileId] || advancedProfiles.calm_focus;
+      content = (
+        <AppShellProvider>
+          <AuthenticatedShell profile={profile} onProfileChange={handleProfileChange} />
+        </AppShellProvider>
+      );
+    } else {
+      content = <Auth />;
+    }
   } else if (isDeskPath(currentPath)) {
     content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
   } else if (currentPath === '/about') {
@@ -483,6 +492,7 @@ export default function App() {
   return (
     <>
       {content}
+      {user ? <SessionLogoutButton variant="fixed" /> : null}
       <ExplainDeepLink />
       {/* Consent-first web/APK update prompt — never silent install */}
       <AppUpdateBanner />

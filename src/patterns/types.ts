@@ -47,6 +47,15 @@ export interface DetectedPattern {
   geometry?: PatternGeometry;
   /** Default major. Nested hits reuse the same fit on a smaller interior window. */
   scale?: PatternScale;
+  /**
+   * Retrace pivots used to draw the structure. Geometry must fit these —
+   * not every swing including the post-breakout dump.
+   */
+  structureAnchors?: {
+    highs: SwingPoint[];
+    lows: SwingPoint[];
+    bodyEndIndex: number;
+  };
 }
 
 export interface PatternLineSegment {

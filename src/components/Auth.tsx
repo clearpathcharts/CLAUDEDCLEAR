@@ -22,6 +22,7 @@ import {
   rememberTraderDesk,
   type TraderDeskId,
 } from '../lib/traderDesks';
+import { SessionLogoutButton } from './session/SessionLogoutButton';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
 
@@ -462,6 +463,7 @@ export default function Auth() {
 
           {/* Sole primary CTA — pinned top-right so the link parade can never clip it */}
           <div className="flex items-center gap-2 shrink-0">
+            <SessionLogoutButton />
             <details className="relative md:hidden">
               <summary className="flex cursor-pointer list-none items-center justify-center rounded-lg border border-white/15 p-1.5 text-zinc-300" aria-label="Site menu">
                 <Menu size={16} aria-hidden="true" />

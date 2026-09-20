@@ -28,6 +28,7 @@ import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
+import { parseMembershipCheckoutRef } from '../content/membershipPricing';
 
 export type MembershipTierId =
   | 'silver'
@@ -308,17 +309,17 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.mode !== 'subscription') return { handled: false };
-      const uid = String(session.client_reference_id || session.metadata?.uid || '').trim();
-      const tier = String(session.metadata?.tier || '').trim();
+      const parsed = parseMembershipCheckoutRef(String(session.client_reference_id || ''));
+      const uid = String(parsed.uid || session.metadata?.uid || '').trim();
+      const tier = String(session.metadata?.tier || parsed.planId || '').trim();
       if (!uid || !isMembershipTier(tier)) {
         console.warn('[Stripe] checkout.session.completed missing uid/tier metadata — skipped.');
         return { handled: false };
       }
-      // Every new subscription starts in its 15-day free trial.
+      const subscribed = session.mode === 'subscription';
       saveMembership(uid, {
         tier,
-        status: 'trialing',
+        status: subscribed ? 'trialing' : 'active',
         stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
         stripeSubscriptionId:
           typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,

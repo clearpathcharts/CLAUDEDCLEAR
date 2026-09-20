@@ -29,7 +29,11 @@ export default function AppUpdateBanner() {
 
   if (!offer || dismissed) return null;
 
-  const hard = offer.severity === 'hard';
+  // A hard lock with no working primary button would freeze the whole app on a
+  // config mistake (minSupported bumped before APP_UPDATE_PLAY_STORE_URL /
+  // allowlisted APK URL is set). Degrade to the dismissible banner instead.
+  const primaryActionable = offer.primaryAction === 'reload' || Boolean(offer.primaryUrl);
+  const hard = offer.severity === 'hard' && primaryActionable;
 
   return (
     <div

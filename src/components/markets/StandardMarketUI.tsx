@@ -11,7 +11,8 @@ import {
 } from '../../constants/chartLayout';
 
 import { setClearState, getClearState } from '../../lib/trading/clearState';
-import { describeTimeframe } from '../../services/marketData';
+import { TimeframeMenu } from '../charts/TimeframeMenu';
+import { normalizeChartTimeframe } from '../../constants/chartTimeframes';
 
 const ASSETS = [
   { label: 'EUR/USD', value: 'EURUSD' },
@@ -22,11 +23,6 @@ const ASSETS = [
   { label: 'NZD/USD', value: 'NZDUSD' },
 ];
 
-const timeframesMapping: Record<string, string> = {
-  '1m': '1m', '2m': '2m', '3m': '3m', '5m': '5m', '10m': '10m', '15m': '15m', '30m': '30m',
-  '1H': '1h', '2H': '2h', '3H': '3h', '4H': '4h',
-  '1D': '1d', '1W': '1w', '1M': '1M', '3M': '3M', '6M': '6M', 'YTD': 'ytd',
-};
 
 function toDataSymbol(raw: string): string {
   const upper = raw.toUpperCase().trim();
@@ -37,7 +33,7 @@ function toDataSymbol(raw: string): string {
 const ChartWidget = ({
   asset,
   profile,
-  activeTimeframe = '1H',
+  activeTimeframe = '1h',
   chartBodyH,
 }: {
   asset: typeof ASSETS[0];
@@ -76,7 +72,7 @@ const ChartWidget = ({
           profileId={profile.id}
           height={chartBodyH}
           fillParent
-          timeframe={timeframesMapping[activeTimeframe] || '1h'}
+          timeframe={normalizeChartTimeframe(activeTimeframe)}
           symbol={dataSymbol}
         />
       </div>
@@ -117,7 +113,7 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
 
   const [searchSymbol, setSearchSymbol] = useState('');
   const [mainAsset, setMainAsset] = useState({ label: 'EUR/USD', value: 'EURUSD' });
-  const [activeTimeframe, setActiveTimeframe] = useState('1H');
+  const [activeTimeframe, setActiveTimeframe] = useState('1h');
 
   const formatSymbol = (raw: string) => toDataSymbol(raw);
 
@@ -239,18 +235,8 @@ export const StandardMarketUI: React.FC<StandardMarketUIProps> = ({ onBack, prof
             </div>
           </div>
 
-          <div className="timeframe-bar overflow-x-auto whitespace-nowrap custom-scrollbar">
-            {['1m', '2m', '3m', '5m', '10m', '15m', '30m', '1H', '2H', '3H', '4H', '1D', '1W', '1M', '3M', '6M', 'YTD'].map((tf, idx) => (
-              <button
-                key={`${tf}-${idx}`}
-                type="button"
-                title={describeTimeframe(timeframesMapping[tf] || tf)}
-                onClick={() => setActiveTimeframe(tf)}
-                className={`time-unit !py-1 !px-2 text-[10px] md:text-xs outline-none ${tf === activeTimeframe ? 'active' : ''}`}
-              >
-                {tf}
-              </button>
-            ))}
+          <div className="px-2 py-2">
+            <TimeframeMenu value={activeTimeframe} onChange={setActiveTimeframe} />
           </div>
           
           <div id="master-chart-stack-std" className="multi-chart-container">
