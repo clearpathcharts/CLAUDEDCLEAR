@@ -10,27 +10,27 @@ function money(n: number) {
 export default function CeoAlwaysOnMonitor() {
   return (
     <div className="mb-8">
-      <div className="bg-[#1a1a2e] p-5 md:p-6 rounded-lg border-2 border-[#FFD700]/35">
-        <h2 className="text-[#FFD700] text-sm font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+      <div className="bg-[#1a1a2e] p-4 md:p-6 rounded-lg border-2 border-[#FFD700]/35">
+        <h2 className="text-[#FFD700] text-sm font-black uppercase tracking-wide md:tracking-widest mb-3 flex flex-wrap items-center gap-2 break-words">
           <DollarSign size={16} />
           ClearPath monthly budget · {MONTHLY_BUDGET.month}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          <div className="bg-black/40 border border-white/10 rounded-md p-3">
-            <p className="text-white text-2xl font-black">{money(MONTHLY_BUDGET.named)}</p>
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Named bills</p>
+          <div className="min-w-0 bg-black/40 border border-white/10 rounded-md p-3">
+            <p className="text-white text-xl sm:text-2xl font-black break-words">{money(MONTHLY_BUDGET.named)}</p>
+            <p className="text-[10px] uppercase tracking-wide md:tracking-widest text-zinc-500 font-mono break-words">Named bills</p>
           </div>
-          <div className="bg-black/40 border border-white/10 rounded-md p-3">
-            <p className="text-amber-200 text-2xl font-black">{money(MONTHLY_BUDGET.missingLiveTotal)}</p>
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Missing live</p>
+          <div className="min-w-0 bg-black/40 border border-white/10 rounded-md p-3">
+            <p className="text-amber-200 text-xl sm:text-2xl font-black break-words">{money(MONTHLY_BUDGET.missingLiveTotal)}</p>
+            <p className="text-[10px] uppercase tracking-wide md:tracking-widest text-zinc-500 font-mono break-words">Missing live</p>
           </div>
-          <div className="bg-black/40 border border-[#FFD700]/30 rounded-md p-3">
-            <p className="text-[#FFD700] text-2xl font-black">{money(MONTHLY_BUDGET.operatingFloor)}</p>
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Must clear / month</p>
+          <div className="min-w-0 bg-black/40 border border-[#FFD700]/30 rounded-md p-3">
+            <p className="text-[#FFD700] text-xl sm:text-2xl font-black break-words">{money(MONTHLY_BUDGET.operatingFloor)}</p>
+            <p className="text-[10px] uppercase tracking-wide md:tracking-widest text-zinc-500 font-mono break-words">Must clear / month</p>
           </div>
-          <div className="bg-black/40 border border-white/10 rounded-md p-3">
-            <p className="text-white text-2xl font-black">{MONTHLY_BUDGET.twelveDataSharePct}%</p>
-            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-mono">Twelve Data of named</p>
+          <div className="min-w-0 bg-black/40 border border-white/10 rounded-md p-3">
+            <p className="text-white text-xl sm:text-2xl font-black break-words">{MONTHLY_BUDGET.twelveDataSharePct}%</p>
+            <p className="text-[10px] uppercase tracking-wide md:tracking-widest text-zinc-500 font-mono break-words">Twelve Data of named</p>
           </div>
         </div>
         <p className="text-amber-100/80 text-xs mb-4 leading-relaxed">{MONTHLY_BUDGET.warning}</p>

@@ -266,17 +266,17 @@ export default function DailyPatternReviewDesk({
 
   return (
     <div className="mb-8" data-testid="daily-pattern-review">
-      <div className="bg-[#1a1a2e] p-6 rounded-lg border-2 border-amber-400/35 shadow-[0_0_18px_rgba(251,191,36,0.12)]">
+      <div className="bg-[#1a1a2e] p-4 md:p-6 rounded-lg border-2 border-amber-400/35 shadow-[0_0_18px_rgba(251,191,36,0.12)]">
         <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-amber-200 text-xl font-bold uppercase mb-1 flex items-center gap-2">
+          <div className="min-w-0 flex-1 basis-64">
+            <h2 className="text-amber-200 text-lg md:text-xl font-bold uppercase mb-1 flex flex-wrap items-center gap-x-2 gap-y-1 break-words">
               <Bell size={20} />
               Daily structure briefing — {report?.date || "today (ET)"}
               {report?.slot ? (
-                <span className="text-[10px] font-mono text-zinc-400 normal-case">{SLOT_LABEL[report.slot]}</span>
+                <span className="text-[10px] font-mono text-zinc-400 normal-case whitespace-nowrap">{SLOT_LABEL[report.slot]}</span>
               ) : null}
             </h2>
-            <p className="text-white/55 text-sm max-w-2xl mb-2">
+            <p className="text-white/55 text-sm max-w-2xl mb-2 break-words">
               Sun–Fri sweeps at NYSE close (4 PM ET) and 1 AM ET. Weekly + daily geometry, in-between prints, DXY,
               DJI, metals, crude, top 25 forex & commodities. CEO reviews each set before publish. Not a trade
               signal.
