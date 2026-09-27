@@ -938,7 +938,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       if (item.verified) return isVerified() || isAdmin();
       return true;
     });
-  }, [userRole?.role, authUser?.email, userProfile?.email, profile?.vipStatus]);
+  }, [userRole?.role, authUser?.email, userProfile?.email, profile?.vipStatus, isFounderUser]);
 
   useEffect(() => {
     if (authLoading || founderResolving) return;

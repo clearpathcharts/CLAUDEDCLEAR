@@ -9,7 +9,7 @@ import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
 import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
-import { FOUNDER_EMAIL, isFounderEmail } from '../lib/founder';
+import { FOUNDER_EMAILS, isFounderAuthUser } from '../lib/founder';
 import { useFounderAccess } from '../hooks/useFounderAccess';
 import { logoutPrivateAccount } from '../api/privateAuth';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
@@ -200,7 +200,7 @@ export default function CeoDashboard() {
     };
     // Only attach Firebase Bearer when it is the founder email.
     const current = auth.currentUser;
-    if (current && isFounderEmail(current.email)) {
+    if (current && isFounderAuthUser(current)) {
       const token = await current.getIdToken(true);
       headers.Authorization = `Bearer ${token}`;
     }
@@ -219,9 +219,9 @@ export default function CeoDashboard() {
     setMembersError(null);
     try {
       const current = auth.currentUser;
-      if (!current || !isFounderEmail(current.email)) {
+      if (!current || !isFounderAuthUser(current)) {
         throw new Error(
-          `STEP 1 failed: Google is not signed in as ${FOUNDER_EMAIL}. Sign in with that Google account on this site, then click Unlock again.`
+          'STEP 1 failed: Google is not signed in as a founder account. Sign in with a founder Google account on this site, then click Unlock again.'
         );
       }
       const token = await current.getIdToken(true);
@@ -871,7 +871,7 @@ export default function CeoDashboard() {
               <ol className="m-0 pl-5 space-y-3 text-sm leading-relaxed text-zinc-100">
                 <li>
                   <strong className="text-white">STEP 1:</strong> Make sure Google on this site is{' '}
-                  <span className="font-mono text-[#00FFFF]">{FOUNDER_EMAIL}</span> (not a different Gmail).
+                  <span className="font-mono text-[#00FFFF]">{FOUNDER_EMAILS.join(' or ')}</span> (not a different Gmail).
                 </li>
                 <li>
                   <strong className="text-white">STEP 2:</strong> Click the big green button below — Unlock CEO
