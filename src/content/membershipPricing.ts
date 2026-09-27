@@ -39,8 +39,8 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
   {
     id: 'silver',
     name: 'Silver',
-    priceCents: 599,
-    priceLabel: '$5.99',
+    priceCents: 598,
+    priceLabel: '$5.98',
     eyebrow: 'Build your workspace',
     features: [
       '4 chart/window',
@@ -70,8 +70,8 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
   {
     id: 'gold',
     name: 'Gold',
-    priceCents: 999,
-    priceLabel: '$9.99',
+    priceCents: 993,
+    priceLabel: '$9.93',
     eyebrow: 'Create and replay',
     features: [
       '10 chart/window',
@@ -103,8 +103,8 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
   {
     id: 'platinum',
     name: 'Platinum',
-    priceCents: 2499,
-    priceLabel: '$24.99',
+    priceCents: 1499,
+    priceLabel: '$14.99',
     eyebrow: 'Everything together',
     featured: true,
     features: [
@@ -155,28 +155,19 @@ export const SILVER_ADDONS: MembershipAddon[] = [
   { id: 'bots', name: 'Ability to add Bots', priceCents: 599, priceLabel: '$5.99' },
 ];
 
-export const SILVER_BASE_CENTS = 599;
+export const SILVER_BASE_CENTS = 598;
 export const ALL_ADDONS_CENTS = SILVER_ADDONS.reduce((sum, addon) => sum + addon.priceCents, 0);
 export const SILVER_WITH_ALL_ADDONS_CENTS = SILVER_BASE_CENTS + ALL_ADDONS_CENTS;
-export const PLATINUM_CENTS = 2499;
+export const PLATINUM_CENTS = 1499;
 
 export function formatMembershipPrice(cents: number): string {
   return cents === 0 ? 'Free' : `$${(cents / 100).toFixed(2)}`;
 }
 
-/** Public Stripe Buy Button id issued for /plans. Publishable key is injected at HTML serve time. */
-export const STRIPE_PLANS_BUY_BUTTON_ID = 'buy_btn_1UHW1BGrAwpKZWrlh5sraF2b';
-
-export function membershipCheckoutRef(uid: string, planId: MembershipPlanId): string {
-  return `${uid}|${planId}`;
-}
-
-export function parseMembershipCheckoutRef(raw: string): { uid: string; planId?: MembershipPlanId } {
-  const [uid, plan] = String(raw || '').split('|').map((part) => part.trim());
-  const planId =
-    plan === 'silver' || plan === 'gold' || plan === 'platinum' || plan === 'basic'
-      ? plan
-      : undefined;
-  return { uid: uid || '', planId };
+/** Monthly amount Stripe checkout charges for a paid package. Must match the Stripe product catalog. */
+export function membershipMonthlyCents(planId: Exclude<MembershipPlanId, 'basic'>): number {
+  const plan = MEMBERSHIP_PLANS.find((p) => p.id === planId);
+  if (!plan) throw new Error(`Unknown package ${planId}`);
+  return plan.priceCents;
 }
 

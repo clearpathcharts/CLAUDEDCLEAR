@@ -1362,7 +1362,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   <div className={`flex-1 flex flex-col ${
                     activeTab === 'StrictlyCharts' || activeTab === 'Fundamentals'
                       ? 'p-0 min-h-0'
-                      : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
+                      : activeTab === 'CeoDashboard' ? 'min-w-0 px-0 sm:px-6 lg:px-12 pb-16 pt-4 sm:pt-8 min-h-[50vh]' : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
                   }`}>
                     {activeTab !== 'CeoDashboard' && activeTab !== 'Fundamentals' && (
                       <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>

@@ -789,12 +789,12 @@ export default function CeoDashboard() {
   }
 
   return (
-    <div className="scrollbar-panel min-h-full p-6 md:p-12 font-sans overflow-y-auto custom-scrollbar pb-32" style={{ backgroundColor: '#09090b' }}>
+    <div className="scrollbar-panel min-h-full min-w-0 max-w-full p-0 sm:p-6 md:p-12 font-sans overflow-y-auto overflow-x-hidden custom-scrollbar pb-32 break-words" style={{ backgroundColor: '#09090b' }}>
       {/* Header Section */}
-      <h1 className="text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-widest mb-2">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl text-[#FF00FF] border-b-2 border-[#4B0082] pb-3 uppercase drop-shadow-[0_0_8px_rgba(255,0,255,0.8)] font-black tracking-wide md:tracking-widest break-words mb-2">
         CEO Dashboard — Founder Console
       </h1>
-      <p className="mb-4 font-mono text-sm font-bold uppercase tracking-wider text-zinc-400">
+      <p className="mb-4 font-mono text-xs md:text-sm font-bold uppercase tracking-wide md:tracking-wider text-zinc-400 break-words">
         Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
@@ -924,7 +924,7 @@ export default function CeoDashboard() {
           )}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl text-white font-black uppercase tracking-widest flex items-center gap-3">
+              <h2 className="text-xl md:text-2xl text-white font-black uppercase tracking-wide md:tracking-widest flex flex-wrap items-center gap-3">
                 <UserPlus className="text-[#00FFFF]" size={26} />
                 Private Login members
               </h2>
