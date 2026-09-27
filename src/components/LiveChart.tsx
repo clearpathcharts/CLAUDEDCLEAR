@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType, IChartApi, ISeriesApi, Time, CandlestickSeries } from 'lightweight-charts';
 import { TradingHaltController } from '../truth/TradingHaltController';
 import { cleanCandleSeriesOptions } from '../lib/charts/cleanCandleSeries';
+import { isChartDisposedError } from '../lib/charts/chartLifecycle';
 import { ChartZoomControls } from './charts/ChartZoomControls';
 import {
   attachShiftWheelPriceScale,
@@ -125,16 +126,21 @@ export default function LiveChart({
         }));
 
         formattedData.sort((a, b) => (a.time as number) - (b.time as number));
-        candlestickSeries.setData(formattedData);
-        
-        if (formattedData.length > 0) {
-          const lastBar = formattedData[formattedData.length - 1];
-          lastClose = lastBar.close;
-          lastTime = lastBar.time as number;
-          isHistoryLoaded = true;
-          chart.timeScale().fitContent();
+        if (!isMounted) return;
+        try {
+          candlestickSeries.setData(formattedData);
+          if (formattedData.length > 0 && isMounted) {
+            const lastBar = formattedData[formattedData.length - 1];
+            lastClose = lastBar.close;
+            lastTime = lastBar.time as number;
+            isHistoryLoaded = true;
+            chart.timeScale().fitContent();
+          }
+        } catch (chartErr) {
+          if (!isChartDisposedError(chartErr)) throw chartErr;
         }
       } catch (error) {
+        if (isChartDisposedError(error)) return;
         console.warn('Feed Error (Simulated fallbacks disabled):', error);
         if (!isMounted) return;
         setErrorState('Real-time data subscription is currently unavailable. Simulated data has been disabled.');

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { auth } from '../firebase';
-import { isFounderSession } from '../lib/founder';
+import { collectAuthEmails, isFounderAuthUser } from '../lib/founder';
 
 type FounderSessionResponse = { founder?: boolean };
 
@@ -32,13 +32,9 @@ export function useFounderAccess() {
     return () => {
       cancelled = true;
     };
-  }, [user?.email, userProfile?.email]);
+  }, [user?.email, userProfile?.email, auth.currentUser?.email, collectAuthEmails(user, userProfile, auth.currentUser).join('|')]);
 
-  const clientFounder = isFounderSession(
-    user?.email,
-    userProfile?.email,
-    auth.currentUser?.email,
-  );
+  const clientFounder = isFounderAuthUser(user, userProfile, auth.currentUser);
   const founder = clientFounder || serverFounder === true;
   const resolving = authLoading || serverFounder === null;
 

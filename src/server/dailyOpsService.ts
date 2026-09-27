@@ -230,8 +230,14 @@ async function checkGithubActions(): Promise<AutoCheck> {
     };
     const runs = body.workflow_runs || [];
     const cutoff = Date.now() - 36 * 60 * 60 * 1000;
-    const recent = runs.filter((r) => new Date(r.created_at).getTime() >= cutoff);
-    const failed = recent.filter(
+    const recent = runs
+      .filter((r) => new Date(r.created_at).getTime() >= cutoff)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    const latestByName = new Map<string, (typeof recent)[number]>();
+    for (const run of recent) {
+      if (!latestByName.has(run.name)) latestByName.set(run.name, run);
+    }
+    const failed = [...latestByName.values()].filter(
       (r) => r.conclusion === "failure" || r.conclusion === "startup_failure" || r.conclusion === "timed_out"
     );
     const ok = failed.length === 0;
@@ -240,7 +246,7 @@ async function checkGithubActions(): Promise<AutoCheck> {
       ok,
       severity: ok ? "info" : "critical",
       detail: ok
-        ? `${GITHUB_REPO}: ${recent.length} runs in 36h, none failed`
+        ? `${GITHUB_REPO}: latest run of each workflow is green (${latestByName.size} workflows, ${recent.length} runs in 36h)`
         : `${failed.length} failed: ${failed
             .slice(0, 3)
             .map((f) => f.name)

@@ -33,11 +33,11 @@ import {
   SAMPLE_LIBRARY_VIDEOS,
   STATIC_DEFAULT_CHANNELS,
   CPMS_CURATOR,
-  CPMS_FOUNDER_EMAIL,
   LAUNCH_FEATURED_VIDEO_ID,
   offlineChannelItems,
   normalizeCinemaVideos,
 } from '../cpms/cpmsCatalog';
+import { isFounderEmail } from '../lib/founder';
 import { bindVideoSource } from '../lib/cpms/hlsPlayer';
 import { uploadCpmsMedia } from '../lib/cpms/uploadMedia';
 
@@ -94,8 +94,8 @@ export default function CpmsApk() {
   // CHECKS IF USER IS GIVEN ACCESS TO CABINET CREATION
   // SECURITY: locked to the founder's real account only. No client-side bypass exists anymore.
   const isUserAuthorized = () => {
-    if (user?.email === CPMS_FOUNDER_EMAIL) return true;
-    if (userProfile?.email === CPMS_FOUNDER_EMAIL) return true;
+    if (isFounderEmail(user?.email)) return true;
+    if (isFounderEmail(userProfile?.email)) return true;
     return false;
   };
 

@@ -212,6 +212,26 @@ export type InstitutionalIntelligencePollOptions = {
   pollEarnings?: boolean;
 };
 
+function sameCandles(a: Candle[], b: Candle[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  if (a.length === 0) return true;
+  const la = a[a.length - 1];
+  const lb = b[b.length - 1];
+  return a[0].time === b[0].time && la.time === lb.time && la.close === lb.close;
+}
+
+function sameCandleMap(prev: Record<string, Candle[]>, next: Record<string, Candle[]>): boolean {
+  const prevKeys = Object.keys(prev);
+  const nextKeys = Object.keys(next);
+  if (prevKeys.length !== nextKeys.length) return false;
+  for (const key of nextKeys) {
+    const bars = prev[key];
+    if (!bars || !sameCandles(bars, next[key])) return false;
+  }
+  return true;
+}
+
 async function loadHistory(symbol: string, timeframe: string): Promise<Candle[]> {
   const key = `${symbol}:${timeframe}`;
   const hit = histCache.get(key);
@@ -268,19 +288,28 @@ export function useInstitutionalIntelligence(
   const workspaceReqRef = useRef(0);
   const loadWorkspace = useCallback(async () => {
     const reqId = ++workspaceReqRef.current;
+    const rows = await Promise.all(
+      slots.map(async (s) => {
+        try {
+          return { symbol: s, candles: await loadHistory(s, timeframe), error: null as string | null };
+        } catch (e) {
+          return {
+            symbol: s,
+            candles: [] as Candle[],
+            error: `${s}: ${e instanceof Error ? e.message : 'unavailable'}`,
+          };
+        }
+      }),
+    );
     const next: Record<string, Candle[]> = {};
     const errors: string[] = [];
-    for (const s of slots) {
-      try {
-        next[s] = await loadHistory(s, timeframe);
-      } catch (e) {
-        next[s] = [];
-        errors.push(`${s}: ${e instanceof Error ? e.message : 'unavailable'}`);
-      }
+    for (const row of rows) {
+      next[row.symbol] = row.candles;
+      if (row.error) errors.push(row.error);
     }
     // Ignore stale completions (symbol/timeframe changed mid-flight or unmounted).
     if (!mountedRef.current || reqId !== workspaceReqRef.current) return;
-    setCandlesBySymbol(next);
+    setCandlesBySymbol((prev) => (sameCandleMap(prev, next) ? prev : next));
     setCandleError(errors.length ? errors.join(' · ') : null);
   }, [slots, timeframe]);
 
@@ -305,9 +334,11 @@ export function useInstitutionalIntelligence(
           }),
         );
       } catch {
+        // Keep the last good tape. Clearing `live` makes the ribbon say DATA UNAVAILABLE
+        // even when the previous prices are still on screen.
         setRibbon((prev) =>
-          prev.length
-            ? prev.map((q) => ({ ...q, live: false }))
+          prev.some((q) => q.price != null)
+            ? prev
             : RIBBON_MARKETS.map((m) => ({
                 symbol: m.symbol,
                 name: m.label,

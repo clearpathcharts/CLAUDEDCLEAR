@@ -47,6 +47,11 @@ export type StoredProfile = {
     /** Referrer credited on first real (post-trial) payment. */
     affiliateCredited?: boolean;
   };
+  /**
+   * Other uids that share this Stripe membership (private account + Firebase).
+   * Written by the webhook and by /api/membership/me when both identities match.
+   */
+  membershipLinkedUids?: string[];
   /** Launch gift: every account gets Ultimate free for its first 15 days. Server-set only. */
   launchTrial?: { startedAt: string };
   /**

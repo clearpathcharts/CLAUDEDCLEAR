@@ -87,7 +87,7 @@ import {
   getFirebaseAdminStatus,
   probeAdminFirestore,
 } from './src/server/firebaseAdmin';
-import { FOUNDER_EMAIL, isFounderEmail, isFounderFirebaseUid } from './src/lib/founder';
+import { isFounderEmail, isFounderFirebaseUid } from './src/lib/founder';
 import { resolveTwelveDataInterval } from './src/services/marketData';
 import {
   hydrateProfilesFromDurableStore,
@@ -135,6 +135,7 @@ import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/broke
 import {
   createMembershipCheckoutSession,
   getMembershipStatus,
+  pickRicherMembershipReport,
   getStripeConfigReport,
   handleStripeEvent,
   isBillingInterval,
@@ -1408,13 +1409,47 @@ async function startServer() {
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
     const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
+    const uids = new Set<string>();
+    if (sessionUser?.uid) uids.add(sessionUser.uid);
+
+    const header = req.get('authorization') || '';
+    const bearer = header.match(/^Bearer\s+(.+)$/i);
+    if (bearer?.[1] && ensureAdminApp()) {
+      try {
+        const decoded = await getAuth().verifyIdToken(bearer[1].trim());
+        const bearerEmail = String(decoded.email || '').trim().toLowerCase();
+        const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
+        const sameInbox = Boolean(bearerEmail && sessionEmail && bearerEmail === sessionEmail);
+        // Google-only members, or the same inbox as the private session.
+        // A different Google account in the same browser must not inherit this plan.
+        if (decoded.uid && (!sessionUser?.uid || sameInbox)) uids.add(decoded.uid);
+      } catch {
+        /* private cookie can still authorize */
+      }
+    }
+
+    if (uids.size === 0) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
     }
+
     // Sync from Firestore first so Stripe webhooks processed on other
     // instances (or before a redeploy) are always reflected here.
-    await refreshProfileFromDurable(sessionUser.uid);
-    const status = getMembershipStatus(sessionUser.uid);
+    for (const uid of uids) await refreshProfileFromDurable(uid);
+    for (const uid of [...uids]) {
+      for (const extra of readProfile(uid)?.membershipLinkedUids || []) {
+        if (extra) uids.add(extra);
+      }
+    }
+    for (const uid of uids) await refreshProfileFromDurable(uid);
+    if (uids.size > 1) {
+      for (const id of uids) {
+        const others = [...uids].filter((uid) => uid !== id);
+        const prev = readProfile(id)?.membershipLinkedUids || [];
+        const merged = [...new Set([...prev, ...others])];
+        if (merged.length > prev.length) writeProfile(id, { membershipLinkedUids: merged });
+      }
+    }
+    const status = pickRicherMembershipReport([...uids].map((uid) => getMembershipStatus(uid)));
     const effectiveTier = status.active ? status.tier : 'basic';
     const pack = entitlementsFor(effectiveTier);
     res.json({
@@ -1622,10 +1657,12 @@ async function startServer() {
         });
       }
       const decoded = await getAuth().verifyIdToken(match[1].trim());
+      const founderEmail = String(decoded.email || '').trim().toLowerCase();
+      const founderUid = String(decoded.uid || '');
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
       // FOUNDER_FIREBASE_UID is set) the founder uid — email alone can be
       // spoofed via federated providers that skip email verification.
-      if (!isFounderEmail(decoded.email) || !isFounderFirebaseUid(decoded.uid)) {
+      if (!isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
@@ -1633,8 +1670,8 @@ async function startServer() {
         });
       }
       const sessionUser = {
-        uid: String(decoded.uid || `founder_${Date.now()}`),
-        email: FOUNDER_EMAIL,
+        uid: founderUid || `founder_${Date.now()}`,
+        email: founderEmail,
         displayName: String(decoded.name || 'Founder'),
         isAnonymous: false,
         emailVerified: true,

@@ -6,7 +6,8 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.auth != null
                    && request.auth.token.email_verified == true
-                   && request.auth.token.email == "forexanarchy@gmail.com"
+                   && (request.auth.token.email == "forexanarchy@gmail.com"
+                       || request.auth.token.email == "clearpathcharts@gmail.com")
                    && request.resource.size < 500 * 1024 * 1024;
     }
 

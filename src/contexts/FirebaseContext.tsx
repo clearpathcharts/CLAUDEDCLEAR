@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp, onSnapshot, query, collection, or
 import { getAuth, getDb, handleFirestoreError, OperationType } from '../firebase';
 import { InterfaceProfile, UserProfile, TimelinePost, AboutContent, AnalysisEntry, JournalSettings, Task, Alert, UserRole, PortfolioPosition } from '../types';
 import { clearClientAuthArtifacts, clearPrivateSession, fetchPrivateSession, logoutPrivateAccount } from '../api/privateAuth';
-import { isFounderEmail } from '../lib/founder';
+import { founderEmailOf, isFounderAuthUser } from '../lib/founder';
 
 interface FirebaseContextType {
   user: User | null;
@@ -122,11 +122,12 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       },
       firebaseUser?: { uid?: string; email?: string | null; displayName?: string | null } | null,
     ) => {
-      const keepFounderGoogle = isFounderEmail(firebaseUser?.email);
+      const founderEmail = founderEmailOf(firebaseUser);
+      const keepFounderGoogle = Boolean(founderEmail);
       setUserProfile((prev) => ({
         ...(prev || defaultUserProfile),
         uid: keepFounderGoogle && firebaseUser?.uid ? firebaseUser.uid : privateSession.uid,
-        email: keepFounderGoogle && firebaseUser?.email ? firebaseUser.email : privateSession.email,
+        email: keepFounderGoogle && founderEmail ? founderEmail : privateSession.email,
         displayName: keepFounderGoogle
           ? firebaseUser?.displayName || prev?.displayName || privateSession.displayName
           : privateSession.displayName,
@@ -138,8 +139,8 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       firebaseUser: any
     ) => {
       // Founder Google must win over a stale non-founder private/board cookie.
-      if (isFounderEmail(firebaseUser?.email)) return firebaseUser;
-      if (isFounderEmail(privateSession?.email) && privateSession) {
+      if (isFounderAuthUser(firebaseUser)) return firebaseUser;
+      if (isFounderAuthUser(privateSession) && privateSession) {
         return privateSession as unknown as User;
       }
       if (privateSession) return privateSession as unknown as User;
@@ -175,13 +176,16 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
           const next = pickAuthUser(latestPrivate, firebaseUser);
           setUser(next);
           if (latestPrivate) applyPrivateProfile(latestPrivate, firebaseUser);
-          else if (firebaseUser?.email) {
-            setUserProfile((prev) => ({
-              ...(prev || defaultUserProfile),
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || prev?.displayName || '',
-            }));
+          else if (firebaseUser) {
+            const email = founderEmailOf(firebaseUser) || firebaseUser.email || '';
+            if (email) {
+              setUserProfile((prev) => ({
+                ...(prev || defaultUserProfile),
+                uid: firebaseUser.uid,
+                email,
+                displayName: firebaseUser.displayName || prev?.displayName || '',
+              }));
+            }
           }
           setLoading(false);
         });
