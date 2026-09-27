@@ -254,16 +254,25 @@ export function useRetailIntelligence(
   const workspaceReqRef = useRef(0);
   const loadWorkspace = useCallback(async () => {
     const reqId = ++workspaceReqRef.current;
+    const rows = await Promise.all(
+      slots.map(async (slot) => {
+        const key = `${slot.symbol}:${slot.timeframe}`;
+        try {
+          return { key, candles: await loadHistory(slot.symbol, slot.timeframe), error: null as string | null };
+        } catch (e) {
+          return {
+            key,
+            candles: [] as Candle[],
+            error: `${slot.symbol}: ${e instanceof Error ? e.message : 'unavailable'}`,
+          };
+        }
+      }),
+    );
     const next: Record<string, Candle[]> = {};
     const errors: string[] = [];
-    for (const slot of slots) {
-      const key = `${slot.symbol}:${slot.timeframe}`;
-      try {
-        next[key] = await loadHistory(slot.symbol, slot.timeframe);
-      } catch (e) {
-        next[key] = [];
-        errors.push(`${slot.symbol}: ${e instanceof Error ? e.message : 'unavailable'}`);
-      }
+    for (const row of rows) {
+      next[row.key] = row.candles;
+      if (row.error) errors.push(row.error);
     }
     // Ignore stale completions (symbol/timeframe changed mid-flight or unmounted).
     if (!mountedRef.current || reqId !== workspaceReqRef.current) return;
@@ -287,7 +296,8 @@ export function useRetailIntelligence(
         const map = await fetchQuoteMap(ribbonSpec.map((m) => m.symbol));
         setRibbon(ribbonSpec.map((m) => map[m.symbol] ?? emptyQuote(m.symbol)));
       } catch {
-        setRibbon(ribbonSpec.map((m) => emptyQuote(m.symbol)));
+        // Keep the last good tape. A transient 429 must not paint DATA UNAVAILABLE.
+        setRibbon((prev) => (prev.some((q) => q.price != null) ? prev : ribbonSpec.map((m) => emptyQuote(m.symbol))));
       }
     },
     { intervalMs: 20_000, enabled: pollRibbon },

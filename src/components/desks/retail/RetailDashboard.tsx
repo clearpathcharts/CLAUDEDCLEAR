@@ -838,6 +838,7 @@ export default function RetailDashboard() {
                   symbol={slot.symbol}
                   profileId={chartProfileId}
                   timeframe={slot.timeframe}
+                  data={intel.candlesByKey[`${slot.symbol}:${slot.timeframe}`] ?? []}
                   fillParent
                   height={layout === 1 ? 640 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}

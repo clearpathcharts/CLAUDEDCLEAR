@@ -187,8 +187,8 @@ export default function NeurodivergentDashboard() {
     pollRibbon: !hideSecondary,
     pollWatchlist: !hideSecondary && !watchHeld,
     pollMovers: false,
-    pollNews: showBelow,
-    pollEcon: showBelow,
+    pollNews: !hideSecondary && deskSectionOpen(hold?.isHeld, ['news']),
+    pollEcon: !hideSecondary && deskSectionOpen(hold?.isHeld, ['calendar']),
     pollFundamentals: false,
   });
   const candles = intel.primaryCandles;
@@ -522,26 +522,16 @@ export default function NeurodivergentDashboard() {
             ) : null}
           </header>
           <DeskChartFill tall>
-            {candles.length === 0 ? (
-              <div
-                className="flex h-full min-h-[320px] items-center justify-center font-mono text-sm text-zinc-500"
-                role="status"
-                aria-live="polite"
-              >
-                {intel.candleError || 'Loading chart…'}
-              </div>
-            ) : (
-              <LightweightCandles
-                symbol={symbol}
-                profileId={profileId}
-                timeframe={timeframe}
-                data={candles}
-                fillParent
-                height={640}
-                hidePatternOverlays
-                publishDrawingSession
-              />
-            )}
+            <LightweightCandles
+              symbol={symbol}
+              profileId={profileId}
+              timeframe={timeframe}
+              data={candles}
+              fillParent
+              height={640}
+              hidePatternOverlays
+              publishDrawingSession
+            />
           </DeskChartFill>
           <p className="border-t border-white/10 px-3 py-2 text-sm font-bold uppercase tracking-wider opacity-60">
             Chart tools on the plot · Indicators stay off until you choose · No trade execution

@@ -30,6 +30,7 @@ import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
 import { membershipMonthlyCents } from '../content/membershipPricing';
+import { tierRankOf } from '../lib/entitlements';
 
 export type MembershipTierId =
   | 'silver'
@@ -281,6 +282,110 @@ function mapSubscriptionStatus(status: Stripe.Subscription.Status): MembershipRe
   return 'canceled';
 }
 
+const LIVE_MEMBERSHIP_STATUS = new Set(['active', 'trialing', 'past_due']);
+
+export type MembershipWrite = {
+  tier: string;
+  status: MembershipRecord['status'];
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  currentPeriodEnd?: string;
+};
+
+/**
+ * A different subscription must not downgrade a higher live plan, and canceling
+ * a different subscription must not wipe the plan the member still has.
+ * Missing tier metadata on the same subscription keeps the stored tier.
+ * Returns null when the incoming event should not be written.
+ */
+export function resolveSubscriptionMembershipWrite(
+  prev: { tier: string; status: MembershipRecord['status']; stripeSubscriptionId?: string } | null | undefined,
+  incoming: MembershipWrite,
+): MembershipWrite | null {
+  const rawTier = incoming.tier.trim();
+  const sameSub = Boolean(
+    prev?.stripeSubscriptionId &&
+      incoming.stripeSubscriptionId &&
+      prev.stripeSubscriptionId === incoming.stripeSubscriptionId,
+  );
+  const tier = rawTier || (sameSub && prev?.tier ? prev.tier : '');
+  if (!tier) return null;
+  const next: MembershipWrite = { ...incoming, tier };
+  if (!prev) return next;
+  const prevLive = LIVE_MEMBERSHIP_STATUS.has(prev.status);
+  const nextLive = LIVE_MEMBERSHIP_STATUS.has(next.status);
+  const prevSub = prev.stripeSubscriptionId;
+  const nextSub = next.stripeSubscriptionId;
+  const differentSub = Boolean(prevSub && nextSub && prevSub !== nextSub);
+  const unlabeledDowngrade = Boolean(prevSub && !nextSub && prevLive && nextLive && tierRankOf(next.tier) < tierRankOf(prev.tier));
+  if (differentSub && prevLive && next.status === 'canceled') return null;
+  if ((differentSub || unlabeledDowngrade) && prevLive && nextLive && tierRankOf(next.tier) < tierRankOf(prev.tier)) {
+    return null;
+  }
+  return next;
+}
+
+export function membershipGrantsAccess(status: string | null | undefined): boolean {
+  return status === 'active' || status === 'trialing' || status === 'past_due';
+}
+
+async function expandMembershipUids(primaryUid: string, email?: string | null): Promise<string[]> {
+  const ids = new Set<string>();
+  if (primaryUid) ids.add(primaryUid);
+  const normalized = String(email || '').trim().toLowerCase();
+  if (normalized.includes('@')) {
+    try {
+      const { findPrivateUserByEmail } = await import('./privateAuthService');
+      const user = await findPrivateUserByEmail(normalized);
+      if (user?.uid) ids.add(user.uid);
+    } catch (err) {
+      console.warn('[Stripe] private-account membership link skipped:', err);
+    }
+  }
+  for (const id of [...ids]) {
+    for (const extra of readProfile(id)?.membershipLinkedUids || []) {
+      if (extra) ids.add(extra);
+    }
+  }
+  return [...ids];
+}
+
+function rememberMembershipLinks(ids: string[]) {
+  if (ids.length < 2) return;
+  for (const id of ids) {
+    const others = ids.filter((uid) => uid !== id);
+    const prev = readProfile(id)?.membershipLinkedUids || [];
+    const merged = [...new Set([...prev, ...others])];
+    if (merged.length === prev.length && merged.every((uid, index) => uid === prev[index])) continue;
+    writeProfile(id, { membershipLinkedUids: merged });
+  }
+}
+
+async function saveMembershipFanout(
+  primaryUid: string,
+  incoming: MembershipWrite,
+  email?: string | null,
+  interval?: string,
+): Promise<'wrote' | 'kept' | 'skipped'> {
+  const ids = await expandMembershipUids(primaryUid, email);
+  rememberMembershipLinks(ids);
+  let wrote = false;
+  let kept = false;
+  for (const id of ids) {
+    const decision = resolveSubscriptionMembershipWrite(readProfile(id)?.membership, incoming);
+    if (!decision) {
+      kept = true;
+      continue;
+    }
+    const record = saveMembership(id, decision);
+    wrote = true;
+    if (id === primaryUid) creditAffiliateResidual(primaryUid, record, interval);
+  }
+  if (wrote) return 'wrote';
+  if (kept) return 'kept';
+  return 'skipped';
+}
+
 function subscriptionPeriodEnd(sub: Stripe.Subscription): string | undefined {
   // current_period_end moved from the subscription to its items on newer API versions.
   const raw =
@@ -302,32 +407,47 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
         return { handled: false };
       }
       const subscribed = session.mode === 'subscription';
-      saveMembership(uid, {
-        tier,
-        status: subscribed ? 'trialing' : 'active',
-        stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
-        stripeSubscriptionId:
-          typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
-      });
-      return { handled: true };
+      const email = session.customer_details?.email || session.customer_email || null;
+      const outcome = await saveMembershipFanout(
+        uid,
+        {
+          tier,
+          status: subscribed ? 'trialing' : 'active',
+          stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
+          stripeSubscriptionId:
+            typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
+        },
+        email,
+      );
+      return { handled: outcome !== 'skipped' };
     }
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
       const uid = String(sub.metadata?.uid || '').trim();
       if (!uid) return { handled: false };
-      const tier = String(sub.metadata?.tier || '').trim() || 'pro';
+      const rawTier = String(sub.metadata?.tier || '').trim();
+      const stored = readProfile(uid)?.membership;
+      const tier = rawTier || (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
+      if (!tier) {
+        console.warn('[Stripe] subscription event missing tier metadata — skipped.');
+        return { handled: false };
+      }
       const status =
         event.type === 'customer.subscription.deleted' ? 'canceled' : mapSubscriptionStatus(sub.status);
-      const record = saveMembership(uid, {
-        tier,
-        status,
-        stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
-        stripeSubscriptionId: sub.id,
-        currentPeriodEnd: subscriptionPeriodEnd(sub),
-      });
-      creditAffiliateResidual(uid, record, String(sub.metadata?.interval || 'month'));
-      return { handled: true };
+      const outcome = await saveMembershipFanout(
+        uid,
+        {
+          tier,
+          status,
+          stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
+          stripeSubscriptionId: sub.id,
+          currentPeriodEnd: subscriptionPeriodEnd(sub),
+        },
+        null,
+        String(sub.metadata?.interval || 'month'),
+      );
+      return { handled: outcome !== 'skipped' };
     }
     default:
       return { handled: false };
@@ -409,6 +529,16 @@ export async function listStripeCustomerEmails(options?: {
   return [...byEmail.values()].sort((a, b) => a.email.localeCompare(b.email));
 }
 
+/** Prefer the highest live plan when private-session and Firebase profiles disagree. */
+export function pickRicherMembershipReport(reports: MembershipStatusReport[]): MembershipStatusReport {
+  if (reports.length === 0) return { active: false, tier: null, status: null };
+  return reports.reduce((best, row) => {
+    const bestRank = best.active ? tierRankOf(best.tier) : -1;
+    const rowRank = row.active ? tierRankOf(row.tier) : -1;
+    return rowRank > bestRank ? row : best;
+  });
+}
+
 export function getMembershipStatus(uid: string): MembershipStatusReport {
   const profile = readProfile(uid);
   const membership = profile?.membership;
@@ -416,7 +546,7 @@ export function getMembershipStatus(uid: string): MembershipStatusReport {
   // A Stripe subscription (any state except canceled) always wins over the launch gift.
   if (membership && membership.status !== 'canceled') {
     return {
-      active: membership.status === 'active' || membership.status === 'trialing',
+      active: membershipGrantsAccess(membership.status),
       tier: membership.tier,
       status: membership.status,
       currentPeriodEnd: membership.currentPeriodEnd,

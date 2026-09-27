@@ -10,7 +10,8 @@ service cloud.firestore {
     function isFounder() {
       return isSignedIn()
         && request.auth.token.email_verified == true
-        && request.auth.token.email == "forexanarchy@gmail.com";
+        && (request.auth.token.email == "forexanarchy@gmail.com"
+            || request.auth.token.email == "clearpathcharts@gmail.com");
     }
     function stringField(field, minLen, maxLen) {
       return field is string

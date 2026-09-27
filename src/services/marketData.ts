@@ -446,10 +446,12 @@ export const fetchTieredHistoricalData = async (
   userTier: string,
   options?: HistoricalFetchOptions,
 ): Promise<NormalizedCandle[]> => {
+  // Cache on the resolved candle cap, not the tier name. VIP and BRONZE both
+  // cap at 5000 today, so a desk hook and a chart must share one in-flight fetch.
   const cacheKey = [
     symbol,
     interval,
-    userTier,
+    getCandleLimit(userTier),
     options?.startDate || "",
     options?.endDate || "",
     options?.limit ?? "",

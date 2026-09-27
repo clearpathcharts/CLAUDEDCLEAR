@@ -6,6 +6,7 @@
  * UI gating only — the server remains the source of truth for anything paid.
  */
 import { useEffect, useState } from 'react';
+import { auth } from '../firebase';
 import { tierRankOf, hasFeatureForRank, type FeatureKey } from '../lib/entitlements';
 import {
   canonicalizePlanId,
@@ -38,6 +39,20 @@ let cache: MembershipInfo | null = null;
 let inflight: Promise<MembershipInfo> | null = null;
 const listeners = new Set<(m: MembershipInfo) => void>();
 
+async function membershipAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  try {
+    const current = auth.currentUser;
+    if (current && typeof current.getIdToken === 'function') {
+      const token = await current.getIdToken();
+      if (token) headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    /* cookie session still authorizes /api/membership/me */
+  }
+  return headers;
+}
+
 async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
   const preview = readPlanPreview();
   if (preview) {
@@ -53,7 +68,10 @@ async function fetchMembershipOnce(force = false): Promise<MembershipInfo> {
   if (inflight && !force) return inflight;
   inflight = (async () => {
     try {
-      const res = await fetch('/api/membership/me', { credentials: 'include' });
+      const res = await fetch('/api/membership/me', {
+        credentials: 'include',
+        headers: await membershipAuthHeaders(),
+      });
       if (!res.ok) return OFFLINE_BASIC;
       const data = await res.json();
       const m = data?.membership;
@@ -94,9 +112,17 @@ export function useMembership(_legacyProfile?: { vipStatus?: string; subscriptio
     };
     listeners.add(onUpdate);
     void fetchMembershipOnce().then(onUpdate);
+    let retryA = 0;
+    let retryB = 0;
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('membership') === 'success') {
+      retryA = window.setTimeout(() => void refreshMembership(), 2000);
+      retryB = window.setTimeout(() => void refreshMembership(), 8000);
+    }
     return () => {
       mounted = false;
       listeners.delete(onUpdate);
+      if (retryA) window.clearTimeout(retryA);
+      if (retryB) window.clearTimeout(retryB);
     };
   }, []);
 
