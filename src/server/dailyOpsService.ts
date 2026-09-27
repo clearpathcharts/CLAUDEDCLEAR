@@ -8,8 +8,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { getGroqApiKey, getSecretPresenceReport, getStripeSecretKey } from "./secrets";
-import { PAYMENTS_ENABLED } from "../lib/paymentsEnabled";
+import { getGroqApiKey, getSecretPresenceReport, getStripeSecretKey, getStripeWebhookSecret } from "./secrets";
+import { MEMBERSHIP_CHECKOUT_ENABLED } from "../lib/paymentsEnabled";
 import { getLatestSiteDoctorReport, runSiteDoctorSweep } from "./siteDoctor";
 import { SUPPORTED_CHART_INDICATORS } from "../config/tradingViewIndicators";
 import { themeProfiles } from "../lib/theme/profiles";
@@ -355,22 +355,28 @@ async function checkTwilio(): Promise<AutoCheck> {
 }
 
 function checkStripe(): AutoCheck {
-  if (!PAYMENTS_ENABLED) {
+  if (!MEMBERSHIP_CHECKOUT_ENABLED) {
     return {
       id: "auto_stripe",
       ok: true,
       severity: "info",
-      detail: "Billing is hard-off (PAYMENTS_ENABLED=false). No Stripe checkout. Rank is a launch gift, not a self-upgrade button.",
+      detail: "Package checkout is off (MEMBERSHIP_CHECKOUT_ENABLED=false). No Stripe checkout.",
     };
   }
-  const present = Boolean(getStripeSecretKey());
+  const keyPresent = Boolean(getStripeSecretKey());
+  const webhookPresent = Boolean(getStripeWebhookSecret());
+  const ok = keyPresent && webhookPresent;
+  const missing = [
+    keyPresent ? null : "STRIPE_SECRET_KEY (checkout cannot start)",
+    webhookPresent ? null : "STRIPE_WEBHOOK_SECRET (paid members are never unlocked)",
+  ].filter(Boolean);
   return {
     id: "auto_stripe",
-    ok: present,
-    severity: present ? "info" : "warn",
-    detail: present
-      ? "STRIPE_SECRET_KEY present — checkout can run"
-      : "Billing is on but STRIPE_SECRET_KEY is missing",
+    ok,
+    severity: ok ? "info" : "warn",
+    detail: ok
+      ? "STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET present — package checkout can run"
+      : `Package checkout is on but missing ${missing.join(" and ")}`,
   };
 }
 

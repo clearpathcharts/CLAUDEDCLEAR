@@ -51,12 +51,12 @@ import {
 } from '../src/server/stripeService.ts';
 
 assert.deepEqual([...CANONICAL_PLANS], ['basic', 'silver', 'gold', 'platinum']);
-assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [0, 599, 999, 2499]);
+assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [0, 598, 993, 1499]);
 assert.equal(SILVER_ADDONS.length, 7);
 assert.equal(ALL_ADDONS_CENTS, 4493);
-assert.equal(SILVER_BASE_CENTS, 599);
-assert.equal(SILVER_WITH_ALL_ADDONS_CENTS, 5092);
-assert.equal(PLATINUM_CENTS, 2499);
+assert.equal(SILVER_BASE_CENTS, 598);
+assert.equal(SILVER_WITH_ALL_ADDONS_CENTS, 5091);
+assert.equal(PLATINUM_CENTS, 1499);
 assert.equal(FIRST_FREE_DAYS, 30);
 assert.equal(LAUNCH_ACCESS_DAYS, STRIPE_LAUNCH_TRIAL_DAYS);
 assert.equal(PLAN_TRIAL_DAYS, STRIPE_PLAN_TRIAL_DAYS);
@@ -162,7 +162,7 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
   assert.doesNotMatch(src, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /8\.99|49\.99|89\.99/);
   assert.doesNotMatch(table, /label: 'Price'/);
-  assert.match(page, /StripePlansBuyButton/);
+  assert.match(page, /PlanCheckoutButton/);
   assert.match(page, /Pay for the package you selected/);
   assert.match(page, /data-testid="offered-package"/);
   assert.match(page, /Your first \{FIRST_FREE_DAYS\} days are free/);

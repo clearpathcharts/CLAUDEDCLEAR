@@ -20,7 +20,6 @@ import {
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
-import { injectStripeBuyButtonConfig } from './stripeBuyButtonConfig';
 import { applyCspNonceToScripts, injectBuildStamp, jsonForInlineScript } from './htmlCacheHeaders';
 import {
   lookupStock,
@@ -1488,7 +1487,7 @@ ${hreflangTags}
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
   // Production CSP is nonce-only, so inline boot + inject scripts must carry the request nonce.
-  let stamped = injectBuildStamp(injectStripeBuyButtonConfig(injectFirebaseClientConfig(html)));
+  let stamped = injectBuildStamp(injectFirebaseClientConfig(html));
   if (options?.cspNonce) {
     stamped = applyCspNonceToScripts(stamped, options.cspNonce);
   }

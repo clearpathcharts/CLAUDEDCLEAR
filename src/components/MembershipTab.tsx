@@ -1,6 +1,5 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { PAYMENTS_DISABLED_MESSAGE } from '../lib/paymentsEnabled';
 import { PlanComparisonTable } from './PlanComparisonTable';
 import { CANONICAL_PLANS } from '../lib/planCatalog';
 
@@ -12,7 +11,10 @@ export default function MembershipTab({ onNavigate }: { onNavigate?: (tab: strin
           <ShieldCheck className="w-7 h-7 text-emerald-300" />
         </div>
         <h2 className="text-xl font-black text-white uppercase tracking-widest">Membership sheet</h2>
-        <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto">{PAYMENTS_DISABLED_MESSAGE}</p>
+        <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl mx-auto">
+          Basic is free. Silver, Gold, and Platinum are billed monthly through Stripe on the{' '}
+          <a href="/plans" className="text-cyan-300 hover:underline">Plans page</a>.
+        </p>
         <p className="text-zinc-500 text-xs font-mono">
           Limits below are the feature spec — no list prices. Preview a tier with{' '}
           {CANONICAL_PLANS.map((id) => (

@@ -145,7 +145,14 @@ import {
 } from './src/server/stripeService';
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
-import { PAYMENTS_DISABLED_MESSAGE, PAYMENTS_ENABLED } from './src/lib/paymentsEnabled';
+import {
+  AFFILIATE_PAYOUTS_DISABLED_MESSAGE,
+  AFFILIATE_PAYOUTS_ENABLED,
+  CHECKOUT_DISABLED_MESSAGE,
+  MEMBERSHIP_CHECKOUT_ENABLED,
+  STRIPE_ACCOUNT_RECOVERY_ENABLED,
+  STRIPE_RECOVERY_DISABLED_MESSAGE,
+} from './src/lib/paymentsEnabled';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -1386,13 +1393,13 @@ async function startServer() {
   // ——— Stripe membership billing ———
   /** Boolean presence only — never key material. */
   app.get('/api/stripe/config', (_req, res) => {
-    if (!PAYMENTS_ENABLED) {
+    if (!MEMBERSHIP_CHECKOUT_ENABLED) {
       return res.json({
         configured: false,
         paymentsEnabled: false,
         webhookConfigured: false,
         tiers: [],
-        message: PAYMENTS_DISABLED_MESSAGE,
+        message: CHECKOUT_DISABLED_MESSAGE,
       });
     }
     res.json({ ...getStripeConfigReport(), paymentsEnabled: true });
@@ -1438,8 +1445,8 @@ async function startServer() {
 
   /** Create a subscription Checkout Session and return the hosted checkout URL. */
   app.post('/api/stripe/create-checkout-session', async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!MEMBERSHIP_CHECKOUT_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: CHECKOUT_DISABLED_MESSAGE });
     }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
@@ -1554,8 +1561,8 @@ async function startServer() {
 
   /** Member requests a cash payout of accumulated affiliate credit. */
   app.post('/api/affiliate/payout-request', (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!AFFILIATE_PAYOUTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
     }
     const sessionUser = getPrivateSessionUser(req);
     if (!sessionUser?.uid) {
@@ -1571,15 +1578,15 @@ async function startServer() {
   });
 
   app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!AFFILIATE_PAYOUTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
     }
     res.json({ ok: true, payouts: adminListPayouts() });
   });
 
   app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!AFFILIATE_PAYOUTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
     }
     const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
     const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
@@ -1759,8 +1766,8 @@ async function startServer() {
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
   app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!STRIPE_ACCOUNT_RECOVERY_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: STRIPE_RECOVERY_DISABLED_MESSAGE });
     }
     try {
       const result = await recoverPrivateAccountsFromStripe({
@@ -2051,8 +2058,8 @@ async function startServer() {
   });
 
   app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
-    if (!PAYMENTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: PAYMENTS_DISABLED_MESSAGE });
+    if (!AFFILIATE_PAYOUTS_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
     }
     const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
     const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
@@ -4767,7 +4774,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
             '[STARTUP] PRIVATE ACCOUNTS HARD-FAIL: no durable store in production (Firestore Admin offline and Stripe unavailable). Register/login/import blocked until STRIPE_SECRET_KEY and/or FIREBASE_SERVICE_ACCOUNT is available.'
           );
         } else if (hasDurablePrivateStore()) {
-          const recovered = PAYMENTS_ENABLED
+          const recovered = STRIPE_ACCOUNT_RECOVERY_ENABLED
             ? await bootRecoverPrivateAccountsFromStripe()
             : { ran: false, skippedReason: 'payments_disabled', created: 0, already: 0, candidates: 0 };
           if (recovered.ran) {

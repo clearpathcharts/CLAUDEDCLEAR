@@ -81,7 +81,7 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
-      - name: Package offer + Stripe buy-button self-test
+      - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 
       - name: Chart timeframe catalog + fetch plans

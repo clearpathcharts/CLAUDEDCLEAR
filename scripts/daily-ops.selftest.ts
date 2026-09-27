@@ -21,7 +21,7 @@ import {
   catalogIdentityKey,
 } from "../src/server/investorDesk";
 import { featuredStocks } from "../src/server/crawlCatalog";
-import { PAYMENTS_ENABLED } from "../src/lib/paymentsEnabled";
+import { AFFILIATE_PAYOUTS_ENABLED } from "../src/lib/paymentsEnabled";
 import { SUPPORTED_CHART_INDICATORS } from "../src/config/tradingViewIndicators";
 import { themeProfiles } from "../src/lib/theme/profiles";
 import {
@@ -173,7 +173,7 @@ assert.equal(/legacyPaid\s*=/.test(membership), false);
 assert.equal(/handleSelfUpgrade/.test(tab), false);
 assert.equal(/create-checkout-session/.test(tab), false);
 assert.equal(/buy\.stripe\.com/.test(tab), false);
-assert.equal(PAYMENTS_ENABLED, false, "billing must stay hard-off");
+assert.equal(AFFILIATE_PAYOUTS_ENABLED, false, "affiliate cash payouts stay off");
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(membership), false);
 assert.equal(/vipStatus\s*===\s*['"]vip_pro['"]/.test(tab), false);
 
