@@ -47,6 +47,7 @@ assert.equal(hook.includes("tier: 'platinum'"), false);
 assert.equal(hook.includes('PAYMENTS_OFF'), false);
 assert.equal(gate.includes('PAYMENTS_ENABLED === false'), false);
 assert.equal(server.includes("entitlementsFor('platinum')"), false);
-assert.match(server, /getMembershipStatus\(sessionUser\.uid\)/);
+assert.match(server, /pickRicherMembershipReport/);
+assert.match(server, /getMembershipStatus\(/);
 
 console.log('ok membership-offer · one package + per-package Stripe checkout');
