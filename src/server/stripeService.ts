@@ -1,12 +1,12 @@
 /**
  * Stripe membership billing — server-side only.
  *
- * Pricing is not part of the feature catalog. Until a new ladder is chosen,
- * checkout ids alias the existing Stripe amounts (Pro / Pro+ / Premium / Ultimate).
- * Silver / Gold / Platinum checkout keys map onto that ladder for entitlements.
+ * Amounts come from MEMBERSHIP_PLANS (the /plans page), which must match the
+ * Stripe product catalog (Silver / GOLD / PLATINUM). Checkout bills under the
+ * catalog product of the same name when it exists.
  *
  * Legacy Stripe ids (pro / proplus / premium / ultimate) remain valid checkout
- * keys and canonicalize onto Silver / Gold / Platinum for entitlements.
+ * keys and charge the Silver / Gold / Platinum amount they canonicalize onto.
  *
  * Free structure:
  *   1. Launch gift — every account gets ULTIMATE features free for its first
@@ -20,15 +20,16 @@
  * - Degrades gracefully: without STRIPE_SECRET_KEY the app boots and the
  *   membership page falls back to its Payment Link catalog.
  *
- * Prices: prefer Dashboard Price IDs via STRIPE_PRICE_<TIER>_<INTERVAL> env
- * vars. When unset, inline price_data is used so checkout works with zero
- * Dashboard setup.
+ * Prices: a recurring monthly Dashboard Price ID in STRIPE_PRICE_<TIER>_MONTHLY
+ * wins. Otherwise inline price_data charges the /plans amount, attached to the
+ * catalog product when one is found, so checkout works with zero env setup.
+ * Billing is monthly only — the Stripe catalog has no yearly prices.
  */
 import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
-import { parseMembershipCheckoutRef } from '../content/membershipPricing';
+import { membershipMonthlyCents } from '../content/membershipPricing';
 
 export type MembershipTierId =
   | 'silver'
@@ -43,75 +44,56 @@ export type BillingInterval = 'month' | 'year';
 export const PLAN_TRIAL_DAYS = 15;
 export const LAUNCH_TRIAL_DAYS = 15;
 
+type PaidPackage = 'silver' | 'gold' | 'platinum';
+
 type TierDef = {
   name: string;
+  /** Package whose /plans amount and Stripe catalog product this tier bills under. */
+  billsAs: PaidPackage;
   monthlyCents: number;
-  /** Full charge for a year (12 × discounted per-month rate). */
-  yearlyCents: number;
-  /** Discounted per-month rate when billed yearly (display only). */
-  yearlyPerMonthCents: number;
   priceEnvMonthly: string;
-  priceEnvYearly: string;
 };
 
+function tierDef(name: string, billsAs: PaidPackage): TierDef {
+  return {
+    name,
+    billsAs,
+    monthlyCents: membershipMonthlyCents(billsAs),
+    priceEnvMonthly: `STRIPE_PRICE_${billsAs.toUpperCase()}_MONTHLY`,
+  };
+}
+
 const TIER_DEFS: Record<MembershipTierId, TierDef> = {
-  silver: {
-    name: 'ClearPath Silver',
-    monthlyCents: 995,
-    yearlyCents: 9540,
-    yearlyPerMonthCents: 795,
-    priceEnvMonthly: 'STRIPE_PRICE_SILVER_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_SILVER_YEARLY',
-  },
-  gold: {
-    name: 'ClearPath Gold',
-    monthlyCents: 3095,
-    yearlyCents: 31140,
-    yearlyPerMonthCents: 2595,
-    priceEnvMonthly: 'STRIPE_PRICE_GOLD_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_GOLD_YEARLY',
-  },
-  platinum: {
-    name: 'ClearPath Platinum',
-    monthlyCents: 6995,
-    yearlyCents: 77940,
-    yearlyPerMonthCents: 6495,
-    priceEnvMonthly: 'STRIPE_PRICE_PLATINUM_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_PLATINUM_YEARLY',
-  },
-  pro: {
-    name: 'ClearPath Pro (legacy → Silver)',
-    monthlyCents: 995,
-    yearlyCents: 9540,
-    yearlyPerMonthCents: 795,
-    priceEnvMonthly: 'STRIPE_PRICE_PRO_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_PRO_YEARLY',
-  },
-  proplus: {
-    name: 'ClearPath Pro+ (legacy → Gold)',
-    monthlyCents: 1995,
-    yearlyCents: 19140,
-    yearlyPerMonthCents: 1595,
-    priceEnvMonthly: 'STRIPE_PRICE_PROPLUS_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_PROPLUS_YEARLY',
-  },
-  premium: {
-    name: 'ClearPath Premium (legacy → Gold)',
-    monthlyCents: 3095,
-    yearlyCents: 31140,
-    yearlyPerMonthCents: 2595,
-    priceEnvMonthly: 'STRIPE_PRICE_PREMIUM_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_PREMIUM_YEARLY',
-  },
-  ultimate: {
-    name: 'ClearPath Ultimate (legacy → Platinum)',
-    monthlyCents: 6995,
-    yearlyCents: 77940,
-    yearlyPerMonthCents: 6495,
-    priceEnvMonthly: 'STRIPE_PRICE_ULTIMATE_MONTHLY',
-    priceEnvYearly: 'STRIPE_PRICE_ULTIMATE_YEARLY',
-  },
+  silver: tierDef('ClearPath Silver', 'silver'),
+  gold: tierDef('ClearPath Gold', 'gold'),
+  platinum: tierDef('ClearPath Platinum', 'platinum'),
+  pro: tierDef('ClearPath Silver', 'silver'),
+  proplus: tierDef('ClearPath Gold', 'gold'),
+  premium: tierDef('ClearPath Gold', 'gold'),
+  ultimate: tierDef('ClearPath Platinum', 'platinum'),
 };
+
+const catalogProductIds = new Map<PaidPackage, string | null>();
+
+/** Active Stripe catalog product named Silver / Gold / Platinum (case-insensitive), cached per process. */
+async function findCatalogProductId(stripe: Stripe, pkg: PaidPackage): Promise<string | null> {
+  if (catalogProductIds.has(pkg)) return catalogProductIds.get(pkg) ?? null;
+  try {
+    for await (const product of stripe.products.list({ active: true, limit: 100 })) {
+      const name = (product.name || '').trim().toLowerCase();
+      if (!catalogProductIds.has(name as PaidPackage) && (name === 'silver' || name === 'gold' || name === 'platinum')) {
+        catalogProductIds.set(name, product.id);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Stripe] catalog product lookup failed:', err?.message || err);
+    return null;
+  }
+  for (const p of ['silver', 'gold', 'platinum'] as const) {
+    if (!catalogProductIds.has(p)) catalogProductIds.set(p, null);
+  }
+  return catalogProductIds.get(pkg) ?? null;
+}
 
 export function isMembershipTier(value: unknown): value is MembershipTierId {
   return typeof value === 'string' && value in TIER_DEFS;
@@ -157,11 +139,7 @@ export function getStripeConfigReport() {
       id,
       name: TIER_DEFS[id].name,
       monthlyCents: TIER_DEFS[id].monthlyCents,
-      yearlyCents: TIER_DEFS[id].yearlyCents,
-      yearlyPerMonthCents: TIER_DEFS[id].yearlyPerMonthCents,
-      dashboardPriceConfigured:
-        Boolean((process.env[TIER_DEFS[id].priceEnvMonthly] || '').trim()) ||
-        Boolean((process.env[TIER_DEFS[id].priceEnvYearly] || '').trim()),
+      dashboardPriceConfigured: Boolean((process.env[TIER_DEFS[id].priceEnvMonthly] || '').trim()),
     })),
   };
 }
@@ -181,27 +159,36 @@ export async function createMembershipCheckoutSession(input: {
   if (!def) {
     throw new StripeServiceError(`Unknown membership tier "${input.tier}".`, 400);
   }
-  const yearly = input.interval === 'year';
-  const amountCents = yearly ? def.yearlyCents : def.monthlyCents;
-  const priceEnv = yearly ? def.priceEnvYearly : def.priceEnvMonthly;
+  if (input.interval !== 'month') {
+    throw new StripeServiceError('Packages are billed monthly only.', 400);
+  }
 
-  const dashboardPriceId = (process.env[priceEnv] || '').trim();
+  const dashboardPriceId = (process.env[def.priceEnvMonthly] || '').trim();
+  const catalogProductId = dashboardPriceId ? null : await findCatalogProductId(stripe, def.billsAs);
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = dashboardPriceId
     ? { price: dashboardPriceId, quantity: 1 }
-    : {
-        price_data: {
-          currency: 'usd',
-          unit_amount: amountCents,
-          recurring: { interval: input.interval },
-          product_data: {
-            name: def.name,
-            description: yearly
-              ? `ClearPath Trader ${def.name} yearly membership ($${(def.yearlyPerMonthCents / 100).toFixed(2)}/mo billed annually)`
-              : `ClearPath Trader ${def.name} monthly membership`,
+    : catalogProductId
+      ? {
+          price_data: {
+            currency: 'usd',
+            unit_amount: def.monthlyCents,
+            recurring: { interval: 'month' },
+            product: catalogProductId,
           },
-        },
-        quantity: 1,
-      };
+          quantity: 1,
+        }
+      : {
+          price_data: {
+            currency: 'usd',
+            unit_amount: def.monthlyCents,
+            recurring: { interval: 'month' },
+            product_data: {
+              name: def.name,
+              description: `ClearPath Trader ${def.name} monthly membership`,
+            },
+          },
+          quantity: 1,
+        };
 
   const params: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
@@ -274,9 +261,7 @@ function saveMembership(
 function creditAffiliateResidual(uid: string, record: MembershipRecord, interval?: string) {
   if (record.status !== 'active') return;
   const def = TIER_DEFS[record.tier as MembershipTierId];
-  const amountCents = def
-    ? (interval === 'year' ? def.yearlyCents : def.monthlyCents)
-    : undefined;
+  const amountCents = def && interval !== 'year' ? def.monthlyCents : undefined;
   try {
     markReferredPaid({
       referredUid: uid,
@@ -309,9 +294,9 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      const parsed = parseMembershipCheckoutRef(String(session.client_reference_id || ''));
-      const uid = String(parsed.uid || session.metadata?.uid || '').trim();
-      const tier = String(session.metadata?.tier || parsed.planId || '').trim();
+      // Tier comes only from server-written session metadata, so it always matches what was charged.
+      const uid = String(session.metadata?.uid || session.client_reference_id || '').trim();
+      const tier = String(session.metadata?.tier || '').trim();
       if (!uid || !isMembershipTier(tier)) {
         console.warn('[Stripe] checkout.session.completed missing uid/tier metadata — skipped.');
         return { handled: false };

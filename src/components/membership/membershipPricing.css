@@ -385,10 +385,32 @@
   border-color: rgba(0, 229, 255, 0.35);
 }
 
-.membership-stripe-buy {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
+.membership-checkout {
+  display: grid;
+  gap: 10px;
+}
+
+.membership-plan-card__button--checkout {
+  width: 100%;
+  cursor: pointer;
+  color: #fff;
+  border-color: var(--plan-accent);
+  background: color-mix(in srgb, var(--plan-accent) 18%, transparent);
+}
+
+.membership-plan-card__button--checkout:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--plan-accent) 32%, transparent);
+}
+
+.membership-plan-card__button--checkout:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.membership-checkout__error {
+  margin: 0;
+  color: #ff8a8a;
+  font-size: 14px;
 }
 
 .membership-plan-grid {

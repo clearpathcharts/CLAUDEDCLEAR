@@ -10,7 +10,7 @@ import {
   type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
-import { StripePlansBuyButton } from './StripePlansBuyButton';
+import { PlanCheckoutButton } from './PlanCheckoutButton';
 import './membershipPricing.css';
 
 const PLAN_ACCENT: Record<MembershipPlanPrice['id'], string> = {
@@ -59,7 +59,6 @@ export default function MembershipPricingPage() {
           content="Choose Basic, Silver, Gold, or Platinum. You only see and unlock the features in the package you pay for."
         />
         <link rel="canonical" href="https://clearpathtrader.com/pricing" />
-        <script async src="https://js.stripe.com/v3/buy-button.js" />
       </Helmet>
 
       <a href="#membership-main" className="cp-skip-link">
@@ -119,7 +118,7 @@ export default function MembershipPricingPage() {
             <p>Stripe checkout</p>
             <strong>Pay for the package you selected</strong>
             <span>
-              The Buy Button on this page is the Stripe checkout issued for ClearPath packages. Your desk then shows
+              Each package opens its own Stripe checkout at the price shown, billed monthly. Your desk then shows
               only that package&apos;s features.
             </span>
             <div>
@@ -184,7 +183,12 @@ export default function MembershipPricingPage() {
                 Continue with Basic
               </a>
             ) : user ? (
-              <StripePlansBuyButton planId={offered.id} uid={user.uid} />
+              <PlanCheckoutButton
+                key={offered.id}
+                planId={offered.id}
+                planName={offered.name}
+                priceLabel={offered.priceLabel}
+              />
             ) : (
               <a href="/" className="membership-plan-card__button membership-plan-card__button--link">
                 Private Login to buy {offered.name}
@@ -198,7 +202,7 @@ export default function MembershipPricingPage() {
           <div>
             <strong>*You only receive the features listed on the package you pay for.</strong>
             <p>
-              Basic is free. Silver, Gold, and Platinum use the Stripe Buy Button on this page. After checkout, the
+              Basic is free. Silver, Gold, and Platinum are monthly Stripe subscriptions. After checkout, the
               signed-in desk unlocks that package — not a higher tier.
             </p>
           </div>
@@ -207,7 +211,7 @@ export default function MembershipPricingPage() {
 
       <footer className="membership-pricing__footer">
         <span>ClearPath Trader</span>
-        <span>Stripe package checkout · one package per member</span>
+        <span>Stripe monthly checkout · one package per member</span>
       </footer>
     </div>
   );

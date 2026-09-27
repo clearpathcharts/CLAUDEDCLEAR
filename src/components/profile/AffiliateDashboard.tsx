@@ -12,7 +12,7 @@ import {
   AFFILIATE_TERMS_SECTIONS,
   AFFILIATE_TERMS_VERSION,
 } from '../../content/affiliateTerms';
-import { PAYMENTS_ENABLED } from '../../lib/paymentsEnabled';
+import { AFFILIATE_PAYOUTS_ENABLED } from '../../lib/paymentsEnabled';
 
 // Shared interfaces
 interface Post {
@@ -1008,7 +1008,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                     )}
                   </div>
                 )}
-                {PAYMENTS_ENABLED && referralDesk?.activated && referralDesk?.payout && (
+                {AFFILIATE_PAYOUTS_ENABLED && referralDesk?.activated && referralDesk?.payout && (
                   <div className="pt-1.5 border-t border-zinc-900 space-y-1.5">
                     <div className="flex justify-between items-center font-semibold">
                       <span className="text-zinc-500 uppercase text-[8px]">PAYOUT READY:</span>
