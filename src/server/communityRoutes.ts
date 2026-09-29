@@ -82,7 +82,9 @@ export function createCommunityRouter(): Router {
       return res.status(403).json({ error: `This room opens on ${communityRoomPlanLabel(room)}.` });
     }
     const cleaned = sanitizeCommunityPost(req.body?.text);
-    if (!cleaned.ok) return res.status(400).json({ error: cleaned.error });
+    if (!cleaned.ok) {
+      return res.status(400).json({ error: 'error' in cleaned ? cleaned.error : 'Post could not be saved.' });
+    }
     const last = postGap.get(who.user.uid) || 0;
     if (Date.now() - last < POST_GAP_MS) {
       return res.status(429).json({ error: 'Wait a few seconds before the next post.' });
