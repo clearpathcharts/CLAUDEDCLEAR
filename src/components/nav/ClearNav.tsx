@@ -8,6 +8,7 @@ import {
   Landmark,
   LogOut,
   Network,
+  MessageSquare,
   Newspaper,
   Shield,
   Terminal,
@@ -96,6 +97,11 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       id: "News",
       icon: Newspaper,
       label: "NEWS",
+    },
+    {
+      id: "Communities",
+      icon: MessageSquare,
+      label: "COMMUNITIES",
     },
     {
       id: "Membership",

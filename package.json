@@ -55,6 +55,7 @@
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:no-third-party-automation": "tsx scripts/no-third-party-automation.selftest.ts",
     "test:plan-catalog": "tsx scripts/plan-catalog.selftest.ts",
+    "test:community-rooms": "tsx scripts/community-rooms.selftest.ts",
     "test:membership-offer": "tsx scripts/membership-offer.selftest.ts",
     "test:glitch-audit": "tsx scripts/glitch-audit.selftest.ts",
     "test:chart-layout": "tsx scripts/chart-layout.selftest.ts",

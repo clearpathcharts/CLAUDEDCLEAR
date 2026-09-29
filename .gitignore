@@ -26,6 +26,7 @@ secrets/
 /data/daily-ops/
 /data/daily-pattern-review/
 /data/chart-pulse/
+/data/communities/
 /data/cot/
 /data/*.log
 /data/*.result.json
