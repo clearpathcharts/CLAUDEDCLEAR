@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ArrowUpRight, BookOpen, Newspaper } from 'lucide-react';
+import { BookOpen, Newspaper, X } from 'lucide-react';
 import { usePageAutoUpdate } from '../../hooks/usePageAutoUpdate';
 import type {
   MagazineCategory,
@@ -41,13 +41,20 @@ function formatWhen(iso: string): string {
   });
 }
 
-function StoryArt({ story, className }: { story: MagazineStory; className: string }) {
+function StoryArt({
+  story,
+  className,
+  onOpen,
+}: {
+  story: MagazineStory;
+  className: string;
+  onOpen: (story: MagazineStory) => void;
+}) {
   return (
-    <a
-      href={story.articleUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`relative block overflow-hidden bg-zinc-900 ${className}`}
+    <button
+      type="button"
+      onClick={() => onOpen(story)}
+      className={`relative block overflow-hidden bg-zinc-900 text-left ${className}`}
     >
       {story.image ? (
         <img
@@ -71,14 +78,24 @@ function StoryArt({ story, className }: { story: MagazineStory; className: strin
           {formatWhen(story.publishedAt)}
         </div>
       ) : null}
-    </a>
+    </button>
   );
 }
 
-export function MagazineStoryCard({ story }: { story: MagazineStory }) {
+function sourceLabel(source: string): string {
+  return source.split('—')[0].trim();
+}
+
+export function MagazineStoryCard({
+  story,
+  onOpen,
+}: {
+  story: MagazineStory;
+  onOpen: (story: MagazineStory) => void;
+}) {
   return (
     <article className="bg-zinc-950/80 border border-white/5 hover:border-[#ff0088]/20 rounded-2xl overflow-hidden hover:shadow-[0_8px_30px_rgba(255,0,136,0.04)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between">
-      <StoryArt story={story} className="h-48 w-full" />
+      <StoryArt story={story} className="h-48 w-full" onOpen={onOpen} />
       <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
@@ -86,37 +103,58 @@ export function MagazineStoryCard({ story }: { story: MagazineStory }) {
             <span>•</span>
             <span>{story.source}</span>
           </div>
-          <a
-            href={story.articleUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-base font-serif font-black italic text-white hover:text-cyan-400 transition-colors line-clamp-2"
+          <button
+            type="button"
+            onClick={() => onOpen(story)}
+            className="text-left text-base font-serif font-black italic text-white hover:text-cyan-400 transition-colors line-clamp-2"
           >
             {story.title}
-          </a>
+          </button>
           {story.snippet ? (
             <p className="text-zinc-400 text-xs line-clamp-3 leading-relaxed">{story.snippet}</p>
           ) : null}
         </div>
         <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-          <a
-            href={story.homepage}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 truncate"
+          <span className="text-[10px] font-mono text-zinc-500 truncate">{sourceLabel(story.source)}</span>
+          <button
+            type="button"
+            onClick={() => onOpen(story)}
+            className="text-xs text-[#00f0ff] font-bold tracking-widest hover:text-[#ff0088] transition-colors shrink-0"
           >
-            Subscribe at {story.source}
-          </a>
-          <a
-            href={story.articleUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[#00f0ff] font-bold tracking-widest hover:text-[#ff0088] transition-colors flex items-center gap-1 shrink-0"
-          >
-            <span>READ ON {story.source.split('—')[0].trim().toUpperCase()}</span>
-            <ArrowUpRight size={14} />
-          </a>
+            Read on Y.W.C.
+          </button>
         </div>
+      </div>
+    </article>
+  );
+}
+
+function StoryReader({ story, onClose }: { story: MagazineStory; onClose: () => void }) {
+  return (
+    <article className="rounded-3xl border border-[#39ff14]/30 bg-zinc-950 overflow-hidden" data-testid="ywc-story-reader">
+      {story.image ? (
+        <img src={story.image} alt="" referrerPolicy="no-referrer" className="w-full max-h-[420px] object-cover" />
+      ) : null}
+      <div className="p-6 md:p-8 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-[#39ff14]">
+            {sourceLabel(story.source)} · on Your World Connected
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-widest text-zinc-400 hover:text-white"
+          >
+            <X size={14} /> Close
+          </button>
+        </div>
+        <h3 className="text-2xl md:text-4xl font-serif italic font-black text-white leading-tight">{story.title}</h3>
+        {story.publishedAt ? (
+          <p className="text-[11px] font-mono text-zinc-500">{formatWhen(story.publishedAt)}</p>
+        ) : null}
+        <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
+          {story.snippet || 'This wire did not include a summary. The headline is the story ClearPath can show here.'}
+        </p>
       </div>
     </article>
   );
@@ -157,35 +195,38 @@ export function useMagazineRack() {
   return { rack, status, refresh, lastUpdatedAt };
 }
 
-function MagazineHero({ story }: { story: MagazineStory }) {
+function MagazineHero({
+  story,
+  onOpen,
+}: {
+  story: MagazineStory;
+  onOpen: (story: MagazineStory) => void;
+}) {
   return (
     <article className="relative min-h-[320px] md:min-h-[420px] rounded-3xl overflow-hidden border border-white/10 flex flex-col justify-end">
-      <StoryArt story={story} className="absolute inset-0" />
+      <StoryArt story={story} className="absolute inset-0" onOpen={onOpen} />
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/10 pointer-events-none" />
       <div className="relative z-10 p-6 md:p-10 space-y-3 max-w-3xl">
         <span className="inline-flex bg-[#ff0088] text-white text-[9px] font-mono font-black tracking-widest px-3 py-1 rounded">
           {story.source}
         </span>
-        <a
-          href={story.articleUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-3xl md:text-5xl font-serif italic font-black leading-tight text-white hover:text-cyan-400 transition-colors"
+        <button
+          type="button"
+          onClick={() => onOpen(story)}
+          className="block text-left text-3xl md:text-5xl font-serif italic font-black leading-tight text-white hover:text-cyan-400 transition-colors"
         >
           {story.title}
-        </a>
+        </button>
         {story.snippet ? (
           <p className="text-zinc-300 text-xs md:text-sm max-w-2xl leading-relaxed">{story.snippet}</p>
         ) : null}
-        <a
-          href={story.articleUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => onOpen(story)}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ff0088] rounded-xl text-xs font-black tracking-wider"
         >
-          Open on {story.source.split('—')[0].trim()}
-          <ArrowUpRight size={14} />
-        </a>
+          Read on Y.W.C.
+        </button>
       </div>
     </article>
   );
@@ -200,12 +241,15 @@ export function YwcMagazineRack({
   compact?: boolean;
   category?: 'all' | MagazineCategory;
   hideIntro?: boolean;
-  /** First headline as a full-width cinematic card that still opens the publisher. */
+  /** First headline as a full-width cinematic card that opens on Y.W.C. */
   showHero?: boolean;
 }) {
   const { rack, status, refresh } = useMagazineRack();
-  const items =
-    category === 'all' ? rack.items : rack.items.filter((s) => s.category === category);
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [openStory, setOpenStory] = useState<MagazineStory | null>(null);
+  const items = (category === 'all' ? rack.items : rack.items.filter((s) => s.category === category)).filter(
+    (story) => !selectedSourceId || story.sourceId === selectedSourceId,
+  );
   const hero = showHero ? items[0] : null;
   const rest = hero ? items.slice(1) : items;
   const shown = compact ? rest.slice(0, 8) : rest;
@@ -223,9 +267,8 @@ export function YwcMagazineRack({
               Live editorial wires
             </h3>
             <p className="text-xs text-zinc-400 max-w-2xl leading-relaxed">
-              Headlines from magazines people actually read — Motorsport, MotorTrend, Car and Driver,
-              WIRED, Smithsonian, and more. Read on opens <strong className="text-zinc-300 font-semibold">their</strong>{' '}
-              website so you can subscribe there. ClearPath does not sell these titles.
+              Headlines stay on Your World Connected. Tap a title such as Smithsonian to read that wire here.
+              ClearPath does not sell these magazines.
             </p>
           </div>
           <button
@@ -240,21 +283,46 @@ export function YwcMagazineRack({
 
       {rack.publications.length > 0 && (
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSourceId(null);
+              setOpenStory(null);
+            }}
+            className={`text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+              selectedSourceId
+                ? 'border-white/10 text-zinc-400 hover:text-white'
+                : 'border-[#39ff14]/50 text-[#39ff14]'
+            }`}
+          >
+            All titles
+          </button>
           {rack.publications
-            .filter((p, i, all) => all.findIndex((x) => x.homepage === p.homepage) === i)
-            .map((pub) => (
-              <a
-                key={pub.id}
-                href={pub.homepage}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full border border-white/10 text-zinc-400 hover:text-white hover:border-[#39ff14]/40"
-              >
-                {pub.name.split('—')[0].trim()}
-              </a>
-            ))}
+            .filter((p, i, all) => all.findIndex((x) => x.id === p.id) === i)
+            .map((pub) => {
+              const on = selectedSourceId === pub.id;
+              return (
+                <button
+                  key={pub.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSourceId(on ? null : pub.id);
+                    setOpenStory(null);
+                  }}
+                  className={`text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                    on
+                      ? 'border-[#39ff14]/50 text-white bg-[#39ff14]/10'
+                      : 'border-white/10 text-zinc-400 hover:text-white hover:border-[#39ff14]/40'
+                  }`}
+                >
+                  {sourceLabel(pub.name)}
+                </button>
+              );
+            })}
         </div>
       )}
+
+      {openStory ? <StoryReader story={openStory} onClose={() => setOpenStory(null)} /> : null}
 
       {status === 'loading' && shown.length === 0 && (
         <p className="text-xs font-mono text-zinc-500">Pulling magazine RSS…</p>
@@ -268,12 +336,12 @@ export function YwcMagazineRack({
         <p className="text-xs font-mono text-zinc-500">No magazine headlines in this pass.</p>
       )}
 
-      {hero ? <MagazineHero story={hero} /> : null}
+      {hero && !openStory ? <MagazineHero story={hero} onOpen={setOpenStory} /> : null}
 
-      {shown.length > 0 && (
+      {shown.length > 0 && !openStory && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {shown.map((story) => (
-            <MagazineStoryCard key={story.id} story={story} />
+            <MagazineStoryCard key={story.id} story={story} onOpen={setOpenStory} />
           ))}
         </div>
       )}

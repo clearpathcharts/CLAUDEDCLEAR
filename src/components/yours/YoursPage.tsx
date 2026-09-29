@@ -871,8 +871,8 @@ export default function YoursPageHub() {
                   Online Newspaper — Live Editorial Grid
                 </YwcSectionTitle>
                 <p className="text-xs text-zinc-400 leading-relaxed max-w-3xl">
-                  Live magazine wires. Headline, photo, and READ ON open the publisher&apos;s website
-                  (Motorsport, MotorTrend, and the rest) so you can subscribe there. ClearPath does not sell these titles.
+                  Live magazine wires. Tap a title or a story and it stays on Your World Connected.
+                  ClearPath does not sell these magazines.
                 </p>
                 <YwcMagazineRack
                   hideIntro

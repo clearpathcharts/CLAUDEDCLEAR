@@ -26,15 +26,15 @@ export default function MagazineHub() {
       <div className="relative z-10 space-y-1.5 text-left">
         <div className="flex items-center gap-2 text-[9px] font-mono tracking-[0.25em] text-[#39ff14] bg-[#39ff14]/10 w-fit px-3 py-1 rounded-full font-black">
           <BookOpen className="w-3 h-3 text-[#39ff14]" />
-          <span>MAGAZINE RACK — PUBLISHER SITES</span>
+          <span>MAGAZINE RACK — ON Y.W.C.</span>
         </div>
         <h2 className="text-4xl md:text-5xl font-black font-serif italic text-white tracking-tight">
           MAGAZINE <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-[#39ff14] to-cyan-400">WIRES</span>
         </h2>
         <p className="text-xs text-zinc-400 font-sans max-w-2xl leading-relaxed">
           Live RSS from Motorsport, MotorTrend, Car and Driver, Road &amp; Track, WIRED, GQ, Esquire,
-          Smithsonian, and Popular Science. Each headline opens the magazine&apos;s own page — subscribe
-          there if you like the desk. ClearPath does not sell these titles.
+          Smithsonian, and Popular Science. Every headline stays on Your World Connected.
+          ClearPath does not sell these titles.
         </p>
       </div>
 

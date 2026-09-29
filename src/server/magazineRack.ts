@@ -1,7 +1,6 @@
 /**
  * Your World Connected magazine rack.
- * Server-only allowlisted RSS → headlines. Clicks go to the publisher
- * (Motorsport, MotorTrend, …) so people can subscribe there.
+ * Server-only allowlisted RSS → headlines shown on Your World Connected.
  * ClearPath does not sell these magazines and is not their partner.
  */
 import RSSParser from 'rss-parser';
