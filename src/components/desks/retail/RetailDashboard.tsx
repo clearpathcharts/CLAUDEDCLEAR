@@ -531,6 +531,12 @@ export default function RetailDashboard() {
               >
                 Learn
               </a>
+              <a
+                href="/communities"
+                className="rounded-lg border border-[var(--desk-border)] px-3 py-2 text-sm font-black uppercase tracking-wider text-[var(--desk-muted)] hover:text-[var(--desk-cyan)]"
+              >
+                Communities
+              </a>
             </div>
           </header>
         </section>

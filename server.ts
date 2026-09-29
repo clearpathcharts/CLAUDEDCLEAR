@@ -131,6 +131,7 @@ import {
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
+import { createCommunityRouter } from './src/server/communityRoutes';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
@@ -873,6 +874,7 @@ async function startServer() {
   });
 
   app.use('/api/broker', createBrokerRouter());
+  app.use('/api/communities', createCommunityRouter());
 
   app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {

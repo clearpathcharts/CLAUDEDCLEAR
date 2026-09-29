@@ -15,6 +15,7 @@ interface RegionalStory {
 export default function WorldHub() {
   const [activeRegion, setActiveRegion] = useState<string>('all');
   const [feeds, setFeeds] = useState<any[]>([]);
+  const [openFeed, setOpenFeed] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
 
   const regionTabs = [
@@ -223,6 +224,15 @@ export default function WorldHub() {
             </h4>
           </div>
 
+          {openFeed ? (
+            <div className="space-y-2 rounded-xl border border-white/10 bg-black/60 p-3">
+              <button type="button" onClick={() => setOpenFeed(null)} className="text-[9px] font-mono uppercase tracking-widest text-zinc-500 hover:text-white">
+                Back to the wire
+              </button>
+              <p className="text-sm font-bold text-white">{openFeed.title}</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">{openFeed.description || 'Shown on Your World Connected.'}</p>
+            </div>
+          ) : null}
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-2">
               <div className="w-5 h-5 border border-[#39ff14] border-t-transparent rounded-full animate-spin" />
@@ -236,9 +246,13 @@ export default function WorldHub() {
                     <span>{feed.author || 'WORLD FEED'}</span>
                     <span className="text-[#39ff14]">{feed.timestamp}</span>
                   </div>
-                  <a href={feed.link} target="_blank" rel="noreferrer" className="block text-zinc-300 hover:text-white font-sans font-bold leading-tight hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFeed(feed)}
+                    className="block text-left text-zinc-300 hover:text-white font-sans font-bold leading-tight"
+                  >
                     {feed.title}
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>

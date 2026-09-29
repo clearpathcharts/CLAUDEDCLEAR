@@ -36,6 +36,7 @@ const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
 const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
 const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
+const CommunityHub = lazy(() => import('./components/community/CommunityHub'));
 
 function AuthenticatedShell({
   profile,
@@ -152,6 +153,11 @@ function isPlansPath(path: string): boolean {
   return p === '/plans' || p === '/membership' || p === '/pricing';
 }
 
+function isCommunitiesPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/communities';
+}
+
 function isFundamentalDeskPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return p === '/desk/fundamental' || p.startsWith('/desk/fundamental/');
@@ -191,6 +197,7 @@ function PublicLearnShell({
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <SessionLogoutButton />
             <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">Plans</a>
+            <a href="/communities" className="text-[10px] font-black uppercase tracking-wider text-[#FF1493]/80 hover:text-[#FF1493]">Communities</a>
             <a href="/education" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Education</a>
             <a href="/literacy" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Literacy OS</a>
             <a href="/encyclopedia" className="text-[10px] font-black uppercase tracking-wider text-[#00E5FF]/80 hover:text-[#00E5FF]">Encyclopedia</a>
@@ -396,6 +403,33 @@ export default function App() {
       >
         <UsBrokerNetworkPage />
       </Suspense>
+    );
+  } else if (isCommunitiesPath(currentPath)) {
+    content = (
+      <div className="min-h-screen w-full bg-[#050505] text-white">
+        <a href="#community-main" className="cp-skip-link">Skip to communities</a>
+        <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
+          <nav className="flex items-center justify-between gap-3" aria-label="Communities">
+            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white">
+              ← ClearPath Home
+            </a>
+            <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">
+              Plans
+            </a>
+          </nav>
+        </header>
+        <main id="community-main" tabIndex={-1} className="outline-none">
+          <Suspense
+            fallback={
+              <div className="min-h-[50vh] flex items-center justify-center text-zinc-500 font-mono text-xs uppercase tracking-widest">
+                Opening communities…
+              </div>
+            }
+          >
+            <CommunityHub onUpgrade={() => { window.location.assign('/plans'); }} />
+          </Suspense>
+        </main>
+      </div>
     );
   } else if (isPlansPath(currentPath)) {
     content = (
