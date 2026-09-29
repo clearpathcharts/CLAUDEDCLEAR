@@ -92,6 +92,7 @@ const MembershipTab = lazy(() => import('./MembershipTab'));
 const NewsPanel = lazy(() => import('./NewsPanel'));
 const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
 const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
+const CommunityHub = lazy(() => import('./community/CommunityHub'));
 const KillZones = lazy(() => import('./KillZones'));
 const GoogleDesk = lazy(() => import('./GoogleDesk'));
 const LegalFooter = lazy(() => import('./LegalFooter'));
@@ -366,6 +367,11 @@ const TabContent = ({
         <FundamentalsPanel />
       );
       case 'News': return <NewsPanel />;
+      case 'Communities': return (
+        <Suspense fallback={<TabLoading />}>
+          <CommunityHub onUpgrade={() => setActiveTab('Membership')} />
+        </Suspense>
+      );
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
       case 'AffiliateNetwork': return gate(
         'affiliate', 'silver', 'Affiliate Network',
@@ -926,6 +932,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
       { id: 'Fundamentals', icon: Landmark, label: 'FUNDAMENTAL' },
       { id: 'News', icon: Newspaper, label: 'LIVE NEWS' },
+      { id: 'Communities', icon: MessageSquare, label: 'COMMUNITIES' },
       { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
       { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },

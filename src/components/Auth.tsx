@@ -840,6 +840,9 @@ export default function Auth() {
             <a href="/education" className="text-zinc-400 hover:text-[#B026FF] transition-colors">
               Education
             </a>
+            <a href="/communities" className="text-zinc-400 hover:text-[#FF1493] transition-colors">
+              Communities
+            </a>
             <a href="/tools/position-size" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Position Size
             </a>

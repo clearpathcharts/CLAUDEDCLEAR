@@ -16,6 +16,7 @@ interface FeedItem {
 export default function GlobalFinance() {
   const [activeTab, setActiveTab] = useState<'all' | 'brics' | 'cb' | 'sovereign' | 'private'>('all');
   const [feeds, setFeeds] = useState<FeedItem[]>([]);
+  const [openFeed, setOpenFeed] = useState<FeedItem | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Dynamic system simulation of finance data
@@ -203,11 +204,22 @@ export default function GlobalFinance() {
               <span className="text-[9px] font-mono tracking-wider text-pink-400 uppercase font-black">
                 LIVE FINANCIAL FEED TRANSMISSIONS:
               </span>
+              {openFeed ? (
+                <div className="rounded-xl border border-white/10 bg-black/60 p-3 space-y-2">
+                  <button type="button" onClick={() => setOpenFeed(null)} className="text-[9px] font-mono uppercase tracking-widest text-zinc-500 hover:text-white">
+                    Back to the wire
+                  </button>
+                  <p className="text-sm font-bold text-white">{openFeed.title}</p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">{openFeed.description || 'Shown on Your World Connected.'}</p>
+                </div>
+              ) : null}
               <div className="space-y-2 max-h-[140px] overflow-y-auto no-scrollbar text-[11px] font-mono text-zinc-400">
                 {feeds.map((feed, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 py-1.5 border-b border-white/5 hover:text-white transition-all">
                     <span className="text-[#39ff14] font-bold shrink-0">[{feed.timestamp}]</span>
-                    <a href={feed.link} target="_blank" rel="noreferrer" className="hover:underline text-zinc-300 truncate block max-w-xs">{feed.title}</a>
+                    <button type="button" onClick={() => setOpenFeed(feed)} className="text-left text-zinc-300 hover:text-white truncate block max-w-xs">
+                      {feed.title}
+                    </button>
                   </div>
                 ))}
               </div>

@@ -8,6 +8,7 @@ import {
   Landmark,
   LogOut,
   Network,
+  MessageSquare,
   Newspaper,
   Shield,
   Terminal,
@@ -60,6 +61,13 @@ const WORK_ITEMS: NavItem[] = [
     label: "NEWS",
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+  },
+  {
+    id: "Communities",
+    icon: MessageSquare,
+    label: "COMMUNITIES",
+    colorClass: "text-[#FF1493] border-[#FF1493]/25 hover:bg-[#FF1493]/10",
+    glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
   },
 ];
 
