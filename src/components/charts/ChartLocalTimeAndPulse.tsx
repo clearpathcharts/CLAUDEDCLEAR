@@ -339,8 +339,8 @@ export function ChartLocalTimeAndPulse({
             onClick={() => void toggleInterval(interval)}
             title={
               symbol
-                ? `Push a ${contact.channel === "sms" ? "text" : "email"} snapshot of this loaded chart every ${interval} minutes`
-                : "This slot is empty — use 5m on a chart that already has candles"
+                ? `Alert only. Sends a ${contact.channel === "sms" ? "text" : "email"} snapshot every ${interval} minutes. Does not change the candles.`
+                : "Alert only. Load a symbol first. This does not change the chart timeframe."
             }
             className={`rounded-md border px-2 py-1 font-mono font-black uppercase tracking-wider transition-colors shrink-0 ${
               compact ? "text-[9px] min-w-[36px]" : "text-[10px] min-w-[42px]"
@@ -350,8 +350,9 @@ export function ChartLocalTimeAndPulse({
                 : "border-rose-500/70 bg-rose-950/40 text-rose-200 hover:bg-rose-900/50"
             } disabled:opacity-50`}
             aria-pressed={on}
+            aria-label={`Alert every ${interval} minutes. Does not change the candles.`}
           >
-            {interval}m
+            Alert {interval}m
           </button>
         );
       })}

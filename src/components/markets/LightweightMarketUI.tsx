@@ -39,6 +39,7 @@ import {
   isUnlimited,
 } from '../../lib/planCatalog';
 import { TimeframeMenu } from '../charts/TimeframeMenu';
+import { ChartIntervalBar } from '../charts/ChartIntervalBar';
 import { normalizeChartTimeframe } from '../../constants/chartTimeframes';
 
 const CHART_LAYOUT_STORAGE_KEY = 'cpt-market-terminal-chart-layout';
@@ -64,6 +65,7 @@ function loadMarketSlots(): ChartLayoutSlot[] {
       if (Array.isArray(parsed) && parsed.length >= 1 && parsed.length <= MARKET_CHART_SLOT_COUNT_MAX) {
         const slots = parsed.map((slot: ChartLayoutSlot, i: number) => ({
           symbol: slot.symbol ?? null,
+          timeframe: normalizeChartTimeframe(slot.timeframe || '1h'),
           // Horizontal drag offsets shoved charts into the right third of the page —
           // always dock full-width; only vertical stacking uses y.
           x: 0,
@@ -541,11 +543,22 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           : ''
                     }`}
                     preHeader={
-                      <ChartLocalTimeAndPulse
-                        slotId={`market-${idx}`}
-                        symbol={slot.symbol}
-                        onInteract={() => setActiveSlot(idx)}
-                      />
+                      <div className="flex flex-col gap-1.5 w-full min-w-0">
+                        <ChartIntervalBar
+                          value={normalizeChartTimeframe(slot.timeframe || activeTimeframe)}
+                          onChange={(tf) => {
+                            setActiveSlot(idx);
+                            setActiveTimeframe(tf);
+                            updateSlot(idx, { timeframe: tf });
+                          }}
+                          isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+                        />
+                        <ChartLocalTimeAndPulse
+                          slotId={`market-${idx}`}
+                          symbol={slot.symbol}
+                          onInteract={() => setActiveSlot(idx)}
+                        />
+                      </div>
                     }
                     header={
                       <div className="flex items-center gap-2 min-w-0 w-full">
@@ -603,7 +616,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                             setActiveSlot(idx);
                             setExpandedSlot(slotExpanded ? null : idx);
                           }}
-                          timeframe={patternTimeframe}
+                          timeframe={normalizeChartTimeframe(slot.timeframe || patternTimeframe)}
                           symbol={slot.symbol}
                           theme={chartTheme}
                           useDedicatedPatternPanel

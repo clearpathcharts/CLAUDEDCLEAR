@@ -4,6 +4,10 @@ import React, { Suspense, lazy, useState } from 'react';
 import { BarChart3, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useYwcPersonalCharts } from '../../hooks/useYwcPersonalCharts';
 import { YwcSectionTitle } from './YwcLavaPanel';
+import { ChartIntervalBar } from '../charts/ChartIntervalBar';
+import { normalizeChartTimeframe } from '../../constants/chartTimeframes';
+import { isIntradayTimeframe } from '../../lib/planCatalog';
+import { useMembership } from '../../hooks/useMembership';
 
 const LightweightCandles = lazy(() =>
   import('../charts/LightweightCandles').then((m) => ({ default: m.LightweightCandles }))
@@ -24,7 +28,8 @@ type YwcPersonalChartsProps = {
 };
 
 export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPersonalChartsProps) {
-  const { slots, addSlot, removeSlot, maxSlots } = useYwcPersonalCharts();
+  const { slots, addSlot, removeSlot, setTimeframe, maxSlots } = useYwcPersonalCharts();
+  const { limits } = useMembership();
   const [symbolInput, setSymbolInput] = useState('');
   const [addError, setAddError] = useState('');
 
@@ -107,6 +112,13 @@ export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPerso
             key={slot.id}
             className="rounded-2xl border border-white/10 bg-black/60 overflow-hidden"
           >
+            <div className="px-3 pt-2">
+              <ChartIntervalBar
+                value={normalizeChartTimeframe(slot.timeframe || '1h')}
+                onChange={(tf) => setTimeframe(slot.id, tf)}
+                isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+              />
+            </div>
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
               <div>
                 <span className="text-xs font-black text-white font-mono">{slot.symbol}</span>
@@ -133,7 +145,7 @@ export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPerso
                 profileId="calm_focus"
                 symbol={slot.symbol}
                 height={compact ? 320 : 560}
-                timeframe="1h"
+                timeframe={normalizeChartTimeframe(slot.timeframe || '1h')}
                 embedMode
               />
             </div>
