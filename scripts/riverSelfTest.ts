@@ -374,6 +374,52 @@ console.log("\n[7] Platform layers (compat, assist, catalog types)");
   check("detect MQL4", mql.language === "mql4");
   const conv = translateMql4ToPine(`extern int R=14;\ndouble rsi=iRSI(NULL,0,R,PRICE_CLOSE);\n`);
   check("MQL4 converts to pine", conv.ok && !!conv.pineSource?.includes("ta.rsi"));
+
+  const { assertCapabilityRegistry, inventoryPine } = await import("../src/river/capabilities");
+  const { readFileSync } = await import("fs");
+  const interpreterSrc = readFileSync(new URL("../src/river/pine/interpreter.ts", import.meta.url), "utf8");
+  const drift = assertCapabilityRegistry(interpreterSrc);
+  check("capability registry matches interpreter", drift.length === 0, drift.join(" | "));
+
+  const st = compilePine(`//@version=5\nindicator("ST", overlay=true)\n[line, dir] = ta.supertrend(3, 10)\nplot(line)\n`);
+  check("supertrend compiles", st.status === "ok", st.status === "error" ? st.error : "");
+  const vwap = compilePine(`//@version=5\nindicator("VW", overlay=true)\nplot(ta.vwap(hlc3))\n`);
+  check("vwap compiles", vwap.status === "ok", vwap.status === "error" ? vwap.error : "");
+  const adx = compilePine(`//@version=5\nindicator("ADX")\nplot(ta.adx(14))\n`);
+  check("adx is rejected", adx.status === "error");
+  const inv = inventoryPine(`plot(ta.ema(close, 20))\nrequest.security(syminfo.tickerid, "60", close)\nfill(a, b)\n`);
+  check("inventory sees ema and security", inv.runs.includes("ta.ema") && inv.unsupported.includes("request.security") && inv.noop.includes("fill"));
+
+  const data = candles(8);
+  const arr = run(`//@version=5
+indicator("Arr")
+var a = array.new_float(0)
+array.push(a, close)
+plot(array.size(a))
+plot(array.get(a, 0))
+`, data);
+  const sizeLast = arr.plots[0].points[arr.plots[0].points.length - 1].value;
+  check("array stores pushed values", sizeLast === data.length, `size ${sizeLast}`);
+  check("array.get reads the first push", approx(arr.plots[1].points[data.length - 1].value as number, data[0].close));
+
+  const fn = run(`//@version=5
+indicator("VarFn")
+f() =>
+    var float x = 0.0
+    x := x + 1
+    x
+plot(f())
+`, data);
+  const fnLast = fn.plots[0].points[fn.plots[0].points.length - 1].value;
+  check("var inside a function persists", fnLast === data.length, `got ${fnLast}`);
+
+  const drawn = run(`//@version=5
+indicator("Draw", overlay=true)
+label.new(bar_index, high, "HI")
+line.new(bar_index, low, bar_index + 1, high)
+`, data);
+  check("label becomes a marker", drawn.markers.some(m => m.text === "HI"));
+  check("line becomes a segment", drawn.segments.length > 0 && drawn.segments[0].value1 === data[0].low);
 }
 
 // -------------------------------------------------------------------- DONE

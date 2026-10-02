@@ -1113,16 +1113,39 @@ export const LightweightCandles = memo(function LightweightCandles({
                 createSeriesMarkers(series, markers);
               }
 
-              // barcolor(): repaint the exact candles the script flagged (Gold Bars).
-              if (result.barColors.length > 0) {
+              // barcolor() repaints the candle. bgcolor() marks the border only.
+              if (result.barColors.length > 0 || result.backgrounds.length > 0) {
                 const colorByTime = new Map(result.barColors.map(bc => [bc.time, bc.color]));
+                const borderByTime = new Map(result.backgrounds.map(bg => [bg.time, bg.color]));
                 series.setData(tierOptimizedData.map(d => {
                   const c = colorByTime.get(d.time);
-                  return c
-                    ? ({ ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as CandlestickData<Time>)
-                    : (d as CandlestickData<Time>);
+                  const border = borderByTime.get(d.time);
+                  if (c) {
+                    return { ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as CandlestickData<Time>;
+                  }
+                  if (border) {
+                    return { ...d, time: d.time as Time, borderColor: border, wickColor: border } as CandlestickData<Time>;
+                  }
+                  return d as CandlestickData<Time>;
                 }));
               }
+
+              result.segments.slice(0, 80).forEach((seg, i) => {
+                const left = seg.time1 <= seg.time2 ? seg : { ...seg, time1: seg.time2, value1: seg.value2, time2: seg.time1, value2: seg.value1 };
+                if (left.time1 === left.time2) return;
+                const segment = chart.addSeries(LineSeries, {
+                  color: seg.color,
+                  lineWidth: 1,
+                  title: `Draw ${i + 1}`,
+                  priceScaleId: result.meta.overlay ? "right" : OSCILLATOR_SCALE_ID,
+                  lastValueVisible: false,
+                  priceLineVisible: false,
+                });
+                segment.setData([
+                  { time: left.time1 as Time, value: left.value1 },
+                  { time: left.time2 as Time, value: left.value2 },
+                ]);
+              });
 
               result.hlines.forEach(hl => {
                 series.createPriceLine({ price: hl.value, color: hl.color, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: hl.title });

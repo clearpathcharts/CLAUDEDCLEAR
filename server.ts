@@ -288,7 +288,7 @@ import {
   savePrivateEntry,
   savePublicEntry,
 } from './src/server/riverCatalogService';
-import { chatRiverGenie } from './src/server/riverGenieService';
+import { chatRiverGenie, offlineRiverGenieAnswer } from './src/server/riverGenieService';
 import {
   getTwelveDataApiKey,
   getTwelveDataKeyPresence,
@@ -2235,14 +2235,17 @@ async function startServer() {
     res.json({ ok: true });
   });
 
-  // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  // River Genie — AI Pine co-pilot (build / fix / recommend indicators).
+  // Members sign in with a private session or a Firebase ID token. A missing
+  // session still gets the built-in guide so the suggestion chips are not a dead 401.
+  app.post('/api/river/genie/chat', aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
     try {
-      const result = await chatRiverGenie({
+      const uid = await resolveAuthenticatedUid(req);
+      const payload = {
         question,
         userName: req.body?.userName,
         conversationHistory: req.body?.conversationHistory,
@@ -2255,7 +2258,11 @@ async function startServer() {
         localHints: req.body?.localHints,
         chartContext: req.body?.chartContext,
         catalogSnippet: req.body?.catalogSnippet,
-      });
+      };
+      if (!uid) {
+        return res.json(offlineRiverGenieAnswer(payload));
+      }
+      const result = await chatRiverGenie(payload);
       res.json(result);
     } catch (error: any) {
       console.error('[River Genie Error]', error);
