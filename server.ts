@@ -1486,7 +1486,27 @@ async function startServer() {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: CHECKOUT_DISABLED_MESSAGE });
     }
     const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
+    // A Google-only member has no private cookie, so fall back to a
+    // server-verified Firebase ID token the same way /api/membership/me does.
+    // The private session always wins so a second Google account in the same
+    // browser can never buy against the signed-in private account.
+    let uid = sessionUser?.uid || '';
+    let email = sessionUser?.email || undefined;
+    if (!uid) {
+      const bearer = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+      if (bearer?.[1] && ensureAdminApp()) {
+        try {
+          const decoded = await getAuth().verifyIdToken(bearer[1].trim());
+          if (decoded.uid) {
+            uid = decoded.uid;
+            email = String(decoded.email || '').trim().toLowerCase() || undefined;
+          }
+        } catch {
+          /* fall through to 401 */
+        }
+      }
+    }
+    if (!uid) {
       return res.status(401).json({ error: 'Sign in to subscribe.' });
     }
     const tier = req.body?.tier;
@@ -1498,8 +1518,8 @@ async function startServer() {
     const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
     try {
       const { url } = await createMembershipCheckoutSession({
-        uid: sessionUser.uid,
-        email: sessionUser.email,
+        uid,
+        email,
         tier,
         interval,
         origin,
