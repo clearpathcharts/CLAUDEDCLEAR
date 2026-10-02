@@ -39,7 +39,7 @@ let cache: MembershipInfo | null = null;
 let inflight: Promise<MembershipInfo> | null = null;
 const listeners = new Set<(m: MembershipInfo) => void>();
 
-async function membershipAuthHeaders(): Promise<Record<string, string>> {
+export async function membershipAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   try {
     const current = auth.currentUser;
