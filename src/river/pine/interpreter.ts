@@ -5,7 +5,8 @@
 //
 //   - the entire script re-runs once per bar, oldest to newest
 //   - `x[1]` reads the value a variable/call had at the END of the previous bar
-//   - `var` / `varip` declarations initialize once and persist across bars
+//   - `var` / `varip` initialize once per call site and persist across bars,
+//     including `var` declared inside a user function
 //   - stateful built-ins (ta.ema, ta.atr, ta.crossover, ...) keep independent
 //     state per syntactic call site, keyed by the call-instantiation path
 //
@@ -20,8 +21,20 @@ import { Candle } from "../../types/indicators";
 
 // --------------------------------------------------------------- value model
 
-/** null represents Pine's `na`. Tuples are Value[]. */
-export type Value = number | boolean | string | null | Value[];
+/** null represents Pine's `na`. Tuples and arrays are Value[]. Drawing objects are PineDraw. */
+export type Value = number | boolean | string | null | Value[] | PineDraw;
+
+export interface PineDraw {
+  kind: "label" | "line" | "box";
+  deleted: boolean;
+  time: number;
+  price: number;
+  time2: number;
+  price2: number;
+  text: string;
+  color: string;
+  position: "aboveBar" | "belowBar" | "inBar";
+}
 
 function isNa(v: Value): boolean {
   return v === null || v === undefined || (typeof v === "number" && !Number.isFinite(v));
@@ -81,6 +94,8 @@ export interface RiverMarker {
 export interface RiverBarColor { time: number; color: string; }
 export interface RiverHLine { value: number; title: string; color: string; }
 export interface RiverAlert { time: number; title: string; message: string; }
+export interface RiverSegment { time1: number; value1: number; time2: number; value2: number; color: string; }
+export interface RiverBackground { time: number; color: string; }
 
 export interface RiverRunResult {
   meta: { title: string; overlay: boolean; version: number };
@@ -90,6 +105,8 @@ export interface RiverRunResult {
   barColors: RiverBarColor[];
   hlines: RiverHLine[];
   alerts: RiverAlert[];
+  segments: RiverSegment[];
+  backgrounds: RiverBackground[];
   warnings: string[];
   barsProcessed: number;
 }
@@ -178,14 +195,10 @@ const V4_ALIASES: Record<string, string> = {
 // Functions that are intentionally accepted as silent no-ops (drawing objects
 // and strategy plumbing that don't affect indicator series output).
 const NOOP_FUNCTIONS = new Set([
-  "fill", "label.new", "label.set_text", "label.set_xy", "label.set_x", "label.set_y",
-  "label.set_color", "label.set_textcolor", "label.set_style", "label.delete",
-  "line.new", "line.set_xy1", "line.set_xy2", "line.set_color", "line.delete",
-  "box.new", "box.delete", "table.new", "table.cell", "table.delete",
+  "table.new", "table.cell", "table.delete",
   "strategy.exit", "strategy.cancel", "strategy.cancel_all", "strategy.risk.max_drawdown",
   "strategy.risk.max_intraday_loss", "strategy.risk.allow_entry_in",
-  "alert", "max_bars_back", "barcolor_noop", "plotcandle", "plotbar",
-  "array.new_float", "array.push", "array.pop", "array.get", "array.set",
+  "alert", "max_bars_back", "plotcandle", "plotbar",
   "timeframe.change",
 ]);
 
@@ -196,7 +209,11 @@ class ContinueSignal { }
 
 // ---------------------------------------------------------------- interpreter
 
-interface Scope { vars: Map<string, Value>; }
+interface Scope {
+  vars: Map<string, Value>;
+  /** Names declared with var/varip in this scope, keyed to persistent storage. */
+  persisted: Map<string, string>;
+}
 
 export interface RunOptions {
   /** Override input values, keyed by input id (title). */
@@ -213,9 +230,10 @@ export class PineInterpreter {
   private opts: RunOptions;
 
   private bar = 0;
-  private globals: Scope = { vars: new Map() };
+  private globals: Scope = { vars: new Map(), persisted: new Map() };
   private scopes: Scope[] = [];
-  private varOnce = new Set<string>();          // var/varip decls already initialized
+  private varOnce = new Set<string>();          // global var/varip already initialized
+  private varLocals = new Map<string, Value>(); // var/varip inside a function, per call site
   private varSeries = new Map<string, Value[]>(); // end-of-bar global variable history
   private callSeries = new Map<string, Value[]>(); // per call-site output history
   private exprSeries = new Map<Expr, Value[]>();   // history for misc [] bases
@@ -230,6 +248,8 @@ export class PineInterpreter {
   private barColors: RiverBarColor[] = [];
   private hlines = new Map<string, RiverHLine>();
   private alerts: RiverAlert[] = [];
+  private draws: PineDraw[] = [];
+  private backgrounds: RiverBackground[] = [];
   private warnings = new Set<string>();
   private meta = { title: "Imported Script", overlay: true, version: 5 };
 
@@ -271,9 +291,34 @@ export class PineInterpreter {
       barColors: this.barColors,
       hlines: [...this.hlines.values()],
       alerts: this.alerts,
+      segments: this.segmentsFromDraws(),
+      backgrounds: this.backgrounds,
       warnings: [...this.warnings],
       barsProcessed: this.candles.length,
     };
+  }
+
+  /** Labels become markers. Lines and box edges become segments. Final coordinates win. */
+  private segmentsFromDraws(): RiverSegment[] {
+    const segments: RiverSegment[] = [];
+    for (const d of this.draws) {
+      if (d.deleted) continue;
+      if (d.kind === "label") {
+        this.markers.push({
+          time: d.time,
+          position: d.position,
+          shape: "circle",
+          color: d.color,
+          text: d.text,
+        });
+      } else if (d.kind === "line") {
+        segments.push({ time1: d.time, value1: d.price, time2: d.time2, value2: d.price2, color: d.color });
+      } else {
+        segments.push({ time1: d.time, value1: d.price, time2: d.time2, value2: d.price, color: d.color });
+        segments.push({ time1: d.time, value1: d.price2, time2: d.time2, value2: d.price2, color: d.color });
+      }
+    }
+    return segments;
   }
 
   // ---------------------------------------------------------------- statements
@@ -293,9 +338,13 @@ export class PineInterpreter {
             }
             return this.lookupVar(stmt.name);
           }
-          // 'var' inside a function/block: Pine keeps per-instantiation state.
-          // The River approximates it as a plain declaration and says so.
-          this.warnOnce("'var' inside a function body re-initializes on each call in INDACREATOR (persistent local state isn't supported yet).");
+          const key = `${this.callPath.join(".")}#${stmt.line}#${stmt.name}`;
+          if (!this.varLocals.has(key)) this.varLocals.set(key, norm(this.evalExpr(stmt.init)));
+          const v = this.varLocals.get(key)!;
+          const scope = this.scopes[this.scopes.length - 1];
+          scope.vars.set(stmt.name, v);
+          scope.persisted.set(stmt.name, key);
+          return v;
         }
         const v = this.evalExpr(stmt.init);
         this.setVar(stmt.name, v, true);
@@ -703,7 +752,12 @@ export class PineInterpreter {
     if (name === "plotchar") return this.builtinPlotChar(call, key);
     if (name === "plotarrow") return this.builtinPlotArrow(call);
     if (name === "barcolor") return this.builtinBarColor(call);
-    if (name === "bgcolor") return null; // accepted; backgrounds not rendered yet
+    if (name === "bgcolor") return this.builtinBg(call);
+    if (name === "fill") return this.builtinFill(call);
+    if (name.startsWith("array.")) return this.builtinArray(name, call);
+    if (name === "label.new" || name.startsWith("label.set_") || name === "label.delete") return this.builtinLabel(name, call);
+    if (name === "line.new" || name.startsWith("line.set_") || name === "line.delete") return this.builtinLine(name, call);
+    if (name === "box.new" || name.startsWith("box.set_") || name === "box.delete") return this.builtinBox(name, call);
     if (name === "hline") {
       if (this.bar === 0) {
         const price = this.argNum(call, 0, "price", 0) ?? 0;
@@ -1385,7 +1439,7 @@ export class PineInterpreter {
     // Series colors: adopt the latest non-na color so conditional colors show.
     if (!isNa(colorV)) def.color = this.resolveColor(colorV, def.color);
     def.points.push({ time: this.candles[this.bar].time, value: series });
-    return null;
+    return `plot:${key}`;
   }
 
   private shapeToMarker(style: string): RiverMarker["shape"] {
@@ -1459,9 +1513,255 @@ export class PineInterpreter {
     return null;
   }
 
+  // ------------------------------------------------------------------- arrays
+
+  private asArray(v: Value, line: number): Value[] {
+    if (!Array.isArray(v)) throw new PineError("Expected an array", line);
+    return v;
+  }
+
+  private arrayIndex(arr: Value[], index: number, line: number): number {
+    let i = Math.trunc(index);
+    if (i < 0) i = arr.length + i;
+    if (i < 0 || i >= arr.length) {
+      throw new PineError(`Array index ${index} is out of range (size ${arr.length})`, line);
+    }
+    return i;
+  }
+
+  private builtinArray(name: string, call: Call): Value {
+    const line = call.line;
+    if (name === "array.new_float" || name === "array.new_int" || name === "array.new_bool" || name === "array.new_string" || name === "array.new_color") {
+      const size = Math.max(0, Math.round(this.argNum(call, 0, "size", 0) ?? 0));
+      if (size > 100000) throw new PineError("Array size exceeds 100000", line);
+      const init = this.argVal(call, 1, "initial_value", null);
+      return Array.from({ length: size }, () => init);
+    }
+    if (name === "array.from") return call.args.map((a) => norm(this.evalExpr(a)));
+
+    const arr = this.asArray(this.argVal(call, 0, "id"), line);
+    if (name === "array.size") return arr.length;
+    if (name === "array.get" || name === "array.first" || name === "array.last") {
+      if (name === "array.first") return arr.length ? arr[0] : null;
+      if (name === "array.last") return arr.length ? arr[arr.length - 1] : null;
+      const idx = this.arrayIndex(arr, this.argNum(call, 1, "index", 0) ?? 0, line);
+      return arr[idx];
+    }
+    if (name === "array.set") {
+      const idx = this.arrayIndex(arr, this.argNum(call, 1, "index", 0) ?? 0, line);
+      arr[idx] = this.argVal(call, 2, "value", null);
+      return null;
+    }
+    if (name === "array.push") {
+      if (arr.length >= 100000) throw new PineError("Array size exceeds 100000", line);
+      arr.push(this.argVal(call, 1, "value", null));
+      return null;
+    }
+    if (name === "array.pop") {
+      if (!arr.length) throw new PineError("Cannot pop an empty array", line);
+      return arr.pop() ?? null;
+    }
+    if (name === "array.shift") {
+      if (!arr.length) throw new PineError("Cannot shift an empty array", line);
+      return arr.shift() ?? null;
+    }
+    if (name === "array.unshift") {
+      if (arr.length >= 100000) throw new PineError("Array size exceeds 100000", line);
+      arr.unshift(this.argVal(call, 1, "value", null));
+      return null;
+    }
+    if (name === "array.clear") { arr.length = 0; return null; }
+    if (name === "array.remove") {
+      const idx = this.arrayIndex(arr, this.argNum(call, 1, "index", 0) ?? 0, line);
+      const [removed] = arr.splice(idx, 1);
+      return removed ?? null;
+    }
+    if (name === "array.insert") {
+      const idx = this.arrayIndex(arr, this.argNum(call, 1, "index", 0) ?? 0, line);
+      arr.splice(idx, 0, this.argVal(call, 2, "value", null));
+      return null;
+    }
+    if (name === "array.copy") return arr.slice();
+    if (name === "array.slice") {
+      const from = Math.trunc(this.argNum(call, 1, "index_from", 0) ?? 0);
+      const to = Math.trunc(this.argNum(call, 2, "index_to", arr.length) ?? arr.length);
+      return arr.slice(from, to);
+    }
+    if (name === "array.concat") {
+      const other = this.asArray(this.argVal(call, 1, "id2"), line);
+      return arr.concat(other);
+    }
+    if (name === "array.includes") return arr.some((v) => v === this.argVal(call, 1, "value"));
+    if (name === "array.indexof") {
+      const needle = this.argVal(call, 1, "value");
+      const idx = arr.findIndex((v) => v === needle);
+      return idx < 0 ? -1 : idx;
+    }
+    if (name === "array.sum" || name === "array.avg" || name === "array.min" || name === "array.max") {
+      const nums: number[] = [];
+      for (const v of arr) {
+        const n = asNumber(v);
+        if (n === null) return null;
+        nums.push(n);
+      }
+      if (!nums.length) return null;
+      if (name === "array.min") return Math.min(...nums);
+      if (name === "array.max") return Math.max(...nums);
+      const sum = nums.reduce((a, b) => a + b, 0);
+      return name === "array.avg" ? sum / nums.length : sum;
+    }
+    throw new PineError(`INDACREATOR doesn't support '${name}' yet. It reports this honestly instead of guessing.`, line);
+  }
+
+  // ------------------------------------------------------------------ drawings
+
+  private xToTime(x: Value, xloc: string): number | null {
+    const n = asNumber(x);
+    if (n === null) return null;
+    if (xloc === "bar_time") return n > 1e12 ? Math.round(n / 1000) : Math.round(n);
+    const idx = Math.round(n);
+    if (idx < 0 || idx >= this.candles.length) return null;
+    return this.candles[idx].time;
+  }
+
+  private asDraw(v: Value, kind: PineDraw["kind"], line: number): PineDraw {
+    if (!v || typeof v !== "object" || Array.isArray(v) || (v as PineDraw).kind !== kind) {
+      throw new PineError(`Expected a ${kind}`, line);
+    }
+    return v as PineDraw;
+  }
+
+  private builtinLabel(name: string, call: Call): Value {
+    if (name === "label.new") {
+      const xloc = this.argStr(call, 3, "xloc", "bar_index");
+      const time = this.xToTime(this.argVal(call, 0, "x"), xloc);
+      const price = this.argNum(call, 1, "y", 0) ?? 0;
+      if (time === null) return null;
+      const yloc = this.argStr(call, 4, "yloc", "price");
+      const candle = this.candles[this.bar];
+      const position: PineDraw["position"] =
+        yloc === "abovebar" || price >= candle.high ? "aboveBar"
+          : yloc === "belowbar" || price <= candle.low ? "belowBar"
+            : "inBar";
+      const draw: PineDraw = {
+        kind: "label",
+        deleted: false,
+        time,
+        price,
+        time2: time,
+        price2: price,
+        text: this.argStr(call, 2, "text", ""),
+        color: this.resolveColor(this.argVal(call, 5, "color", "#00D9FF"), "#00D9FF"),
+        position,
+      };
+      this.draws.push(draw);
+      return draw;
+    }
+    const draw = this.asDraw(this.argVal(call, 0, "id"), "label", call.line);
+    if (name === "label.delete") { draw.deleted = true; return null; }
+    if (name === "label.set_text") draw.text = this.argStr(call, 1, "text", draw.text);
+    if (name === "label.set_color" || name === "label.set_textcolor") {
+      draw.color = this.resolveColor(this.argVal(call, 1, "color", draw.color), draw.color);
+    }
+    if (name === "label.set_x" || name === "label.set_xy") {
+      const xloc = this.argStr(call, 3, "xloc", "bar_index");
+      const time = this.xToTime(this.argVal(call, 1, "x"), xloc);
+      if (time !== null) draw.time = time;
+    }
+    if (name === "label.set_y" || name === "label.set_xy") {
+      const y = this.argNum(call, name === "label.set_xy" ? 2 : 1, "y");
+      if (y !== null) draw.price = y;
+    }
+    return null;
+  }
+
+  private builtinLine(name: string, call: Call): Value {
+    if (name === "line.new") {
+      const xloc = this.argStr(call, 4, "xloc", "bar_index");
+      const t1 = this.xToTime(this.argVal(call, 0, "x1"), xloc);
+      const t2 = this.xToTime(this.argVal(call, 2, "x2"), xloc);
+      const y1 = this.argNum(call, 1, "y1", 0) ?? 0;
+      const y2 = this.argNum(call, 3, "y2", 0) ?? 0;
+      if (t1 === null || t2 === null) return null;
+      const extend = this.argStr(call, 5, "extend", "none");
+      const last = this.candles[this.candles.length - 1].time;
+      const draw: PineDraw = {
+        kind: "line",
+        deleted: false,
+        time: extend === "left" || extend === "both" ? this.candles[0].time : t1,
+        price: y1,
+        time2: extend === "right" || extend === "both" ? last : t2,
+        price2: y2,
+        text: "",
+        color: this.resolveColor(this.argVal(call, 6, "color", "#FF007F"), "#FF007F"),
+        position: "inBar",
+      };
+      this.draws.push(draw);
+      return draw;
+    }
+    const draw = this.asDraw(this.argVal(call, 0, "id"), "line", call.line);
+    if (name === "line.delete") { draw.deleted = true; return null; }
+    if (name === "line.set_color") draw.color = this.resolveColor(this.argVal(call, 1, "color", draw.color), draw.color);
+    if (name === "line.set_xy1") {
+      const t = this.xToTime(this.argVal(call, 1, "x"), "bar_index");
+      const y = this.argNum(call, 2, "y");
+      if (t !== null) draw.time = t;
+      if (y !== null) draw.price = y;
+    }
+    if (name === "line.set_xy2") {
+      const t = this.xToTime(this.argVal(call, 1, "x"), "bar_index");
+      const y = this.argNum(call, 2, "y");
+      if (t !== null) draw.time2 = t;
+      if (y !== null) draw.price2 = y;
+    }
+    return null;
+  }
+
+  private builtinBox(name: string, call: Call): Value {
+    if (name === "box.new") {
+      const xloc = this.argStr(call, 8, "xloc", "bar_index");
+      const t1 = this.xToTime(this.argVal(call, 0, "left"), xloc);
+      const t2 = this.xToTime(this.argVal(call, 2, "right"), xloc);
+      const top = this.argNum(call, 1, "top", 0) ?? 0;
+      const bottom = this.argNum(call, 3, "bottom", 0) ?? 0;
+      if (t1 === null || t2 === null) return null;
+      const colorV = this.argVal(call, 9, "bgcolor", this.argVal(call, 4, "border_color", "#00D9FF"));
+      const draw: PineDraw = {
+        kind: "box",
+        deleted: false,
+        time: t1,
+        price: top,
+        time2: t2,
+        price2: bottom,
+        text: "",
+        color: this.resolveColor(colorV, "#00D9FF"),
+        position: "inBar",
+      };
+      this.draws.push(draw);
+      return draw;
+    }
+    const draw = this.asDraw(this.argVal(call, 0, "id"), "box", call.line);
+    if (name === "box.delete") draw.deleted = true;
+    return null;
+  }
+
+  private builtinBg(call: Call): Value {
+    const colorV = this.argVal(call, 0, "color");
+    if (isNa(colorV)) return null;
+    this.backgrounds.push({ time: this.candles[this.bar].time, color: this.resolveColor(colorV, "#787B86") });
+    return null;
+  }
+
+  private builtinFill(call: Call): Value {
+    this.warnOnce("fill() keeps both plot lines. The shaded band between them is not painted.");
+    this.argVal(call, 0, "plot1");
+    this.argVal(call, 1, "plot2");
+    return null;
+  }
+
   // ------------------------------------------------------------------- scopes
 
-  private pushScope() { this.scopes.push({ vars: new Map() }); }
+  private pushScope() { this.scopes.push({ vars: new Map(), persisted: new Map() }); }
   private popScope() { this.scopes.pop(); }
 
   private lookupVar(name: string, line = 0): Value {
@@ -1483,10 +1783,16 @@ export class PineInterpreter {
   }
 
   private assignVar(name: string, v: Value, line: number) {
+    const value = norm(v);
     for (let i = this.scopes.length - 1; i >= 0; i--) {
-      if (this.scopes[i].vars.has(name)) { this.scopes[i].vars.set(name, norm(v)); return; }
+      if (this.scopes[i].vars.has(name)) {
+        this.scopes[i].vars.set(name, value);
+        const key = this.scopes[i].persisted.get(name);
+        if (key) this.varLocals.set(key, value);
+        return;
+      }
     }
-    if (this.globals.vars.has(name)) { this.globals.vars.set(name, norm(v)); return; }
+    if (this.globals.vars.has(name)) { this.globals.vars.set(name, value); return; }
     throw new PineError(`Cannot ':=' assign to undeclared variable '${name}'`, line);
   }
 
