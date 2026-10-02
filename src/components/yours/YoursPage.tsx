@@ -38,6 +38,22 @@ import MagazineHub from '../MagazineHub';
 import WorldHub from '../WorldHub';
 import OptimisticInjusticeArticle, { OPTIMISTIC_INJUSTICE_ARTICLE } from './OptimisticInjustice';
 import { YwcLavaPanel, YwcSectionTitle } from './YwcLavaPanel';
+import { YwcClosable } from './YwcClosable';
+import DeskHeldFile from '../desks/DeskHeldFile';
+import { useDeskHeldPanels, type HeldMeta } from '../desks/deskHeldPanels';
+
+const YWC_HELD_META: Record<string, HeldMeta> = {
+  hero: { title: 'Y.W.C. intro', blurb: 'The Your World Connected header' },
+  'rss-sim': { title: 'RSS simulator', blurb: 'Feed fetch console' },
+  'market-watch': { title: 'Market watch', blurb: 'Index snapshot' },
+  'personal-charts': { title: 'Personal charts', blurb: 'Your chart workspace' },
+  'feed-list': { title: 'RSS feed list', blurb: 'Second hub publication list' },
+  newspaper: { title: 'Newspaper', blurb: 'Editorial grid and magazine wires' },
+  charts: { title: 'Live charts', blurb: 'Charts beside the newspaper' },
+  pantry: { title: 'Media pantry', blurb: 'Radio, TV, and podcasts' },
+  social: { title: 'Social hub', blurb: 'Connected social desk' },
+};
+const YWC_HELD_IDS = Object.keys(YWC_HELD_META);
 import { CpmsMediaPantry } from './CpmsMediaPantry';
 import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
@@ -552,6 +568,9 @@ export default function YoursPageHub() {
       )
     : filteredFeed;
 
+  const ywcPanels = useDeskHeldPanels('cpt-ywc-held-v1', YWC_HELD_IDS, []);
+  const newspaperHeld = ywcPanels.isHeld('newspaper');
+
   if (hubOpen) {
     return (
       <YwcChartWorkspace>
@@ -588,15 +607,18 @@ export default function YoursPageHub() {
 
   return (
     <YwcChartWorkspace>
-    <div id="ywc-page-canvas" className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative overflow-x-hidden">
+    <div id="ywc-page-canvas" className="min-h-screen bg-[#030003] text-white font-sans selection:bg-[#ff0088] selection:text-white p-4 md:p-8 space-y-8 select-none relative">
       
-      {/* Lava / neon atmosphere */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
-      <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#FF0080]/20 blur-[140px] rounded-full pointer-events-none animate-pulse" />
-      <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-[#FF4500]/25 blur-[120px] rounded-full pointer-events-none ywc-lava-drift" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-[#BF00FF]/15 blur-[130px] rounded-full pointer-events-none" />
+      {/* Lava / neon atmosphere. Clipped here so the page itself can keep sticky close buttons. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,128,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,69,0,0.04)_1px,transparent_1px)] bg-[size:28px_28px]" />
+      <div className="absolute -top-32 left-1/4 w-[700px] h-[500px] bg-[#FF0080]/20 blur-[140px] rounded-full animate-pulse" />
+      <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-[#FF4500]/25 blur-[120px] rounded-full ywc-lava-drift" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-[#BF00FF]/15 blur-[130px] rounded-full" />
+      </div>
 
       {/* TOP HEADER MODULE - BRAND PROVENANCE */}
+      <YwcClosable id="hero" held={ywcPanels.isHeld('hero')} onClose={ywcPanels.hold}>
       <YwcLavaPanel rounded="3xl" padding="p-6 md:p-8 pt-7">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-3">
@@ -668,12 +690,14 @@ export default function YoursPageHub() {
           </div>
         </div>
       </YwcLavaPanel>
+      </YwcClosable>
 
       {/* AUTO UPDATE SIMULATION CONSOLE LOG (CRON, XML/RSS PIPELINE TO REACT) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Core Live Update & RSS Engine Simulator */}
-        <YwcLavaPanel className="lg:col-span-8 space-y-4">
+        <YwcClosable id="rss-sim" held={ywcPanels.isHeld('rss-sim')} onClose={ywcPanels.hold} className="lg:col-span-8">
+        <YwcLavaPanel className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-[#FF4500]/15 text-[#FF4500] shadow-[0_0_12px_rgba(255,69,0,0.35)]">
@@ -730,9 +754,11 @@ export default function YoursPageHub() {
             </div>
           )}
         </YwcLavaPanel>
+        </YwcClosable>
 
         {/* Global Indices Quick View (MARKET WATCH PANEL) */}
-        <YwcLavaPanel className="lg:col-span-4 space-y-4">
+        <YwcClosable id="market-watch" held={ywcPanels.isHeld('market-watch')} onClose={ywcPanels.hold} className="lg:col-span-4">
+        <YwcLavaPanel className="space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#FF1493]/25">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-[#FF4500] drop-shadow-[0_0_8px_#FF4500]" />
@@ -771,14 +797,18 @@ export default function YoursPageHub() {
             ))}
           </div>
         </YwcLavaPanel>
+        </YwcClosable>
 
       </div>
 
       {/* Personal trading chart workspace */}
+      <YwcClosable id="personal-charts" held={ywcPanels.isHeld('personal-charts')} onClose={ywcPanels.hold}>
       <YwcLavaPanel className="space-y-4">
         <YwcPersonalCharts />
       </YwcLavaPanel>
+      </YwcClosable>
 
+      <YwcClosable id="feed-list" held={ywcPanels.isHeld('feed-list')} onClose={ywcPanels.hold}>
       <button
         type="button"
         onClick={openRssCatalog}
@@ -807,12 +837,19 @@ export default function YoursPageHub() {
           </div>
         </YwcLavaPanel>
       </button>
+      </YwcClosable>
 
       {/* CORE DIGITAL NEWSPAPER WIREFRAME (REACTIVE SECTIONS FEEDS) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Main Content Column (Sports, News, Finance, Crypto, etc.) */}
-        <div className="lg:col-span-8 space-y-8">
+        <YwcClosable
+          id="newspaper"
+          held={newspaperHeld}
+          onClose={ywcPanels.hold}
+          className="lg:col-span-8 space-y-8"
+        >
+        <div className="space-y-8">
 
           <YwcLavaPanel rounded="3xl" padding="p-4 md:p-5" className="space-y-0">
           {/* Main Filter categories row (Authentic newspaper navigation rhythm) */}
@@ -1010,19 +1047,25 @@ export default function YoursPageHub() {
           )}
 
         </div>
+        </YwcClosable>
 
         {/* Sidebar Column (charts, live TV, social OAuth) */}
-        <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-6 lg:self-start">
+        <div className={`${newspaperHeld ? 'lg:col-span-12' : 'lg:col-span-4 lg:sticky lg:top-6 lg:self-start'} space-y-8`}>
           
           {/* Independent live charts — right rail beside editorial grid */}
-          <YwcChartSection variant="sidebar" />
+          <YwcClosable id="charts" held={ywcPanels.isHeld('charts')} onClose={ywcPanels.hold}>
+            <YwcChartSection variant={newspaperHeld ? 'wide' : 'sidebar'} />
+          </YwcClosable>
 
           {/* CPMS Media Pantry — radio, live TV embeds, podcast search */}
+          <YwcClosable id="pantry" held={ywcPanels.isHeld('pantry')} onClose={ywcPanels.hold}>
           <YwcLavaPanel className="space-y-4">
             <CpmsMediaPantry />
           </YwcLavaPanel>
+          </YwcClosable>
 
           {/* SOCIAL MEDIA OAUTH HANDSHAKE PORTAL (15 PLATFORMS INTEGRATED) */}
+          <YwcClosable id="social" held={ywcPanels.isHeld('social')} onClose={ywcPanels.hold}>
           <YwcLavaPanel className="space-y-4">
             <div className="flex flex-col space-y-1.5 pb-3 border-b border-[#FF1493]/25">
               <div className="flex items-center justify-between">
@@ -1139,6 +1182,7 @@ export default function YoursPageHub() {
             </div>
 
           </YwcLavaPanel>
+          </YwcClosable>
 
         </div>
 
@@ -1246,6 +1290,18 @@ export default function YoursPageHub() {
         </div>
       </YwcLavaPanel>
 
+    </div>
+    <div className="ywc-held-scope">
+      <DeskHeldFile
+        desk="ywc"
+        held={ywcPanels.held}
+        meta={YWC_HELD_META}
+        open={ywcPanels.fileOpen}
+        justHeld={ywcPanels.justHeld}
+        onOpenChange={ywcPanels.setFileOpen}
+        onRestore={ywcPanels.restore}
+        onRestoreAll={ywcPanels.restoreAll}
+      />
     </div>
     </YwcChartWorkspace>
   );

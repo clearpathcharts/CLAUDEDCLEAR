@@ -1,0 +1,24 @@
+/* Held-file colors for Y.W.C. The desk theme is not mounted on this page. */
+.ywc-close-dock {
+  position: sticky;
+  top: 8.75rem;
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  height: 0;
+  pointer-events: none;
+}
+.ywc-close-dock .rt-bento-x {
+  position: relative;
+  top: 10px;
+  right: 10px;
+  pointer-events: auto;
+}
+.ywc-held-scope {
+  --desk-border: rgba(255, 20, 147, 0.35);
+  --desk-panel: rgba(14, 8, 24, 0.96);
+  --desk-cyan: #00f0ff;
+  --desk-pink: #ff1493;
+  --desk-muted: #a1a1aa;
+  --desk-text: #f4f4f5;
+}
