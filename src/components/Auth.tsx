@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  ShieldCheck, Lock, Eye, EyeOff, UserCheck, 
+  Lock, Eye, EyeOff, UserCheck, 
   Sparkles, BookOpen, Users, X, GraduationCap, Menu
 } from 'lucide-react';
+import { BrandMark } from './brand/BrandMark';
 import { loginAnonymously } from "../firebase";
 import { verifyBoardAccess } from "../api/privateAuth";
 import { TRADING_REIMAGINED_SHORT_PATH } from '../content/tradingReimaginedLanding';
@@ -452,10 +453,7 @@ export default function Auth() {
       >
         <div className="flex items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0 shrink">
-            {/* Logo element matches specified clearpath branding icon */}
-            <div className="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center shadow-[0_0_10px_rgba(255,20,147,0.4)] shrink-0" aria-hidden="true">
-              <ShieldCheck className="text-white w-5 h-5" />
-            </div>
+            <BrandMark size={34} />
             <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-base sm:text-lg uppercase truncate">
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>

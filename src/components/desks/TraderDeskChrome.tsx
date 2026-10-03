@@ -10,6 +10,7 @@ import {
 } from '../../lib/traderDesks';
 import { useFounderAccess } from '../../hooks/useFounderAccess';
 import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
+import { BrandMark } from '../brand/BrandMark';
 import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
 import { clampOpacity } from '../../lib/deskColorChart';
@@ -72,8 +73,9 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           <a
             href={homeHref}
             onClick={onHome}
-            className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400 hover:text-white"
+            className="flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-zinc-400 hover:text-white"
           >
+            <BrandMark size={26} />
             ClearPath
           </a>
           <span className="hidden h-4 w-px bg-white/15 sm:block" aria-hidden="true" />
