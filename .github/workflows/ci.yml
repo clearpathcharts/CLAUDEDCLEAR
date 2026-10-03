@@ -63,6 +63,12 @@ jobs:
       - name: CEO desk cleanup (ticker interval, no contacts rail)
         run: npm run test:ceo-desk-cleanup
 
+      - name: CEO explainer-video library (founder gate + durable storage only)
+        run: npm run test:ceo-videos
+
+      - name: Explainer-video slots (founder gate + safe public read)
+        run: npm run test:video-slots
+
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
 
@@ -92,6 +98,9 @@ jobs:
 
       - name: Daily Ops catalog + investor letter
         run: npm run test:daily-ops
+
+      - name: Site Doctor sweep (fails closed with no vendor key)
+        run: npm run test:site-doctor
 
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation

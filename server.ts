@@ -132,6 +132,8 @@ import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
+import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
+import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
@@ -888,6 +890,19 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+
+  // Founder-only explainer-video library. Same gate as the disaster backup:
+  // founder session / Bearer / catalog secret, plus the CEO Dashboard action header.
+  app.use(
+    '/api/ceo/videos',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    createCeoVideoRouter()
+  );
+
+  // Public read side: slot id -> playable URL, nothing else. Visitors need this
+  // to play the explainer behind a play icon; it exposes no founder-only field.
+  app.use('/api/videos', createPublicVideoSlotRouter());
 
   app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {

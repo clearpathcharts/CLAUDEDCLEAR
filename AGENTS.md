@@ -49,7 +49,7 @@ The founder already has **one** Cloud Build trigger for **new website code**. Do
 
 ### Backups (non-negotiable)
 - **Never tell the founder backups are unnecessary.** Cloud Run disk is ephemeral; durable Firestore/Stripe still needs founder-owned JSON exports.
-- CEO Dashboard → **Download disaster backup** (`GET /api/admin/backup/download`) saves private accounts (with hashes), waitlist, invites, and Stripe customer emails. Also snapshots to Firestore `founder_backups` on boot / `POST /api/admin/backup/snapshot`.
+- CEO Dashboard → **Download disaster backup** (`POST /api/admin/backup/download`, founder/catalog-admin auth **plus** the `x-clearpath-founder-action: 1` header the dashboard sends) saves private accounts (with hashes), waitlist, invites, and Stripe customer emails. A plain `GET` on that path answers **405 Method Not Allowed** (`server.ts:1929`) — the export is POST-only so a top-level link can never CSRF the password hashes out. Also snapshots to Firestore `founder_backups` on boot / `POST /api/admin/backup/snapshot`.
 - Restore: `POST /api/admin/backup/restore` with a backup's `privateAccounts.accounts` (or `{ accounts: [...] }`).
 - Self-test: `npm run test:founder-backup`.
 

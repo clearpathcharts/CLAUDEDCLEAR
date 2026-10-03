@@ -6,8 +6,6 @@ import { bindVideoSource } from '../../lib/cpms/hlsPlayer';
 import {
   SECTION_GUIDE_BEAT_COUNT,
   getSectionGuide,
-  sectionGuideBeatHasVideo,
-  sectionGuideReadyBeatCount,
   type SectionGuideBeat,
   type SectionGuideEntry,
 } from '../../sectionGuides/catalog';
@@ -15,6 +13,8 @@ import {
   isSectionGuideOfferSnoozed,
   snoozeSectionGuideOffer,
 } from '../../sectionGuides/storage';
+import { resolveGuideBeatVideoUrl } from '../../content/videoSlots';
+import { useVideoSlotUrls, type VideoSlotUrlMap } from '../../hooks/useVideoSlotUrl';
 
 type Props = {
   tabId: string;
@@ -37,6 +37,8 @@ export default function SectionGuideOffer({ tabId, disabled = false }: Props) {
   const guide = getSectionGuide(tabId);
   const [snoozed, setSnoozed] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
+  // Whatever the founder assigned on the CEO page, keyed by slot id.
+  const { urls: slotUrls } = useVideoSlotUrls();
 
   useEffect(() => {
     setSnoozed(guide ? isSectionGuideOfferSnoozed(guide.tabId) : false);
@@ -45,7 +47,7 @@ export default function SectionGuideOffer({ tabId, disabled = false }: Props) {
 
   if (disabled || !guide || snoozed) return null;
 
-  const ready = sectionGuideReadyBeatCount(guide);
+  const ready = guide.beats.filter((b) => resolveGuideBeatVideoUrl(guide.tabId, b, slotUrls)).length;
 
   return (
     <>
@@ -91,6 +93,7 @@ export default function SectionGuideOffer({ tabId, disabled = false }: Props) {
       {playerOpen && (
         <SectionGuidePlayerModal
           guide={guide}
+          slotUrls={slotUrls}
           onClose={() => setPlayerOpen(false)}
           onDontAskAgain={() => {
             snoozeSectionGuideOffer(guide.tabId, 0);
@@ -105,10 +108,12 @@ export default function SectionGuideOffer({ tabId, disabled = false }: Props) {
 
 function SectionGuidePlayerModal({
   guide,
+  slotUrls,
   onClose,
   onDontAskAgain,
 }: {
   guide: SectionGuideEntry;
+  slotUrls: VideoSlotUrlMap;
   onClose: () => void;
   onDontAskAgain: () => void;
 }) {
@@ -118,7 +123,8 @@ function SectionGuidePlayerModal({
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   const beat: SectionGuideBeat | null = guide.beats[beatIndex] ?? null;
-  const hasVideo = beat ? sectionGuideBeatHasVideo(beat) : false;
+  const src = beat ? resolveGuideBeatVideoUrl(guide.tabId, beat, slotUrls) : '';
+  const hasVideo = Boolean(src);
   const isFirst = beatIndex <= 0;
   const isLast = beatIndex >= guide.beats.length - 1;
 
@@ -127,12 +133,12 @@ function SectionGuidePlayerModal({
   useEffect(() => {
     setMediaError(null);
     const el = videoRef.current;
-    if (!el || !beat || !hasVideo) return;
-    return bindVideoSource(el, beat.videoUrl.trim(), {
+    if (!el || !src) return;
+    return bindVideoSource(el, src, {
       autoPlay: true,
       onError: (message) => setMediaError(message || 'Could not play this guide clip.'),
     });
-  }, [beat?.id, beat?.videoUrl, hasVideo]);
+  }, [beat?.id, src]);
 
   const goPrev = () => {
     if (!isFirst) setBeatIndex((i) => i - 1);
@@ -223,7 +229,7 @@ function SectionGuidePlayerModal({
           >
             <ol className="p-2 space-y-1">
               {guide.beats.map((b, i) => {
-                const ready = sectionGuideBeatHasVideo(b);
+                const ready = Boolean(resolveGuideBeatVideoUrl(guide.tabId, b, slotUrls));
                 const active = i === beatIndex;
                 return (
                   <li key={b.id}>

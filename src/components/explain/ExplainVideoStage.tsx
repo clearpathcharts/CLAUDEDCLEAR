@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { navVideoSlotId } from '../../content/videoSlots';
+import { useVideoSlotUrl } from '../../hooks/useVideoSlotUrl';
 import {
   explainCaptionsSrc,
   explainPosterSrc,
@@ -8,6 +10,11 @@ import {
 } from './explainMedia';
 
 type StageState = 'checking' | 'ready' | 'empty';
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function isUsableMedia(res: Response, kind: 'video' | 'image' | 'text'): boolean {
   if (!res.ok) return false;
@@ -33,18 +40,28 @@ export function ExplainVideoStage({
   posterUrl?: string;
   aspect?: ExplainFlowAspect;
 }) {
-  const src = explainVideoSrc(id, videoUrl);
+  // Priority: an explicitly coded URL, then whatever the founder assigned to
+  // this play icon on the CEO page, then the static file dropped in public/.
+  const slot = useVideoSlotUrl(navVideoSlotId(id));
+  const assigned = slot.url || undefined;
+  const src = explainVideoSrc(id, videoUrl?.trim() || assigned);
   const poster = explainPosterSrc(id, posterUrl);
   const captions = explainCaptionsSrc(id);
-  const [state, setState] = useState<StageState>(videoUrl?.trim() ? 'ready' : 'checking');
+  const [state, setState] = useState<StageState>('checking');
   const [posterOk, setPosterOk] = useState(false);
   const [captionsOk, setCaptionsOk] = useState(false);
   const reduced =
-    typeof document !== 'undefined' &&
-    document.documentElement.getAttribute('data-reduced-sensory') === 'true';
+    (typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('data-reduced-sensory') === 'true') ||
+    prefersReducedMotion();
 
   useEffect(() => {
-    if (videoUrl?.trim()) {
+    // Still waiting to hear which video belongs here — do not declare it empty yet.
+    if (!videoUrl?.trim() && slot.loading) {
+      setState('checking');
+      return;
+    }
+    if (videoUrl?.trim() || assigned) {
       setState('ready');
       return;
     }
@@ -58,6 +75,17 @@ export function ExplainVideoStage({
       .catch(() => {
         if (!cancelled) setState('empty');
       });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
+  }, [src, videoUrl, assigned, slot.loading]);
+
+  // Poster and captions live in public/explain-videos regardless of where the
+  // video itself comes from, so a .vtt dropped there captions an assigned clip.
+  useEffect(() => {
+    let cancelled = false;
+    const ctrl = new AbortController();
     fetch(poster, { method: 'HEAD', signal: ctrl.signal })
       .then((res) => {
         if (!cancelled) setPosterOk(isUsableMedia(res, 'image'));
@@ -76,7 +104,7 @@ export function ExplainVideoStage({
       cancelled = true;
       ctrl.abort();
     };
-  }, [src, poster, captions, videoUrl]);
+  }, [poster, captions]);
 
   const ratio = aspect === '9:16' ? '9 / 16' : '16 / 9';
   const showSlotHint =
@@ -120,7 +148,13 @@ export function ExplainVideoStage({
             controls
             playsInline
             preload="metadata"
+            // Never autoplay: this plays for people who asked for it, including
+            // anyone browsing with reduced motion on.
+            aria-label={`Video explaining how ${title} works`}
+            data-explain-video-slot={navVideoSlotId(id)}
             className="absolute inset-0 h-full w-full object-contain bg-black"
+            // A video deleted from the library after it was assigned lands here;
+            // the honest "no clip" frame replaces it instead of a dead player.
             onError={() => setState('empty')}
           >
             {captionsOk ? (

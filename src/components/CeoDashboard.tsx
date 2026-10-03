@@ -9,6 +9,7 @@ import QuarantineModal from './QuarantineModal';
 import DailyOpsDesk from './DailyOpsDesk';
 import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
+import CeoVideoLibrary from './CeoVideoLibrary';
 import { FOUNDER_EMAILS, isFounderAuthUser } from '../lib/founder';
 import { useFounderAccess } from '../hooks/useFounderAccess';
 import { logoutPrivateAccount } from '../api/privateAuth';
@@ -117,7 +118,13 @@ function formatJoined(value?: string | null): string {
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'members'>('system');
+  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'videos'>(() => {
+    try {
+      return window.location.hash === '#videos' ? 'videos' : 'system';
+    } catch {
+      return 'system';
+    }
+  });
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -859,9 +866,22 @@ export default function CeoDashboard() {
         >
           MEMBERS / ALL USERS
         </button>
+        <button
+          data-ceo-videos-tab
+          onClick={() => setCeoTab('videos')}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'videos'
+              ? 'text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/5 shadow-[0_12px_24px_-12px_rgba(0,255,255,0.4)]'
+              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+          }`}
+        >
+          🎬 EXPLAINER VIDEOS
+        </button>
       </div>
 
-      {ceoTab === 'members' ? (
+      {ceoTab === 'videos' ? (
+        <CeoVideoLibrary getHeaders={founderApiHeaders} />
+      ) : ceoTab === 'members' ? (
         <div className="space-y-8">
           {showsUnauthorized && (
             <div className="rounded-xl border-2 border-amber-400/50 bg-zinc-950 px-5 py-5 text-amber-50 space-y-4">
