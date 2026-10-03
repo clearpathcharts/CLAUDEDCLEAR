@@ -48,6 +48,36 @@
   );
 }
 
+/* Top-edge sweep only, for panels that already own their background and border.
+   The host must establish a positioning context. */
+.cp-grad-edge::before {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 18px;
+  left: 18px;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, #5b00ff, #ff007f 58%, #ff6a00, transparent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* ---- Stat tile: one accent per cell so a row of counters is not four grey
+   boxes. Set --plan-accent on the tile. ---- */
+.cp-stat-tile {
+  border: 1px solid color-mix(in srgb, var(--plan-accent) 24%, transparent);
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--plan-accent) 15%, transparent), transparent 70%),
+    rgba(10, 10, 16, 0.82);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.cp-stat-tile:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--plan-accent) 55%, transparent);
+}
+
 /* ---- Gradient headings ---- */
 .cp-grad-title {
   background: linear-gradient(100deg, #5b00ff, #ff007f 58%, #ff6a00);
@@ -154,11 +184,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cp-tier-row,
+  .cp-stat-tile,
   .cp-grad-button {
     transition: none;
   }
 
   .cp-tier-row:hover,
+  .cp-stat-tile:hover,
   .cp-grad-button:hover {
     transform: none;
   }
