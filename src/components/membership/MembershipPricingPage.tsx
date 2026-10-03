@@ -8,29 +8,11 @@ import {
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
+import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
-const PLAN_ACCENT: Record<MembershipPlanPrice['id'], string> = {
-  basic: '#00E5FF',
-  silver: '#C9D3E0',
-  gold: '#FF6A00',
-  platinum: '#FF007F',
-};
-
-/** Second stop so each level reads as a gradient instead of one flat colour. */
-const PLAN_ACCENT_2: Record<MembershipPlanPrice['id'], string> = {
-  basic: '#0066FF',
-  silver: '#7D8DA3',
-  gold: '#FFD700',
-  platinum: '#5B00FF',
-};
-
-function planAccentVars(id: MembershipPlanPrice['id']) {
-  return {
-    '--plan-accent': PLAN_ACCENT[id],
-    '--plan-accent-2': PLAN_ACCENT_2[id],
-  } as React.CSSProperties;
-}
+/** Tier colours live in one place so /plans and Communities cannot drift apart. */
+const planAccentVars = (id: MembershipPlanPrice['id']) => tierAccentVars(id);
 
 function readOfferedPlan(): MembershipPlanId {
   if (typeof window === 'undefined') return 'basic';
