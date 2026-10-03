@@ -58,25 +58,85 @@ assert.match(ui, /Nothing yet/, 'clearing a slot is one option in the same dropd
 assert.match(ui, /data-ceo-video-copy/, 'Copy link survives alongside assignment');
 assert.match(ui, /htmlFor=\{selectId\}/, 'every dropdown has a real label');
 
+// ~100 rows only stay usable if the founder can fold, search and filter them.
+assert.match(ui, /data-ceo-video-slot-group-toggle/, 'slot rows are grouped behind a toggle');
+assert.match(ui, /aria-expanded=\{open\}/, 'the group toggle reports its state to screen readers');
+assert.match(ui, /data-ceo-video-slot-search/, 'there is a search box over the slot list');
+assert.match(ui, /htmlFor="video-slot-search"/, 'the search box has a real label');
+assert.match(ui, /data-ceo-video-slot-unassigned-toggle/, 'there is a show-only-empty filter');
+assert.match(ui, /\{assigned\} of \{all\.length\} filled/, 'each group shows an assigned/total count');
+assert.match(
+  ui,
+  /groupOverrides\[groupId\] \?\? \(filtering \|\| groupId === NAV_GROUP_ID\)/,
+  'nav is expanded by default and the walkthrough groups are not'
+);
+assert.match(ui, /\{open \? \(/, 'a collapsed group does not render its dropdowns at all');
+
+const offer = read('src/components/sectionGuides/SectionGuideOffer.tsx');
+assert.match(offer, /resolveGuideBeatVideoUrl/, 'the section walkthrough resolves its clips through the slot map');
+assert.match(offer, /useVideoSlotUrls/, 'the walkthrough reads what the founder assigned');
+assert.doesNotMatch(
+  offer,
+  /bindVideoSource\(el, beat\.videoUrl/,
+  'the player must not bypass the founder assignment and play the catalog URL directly'
+);
+assert.doesNotMatch(offer, /kind="captions"|\.vtt/, 'captions are out of scope here');
+
 // ----------------------------------------------------------- unit checks ----
 
 async function main() {
   const registry = await import('../src/content/videoSlots.ts');
   const { EXPLAIN_FLOW_SLOT_IDS } = await import('../src/components/explain/explainMedia.ts');
+  const { SECTION_GUIDES, SECTION_GUIDE_TAB_IDS, SECTION_GUIDE_BEAT_COUNT } = await import(
+    '../src/sectionGuides/catalog.ts'
+  );
 
   const ids = registry.VIDEO_SLOTS.map((s) => s.id);
-  assert.equal(new Set(ids).size, ids.length, 'slot ids must be unique');
-  assert.ok(ids.length >= 16, `expected at least 16 play-icon slots, got ${ids.length}`);
+  assert.equal(new Set(ids).size, ids.length, 'slot ids must be unique across every group');
   for (const slot of registry.VIDEO_SLOTS) {
-    assert.match(slot.id, /^[a-z]+\.[a-z0-9-]+$/, `${slot.id} is not a stable lowercase id`);
     assert.doesNotMatch(slot.id, /^slot_?\d+$/i, `${slot.id} must not be positional`);
     assert.ok(slot.label.length > 8, `${slot.id} needs a label the founder will recognise`);
     assert.ok(slot.where.length > 8, `${slot.id} needs to say where the icon is`);
     assert.ok(slot.explains.length > 8, `${slot.id} needs an aria description`);
+    assert.ok(
+      registry.getVideoSlotGroup(slot.groupId),
+      `${slot.id} sits in group "${slot.groupId}" which is not on the group list`
+    );
   }
   const labels = registry.VIDEO_SLOTS.map((s) => s.label);
   assert.equal(new Set(labels).size, labels.length, 'dropdown labels must be distinguishable');
 
+  // ------------------------------------------------- groups stay findable ----
+
+  const groupIds = registry.VIDEO_SLOT_GROUPS.map((g) => g.id);
+  assert.equal(new Set(groupIds).size, groupIds.length, 'group ids must be unique');
+  assert.equal(
+    groupIds[0],
+    registry.NAV_VIDEO_SLOT_GROUP_ID,
+    'the nav play icons must be the first group so they are never buried'
+  );
+  assert.equal(
+    groupIds.length,
+    1 + SECTION_GUIDE_TAB_IDS.length,
+    'one nav group plus one group per section walkthrough'
+  );
+  for (const group of registry.VIDEO_SLOT_GROUPS) {
+    assert.ok(group.label.trim().length > 3, `${group.id} needs a readable heading`);
+    assert.ok(
+      registry.VIDEO_SLOTS.some((s) => s.groupId === group.id),
+      `group ${group.id} has no rows — an empty collapsible panel is just noise`
+    );
+  }
+
+  // ------------------------------------------------------- nav play icons ----
+
+  const navSlots = registry.VIDEO_SLOTS.filter(
+    (s) => s.groupId === registry.NAV_VIDEO_SLOT_GROUP_ID
+  );
+  assert.ok(navSlots.length >= 16, `expected at least 16 play-icon slots, got ${navSlots.length}`);
+  for (const slot of navSlots) {
+    assert.match(slot.id, /^nav\.[a-z0-9-]+$/, `${slot.id} is not a stable lowercase nav id`);
+  }
   // Every play icon the site already renders must be adoptable.
   for (const explainId of EXPLAIN_FLOW_SLOT_IDS) {
     const slotId = registry.navVideoSlotId(explainId);
@@ -85,6 +145,108 @@ async function main() {
   assert.equal(registry.isVideoSlotId('nope'), false);
   assert.equal(registry.isVideoSlotId('../../etc/passwd'), false);
   assert.equal(registry.getVideoSlot('nav.charts')?.id, 'nav.charts');
+
+  // ------------------------------------- walkthrough clips, both directions ----
+
+  const guideSlots = registry.VIDEO_SLOTS.filter((s) =>
+    s.id.startsWith(registry.GUIDE_VIDEO_SLOT_PREFIX)
+  );
+  assert.equal(
+    guideSlots.length,
+    SECTION_GUIDE_TAB_IDS.length * SECTION_GUIDE_BEAT_COUNT,
+    'every section beat gets exactly one slot'
+  );
+
+  // No orphan slots: each guide id names a section and beat that really exist.
+  for (const slot of guideSlots) {
+    const parsed = registry.parseGuideVideoSlotId(slot.id);
+    assert.ok(parsed, `${slot.id} does not parse back into a section and a beat`);
+    const guide = (SECTION_GUIDES as Record<string, { beats: { id: string }[] }>)[
+      parsed!.sectionGuideId
+    ];
+    assert.ok(guide, `${slot.id} names a section that is not in the catalog`);
+    assert.ok(
+      guide.beats.some((b) => b.id === parsed!.beatId),
+      `${slot.id} names a beat that ${parsed!.sectionGuideId} does not have`
+    );
+    assert.equal(
+      slot.groupId,
+      registry.guideVideoSlotGroupId(parsed!.sectionGuideId),
+      `${slot.id} is filed under the wrong section group`
+    );
+  }
+
+  // No orphan beats: every beat in the catalog is reachable from the CEO page.
+  for (const sectionGuideId of SECTION_GUIDE_TAB_IDS) {
+    for (const beat of SECTION_GUIDES[sectionGuideId].beats) {
+      const slotId = registry.guideVideoSlotId(sectionGuideId, beat.id);
+      assert.ok(
+        registry.isVideoSlotId(slotId),
+        `catalog beat ${sectionGuideId}/${beat.id} has no slot the founder can fill`
+      );
+    }
+  }
+
+  // The id carries the real beat id, not the display text or an index.
+  assert.equal(
+    registry.guideVideoSlotId('StrictlyCharts', '02-neuro-profiles'),
+    'guide.StrictlyCharts.02-neuro-profiles'
+  );
+  assert.deepEqual(registry.parseGuideVideoSlotId('guide.StrictlyCharts.02-neuro-profiles'), {
+    sectionGuideId: 'StrictlyCharts',
+    beatId: '02-neuro-profiles',
+  });
+  for (const junk of ['guide.', 'guide.Only', 'guide..x', 'guide.a.b.c', 'nav.charts', '']) {
+    assert.equal(registry.parseGuideVideoSlotId(junk), null, `${junk} must not parse as a beat`);
+  }
+
+  // ------------------------------------------------- which file actually plays ----
+
+  const catalogUrl = 'https://cdn.example.test/catalog-clip.mp4';
+  const founderUrl = 'https://storage.googleapis.com/cp/founder-clip.mp4';
+  const beat = { id: '02-neuro-profiles', videoUrl: '' };
+  const slotId = registry.guideVideoSlotId('StrictlyCharts', beat.id);
+
+  assert.equal(
+    registry.resolveGuideBeatVideoUrl('StrictlyCharts', beat, {}),
+    '',
+    'no assignment and no catalog URL means the honest coming-soon frame'
+  );
+  assert.equal(
+    registry.resolveGuideBeatVideoUrl('StrictlyCharts', { ...beat, videoUrl: catalogUrl }, {}),
+    catalogUrl,
+    'a catalog URL is the fallback when the founder has not assigned anything'
+  );
+  assert.equal(
+    registry.resolveGuideBeatVideoUrl(
+      'StrictlyCharts',
+      { ...beat, videoUrl: catalogUrl },
+      { [slotId]: founderUrl }
+    ),
+    founderUrl,
+    'a founder assignment wins over the static catalog URL'
+  );
+  assert.equal(
+    registry.resolveGuideBeatVideoUrl(
+      'StrictlyCharts',
+      { ...beat, videoUrl: catalogUrl },
+      { [slotId]: 'javascript:alert(1)' }
+    ),
+    catalogUrl,
+    'a non-https assignment is ignored rather than injected into <video src>'
+  );
+  assert.equal(
+    registry.resolveGuideBeatVideoUrl('StrictlyCharts', beat, { 'guide.Other.01-x': founderUrl }),
+    '',
+    'another beat’s assignment must not leak into this one'
+  );
+
+  // Today every catalog beat is a placeholder, so the assignment is the only
+  // thing that can light a clip up. If that ever changes, say so out loud.
+  const hardCoded = SECTION_GUIDE_TAB_IDS.flatMap((id) =>
+    SECTION_GUIDES[id].beats.filter((b) => b.videoUrl.trim())
+  );
+  assert.equal(hardCoded.length, 0, 'catalog videoUrls are placeholders; the CEO page is the only wire-up');
 
   // Storage lives under cwd; keep the repo's data/ directory out of this.
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'clearpath-video-slots-'));
@@ -213,16 +375,23 @@ async function runStoreAndRouteChecks() {
     });
     assert.equal(noHeader.status, 403, 'missing founder action header must be 403');
 
-    // 2. Founder sees every slot, even with storage unconfigured.
+    // 2. Founder sees every slot, grouped, even with storage unconfigured.
+    const registry = await import('../src/content/videoSlots.ts');
     const library = await call('/api/ceo/videos', { headers: founder });
     assert.equal(library.status, 200);
     const libraryBody = (await library.json()) as any;
     assert.ok(Array.isArray(libraryBody.slots), 'the CEO payload lists the slots');
-    assert.equal(libraryBody.slots.length, (await import('../src/content/videoSlots.ts')).VIDEO_SLOTS.length);
+    assert.equal(libraryBody.slots.length, registry.VIDEO_SLOTS.length);
     assert.ok(
       libraryBody.slots.every((s: any) => typeof s.label === 'string' && 'assignment' in s),
       'each slot says what it is and what is behind it'
     );
+    assert.ok(Array.isArray(libraryBody.groups), 'the CEO payload carries the group order');
+    assert.equal(libraryBody.groups[0]?.id, registry.NAV_VIDEO_SLOT_GROUP_ID, 'nav group comes first');
+    const payloadGroupIds = new Set(libraryBody.groups.map((g: any) => g.id));
+    for (const slot of libraryBody.slots) {
+      assert.ok(payloadGroupIds.has(slot.groupId), `${slot.id} has no group to live in on the page`);
+    }
 
     // 3. An unknown slot id is refused even for the founder.
     const badSlot = await call('/api/ceo/videos/slots/nav.not-a-slot', {
@@ -233,15 +402,44 @@ async function runStoreAndRouteChecks() {
     assert.equal(badSlot.status, 404);
     assert.equal(((await badSlot.json()) as any).error, 'unknown_slot');
 
+    // 3b. A walkthrough clip is assignable through the same founder-gated route.
+    const guideSlotId = registry.guideVideoSlotId('StrictlyCharts', '02-neuro-profiles');
+    const unauthGuide = await call(`/api/ceo/videos/slots/${encodeURIComponent(guideSlotId)}`, {
+      method: 'DELETE',
+    });
+    assert.equal(unauthGuide.status, 401, 'walkthrough clips are founder-gated like every other slot');
+    const badBeat = await call('/api/ceo/videos/slots/guide.StrictlyCharts.99-not-a-beat', {
+      method: 'PUT',
+      headers: founder,
+      body: JSON.stringify({ videoId: 'abc123' }),
+    });
+    assert.equal(badBeat.status, 404, 'a beat that is not in the catalog is not a slot');
+
     // 4. The public endpoint needs no auth and leaks nothing founder-only.
     store.__resetVideoSlotCacheForTests();
     await store.setVideoSlotAssignment({ slotId: 'nav.charts', videoId: 'abc123', url });
+    await store.setVideoSlotAssignment({ slotId: guideSlotId, videoId: 'abc123', url });
 
     const pub = await call('/api/videos/slots');
     assert.equal(pub.status, 200, 'visitors can read the slot map with no credentials');
     const pubBody = (await pub.json()) as any;
     assert.deepEqual(Object.keys(pubBody).sort(), ['ok', 'slots'], 'the public body has no extra fields');
-    assert.deepEqual(pubBody.slots, { 'nav.charts': url }, 'the public map is slot id -> URL only');
+    assert.deepEqual(
+      pubBody.slots,
+      { 'nav.charts': url, [guideSlotId]: url },
+      'the public map is slot id -> URL only'
+    );
+    // ~100 registered slots must not mean ~100 keys on the wire: only the ones
+    // the founder actually filled are published.
+    assert.ok(
+      Object.keys(pubBody.slots).length < registry.VIDEO_SLOTS.length,
+      'the public map lists assignments, not the whole registry'
+    );
+    assert.doesNotMatch(
+      JSON.stringify(pubBody),
+      /flowPrompt|narrationScript|groupId|explains|label|where/,
+      'registry copy and production notes stay off the public endpoint'
+    );
     for (const value of Object.values(pubBody.slots)) {
       assert.equal(typeof value, 'string', 'a slot value is a bare URL, never an object of metadata');
     }
@@ -264,10 +462,21 @@ async function runStoreAndRouteChecks() {
       assert.equal(raw.includes(leak), false, `public slot map must not expose ${leak}`);
     }
 
-    // 5. Delete the video: the icon goes quiet instead of serving a dead player.
+    // 5. Delete the video: every icon and clip using it goes quiet instead of
+    // serving a dead player. The walkthrough then shows its coming-soon frame.
     await store.clearAssignmentsForVideo('abc123');
     const after = await call('/api/videos/slots');
-    assert.deepEqual(((await after.json()) as any).slots, {}, 'a deleted video leaves no slot behind');
+    const afterSlots = ((await after.json()) as any).slots;
+    assert.deepEqual(afterSlots, {}, 'a deleted video leaves no slot behind');
+    assert.equal(
+      registry.resolveGuideBeatVideoUrl(
+        'StrictlyCharts',
+        { id: '02-neuro-profiles', videoUrl: '' },
+        afterSlots
+      ),
+      '',
+      'a clip whose video was deleted falls back to the honest coming-soon frame'
+    );
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
   }

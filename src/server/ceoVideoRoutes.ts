@@ -19,7 +19,7 @@ import {
   listCeoVideos,
   type CeoVideo,
 } from './ceoVideoStorage';
-import { VIDEO_SLOTS, getVideoSlot } from '../content/videoSlots';
+import { VIDEO_SLOTS, VIDEO_SLOT_GROUPS, getVideoSlot } from '../content/videoSlots';
 import {
   clearAssignmentsForVideo,
   clearVideoSlotAssignment,
@@ -50,9 +50,10 @@ function fail(res: Response, error: unknown): void {
 }
 
 /**
- * Every play icon, plus whichever video is currently behind it. Slots are
- * always listed in full so the CEO page can show empty ones as empty rather
- * than hiding them.
+ * Every place a video can play, plus whichever video is currently behind it.
+ * Slots are always listed in full so the CEO page can show empty ones as empty
+ * rather than hiding them. `groups` travels alongside so the page can pin the
+ * nav icons first and collapse the walkthroughs.
  */
 function slotsPayload(assignments: VideoSlotAssignmentMap) {
   return VIDEO_SLOTS.map((slot) => ({
@@ -60,6 +61,8 @@ function slotsPayload(assignments: VideoSlotAssignmentMap) {
     assignment: assignments[slot.id] ?? null,
   }));
 }
+
+const groupsPayload = () => VIDEO_SLOT_GROUPS.map((group) => ({ ...group }));
 
 export function createCeoVideoRouter(): Router {
   const router = Router();
@@ -70,7 +73,14 @@ export function createCeoVideoRouter(): Router {
     const limits = { maxBytes: ceoVideoMaxBytes(), contentTypes: [...CEO_VIDEO_CONTENT_TYPES] };
     if (!storage.configured) {
       const assignments = await getVideoSlotAssignments();
-      res.json({ ok: true, storage, limits, videos: [], slots: slotsPayload(assignments) });
+      res.json({
+        ok: true,
+        storage,
+        limits,
+        videos: [],
+        groups: groupsPayload(),
+        slots: slotsPayload(assignments),
+      });
       return;
     }
     try {
@@ -82,6 +92,7 @@ export function createCeoVideoRouter(): Router {
         storage,
         limits,
         videos,
+        groups: groupsPayload(),
         slots: slotsPayload(await getVideoSlotAssignments()),
       });
     } catch (error) {

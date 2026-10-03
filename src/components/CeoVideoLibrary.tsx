@@ -14,11 +14,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Check,
+  ChevronDown,
+  ChevronRight,
   Copy,
   Film,
   Loader2,
   MonitorPlay,
   RefreshCw,
+  Search,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -51,10 +54,17 @@ type SlotAssignment = {
 
 type VideoSlotRow = {
   id: string;
+  groupId: string;
   label: string;
   where: string;
   explains: string;
   assignment: SlotAssignment | null;
+};
+
+type VideoSlotGroupRow = {
+  id: string;
+  label: string;
+  blurb: string;
 };
 
 type LibraryPayload = {
@@ -62,8 +72,12 @@ type LibraryPayload = {
   storage: StorageStatus;
   limits: { maxBytes: number; contentTypes: string[] };
   videos: CeoVideo[];
+  groups: VideoSlotGroupRow[];
   slots: VideoSlotRow[];
 };
+
+/** The group pinned open at the top. Everything else starts folded away. */
+const NAV_GROUP_ID = 'nav';
 
 type UploadRow = {
   key: string;
@@ -149,6 +163,11 @@ export default function CeoVideoLibrary({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [savingSlotId, setSavingSlotId] = useState<string | null>(null);
   const [savedSlotId, setSavedSlotId] = useState<string | null>(null);
+  const [slotQuery, setSlotQuery] = useState('');
+  const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+  // Only groups the founder has deliberately opened or closed land here; the
+  // rest fall back to the default for the current filter state.
+  const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
@@ -298,6 +317,49 @@ export default function CeoVideoLibrary({
   const nameForVideoId = (videoId: string) =>
     videos.find((v) => v.id === videoId)?.originalName || 'this video';
 
+  // Fall back to one synthetic group if an older server build sends no groups,
+  // so the page still lists every slot instead of rendering nothing.
+  const groups: VideoSlotGroupRow[] = payload?.groups?.length
+    ? payload.groups
+    : slots.length
+      ? [{ id: NAV_GROUP_ID, label: 'All places a video can play', blurb: '' }]
+      : [];
+
+  const needle = slotQuery.trim().toLowerCase();
+  const filtering = needle.length > 0 || onlyUnassigned;
+  const slotMatches = (slot: VideoSlotRow) => {
+    if (onlyUnassigned && slot.assignment) return false;
+    if (!needle) return true;
+    return (
+      slot.label.toLowerCase().includes(needle) || slot.where.toLowerCase().includes(needle)
+    );
+  };
+
+  /**
+   * Nav is open on arrival; walkthroughs stay folded. While a filter is on,
+   * everything opens so a match is never hidden behind a closed panel — but an
+   * explicit tap on a header always wins over that default.
+   */
+  const isGroupOpen = (groupId: string) =>
+    groupOverrides[groupId] ?? (filtering || groupId === NAV_GROUP_ID);
+
+  const toggleGroup = (groupId: string) =>
+    setGroupOverrides((prev) => ({ ...prev, [groupId]: !isGroupOpen(groupId) }));
+
+  const visibleGroups = groups
+    .map((group) => {
+      const all = slots.filter((slot) => (slot.groupId || NAV_GROUP_ID) === group.id);
+      return {
+        group,
+        all,
+        shown: all.filter(slotMatches),
+        assigned: all.filter((slot) => slot.assignment).length,
+      };
+    })
+    .filter((row) => row.all.length > 0 && (!filtering || row.shown.length > 0));
+
+  const shownCount = visibleGroups.reduce((n, row) => n + row.shown.length, 0);
+
   return (
     <section data-ceo-video-library className="space-y-6">
       <header className="space-y-2">
@@ -426,12 +488,13 @@ export default function CeoVideoLibrary({
               <MonitorPlay className="h-6 w-6" aria-hidden="true" /> Where each video plays
             </h3>
             <p className="m-0 max-w-3xl text-sm leading-relaxed text-zinc-300">
-              Every little play icon on the site is one row below. Pick a video from a row&apos;s dropdown and it
-              starts playing behind that icon straight away. Pick{' '}
-              <span className="text-white">Nothing yet</span> to take it back off.
+              Every place a video can play is one row below. Pick a video from a row&apos;s dropdown and it
+              starts playing there straight away. Pick <span className="text-white">Nothing yet</span> to take
+              it back off. The nav play icons are open at the top; each section walkthrough is folded away
+              until you tap its heading.
             </p>
             <p className="m-0 text-xs uppercase tracking-widest text-zinc-500">
-              {assignedCount} of {slots.length} icons have a video
+              {assignedCount} of {slots.length} places have a video
             </p>
           </header>
 
@@ -441,54 +504,146 @@ export default function CeoVideoLibrary({
             </p>
           ) : null}
 
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[260px] flex-1">
+              <label
+                htmlFor="video-slot-search"
+                className="m-0 block text-xs font-black uppercase tracking-widest text-zinc-400"
+              >
+                Find a place by name
+              </label>
+              <div className="relative mt-2">
+                <Search
+                  className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500"
+                  aria-hidden="true"
+                />
+                <input
+                  id="video-slot-search"
+                  data-ceo-video-slot-search
+                  type="search"
+                  value={slotQuery}
+                  onChange={(e) => setSlotQuery(e.target.value)}
+                  placeholder="Try: charts, affiliate, calm tip"
+                  className="min-h-[64px] w-full rounded-xl border border-zinc-600 bg-black pl-12 pr-4 text-base text-white placeholder:text-zinc-600 focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF]"
+                />
+              </div>
+            </div>
+            <label
+              htmlFor="video-slot-unassigned"
+              data-ceo-video-slot-unassigned-toggle
+              className="flex min-h-[64px] cursor-pointer items-center gap-3 rounded-xl border border-zinc-600 bg-black px-5 text-sm font-black uppercase tracking-widest text-zinc-200 hover:border-[#00FFFF]/60"
+            >
+              <input
+                id="video-slot-unassigned"
+                type="checkbox"
+                checked={onlyUnassigned}
+                onChange={(e) => setOnlyUnassigned(e.target.checked)}
+                className="h-6 w-6 accent-[#00FFFF]"
+              />
+              Show only empty ones
+            </label>
+          </div>
+
+          {filtering ? (
+            <p aria-live="polite" className="m-0 text-xs uppercase tracking-widest text-[#00FFFF]">
+              {shownCount === 0
+                ? 'Nothing matches that — clear the box to see everything again.'
+                : `Showing ${shownCount} of ${slots.length} places`}
+            </p>
+          ) : null}
+
           <ul className="m-0 list-none space-y-3 p-0">
-            {slots.map((slot) => {
-              const selectId = `video-slot-${slot.id.replace(/[^a-z0-9]+/gi, '-')}`;
-              const busy = savingSlotId === slot.id;
+            {visibleGroups.map(({ group, all, shown, assigned }) => {
+              const open = isGroupOpen(group.id);
+              const panelId = `video-slot-group-${group.id.replace(/[^a-z0-9]+/gi, '-')}`;
               return (
-                <li
-                  key={slot.id}
-                  data-ceo-video-slot-row
-                  className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-4"
-                >
-                  <div className="min-w-[240px] flex-1">
-                    <label htmlFor={selectId} className="m-0 block text-sm font-black text-white">
-                      {slot.label}
-                    </label>
-                    <p className="m-0 mt-1 text-xs leading-relaxed text-zinc-500">{slot.where}</p>
-                    <p
-                      className={`m-0 mt-1 text-xs font-bold ${
-                        slot.assignment ? 'text-emerald-300' : 'text-zinc-600'
+                <li key={group.id} data-ceo-video-slot-group className="overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950">
+                  <button
+                    type="button"
+                    data-ceo-video-slot-group-toggle
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    onClick={() => toggleGroup(group.id)}
+                    className="flex min-h-[72px] w-full flex-wrap items-center gap-4 px-4 py-4 text-left hover:bg-zinc-900"
+                  >
+                    {open ? (
+                      <ChevronDown className="h-6 w-6 shrink-0 text-[#00FFFF]" aria-hidden="true" />
+                    ) : (
+                      <ChevronRight className="h-6 w-6 shrink-0 text-[#00FFFF]" aria-hidden="true" />
+                    )}
+                    <span className="min-w-[200px] flex-1">
+                      <span className="block text-base font-black text-white">{group.label}</span>
+                      {group.blurb ? (
+                        <span className="mt-1 block text-xs leading-relaxed text-zinc-500">{group.blurb}</span>
+                      ) : null}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black uppercase tracking-widest ${
+                        assigned === all.length
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : assigned > 0
+                            ? 'bg-[#FFD700]/15 text-[#FFD700]'
+                            : 'bg-zinc-800 text-zinc-400'
                       }`}
                     >
-                      {slot.assignment
-                        ? `Now playing: ${nameForVideoId(slot.assignment.videoId)}`
-                        : 'Nothing here yet — visitors read the written explanation instead.'}
-                    </p>
-                  </div>
-                  <div className="flex min-w-[260px] flex-1 items-center gap-3">
-                    <select
-                      id={selectId}
-                      data-ceo-video-slot-select
-                      disabled={busy || !videos.length}
-                      value={slot.assignment?.videoId || ''}
-                      onChange={(e) => void handleSlotChange(slot, e.target.value)}
-                      className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
-                    >
-                      <option value="">Nothing yet</option>
-                      {videos.map((video) => (
-                        <option key={video.id} value={video.id}>
-                          {video.originalName}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      aria-live="polite"
-                      className="min-w-[72px] text-xs font-black uppercase tracking-widest text-emerald-300"
-                    >
-                      {busy ? 'Saving…' : savedSlotId === slot.id ? 'Saved' : ''}
+                      {assigned} of {all.length} filled
                     </span>
-                  </div>
+                  </button>
+
+                  {open ? (
+                    <ul id={panelId} className="m-0 list-none space-y-3 border-t border-zinc-800 p-4">
+                      {shown.map((slot) => {
+                        const selectId = `video-slot-${slot.id.replace(/[^a-z0-9]+/gi, '-')}`;
+                        const busy = savingSlotId === slot.id;
+                        return (
+                          <li
+                            key={slot.id}
+                            data-ceo-video-slot-row
+                            className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-700 bg-black/60 px-4 py-4"
+                          >
+                            <div className="min-w-[240px] flex-1">
+                              <label htmlFor={selectId} className="m-0 block text-sm font-black text-white">
+                                {slot.label}
+                              </label>
+                              <p className="m-0 mt-1 text-xs leading-relaxed text-zinc-500">{slot.where}</p>
+                              <p
+                                className={`m-0 mt-1 text-xs font-bold ${
+                                  slot.assignment ? 'text-emerald-300' : 'text-zinc-600'
+                                }`}
+                              >
+                                {slot.assignment
+                                  ? `Now playing: ${nameForVideoId(slot.assignment.videoId)}`
+                                  : 'Nothing here yet — visitors read the written explanation instead.'}
+                              </p>
+                            </div>
+                            <div className="flex min-w-[260px] flex-1 items-center gap-3">
+                              <select
+                                id={selectId}
+                                data-ceo-video-slot-select
+                                disabled={busy || !videos.length}
+                                value={slot.assignment?.videoId || ''}
+                                onChange={(e) => void handleSlotChange(slot, e.target.value)}
+                                className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+                              >
+                                <option value="">Nothing yet</option>
+                                {videos.map((video) => (
+                                  <option key={video.id} value={video.id}>
+                                    {video.originalName}
+                                  </option>
+                                ))}
+                              </select>
+                              <span
+                                aria-live="polite"
+                                className="min-w-[72px] text-xs font-black uppercase tracking-widest text-emerald-300"
+                              >
+                                {busy ? 'Saving…' : savedSlotId === slot.id ? 'Saved' : ''}
+                              </span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
                 </li>
               );
             })}

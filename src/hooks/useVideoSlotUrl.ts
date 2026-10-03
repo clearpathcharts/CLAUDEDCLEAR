@@ -47,7 +47,13 @@ export type VideoSlotLookup = {
   loading: boolean;
 };
 
-export function useVideoSlotUrl(slotId: string): VideoSlotLookup {
+const EMPTY_MAP: VideoSlotUrlMap = {};
+
+/**
+ * The whole map at once. A section walkthrough resolves seven clips in one
+ * render, which rules out calling {@link useVideoSlotUrl} in a loop.
+ */
+export function useVideoSlotUrls(): { urls: VideoSlotUrlMap; loading: boolean } {
   const [map, setMap] = useState<VideoSlotUrlMap | null>(resolved);
 
   useEffect(() => {
@@ -61,7 +67,12 @@ export function useVideoSlotUrl(slotId: string): VideoSlotLookup {
     };
   }, [map]);
 
-  return { url: map?.[slotId] ?? null, loading: map === null };
+  return { urls: map ?? EMPTY_MAP, loading: map === null };
+}
+
+export function useVideoSlotUrl(slotId: string): VideoSlotLookup {
+  const { urls, loading } = useVideoSlotUrls();
+  return { url: loading ? null : (urls[slotId] ?? null), loading };
 }
 
 /** Test-only: forget the shared map between cases. */

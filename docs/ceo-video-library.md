@@ -4,12 +4,18 @@ Founder-only page inside the CEO Dashboard: **CEO DASHBOARD → 🎬 EXPLAINER V
 (or open `/ceo#videos`).
 
 1. **Upload** a video and wait for the bar to fill.
-2. Scroll to **Where each video plays** and choose that video from the dropdown
-   next to the play icon it belongs to. It is live immediately — no code, no deploy.
-3. **COPY LINK** is still there for one-off placements (for example a `videoUrl`
-   in `src/sectionGuides/catalog.ts`).
+2. Scroll to **Where each video plays**. The sixteen **Nav play icons** are open at
+   the top. Every section walkthrough below is folded up with a `3 of 7 filled`
+   count on its heading — tap a heading to open it.
+3. Choose the video from the dropdown next to the place it belongs. It is live
+   immediately — no code, no deploy.
+4. **COPY LINK** is still there for one-off placements.
 
-Choosing **Nothing yet** in a dropdown takes the video back off that icon.
+Choosing **Nothing yet** in a dropdown takes the video back off that place.
+
+Two shortcuts for the long list: type in **Find a place by name** to filter every
+group at once, or tick **Show only empty ones** to see just what is left to fill.
+Either one opens the matching groups for you.
 
 ## How it works
 
@@ -33,11 +39,34 @@ One route is public:
 
 ## Slots
 
-`src/content/videoSlots.ts` is the single list of play icons. Each entry has a
-stable `id` (`nav.charts`), a founder-facing `label`, `where` the icon sits, and
-what it `explains` (which becomes the public `aria-label`). **Ids are the storage
-contract — never renumber them, never key off array position or label text.**
-Adopting another play icon later is one entry here plus passing its id to the player.
+`src/content/videoSlots.ts` is the single list of places a video can play. Each
+entry has a stable `id`, a `groupId`, a founder-facing `label`, `where` it sits,
+and what it `explains` (which becomes the public `aria-label`). **Ids are the
+storage contract — never renumber them, never key off array position or label text.**
+
+Two families, in two kinds of group:
+
+| Family | Id | Group | Count |
+|---|---|---|---|
+| Nav play icons | `nav.charts` | `nav`, pinned first and open by default | 16, hand-written |
+| Section walkthrough clips | `guide.StrictlyCharts.02-neuro-profiles` | `guide.<section>`, one per section, collapsed | 84, derived |
+
+The walkthrough rows are generated from `src/sectionGuides/catalog.ts`
+(12 sections × 7 beats), so renaming a beat there can never leave a stale row
+here — `npm run test:video-slots` fails if the two lists drift in either direction.
+Adopting another nav play icon is one entry in `NAV_VIDEO_SLOTS` plus passing its
+id to the player; a new walkthrough beat needs no entry at all.
+
+### Which file a walkthrough clip plays
+
+`resolveGuideBeatVideoUrl()` decides, in this order:
+
+1. The founder's assignment for that slot, if it is an absolute `https` URL.
+2. The beat's own `videoUrl` in `catalog.ts`.
+3. Nothing — the player shows its honest “coming soon” frame.
+
+Today all 84 catalog `videoUrl`s are empty placeholders, so in practice the CEO
+page is the only thing that can light a clip up.
 
 Assignments live in Firestore `site_settings/video_slots` with a
 `data/video-slots/assignments.json` write-through copy — the same pattern as
@@ -108,7 +137,9 @@ build trigger.
 403 without the founder action header), that the storage module has no local-disk
 write path, and that filename/MIME/size validation holds.
 
-`npm run test:video-slots` — proves slot ids are unique and cover every play icon,
-the assignment routes stay founder-gated, the public endpoint reads without auth
-and emits nothing but `slot id -> URL`, assignments survive a cold start, and a
-deleted video leaves no slot behind.
+`npm run test:video-slots` — proves slot ids are unique across both families and
+cover every play icon, every `guide.*` id maps to a real section and beat and
+every catalog beat has a slot (no orphans in either direction), the assignment
+routes stay founder-gated, the public endpoint reads without auth and emits
+nothing but `slot id -> URL`, a founder assignment beats the catalog URL,
+assignments survive a cold start, and a deleted video leaves no slot behind.
