@@ -185,9 +185,11 @@ const PAGE_CSS = `
   main { max-width: 48rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
   nav.breadcrumb { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-bottom: 1.5rem; }
   nav.breadcrumb a { color: rgba(0,229,255,0.8); text-decoration: none; }
-  h1 { font-size: 1.9rem; line-height: 1.25; color: #fff; margin: 0 0 0.75rem; }
+  /* Headings use only bright stops (cyan / pink / amber). Deep violet is kept
+     out of text fills so these pages stay contrast-tuned on #050505. */
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 0.75rem; background: linear-gradient(100deg, #00E5FF, #FF2EA6 55%, #FF8A33); -webkit-background-clip: text; background-clip: text; color: transparent; }
   p.lead { color: rgba(255,255,255,0.7); font-size: 1.05rem; margin: 0 0 2rem; }
-  article h2 { font-size: 1.35rem; color: #00E5FF; margin: 2.25rem 0 0.75rem; }
+  article h2 { font-size: 1.35rem; margin: 2.25rem 0 0.75rem; background: linear-gradient(100deg, #00E5FF, #FF2EA6 70%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   article h3 { font-size: 1.1rem; color: #fff; margin: 1.75rem 0 0.5rem; }
   article p { margin: 0 0 1rem; color: rgba(255,255,255,0.82); }
   article ul, article ol { margin: 0 0 1.25rem; padding-left: 1.4rem; color: rgba(255,255,255,0.82); }
@@ -196,9 +198,13 @@ const PAGE_CSS = `
   article a:hover { text-decoration: underline; }
   pre.math { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.9rem 1rem; overflow-x: auto; font-size: 0.85rem; color: #9fe8ff; }
   .card-list { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
-  .card-list a.card { display: block; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 1.1rem 1.25rem; text-decoration: none; background: rgba(255,255,255,0.03); transition: border-color 0.15s; }
-  .card-list a.card:hover { border-color: rgba(0,229,255,0.5); }
-  .card-list .card h2 { margin: 0 0 0.35rem; font-size: 1.05rem; color: #00E5FF; }
+  /* Cards were a flat rgba(255,255,255,0.03) on black, which is what made these
+     pages read as one grey list. A lit top edge plus a wash separates them. */
+  .card-list a.card { position: relative; display: block; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 1.1rem 1.25rem; text-decoration: none; background: linear-gradient(150deg, rgba(0,229,255,0.07), rgba(255,46,166,0.04) 55%, rgba(255,255,255,0.02)); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+  .card-list a.card::before { position: absolute; top: 0; right: 14px; left: 14px; height: 2px; content: ""; background: linear-gradient(90deg, transparent, #00E5FF, #FF2EA6 58%, #FF8A33, transparent); opacity: 0.7; }
+  .card-list a.card:hover { border-color: rgba(0,229,255,0.5); transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,229,255,0.1); }
+  .card-list a.card:hover::before { opacity: 1; }
+  .card-list .card h2 { margin: 0 0 0.35rem; font-size: 1.05rem; background: linear-gradient(100deg, #00E5FF, #FF2EA6 75%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .card-list .card p { margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.65); }
   dl.glossary dt { color: #00E5FF; font-weight: 800; font-size: 1rem; margin-top: 1.4rem; }
   dl.glossary dd { margin: 0.25rem 0 0; color: rgba(255,255,255,0.78); }
@@ -206,16 +212,19 @@ const PAGE_CSS = `
   section.faqs h2 { font-size: 1.3rem; color: #fff; }
   section.faqs h3 { color: #00E5FF; font-size: 1rem; margin: 1.4rem 0 0.35rem; }
   section.faqs p { color: rgba(255,255,255,0.78); margin: 0 0 0.75rem; }
-  aside.cta { margin-top: 3rem; border: 1px solid rgba(0,229,255,0.35); background: rgba(0,229,255,0.06); border-radius: 14px; padding: 1.4rem 1.5rem; }
+  aside.cta { position: relative; overflow: hidden; margin-top: 3rem; border: 1px solid rgba(0,229,255,0.35); background: linear-gradient(130deg, rgba(0,229,255,0.1), rgba(255,46,166,0.07) 55%, rgba(255,138,51,0.05)); border-radius: 14px; padding: 1.4rem 1.5rem; }
+  aside.cta::before { position: absolute; top: 0; right: 16px; left: 16px; height: 2px; content: ""; background: linear-gradient(90deg, transparent, #00E5FF, #FF2EA6 58%, #FF8A33, transparent); }
   aside.cta h2 { margin: 0 0 0.4rem; font-size: 1.1rem; color: #fff; }
   aside.cta p { margin: 0 0 0.9rem; font-size: 0.9rem; color: rgba(255,255,255,0.7); }
-  aside.cta a, a.btn { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
+  /* Black on every stop of this gradient stays above 6:1, so the buttons keep
+     their contrast while picking up the brand sweep. */
+  aside.cta a, a.btn { display: inline-block; background: linear-gradient(100deg, #00E5FF, #FF2EA6 55%, #FF8A33); color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
   a.btn.ghost { background: transparent; color: #00E5FF; border: 1px solid rgba(0,229,255,0.5); }
   .btn-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0 1.5rem; }
   .tool-grid { display: grid; gap: 0.75rem; max-width: 28rem; }
   .tool-grid label { display: grid; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
   .tool-grid input, .tool-grid select { background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; padding: 0.55rem 0.7rem; font-size: 0.95rem; }
-  .tool-result { margin-top: 1.25rem; border: 1px solid rgba(0,229,255,0.35); border-radius: 12px; padding: 1rem 1.1rem; background: rgba(0,229,255,0.06); }
+  .tool-result { margin-top: 1.25rem; border: 1px solid rgba(0,229,255,0.35); border-radius: 12px; padding: 1rem 1.1rem; background: linear-gradient(130deg, rgba(0,229,255,0.1), rgba(255,46,166,0.06)); }
   .tool-result .big { font-size: 1.6rem; font-weight: 900; color: #00E5FF; }
   .alpha-block { margin: 1.5rem 0; }
   .alpha-block h3 { color: #fff; font-size: 1rem; margin: 0 0 0.5rem; }
@@ -225,13 +234,17 @@ const PAGE_CSS = `
   aside.cta a.btn { display: inline-block; background: #00E5FF; color: #000; font-weight: 900; font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.65rem 1.2rem; border-radius: 8px; text-decoration: none; }
   aside.cta .cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.25rem; }
   .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 0 0 1.5rem; }
-  .meta-grid div { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.03); }
+  .meta-grid div { border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; background: linear-gradient(150deg, rgba(0,229,255,0.07), rgba(255,255,255,0.02)); }
   .meta-grid .k { display: block; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 0.25rem; }
   .meta-grid .v { color: #fff; font-weight: 700; font-size: 0.95rem; }
   footer.site { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 2rem; }
   footer.site .inner { max-width: 60rem; margin: 0 auto; padding: 1.5rem 1rem; display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.72rem; color: rgba(255,255,255,0.45); }
   footer.site a { color: rgba(255,255,255,0.55); text-decoration: none; }
   footer.site a:hover { color: #00E5FF; }
+  @media (prefers-reduced-motion: reduce) {
+    .card-list a.card { transition: none; }
+    .card-list a.card:hover { transform: none; }
+  }
 `;
 
 function renderShell(
