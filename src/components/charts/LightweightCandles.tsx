@@ -10,6 +10,7 @@ import {
   type ThemeProfileId,
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
+import { ChartWatermark } from "../brand/BrandMark";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
 import { cleanCandleSeriesOptions } from "../../lib/charts/cleanCandleSeries";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
@@ -1608,6 +1609,7 @@ export const LightweightCandles = memo(function LightweightCandles({
           background: paint.background,
         }}
       >
+        <ChartWatermark />
         {!embedMode && !hidePatternOverlays ? (
           <PatternDismissPins
             chart={liveChartApi}

@@ -13,6 +13,7 @@ import {
 import { setClearState, getClearState } from '../../lib/trading/clearState';
 import { TimeframeMenu } from '../charts/TimeframeMenu';
 import { normalizeChartTimeframe } from '../../constants/chartTimeframes';
+import { BRAND_LOCKUP_SRC } from '../brand/BrandMark';
 
 const ASSETS = [
   { label: 'EUR/USD', value: 'EURUSD' },
@@ -77,7 +78,8 @@ const ChartWidget = ({
         />
       </div>
       <div className="brand-mask-forced !bottom-4 !right-6">
-        <img src="/logo.png" alt="Clear Path Markets Science" className="h-7 w-auto max-w-[140px] object-contain opacity-90 drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
+        {/* Transparent lockup: /logo.png is a 1.6 MB opaque plate that showed a box over the candles. */}
+        <img src={BRAND_LOCKUP_SRC} alt="Clear Path Markets Science" className="h-7 w-auto max-w-[140px] object-contain opacity-90 drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
       </div>
     </div>
   );
