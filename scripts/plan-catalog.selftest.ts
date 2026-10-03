@@ -165,7 +165,9 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
   assert.match(page, /PlanCheckoutButton/);
   assert.match(page, /Pay for the package you selected/);
   assert.match(page, /data-testid="offered-package"/);
-  assert.match(page, /Your first \{FIRST_FREE_DAYS\} days are free/);
+  // The free-trial sentence was removed from /plans by founder decision. Stripe
+  // Checkout still discloses the trial and the first charge date at payment time.
+  assert.doesNotMatch(page, /days are free/);
   assert.match(app, /<MembershipPricingPage \/>/);
 }
 

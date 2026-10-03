@@ -3,10 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
-  FIRST_FREE_DAYS,
-  LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
-  PLAN_TRIAL_DAYS,
   type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
@@ -211,10 +208,6 @@ export default function MembershipPricingPage() {
             <p>
               Basic is free. Silver, Gold, and Platinum are monthly Stripe subscriptions. After checkout, the
               signed-in desk unlocks that package — not a higher tier.
-            </p>
-            <p>
-              <strong>Your first {FIRST_FREE_DAYS} days are free</strong> — {LAUNCH_ACCESS_DAYS} days of launch
-              access plus {PLAN_TRIAL_DAYS} days of plan trial before the first charge.
             </p>
           </div>
         </section>
