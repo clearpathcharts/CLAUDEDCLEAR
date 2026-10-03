@@ -13,6 +13,7 @@ import {
   AFFILIATE_TERMS_VERSION,
 } from '../../content/affiliateTerms';
 import { AFFILIATE_PAYOUTS_ENABLED } from '../../lib/paymentsEnabled';
+import '../../styles/tierGradient.css';
 
 // Shared interfaces
 interface Post {
@@ -1867,7 +1868,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: COMMUNITIES */}
           {activeMenu === 'Communities' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3">
                 <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
                   DECENTRALIZED COMMUNITY CHANNELS
@@ -1962,7 +1963,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: MESSAGES (Radio Channels inbox) */}
           {activeMenu === 'Messages' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3 flex flex-wrap justify-between items-start gap-3">
                 <div>
                   <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
@@ -2064,7 +2065,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: LIVE MEETINGS */}
           {activeMenu === 'Live Meetings' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3 flex justify-between items-center">
                 <div>
                   <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
@@ -2245,7 +2246,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: CHARTS TERMINAL (Draggable & resizable neon indicators grid) */}
           {activeMenu === 'Charts' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3 flex justify-between items-start sm:items-center flex-col sm:flex-row gap-3">
                 <div>
                   <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
@@ -2374,7 +2375,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: TEAM NETWORK TREE */}
           {activeMenu === 'Team Network' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3">
                 <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
                   DECENTRALIZED MULTI-DESK TREE
@@ -2445,7 +2446,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: EDUCATION (Macro Academic Interactive Quiz Suite) */}
           {activeMenu === 'Education' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3">
                 <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
                   CLEARPATHTRADER MACRO ACADEMIC QUIZ PORT
@@ -2563,7 +2564,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: WATCHLIST */}
           {activeMenu === 'Watchlist' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3 flex justify-between items-center">
                 <div>
                   <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
@@ -2671,7 +2672,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
 
           {/* VIEW: COMPLIANCE / SETTINGS */}
           {activeMenu === 'Settings' && (
-            <div className="bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
+            <div className="cp-grad-edge relative overflow-hidden bg-[#04040a] border-2 border-[#ff5a1f]/20 rounded-3xl p-6 text-left space-y-6">
               <div className="border-b border-zinc-900 pb-3">
                 <h4 className="text-base font-cinzel font-black text-[#00ffe1] uppercase tracking-wider">
                   OS COCKPIT PRESETS
@@ -2788,7 +2789,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
           </div>
 
           {/* B. SCREEN SHARING MONITOR PREVIEW */}
-          <div className="bg-[#030308] border border-zinc-900 rounded-3xl p-5 space-y-3.5 text-left shadow-lg">
+          <div className="bg-gradient-to-br from-[#00ffe1]/[0.07] to-[#030308] border border-[#00ffe1]/20 rounded-3xl p-5 space-y-3.5 text-left shadow-lg">
             <div className="border-b border-zinc-900 pb-2.5">
               <h4 className="text-xs font-cinzel font-black text-[#00ffe1] uppercase tracking-wider flex items-center gap-1.5">
                 <Video className="text-[#00ffe1] w-4 h-4 shrink-0" />
@@ -2823,7 +2824,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
           </div>
 
           {/* C. UPCOMING TRADING WEBINARS */}
-          <div className="bg-[#030308] border border-zinc-900 rounded-3xl p-5 space-y-3 text-left shadow-lg">
+          <div className="bg-gradient-to-br from-purple-500/[0.09] to-[#030308] border border-purple-500/20 rounded-3xl p-5 space-y-3 text-left shadow-lg">
             <div className="border-b border-zinc-900 pb-2.5 flex justify-between items-center">
               <h4 className="text-xs font-cinzel font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="text-purple-400 w-4 h-4" />
@@ -2863,7 +2864,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
           </div>
 
           {/* D. ACTIVITY LOGS TELEMETRY */}
-          <div className="bg-[#030308] border border-zinc-900 rounded-3xl p-5 space-y-3 text-left shadow-lg relative overflow-hidden">
+          <div className="bg-gradient-to-br from-orange-500/[0.09] to-[#030308] border border-orange-500/20 rounded-3xl p-5 space-y-3 text-left shadow-lg relative overflow-hidden">
             <div className="border-b border-zinc-900 pb-2 flex justify-between items-center">
               <h4 className="text-xs font-cinzel font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Activity className="text-orange-500 w-4 h-4 animate-spin-slow shrink-0" />
