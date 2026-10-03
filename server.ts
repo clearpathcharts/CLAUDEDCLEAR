@@ -542,6 +542,19 @@ async function startServer() {
 
   app.use(express.json({ limit: '1mb' }));
 
+  // A malformed or oversized JSON body is the caller's mistake, not a server
+  // fault. Without this it reaches the global handler, answers 500 "Institutional
+  // Terminal Fault", and logs [CRITICAL] — noise that hides real failures.
+  app.use((err: any, _req: any, res: any, next: any) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      return res.status(400).json({ error: 'Malformed JSON body.' });
+    }
+    if (err?.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'Request body too large.' });
+    }
+    return next(err);
+  });
+
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
   app.use((req, res, next) => {
