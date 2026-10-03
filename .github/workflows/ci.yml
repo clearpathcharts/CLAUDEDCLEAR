@@ -63,6 +63,9 @@ jobs:
       - name: CEO desk cleanup (ticker interval, no contacts rail)
         run: npm run test:ceo-desk-cleanup
 
+      - name: CEO explainer-video library (founder gate + durable storage only)
+        run: npm run test:ceo-videos
+
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
 
