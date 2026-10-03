@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { MembershipPlanId } from '../../content/membershipPricing';
+import { membershipAuthHeaders } from '../../hooks/useMembership';
 
 export function PlanCheckoutButton({
   planId,
@@ -19,7 +20,7 @@ export function PlanCheckoutButton({
     try {
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...(await membershipAuthHeaders()), 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ tier: planId, interval: 'month' }),
       });

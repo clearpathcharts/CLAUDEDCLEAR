@@ -2,6 +2,8 @@ export type ChartLayoutSlot = {
   symbol: string | null;
   x: number;
   y: number;
+  /** Candle interval for this chart. Older saved layouts omit it and stay on 1h. */
+  timeframe?: string;
 };
 
 /** Where a YWC mini-chart lives on the page — never viewport-fixed overlays. */
@@ -19,6 +21,8 @@ export type YwcChartSlot = {
   /** Only used when anchor === "float" — position inside #ywc-page-canvas. */
   x: number;
   y: number;
+  /** Candle interval for this slot. */
+  timeframe: string;
 };
 
 export const MARKET_CHART_SLOT_COUNT = 3;
@@ -134,5 +138,6 @@ export function createEmptyYwcSlots(): YwcChartSlot[] {
     dockOrder: i,
     x: 24,
     y: 120 + i * 48,
+    timeframe: "1h",
   }));
 }

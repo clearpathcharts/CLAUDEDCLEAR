@@ -102,6 +102,9 @@ jobs:
       - name: Per-pattern dismiss X
         run: npm run test:pattern-dismiss
 
+      - name: Public chart neuro-profile wiring
+        run: npm run test:public-chart-profile
+
       - name: YWC magazine rack allowlist self-test
         run: npm run test:magazine-rack
 

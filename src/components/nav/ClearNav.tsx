@@ -103,11 +103,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: MessageSquare,
       label: "COMMUNITIES",
     },
-    {
-      id: "Membership",
-      icon: Crown,
-      label: "MEMBERSHIPS",
-    },
+    // MEMBERSHIPS removed — PLANS in PAGE_LINKS is the single way in.
   ];
 
   const secondaryNavItems: NavItem[] = [
@@ -147,8 +143,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       activeTab === item.id ||
       (item.id === "ClearPathEducation" && isEducationFamilyTab(activeTab));
 
-    const isGold = item.id === "Membership";
-
     const isPink =
       item.id === "Biography" ||
       item.id === "CeoDashboard" ||
@@ -179,15 +173,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       classes =
         "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10";
 
-    if (isGold)
-      classes =
-        "text-[#FFD700] border border-[#FFD700]/35 hover:bg-[#FFD700]/10";
-
     if (isActive) {
-      if (isGold)
-        classes =
-          "bg-[#FFD700]/25 text-[#FFD700] border border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]";
-      else if (isPink)
+      if (isPink)
         classes =
           "bg-[#FF1493]/25 text-[#FF1493] border border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]";
       else if (isCyan)

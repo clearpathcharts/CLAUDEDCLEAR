@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import DeskRoute from './components/desks/DeskRoute';
+import { BrandMark } from './components/brand/BrandMark';
 import {
   hasDashboardTabIntent,
   isDeskPath,
@@ -189,9 +190,10 @@ function PublicLearnShell({
         <nav aria-label="Learning desks" className="flex items-center justify-between gap-3">
           <a
             href="/"
-            className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors"
             style={{ fontFamily: "'Cinzel', serif" }}
           >
+            <BrandMark size={22} />
             ← ClearPath Home
           </a>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -410,7 +412,8 @@ export default function App() {
         <a href="#community-main" className="cp-skip-link">Skip to communities</a>
         <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
           <nav className="flex items-center justify-between gap-3" aria-label="Communities">
-            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white">
+            <a href="/" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#00E5FF] hover:text-white">
+              <BrandMark size={22} />
               ← ClearPath Home
             </a>
             <a href="/plans" className="text-[10px] font-black uppercase tracking-wider text-amber-300/80 hover:text-amber-200">
@@ -494,7 +497,8 @@ export default function App() {
         <div className="min-h-screen w-full bg-[#0c0b0a] text-[#f3ece2]">
           <a href="#learn-main" className="cp-skip-link">Skip to research</a>
           <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
-            <a href="/" className="text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
+            <a href="/" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
+              <BrandMark size={22} />
               ← ClearPath Home
             </a>
           </header>

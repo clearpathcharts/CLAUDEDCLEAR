@@ -15,6 +15,10 @@ import {
 } from "../../constants/chartLayout";
 import { usePersistedLayout } from "../../hooks/useDraggablePosition";
 import { YwcLavaPanel, YwcSectionTitle } from "./YwcLavaPanel";
+import { ChartIntervalBar } from "../charts/ChartIntervalBar";
+import { normalizeChartTimeframe } from "../../constants/chartTimeframes";
+import { isIntradayTimeframe } from "../../lib/planCatalog";
+import { useMembership } from "../../hooks/useMembership";
 
 const STORAGE_KEY = "cpt-ywc-live-chart-layout";
 const VERSION_KEY = "cpt-ywc-live-chart-layout-version";
@@ -47,6 +51,7 @@ function normalizeSlots(raw: unknown): YwcChartSlot[] {
     dockOrder: typeof slot?.dockOrder === "number" ? slot.dockOrder : i,
     x: 0,
     y: 0,
+    timeframe: normalizeChartTimeframe(slot?.timeframe || "1h"),
   }));
 }
 
@@ -99,6 +104,8 @@ function YwcChartSlotPanel({
   chartHeight?: number;
 }) {
   const { updateSlot, clearSlot, moveSlot } = useYwcCharts();
+  const { limits } = useMembership();
+  const timeframe = normalizeChartTimeframe(slot.timeframe || "1h");
 
   const header = (
     <div className="flex items-center gap-1 min-w-0 w-full">
@@ -143,7 +150,7 @@ function YwcChartSlotPanel({
 
   const body = slot.symbol ? (
     <div className="relative" style={{ height: chartHeight }}>
-      <LightweightCandles profileId="calm_focus" symbol={slot.symbol} timeframe="1h" height={chartHeight} embedMode />
+      <LightweightCandles profileId="calm_focus" symbol={slot.symbol} timeframe={timeframe} height={chartHeight} embedMode />
     </div>
   ) : (
     <div
@@ -167,11 +174,18 @@ function YwcChartSlotPanel({
       onPositionChange={() => {}}
       width="100%"
       preHeader={
-        <ChartLocalTimeAndPulse
-          compact
-          slotId={`ywc-${slotIndex}`}
-          symbol={slot.symbol}
-        />
+        <div className="flex flex-col gap-1.5 w-full min-w-0">
+          <ChartIntervalBar
+            value={timeframe}
+            onChange={(tf) => updateSlot(slotIndex, { timeframe: tf })}
+            isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+          />
+          <ChartLocalTimeAndPulse
+            compact
+            slotId={`ywc-${slotIndex}`}
+            symbol={slot.symbol}
+          />
+        </div>
       }
       header={header}
     >

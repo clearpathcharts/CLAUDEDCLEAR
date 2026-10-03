@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, Send, Code2, Play, Loader2 } from 'lucide-react';
 import { useChartVision } from '../hooks/useChartVision';
+import { auth } from '../firebase';
 import type { CompatibilityReport } from '../river/compat/report';
 
 interface ChatMessage {
@@ -85,9 +86,16 @@ export default function RiverGeniePanel({
       setLoading(true);
 
       try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        try {
+          const token = await auth.currentUser?.getIdToken?.();
+          if (token) headers.Authorization = `Bearer ${token}`;
+        } catch {
+          /* Private session cookie still counts. */
+        }
         const res = await fetch('/api/river/genie/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           credentials: 'same-origin',
           body: JSON.stringify({
             question,
@@ -104,7 +112,7 @@ export default function RiverGeniePanel({
           }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Genie unavailable');
+        if (!res.ok) throw new Error(data.message || data.error || 'Genie unavailable');
 
         setMessages((prev) => [
           ...prev,

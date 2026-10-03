@@ -1,24 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, Check, ChevronDown, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
-  FIRST_FREE_DAYS,
-  LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
-  PLAN_TRIAL_DAYS,
   type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
+import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
-const PLAN_ACCENT: Record<MembershipPlanPrice['id'], string> = {
-  basic: '#00E5FF',
-  silver: '#C9D3E0',
-  gold: '#FF6A00',
-  platinum: '#FF007F',
-};
+/** Tier colours live in one place so /plans and Communities cannot drift apart. */
+const planAccentVars = (id: MembershipPlanPrice['id']) => tierAccentVars(id);
 
 function readOfferedPlan(): MembershipPlanId {
   if (typeof window === 'undefined') return 'basic';
@@ -101,14 +95,6 @@ export default function MembershipPricingPage() {
                 <ChevronDown size={17} aria-hidden="true" />
               </a>
             </div>
-            <div className="membership-trial-callout">
-              <Sparkles size={18} aria-hidden="true" />
-              <span>
-                <strong>Your first {FIRST_FREE_DAYS} days are free.</strong>
-                {LAUNCH_ACCESS_DAYS} days of launch access + {PLAN_TRIAL_DAYS} days of plan trial before the first
-                charge.*
-              </span>
-            </div>
           </div>
 
           <aside className="membership-review-card" aria-label="Package checkout">
@@ -146,7 +132,7 @@ export default function MembershipPricingPage() {
                 role="tab"
                 aria-selected={plan.id === offered.id}
                 className={`membership-plan-picker__tab ${plan.id === offered.id ? 'is-active' : ''}`}
-                style={{ '--plan-accent': PLAN_ACCENT[plan.id] } as React.CSSProperties}
+                style={planAccentVars(plan.id)}
                 onClick={() => choosePlan(plan.id)}
               >
                 <strong>{plan.name}</strong>
@@ -159,7 +145,7 @@ export default function MembershipPricingPage() {
             className={`membership-plan-card membership-plan-card--offer ${offered.featured ? 'membership-plan-card--featured' : ''}`}
             data-testid="offered-package"
             data-package={offered.id}
-            style={{ '--plan-accent': PLAN_ACCENT[offered.id] } as React.CSSProperties}
+            style={planAccentVars(offered.id)}
           >
             {offered.featured ? <span className="membership-plan-card__best">Complete package</span> : null}
             <p className="membership-plan-card__eyebrow">{offered.eyebrow}</p>

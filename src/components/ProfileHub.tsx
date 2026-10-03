@@ -12,6 +12,8 @@ import {
   normalizeProfileUsername,
   publicProfileUrl,
 } from "../lib/profileUsername";
+import { sequenceAccentVars } from "../lib/tierGradients";
+import "../styles/tierGradient.css";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
   const uid = user?.uid || "";
@@ -436,7 +438,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
   return (
     <div className="max-w-[1700px] mx-auto grid grid-cols-1 xl:grid-cols-[350px_1fr] gap-8 p-4 md:p-8 font-inter text-white min-h-screen pb-32 animate-fade-in">
       {/* SIDEBAR */}
-      <div className="bg-white/5 border border-white/10 rounded-[30px] p-8 md:sticky xl:top-6 h-fit backdrop-blur-xl shadow-[0_0_18px_rgba(255,46,166,0.3)] z-20">
+      <div className="cp-grad-edge relative overflow-hidden bg-white/5 border border-white/10 rounded-[30px] p-8 md:sticky xl:top-6 h-fit backdrop-blur-xl shadow-[0_0_18px_rgba(255,46,166,0.3)] z-20">
         <div className="relative w-[140px] h-[140px] rounded-full mx-auto bg-gradient-to-br from-[#ff2ea6] to-[#00e5ff] p-1 group cursor-pointer overflow-hidden">
           <input
             type="file"
@@ -517,25 +519,23 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </button>
         )}
         <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Followers: 12,450
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Connected Platforms: 11
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Verified Challenges: 7
-          </div>
-          <div className="bg-[#121212] rounded-[18px] p-4 border border-white/5">
-            Community Rewards Earned: 42
-          </div>
+          {[
+            "Followers: 12,450",
+            "Connected Platforms: 11",
+            "Verified Challenges: 7",
+            "Community Rewards Earned: 42",
+          ].map((stat, i) => (
+            <div key={stat} style={sequenceAccentVars(i)} className="cp-stat-tile rounded-[18px] p-4">
+              {stat}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* MAIN */}
       <div className="flex flex-col gap-6 z-10">
         {/* PROFILE SETTINGS */}
-        <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
+        <div className="cp-grad-edge bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
           <div className="text-[20px] md:text-[28px] mb-6 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
             PROFILE SETTINGS
           </div>
@@ -866,32 +866,28 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         )}
 
         {/* COMMUNITY INCENTIVES */}
-        <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
+        <div className="cp-grad-edge bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
           <div className="text-[20px] md:text-[28px] mb-6 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
             COMMUNITY INCENTIVES
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">☕</div>
-              <div className="text-[#999] text-sm">Coffees Earned</div>
-              <h2 className="text-2xl font-bold mt-1">12</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🍦</div>
-              <div className="text-[#999] text-sm">Ice Cream Rewards</div>
-              <h2 className="text-2xl font-bold mt-1">4</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🥧</div>
-              <div className="text-[#999] text-sm">Pie Rewards</div>
-              <h2 className="text-2xl font-bold mt-1">1</h2>
-            </div>
-            <div className="bg-[#111] rounded-[22px] p-6 border border-white/5 text-center flex flex-col items-center justify-center">
-              <div className="text-[52px] mb-3 leading-none">🥇</div>
-              <div className="text-[#999] text-sm">Gold Trophies</div>
-              <h2 className="text-2xl font-bold mt-1">2</h2>
-            </div>
+            {[
+              { emoji: "☕", label: "Coffees Earned", count: 12 },
+              { emoji: "🍦", label: "Ice Cream Rewards", count: 4 },
+              { emoji: "🥧", label: "Pie Rewards", count: 1 },
+              { emoji: "🥇", label: "Gold Trophies", count: 2 },
+            ].map((reward, i) => (
+              <div
+                key={reward.label}
+                style={sequenceAccentVars(i)}
+                className="cp-stat-tile rounded-[22px] p-6 text-center flex flex-col items-center justify-center"
+              >
+                <div className="text-[52px] mb-3 leading-none">{reward.emoji}</div>
+                <div className="text-[#999] text-sm">{reward.label}</div>
+                <h2 className="text-2xl font-bold mt-1">{reward.count}</h2>
+              </div>
+            ))}
           </div>
 
           <button
@@ -917,7 +913,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
         </div>
 
         {/* COMPLIANCE & RISK STATUS PANEL */}
-        <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden text-left" id="regulatory-compliance-section">
+        <div className="cp-grad-edge bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden text-left" id="regulatory-compliance-section">
           <div className="text-[20px] md:text-[28px] mb-4 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
             REGULATORY COMPLIANCE
           </div>

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
 import { communityRoomPlanLabel, type CommunityRoom } from '../../lib/communityRooms';
+import { tierAccentVars } from '../../lib/tierGradients';
+import '../../styles/tierGradient.css';
 
 type RoomRow = CommunityRoom & { planLabel: string; locked: boolean };
 
@@ -103,7 +105,7 @@ export default function CommunityHub({ onUpgrade }: { onUpgrade: () => void }) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 p-3 md:p-6" data-testid="community-hub">
       <header className="space-y-1">
-        <h1 className="text-xl font-black uppercase tracking-wide text-white">Communities</h1>
+        <h1 className="cp-grad-title text-xl font-black uppercase tracking-wide">Communities</h1>
         <p className="max-w-2xl text-sm text-zinc-400">
           One room for each paid feature. You can read and post only in rooms your plan includes.
           Educational talk. No trade calls and no price predictions.
@@ -125,13 +127,14 @@ export default function CommunityHub({ onUpgrade }: { onUpgrade: () => void }) {
                   <button
                     type="button"
                     onClick={() => setActiveId(room.id)}
-                    className={`flex w-full min-w-[10rem] items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-xs ${
-                      on ? 'border-cyan-400/50 bg-cyan-400/10 text-white' : 'border-white/10 text-zinc-300'
-                    }`}
+                    style={tierAccentVars(room.minTier)}
+                    className={`cp-tier-row flex w-full min-w-[10rem] items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-xs ${
+                      on ? 'is-active text-white' : 'text-zinc-200'
+                    } ${room.locked ? 'is-locked' : ''}`}
                   >
                     <span className="font-bold">{room.label}</span>
                     {room.locked ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase text-zinc-500">
+                      <span className="cp-tier-chip text-[10px] uppercase">
                         <Lock size={10} /> {room.planLabel}
                       </span>
                     ) : (
@@ -143,12 +146,17 @@ export default function CommunityHub({ onUpgrade }: { onUpgrade: () => void }) {
             })}
           </ul>
 
-          <section className="flex min-h-[420px] flex-col rounded-2xl border border-white/10 bg-black/50">
+          <section
+            style={active ? tierAccentVars(active.minTier) : undefined}
+            className="cp-grad-panel cp-grad-panel--tier flex min-h-[420px] flex-col rounded-2xl"
+          >
             {active ? (
               <>
                 <header className="border-b border-white/10 px-4 py-3">
-                  <h2 className="text-sm font-black uppercase tracking-wider text-white">{active.label}</h2>
-                  <p className="text-xs text-zinc-500">{active.blurb}</p>
+                  <h2 className="cp-grad-title--tier text-sm font-black uppercase tracking-wider">
+                    {active.label}
+                  </h2>
+                  <p className="text-xs text-zinc-400">{active.blurb}</p>
                 </header>
                 {active.locked ? (
                   <div className="flex flex-1 flex-col items-start justify-center gap-3 px-4 py-8">
@@ -158,9 +166,9 @@ export default function CommunityHub({ onUpgrade }: { onUpgrade: () => void }) {
                     <button
                       type="button"
                       onClick={onUpgrade}
-                      className="rounded-full border border-amber-400/40 px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-200"
+                      className="cp-grad-button rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest"
                     >
-                      View memberships
+                      View plans
                     </button>
                   </div>
                 ) : (

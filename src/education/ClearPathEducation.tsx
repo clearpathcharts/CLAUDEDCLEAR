@@ -33,6 +33,34 @@ const BODY = "#E8EDF5";
 const SUBTLE = "#9FB3C8";
 const GOOD = "#00F5D4";
 
+/**
+ * Every school and library desk already carries its own colour, but the cards
+ * all shared one flat `rgba(255,255,255,0.03)` fill, so the colour only ever
+ * reached the text. This paints the surface with it: a lit top edge over a
+ * fade of the same hue. Accents are 6-digit hex (see NEON), so the alpha
+ * suffixes below are safe.
+ */
+function accentSurface(accent: string, dim = false) {
+  return {
+    background: [
+      `linear-gradient(180deg, ${accent} 0 2px, transparent 2px)`,
+      `linear-gradient(155deg, ${accent}${dim ? "0F" : "22"}, transparent 70%)`,
+      "rgba(255,255,255,0.03)",
+    ].join(", "),
+    border: `1px solid ${accent}${dim ? "33" : "55"}`,
+  };
+}
+
+/** Heading filled with the school's own two colours instead of flat text. */
+function accentHeading(from: string, to: string) {
+  return {
+    background: `linear-gradient(100deg, ${from}, ${to})`,
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    color: "transparent",
+  } as const;
+}
+
 type View =
   | { kind: "schools" }
   | { kind: "units"; schoolId: string }
@@ -227,9 +255,11 @@ function LibraryDesks({ onNavigate }: { onNavigate?: (tabId: string) => void }) 
             type="button"
             onClick={() => openEducationDesk(desk.tabId, onNavigate)}
             style={{
+              // index.css forces `display: inline-flex` on every button for
+              // touch targets, which laid these stacked rows out side by side.
+              display: "block",
               textAlign: "left",
-              background: "rgba(255,255,255,0.03)",
-              border: `1px solid ${desk.accent}55`,
+              ...accentSurface(desk.accent),
               borderRadius: 16,
               padding: 18,
               cursor: "pointer",
@@ -272,9 +302,11 @@ function SchoolCard({ school, onOpen }: { school: School; onOpen: (id: string) =
     <button
       onClick={() => onOpen(school.id)}
       style={{
+        // See LibraryDesks: the global button rule in index.css is inline-flex,
+        // so the title / tagline / counts collided instead of stacking.
+        display: "block",
         textAlign: "left",
-        background: "rgba(255,255,255,0.03)",
-        border: `1px solid ${school.colors.head}55`,
+        ...accentSurface(school.colors.head),
         borderRadius: 16,
         padding: 18,
         cursor: "pointer",
@@ -288,7 +320,14 @@ function SchoolCard({ school, onOpen }: { school: School; onOpen: (id: string) =
         e.currentTarget.style.borderColor = `${school.colors.head}55`;
       }}
     >
-      <div style={{ fontSize: 19, fontWeight: 800, color: school.colors.head, marginBottom: 6 }}>
+      <div
+        style={{
+          fontSize: 19,
+          fontWeight: 800,
+          marginBottom: 6,
+          ...accentHeading(school.colors.head, school.colors.unit),
+        }}
+      >
         {school.name}
       </div>
       <div style={{ fontSize: 13, color: SUBTLE, lineHeight: 1.5, minHeight: 56 }}>
@@ -330,7 +369,14 @@ function UnitList({
 
   return (
     <div>
-      <h2 style={{ fontSize: 24, fontWeight: 800, color: school.colors.head, margin: "4px 0 16px" }}>
+      <h2
+        style={{
+          fontSize: 24,
+          fontWeight: 800,
+          margin: "4px 0 16px",
+          ...accentHeading(school.colors.head, school.colors.unit),
+        }}
+      >
         {school.name}
       </h2>
 
@@ -342,8 +388,9 @@ function UnitList({
             <div
               key={unit.id}
               style={{
-                border: `1px solid ${unlocked ? school.colors.unit + "55" : "#2A2F3A"}`,
-                background: unlocked ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.015)",
+                // A locked unit keeps the school's colour, just muted, so the
+                // row still reads as part of the book.
+                ...accentSurface(unlocked ? school.colors.unit : "#2A2F3A", !unlocked),
                 borderRadius: 14,
                 padding: 16,
                 opacity: unlocked ? 1 : 0.6,
@@ -457,7 +504,14 @@ function LessonList({
 
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: school.colors.unit, margin: "4px 0 8px" }}>
+      <h2
+        style={{
+          fontSize: 22,
+          fontWeight: 800,
+          margin: "4px 0 8px",
+          ...accentHeading(school.colors.unit, school.colors.lesson),
+        }}
+      >
         {unit.title}
       </h2>
       <p style={{ color: SUBTLE, fontSize: 13, margin: "0 0 16px" }}>
@@ -476,21 +530,18 @@ function LessonList({
                 gap: 12,
                 alignItems: "center",
                 textAlign: "left",
-                background: "rgba(255,255,255,0.03)",
-                border: `1px solid ${school.colors.lesson}33`,
+                ...accentSurface(school.colors.lesson),
                 borderRadius: 10,
                 padding: "12px 14px",
                 cursor: "pointer",
                 color: BODY,
-                transition: "border-color 0.15s, background 0.15s",
+                transition: "border-color 0.15s",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = school.colors.lesson;
-                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = `${school.colors.lesson}33`;
-                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                e.currentTarget.style.borderColor = `${school.colors.lesson}55`;
               }}
             >
               <span style={{ color: SUBTLE, fontVariantNumeric: "tabular-nums", minWidth: 24 }}>
@@ -522,7 +573,7 @@ function LessonList({
           <div
             style={{
               padding: 16,
-              border: `1px solid ${school.colors.head}66`,
+              ...accentSurface(school.colors.head),
               borderRadius: 12,
               display: "flex",
               justifyContent: "space-between",
@@ -643,9 +694,9 @@ function LessonReader({
         style={{
           fontSize: 26,
           fontWeight: 800,
-          color: school.colors.lesson,
           margin: "0 0 12px",
           lineHeight: 1.25,
+          ...accentHeading(school.colors.lesson, school.colors.head),
         }}
       >
         {lesson.title}
@@ -688,8 +739,7 @@ function LessonReader({
           marginBottom: 28,
           padding: 16,
           borderRadius: 12,
-          border: `1px solid ${school.colors.head}55`,
-          background: "rgba(255,255,255,0.03)",
+          ...accentSurface(school.colors.head),
         }}
       >
         <div

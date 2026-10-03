@@ -156,7 +156,8 @@ assert.match(picker, /Unsaved changes/);
 const candles = fs.readFileSync(path.join(root, 'src/components/charts/LightweightCandles.tsx'), 'utf8');
 assert.match(candles, /visualPaint/);
 assert.match(candles, /useOptionalDeskAppearance/);
-assert.match(candles, /indColor/);
+// Indicator colors are centralised in COLOR_MAP (was a loose `indColor` local).
+assert.match(candles, /COLOR_MAP/);
 assert.match(candles, /visualPaint\?\.candleUp/);
 assert.match(candles, /visualPaint\?\.indicator/);
 assert.match(candles, /visualPaint\?\.chart/);

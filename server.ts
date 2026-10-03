@@ -288,7 +288,7 @@ import {
   savePrivateEntry,
   savePublicEntry,
 } from './src/server/riverCatalogService';
-import { chatRiverGenie } from './src/server/riverGenieService';
+import { chatRiverGenie, offlineRiverGenieAnswer } from './src/server/riverGenieService';
 import {
   getTwelveDataApiKey,
   getTwelveDataKeyPresence,
@@ -541,6 +541,19 @@ async function startServer() {
   });
 
   app.use(express.json({ limit: '1mb' }));
+
+  // A malformed or oversized JSON body is the caller's mistake, not a server
+  // fault. Without this it reaches the global handler, answers 500 "Institutional
+  // Terminal Fault", and logs [CRITICAL] — noise that hides real failures.
+  app.use((err: any, _req: any, res: any, next: any) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      return res.status(400).json({ error: 'Malformed JSON body.' });
+    }
+    if (err?.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'Request body too large.' });
+    }
+    return next(err);
+  });
 
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
@@ -1486,7 +1499,27 @@ async function startServer() {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: CHECKOUT_DISABLED_MESSAGE });
     }
     const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
+    // A Google-only member has no private cookie, so fall back to a
+    // server-verified Firebase ID token the same way /api/membership/me does.
+    // The private session always wins so a second Google account in the same
+    // browser can never buy against the signed-in private account.
+    let uid = sessionUser?.uid || '';
+    let email = sessionUser?.email || undefined;
+    if (!uid) {
+      const bearer = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+      if (bearer?.[1] && ensureAdminApp()) {
+        try {
+          const decoded = await getAuth().verifyIdToken(bearer[1].trim());
+          if (decoded.uid) {
+            uid = decoded.uid;
+            email = String(decoded.email || '').trim().toLowerCase() || undefined;
+          }
+        } catch {
+          /* fall through to 401 */
+        }
+      }
+    }
+    if (!uid) {
       return res.status(401).json({ error: 'Sign in to subscribe.' });
     }
     const tier = req.body?.tier;
@@ -1498,8 +1531,8 @@ async function startServer() {
     const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
     try {
       const { url } = await createMembershipCheckoutSession({
-        uid: sessionUser.uid,
-        email: sessionUser.email,
+        uid,
+        email,
         tier,
         interval,
         origin,
@@ -2215,14 +2248,17 @@ async function startServer() {
     res.json({ ok: true });
   });
 
-  // River Genie — AI Pine co-pilot (build / fix / recommend indicators)
-  app.post('/api/river/genie/chat', requirePrivateSession, aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
+  // River Genie — AI Pine co-pilot (build / fix / recommend indicators).
+  // Members sign in with a private session or a Firebase ID token. A missing
+  // session still gets the built-in guide so the suggestion chips are not a dead 401.
+  app.post('/api/river/genie/chat', aiChatLimiter, moderateBodyFields('question', 'pineSource'), async (req, res) => {
     const { question } = req.body || {};
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
     try {
-      const result = await chatRiverGenie({
+      const uid = await resolveAuthenticatedUid(req);
+      const payload = {
         question,
         userName: req.body?.userName,
         conversationHistory: req.body?.conversationHistory,
@@ -2235,7 +2271,11 @@ async function startServer() {
         localHints: req.body?.localHints,
         chartContext: req.body?.chartContext,
         catalogSnippet: req.body?.catalogSnippet,
-      });
+      };
+      if (!uid) {
+        return res.json(offlineRiverGenieAnswer(payload));
+      }
+      const result = await chatRiverGenie(payload);
       res.json(result);
     } catch (error: any) {
       console.error('[River Genie Error]', error);

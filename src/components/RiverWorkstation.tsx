@@ -608,8 +608,20 @@ function PastePanel({ onSubmit, onLoadExample }: { onSubmit: (source: string) =>
         <button onClick={onLoadExample}
           className="px-5 py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] rounded-lg text-sm hover:bg-[#FFD700]/20 transition-all flex items-center gap-1.5"
           id="river_load_example_btn">
-          <Zap size={13} /> Try the Gold Bar example
+          <Zap size={13} /> Try the Gold Bar indicator
         </button>
+      </div>
+      <div className="mt-4 rounded-lg border border-[#FFD700]/25 bg-[#FFD700]/5 p-4 text-left">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FFD700] mb-2">
+          What Gold Bar was for on TradingView
+        </p>
+        <p className="text-xs text-white/70 leading-relaxed font-sans">
+          Gold Bar is the ATR trailing-stop overlay traders left on a TradingView chart.
+          The stop rides Sensitivity × ATR away from the close. The usual start is sensitivity 1 and an ATR period of 10.
+          While price stays on one side, the stop only trails. When the close crosses it, the script prints Buy or Sell, paints that candle gold, and fires the Long or Short alert.
+          On TradingView that was the job: see the trend flip on the candle and get the alert without watching every bar.
+          It draws on the chart. It does not send an order.
+        </p>
       </div>
     </div>
   );
