@@ -1,8 +1,9 @@
 /**
  * CEO-only explainer-video library.
  *
- * Founder flow: pick video → watch the bar fill → tap COPY LINK → paste the
- * link wherever it belongs on the site. Big targets, one tap per action, and
+ * Founder flow: upload a video → watch the bar fill → in "Where each video
+ * plays", choose it from the dropdown next to the play icon it belongs to.
+ * COPY LINK stays for one-off placements. Big targets, one tap per action, and
  * every state says out loud what is happening.
  *
  * Files go straight from this browser to the Cloud Storage bucket using a
@@ -10,7 +11,17 @@
  * never has to squeeze through Cloud Run's ~32 MB request limit.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Copy, Film, Loader2, RefreshCw, Trash2, Upload, AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Film,
+  Loader2,
+  MonitorPlay,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 
 type CeoVideo = {
   id: string;
@@ -31,11 +42,27 @@ type StorageStatus = {
   reason?: string;
 };
 
+type SlotAssignment = {
+  slotId: string;
+  videoId: string;
+  url: string;
+  assignedAt: string;
+};
+
+type VideoSlotRow = {
+  id: string;
+  label: string;
+  where: string;
+  explains: string;
+  assignment: SlotAssignment | null;
+};
+
 type LibraryPayload = {
   ok: boolean;
   storage: StorageStatus;
   limits: { maxBytes: number; contentTypes: string[] };
   videos: CeoVideo[];
+  slots: VideoSlotRow[];
 };
 
 type UploadRow = {
@@ -120,6 +147,8 @@ export default function CeoVideoLibrary({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [savingSlotId, setSavingSlotId] = useState<string | null>(null);
+  const [savedSlotId, setSavedSlotId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
@@ -206,6 +235,36 @@ export default function CeoVideoLibrary({
     window.setTimeout(() => setCopiedId(null), 2500);
   };
 
+  /** One dropdown change = one video behind one play icon. Empty value clears it. */
+  const handleSlotChange = async (slot: VideoSlotRow, videoId: string) => {
+    setSavingSlotId(slot.id);
+    setError(null);
+    try {
+      const headers = await getHeaders();
+      const res = videoId
+        ? await fetch(`/api/ceo/videos/slots/${encodeURIComponent(slot.id)}`, {
+            method: 'PUT',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify({ videoId }),
+          })
+        : await fetch(`/api/ceo/videos/slots/${encodeURIComponent(slot.id)}`, {
+            method: 'DELETE',
+            headers,
+            credentials: 'include',
+          });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || `Could not save that (${res.status})`);
+      setSavedSlotId(slot.id);
+      window.setTimeout(() => setSavedSlotId((id) => (id === slot.id ? null : id)), 2500);
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Could not change what plays there.');
+    } finally {
+      setSavingSlotId(null);
+    }
+  };
+
   const handleDelete = async (video: CeoVideo) => {
     if (confirmDeleteId !== video.id) {
       setConfirmDeleteId(video.id);
@@ -234,6 +293,10 @@ export default function CeoVideoLibrary({
   const storage = payload?.storage;
   const maxMb = payload ? Math.round(payload.limits.maxBytes / 1024 / 1024) : 2048;
   const videos = payload?.videos || [];
+  const slots = payload?.slots || [];
+  const assignedCount = slots.filter((s) => s.assignment).length;
+  const nameForVideoId = (videoId: string) =>
+    videos.find((v) => v.id === videoId)?.originalName || 'this video';
 
   return (
     <section data-ceo-video-library className="space-y-6">
@@ -242,8 +305,11 @@ export default function CeoVideoLibrary({
           <Film className="h-6 w-6" aria-hidden="true" /> Explainer video library
         </h2>
         <p className="m-0 max-w-3xl text-sm leading-relaxed text-zinc-300">
-          Upload a video, wait for the bar to fill, then tap <strong className="text-white">COPY LINK</strong> and
-          paste it wherever you want it on the site. Only you can open this page.
+          Upload a video, wait for the bar to fill, then scroll to{' '}
+          <strong className="text-white">Where each video plays</strong> and choose it from the dropdown next to
+          the play icon it belongs to. That puts it on the live site — no code, no developer.{' '}
+          <strong className="text-white">COPY LINK</strong> is still there for one-off placements. Only you can
+          open this page.
         </p>
       </header>
 
@@ -351,6 +417,83 @@ export default function CeoVideoLibrary({
         <p className="m-0 flex items-center gap-2 text-sm text-zinc-400">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading your videos…
         </p>
+      ) : null}
+
+      {slots.length ? (
+        <section data-ceo-video-slots className="space-y-4 rounded-2xl border border-[#00FFFF]/25 bg-black/40 p-5">
+          <header className="space-y-2">
+            <h3 className="m-0 flex items-center gap-3 text-lg font-black uppercase tracking-widest text-[#00FFFF]">
+              <MonitorPlay className="h-6 w-6" aria-hidden="true" /> Where each video plays
+            </h3>
+            <p className="m-0 max-w-3xl text-sm leading-relaxed text-zinc-300">
+              Every little play icon on the site is one row below. Pick a video from a row&apos;s dropdown and it
+              starts playing behind that icon straight away. Pick{' '}
+              <span className="text-white">Nothing yet</span> to take it back off.
+            </p>
+            <p className="m-0 text-xs uppercase tracking-widest text-zinc-500">
+              {assignedCount} of {slots.length} icons have a video
+            </p>
+          </header>
+
+          {videos.length === 0 ? (
+            <p className="m-0 rounded-xl border border-zinc-700 bg-black/50 px-4 py-4 text-sm text-zinc-400">
+              Upload a video first — then these dropdowns will have something to choose.
+            </p>
+          ) : null}
+
+          <ul className="m-0 list-none space-y-3 p-0">
+            {slots.map((slot) => {
+              const selectId = `video-slot-${slot.id.replace(/[^a-z0-9]+/gi, '-')}`;
+              const busy = savingSlotId === slot.id;
+              return (
+                <li
+                  key={slot.id}
+                  data-ceo-video-slot-row
+                  className="flex flex-wrap items-center gap-4 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-4"
+                >
+                  <div className="min-w-[240px] flex-1">
+                    <label htmlFor={selectId} className="m-0 block text-sm font-black text-white">
+                      {slot.label}
+                    </label>
+                    <p className="m-0 mt-1 text-xs leading-relaxed text-zinc-500">{slot.where}</p>
+                    <p
+                      className={`m-0 mt-1 text-xs font-bold ${
+                        slot.assignment ? 'text-emerald-300' : 'text-zinc-600'
+                      }`}
+                    >
+                      {slot.assignment
+                        ? `Now playing: ${nameForVideoId(slot.assignment.videoId)}`
+                        : 'Nothing here yet — visitors read the written explanation instead.'}
+                    </p>
+                  </div>
+                  <div className="flex min-w-[260px] flex-1 items-center gap-3">
+                    <select
+                      id={selectId}
+                      data-ceo-video-slot-select
+                      disabled={busy || !videos.length}
+                      value={slot.assignment?.videoId || ''}
+                      onChange={(e) => void handleSlotChange(slot, e.target.value)}
+                      className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+                    >
+                      <option value="">Nothing yet</option>
+                      {videos.map((video) => (
+                        <option key={video.id} value={video.id}>
+                          {video.originalName}
+                        </option>
+                      ))}
+                    </select>
+                    <span
+                      aria-live="polite"
+                      className="min-w-[72px] text-xs font-black uppercase tracking-widest text-emerald-300"
+                    >
+                      {busy ? 'Saving…' : savedSlotId === slot.id ? 'Saved' : ''}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       {payload && storage?.configured && videos.length === 0 && !loading ? (

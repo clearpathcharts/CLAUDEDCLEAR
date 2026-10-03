@@ -133,6 +133,7 @@ import { appendFrontendError } from './src/server/frontendErrorLog';
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
+import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
@@ -898,6 +899,10 @@ async function startServer() {
     requireFounderActionHeader,
     createCeoVideoRouter()
   );
+
+  // Public read side: slot id -> playable URL, nothing else. Visitors need this
+  // to play the explainer behind a play icon; it exposes no founder-only field.
+  app.use('/api/videos', createPublicVideoSlotRouter());
 
   app.post('/api/auth/private/login', authLoginLimiter, async (req, res) => {
     try {
