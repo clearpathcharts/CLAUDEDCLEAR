@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Newspaper, Radio, AlertCircle, RefreshCw } from 'lucide-react';
 import { usePageAutoUpdate } from '../hooks/usePageAutoUpdate';
+import '../styles/tierGradient.css';
 
 interface NewsItem {
   title: string;
@@ -54,14 +55,14 @@ export default function NewsPanel() {
   }, { intervalMs: 60_000 });
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/5 bg-black/40 p-4 backdrop-blur-md">
+    <div className="cp-grad-panel flex h-full flex-col p-4 backdrop-blur-md">
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-500/30 bg-orange-500/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-500/30 bg-gradient-to-br from-orange-500/30 to-rose-500/20">
             <Newspaper className="h-5 w-5 text-orange-400" />
           </div>
           <div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-white">News</h2>
+            <h2 className="cp-grad-title text-sm font-black uppercase tracking-widest">News</h2>
             <p className="font-mono text-[10px] uppercase text-orange-400/60">
               Live wire · /api/newsdata/latest
             </p>
@@ -119,7 +120,7 @@ export default function NewsPanel() {
           news.map((item, i) => (
             <article
               key={`${item.title}-${i}`}
-              className="rounded-xl border border-white/5 bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.05]"
+              className="rounded-xl border border-white/5 bg-gradient-to-r from-orange-500/[0.07] via-white/[0.03] to-transparent p-4 transition-colors hover:border-orange-500/25 hover:from-orange-500/[0.13]"
             >
               <div className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[9px] uppercase tracking-wider text-zinc-500">
                 <span className="text-orange-400/80">{item.source}</span>
