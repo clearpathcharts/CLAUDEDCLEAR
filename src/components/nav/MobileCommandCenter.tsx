@@ -122,13 +122,7 @@ const ACCOUNT_ITEMS: NavItem[] = [
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
-  {
-    id: "Membership",
-    icon: Crown,
-    label: "MEMBERSHIPS",
-    colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
-    glowClass: "bg-[#FFD700]/25 text-[#FFD700] border-[#FFD700] shadow-[0_0_18px_rgba(255,215,0,.8)]",
-  },
+  // MEMBERSHIPS removed — "PLANS & PRICING" in PAGE_LINKS is the single way in.
 ];
 
 /** Standalone pages — full navigation, not Dashboard tabs. */
