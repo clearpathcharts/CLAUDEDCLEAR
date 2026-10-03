@@ -800,6 +800,7 @@ export default function Auth() {
       >
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-2">
+            <BrandMark size={26} />
             <span className="font-sans font-black tracking-widest text-[#FFFFFF] text-sm uppercase">
               CLEARPATH <span className="text-[#00FFFF]">TRADER</span>
             </span>
