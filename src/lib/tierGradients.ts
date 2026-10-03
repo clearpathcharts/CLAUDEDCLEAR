@@ -33,3 +33,16 @@ export function tierAccentVars(id: string | null | undefined): CSSProperties {
     '--plan-accent-2': TIER_GRADIENT[tier].to,
   } as CSSProperties;
 }
+
+/**
+ * Stops of the brand sweep, in order. A row of sibling cards that has no tier
+ * of its own (stat counters, process steps) walks these so the group reads as
+ * one gradient instead of N identical boxes.
+ */
+export const SEQUENCE_ACCENTS = ['#36D9F5', '#5B00FF', '#FF007F', '#FF6A00'] as const;
+
+/** Accent vars for position `index` in a sibling row. Wraps past the last stop. */
+export function sequenceAccentVars(index: number): CSSProperties {
+  const accent = SEQUENCE_ACCENTS[((index % SEQUENCE_ACCENTS.length) + SEQUENCE_ACCENTS.length) % SEQUENCE_ACCENTS.length];
+  return { '--plan-accent': accent } as CSSProperties;
+}
