@@ -93,6 +93,9 @@ jobs:
       - name: Daily Ops catalog + investor letter
         run: npm run test:daily-ops
 
+      - name: Site Doctor sweep (fails closed with no vendor key)
+        run: npm run test:site-doctor
+
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
 
