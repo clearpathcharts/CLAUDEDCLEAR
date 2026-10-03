@@ -66,6 +66,9 @@ jobs:
       - name: CEO explainer-video library (founder gate + durable storage only)
         run: npm run test:ceo-videos
 
+      - name: Explainer-video slots (founder gate + safe public read)
+        run: npm run test:video-slots
+
       - name: C.P.T. Buddy affect / bond self-test
         run: npm run test:buddy-affect
 

@@ -45,6 +45,7 @@
     "test:section-guides": "tsx scripts/section-guides.selftest.ts",
     "test:ceo-desk-cleanup": "tsx scripts/ceo-desk-cleanup.selftest.ts",
     "test:ceo-videos": "tsx scripts/ceo-videos.selftest.ts",
+    "test:video-slots": "tsx scripts/video-slots.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "explain-flow:print": "tsx scripts/print-explain-flow-scripts.ts",
     "test:buddy-affect": "tsx scripts/buddy-affect.selftest.ts",
