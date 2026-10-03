@@ -335,21 +335,53 @@
 }
 
 .broker-trust-strip {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  overflow: hidden;
   border: 1px solid var(--broker-line);
   border-radius: 15px;
   background: rgba(5, 8, 22, 0.86);
 }
 
+.broker-trust-strip::before {
+  position: absolute;
+  top: 0;
+  right: 18px;
+  left: 18px;
+  height: 2px;
+  content: "";
+  opacity: 0.75;
+  background: linear-gradient(90deg, transparent, #5b00ff, #ff007f 58%, #ff6a00, transparent);
+}
+
+/* Each safeguard takes one stop of the brand sweep above it. */
 .broker-trust-strip > div {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   min-height: 86px;
   padding: 18px;
-  color: var(--broker-cyan);
+  color: var(--broker-accent, var(--broker-cyan));
+  background: linear-gradient(
+    170deg,
+    color-mix(in srgb, var(--broker-accent, var(--broker-cyan)) 9%, transparent),
+    transparent 72%
+  );
+}
+
+.broker-trust-strip > div:nth-child(1) {
+  --broker-accent: #36d9f5;
+}
+
+.broker-trust-strip > div:nth-child(2) {
+  --broker-accent: #ff007f;
+}
+
+.broker-trust-strip > div:nth-child(3) {
+  --broker-accent: #ff6a00;
 }
 
 .broker-trust-strip > div + div {
@@ -408,9 +440,12 @@
 
 .broker-section-heading h2 {
   margin: 0;
-  color: #edf6ff;
   font-size: clamp(28px, 3vw, 42px);
   letter-spacing: -0.035em;
+  background: linear-gradient(100deg, #5b00ff, #ff007f 58%, #ff6a00);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .broker-grid {
@@ -450,8 +485,41 @@
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28), 0 0 30px rgba(91, 0, 255, 0.07), inset 0 1px rgba(255, 255, 255, 0.035);
 }
 
+/* Status colour: a live connection should read at a glance against a firm that
+   is only mapped, so the whole card carries the accent, not just the badge. */
 .broker-card--connected {
-  border-color: rgba(52, 211, 153, 0.38);
+  --broker-accent: #34d399;
+}
+
+.broker-card--ready {
+  --broker-accent: #36d9f5;
+}
+
+.broker-card--connected,
+.broker-card--ready {
+  border-color: color-mix(in srgb, var(--broker-accent) 40%, transparent);
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--broker-accent) 11%, transparent), transparent 60%),
+    linear-gradient(150deg, rgba(10, 15, 45, 0.95), rgba(8, 8, 12, 0.98));
+}
+
+.broker-card--connected::before,
+.broker-card--ready::before {
+  height: 2px;
+  opacity: 1;
+  background: linear-gradient(90deg, transparent, var(--broker-accent), transparent);
+  box-shadow: 0 0 14px var(--broker-accent);
+}
+
+.broker-card--connected:hover,
+.broker-card--ready:hover {
+  border-color: var(--broker-accent);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28), 0 0 34px color-mix(in srgb, var(--broker-accent) 22%, transparent);
+}
+
+/* Mapped-but-unavailable firms stay legible but recede. */
+.broker-card--planned .broker-logo-locker {
+  opacity: 0.82;
 }
 
 .broker-card__top {
@@ -623,21 +691,56 @@
   list-style: none;
 }
 
+/* The four steps walk the brand gradient left to right, so the handoff reads as
+   a sequence rather than four identical boxes. */
 .broker-how li {
+  position: relative;
   min-height: 240px;
   padding: 28px;
-  background: linear-gradient(155deg, #0a0f2d, #08080c);
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--broker-accent) 14%, transparent), transparent 68%),
+    linear-gradient(155deg, #0a0f2d, #08080c);
+}
+
+.broker-how li::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, transparent, var(--broker-accent), transparent);
+}
+
+.broker-how li:nth-child(1) {
+  --broker-accent: #36d9f5;
+}
+
+.broker-how li:nth-child(2) {
+  --broker-accent: #5b00ff;
+}
+
+.broker-how li:nth-child(3) {
+  --broker-accent: #ff007f;
+}
+
+.broker-how li:nth-child(4) {
+  --broker-accent: #ff6a00;
 }
 
 .broker-how li > span {
-  color: rgba(54, 217, 245, 0.5);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
+  font-size: 30px;
   font-weight: 900;
+  letter-spacing: -0.04em;
+  background: linear-gradient(140deg, var(--broker-accent), #ffffff 150%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .broker-how h3 {
-  margin: 55px 0 10px;
+  margin: 36px 0 10px;
   color: #e6f0fa;
   font-size: 15px;
 }
@@ -650,13 +753,23 @@
 }
 
 .broker-disclosure {
+  position: relative;
   display: flex;
   gap: 16px;
   margin-top: 56px;
-  border-left: 2px solid var(--broker-cyan);
-  padding: 22px 24px;
+  padding: 22px 24px 22px 26px;
   color: var(--broker-cyan);
-  background: rgba(54, 217, 245, 0.045);
+  background: linear-gradient(100deg, rgba(91, 0, 255, 0.07), rgba(255, 0, 127, 0.05) 55%, rgba(255, 106, 0, 0.04));
+}
+
+.broker-disclosure::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  content: "";
+  background: linear-gradient(180deg, #5b00ff, #ff007f 58%, #ff6a00);
 }
 
 .broker-disclosure strong {

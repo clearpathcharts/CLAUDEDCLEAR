@@ -225,15 +225,14 @@ export default function UsBrokerNetworkPage() {
               const isAlpaca = broker.id === 'alpaca';
               const connected = isAlpaca && Boolean(alpaca?.connected);
               const configured = isAlpaca && Boolean(alpaca?.configured);
+              // A usable connection should look different from one that is only
+              // mapped, so the card carries its status rather than the badge alone.
+              const state = connected ? 'connected' : configured ? 'ready' : 'planned';
               return (
-                <article className={`broker-card ${connected ? 'broker-card--connected' : ''}`} key={broker.id}>
+                <article className={`broker-card broker-card--${state}`} key={broker.id}>
                   <div className="broker-card__top">
                     <BrokerLogo broker={broker} />
-                    <span
-                      className={`broker-state broker-state--${
-                        connected ? 'connected' : configured ? 'ready' : 'planned'
-                      }`}
-                    >
+                    <span className={`broker-state broker-state--${state}`}>
                       {connected ? 'Connected' : configured ? 'Ready' : isAlpaca ? 'Setup required' : 'Planned'}
                     </span>
                   </div>
