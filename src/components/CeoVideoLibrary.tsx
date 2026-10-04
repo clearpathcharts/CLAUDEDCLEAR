@@ -433,6 +433,16 @@ export default function CeoVideoLibrary({
           <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" /> Refresh
         </button>
       </div>
+      {!payload && !loading ? (
+        <p
+          data-ceo-video-upload-locked
+          className="m-0 rounded-xl border border-amber-400/50 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-amber-50"
+        >
+          The upload button is locked because your video library did not load. Read the red message above,
+          then tap <strong className="text-white">Refresh</strong>. If it says Unauthorized, sign out and use
+          Private Login with the founder account, then come back to this tab.
+        </p>
+      ) : null}
       <p className="m-0 text-xs uppercase tracking-widest text-zinc-500">
         Up to {maxMb} MB each · MP4, MOV, WebM, M4V, MKV · you can pick several at once
       </p>

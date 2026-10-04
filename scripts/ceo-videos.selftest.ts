@@ -47,6 +47,13 @@ assert.match(ui, /data-ceo-video-not-configured/, 'honest storage-not-configured
 const ceo = read('src/components/CeoDashboard.tsx');
 assert.match(ceo, /CeoVideoLibrary/, 'CEO Dashboard renders the library');
 assert.match(ceo, /data-ceo-videos-tab/, 'CEO Dashboard has the explainer videos tab');
+const shortcutAt = ceo.indexOf('data-ceo-videos-shortcut');
+assert.ok(shortcutAt > 0, 'CEO Dashboard has a top-of-page explainer videos shortcut');
+for (const later of ['<ChooseYourPath', '<DailyOpsDesk', '<DailyPatternReviewDesk', 'data-ceo-tabs']) {
+  assert.ok(ceo.indexOf(later) > shortcutAt, `videos shortcut sits above ${later} so the founder never scrolls to find it`);
+}
+assert.match(ceo, /data-ceo-videos-open[\s\S]{0,80}openVideoLibrary/, 'shortcut opens the video tab');
+assert.match(ui, /data-ceo-video-upload-locked/, 'a disabled upload button always explains why');
 
 const envExample = read('.env.example');
 assert.match(envExample, /^CEO_VIDEO_BUCKET=/m, 'CEO_VIDEO_BUCKET documented');
