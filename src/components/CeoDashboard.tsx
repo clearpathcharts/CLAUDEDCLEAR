@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getDb, auth } from "../firebase";
 import { collection, getDocs, query, limit, onSnapshot } from '../firebase';
-import { Search, Activity, Users, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download, LogOut } from 'lucide-react';
+import { Search, Activity, Users, ShieldAlert, Terminal, AlertCircle, Lock, UserPlus, RefreshCw, Mail, Download, LogOut, Film, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/FirebaseContext';
 import { isVideoUrl, isAudioUrl } from '../lib/utils';
 import { AnimatePresence } from 'framer-motion';
@@ -125,6 +125,25 @@ export default function CeoDashboard() {
       return 'system';
     }
   });
+  const ceoTabsRef = useRef<HTMLDivElement | null>(null);
+  const [scrollToTabs, setScrollToTabs] = useState(() => {
+    try {
+      return window.location.hash === '#videos';
+    } catch {
+      return false;
+    }
+  });
+  const openVideoLibrary = () => {
+    setCeoTab('videos');
+    setScrollToTabs(true);
+    try {
+      if (window.location.hash !== '#videos') {
+        window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#videos`);
+      }
+    } catch {
+      /* hash is a convenience only */
+    }
+  };
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -740,6 +759,23 @@ export default function CeoDashboard() {
     return () => window.clearInterval(id);
   }, [founderOk, ceoTab]);
 
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === '#videos') {
+        setCeoTab('videos');
+        setScrollToTabs(true);
+      }
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  useEffect(() => {
+    if (!scrollToTabs || !founderOk || founderResolving || !ceoTabsRef.current) return;
+    ceoTabsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setScrollToTabs(false);
+  }, [scrollToTabs, founderOk, founderResolving]);
+
   const filteredUsers = users.filter(u => 
     (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (u.displayName && u.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -802,7 +838,7 @@ export default function CeoDashboard() {
         CEO Dashboard — Founder Console
       </h1>
       <p className="mb-4 font-mono text-xs md:text-sm font-bold uppercase tracking-wide md:tracking-wider text-zinc-400 break-words">
-        Ops only · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
+        Ops only · Explainer videos · Daily Ops · Daily structure briefing · Budget · Members · Alerts · Disaster backup · Force everyone out · Source ZIP · Site Doctor
         <span className="mx-2 text-zinc-600">·</span>
         Deep link <a href="/ceo" className="text-[#00FFFF] underline-offset-2 hover:underline">/ceo</a>
         <span className="mx-2 text-zinc-600">·</span>
@@ -810,6 +846,28 @@ export default function CeoDashboard() {
         <span className="mx-2 text-zinc-600">·</span>
         Plans <a href="/plans" data-ceo-plans-link className="text-[#FFD700] underline-offset-2 hover:underline">/plans</a>
       </p>
+
+      <div
+        data-ceo-videos-shortcut
+        className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-[#00FFFF]/60 bg-[#00FFFF]/10 px-5 py-4"
+      >
+        <div className="min-w-[240px] flex-1 space-y-1">
+          <p className="m-0 flex items-center gap-2 text-base font-black uppercase tracking-widest text-[#00FFFF]">
+            <Film size={20} aria-hidden="true" /> Explainer videos
+          </p>
+          <p className="m-0 text-sm leading-relaxed text-zinc-200">
+            Upload your videos and choose which play icon or section each one plays behind.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-ceo-videos-open
+          onClick={openVideoLibrary}
+          className="inline-flex min-h-[64px] items-center justify-center gap-3 rounded-xl bg-[#00FFFF] px-8 text-sm font-black uppercase tracking-widest text-black hover:bg-[#6ffcff]"
+        >
+          <Upload size={20} aria-hidden="true" /> Upload &amp; place videos
+        </button>
+      </div>
 
       <div
         data-ceo-kick-bar
@@ -845,7 +903,11 @@ export default function CeoDashboard() {
       <DailyPatternReviewDesk getHeaders={founderApiHeaders} />
 
       {/* CEO Micro-Tabs */}
-      <div className="flex border-b border-indigo-500/20 mb-8 gap-4 select-none flex-wrap">
+      <div
+        ref={ceoTabsRef}
+        data-ceo-tabs
+        className="flex border-b border-indigo-500/20 mb-8 gap-4 select-none flex-wrap scroll-mt-4"
+      >
         <button
           onClick={() => setCeoTab('system')}
           className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
@@ -868,11 +930,11 @@ export default function CeoDashboard() {
         </button>
         <button
           data-ceo-videos-tab
-          onClick={() => setCeoTab('videos')}
+          onClick={openVideoLibrary}
           className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
             ceoTab === 'videos'
               ? 'text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/5 shadow-[0_12px_24px_-12px_rgba(0,255,255,0.4)]'
-              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+              : 'text-[#00FFFF]/80 border-[#00FFFF]/30 hover:text-[#00FFFF] hover:bg-[#00FFFF]/5'
           }`}
         >
           🎬 EXPLAINER VIDEOS

@@ -1,7 +1,8 @@
 # CEO explainer-video library
 
 Founder-only page inside the CEO Dashboard: **CEO DASHBOARD → 🎬 EXPLAINER VIDEOS**
-(or open `/ceo#videos`).
+(or open `/ceo#videos`). The fastest way in is the cyan **Explainer videos** bar right
+under the CEO Dashboard title — **UPLOAD & PLACE VIDEOS** opens the tab and scrolls to it.
 
 1. **Upload** a video and wait for the bar to fill.
 2. Scroll to **Where each video plays**. The sixteen **Nav play icons** are open at
