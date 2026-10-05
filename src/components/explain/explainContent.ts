@@ -192,26 +192,6 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     ],
   },
 
-  ceo: {
-    id: 'ceo',
-    title: 'CEO dashboard',
-    color: '#FF2E9A',
-    text: vo('ceo'),
-    quiz: [
-      {
-        id: 'q1',
-        prompt: 'Who is the hot-pink CEO button for?',
-        options: [
-          { id: 'a', text: 'Only the person who built this website' },
-          { id: 'b', text: 'Every visitor' },
-          { id: 'c', text: 'A store that buys and sells' },
-        ],
-        correctOptionId: 'a',
-        explanation: 'Most people will not see it. That is normal. Click purple HOME and keep going.',
-      },
-    ],
-  },
-
   cinema: {
     id: 'cinema',
     title: 'ClearPath cinema',
@@ -363,7 +343,6 @@ export const NAV_TAB_EXPLAIN_IDS: Record<string, string> = {
   Membership: 'memberships',
   Biography: 'profile',
   AffiliateNetwork: 'affiliate',
-  CeoDashboard: 'ceo',
   CpmsApk: 'cinema',
   ClearPathEducation: 'education',
   LiteracyOS: 'literacy',

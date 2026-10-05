@@ -5,8 +5,9 @@ Founder-only page inside the CEO Dashboard: **CEO DASHBOARD → 🎬 EXPLAINER V
 under the CEO Dashboard title — **UPLOAD & PLACE VIDEOS** opens the tab and scrolls to it.
 
 1. **Upload** a video and wait for the bar to fill.
-2. Scroll to **Where each video plays**. The sixteen **Nav play icons** are open at
-   the top. Every section walkthrough below is folded up with a `3 of 7 filled`
+2. Scroll to **Where each video plays**. The fifteen **Nav play icons** are open at
+   the top. The CEO button has no play icon and no slot — nobody but you ever
+   sees the CEO dashboard, so there is nothing to explain to visitors. Every section walkthrough below is folded up with a `3 of 7 filled`
    count on its heading — tap a heading to open it.
 3. Choose the video from the dropdown next to the place it belongs. It is live
    immediately — no code, no deploy.
