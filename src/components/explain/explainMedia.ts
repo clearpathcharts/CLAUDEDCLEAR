@@ -13,7 +13,6 @@
 export const EXPLAIN_VIDEO_PUBLIC_DIR = '/explain-videos';
 
 export const EXPLAIN_FLOW_SLOT_IDS = [
-  'ceo',
   'home',
   'ywc',
   'indacreator',

@@ -11,8 +11,13 @@
  * reads in the dropdown, so it says the button he actually taps.
  *
  * Slots carry a `groupId` because there are around a hundred of them. The CEO
- * page pins the nav group first and collapses the rest, so the sixteen play
+ * page pins the nav group first and collapses the rest, so the fifteen play
  * icons never get buried under eighty-four walkthrough clips.
+ *
+ * The CEO button deliberately has no slot and no play icon: nobody but the
+ * founder ever sees the CEO dashboard, so there is nothing to explain to a
+ * visitor. Any `nav.ceo` assignment left in storage fails `isVideoSlotId` and
+ * is dropped on read.
  *
  * Adopting another play icon later is one entry in {@link NAV_VIDEO_SLOTS} plus
  * the matching id passed to the player. Walkthrough clips need no entry at all
@@ -188,13 +193,6 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
     where: `${NAV_BADGE} log out control`,
     explains: 'what logging out does and does not delete',
   },
-  {
-    id: 'nav.ceo',
-    groupId: NAV_VIDEO_SLOT_GROUP_ID,
-    label: 'Nav play icon — CEO (founder only)',
-    where: `${NAV_BADGE} CEO button — only you ever see this one`,
-    explains: 'what the CEO dashboard is for',
-  },
 ];
 
 const NAV_GROUP: VideoSlotGroup = {
@@ -238,7 +236,7 @@ function buildGuideSlots(): { groups: VideoSlotGroup[]; slots: VideoSlot[] } {
 
 const GUIDE = buildGuideSlots();
 
-/** Nav group pinned first so the sixteen play icons stay at the top of the CEO list. */
+/** Nav group pinned first so the fifteen play icons stay at the top of the CEO list. */
 export const VIDEO_SLOT_GROUPS: VideoSlotGroup[] = [NAV_GROUP, ...GUIDE.groups];
 
 export const VIDEO_SLOTS: VideoSlot[] = [...NAV_VIDEO_SLOTS, ...GUIDE.slots];

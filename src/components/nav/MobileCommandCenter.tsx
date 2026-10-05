@@ -217,7 +217,6 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               <Shield className="w-4 h-4" />
               <span>CEO</span>
             </button>
-            <ExplainTrigger contentId="CeoDashboard" color={explainColorForNavTab("CeoDashboard")} />
           </div>
         ) : null}
         <div className="flex items-center gap-1">
