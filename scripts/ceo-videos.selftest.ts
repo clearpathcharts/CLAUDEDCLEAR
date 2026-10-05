@@ -149,6 +149,19 @@ async function main() {
     assert.equal(body.storage.configured, false);
     assert.deepEqual(body.videos, []);
     assert.ok(body.limits.maxBytes > 0);
+    const navRows = body.slots.filter((s: any) => s.groupId === 'nav');
+    assert.equal(navRows.length, 15, 'the upload list has 15 nav play icons');
+    assert.equal(
+      body.slots.some((s: any) => String(s.id).startsWith('nav.ceo')),
+      false,
+      'no one but the founder sees the CEO dashboard, so it has no row on the upload list'
+    );
+    const ceoAssign = await call('/api/ceo/videos/slots/nav.ceo', {
+      method: 'PUT',
+      headers: founder,
+      body: JSON.stringify({ videoId: 'abc123' }),
+    });
+    assert.equal(ceoAssign.status, 404, 'a nav.ceo assignment is refused');
 
     // 5. Minting an upload URL fails loudly instead of pretending it worked.
     const mint = await call('/api/ceo/videos/upload-url', {

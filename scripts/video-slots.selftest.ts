@@ -133,10 +133,23 @@ async function main() {
   const navSlots = registry.VIDEO_SLOTS.filter(
     (s) => s.groupId === registry.NAV_VIDEO_SLOT_GROUP_ID
   );
-  assert.ok(navSlots.length >= 16, `expected at least 16 play-icon slots, got ${navSlots.length}`);
+  assert.equal(navSlots.length, 15, `expected exactly 15 play-icon slots, got ${navSlots.length}`);
   for (const slot of navSlots) {
     assert.match(slot.id, /^nav\.[a-z0-9-]+$/, `${slot.id} is not a stable lowercase nav id`);
   }
+  // Only the founder ever sees the CEO dashboard, so it never gets a play icon.
+  for (const slot of registry.VIDEO_SLOTS) {
+    assert.equal(slot.id.startsWith('nav.ceo'), false, `${slot.id}: the CEO button must not have a video slot`);
+    assert.doesNotMatch(slot.label, /CEO/, `${slot.id}: no CEO row on the upload list`);
+  }
+  assert.equal(registry.isVideoSlotId('nav.ceo'), false, 'nav.ceo is not a slot');
+  assert.equal(EXPLAIN_FLOW_SLOT_IDS.includes('ceo' as never), false, 'no CEO explain film');
+  const { getExplainContent } = await import('../src/components/explain/explainContent.ts');
+  assert.equal(
+    getExplainContent('CeoDashboard'),
+    undefined,
+    'no explain copy for the CEO tab, so ExplainTrigger renders no play badge beside the CEO button'
+  );
   // Every play icon the site already renders must be adoptable.
   for (const explainId of EXPLAIN_FLOW_SLOT_IDS) {
     const slotId = registry.navVideoSlotId(explainId);
@@ -285,6 +298,11 @@ async function runStoreAndRouteChecks() {
     'unknown slot ids are refused'
   );
   await assert.rejects(
+    () => store.setVideoSlotAssignment({ slotId: 'nav.ceo', videoId: 'abc123', url }),
+    /unknown slot|non-https/i,
+    'the retired CEO slot cannot be assigned'
+  );
+  await assert.rejects(
     () =>
       store.setVideoSlotAssignment({
         slotId: 'nav.home',
@@ -302,12 +320,22 @@ async function runStoreAndRouteChecks() {
       'nav.charts': { slotId: 'nav.charts', videoId: 'abc123', url, assignedAt: '2026-01-01' },
       'nav.evil': { slotId: 'nav.evil', videoId: 'x', url: 'https://x/y.mp4', assignedAt: '2026-01-01' },
       'nav.home': { slotId: 'nav.home', videoId: 'y', url: 'http://insecure/y.mp4', assignedAt: '2026-01-01' },
+      'nav.ceo': { slotId: 'nav.ceo', videoId: 'abc123', url, assignedAt: '2026-01-01' },
     }),
     'utf8'
   );
   store.__resetVideoSlotCacheForTests();
   const sanitized = await store.getVideoSlotAssignments();
-  assert.deepEqual(Object.keys(sanitized), ['nav.charts'], 'unknown slots and non-https URLs are dropped on read');
+  assert.deepEqual(
+    Object.keys(sanitized),
+    ['nav.charts'],
+    'unknown slots, a leftover nav.ceo assignment and non-https URLs are dropped on read'
+  );
+  assert.deepEqual(
+    Object.keys(store.toPublicSlotUrlMap({ ...sanitized, 'nav.ceo': { slotId: 'nav.ceo', videoId: 'abc123', url, assignedAt: '' } })),
+    ['nav.charts'],
+    'a leftover nav.ceo assignment never reaches the public slot map'
+  );
 
   // --- a deleted video unwires its icons ---
   await store.setVideoSlotAssignment({ slotId: 'nav.home', videoId: 'abc123', url });
@@ -401,6 +429,18 @@ async function runStoreAndRouteChecks() {
     });
     assert.equal(badSlot.status, 404);
     assert.equal(((await badSlot.json()) as any).error, 'unknown_slot');
+    const ceoSlot = await call('/api/ceo/videos/slots/nav.ceo', {
+      method: 'PUT',
+      headers: founder,
+      body: JSON.stringify({ videoId: 'abc123' }),
+    });
+    assert.equal(ceoSlot.status, 404, 'the CEO button has no slot, even for the founder');
+    assert.equal(((await ceoSlot.json()) as any).error, 'unknown_slot');
+    assert.equal(
+      libraryBody.slots.some((s: any) => String(s.id).startsWith('nav.ceo')),
+      false,
+      'the CEO upload list has no CEO row'
+    );
 
     // 3b. A walkthrough clip is assignable through the same founder-gated route.
     const guideSlotId = registry.guideVideoSlotId('StrictlyCharts', '02-neuro-profiles');
