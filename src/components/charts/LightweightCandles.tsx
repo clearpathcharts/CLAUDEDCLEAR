@@ -65,9 +65,16 @@ import {
   readOverlayOpen,
   writeOverlayOpen,
 } from "../../lib/charts/chartOverlayPrefs";
+import {
+  applyHardcodedGoldBar,
+  GOLD_BAR_COLOR,
+  readGoldBarEnabled,
+  subscribeGoldBarEnabled,
+  writeGoldBarEnabled,
+} from "../../lib/charts/goldBarOverlay";
 
 /** Visible in the chart chrome — if live does not show this string, Cloud Run is on an old build. */
-export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-09-19-TF-MENU";
+export const CHART_UI_BUILD_STAMP = "CHART-BUILD-2026-10-10-GOLD-BAR";
 
 export type { PriceSeriesType };
 
@@ -216,6 +223,15 @@ function toPriceSeriesData(
   });
 }
 
+function toGoldPriceSeriesData(
+  candles: PriceBar[],
+  type: PriceSeriesType,
+  colors: { up: string; down: string },
+  goldBarOn: boolean,
+) {
+  return toPriceSeriesData(applyHardcodedGoldBar(candles, goldBarOn), type, colors);
+}
+
 function toPriceSeriesUpdate(
   bar: { time: number; open: number; high: number; low: number; close: number },
   type: PriceSeriesType,
@@ -315,9 +331,20 @@ export const LightweightCandles = memo(function LightweightCandles({
   const hidePatternChrome = embedMode || useDedicatedPatternPanel || hidePatternOverlays;
   const hidePatternOverlaysRef = useRef(hidePatternOverlays);
   hidePatternOverlaysRef.current = hidePatternOverlays;
+
+  useEffect(() => {
+    setGoldBarOn(readGoldBarEnabled());
+    return subscribeGoldBarEnabled((on) => {
+      goldBarOnRef.current = on;
+      setGoldBarOn(on);
+    });
+  }, []);
+  goldBarOnRef.current = goldBarOn;
   const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
+  const [goldBarOn, setGoldBarOn] = useState(true);
+  const goldBarOnRef = useRef(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const disposedRef = useRef(false);
@@ -712,10 +739,10 @@ export const LightweightCandles = memo(function LightweightCandles({
 
         const rawBars = chartCandles as PriceBar[];
         const plotBars = transformOhlc(rawBars, seriesStyle);
-        series.setData(toPriceSeriesData(plotBars, seriesStyle, {
+        series.setData(toGoldPriceSeriesData(plotBars, seriesStyle, {
           up: vividCandles.upColor,
           down: vividCandles.downColor,
-        }) as any);
+        }, goldBarOnRef.current) as any);
         drawings.setMarketBars(rawBars as OhlcBar[]);
         marketBarsRef.current = rawBars as OhlcBar[];
         if (showsVolumeOverlay(seriesStyle)) {
@@ -1118,17 +1145,21 @@ export const LightweightCandles = memo(function LightweightCandles({
               if (result.barColors.length > 0 || result.backgrounds.length > 0) {
                 const colorByTime = new Map(result.barColors.map(bc => [bc.time, bc.color]));
                 const borderByTime = new Map(result.backgrounds.map(bg => [bg.time, bg.color]));
-                series.setData(tierOptimizedData.map(d => {
+                const riverPainted = tierOptimizedData.map(d => {
                   const c = colorByTime.get(d.time);
                   const border = borderByTime.get(d.time);
                   if (c) {
-                    return { ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as CandlestickData<Time>;
+                    return { ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as PriceBar;
                   }
                   if (border) {
-                    return { ...d, time: d.time as Time, borderColor: border, wickColor: border } as CandlestickData<Time>;
+                    return { ...d, time: d.time as Time, borderColor: border, wickColor: border } as PriceBar;
                   }
-                  return d as CandlestickData<Time>;
-                }));
+                  return d as PriceBar;
+                });
+                series.setData(toGoldPriceSeriesData(riverPainted, seriesStyle, {
+                  up: vividCandles.upColor,
+                  down: vividCandles.downColor,
+                }, goldBarOnRef.current) as any);
               }
 
               result.segments.slice(0, 80).forEach((seg, i) => {
@@ -1337,7 +1368,7 @@ export const LightweightCandles = memo(function LightweightCandles({
     try {
       const rawBars = uniqueAscendingTimes(trimTrailingStagnantBars(incoming)) as PriceBar[];
       const plotBars = transformOhlc(rawBars, seriesStyle);
-      series.setData(toPriceSeriesData(plotBars, seriesStyle, candleColorsRef.current) as any);
+      series.setData(toGoldPriceSeriesData(plotBars, seriesStyle, candleColorsRef.current, goldBarOnRef.current) as any);
       barCountRef.current = rawBars.length;
       setError(null);
       const range = chart.timeScale().getVisibleLogicalRange();
@@ -1356,15 +1387,43 @@ export const LightweightCandles = memo(function LightweightCandles({
     }
   }, [replayMode, dataSig, chartReadyKey, seriesStyle, isExpanded]);
 
+  // Opt-out / opt-in without remounting the chart.
+  useEffect(() => {
+    const series = candleSeriesRef.current;
+    const raw = marketBarsRef.current;
+    if (!series || raw.length === 0) return;
+    try {
+      const plotBars = transformOhlc(raw as PriceBar[], seriesStyle);
+      series.setData(
+        toGoldPriceSeriesData(plotBars, seriesStyle, candleColorsRef.current, goldBarOn) as any,
+      );
+    } catch (err) {
+      if (isChartDisposedError(err)) return;
+      console.warn("[LightweightCandles] gold bar toggle skipped", err);
+    }
+  }, [goldBarOn, seriesStyle]);
+
   // Market Replay: push newly revealed candles without rebuilding the chart (no look-ahead).
   useEffect(() => {
     if (!replayMode || !candleSeriesRef.current || !Array.isArray(data)) return;
-    const mapped = data.map((d) => ({
+    const mapped = applyHardcodedGoldBar(
+      data.map((d) => ({
+        time: d.time,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+      })),
+      goldBarOnRef.current,
+    ).map((d) => ({
       time: d.time as Time,
       open: d.open,
       high: d.high,
       low: d.low,
       close: d.close,
+      color: d.color,
+      wickColor: d.wickColor,
+      borderColor: d.borderColor,
     }));
     try {
       candleSeriesRef.current.setData(mapped as any);
@@ -1521,6 +1580,21 @@ export const LightweightCandles = memo(function LightweightCandles({
             <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
           <ChartSeriesStylePicker compact value={seriesStyle} onChange={setSeriesStyle} />
+          <button
+            type="button"
+            onClick={() => writeGoldBarEnabled(!goldBarOn)}
+            className="flex h-8 items-center gap-1.5 rounded-md border px-2 font-mono text-[9px] font-black uppercase tracking-wider transition-all"
+            style={{
+              color: GOLD_BAR_COLOR,
+              borderColor: goldBarOn ? "rgba(255,204,0,0.55)" : "rgba(255,255,255,0.15)",
+              background: goldBarOn ? "rgba(255,204,0,0.12)" : "transparent",
+            }}
+            aria-pressed={goldBarOn}
+            title={goldBarOn ? "Gold Bar is on every chart. Click to hide it." : "Show the bright gold bar on every chart."}
+            data-testid="gold-bar-toggle"
+          >
+            Gold Bar {goldBarOn ? "on" : "off"}
+          </button>
           <ChartBackgroundToggle compact />
           <span
             className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
@@ -1626,6 +1700,22 @@ export const LightweightCandles = memo(function LightweightCandles({
           >
             {CHART_UI_BUILD_STAMP}
           </span>
+        ) : null}
+        {!embedMode && hideChartToolbar ? (
+          <button
+            type="button"
+            onClick={() => writeGoldBarEnabled(!goldBarOn)}
+            className="absolute top-2 left-14 z-[60] flex h-8 items-center rounded-md border bg-black/75 px-2 font-mono text-[9px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md"
+            style={{
+              color: GOLD_BAR_COLOR,
+              borderColor: goldBarOn ? "rgba(255,204,0,0.55)" : "rgba(255,255,255,0.2)",
+            }}
+            aria-pressed={goldBarOn}
+            title={goldBarOn ? "Gold Bar is on. Click to hide it." : "Show the bright gold bar."}
+            data-testid="gold-bar-toggle-overlay"
+          >
+            Gold Bar {goldBarOn ? "on" : "off"}
+          </button>
         ) : null}
         {!embedMode && hideChartToolbar && onExpandToggle ? (
           <button
