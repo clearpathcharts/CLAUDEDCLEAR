@@ -289,7 +289,7 @@ export function ChartDrawingToolbar({
       ) : null}
 
       <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
-        <div className="flex items-center gap-1.5" aria-label="Drawing color">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1" aria-label="Drawing color">
           {DRAWING_COLORS.map((c) => (
             <button
               key={c}
@@ -297,12 +297,22 @@ export function ChartDrawingToolbar({
               title={`Color ${c}`}
               aria-label={`Drawing color ${c}`}
               onClick={() => onColorChange(c)}
-              className={`h-4 w-4 rounded-full border-2 transition-transform active:scale-90 ${
-                drawColor === c ? "scale-110 border-white" : "border-white/30"
+              className={`h-3.5 w-3.5 rounded-sm border transition-transform active:scale-90 ${
+                drawColor.toUpperCase() === c.toUpperCase() ? "scale-110 border-white" : "border-white/30"
               }`}
               style={{ backgroundColor: c }}
             />
           ))}
+          <label className="relative grid h-3.5 w-3.5 place-items-center overflow-hidden rounded-sm border border-dashed border-white/40 text-[9px] text-white">
+            +
+            <input
+              type="color"
+              value={/^#[0-9A-Fa-f]{6}$/.test(drawColor) ? drawColor : "#00D9FF"}
+              aria-label="Custom drawing color"
+              className="absolute inset-0 cursor-pointer opacity-0"
+              onChange={(e) => onColorChange(e.target.value)}
+            />
+          </label>
         </div>
         <div className="flex items-center gap-1">
           <button

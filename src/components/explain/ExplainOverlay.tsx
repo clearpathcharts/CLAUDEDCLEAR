@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getExplainContent } from './explainContent';
 import { getExplainFlowScript } from './flowScripts';
+import { GOLD_BAR_FLOW_SCRIPT } from './goldBarFlow';
 import { hexToRgba } from './explainMedia';
 import { ExplainVideoStage } from './ExplainVideoStage';
 import { QuizCheck } from './QuizCheck';
@@ -98,7 +99,10 @@ export function ExplainOverlay({ contentId, onClose }: ExplainOverlayProps) {
 }
 
 function FlowScriptReadAlong({ contentId, color }: { contentId: string; color: string }) {
-  const flow = getExplainFlowScript(contentId);
+  const flow =
+    contentId === 'gold-bar' || contentId === 'goldbar' || contentId === 'GoldBar'
+      ? GOLD_BAR_FLOW_SCRIPT
+      : getExplainFlowScript(contentId);
   if (!flow) return null;
 
   return (

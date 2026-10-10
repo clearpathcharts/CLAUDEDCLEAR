@@ -19,20 +19,26 @@ export const ASSET_COLOR_STORAGE_KEY = 'clearpath_asset_colors_v1';
 
 /** Full rainbow presets — still free to pick any hex via native color input. */
 export const RAINBOW_PRESETS: string[] = [
-  '#FF1493', // hot pink
-  '#FF2D55', // neon rose
-  '#FF6B00', // orange
-  '#FFD60A', // gold
-  '#39FF14', // lime
-  '#00FF9C', // mint
-  '#00E5FF', // cyan
-  '#3B82F6', // blue
-  '#6366F1', // indigo
-  '#A855F7', // violet
-  '#BF00FF', // electric purple
-  '#F5F3FF', // soft white
-  '#FFFFFF', // white
-  '#A1A1AA', // muted
+  '#FF0000',
+  '#FF1493',
+  '#FF2D55',
+  '#FF6B00',
+  '#FFD60A',
+  '#FFCC00',
+  '#39FF14',
+  '#00FF9C',
+  '#00E5FF',
+  '#00FFFF',
+  '#3B82F6',
+  '#2962FF',
+  '#6366F1',
+  '#7C4DFF',
+  '#A855F7',
+  '#BF00FF',
+  '#D500F9',
+  '#FFFFFF',
+  '#8C8C8C',
+  '#000000',
 ];
 
 export const DEFAULT_ASSET_COLORS: AssetColorSlots = {

@@ -120,17 +120,79 @@
 }
 
 .color-chart-panel {
-  width: min(100%, 22.5rem);
+  width: min(100%, 46rem);
   padding: 0.7rem 0.7rem 0.55rem;
   border-radius: 0.65rem;
   background: #1c1c1f;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.color-chart-count {
+  margin: 0 0 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.color-chart-spectrum {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+
+.color-chart-moon {
+  position: relative;
+  width: 7.5rem;
+  height: 7.5rem;
+  border: 0;
+  border-radius: 50%;
+  cursor: crosshair;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.color-chart-moon-core {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  border: 2px solid #111;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.color-chart-square {
+  position: relative;
+  width: 100%;
+  min-height: 7.5rem;
+  border-radius: 0.4rem;
+  cursor: crosshair;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.color-chart-square-dot {
+  position: absolute;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #111;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .color-chart-row {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 0.28rem;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 0.16rem;
+}
+
+.color-chart-grays {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
 }
 
 .color-chart-grid {
@@ -147,9 +209,9 @@
 .color-chart-swatch {
   aspect-ratio: 1;
   width: 100%;
-  min-height: 1.35rem;
+  min-height: 0.85rem;
   border: 0;
-  border-radius: 0.28rem;
+  border-radius: 0.14rem;
   cursor: pointer;
   padding: 0;
 }
@@ -161,7 +223,51 @@
 }
 
 .color-chart-presets {
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+}
+
+.color-chart-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 80;
+  border-top: 1px solid rgba(255, 20, 147, 0.35);
+  background: rgba(5, 5, 8, 0.96);
+  backdrop-filter: blur(16px);
+}
+
+.color-chart-teaser {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.color-chart-teaser-rainbow {
+  flex: 1;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff8000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0040ff,
+    #8000ff,
+    #ff00ff,
+    #ff0000
+  );
+  box-shadow: 0 0 16px rgba(255, 20, 147, 0.35);
 }
 
 .color-chart-recents {
@@ -237,8 +343,18 @@
 
 .desk-shell[data-desk-paper='white'] .color-chart-hint,
 .desk-shell[data-desk-paper='white'] .color-chart-opacity-note,
-.desk-shell[data-desk-paper='white'] .color-chart-slots {
+.desk-shell[data-desk-paper='white'] .color-chart-slots,
+.desk-shell[data-desk-paper='white'] .color-chart-count {
   color: #52525b;
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-dock {
+  background: rgba(248, 248, 250, 0.96);
+  border-top-color: rgba(17, 17, 17, 0.12);
+}
+
+.desk-shell[data-desk-paper='white'] .color-chart-teaser {
+  color: #111111;
 }
 
 .desk-shell[data-desk-paper='white'] .color-chart-save-status {

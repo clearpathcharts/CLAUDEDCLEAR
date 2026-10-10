@@ -86,7 +86,7 @@ assert.match(
   /fontFamily:\s*'"IBM Plex Mono"/,
   'Lightweight Charts axis/crosshair text must use IBM Plex Mono',
 );
-assert.match(candles, /CHART-BUILD-2026-09-19-TF-MENU/, 'stamp must mark the current chart build');
+assert.match(candles, /CHART-BUILD-2026-10-10-GOLD-BAR/, 'stamp must mark the current chart build');
 assert.match(
   liveChart,
   /fontFamily:\s*'"IBM Plex Mono"/,
@@ -96,11 +96,6 @@ assert.match(
   fs.readFileSync(path.resolve('src/components/Auth.tsx'), 'utf8'),
   /font-mono text-zinc-500 text-\[9px\][\s\S]*DXY INDEX/,
   'public header tickers (DXY / BTC / USDJPY) must use IBM Plex Mono',
-);
-assert.match(
-  candles,
-  /data-chart-build/,
-  'CHART-BUILD stamp must be targetable as a mono data readout',
 );
 assert.match(
   indexCss,

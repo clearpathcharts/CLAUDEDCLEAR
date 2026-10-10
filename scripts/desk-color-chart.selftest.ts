@@ -11,6 +11,8 @@ import {
   COLOR_CHART_HUE_GRID,
   COLOR_CHART_PRESETS,
   COLOR_CHART_ROW_SL,
+  COLOR_CHART_SWATCH_COUNT,
+  TERMINAL_COLOR_PRESET_COUNTS,
   DESK_COLOR_CHART_STORAGE_KEY,
   DESK_COLOR_TARGETS,
   DESK_COLOR_TARGET_META,
@@ -38,14 +40,18 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-assert.equal(COLOR_CHART_GRAYS.length, 10);
+assert.equal(COLOR_CHART_GRAYS.length, 16);
 assert.equal(COLOR_CHART_GRAYS[0], '#FFFFFF');
-assert.equal(COLOR_CHART_GRAYS[9], '#000000');
-assert.equal(COLOR_CHART_PRESETS.length, 9);
-assert.equal(COLOR_CHART_ROW_SL.length, 8);
-assert.equal(COLOR_CHART_HUE_GRID.length, 8);
-assert.equal(COLOR_CHART_HUE_GRID[0].length, 10);
-assert.equal(buildHueGrid()[0][0], hslToHex(0, 92, 54));
+assert.equal(COLOR_CHART_GRAYS[15], '#000000');
+assert.equal(COLOR_CHART_PRESETS.length, 12);
+assert.equal(COLOR_CHART_ROW_SL.length, 12);
+assert.equal(COLOR_CHART_HUE_GRID.length, 12);
+assert.equal(COLOR_CHART_HUE_GRID[0].length, 24);
+assert.equal(buildHueGrid()[0][0], hslToHex(0, 96, 56));
+assert.equal(COLOR_CHART_SWATCH_COUNT, 16 + 24 * 12);
+assert.ok(COLOR_CHART_SWATCH_COUNT > TERMINAL_COLOR_PRESET_COUNTS.tradingView);
+assert.ok(COLOR_CHART_SWATCH_COUNT > TERMINAL_COLOR_PRESET_COUNTS.ninjaTrader);
+assert.ok(COLOR_CHART_SWATCH_COUNT > TERMINAL_COLOR_PRESET_COUNTS.bloomberg);
 assert.ok(COLOR_CHART_PRESETS.includes('#00E5FF'));
 assert.ok(COLOR_CHART_PRESETS.includes('#FF1744'));
 assert.equal(DESK_COLOR_TARGETS.length, 6);
@@ -125,6 +131,7 @@ const files = [
   'src/components/desks/DeskAppearanceContext.tsx',
   'src/components/desks/DeskRoute.tsx',
   'src/components/desks/TraderDeskChrome.tsx',
+  'src/components/desks/DeskColorChartDock.tsx',
   'src/components/charts/LightweightCandles.tsx',
   'src/components/desks/neuro/NeurodivergentDashboard.tsx',
 ];
@@ -134,9 +141,14 @@ for (const rel of files) {
 
 const chrome = fs.readFileSync(path.join(root, 'src/components/desks/TraderDeskChrome.tsx'), 'utf8');
 assert.match(chrome, /data-color-chart-toggle/);
-assert.match(chrome, /ColorChartPicker/);
-assert.match(chrome, /showPastels=\{active === 'neurodivergent'\}/);
 assert.match(chrome, /Colors/);
+assert.doesNotMatch(chrome, /ColorChartPicker/);
+
+const dock = fs.readFileSync(path.join(root, 'src/components/desks/DeskColorChartDock.tsx'), 'utf8');
+assert.match(dock, /ColorChartPicker/);
+assert.match(dock, /data-color-chart-dock/);
+assert.match(dock, /data-color-chart-teaser/);
+assert.match(dock, /showPastels=\{deskId === 'neurodivergent'\}/);
 
 const picker = fs.readFileSync(path.join(root, 'src/components/desks/ColorChartPicker.tsx'), 'utf8');
 assert.match(picker, /data-color-chart/);
@@ -147,6 +159,9 @@ assert.match(picker, /Opacity/);
 assert.match(picker, /COLOR_CHART_GRAYS/);
 assert.match(picker, /COLOR_CHART_HUE_GRID/);
 assert.match(picker, /COLOR_CHART_PRESETS/);
+assert.match(picker, /data-color-chart-moon/);
+assert.match(picker, /data-color-chart-square/);
+assert.match(picker, /data-color-chart-count/);
 assert.match(picker, /neuroPastelSwatches/);
 assert.match(picker, /data-color-chart-save/);
 assert.match(picker, /Save colors/);
@@ -167,6 +182,7 @@ assert.match(route, /DeskAppearanceProvider deskId=\{deskId\}/);
 assert.match(route, /data-desk-color-bg/);
 assert.match(route, /data-desk-color-bento/);
 assert.match(route, /colorChart\.css/);
+assert.match(route, /DeskColorChartDock/);
 
 const css = fs.readFileSync(path.join(root, 'src/components/desks/colorChart.css'), 'utf8');
 assert.match(css, /data-desk-color-bg/);

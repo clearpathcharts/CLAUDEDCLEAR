@@ -62,6 +62,13 @@ assert.equal(getExplainContent('river_genie')?.id, 'indacreator');
 assert.equal(getExplainContent('charts')?.title, 'Charts');
 assert.equal(getExplainContent('ExplainMode')?.id, 'explain');
 assert.equal(getExplainContent('Exit')?.id, 'exit');
+assert.equal(getExplainContent('gold-bar')?.id, 'gold-bar');
+assert.equal(getExplainContent('gold bar')?.id, 'gold-bar');
+assert.match(getExplainContent('gold-bar')?.title || '', /Gold Bar/);
+assert.equal(
+  /buy now|sell now|guaranteed profit/i.test(getExplainContent('gold-bar')?.text || ''),
+  false,
+);
 assert.ok(Object.keys(explainContentLibrary).length >= NAV_IDS.length);
 
 assert.equal(explainVideoSrc('charts'), '/explain-videos/charts.mp4');
