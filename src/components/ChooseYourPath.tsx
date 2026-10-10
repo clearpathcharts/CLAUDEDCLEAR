@@ -6,22 +6,24 @@ type Props = {
   onChoosePath: (deskId: TraderDeskId) => void;
 };
 
-/** Native-pixel images — never CSS-upscale past width/height. */
+/** Path cards share one tall frame. Banner stays native-width. */
 function SharpPathImage({
   webp,
   png,
   width,
   height,
   alt,
+  fillFrame = false,
 }: {
   webp: string;
   png: string;
   width: number;
   height: number;
   alt: string;
+  fillFrame?: boolean;
 }) {
   return (
-    <picture>
+    <picture className={fillFrame ? 'block h-full w-full' : undefined}>
       <source type="image/webp" srcSet={webp} />
       <img
         src={png}
@@ -30,9 +32,13 @@ function SharpPathImage({
         height={height}
         decoding="async"
         draggable={false}
-        className="pointer-events-none block h-auto w-full cp-path-art"
+        className={
+          fillFrame
+            ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
+            : 'pointer-events-none block h-auto w-full cp-path-art'
+        }
         style={{
-          maxWidth: `${width}px`,
+          maxWidth: fillFrame ? '100%' : `${width}px`,
           imageRendering: 'auto',
         }}
       />
@@ -55,14 +61,14 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
           Welcome to ClearPath Trader Please choose your path
         </h2>
 
-        <ul className="relative z-20 grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-start isolate">
+        <ul className="relative z-20 grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-stretch isolate">
           {PATH_CARDS.map((card) => (
-            <li key={card.id} className="relative z-10 min-w-0 w-full flex flex-col items-center">
+            <li key={card.id} className="relative z-10 min-w-0 w-full">
               <button
                 type="button"
                 data-path-card={card.id}
                 onClick={() => onChoosePath(card.id)}
-                className="cp-path-card w-full rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
+                className="cp-path-card flex h-full w-full aspect-[533/735] rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
                 style={{
                   borderColor: `${card.accent}CC`,
                   boxShadow: `0 0 28px ${card.accent}88, 0 0 64px ${card.accent}40`,
@@ -75,6 +81,7 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                   width={card.width}
                   height={card.height}
                   alt={`${card.title}. ${card.tagline}.`}
+                  fillFrame
                 />
               </button>
             </li>
