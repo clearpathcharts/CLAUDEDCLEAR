@@ -68,7 +68,7 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                 type="button"
                 data-path-card={card.id}
                 onClick={() => onChoosePath(card.id)}
-                className="cp-path-card flex h-full w-full aspect-[533/735] rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
+                className="cp-path-card block w-full aspect-[533/735] rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
                 style={{
                   borderColor: `${card.accent}CC`,
                   boxShadow: `0 0 28px ${card.accent}88, 0 0 64px ${card.accent}40`,
