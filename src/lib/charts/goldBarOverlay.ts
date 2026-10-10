@@ -1,9 +1,13 @@
 /**
  * Hard-coded Gold Bar — the TradingView look: a bright gold candlestick
- * on the regular chart. No buy/sell markers. No ATR trail line.
+ * on the regular chart. No buy/sell markers. No trail line.
  *
- * On by default on every chart. Opt out with the Gold Bar switch.
+ * Paints the breakout candle of a new trend, and still paints the wide
+ * expansion candles traders already like. On by default. Opt out with
+ * the Gold Bar switch.
  */
+
+import { calculateGoldBar } from "../../river/goldBarIndicator";
 
 export const GOLD_BAR_COLOR = "#FFCC00";
 export const GOLD_BAR_STORAGE_KEY = "cpt-gold-bar-on";
@@ -53,7 +57,39 @@ export function subscribeGoldBarEnabled(listener: (on: boolean) => void): () => 
   };
 }
 
-/** Paint wide-range candles bright gold. That is the bar — nothing else. */
+function trendBreakoutTimes(bars: PaintableBar[]): Set<number> {
+  const times = new Set<number>();
+  if (bars.length < 12) return times;
+  try {
+    const signals = calculateGoldBar(
+      bars.map((bar) => ({
+        time: bar.time,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+      })),
+    );
+    for (const signal of signals) {
+      if (signal.buySignal || signal.sellSignal) times.add(signal.time);
+    }
+  } catch {
+    /* expansion paint still runs */
+  }
+  return times;
+}
+
+function isExpansionBreakout<T extends PaintableBar>(bars: T[], index: number): boolean {
+  const bar = bars[index];
+  const range = bar.high - bar.low;
+  const start = Math.max(0, index - 14);
+  const prior = bars.slice(start, index);
+  if (prior.length < 5) return false;
+  const typical = prior.reduce((sum, item) => sum + (item.high - item.low), 0) / prior.length;
+  return typical > 0 && range >= typical * 1.65;
+}
+
+/** Gold paint only. No trail. No markers. */
 export function applyHardcodedGoldBar<T extends PaintableBar>(
   bars: T[],
   enabled: boolean,
@@ -61,13 +97,9 @@ export function applyHardcodedGoldBar<T extends PaintableBar>(
   if (!enabled || bars.length === 0) {
     return bars as Array<T & Pick<PaintableBar, "color" | "wickColor" | "borderColor">>;
   }
+  const breakouts = trendBreakoutTimes(bars);
   return bars.map((bar, index) => {
-    const range = bar.high - bar.low;
-    const start = Math.max(0, index - 14);
-    const prior = bars.slice(start, index);
-    if (prior.length < 5) return bar;
-    const typical = prior.reduce((sum, item) => sum + (item.high - item.low), 0) / prior.length;
-    if (typical <= 0 || range < typical * 1.65) return bar;
+    if (!breakouts.has(bar.time) && !isExpansionBreakout(bars, index)) return bar;
     return {
       ...bar,
       color: GOLD_BAR_COLOR,
