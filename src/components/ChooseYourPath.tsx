@@ -30,7 +30,7 @@ function SharpPathImage({
         height={height}
         decoding="async"
         draggable={false}
-        className="pointer-events-none block h-auto w-full"
+        className="pointer-events-none block h-auto w-full cp-path-art"
         style={{
           maxWidth: `${width}px`,
           imageRendering: 'auto',
@@ -50,7 +50,7 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
       <div className="max-w-7xl mx-auto px-3 sm:px-8">
         <h2
           id="choose-path-heading"
-          className="text-center text-xl sm:text-3xl md:text-4xl font-black tracking-tight text-white uppercase leading-snug font-sans mb-8 sm:mb-10"
+          className="text-center text-xl sm:text-3xl md:text-4xl font-black tracking-tight uppercase leading-snug font-sans mb-8 sm:mb-10 bg-gradient-to-r from-[#00FFFF] via-[#FFD700] to-[#FF1493] bg-clip-text text-transparent"
         >
           Welcome to ClearPath Trader Please choose your path
         </h2>
@@ -62,10 +62,10 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                 type="button"
                 data-path-card={card.id}
                 onClick={() => onChoosePath(card.id)}
-                className="w-full rounded-2xl overflow-hidden border bg-black/80 text-left cursor-pointer"
+                className="cp-path-card w-full rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
                 style={{
-                  borderColor: `${card.accent}66`,
-                  boxShadow: `0 0 24px ${card.accent}22`,
+                  borderColor: `${card.accent}CC`,
+                  boxShadow: `0 0 28px ${card.accent}88, 0 0 64px ${card.accent}40`,
                 }}
                 aria-label={`Private Login to open ${card.title}`}
               >
@@ -87,7 +87,8 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
               type="button"
               data-path-card="neurodivergent"
               onClick={() => onChoosePath('neurodivergent')}
-              className="w-full rounded-2xl overflow-hidden border border-[#FF1493]/40 text-left cursor-pointer"
+              className="cp-path-card w-full rounded-2xl overflow-hidden border border-[#FF1493]/80 text-left cursor-pointer"
+              style={{ boxShadow: '0 0 32px rgba(255,20,147,0.45), 0 0 72px rgba(0,229,255,0.22)' }}
               aria-label="Private Login to open Neurodivergent Traders"
             >
               <SharpPathImage

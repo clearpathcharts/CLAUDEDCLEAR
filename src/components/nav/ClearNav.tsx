@@ -42,14 +42,14 @@ const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; classe
     href: "/brokers",
     icon: Landmark,
     label: "BROKERS",
-    classes: "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
+    classes: "text-[#00E5FF] border border-[#00E5FF]/60 hover:bg-[#00E5FF]/20",
     testId: "nav-brokers-link",
   },
   {
     href: "/plans",
     icon: Crown,
     label: "PLANS",
-    classes: "text-[#FFD700] border border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    classes: "text-[#FFD700] border border-[#FFD700]/65 hover:bg-[#FFD700]/20",
     testId: "nav-plans-link",
   },
 ];
@@ -159,19 +159,19 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       isSecondaryGroup || index % 2 === 1;
 
     let classes =
-      "text-[#4D00FF] border border-[#4D00FF]/25 hover:bg-[#4D00FF]/10";
+      "text-[#4D00FF] border border-[#4D00FF]/55 hover:bg-[#4D00FF]/20";
 
     if (isOrange)
       classes =
-        "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10";
+        "text-[#FF6A00] border border-[#FF6A00]/55 hover:bg-[#FF6A00]/20";
 
     if (isPink)
       classes =
-        "text-[#FF1493] border border-[#FF1493]/30 hover:bg-[#FF1493]/10";
+        "text-[#FF1493] border border-[#FF1493]/60 hover:bg-[#FF1493]/20";
 
     if (isCyan)
       classes =
-        "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10";
+        "text-[#00E5FF] border border-[#00E5FF]/60 hover:bg-[#00E5FF]/20";
 
     if (isActive) {
       if (isPink)
