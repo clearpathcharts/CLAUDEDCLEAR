@@ -1,4 +1,5 @@
 import { EXPLAIN_FLOW_SCRIPTS } from './flowScripts';
+import { GOLD_BAR_FLOW_DROPS, GOLD_BAR_FLOW_PARAGRAPH } from './goldBarFlow';
 
 export interface QuizOption {
   id: string;
@@ -312,6 +313,28 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     ],
   },
 
+  'gold-bar': {
+    id: 'gold-bar',
+    title: 'What is the Gold Bar',
+    color: '#FFCC00',
+    text: GOLD_BAR_FLOW_PARAGRAPH,
+    posterUrl: GOLD_BAR_FLOW_DROPS.poster,
+    quiz: [
+      {
+        id: 'q1',
+        prompt: 'What is the Gold Bar on the chart?',
+        options: [
+          { id: 'a', text: 'A bright gold candle that helps your eye find the turn' },
+          { id: 'b', text: 'A button that buys gold for you' },
+          { id: 'c', text: 'A secret formula written on the screen' },
+        ],
+        correctOptionId: 'a',
+        explanation:
+          'The Gold Bar is a gold candle on the same chart. It does not buy or sell. You still choose what to do.',
+      },
+    ],
+  },
+
   exit: {
     id: 'exit',
     title: 'Exit',
@@ -361,6 +384,8 @@ const ALIASES: Record<string, string> = {
   explain_on: 'explain',
   'need extra understanding': 'explain',
   logout: 'exit',
+  goldbar: 'gold-bar',
+  'gold bar': 'gold-bar',
 };
 
 export function getExplainContent(id: string): ExplainContent | undefined {
