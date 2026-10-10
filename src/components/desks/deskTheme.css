@@ -145,9 +145,9 @@
     linear-gradient(180deg, rgba(16, 10, 28, 0.98), rgba(10, 6, 18, 0.98)) padding-box,
     linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(255, 20, 147, 0.95)) border-box !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 0 28px rgba(99, 102, 241, 0.22),
-    0 0 48px rgba(255, 20, 147, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 0 32px rgba(99, 102, 241, 0.38),
+    0 0 56px rgba(255, 20, 147, 0.28),
     0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
@@ -291,10 +291,13 @@
 .desk-shell [data-neuro-door] section.flex,
 .desk-shell [data-neuro-door] [data-retail-bento],
 .desk-shell [data-neuro-door] .retail-bento {
-  border: 1.5px solid rgba(176, 38, 255, 0.35) !important;
+  border: 1.5px solid rgba(191, 0, 255, 0.55) !important;
   border-radius: 0.75rem !important;
   background: rgba(12, 8, 20, 0.98) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 24px rgba(191, 0, 255, 0.28),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
 .desk-shell [data-neuro-door] > section > header,

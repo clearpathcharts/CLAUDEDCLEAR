@@ -125,41 +125,56 @@ export function copyDeskColorsToAll(
   return { ...store, desks, savedAt };
 }
 
-/** 10-stop grayscale row — white → black, matching the chart screenshot. */
-export const COLOR_CHART_GRAYS: readonly string[] = [
-  '#FFFFFF',
-  '#F2F2F2',
-  '#D9D9D9',
-  '#BFBFBF',
-  '#A6A6A6',
-  '#8C8C8C',
-  '#737373',
-  '#595959',
-  '#404040',
-  '#000000',
-];
+/**
+ * Visible preset counts on the terminals we match. Those apps also open a
+ * 24-bit custom dialog (16,777,216 colors). Our chart does both: a denser
+ * named grid than any of the three, plus a hue moon + saturation square +
+ * native hex picker so every Bloomberg / NinjaTrader / TradingView color exists here.
+ */
+export const TERMINAL_COLOR_PRESET_COUNTS = {
+  tradingView: 80,
+  ninjaTrader: 48,
+  bloomberg: 140,
+} as const;
 
-/** Hue columns left → right: red, orange, yellow, green, teal, sky, royal, purple, magenta, pink. */
-export const COLOR_CHART_HUES = [0, 24, 48, 120, 168, 195, 220, 265, 295, 330] as const;
+export const COLOR_CHART_HUE_STEPS = 24;
+export const COLOR_CHART_SHADE_ROWS = 12;
+export const COLOR_CHART_GRAY_STEPS = 16;
+
+/** 16-stop grayscale — white → black (NinjaTrader / Windows basic grays). */
+export const COLOR_CHART_GRAYS: readonly string[] = Array.from({ length: COLOR_CHART_GRAY_STEPS }, (_, i) => {
+  if (i === COLOR_CHART_GRAY_STEPS - 1) return '#000000';
+  const v = Math.round(255 * (1 - i / (COLOR_CHART_GRAY_STEPS - 1)));
+  const hex = v.toString(16).padStart(2, '0').toUpperCase();
+  return `#${hex}${hex}${hex}`;
+});
+
+/** 24 hue columns — every 15°, a full rainbow instead of ten circles. */
+export const COLOR_CHART_HUES: readonly number[] = Array.from(
+  { length: COLOR_CHART_HUE_STEPS },
+  (_, i) => i * (360 / COLOR_CHART_HUE_STEPS),
+);
 
 /**
- * Saturation / lightness rows for the 8×10 hue grid.
- * Row 0 = peak saturated (screenshot selection row).
- * Rows 1–3 = pastel tints (neurodivergent-friendly).
- * Rows 4–7 = deepening shades.
+ * Saturation / lightness rows for the 24×12 hue grid.
+ * Rows 0–1 = neon peak. Rows 2–4 = pastel tints. Rows 5–11 = deepening shades.
  */
 export const COLOR_CHART_ROW_SL: readonly { s: number; l: number }[] = [
-  { s: 92, l: 54 },
-  { s: 42, l: 90 },
-  { s: 50, l: 82 },
-  { s: 60, l: 72 },
-  { s: 80, l: 40 },
-  { s: 82, l: 30 },
-  { s: 78, l: 20 },
-  { s: 70, l: 12 },
+  { s: 96, l: 56 },
+  { s: 90, l: 48 },
+  { s: 38, l: 92 },
+  { s: 46, l: 84 },
+  { s: 58, l: 74 },
+  { s: 70, l: 64 },
+  { s: 82, l: 50 },
+  { s: 88, l: 40 },
+  { s: 90, l: 30 },
+  { s: 84, l: 22 },
+  { s: 76, l: 14 },
+  { s: 64, l: 8 },
 ];
 
-/** High-vibrancy preset row from the screenshot (plus-button adds custom). */
+/** High-vibrancy shortcuts (plus-button / moon still reach every hex). */
 export const COLOR_CHART_PRESETS: readonly string[] = [
   '#00E5FF',
   '#FF2D95',
@@ -170,6 +185,9 @@ export const COLOR_CHART_PRESETS: readonly string[] = [
   '#3D5AFE',
   '#7C4DFF',
   '#2962FF',
+  '#FFCC00',
+  '#FF1493',
+  '#00FFFF',
 ];
 
 export function hslToHex(h: number, s: number, l: number): string {
@@ -191,6 +209,10 @@ export function buildHueGrid(): string[][] {
 }
 
 export const COLOR_CHART_HUE_GRID: readonly (readonly string[])[] = buildHueGrid();
+
+/** Named swatches on the chart (grays + hue grid). Must beat TV 80 / NT 48 / Bloomberg 140. */
+export const COLOR_CHART_SWATCH_COUNT =
+  COLOR_CHART_GRAYS.length + COLOR_CHART_HUE_STEPS * COLOR_CHART_SHADE_ROWS;
 
 export function normalizeHex(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -398,9 +420,9 @@ export function deskCssVars(overrides: DeskColorOverrides): Record<string, strin
   return vars;
 }
 
-/** Soft pastels from hue-grid rows 1–2 — default suggestion for neurodivergent desks. */
+/** Soft pastels from hue-grid tint rows — default suggestion for neurodivergent desks. */
 export function neuroPastelSwatches(): string[] {
-  const row1 = COLOR_CHART_HUE_GRID[1] || [];
-  const row2 = COLOR_CHART_HUE_GRID[2] || [];
-  return [...row1.slice(0, 5), ...row2.slice(5, 10)];
+  const row1 = COLOR_CHART_HUE_GRID[2] || [];
+  const row2 = COLOR_CHART_HUE_GRID[3] || [];
+  return [...row1.slice(0, 5), ...row2.slice(12, 17)];
 }

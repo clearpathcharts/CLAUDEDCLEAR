@@ -1,5 +1,4 @@
 import type { ChartDrawing, ChartPoint, DrawingColor } from "./types";
-import { DRAWING_COLORS } from "./types";
 import { DRAWING_TOOLS } from "./toolCatalog";
 
 const PREFIX = "cp_drawings:";
@@ -21,7 +20,7 @@ function isPoint(v: unknown): v is ChartPoint {
 }
 
 function isColor(v: unknown): v is DrawingColor {
-  return typeof v === "string" && (DRAWING_COLORS as string[]).includes(v);
+  return typeof v === "string" && /^#[0-9A-Fa-f]{6}$/.test(v);
 }
 
 function collectPoints(d: Record<string, unknown>): ChartPoint[] {
