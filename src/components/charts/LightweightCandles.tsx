@@ -1596,13 +1596,6 @@ export const LightweightCandles = memo(function LightweightCandles({
             Gold Bar {goldBarOn ? "on" : "off"}
           </button>
           <ChartBackgroundToggle compact />
-          <span
-            className="rounded border border-emerald-500/40 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
-            data-chart-build=""
-            title="If you do not see this stamp on live, Cloud Run is still serving an old image"
-          >
-            {CHART_UI_BUILD_STAMP}
-          </span>
           <div className="ml-auto flex items-center gap-1">
             <button
               type="button"
@@ -1692,20 +1685,11 @@ export const LightweightCandles = memo(function LightweightCandles({
             onDismiss={dismissChartPattern}
           />
         ) : null}
-        {embedMode || hideChartToolbar ? (
-          <span
-            className="pointer-events-none absolute top-2 left-2 z-40 rounded border border-emerald-500/40 bg-black/70 px-1.5 py-0.5 font-mono text-[8px] font-bold tracking-wider text-emerald-400"
-            data-chart-build=""
-            title="If you do not see this stamp on live, Cloud Run is still serving an old image"
-          >
-            {CHART_UI_BUILD_STAMP}
-          </span>
-        ) : null}
         {!embedMode && hideChartToolbar ? (
           <button
             type="button"
             onClick={() => writeGoldBarEnabled(!goldBarOn)}
-            className="absolute top-2 left-14 z-[60] flex h-8 items-center rounded-md border bg-black/75 px-2 font-mono text-[9px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md"
+            className="absolute top-2 left-2 z-[60] flex h-8 items-center rounded-md border bg-black/75 px-2 font-mono text-[9px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md"
             style={{
               color: GOLD_BAR_COLOR,
               borderColor: goldBarOn ? "rgba(255,204,0,0.55)" : "rgba(255,255,255,0.2)",

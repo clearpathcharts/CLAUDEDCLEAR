@@ -98,11 +98,6 @@ assert.match(
   'public header tickers (DXY / BTC / USDJPY) must use IBM Plex Mono',
 );
 assert.match(
-  candles,
-  /data-chart-build/,
-  'CHART-BUILD stamp must be targetable as a mono data readout',
-);
-assert.match(
   indexCss,
   /\[data-chart-build\][\s\S]{0,80}font-family:\s*var\(--font-mono\)/,
 );
