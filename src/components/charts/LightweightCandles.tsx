@@ -332,6 +332,8 @@ export const LightweightCandles = memo(function LightweightCandles({
   const hidePatternOverlaysRef = useRef(hidePatternOverlays);
   hidePatternOverlaysRef.current = hidePatternOverlays;
 
+  const [goldBarOn, setGoldBarOn] = useState(true);
+  const goldBarOnRef = useRef(true);
   useEffect(() => {
     setGoldBarOn(readGoldBarEnabled());
     return subscribeGoldBarEnabled((on) => {
@@ -343,8 +345,6 @@ export const LightweightCandles = memo(function LightweightCandles({
   const [storedSeriesStyle, setStoredSeriesStyle] = useChartSeriesStyle();
   const seriesStyle = priceSeriesType ?? storedSeriesStyle;
   const setSeriesStyle = onPriceSeriesTypeChange ?? setStoredSeriesStyle;
-  const [goldBarOn, setGoldBarOn] = useState(true);
-  const goldBarOnRef = useRef(true);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const disposedRef = useRef(false);
@@ -1407,7 +1407,7 @@ export const LightweightCandles = memo(function LightweightCandles({
   useEffect(() => {
     if (!replayMode || !candleSeriesRef.current || !Array.isArray(data)) return;
     const mapped = applyHardcodedGoldBar(
-      data.map((d) => ({
+      data.map((d): PriceBar => ({
         time: d.time,
         open: d.open,
         high: d.high,

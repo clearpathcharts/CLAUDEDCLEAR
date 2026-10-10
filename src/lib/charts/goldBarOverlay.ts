@@ -57,8 +57,10 @@ export function subscribeGoldBarEnabled(listener: (on: boolean) => void): () => 
 export function applyHardcodedGoldBar<T extends PaintableBar>(
   bars: T[],
   enabled: boolean,
-): T[] {
-  if (!enabled || bars.length === 0) return bars;
+): Array<T & Pick<PaintableBar, "color" | "wickColor" | "borderColor">> {
+  if (!enabled || bars.length === 0) {
+    return bars as Array<T & Pick<PaintableBar, "color" | "wickColor" | "borderColor">>;
+  }
   return bars.map((bar, index) => {
     const range = bar.high - bar.low;
     const start = Math.max(0, index - 14);
