@@ -1,0 +1,84 @@
+MONEY CHANNELS — Instagram / TikTok / Facebook / YouTube
+(Discord is closed-circuit. It will not acquire paying students.)
+
+────────────────────────────────────────
+1) Redeploy code that wires money-channel Dispatch
+────────────────────────────────────────
+
+cd ~
+rm -rf ~/CLAUDEDCLEAR-fix
+gh auth status || gh auth login
+gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
+
+────────────────────────────────────────
+2) What is CODE-ready vs what YOU must unlock
+────────────────────────────────────────
+
+YouTube   — CODE READY. Needs 3 Google OAuth env vars. Fastest money channel.
+Facebook  — CODE READY. Needs META_PAGE_ID + META_PAGE_ACCESS_TOKEN (+ App Review for public).
+Instagram — CODE READY. Needs META_IG_USER_ID + same Page token (+ App Review).
+TikTok    — CODE READY. Needs TIKTOK_ACCESS_TOKEN (+ Content Posting API audit).
+
+Discord stays available as a backup. It is not the growth path.
+
+────────────────────────────────────────
+3) Fastest path: YouTube first
+────────────────────────────────────────
+
+A) Google Cloud Console (can use same project gen-lang-client-0282858983)
+   → Enable "YouTube Data API v3"
+   → Credentials → OAuth client
+   → Mint refresh token with scope: https://www.googleapis.com/auth/youtube.upload
+
+B) Set on Cloud Run service clearpath-automation-console (europe-west1):
+
+gcloud run services update clearpath-automation-console \
+  --region europe-west1 \
+  --update-env-vars "YOUTUBE_CLIENT_ID=YOUR_ID,YOUTUBE_CLIENT_SECRET=YOUR_SECRET,YOUTUBE_REFRESH_TOKEN=YOUR_REFRESH,PUBLIC_BASE_URL=https://fuckweasel.net" \
+  --quiet
+
+Or: bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-YOUTUBE.sh
+
+C) Hard-refresh fuckweasel → upload MP4 → pick YouTube → Dispatch now
+   (default privacy = unlisted so you can review first)
+
+────────────────────────────────────────
+4) Meta (Facebook + Instagram)
+────────────────────────────────────────
+
+A) developers.facebook.com → Business app
+B) Permissions: pages_manage_posts, pages_read_engagement, pages_show_list,
+   publish_video, instagram_content_publish
+C) Link Facebook Page + Instagram Professional
+D) Long-lived Page access token
+E) Set on Cloud Run:
+
+gcloud run services update clearpath-automation-console \
+  --region europe-west1 \
+  --update-env-vars "META_PAGE_ID=...,META_PAGE_ACCESS_TOKEN=...,META_IG_USER_ID=...,PUBLIC_BASE_URL=https://fuckweasel.net" \
+  --quiet
+
+Or: bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/SET-META.sh
+
+F) Submit App Review for production. Until approved, posting may only work for
+   app admins/testers — that is Meta’s rule, not ClearPath blocking you.
+
+────────────────────────────────────────
+5) TikTok
+────────────────────────────────────────
+
+A) developers.tiktok.com → Content Posting API → Direct Post
+B) Complete app audit
+C) User access token with video.publish
+D) Set TIKTOK_ACCESS_TOKEN on Cloud Run (SET-TIKTOK.sh)
+E) Default privacy SELF_ONLY until audit allows PUBLIC_TO_EVERYONE
+
+────────────────────────────────────────
+6) Check readiness (no secrets printed)
+────────────────────────────────────────
+
+curl -sS https://fuckweasel.net/api/secrets/status | python3 -m json.tool
+curl -sS https://fuckweasel.net/api/health | python3 -m json.tool
+
+Look for resolved.youtubeReady / facebookReady / instagramReady / tiktokReady = true
