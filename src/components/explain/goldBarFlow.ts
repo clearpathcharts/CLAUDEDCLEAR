@@ -178,6 +178,14 @@ const CLIPS: Draft[] = [
 
 const shots = shotsFrom(CLIPS);
 
+/** Paste this ONE paragraph into Google Flow as a single job. */
+export const GOLD_BAR_GOOGLE_FLOW_PROMPT =
+  "Cinematic 16:9 Google Flow film, one continuous shot-family, longest duration available, hold the last frame, do not fade early, ClearPath Trader dark night-sky terminal, candy-bright but not casino, hero color trophy gold #FFCC00 with quiet cyan #00FFFF and magenta #FF1493 candles in the background, huge easy words, no formulas, no trailing lines, no buy or sell arrows, no order tickets, no P&L fireworks, a busy storm of pink and blue candlesticks slowly goes soft-focus while one candle in the center ignites into a living solid-gold bar, body wick and outline the same bright gold, like a lighthouse in fog, a new trader’s shoulders drop in relief and a veteran’s messy overlay desk fades until only that gold candle remains, the same gold language repeating across gold euro bitcoin and stock tiles, a giant white-glove cartoon cursor gently clicks a Gold Bar on-off pill then the gold stays as a gift not a robot, one color one meaning for a new brain a tired brain and a veteran brain, super text in huge rounded gold letters with white outline reading Look for the gold, the market feels alive and finally readable, educational calm museum glitter, silent picture, no secret math on screen.";
+
+/** Spoken VO, also one paragraph — what Gold Bar is, never how it works. */
+export const GOLD_BAR_FLOW_PARAGRAPH =
+  "This is the Gold Bar: one bright gold candle on your chart, not a tip, a picture your eyes can trust, because most charts are a storm of pink and blue and the Gold Bar is the one candle that steps forward and says look here, so you do not hunt, your eye lands on gold, and the market becomes a picture instead of a puzzle; if you are new you do not need ten years of tape reading because the gold candle shows you the moment a new chapter starts, and if you have traded for years you already know the turn, Gold Bar just lets you see it without a messy desk of leftover lines, painting the first real step of every trend so the new story is visible the second it begins, the same gold language on gold, euro, bitcoin, and stocks, so you stop translating and start seeing; this is not a robot, click the Gold Bar button if you want it on, you still choose what to do with what you see, and if you need a quieter screen click the same button to hide it, the market stays, only the gold highlight takes a rest, one color, one meaning, built so a tired brain, a new brain, and a veteran brain can all read the same moment, see first then think, it does not shout buy or sell, it shows you the live turn so your own mind can work, so look for the gold, that is ClearPath’s way of making the market feel alive and finally readable.";
+
 export const GOLD_BAR_FLOW_SCRIPT: Omit<ExplainFlowScript, "id"> & { id: "gold-bar" } = {
   id: "gold-bar",
   navLabel: "Gold Bar",
@@ -186,7 +194,7 @@ export const GOLD_BAR_FLOW_SCRIPT: Omit<ExplainFlowScript, "id"> & { id: "gold-b
   targetSeconds: EXPLAIN_FLOW_SHOT_COUNT * EXPLAIN_FLOW_CLIP_SECONDS,
   logline:
     "What the Gold Bar is for a human being: a gold candle that makes the market readable. Never how it is built.",
-  narrationScript: shots.map((shot) => shot.narration.trim()).join(" "),
+  narrationScript: GOLD_BAR_FLOW_PARAGRAPH,
   masterFlowPrompt: [
     "MASTER LOOK ONLY — do not generate one film from this. Generate twelve separate 8.00s Flow jobs.",
     EXPLAIN_FLOW_BRAND_LOOK,
