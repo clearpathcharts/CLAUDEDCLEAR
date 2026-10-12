@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import TraderDeskChrome from './TraderDeskChrome';
+import DeskColorChartDock from './DeskColorChartDock';
 import InstitutionalTraderDesk from './InstitutionalTraderDesk';
 import FundamentalTraderDesk from './FundamentalTraderDesk';
 import RetailTraderDesk from './RetailTraderDesk';
@@ -121,6 +122,7 @@ function DeskShell({
           {body}
         </DeskErrorBoundary>
       </main>
+      {satellitePane ? null : <DeskColorChartDock deskId={deskId} />}
     </div>
   );
 }

@@ -13,8 +13,6 @@ import { DESK_DISCLAIMER } from '../../content/traderDesksCopy';
 import { BrandMark } from '../brand/BrandMark';
 import BrokerDeskChip from '../broker/BrokerDeskChip';
 import { useDeskAppearance } from './DeskAppearanceContext';
-import { clampOpacity } from '../../lib/deskColorChart';
-import ColorChartPicker from './ColorChartPicker';
 import DeskScreensMenu from './DeskScreensMenu';
 import { DESK_SCREEN_PANE_LABEL, type DeskScreenPane } from '../../lib/deskMonitorTree';
 import { SessionLogoutButton } from '../session/SessionLogoutButton';
@@ -30,25 +28,7 @@ function utcHourFrom(date: Date): number {
 
 export default function TraderDeskChrome({ active, satellitePane = null }: Props) {
   const meta = TRADER_DESKS[active];
-  const {
-    paper,
-    togglePaper,
-    pickerOpen,
-    setPickerOpen,
-    target,
-    setTarget,
-    overrides,
-    recents,
-    applyColor,
-    setOpacity,
-    resetVisual,
-    saveDesk,
-    saveAllDesks,
-    discardDraft,
-    isDirty,
-    savedAt,
-    lastSaveScope,
-  } = useDeskAppearance();
+  const { paper, togglePaper, pickerOpen, setPickerOpen } = useDeskAppearance();
   const { founder } = useFounderAccess();
   const [now, setNow] = useState(() => new Date());
 
@@ -112,7 +92,12 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           <DeskScreensMenu deskId={active} accent={meta.accent} paper={paper} />
           <button
             type="button"
-            onClick={() => setPickerOpen(!pickerOpen)}
+            onClick={() => {
+              setPickerOpen(!pickerOpen);
+              window.requestAnimationFrame(() => {
+                document.getElementById('desk-color-chart')?.scrollIntoView({ block: 'end', behavior: 'smooth' });
+              });
+            }}
             aria-pressed={pickerOpen}
             data-color-chart-toggle
             className="rounded-md border px-3 py-1.5 text-sm font-extrabold uppercase tracking-wide"
@@ -212,28 +197,6 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
       <p className="px-3 pb-2 font-mono text-sm font-bold uppercase tracking-wider text-zinc-600">
         {DESK_DISCLAIMER}
       </p>
-      {pickerOpen ? (
-        <ColorChartPicker
-          target={target}
-          onTargetChange={setTarget}
-          selected={overrides[target]}
-          recents={recents}
-          opacity={clampOpacity(overrides.opacity ?? 100)}
-          onPick={applyColor}
-          onOpacity={setOpacity}
-          onReset={resetVisual}
-          onSave={saveDesk}
-          onSaveAll={saveAllDesks}
-          onDiscard={discardDraft}
-          isDirty={isDirty}
-          savedAt={savedAt}
-          lastSaveScope={lastSaveScope}
-          overrides={overrides}
-          deskLabel={meta.title}
-          showPastels={active === 'neurodivergent'}
-          noPlotOnDesk={active === 'fundamental'}
-        />
-      ) : null}
     </header>
   );
 }

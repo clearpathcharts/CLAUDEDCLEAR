@@ -1,5 +1,5 @@
 import type { ChartDrawing, ChartPoint, DrawingColor } from "./types";
-import { DEFAULT_DRAWING_COLOR, DRAWING_COLORS, LEGACY_DRAWING_COLORS } from "./types";
+import { DEFAULT_DRAWING_COLOR, LEGACY_DRAWING_COLORS } from "./types";
 import { DRAWING_TOOLS } from "./toolCatalog";
 
 const PREFIX = "cp_drawings:";
@@ -22,9 +22,9 @@ function isPoint(v: unknown): v is ChartPoint {
 
 function resolveColor(v: unknown): DrawingColor {
   if (typeof v !== "string") return DEFAULT_DRAWING_COLOR;
-  const hex = v.toUpperCase();
-  if ((DRAWING_COLORS as readonly string[]).includes(hex)) return hex as DrawingColor;
-  return LEGACY_DRAWING_COLORS[hex] ?? DEFAULT_DRAWING_COLOR;
+  const hex = /^#[0-9A-Fa-f]{6}$/.test(v) ? v.toUpperCase() : "";
+  if (!hex) return DEFAULT_DRAWING_COLOR;
+  return LEGACY_DRAWING_COLORS[hex] ?? hex;
 }
 
 function collectPoints(d: Record<string, unknown>): ChartPoint[] {

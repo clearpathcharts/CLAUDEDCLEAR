@@ -150,7 +150,11 @@ async function main() {
     assert.deepEqual(body.videos, []);
     assert.ok(body.limits.maxBytes > 0);
     const navRows = body.slots.filter((s: any) => s.groupId === 'nav');
-    assert.equal(navRows.length, 15, 'the upload list has 15 nav play icons');
+    assert.equal(navRows.length, 16, 'the upload list has 16 nav play icons');
+    assert.ok(
+      navRows.some((s: any) => s.id === 'nav.gold-bar'),
+      'the Gold Bar chart play icon is on the CEO upload list',
+    );
     assert.equal(
       body.slots.some((s: any) => String(s.id).startsWith('nav.ceo')),
       false,

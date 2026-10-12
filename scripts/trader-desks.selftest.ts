@@ -168,6 +168,7 @@ const srcFiles = [
   'src/lib/deskMonitorTree.ts',
   'src/hooks/useDeskMonitorSync.ts',
   'src/components/desks/ColorChartPicker.tsx',
+  'src/components/desks/DeskColorChartDock.tsx',
   'src/lib/deskColorChart.ts',
   'src/components/Dashboard.tsx',
   'src/App.tsx',
@@ -444,8 +445,8 @@ for (const rel of srcFiles) {
     assert.match(text, /href=\{homeHref\}/);
     assert.doesNotMatch(text, /\/\?choose=1/);
     assert.doesNotMatch(text, /href="\/"/);
-    assert.match(text, /ColorChartPicker/);
     assert.match(text, /data-color-chart-toggle/);
+    assert.doesNotMatch(text, /ColorChartPicker/);
     assert.match(text, /DeskScreensMenu/);
     assert.match(text, /Screens/);
   }
@@ -507,6 +508,12 @@ for (const rel of srcFiles) {
     assert.match(text, /data-desk-satellite/);
     assert.match(text, /DeferredDeskBuddy/);
     assert.match(text, /satellitePane \? null : <DeferredDeskBuddy/);
+    assert.match(text, /DeskColorChartDock/);
+  }
+  if (rel === 'src/components/desks/DeskColorChartDock.tsx') {
+    assert.match(text, /ColorChartPicker/);
+    assert.match(text, /data-color-chart-dock/);
+    assert.match(text, /data-color-chart-teaser/);
   }
   if (rel === 'src/components/Dashboard.tsx') {
     assert.match(text, /CeoDashboard/);

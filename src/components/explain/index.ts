@@ -1,6 +1,7 @@
 export { ExplainModeProvider, useExplainMode, useExplainModeOptional } from './ExplainModeContext';
 export { ExplainModeToggle } from './ExplainModeToggle';
 export { ExplainTrigger } from './ExplainTrigger';
+export { GoldBarChartVideoTrigger } from './GoldBarChartVideoTrigger';
 export { VideoBadge } from './VideoBadge';
 export { ExplainOverlay } from './ExplainOverlay';
 export { ExplainVideoStage } from './ExplainVideoStage';

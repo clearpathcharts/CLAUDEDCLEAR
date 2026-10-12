@@ -11,7 +11,7 @@
  * reads in the dropdown, so it says the button he actually taps.
  *
  * Slots carry a `groupId` because there are around a hundred of them. The CEO
- * page pins the nav group first and collapses the rest, so the fifteen play
+ * page pins the nav group first and collapses the rest, so the sixteen play
  * icons never get buried under eighty-four walkthrough clips.
  *
  * The CEO button deliberately has no slot and no play icon: nobody but the
@@ -193,6 +193,14 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
     where: `${NAV_BADGE} log out control`,
     explains: 'what logging out does and does not delete',
   },
+  {
+    id: 'nav.gold-bar',
+    groupId: NAV_VIDEO_SLOT_GROUP_ID,
+    label: 'Chart play icon — GOLD BAR',
+    where:
+      'Play icon about an inch above the red Email chip on every live chart — Strictly Charts, Y.W.C., and the standard desk',
+    explains: 'what the Gold Bar trading tool is',
+  },
 ];
 
 const NAV_GROUP: VideoSlotGroup = {
@@ -236,7 +244,7 @@ function buildGuideSlots(): { groups: VideoSlotGroup[]; slots: VideoSlot[] } {
 
 const GUIDE = buildGuideSlots();
 
-/** Nav group pinned first so the fifteen play icons stay at the top of the CEO list. */
+/** Nav group pinned first so the sixteen play icons stay at the top of the CEO list. */
 export const VIDEO_SLOT_GROUPS: VideoSlotGroup[] = [NAV_GROUP, ...GUIDE.groups];
 
 export const VIDEO_SLOTS: VideoSlot[] = [...NAV_VIDEO_SLOTS, ...GUIDE.slots];

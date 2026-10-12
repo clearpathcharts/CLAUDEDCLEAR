@@ -44,6 +44,17 @@ assert.doesNotMatch(
   'the public router must not reach into founder-only storage state'
 );
 
+const goldBarTrigger = read('src/components/explain/GoldBarChartVideoTrigger.tsx');
+assert.match(goldBarTrigger, /contentId="gold-bar"/, 'the chart play icon opens the Gold Bar overlay');
+assert.doesNotMatch(goldBarTrigger, /explainMode/, 'Gold Bar on the chart stays visible without Explain Mode');
+
+const pulse = read('src/components/charts/ChartLocalTimeAndPulse.tsx');
+assert.match(
+  pulse,
+  /GoldBarChartVideoTrigger/,
+  'the Gold Bar play icon sits in the chart chrome above Email'
+);
+
 const stage = read('src/components/explain/ExplainVideoStage.tsx');
 assert.match(stage, /useVideoSlotUrl/, 'the public player reads its assigned video');
 assert.match(stage, /onError=\{\(\) => setState\('empty'\)\}/, 'a dead URL falls back to the honest frame');
@@ -133,7 +144,11 @@ async function main() {
   const navSlots = registry.VIDEO_SLOTS.filter(
     (s) => s.groupId === registry.NAV_VIDEO_SLOT_GROUP_ID
   );
-  assert.equal(navSlots.length, 15, `expected exactly 15 play-icon slots, got ${navSlots.length}`);
+  assert.equal(navSlots.length, 16, `expected exactly 16 play-icon slots, got ${navSlots.length}`);
+  assert.ok(
+    registry.isVideoSlotId('nav.gold-bar'),
+    'the Gold Bar play icon above every chart must be assignable from the CEO page'
+  );
   for (const slot of navSlots) {
     assert.match(slot.id, /^nav\.[a-z0-9-]+$/, `${slot.id} is not a stable lowercase nav id`);
   }

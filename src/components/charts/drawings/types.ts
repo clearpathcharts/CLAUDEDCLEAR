@@ -1,13 +1,11 @@
 /** Chart drawing tools — shared model for all toolbar layers. */
 
-import {
-  HIGH_INTENSITY_TOOL_COLORS,
-  type HighIntensityInk,
-} from "../../../lib/charts/highIntensityPalette";
+import { HIGH_INTENSITY_TOOL_COLORS } from "../../../lib/charts/highIntensityPalette";
 
-export const DRAWING_COLORS = HIGH_INTENSITY_TOOL_COLORS;
+/** Any hex paints. The dock swatches are the high-intensity set; the + chip covers the rest. */
+export type DrawingColor = string;
 
-export type DrawingColor = HighIntensityInk;
+export const DRAWING_COLORS: DrawingColor[] = [...HIGH_INTENSITY_TOOL_COLORS];
 
 /** Previous toolbar inks, rewritten to the neon pair of the same hue on load. */
 export const LEGACY_DRAWING_COLORS: Record<string, DrawingColor> = {
