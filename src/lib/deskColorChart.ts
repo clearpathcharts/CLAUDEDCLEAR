@@ -162,14 +162,14 @@ export const COLOR_CHART_ROW_SL: readonly { s: number; l: number }[] = [
 /** High-vibrancy preset row from the screenshot (plus-button adds custom). */
 export const COLOR_CHART_PRESETS: readonly string[] = [
   '#00E5FF',
-  '#FF2D95',
+  '#FF00CC',
   '#39FF14',
   '#FF1744',
-  '#D500F9',
-  '#FFAB00',
-  '#3D5AFE',
-  '#7C4DFF',
-  '#2962FF',
+  '#BF00FF',
+  '#FFD700',
+  '#2979FF',
+  '#9D00FF',
+  '#00FF66',
 ];
 
 export function hslToHex(h: number, s: number, l: number): string {

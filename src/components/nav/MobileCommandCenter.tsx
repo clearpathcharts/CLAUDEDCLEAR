@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
+import { RecommendedChartColorsBox } from "./RecommendedChartColorsBox";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -330,6 +331,9 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         <div className="flex justify-center items-center gap-1 pt-2">
           <ExplainModeToggle compact />
           <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
+        </div>
+        <div className="pt-2">
+          <RecommendedChartColorsBox compact />
         </div>
       </div>
 

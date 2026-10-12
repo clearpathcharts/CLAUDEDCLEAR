@@ -44,7 +44,16 @@ export function writeChartBackgroundMode(mode: ChartBackgroundMode): void {
 export function chartBackgroundColors(
   mode: ChartBackgroundMode,
   fallback: { background: string; text: string; grid: string },
+  customHex?: string | null,
 ): { background: string; text: string; grid: string } {
+  if (customHex && /^#[0-9A-Fa-f]{6}$/.test(customHex)) {
+    const light = parseInt(customHex.slice(1, 3), 16) + parseInt(customHex.slice(3, 5), 16) + parseInt(customHex.slice(5, 7), 16) > 380;
+    return {
+      background: customHex.toUpperCase(),
+      text: light ? "#111318" : "#F5F7FF",
+      grid: light ? "#D0D5DD" : "#252A34",
+    };
+  }
   if (mode === "white") return { ...CHART_BACKGROUND_PRESETS.white };
   if (mode === "black") return { ...CHART_BACKGROUND_PRESETS.black };
   return fallback;

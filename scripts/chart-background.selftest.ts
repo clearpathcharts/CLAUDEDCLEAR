@@ -12,6 +12,11 @@ import {
   chartBackgroundColors,
   isChartBackgroundMode,
 } from '../src/lib/charts/chartBackground.ts';
+import {
+  CEO_DAILY_TRADING_COLORS,
+  CHART_BACKGROUND_GRAYS,
+  ceoGoldBarWick,
+} from '../src/lib/charts/ceoDailyColors.ts';
 
 assert.equal(isChartBackgroundMode('white'), true);
 assert.equal(isChartBackgroundMode('black'), true);
@@ -25,6 +30,19 @@ assert.deepEqual(chartBackgroundColors('black', fallback), { ...CHART_BACKGROUND
 assert.deepEqual(chartBackgroundColors('profile', fallback), fallback);
 assert.equal(CHART_BACKGROUND_PRESETS.white.background, '#ffffff');
 assert.equal(CHART_BACKGROUND_PRESETS.black.background, '#000000');
+assert.equal(chartBackgroundColors('profile', fallback, '#000000').background, '#000000');
+assert.equal(chartBackgroundColors('profile', fallback, '#FFFFFF').text, '#111318');
+assert.deepEqual(chartBackgroundColors('profile', fallback, 'nope'), fallback);
+
+assert.equal(CHART_BACKGROUND_GRAYS[0], '#000000');
+assert.equal(CHART_BACKGROUND_GRAYS[CHART_BACKGROUND_GRAYS.length - 1], '#FFFFFF');
+assert.equal(CEO_DAILY_TRADING_COLORS.bullishCandle, '#00F5FF');
+assert.equal(CEO_DAILY_TRADING_COLORS.bearishCandle, '#FF00CC');
+assert.equal(CEO_DAILY_TRADING_COLORS.goldBarCandle, '#FFD700');
+assert.equal(CEO_DAILY_TRADING_COLORS.bullishWick, '#00FFFF');
+assert.equal(CEO_DAILY_TRADING_COLORS.bearishWick, '#FF1493');
+assert.equal(ceoGoldBarWick('#FFD700', true), '#FFFF00');
+assert.equal(ceoGoldBarWick('#FFD700', false), null);
 
 const root = path.resolve('.');
 const candles = fs.readFileSync(path.join(root, 'src/components/charts/LightweightCandles.tsx'), 'utf8');
@@ -44,5 +62,12 @@ assert.match(publicChart, /ChartBackgroundToggle/);
 
 const market = fs.readFileSync(path.join(root, 'src/components/markets/LightweightMarketUI.tsx'), 'utf8');
 assert.match(market, /ChartBackgroundToggle/);
+
+const nav = fs.readFileSync(path.join(root, 'src/components/nav/ClearNav.tsx'), 'utf8');
+assert.match(nav, /RecommendedChartColorsBox/);
+const box = fs.readFileSync(path.join(root, 'src/components/nav/RecommendedChartColorsBox.tsx'), 'utf8');
+assert.match(box, /ClearPath recommended colors for your charts/);
+assert.match(box, /Not financial advice/);
+assert.match(box, /Use CEO daily colors/);
 
 console.log('chart-background.selftest: ok');

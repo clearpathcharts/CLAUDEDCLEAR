@@ -288,8 +288,8 @@ export function ChartDrawingToolbar({
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2">
-        <div className="flex items-center gap-1.5" aria-label="Drawing color">
+      <div className="space-y-2 border-t border-white/10 pt-2">
+        <div className="grid grid-cols-6 gap-1" aria-label="Drawing color">
           {DRAWING_COLORS.map((c) => (
             <button
               key={c}
@@ -297,14 +297,14 @@ export function ChartDrawingToolbar({
               title={`Color ${c}`}
               aria-label={`Drawing color ${c}`}
               onClick={() => onColorChange(c)}
-              className={`h-4 w-4 rounded-full border-2 transition-transform active:scale-90 ${
-                drawColor === c ? "scale-110 border-white" : "border-white/30"
+              className={`h-5 w-full rounded-sm border transition-transform active:scale-90 ${
+                drawColor === c ? "z-10 scale-110 border-white ring-2 ring-white" : "border-white/40"
               }`}
               style={{ backgroundColor: c }}
             />
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-end gap-1">
           <button
             type="button"
             title="Undo last drawing"
