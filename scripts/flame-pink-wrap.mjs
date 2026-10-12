@@ -1,36 +1,35 @@
 import sharp from "sharp";
 
-const BAND = 22;
-const GAP = 4;
-
-function isPurple(r, g, b, a) {
-  if (a < 50) return false;
-  if (g > 150 && b > 160 && r < g) return false;
-  return r > 75 && b > 85 && b + r > g * 2.15 && b >= g && r > g * 0.62;
-}
+const BAND_INNER = 1.4;
+const BAND_OUTER = 8.6;
+const GAP = 3.1;
 
 function isCyan(r, g, b, a) {
   if (a < 40) return false;
-  return b > 85 && g > 55 && r < 175 && g > r * 0.72 && b > r + 12;
+  return b > 95 && g > 70 && r < 165 && g > r * 0.8 && b > r + 25;
 }
 
-function distTo(mask, w, h) {
+function isPurpleSeed(r, g, b, a) {
+  if (a < 45 || isCyan(r, g, b, a)) return false;
+  return b > 55 && r > 45 && r + b > g * 1.85 && b >= g * 0.85 && r > g * 0.5;
+}
+
+function nearest(mask, w, h) {
   const n = w * h;
-  const dist = new Int16Array(n);
-  dist.fill(32767);
+  const dist = new Float32Array(n);
+  dist.fill(1e6);
   const q = new Int32Array(n);
   let qs = 0;
   let qe = 0;
   for (let p = 0; p < n; p++) {
-    if (mask[p]) {
-      dist[p] = 0;
-      q[qe++] = p;
-    }
+    if (!mask[p]) continue;
+    dist[p] = 0;
+    q[qe++] = p;
   }
   while (qs < qe) {
     const p = q[qs++];
-    const d = dist[p] + 1;
-    if (d > 48) continue;
+    const base = dist[p];
+    if (base > 40) continue;
     const x = p % w;
     const y = (p / w) | 0;
     for (let dy = -1; dy <= 1; dy++) {
@@ -41,8 +40,9 @@ function distTo(mask, w, h) {
         const xx = x + dx;
         if (xx < 0 || xx >= w) continue;
         const np = yy * w + xx;
-        if (dist[np] > d) {
-          dist[np] = d;
+        const nd = base + (dx && dy ? 1.4142 : 1);
+        if (nd < dist[np]) {
+          dist[np] = nd;
           q[qe++] = np;
         }
       }
@@ -51,45 +51,101 @@ function distTo(mask, w, h) {
   return dist;
 }
 
+function dilate(mask, dist, radius) {
+  const out = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) if (dist[p] <= radius) out[p] = 1;
+  return out;
+}
+
+function erode(mask, w, h, radius) {
+  const inv = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) inv[p] = mask[p] ? 0 : 1;
+  const dist = nearest(inv, w, h);
+  const out = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) if (mask[p] && dist[p] > radius) out[p] = 1;
+  return out;
+}
+
+function smooth(edge0, edge1, x) {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
 export async function wrapHotPink(srcPath) {
   const { data, info } = await sharp(srcPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const w = info.width;
   const h = info.height;
   const n = w * h;
-  const purple = new Uint8Array(n);
+  const seed = new Uint8Array(n);
   const cyan = new Uint8Array(n);
   for (let p = 0, i = 0; p < n; p++, i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
     const a = data[i + 3];
-    if (isPurple(r, g, b, a)) purple[p] = 1;
-    else if (isCyan(r, g, b, a)) cyan[p] = 1;
+    if (isCyan(r, g, b, a)) cyan[p] = 1;
+    else if (isPurpleSeed(r, g, b, a)) seed[p] = 1;
   }
-  const dP = distTo(purple, w, h);
-  const dC = distTo(cyan, w, h);
-  const pink = new Uint8Array(n);
+  const fromSeed = nearest(seed, w, h);
+  const cyanDist = nearest(cyan, w, h);
+  const core = new Uint8Array(n);
   for (let p = 0, i = 0; p < n; p++, i += 4) {
-    if (purple[p] || cyan[p] || data[i + 3] < 48) continue;
-    if (dP[p] < 1 || dP[p] > BAND) continue;
-    if (dC[p] < GAP) continue;
-    pink[p] = 1;
+    if (cyan[p] || data[i + 3] < 40) continue;
+    if (fromSeed[p] <= 24 && fromSeed[p] + 2 < cyanDist[p]) core[p] = 1;
   }
-  // Close small breaks in the wrap, then drop isolated specks.
-  const closed = new Uint8Array(n);
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const p = y * w + x;
-      if (purple[p] || cyan[p] || data[p * 4 + 3] < 48) continue;
-      if (dC[p] < GAP) continue;
-      let neighbors = 0;
+  let solid = dilate(core, nearest(core, w, h), 2);
+  for (let p = 0; p < n; p++) if (cyan[p]) solid[p] = 0;
+  solid = erode(solid, w, h, 2);
+  const coreDist = nearest(solid, w, h);
+  const smoothDist = new Float32Array(n);
+  for (let y = 2; y < h - 2; y++) {
+    for (let x = 2; x < w - 2; x++) {
+      let sum = 0;
       for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          if (pink[(y + dy) * w + (x + dx)]) neighbors++;
-        }
+        for (let dx = -2; dx <= 2; dx++) sum += coreDist[(y + dy) * w + (x + dx)];
       }
-      if (pink[p] || neighbors >= 8) closed[p] = 1;
+      smoothDist[y * w + x] = sum / 25;
     }
+  }
+  const out = Buffer.from(data);
+  let painted = 0;
+  const lightX = -0.32;
+  const lightY = -0.95;
+  for (let y = 2; y < h - 2; y++) {
+    for (let x = 2; x < w - 2; x++) {
+      const p = y * w + x;
+      const i = p * 4;
+      if (solid[p] || cyan[p] || data[i + 3] < 20) continue;
+      const dCore = smoothDist[p];
+      const dCyan = cyanDist[p];
+      const cover =
+        smooth(0.25, 1.15, dCore) *
+        (1 - smooth(11.5, 13.5, dCore)) *
+        smooth(1.5, 2.7, dCyan);
+      if (cover < 0.05) continue;
+      const gx = smoothDist[p + 1] - smoothDist[p - 1];
+      const gy = smoothDist[p + w] - smoothDist[p - w];
+      const glen = Math.hypot(gx, gy) || 1;
+      const ndotl = (gx / glen) * lightX + (gy / glen) * lightY;
+      const wrapped = Math.min(1, Math.max(0.08, ndotl * 0.48 + 0.62));
+      const spec = Math.pow(Math.max(0, ndotl), 8);
+      let pr = 120 + 135 * wrapped;
+      let pg = 6 + 36 * wrapped;
+      let pb = 78 + 80 * wrapped;
+      pr += (255 - pr) * spec;
+      pg += (248 - pg) * spec;
+      pb += (255 - pb) * spec;
+      const t = Math.min(1, cover);
+      out[i] = Math.round(data[i] * (1 - t) + Math.min(255, pr) * t);
+      out[i + 1] = Math.round(data[i + 1] * (1 - t) + Math.min(255, pg) * t);
+      out[i + 2] = Math.round(data[i + 2] * (1 - t) + Math.min(255, pb) * t);
+      out[i + 3] = Math.max(data[i + 3], Math.round(255 * t));
+      painted++;
+    }
+  }
+  const changed = new Uint8Array(n);
+  for (let p = 0, i = 0; p < n; p++, i += 4) {
+    if (out[i] !== data[i] || out[i + 1] !== data[i + 1] || out[i + 2] !== data[i + 2]) changed[p] = 1;
   }
   const seen = new Uint8Array(n);
   const ids = new Int32Array(n);
@@ -98,7 +154,7 @@ export async function wrapHotPink(srcPath) {
   let bestCount = 0;
   let nextId = 0;
   for (let start = 0; start < n; start++) {
-    if (!closed[start] || seen[start]) continue;
+    if (!changed[start] || seen[start]) continue;
     const stack = [start];
     seen[start] = 1;
     const pixels = [];
@@ -114,7 +170,7 @@ export async function wrapHotPink(srcPath) {
           const yy = y + dy;
           if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
           const np = yy * w + xx;
-          if (closed[np] && !seen[np]) {
+          if (changed[np] && !seen[np]) {
             seen[np] = 1;
             stack.push(np);
           }
@@ -128,29 +184,13 @@ export async function wrapHotPink(srcPath) {
     }
     for (const p of pixels) ids[p] = id;
   }
-  const out = Buffer.from(data);
-  let painted = 0;
   for (let p = 0, i = 0; p < n; p++, i += 4) {
-    if (ids[p] !== bestId) continue;
-    let neighbors = 0;
-    const x = p % w;
-    const y = (p / w) | 0;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        if (!dx && !dy) continue;
-        const xx = x + dx;
-        const yy = y + dy;
-        if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue;
-        if (closed[yy * w + xx]) neighbors++;
-      }
-    }
-    if (neighbors < 3) continue;
-    // Flat #FF1493 — red is already maxed, so this is as hot a pink as the screen can hold.
-    out[i] = 255;
-    out[i + 1] = 20;
-    out[i + 2] = 147;
-    out[i + 3] = 255;
-    painted++;
+    if (!changed[p] || ids[p] === bestId) continue;
+    out[i] = data[i];
+    out[i + 1] = data[i + 1];
+    out[i + 2] = data[i + 2];
+    out[i + 3] = data[i + 3];
+    painted--;
   }
   return { buffer: out, width: w, height: h, painted };
 }
