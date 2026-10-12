@@ -1,3 +1,5 @@
+import { STANDARD_GREEN_RED } from "../charts/highIntensityPalette";
+
 export type ThemeProfileId =
   | "calm_focus"
   | "low_stim_emergency"
@@ -296,14 +298,14 @@ export const themeProfiles: Record<ThemeProfileId, ThemeProfile> = {
     panel: "rgba(19,23,34,0.96)",
     text: "#d1d4dc",
     grid: "rgba(54,60,78,0.55)",
-    borderA: "#26a69a",
-    borderB: "#ef5350",
-    upColor: "#26a69a",
-    downColor: "#ef5350",
-    wickUpColor: "#26a69a",
-    wickDownColor: "#ef5350",
-    borderUpColor: "#26a69a",
-    borderDownColor: "#ef5350",
+    borderA: STANDARD_GREEN_RED.up,
+    borderB: STANDARD_GREEN_RED.down,
+    upColor: STANDARD_GREEN_RED.up,
+    downColor: STANDARD_GREEN_RED.down,
+    wickUpColor: STANDARD_GREEN_RED.up,
+    wickDownColor: STANDARD_GREEN_RED.down,
+    borderUpColor: STANDARD_GREEN_RED.up,
+    borderDownColor: STANDARD_GREEN_RED.down,
     glow: "Low",
     spacing: "Normal",
     dataDensity: "Medium",

@@ -21,14 +21,14 @@ export const chartThemes = {
     grid: "#363c4e",
     text: "#d1d4dc",
 
-    candleUp: "#00e676",
-    candleDown: "#ff1744",
+    candleUp: "#00FF66",
+    candleDown: "#FF1744",
 
-    wickUp: "#69f0ae",
-    wickDown: "#ff5252",
+    wickUp: "#00FF66",
+    wickDown: "#FF1744",
 
-    borderUp: "#00e676",
-    borderDown: "#ff1744",
+    borderUp: "#00FF66",
+    borderDown: "#FF1744",
   },
 
   // 🔵 BLUE / ORANGE (colorblind friendly)
@@ -37,14 +37,14 @@ export const chartThemes = {
     grid: "#1e293b",
     text: "#cbd5f5",
 
-    candleUp: "#2979ff",
-    candleDown: "#ff6d00",
+    candleUp: "#2979FF",
+    candleDown: "#FF6D00",
 
-    wickUp: "#82b1ff",
-    wickDown: "#ff9e40",
+    wickUp: "#2979FF",
+    wickDown: "#FF6D00",
 
-    borderUp: "#2979ff",
-    borderDown: "#ff6d00",
+    borderUp: "#2979FF",
+    borderDown: "#FF6D00",
   },
 
   // ⚫ BLACK / WHITE HIGH CONTRAST
@@ -53,14 +53,14 @@ export const chartThemes = {
     grid: "#222222",
     text: "#ffffff",
 
-    candleUp: "#ffffff",
-    candleDown: "#ff4444",
+    candleUp: "#FFFFFF",
+    candleDown: "#202020",
 
-    wickUp: "#ffffff",
-    wickDown: "#ff6666",
+    wickUp: "#FFFFFF",
+    wickDown: "#202020",
 
-    borderUp: "#ffffff",
-    borderDown: "#ff4444",
+    borderUp: "#FFFFFF",
+    borderDown: "#202020",
   },
 
   // ⚪ WHITE MODE (light theme users)
@@ -69,14 +69,14 @@ export const chartThemes = {
     grid: "#e5e7eb",
     text: "#111827",
 
-    candleUp: "#00c853",
-    candleDown: "#d50000",
+    candleUp: "#00FF66",
+    candleDown: "#FF1744",
 
-    wickUp: "#00e676",
-    wickDown: "#ff1744",
+    wickUp: "#00FF66",
+    wickDown: "#FF1744",
 
-    borderUp: "#00c853",
-    borderDown: "#d50000",
+    borderUp: "#00FF66",
+    borderDown: "#FF1744",
   },
 
   // 🔴 RED / BLACK (High intensity mode)

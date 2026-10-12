@@ -1,5 +1,7 @@
 /** Boost saturation and lightness so candles read vividly on dark charts. */
 
+import { intensifyNaturalHex } from "./highIntensityPalette";
+
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
   const raw = hex.trim();
   const m = raw.match(/^#?([0-9a-f]{6})$/i);
@@ -69,6 +71,11 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
 export function intensifyHexColor(hex: string, amount = 1): string {
   if (!hex || typeof hex !== 'string') return hex;
   if (hex.startsWith('rgba') || hex.startsWith('rgb')) return hex;
+
+  // Palette inks and their dull cousins land on the exact neon hex.
+  // A lightness boost would wash #00FF66 toward a paler green.
+  const vivid = intensifyNaturalHex(hex);
+  if (vivid) return vivid;
 
   const rgb = parseHex(hex);
   if (!rgb) return hex;

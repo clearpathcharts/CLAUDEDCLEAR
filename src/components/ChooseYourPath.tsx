@@ -1,6 +1,7 @@
 import React from 'react';
 import { PATH_CARDS, NEURODIVERGENT_BANNER } from '../content/chooseYourPath';
 import type { TraderDeskId } from '../lib/traderDesks';
+import { BrandMark } from './brand/BrandMark';
 
 type Props = {
   onChoosePath: (deskId: TraderDeskId) => void;
@@ -23,26 +24,35 @@ function SharpPathImage({
   fillFrame?: boolean;
 }) {
   return (
-    <picture className={fillFrame ? 'block h-full w-full' : undefined}>
-      <source type="image/webp" srcSet={webp} />
-      <img
-        src={png}
-        alt={alt}
-        width={width}
-        height={height}
-        decoding="async"
-        draggable={false}
-        className={
-          fillFrame
-            ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
-            : 'pointer-events-none block h-auto w-full cp-path-art'
-        }
-        style={{
-          maxWidth: fillFrame ? '100%' : `${width}px`,
-          imageRendering: 'auto',
-        }}
-      />
-    </picture>
+    <span className={`relative block ${fillFrame ? 'h-full w-full' : 'w-full'}`}>
+      <picture className={fillFrame ? 'block h-full w-full' : undefined}>
+        <source type="image/webp" srcSet={webp} />
+        <img
+          src={png}
+          alt={alt}
+          width={width}
+          height={height}
+          decoding="async"
+          draggable={false}
+          className={
+            fillFrame
+              ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
+              : 'pointer-events-none block h-auto w-full cp-path-art'
+          }
+          style={{
+            maxWidth: fillFrame ? '100%' : `${width}px`,
+            imageRendering: 'auto',
+          }}
+        />
+      </picture>
+      <span
+        className="pointer-events-none absolute right-2 top-[22%] z-10 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:right-3"
+        data-path-watermark=""
+        aria-hidden="true"
+      >
+        <BrandMark size={28} />
+      </span>
+    </span>
   );
 }
 

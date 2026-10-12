@@ -42,5 +42,5 @@ export const advancedProfiles: Record<AdvancedProfileId, AdvancedProfile> = {
   adhd_hyperfocus: { id: "adhd_hyperfocus", name: "Hyperfocus", bgTop: "#090510", bgBottom: "#000000", borderA: "#00f5ff", text: "#ffffff", chartStyle: 2 },
   autism_predictable: { id: "autism_predictable", name: "Autism - Predictable", bgTop: "#07111a", bgBottom: "#020617", borderA: "#4D00FF", text: "#f1f5f9", chartStyle: 1 },
   tourette_tic_friendly: { id: "tourette_tic_friendly", name: "Minimal Motion", bgTop: "#05070b", bgBottom: "#000000", borderA: "#4D00FF", text: "#e2e8f0", chartStyle: 1 },
-  standard_red_green: { id: "standard_red_green", name: "Standard Chart (Red & Green)", bgTop: "#131722", bgBottom: "#0b0e14", borderA: "#26a69a", text: "#d1d4dc", chartStyle: 1 },
+  standard_red_green: { id: "standard_red_green", name: "Standard Chart (Red & Green)", bgTop: "#131722", bgBottom: "#0b0e14", borderA: "#00FF66", text: "#d1d4dc", chartStyle: 1 },
 };

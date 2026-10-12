@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { toolClicks } from "./toolCatalog";
 import type { OhlcBar, VolumeAtPriceNode } from "../../../lib/charts/priceSeriesStyles";
+import { CEO_DAILY_TRADING_COLORS, CHART_COLOR_PREF_EVENT } from "../../../lib/charts/ceoDailyColors";
 
 function timeToNumber(time: Time): number | null {
   if (typeof time === "number" && Number.isFinite(time)) return time;
@@ -76,7 +77,16 @@ export function useChartDrawings(opts: {
   const { chartRef, seriesRef, symbol, timeframe, enabled, chartReadyKey } = opts;
 
   const [activeTool, setActiveToolState] = useState<DrawingToolId>("select");
-  const [drawColor, setDrawColor] = useState<DrawingColor>("#00D9FF");
+  const [drawColor, setDrawColor] = useState<DrawingColor>("#00F5FF");
+
+  useEffect(() => {
+    const onPref = (event: Event) => {
+      const detail = (event as CustomEvent<{ ceoDaily?: boolean }>).detail;
+      if (detail?.ceoDaily) setDrawColor(CEO_DAILY_TRADING_COLORS.horizontalSupport);
+    };
+    window.addEventListener(CHART_COLOR_PREF_EVENT, onPref);
+    return () => window.removeEventListener(CHART_COLOR_PREF_EVENT, onPref);
+  }, []);
   const [drawings, setDrawings] = useState<ChartDrawing[]>([]);
   const [pendingPoints, setPendingPoints] = useState<ChartPoint[]>([]);
   const [annotationText, setAnnotationText] = useState("Note");

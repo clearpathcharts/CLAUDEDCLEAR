@@ -96,7 +96,7 @@ class DrawingPaneView implements IPrimitivePaneView {
 export class DrawingPrimitive implements ISeriesPrimitive<Time> {
   private _drawings: ChartDrawing[] = [];
   private _pending: ChartPoint[] = [];
-  private _pendingColor = "#00D9FF";
+  private _pendingColor = "#00F5FF";
   private _marketBars: OhlcBar[] = [];
   private _overlay: VolumeAtPriceNode[] = [];
   private _overlayMode: "profile" | "footprint" | "tpo" | null = null;
@@ -150,7 +150,7 @@ export class DrawingPrimitive implements ISeriesPrimitive<Time> {
     this.bump();
   }
 
-  setPending(points: ChartPoint[], color = "#00D9FF"): void {
+  setPending(points: ChartPoint[], color = "#00F5FF"): void {
     this._pending = points;
     this._pendingColor = color;
     this.bump();
