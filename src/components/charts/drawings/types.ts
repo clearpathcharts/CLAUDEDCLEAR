@@ -1,34 +1,21 @@
 /** Chart drawing tools — shared model for all toolbar layers. */
 
+import { HIGH_INTENSITY_TOOL_COLORS } from "../../../lib/charts/highIntensityPalette";
+
+/** Any hex paints. The dock swatches are the high-intensity set; the + chip covers the rest. */
 export type DrawingColor = string;
 
-/** Quick rainbow on the drawing dock — any hex still paints via the custom chip. */
-export const DRAWING_COLORS: DrawingColor[] = [
-  "#00D9FF",
-  "#BF00FF",
-  "#FFD166",
-  "#FFFFFF",
-  "#22C55E",
-  "#EF4444",
-  "#FF1493",
-  "#FF6A00",
-  "#FFCC00",
-  "#39FF14",
-  "#00FFFF",
-  "#2962FF",
-  "#7C4DFF",
-  "#D500F9",
-  "#FF1744",
-  "#000000",
-  "#8C8C8C",
-  "#FF2D95",
-  "#00E5FF",
-  "#3D5AFE",
-  "#A855F7",
-  "#FFAB00",
-  "#10B981",
-  "#F43F5E",
-];
+export const DRAWING_COLORS: DrawingColor[] = [...HIGH_INTENSITY_TOOL_COLORS];
+
+/** Previous toolbar inks, rewritten to the neon pair of the same hue on load. */
+export const LEGACY_DRAWING_COLORS: Record<string, DrawingColor> = {
+  "#00D9FF": "#00F5FF",
+  "#FFD166": "#FFD700",
+  "#22C55E": "#00FF66",
+  "#EF4444": "#FF1744",
+};
+
+export const DEFAULT_DRAWING_COLOR: DrawingColor = "#00F5FF";
 
 export type DrawingToolId =
   | "select"

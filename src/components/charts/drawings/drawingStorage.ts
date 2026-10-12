@@ -1,4 +1,5 @@
 import type { ChartDrawing, ChartPoint, DrawingColor } from "./types";
+import { DEFAULT_DRAWING_COLOR, LEGACY_DRAWING_COLORS } from "./types";
 import { DRAWING_TOOLS } from "./toolCatalog";
 
 const PREFIX = "cp_drawings:";
@@ -19,8 +20,11 @@ function isPoint(v: unknown): v is ChartPoint {
   );
 }
 
-function isColor(v: unknown): v is DrawingColor {
-  return typeof v === "string" && /^#[0-9A-Fa-f]{6}$/.test(v);
+function resolveColor(v: unknown): DrawingColor {
+  if (typeof v !== "string") return DEFAULT_DRAWING_COLOR;
+  const hex = /^#[0-9A-Fa-f]{6}$/.test(v) ? v.toUpperCase() : "";
+  if (!hex) return DEFAULT_DRAWING_COLOR;
+  return LEGACY_DRAWING_COLORS[hex] ?? hex;
 }
 
 function collectPoints(d: Record<string, unknown>): ChartPoint[] {
@@ -63,7 +67,7 @@ function sanitizeDrawing(raw: unknown): ChartDrawing | null {
   if (typeof d.id !== "string" || typeof d.kind !== "string") return null;
   const mapped = LEGACY_KIND[d.kind] ?? (KIND_SET.has(d.kind as ChartDrawing["kind"]) ? (d.kind as ChartDrawing["kind"]) : null);
   if (!mapped) return null;
-  const color: DrawingColor = isColor(d.color) ? d.color : "#00D9FF";
+  const color = resolveColor(d.color);
   const points = collectPoints(d);
   if (points.length === 0) return null;
   const text = typeof d.text === "string" ? d.text.slice(0, 160) : undefined;

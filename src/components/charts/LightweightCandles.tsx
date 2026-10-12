@@ -53,6 +53,12 @@ import { chartTimeframeStepSeconds } from "../../constants/chartTimeframes";
 import { nextChartPixelSize } from "../../lib/charts/chartResize";
 import { chartBackgroundColors } from "../../lib/charts/chartBackground";
 import { useChartBackgroundMode } from "../../hooks/useChartBackgroundMode";
+import { useChartColorPreference } from "../../hooks/useChartColorPreference";
+import {
+  CEO_DAILY_TRADING_COLORS,
+  ceoGoldBarWick,
+  isLightChartBackground,
+} from "../../lib/charts/ceoDailyColors";
 import { useOptionalDeskAppearance } from "../desks/DeskAppearanceContext";
 import type { DeskVisualPaint } from "../../lib/deskColorChart";
 import {
@@ -496,18 +502,37 @@ export const LightweightCandles = memo(function LightweightCandles({
   // When returning to 'calm_focus', we restore the user's custom-selected chart theme safely.
   const activeCustomTheme = (safeProfileId === "calm_focus") ? (customTheme || savedTheme) : null;
   const [backgroundMode] = useChartBackgroundMode();
+  const colorPref = useChartColorPreference();
   const paint = useMemo(() => {
-    const base = chartBackgroundColors(backgroundMode, {
+    const fallback = {
       background: activeCustomTheme?.background || profile.bgBottom,
       text: activeCustomTheme?.text || profile.text,
       grid: activeCustomTheme?.grid || profile.grid,
-    });
+    };
+    const chosenBg = colorPref.ceoDaily
+      ? colorPref.backgroundHex || CEO_DAILY_TRADING_COLORS.chartBackground
+      : colorPref.backgroundHex;
+    const base = chartBackgroundColors(backgroundMode, fallback, chosenBg);
+    if (colorPref.ceoDaily || colorPref.backgroundHex) {
+      const background = base.background;
+      return {
+        background,
+        text: colorPref.ceoDaily
+          ? isLightChartBackground(background)
+            ? CEO_DAILY_TRADING_COLORS.secondaryBackground
+            : CEO_DAILY_TRADING_COLORS.priceLabels
+          : base.text,
+        grid: colorPref.ceoDaily ? CEO_DAILY_TRADING_COLORS.chartGrid : base.grid,
+        frame: colorPref.ceoDaily ? CEO_DAILY_TRADING_COLORS.secondaryBackground : undefined,
+      };
+    }
     return {
       background: visualPaint?.chart || base.background,
       text: visualPaint?.text || base.text,
       grid: visualPaint?.grid || base.grid,
+      frame: undefined as string | undefined,
     };
-  }, [backgroundMode, activeCustomTheme, profile, visualPaint]);
+  }, [backgroundMode, activeCustomTheme, profile, visualPaint, colorPref.ceoDaily, colorPref.backgroundHex]);
 
   // Use custom theme if provided, otherwise fallback to profile-based theme
   const theme = useMemo(() => {
@@ -601,19 +626,27 @@ export const LightweightCandles = memo(function LightweightCandles({
       };
     }
 
-    const rawCandleColors = {
-      upColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor),
-      downColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor),
-      wickUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor),
-      wickDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor),
-      borderUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor),
-      borderDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor),
-    };
-    // TradingView-clean: body === wick === border, borders off (no muddy outlines).
-    const vividCandles = cleanCandleSeriesOptions(
-      rawCandleColors,
-      activeCustomTheme ? 1.05 : 0,
-    );
+    const rawCandleColors = colorPref.ceoDaily
+      ? {
+          upColor: CEO_DAILY_TRADING_COLORS.bullishCandle,
+          downColor: CEO_DAILY_TRADING_COLORS.bearishCandle,
+          wickUpColor: CEO_DAILY_TRADING_COLORS.bullishWick,
+          wickDownColor: CEO_DAILY_TRADING_COLORS.bearishWick,
+          borderUpColor: CEO_DAILY_TRADING_COLORS.bullishCandle,
+          borderDownColor: CEO_DAILY_TRADING_COLORS.bearishCandle,
+        }
+      : {
+          upColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor),
+          downColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor),
+          wickUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor),
+          wickDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.wickDownColor || activeCustomTheme.wickDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.wickDownColor),
+          borderUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor),
+          borderDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor),
+        };
+    // CEO daily colors keep a brighter wick than the body. Other themes stay matched.
+    const vividCandles = colorPref.ceoDaily
+      ? { ...rawCandleColors, borderVisible: false as const }
+      : cleanCandleSeriesOptions(rawCandleColors, activeCustomTheme ? 1.05 : 0);
     candleColorsRef.current = { up: vividCandles.upColor, down: vividCandles.downColor };
 
     const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
@@ -813,14 +846,14 @@ export const LightweightCandles = memo(function LightweightCandles({
 
         const COLOR_MAP: Record<string, string> = {
           "SMA": visualPaint?.indicator || "#00FFFF",
-          "EMA": visualPaint?.indicator || "#FFAA00",
+          "EMA": visualPaint?.indicator || "#FF6D00",
           "RSI": visualPaint?.indicator || "#00FF66",
-          "BB": visualPaint?.indicator || "#7A3BFF",
-          "ADX": visualPaint?.indicator || "#00D9FF",
+          "BB": visualPaint?.indicator || "#9D00FF",
+          "ADX": visualPaint?.indicator || "#00F5FF",
           "ATR": visualPaint?.indicator || "#FF4500",
-          "AO": visualPaint?.indicator || "#3E78FF",
+          "AO": visualPaint?.indicator || "#4169FF",
           "MACD": visualPaint?.indicator || "#FF00C8",
-          "COT": "#22C55E",
+          "COT": "#00FF66",
         };
 
         let cotPack: Awaited<ReturnType<typeof fetchCotReportsForChart>> | null = null;
@@ -832,7 +865,7 @@ export const LightweightCandles = memo(function LightweightCandles({
 
         if (activeIndicators && activeIndicators.length > 0) {
           activeIndicators.forEach((indAbbr) => {
-            const color = COLOR_MAP[indAbbr] || "#4DFFFF"; // premium non-magenta cyan fallback
+            const color = COLOR_MAP[indAbbr] || "#00FFFF"; // premium non-magenta cyan fallback
             try {
               // ---- PRICE-SCALE OVERLAYS (stay on the candle axis) ----
               if (indAbbr === "SMA") {
@@ -847,7 +880,7 @@ export const LightweightCandles = memo(function LightweightCandles({
               else if (indAbbr === "EMA") {
                 const lineData = IndicatorEngine.calculate("EMA", tierOptimizedData, { period: 50 });
                 const emaLine = chart.addSeries(LineSeries, {
-                  color: "#FFAA00",
+                  color: "#FF6D00",
                   lineWidth: 2,
                   title: "EMA (50)",
                 });
@@ -859,9 +892,9 @@ export const LightweightCandles = memo(function LightweightCandles({
                 const upperData = bbData.map((d: any) => ({ time: d.time as Time, value: d.upper }));
                 const lowerData = bbData.map((d: any) => ({ time: d.time as Time, value: d.lower }));
 
-                const mLine = chart.addSeries(LineSeries, { color: "#7A3BFF", lineWidth: 1, title: "BB basis" });
-                const uLine = chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 2, title: "BB upper" });
-                const lLine = chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 2, title: "BB lower" });
+                const mLine = chart.addSeries(LineSeries, { color: "#9D00FF", lineWidth: 1, title: "BB basis" });
+                const uLine = chart.addSeries(LineSeries, { color: "#00FF66", lineWidth: 2, title: "BB upper" });
+                const lLine = chart.addSeries(LineSeries, { color: "#FF1744", lineWidth: 2, title: "BB lower" });
 
                 mLine.setData(basisData);
                 uLine.setData(upperData);
@@ -874,19 +907,19 @@ export const LightweightCandles = memo(function LightweightCandles({
                     .filter((d: any) => d[key] != null && Number.isFinite(d[key]))
                     .map((d: any) => ({ time: d.time as Time, value: d[key] as number }));
 
-                const convLine = chart.addSeries(LineSeries, { color: "#2962FF", lineWidth: 2, title: "Conversion (Tenkan)" });
+                const convLine = chart.addSeries(LineSeries, { color: "#2979FF", lineWidth: 2, title: "Conversion (Tenkan)" });
                 convLine.setData(linePts("tenkan"));
 
-                const bsLine = chart.addSeries(LineSeries, { color: "#B71C1C", lineWidth: 2, title: "Base (Kijun)" });
+                const bsLine = chart.addSeries(LineSeries, { color: "#FF1744", lineWidth: 2, title: "Base (Kijun)" });
                 bsLine.setData(linePts("kijun"));
 
-                const lagLine = chart.addSeries(LineSeries, { color: "#43A047", lineWidth: 1, title: "Lagging (Chikou)" });
+                const lagLine = chart.addSeries(LineSeries, { color: "#00FF66", lineWidth: 1, title: "Lagging (Chikou)" });
                 lagLine.setData(linePts("chikou"));
 
-                const spanALine = chart.addSeries(LineSeries, { color: "#A5D6A7", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span A" });
+                const spanALine = chart.addSeries(LineSeries, { color: "#00FFB3", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span A" });
                 spanALine.setData(linePts("spanA"));
 
-                const spanBLine = chart.addSeries(LineSeries, { color: "#EF9A9A", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span B" });
+                const spanBLine = chart.addSeries(LineSeries, { color: "#FF4D6D", lineWidth: 1, lineStyle: LineStyle.Dashed, title: "Span B" });
                 spanBLine.setData(linePts("spanB"));
 
                 const bullCloudData = ichiData.map((d: any) => {
@@ -924,7 +957,7 @@ export const LightweightCandles = memo(function LightweightCandles({
               else if (indAbbr === "VWAP") {
                 const vwapData = IndicatorEngine.calculate("VWAP", tierOptimizedData);
                 const vwapLine = chart.addSeries(LineSeries, {
-                  color: "#F72585",
+                  color: "#FF1493",
                   lineWidth: 2,
                   title: "VWAP",
                 });
@@ -941,8 +974,8 @@ export const LightweightCandles = memo(function LightweightCandles({
                 const macdLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.macd }));
                 const signalLineData = macdOutput.map((d: any) => ({ time: d.time as Time, value: d.signal }));
 
-                const mLine = addOscillatorSeries({ color: "#3B82F6", lineWidth: 2, title: "MACD Line" });
-                const sLine = addOscillatorSeries({ color: "#F59E0B", lineWidth: 2, title: "Signal Line" });
+                const mLine = addOscillatorSeries({ color: "#2979FF", lineWidth: 2, title: "MACD Line" });
+                const sLine = addOscillatorSeries({ color: "#FF6D00", lineWidth: 2, title: "Signal Line" });
                 mLine.setData(macdLineData);
                 sLine.setData(signalLineData);
               }
@@ -959,13 +992,13 @@ export const LightweightCandles = memo(function LightweightCandles({
                   : "Commercials";
                 const largeTitle = unavailable ? "Large Traders — DATA UNAVAILABLE" : "Large Traders";
                 const commLine = addOscillatorSeries({
-                  color: "#22C55E",
+                  color: "#00FF66",
                   lineWidth: 2,
                   title: commTitle,
                   lineType: LineType.WithSteps,
                 });
                 const largeLine = addOscillatorSeries({
-                  color: "#EF4444",
+                  color: "#FF1744",
                   lineWidth: 2,
                   title: largeTitle,
                   lineType: LineType.WithSteps,
@@ -996,7 +1029,7 @@ export const LightweightCandles = memo(function LightweightCandles({
               }
               else if (indAbbr === "OBV") {
                 const obvData = IndicatorEngine.calculate("OBV", tierOptimizedData);
-                const obvLine = addOscillatorSeries({ color: "#118AB2", lineWidth: 2, title: "OBV" });
+                const obvLine = addOscillatorSeries({ color: "#00A8FF", lineWidth: 2, title: "OBV" });
                 obvLine.setData(obvData as any[]);
               }
               else if (indAbbr === "ADX" || indAbbr === "DMI") {
@@ -1004,38 +1037,38 @@ export const LightweightCandles = memo(function LightweightCandles({
                 const adxValueData = adxData.map((d: any) => ({ time: d.time as Time, value: d.adx }));
                 const plusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.plusDI }));
                 const minusData = adxData.map((d: any) => ({ time: d.time as Time, value: d.minusDI }));
-                addOscillatorSeries({ color: "#00D9FF", lineWidth: 2, title: "ADX (14)" }).setData(adxValueData);
+                addOscillatorSeries({ color: "#00F5FF", lineWidth: 2, title: "ADX (14)" }).setData(adxValueData);
                 if (indAbbr === "DMI") {
-                  addOscillatorSeries({ color: "#22C55E", lineWidth: 1, title: "+DI" }).setData(plusData);
-                  addOscillatorSeries({ color: "#EF4444", lineWidth: 1, title: "-DI" }).setData(minusData);
+                  addOscillatorSeries({ color: "#00FF66", lineWidth: 1, title: "+DI" }).setData(plusData);
+                  addOscillatorSeries({ color: "#FF1744", lineWidth: 1, title: "-DI" }).setData(minusData);
                 }
               }
               else if (indAbbr === "STOCH" || indAbbr === "STOCHRSI") {
                 const st = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
-                addOscillatorSeries({ color: "#B5179E", lineWidth: 2, title: `${indAbbr} %K` }).setData(
+                addOscillatorSeries({ color: "#FF00CC", lineWidth: 2, title: `${indAbbr} %K` }).setData(
                   st.map((d: any) => ({ time: d.time as Time, value: d.k }))
                 );
-                addOscillatorSeries({ color: "#FFD166", lineWidth: 1, title: `${indAbbr} %D` }).setData(
+                addOscillatorSeries({ color: "#FFD700", lineWidth: 1, title: `${indAbbr} %D` }).setData(
                   st.map((d: any) => ({ time: d.time as Time, value: d.d }))
                 );
               }
               else if (indAbbr === "DC" || indAbbr === "KC") {
                 const ch = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
                 const midKey = indAbbr === "DC" ? "middle" : "middle";
-                chart.addSeries(LineSeries, { color: "#F72585", lineWidth: 1, title: `${indAbbr} mid` }).setData(
+                chart.addSeries(LineSeries, { color: "#FF1493", lineWidth: 1, title: `${indAbbr} mid` }).setData(
                   ch.map((d: any) => ({ time: d.time as Time, value: d[midKey] }))
                 );
-                chart.addSeries(LineSeries, { color: "#22C55E", lineWidth: 1, title: `${indAbbr} upper` }).setData(
+                chart.addSeries(LineSeries, { color: "#00FF66", lineWidth: 1, title: `${indAbbr} upper` }).setData(
                   ch.map((d: any) => ({ time: d.time as Time, value: d.upper }))
                 );
-                chart.addSeries(LineSeries, { color: "#EF4444", lineWidth: 1, title: `${indAbbr} lower` }).setData(
+                chart.addSeries(LineSeries, { color: "#FF1744", lineWidth: 1, title: `${indAbbr} lower` }).setData(
                   ch.map((d: any) => ({ time: d.time as Time, value: d.lower }))
                 );
               }
               else if (indAbbr === "SUPERTREND" || indAbbr === "PSAR") {
                 const series = IndicatorEngine.calculate(indAbbr, tierOptimizedData);
                 chart.addSeries(LineSeries, {
-                  color: indAbbr === "PSAR" ? "#FFD166" : "#00FFCC",
+                  color: indAbbr === "PSAR" ? "#FFD700" : "#00FFD1",
                   lineWidth: 2,
                   title: indAbbr,
                 }).setData(series.map((d: any) => ({ time: d.time as Time, value: d.value })));
@@ -1044,7 +1077,7 @@ export const LightweightCandles = memo(function LightweightCandles({
                 const piv = IndicatorEngine.calculate("PIVOT", tierOptimizedData);
                 for (const key of ["pp", "r1", "s1"] as const) {
                   chart.addSeries(LineSeries, {
-                    color: key === "pp" ? "#F72585" : key === "r1" ? "#22C55E" : "#EF4444",
+                    color: key === "pp" ? "#FF1493" : key === "r1" ? "#00FF66" : "#FF1744",
                     lineWidth: 1,
                     lineStyle: LineStyle.Dashed,
                     title: key.toUpperCase(),
@@ -1058,7 +1091,7 @@ export const LightweightCandles = memo(function LightweightCandles({
                 addOscillatorSeries({ color, lineWidth: 2, title: indAbbr }).setData(
                   multi.map((d: any) => ({ time: d.time as Time, value: d[primaryKey] }))
                 );
-                addOscillatorSeries({ color: "#F59E0B", lineWidth: 1, title: `${indAbbr} signal` }).setData(
+                addOscillatorSeries({ color: "#FF6D00", lineWidth: 1, title: `${indAbbr} signal` }).setData(
                   multi.map((d: any) => ({ time: d.time as Time, value: d[secondaryKey] }))
                 );
               }
@@ -1100,7 +1133,7 @@ export const LightweightCandles = memo(function LightweightCandles({
                 timeframe,
               });
 
-              const RIVER_PLOT_FALLBACKS = ["#FF007F", "#00D9FF", "#FFD700", "#00FF66", "#FFAA00", "#7A3BFF"];
+              const RIVER_PLOT_FALLBACKS = ["#FF1493", "#00F5FF", "#FFD700", "#00FF66", "#FF6D00", "#9D00FF"];
               result.plots.forEach((plot, plotIdx) => {
                 const color = plot.color || RIVER_PLOT_FALLBACKS[plotIdx % RIVER_PLOT_FALLBACKS.length];
                 const isHistogram = plot.style === "histogram" || plot.style === "columns";
@@ -1149,7 +1182,8 @@ export const LightweightCandles = memo(function LightweightCandles({
                   const c = colorByTime.get(d.time);
                   const border = borderByTime.get(d.time);
                   if (c) {
-                    return { ...d, time: d.time as Time, color: c, wickColor: c, borderColor: c } as PriceBar;
+                    const wick = ceoGoldBarWick(c, colorPref.ceoDaily) || c;
+                    return { ...d, time: d.time as Time, color: c, wickColor: wick, borderColor: c } as PriceBar;
                   }
                   if (border) {
                     return { ...d, time: d.time as Time, borderColor: border, wickColor: border } as PriceBar;
@@ -1355,7 +1389,7 @@ export const LightweightCandles = memo(function LightweightCandles({
   // NOTE: `data` is read via dataRef so parent array identity (quotes/search
   // re-renders) cannot remount the chart. `error` is also omitted — re-running
   // the effect on error changes caused a chart-rebuild/refetch loop.
-  }, [replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null)]);
+  }, [replayMode, profile, theme, activeCustomTheme, defaultTheme, timeframe, sym, userTier, takeSnapshotRef, visible, activeIndicators.join(","), showMineIndicator, mineIndicatorName, JSON.stringify(ichimokuSettings), seriesStyle, JSON.stringify(visualPaint ?? null), colorPref.ceoDaily]);
 
   // Live parent candles: update series in place — never remount the chart.
   useEffect(() => {
@@ -1556,6 +1590,7 @@ export const LightweightCandles = memo(function LightweightCandles({
       style={{
         height: frameHeight,
         minHeight: isExpanded || fillParent ? Math.max(320, height || 0) || 320 : undefined,
+        background: paint.frame,
         boxShadow:
           defaultTheme.physics.glowBlur > 0
             ? `0 0 ${defaultTheme.physics.glowBlur}px ${profile.borderA}55`
@@ -1572,11 +1607,11 @@ export const LightweightCandles = memo(function LightweightCandles({
           <button
             type="button"
             onClick={() => setCrosshairEnabled(!crosshairEnabled)}
-            className="flex h-8 items-center gap-1.5 rounded-md border border-white/15 px-2 font-mono text-[9px] tracking-wider text-zinc-300 transition-all hover:border-[#00D9FF]/40"
+            className="flex h-8 items-center gap-1.5 rounded-md border border-white/15 px-2 font-mono text-[9px] tracking-wider text-zinc-300 transition-all hover:border-[#00F5FF]/40"
             title="Toggle Crosshair"
             id={`crosshair_toggle_${symbol}`}
           >
-            <Crosshair size={10} className={crosshairEnabled ? "text-[#00D9FF] animate-pulse" : "text-zinc-500"} />
+            <Crosshair size={10} className={crosshairEnabled ? "text-[#00F5FF] animate-pulse" : "text-zinc-500"} />
             <span>{crosshairEnabled ? "CROSSHAIR ON" : "CROSSHAIR OFF"}</span>
           </button>
           <ChartSeriesStylePicker compact value={seriesStyle} onChange={setSeriesStyle} />
@@ -1602,7 +1637,7 @@ export const LightweightCandles = memo(function LightweightCandles({
               onClick={handleFocusRecent}
               aria-label="Focus recent bars"
               title="Snap to recent price action"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00D9FF]/25 text-[#00D9FF] transition-all hover:border-[#00D9FF]/60 hover:bg-[#00D9FF]/10 active:scale-95"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#00F5FF]/25 text-[#00F5FF] transition-all hover:border-[#00F5FF]/60 hover:bg-[#00F5FF]/10 active:scale-95"
             >
               <Focus size={13} strokeWidth={2.5} />
             </button>

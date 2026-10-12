@@ -45,9 +45,9 @@ export interface PatternLineOverlay {
 }
 
 const CANDLE_MARKER_COLOR = {
-  bullish: '#22C55E',
-  bearish: '#EF4444',
-  neutral: '#00D9FF',
+  bullish: '#00FF66',
+  bearish: '#FF1744',
+  neutral: '#00F5FF',
 };
 
 /** Build lightweight-charts line overlays — hot pink / purple neon geometry */

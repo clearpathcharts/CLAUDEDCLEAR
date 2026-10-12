@@ -177,17 +177,17 @@ export const COLOR_CHART_ROW_SL: readonly { s: number; l: number }[] = [
 /** High-vibrancy shortcuts (plus-button / moon still reach every hex). */
 export const COLOR_CHART_PRESETS: readonly string[] = [
   '#00E5FF',
-  '#FF2D95',
+  '#FF00CC',
   '#39FF14',
   '#FF1744',
-  '#D500F9',
-  '#FFAB00',
-  '#3D5AFE',
-  '#7C4DFF',
-  '#2962FF',
-  '#FFCC00',
+  '#BF00FF',
+  '#FFD700',
+  '#2979FF',
+  '#9D00FF',
+  '#FFFF00',
   '#FF1493',
   '#00FFFF',
+  '#00FF66',
 ];
 
 export function hslToHex(h: number, s: number, l: number): string {

@@ -154,7 +154,7 @@ for (const nested of nestedHits) {
 }
 const nestedOverlays = buildPatternLineOverlays(fractalDesc, [...nestedHits, parentDesc]);
 assert(
-  nestedOverlays.some((l) => l.color === '#00D9FF'),
+  nestedOverlays.some((l) => l.color === '#00F5FF'),
   'nested geometry should draw in cyan',
 );
 console.log(`  nested hits: ${nestedHits.map((p) => `${p.id}@${p.startIndex}-${p.endIndex}`).join(', ')}`);

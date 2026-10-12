@@ -279,8 +279,8 @@ function drawPosition(
   if (!a || !b || !tp || !sl) return;
   const left = Math.min(a.x, b.x);
   const right = Math.max(a.x, b.x);
-  const tpFill = long ? "#22C55E" : "#EF4444";
-  const slFill = long ? "#EF4444" : "#22C55E";
+  const tpFill = long ? "#00FF66" : "#FF1744";
+  const slFill = long ? "#FF1744" : "#00FF66";
   fillPoly(
     ctx,
     [

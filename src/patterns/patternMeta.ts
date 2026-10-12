@@ -32,8 +32,8 @@ export const NEON_PATTERN_LINE_COLORS = {
   magenta: '#FF00CC',
   purple: '#BF00FF',
   violet: '#9D00FF',
-  deepPurple: '#7F00FF',
-  nestedCyan: '#00D9FF',
+  deepPurple: '#9D00FF',
+  nestedCyan: '#00F5FF',
 } as const;
 
 export function neonLineColor(role: string, lineIndex: number, scale?: 'major' | 'nested'): string {
