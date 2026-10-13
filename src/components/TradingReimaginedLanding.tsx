@@ -45,7 +45,7 @@ export default function TradingReimaginedLanding() {
       <nav className="relative z-10 w-full p-6 lg:px-12 flex justify-between items-center border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
         <span className="font-black tracking-tighter text-xl uppercase italic text-white flex flex-col leading-none">
           <span>CLEAR PATH</span>
-          <span className="text-sm lava-hot-text">TRADER</span>
+          <span className="text-sm cp-chrome-flame-text">TRADER</span>
         </span>
         <button
           type="button"
