@@ -36,7 +36,6 @@ const NAV_IDS = [
   'Membership',
   'Biography',
   'AffiliateNetwork',
-  'CpmsApk',
   'ClearPathEducation',
   'LiteracyOS',
   'Encyclopedia',
@@ -73,7 +72,8 @@ assert.ok(Object.keys(explainContentLibrary).length >= NAV_IDS.length);
 
 assert.equal(explainVideoSrc('charts'), '/explain-videos/charts.mp4');
 assert.equal(explainVideoSrc('charts', 'https://cdn.example/x.mp4'), 'https://cdn.example/x.mp4');
-assert.equal(EXPLAIN_FLOW_SLOT_IDS.length, 15);
+assert.equal(EXPLAIN_FLOW_SLOT_IDS.length, 14);
+assert.equal(NAV_TAB_EXPLAIN_IDS.CpmsApk, undefined, 'ClearPath Cinema tab retired');
 // The CEO dashboard is founder-only: no play badge, no overlay, no film.
 assert.equal(getExplainContent('CeoDashboard'), undefined);
 assert.equal(NAV_TAB_EXPLAIN_IDS.CeoDashboard, undefined);
@@ -84,7 +84,7 @@ assert.equal(isExplainFlowSlotId('exit'), true);
 assert.equal(isExplainFlowSlotId('nope'), false);
 assert.match(hexToRgba('#FF7B00', 0.2), /^rgba\(255,123,0,0\.2\)$/);
 
-assert.equal(EXPLAIN_FLOW_NAV_ORDER.length, 12);
+assert.equal(EXPLAIN_FLOW_NAV_ORDER.length, 11);
 for (const id of EXPLAIN_FLOW_SLOT_IDS) {
   const script = EXPLAIN_FLOW_SCRIPTS[id];
   assert.ok(script, `missing Flow script for ${id}`);

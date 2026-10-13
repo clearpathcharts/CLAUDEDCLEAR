@@ -22,7 +22,6 @@ export const EXPLAIN_FLOW_SLOT_IDS = [
   'explain',
   'profile',
   'affiliate',
-  'cinema',
   'education',
   'exit',
   'literacy',
