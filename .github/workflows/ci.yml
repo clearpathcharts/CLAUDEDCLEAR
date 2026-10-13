@@ -93,6 +93,9 @@ jobs:
       - name: Hypercolor surface regression self-test
         run: npm run test:hypercolor-surfaces
 
+      - name: Initial-load bundle boundaries self-test
+        run: npm run test:bundle-boundaries
+
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 
