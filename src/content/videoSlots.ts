@@ -159,13 +159,6 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
     explains: 'what an indicator is in plain language',
   },
   {
-    id: 'nav.cinema',
-    groupId: NAV_VIDEO_SLOT_GROUP_ID,
-    label: 'Nav play icon — CLEARPATH CINEMA',
-    where: `${NAV_BADGE} CLEARPATH CINEMA button`,
-    explains: 'how to find and play a title in Cinema',
-  },
-  {
     id: 'nav.profile',
     groupId: NAV_VIDEO_SLOT_GROUP_ID,
     label: 'Nav play icon — PROFILE',

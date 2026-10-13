@@ -193,26 +193,6 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
     ],
   },
 
-  cinema: {
-    id: 'cinema',
-    title: 'ClearPath cinema',
-    color: '#00E5FF',
-    text: vo('cinema'),
-    quiz: [
-      {
-        id: 'q1',
-        prompt: 'What is the cyan CINEMA room?',
-        options: [
-          { id: 'a', text: 'A movie theater inside the website' },
-          { id: 'b', text: 'A chat that buys things for you' },
-          { id: 'c', text: 'A button that deletes school' },
-        ],
-        correctOptionId: 'a',
-        explanation: 'Click a picture. A player is a box that shows the movie. Movies teach. They do not tell you what to buy.',
-      },
-    ],
-  },
-
   education: {
     id: 'education',
     title: 'ClearPath education',
@@ -366,7 +346,6 @@ export const NAV_TAB_EXPLAIN_IDS: Record<string, string> = {
   Membership: 'memberships',
   Biography: 'profile',
   AffiliateNetwork: 'affiliate',
-  CpmsApk: 'cinema',
   ClearPathEducation: 'education',
   LiteracyOS: 'literacy',
   Encyclopedia: 'encyclopedia',

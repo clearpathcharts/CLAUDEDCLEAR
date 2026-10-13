@@ -217,6 +217,36 @@ html[data-high-contrast="true"] .cpt-cta-gradient {
   color: #ffffff;
 }
 
+/* 3-tone chrome flame — matches Choose Your Path heading (cyan → gold → hot pink) */
+.cp-chrome-flame-text {
+  background-image: linear-gradient(
+    105deg,
+    #00ffff 0%,
+    #c0f0ff 12%,
+    #ffd700 38%,
+    #ffe566 48%,
+    #ff1493 72%,
+    #ff6ec7 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+html:not([data-reduced-sensory="true"]):not([data-high-contrast="true"]) .cp-chrome-flame-text {
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.35)) drop-shadow(0 0 18px rgba(255, 20, 147, 0.4));
+}
+
+html[data-reduced-sensory="true"] .cp-chrome-flame-text,
+html[data-high-contrast="true"] .cp-chrome-flame-text {
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--cpt-cyan, #00ffff);
+  filter: none;
+}
+
 /* Tailwind gradient stops that hardcode neon pink */
 html[data-high-contrast="true"] .from-\[\#FF1493\],
 html[data-high-contrast="true"] .from-\[\#ff1493\] {

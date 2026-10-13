@@ -1,0 +1,132 @@
+CLEARPATHTRADER
+LOCAL PC DEVELOPMENT PROJECT
+
+OBJECTIVE
+
+Audit the existing ClearPathTrader application and
+prepare a company-wide digital identity and technical
+SEO implementation plan.
+
+EXECUTION ENVIRONMENT
+
+Work with the existing local project files.
+
+Do not require autonomous cloud agents.
+
+Do not initiate paid API calls.
+
+Do not install packages unless explicitly approved.
+
+Do not deploy changes.
+
+Do not modify production infrastructure.
+
+Do not replace the existing application.
+
+PHASE 1: REPOSITORY INVENTORY
+
+Identify:
+
+- Application framework and version.
+- Main application entry points.
+- Routing architecture.
+- Existing pages.
+- Existing SEO implementation.
+- Existing structured data.
+- Sitemap and robots.txt.
+- Canonical URL configuration.
+- Existing founder and company pages.
+- Existing leadership pages.
+- Existing logos and approved photographs.
+- Build and test commands.
+- Deployment configuration.
+
+Do not expose credentials or private information.
+
+PHASE 2: COMPANY IDENTITY
+
+Document the verified information available about:
+
+- ClearPathTrader.
+- Its legal operating entity, where established.
+- Company mission.
+- Products and actual capabilities.
+- Founder.
+- Leadership.
+- Customer communications.
+- Company history.
+- Official public profiles.
+
+Do not invent facts.
+
+Distinguish verified information from unverified claims.
+
+PHASE 3: LEADERSHIP REVIEW
+
+Review the proposed descriptions of:
+
+- Richard Anthony Floyd, founder.
+- Brent, communications leadership.
+- Brian Weber, financial leadership.
+
+Flag titles, responsibilities, qualifications, and
+corporate appointments that require confirmation.
+
+Do not publish or modify leadership profiles.
+
+PHASE 4: DEVIL'S ADVOCATE
+
+Identify:
+
+- Contradictory company information.
+- Ambiguous identity relationships.
+- Unsupported claims.
+- Duplicate pages.
+- Technical SEO problems.
+- Structured-data conflicts.
+- Privacy risks.
+- Unnecessary development work.
+- Potential regressions.
+
+For every issue, recommend a specific improvement
+and an objective acceptance test.
+
+PHASE 5: REPORTS
+
+Prepare:
+
+docs/company-identity/TECHNICAL_AUDIT.md
+
+docs/company-identity/COMPANY_IDENTITY_REGISTRY.md
+
+docs/company-identity/LEADERSHIP_REVIEW.md
+
+docs/company-identity/EVIDENCE_LEDGER.md
+
+docs/company-identity/DEVILS_ADVOCATE_REVIEW.md
+
+docs/company-identity/IMPLEMENTATION_PLAN.md
+
+Do not modify existing application files.
+
+Do not deploy.
+
+Do not claim tests passed unless they were run.
+
+FINAL REQUIREMENT
+
+Report what was inspected, what remains unknown,
+what should be improved, and which decisions require
+company approval.
+
+Stop after preparing the audit and implementation plan.
+
+AUDIT RUN (2026-10-12)
+
+Repository audited: C:\Users\forex\Downloads\clearpath-COMPLETE-tonight
+
+Baseline build: npm run build — SUCCESS (Vite client + esbuild server.cjs)
+
+Reports written under: docs/company-identity/
+
+Cursor workspace path CLAUDEDCLEAR was empty on disk; use this folder as the working copy until the repo is re-linked in the editor.

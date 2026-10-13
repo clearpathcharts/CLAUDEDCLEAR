@@ -76,7 +76,7 @@ export const PRESS_KIT = {
   facts: [
     { label: 'Name', value: 'Richard Floyd' },
     { label: 'Role', value: 'Founder & creator, ClearPathTrader.com' },
-    { label: 'Company', value: 'Clear Path Markets Science / ClearPath Trader' },
+    { label: 'Company', value: 'Clear Path Markets Science Corp. / ClearPath Trader' },
     { label: 'Product', value: 'Market intelligence, charting, and trading education platform' },
     { label: 'Category', value: 'Fintech · education · analytics (not a broker)' },
     { label: 'Website', value: 'https://clearpathtrader.com' },

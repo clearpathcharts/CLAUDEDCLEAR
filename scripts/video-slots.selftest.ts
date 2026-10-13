@@ -144,7 +144,12 @@ async function main() {
   const navSlots = registry.VIDEO_SLOTS.filter(
     (s) => s.groupId === registry.NAV_VIDEO_SLOT_GROUP_ID
   );
-  assert.equal(navSlots.length, 16, `expected exactly 16 play-icon slots, got ${navSlots.length}`);
+  assert.equal(navSlots.length, 15, `expected exactly 15 play-icon slots, got ${navSlots.length}`);
+  assert.equal(
+    registry.isVideoSlotId('nav.cinema'),
+    false,
+    'ClearPath Cinema tab was retired — no nav.cinema slot',
+  );
   assert.ok(
     registry.isVideoSlotId('nav.gold-bar'),
     'the Gold Bar play icon above every chart must be assignable from the CEO page'

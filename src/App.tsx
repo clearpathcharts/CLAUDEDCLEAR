@@ -15,6 +15,9 @@ import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
+import CompanyPage from './components/CompanyPage';
+import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
+import FounderPage from './components/FounderPage';
 import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
@@ -29,6 +32,7 @@ import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
 import { SessionLogoutButton } from './components/session/SessionLogoutButton';
+import { isPublicIdentityPath } from './lib/publicIdentityRoutes';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -38,6 +42,7 @@ const FundamentalResearchDesk = lazy(() => import('./components/fundamental/Fund
 const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
 const CommunityHub = lazy(() => import('./components/community/CommunityHub'));
+const BoardPortal = lazy(() => import('./components/MeetTheBoard'));
 
 function AuthenticatedShell({
   profile,
@@ -356,7 +361,8 @@ export default function App() {
     }
   }, [currentProfileId]);
   let content: React.ReactNode;
-  if (loading) {
+  const blockOnAuthBoot = loading && !isPublicIdentityPath(currentPath);
+  if (blockOnAuthBoot) {
     content = (
       <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
@@ -383,6 +389,28 @@ export default function App() {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/affiliate-terms') {
     content = <AffiliateTermsPage />;
+  } else if (currentPath === '/company') {
+    content = <CompanyPage />;
+  } else if (currentPath === '/meet-the-board') {
+    content = <LeadershipPage />;
+  } else if (currentPath === '/leadership') {
+    content = <LeadershipLegacyRedirect />;
+  } else if (currentPath === '/board-portal') {
+    content = user ? (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050505] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Board portal…
+          </div>
+        }
+      >
+        <BoardPortal />
+      </Suspense>
+    ) : (
+      <Auth />
+    );
+  } else if (currentPath === '/founder') {
+    content = <FounderPage />;
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {

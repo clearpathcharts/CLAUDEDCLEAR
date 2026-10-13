@@ -27,7 +27,7 @@ export default function ExternalAboutPage() {
           </div>
           <span className="font-black tracking-tighter text-xl uppercase italic text-white flex flex-col leading-none">
             <span>CLEAR PATH MARKETS SCIENCE</span>
-            <span className="text-sm lava-hot-text">TRADER</span>
+            <span className="text-sm cp-chrome-flame-text">TRADER</span>
           </span>
         </div>
         <div className="flex items-center space-x-6">
@@ -49,8 +49,9 @@ export default function ExternalAboutPage() {
               <Building2 size={14} className="mr-2" />
               Board-Governed Platform
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-[1.1]">
-              About <span className="lava-hot-text">ClearPath Trader</span>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic leading-[1.1]">
+              <span className="text-white">About </span>
+              <span className="cp-chrome-flame-text">ClearPath Trader</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-400 font-sans max-w-3xl mx-auto leading-relaxed">
               ClearPath Trader is one <strong className="text-indigo-400 font-normal">educational financial markets site with four trader desks</strong> — Institutional, Fundamental, Retail, and Neurodivergent — plus live charts, encyclopedias, Literacy OS, a macro desk, custom indicators, and accessibility profiles. It is <strong className="text-white font-normal">not</strong> a brokerage, not four brokerages, not a website chatbot, and not aiclearpath.com.
@@ -279,6 +280,10 @@ export default function ExternalAboutPage() {
             <a href="/ui" className="hover:text-indigo-400 transition-colors">Accessible UI Modes</a>
             <span className="text-white/10 hidden md:block">•</span>
             <a href="/" className="hover:text-indigo-400 transition-colors">Return to Login</a>
+            <span className="text-white/10 hidden md:block">•</span>
+            <a href="/company" className="hover:text-indigo-400 transition-colors">Company</a>
+            <span className="text-white/10 hidden md:block">•</span>
+            <a href="/meet-the-board" className="hover:text-indigo-400 transition-colors">Meet the Board</a>
             <span className="text-white/10 hidden md:block">•</span>
             <a href="/press" className="hover:text-indigo-400 transition-colors">Press Kit</a>
             <span className="text-white/10 hidden md:block">•</span>
