@@ -94,22 +94,6 @@ export default defineConfig(({mode}) => {
               if (id.includes('node_modules/hls.js/')) {
                 return 'hls-vendor';
               }
-              if (
-                id.includes('node_modules/react-markdown/') ||
-                id.includes('node_modules/unified/') ||
-                id.includes('node_modules/remark-') ||
-                id.includes('node_modules/rehype-') ||
-                id.includes('node_modules/micromark') ||
-                id.includes('node_modules/mdast-') ||
-                id.includes('node_modules/hast-') ||
-                id.includes('node_modules/vfile/') ||
-                id.includes('node_modules/unist-')
-              ) {
-                return 'markdown-vendor';
-              }
-              if (id.includes('node_modules/d3/') || id.includes('node_modules/d3-')) {
-                return 'd3-vendor';
-              }
               if (id.includes('node_modules/date-fns/')) {
                 return 'date-vendor';
               }

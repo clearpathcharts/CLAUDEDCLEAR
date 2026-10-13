@@ -18,8 +18,6 @@ for (const chunk of [
   'motion-vendor',
   'firebase-vendor',
   'charts-vendor',
-  'markdown-vendor',
-  'd3-vendor',
   'date-vendor',
 ]) {
   assert.match(vite, new RegExp(`return ['"]${chunk}['"]`), `${chunk} boundary is missing.`);
