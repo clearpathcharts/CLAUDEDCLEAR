@@ -121,12 +121,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
     },
 
     {
-      id: "CpmsApk",
-      icon: Cpu,
-      label: "CLEARPATH CINEMA",
-    },
-
-    {
       id: "ClearPathEducation",
       icon: BookOpen,
       label: "CLEARPATH EDUCATION",
@@ -150,7 +144,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "AffiliateNetwork";
 
     const isCyan =
-      item.id === "CpmsApk" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
       item.id === "ClearPathEducation" ||

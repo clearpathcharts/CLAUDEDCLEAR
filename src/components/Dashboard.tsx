@@ -110,7 +110,6 @@ const GeographicMap = lazy(() => import('./GeographicMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
-const CpmsApk = lazy(() => import('./CpmsApk'));
 const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
@@ -141,6 +140,7 @@ const RETIRED_TABS: Record<string, string> = {
   ReferralDesk: 'Yours',
   // Broken PIN gate removed from the site — old links land on Memberships.
   Founders: 'Membership',
+  CpmsApk: 'ClearPathEducation',
 };
 
 function normalizeTabId(tabId: string): string {
@@ -393,8 +393,7 @@ const TabContent = ({
           <RiverWorkstation />
         </Suspense>
       );
-      case 'CpmsApk': return <CpmsApk />;
-      // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
+      // CpmsApk (ClearPath Cinema) removed from nav; #CpmsApk hash maps to ClearPathEducation via RETIRED_TABS.
 
       case 'EncyclopediaOfIndicators': return gate(
         'encyclopedia', 'silver', 'Encyclopedia of Indicators',
@@ -1212,7 +1211,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Calendar' ||
           hash === 'Biography' || 
           hash === 'Yours' || 
-          hash === 'CpmsApk' || 
           hash === 'AffiliateNetwork' || 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
