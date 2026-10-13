@@ -26,6 +26,8 @@ assert.match(aboutPage, /ABOUT_MANIFESTO_CLOSER/);
 assert.match(aboutPage, /id="about-manifesto"/);
 assert.match(aboutPage, /canonical="https:\/\/clearpathtrader.com\/about"/);
 assert.match(aboutPage, /educational financial markets site/);
+assert.match(aboutPage, /import \{ BrandMark \} from '\.\/brand\/BrandMark'/);
+assert.match(aboutPage, /<BrandMark size=\{42\}/, 'About header must show the ClearPath flame');
 assert.doesNotMatch(aboutPage, /trading terminal/i);
 assert.doesNotMatch(aboutPage, /Back to Terminal/);
 

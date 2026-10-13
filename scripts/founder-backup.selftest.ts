@@ -7,6 +7,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
+const repoRoot = path.resolve('.');
+const serverSource = fs.readFileSync(path.join(repoRoot, 'server.ts'), 'utf8');
+for (const route of ['snapshot', 'restore']) {
+  const mount = serverSource.match(
+    new RegExp(`app\\.post\\(\\s*'/api/admin/backup/${route}',[\\s\\S]{0,220}?async`),
+  );
+  assert.ok(mount, `backup ${route} route must stay mounted`);
+  assert.match(
+    mount![0],
+    /requireFounderActionHeader/,
+    `backup ${route} must require the explicit founder action header`,
+  );
+}
+
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-backup-'));
 process.chdir(tmp);
 process.env.NODE_ENV = 'development';

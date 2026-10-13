@@ -11,6 +11,7 @@ import {
 } from "../../lib/theme/profiles";
 import { chartThemes } from "../../config/chartThemes";
 import { ChartWatermark } from "../brand/BrandMark";
+import { GoldBarChartVideoTrigger } from "../explain/GoldBarChartVideoTrigger";
 import { lightweightThemeAdapter } from "../../lib/charts/lightweightThemeAdapter";
 import { cleanCandleSeriesOptions } from "../../lib/charts/cleanCandleSeries";
 import { ChartFeedAdapter } from "../../engine/chartFeedAdapter";
@@ -1630,6 +1631,7 @@ export const LightweightCandles = memo(function LightweightCandles({
           >
             Gold Bar {goldBarOn ? "on" : "off"}
           </button>
+          <GoldBarChartVideoTrigger compact />
           <ChartBackgroundToggle compact />
           <div className="ml-auto flex items-center gap-1">
             <button

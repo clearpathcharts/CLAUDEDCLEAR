@@ -1997,7 +1997,11 @@ async function startServer() {
   );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
-  app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post(
+    '/api/admin/backup/snapshot',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
     try {
       const result = await persistFounderBackupSnapshot();
       if (result.ok === false) {
@@ -2014,13 +2018,18 @@ async function startServer() {
       console.error('[admin/backup/snapshot] Failed:', error);
       res.status(500).json({ error: error?.message || 'Backup snapshot failed' });
     }
-  });
+    },
+  );
 
   /**
    * Founder-only: restore private accounts from a disaster backup JSON.
    * Body: { accounts: [...], dryRun?: boolean } or full backup package { privateAccounts: { accounts } }.
    */
-  app.post('/api/admin/backup/restore', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post(
+    '/api/admin/backup/restore',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
     try {
       const fromPackage = Array.isArray(req.body?.privateAccounts?.accounts)
         ? req.body.privateAccounts.accounts
@@ -2036,7 +2045,8 @@ async function startServer() {
       console.error('[admin/backup/restore] Failed:', error);
       res.status(status).json({ error: error?.message || 'Backup restore failed' });
     }
-  });
+    },
+  );
 
   app.get('/api/admin/members/convert-waitlist/candidates', requireFounderOrCatalogAdmin, async (_req, res) => {
     try {

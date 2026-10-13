@@ -226,6 +226,18 @@
   grid-template-columns: repeat(13, minmax(0, 1fr));
 }
 
+@media (max-width: 640px) {
+  .color-chart-presets {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .color-chart-presets .color-chart-swatch,
+  .color-chart-presets .color-chart-add {
+    min-height: 2rem;
+  }
+}
+
 .color-chart-dock {
   position: sticky;
   bottom: 0;

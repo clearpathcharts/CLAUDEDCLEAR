@@ -4,6 +4,7 @@ import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
 import GovernmentFinanceLinks from './GovernmentFinanceLinks';
 import { ABOUT_MANIFESTO_CLOSER, ABOUT_MANIFESTO_LEAD } from '../content/aboutManifesto';
+import { BrandMark } from './brand/BrandMark';
 
 export default function ExternalAboutPage() {
   const handleBack = () => {
@@ -22,8 +23,8 @@ export default function ExternalAboutPage() {
       {/* Nav */}
       <nav className="relative z-10 w-full p-6 lg:px-12 flex justify-between items-center border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_20px_#4D00FF]">
-            
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#FF1493]/40 bg-black/70 shadow-[0_0_20px_#4D00FF]">
+            <BrandMark size={42} className="drop-shadow-[0_0_12px_rgba(255,20,147,0.8)]" />
           </div>
           <span className="font-black tracking-tighter text-xl uppercase italic text-white flex flex-col leading-none">
             <span>CLEAR PATH MARKETS SCIENCE</span>

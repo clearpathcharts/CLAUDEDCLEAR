@@ -48,12 +48,14 @@ const goldBarTrigger = read('src/components/explain/GoldBarChartVideoTrigger.tsx
 assert.match(goldBarTrigger, /contentId="gold-bar"/, 'the chart play icon opens the Gold Bar overlay');
 assert.doesNotMatch(goldBarTrigger, /explainMode/, 'Gold Bar on the chart stays visible without Explain Mode');
 
-const pulse = read('src/components/charts/ChartLocalTimeAndPulse.tsx');
+const candles = read('src/components/charts/LightweightCandles.tsx');
 assert.match(
-  pulse,
+  candles,
   /GoldBarChartVideoTrigger/,
-  'the Gold Bar play icon sits in the chart chrome above Email'
+  'the Gold Bar play icon sits in the shared chart chrome used by every candle chart'
 );
+const pulse = read('src/components/charts/ChartLocalTimeAndPulse.tsx');
+assert.doesNotMatch(pulse, /GoldBarChartVideoTrigger/, 'pulse controls must not duplicate the chart play icon');
 
 const stage = read('src/components/explain/ExplainVideoStage.tsx');
 assert.match(stage, /useVideoSlotUrl/, 'the public player reads its assigned video');
@@ -305,6 +307,29 @@ async function runStoreAndRouteChecks() {
   const reloaded = await store.getVideoSlotAssignments();
   assert.equal(reloaded['nav.charts']?.videoId, 'abc123', 'assignment survives a restart');
   assert.equal(reloaded['nav.charts']?.url, url);
+
+  // Another Cloud Run instance can update Firestore while this process is warm.
+  // Expiring the bounded cache must reveal that durable update without a restart.
+  fs.writeFileSync(
+    file,
+    JSON.stringify({
+      ...reloaded,
+      'nav.home': {
+        slotId: 'nav.home',
+        videoId: 'other-instance',
+        url,
+        assignedAt: '2026-10-12T00:00:00.000Z',
+      },
+    }),
+    'utf8'
+  );
+  store.__expireVideoSlotCacheForTests();
+  const crossInstanceReload = await store.getVideoSlotAssignments();
+  assert.equal(
+    crossInstanceReload['nav.home']?.videoId,
+    'other-instance',
+    'bounded cache refresh picks up another instance’s durable assignment'
+  );
 
   // --- refuses junk rather than writing a broken <video src> ---
   await assert.rejects(

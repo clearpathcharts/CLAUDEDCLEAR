@@ -31,8 +31,10 @@ const FILE = path.join(DIR, 'assignments.json');
 const COLLECTION = 'site_settings';
 const DOC = 'video_slots';
 
-/** In-memory copy so the public endpoint never waits on Firestore per request. */
+/** Brief warm copy; short enough that another Cloud Run instance's write becomes visible. */
 let cache: VideoSlotAssignmentMap | null = null;
+let cacheLoadedAt = 0;
+const CACHE_MAX_AGE_MS = 15_000;
 
 function isAssignment(row: unknown): row is VideoSlotAssignment {
   if (!row || typeof row !== 'object') return false;
@@ -118,13 +120,14 @@ async function writeFirestore(map: VideoSlotAssignmentMap): Promise<void> {
 export async function loadVideoSlotAssignments(): Promise<VideoSlotAssignmentMap> {
   const remote = await readFirestore();
   cache = remote ?? readDisk();
+  cacheLoadedAt = Date.now();
   if (remote) writeDisk(remote);
   return cache;
 }
 
-/** Non-blocking read for the public endpoint. Hydrates once, then serves memory. */
+/** Fast public read with a bounded cache, so multi-instance assignments cannot stay stale forever. */
 export async function getVideoSlotAssignments(): Promise<VideoSlotAssignmentMap> {
-  if (cache) return cache;
+  if (cache && Date.now() - cacheLoadedAt < CACHE_MAX_AGE_MS) return cache;
   return loadVideoSlotAssignments();
 }
 
@@ -142,19 +145,23 @@ export async function setVideoSlotAssignment(input: {
   if (!isAssignment(row)) {
     throw new Error('Refusing to store an unknown slot or a non-https video URL.');
   }
-  const next = { ...(await getVideoSlotAssignments()), [row.slotId]: row };
+  // Refresh before a founder write so this instance does not overwrite a slot
+  // another Cloud Run instance assigned after our public-read cache was filled.
+  const next = { ...(await loadVideoSlotAssignments()), [row.slotId]: row };
   cache = next;
+  cacheLoadedAt = Date.now();
   writeDisk(next);
   await writeFirestore(next);
   return row;
 }
 
 export async function clearVideoSlotAssignment(slotId: string): Promise<boolean> {
-  const current = await getVideoSlotAssignments();
+  const current = await loadVideoSlotAssignments();
   if (!current[slotId]) return false;
   const next = { ...current };
   delete next[slotId];
   cache = next;
+  cacheLoadedAt = Date.now();
   writeDisk(next);
   await writeFirestore(next);
   return true;
@@ -165,7 +172,7 @@ export async function clearVideoSlotAssignment(slotId: string): Promise<boolean>
  * stay wired to a play icon and visitors would get a dead `<video>`.
  */
 export async function clearAssignmentsForVideo(videoId: string): Promise<string[]> {
-  const current = await getVideoSlotAssignments();
+  const current = await loadVideoSlotAssignments();
   const orphaned = Object.values(current)
     .filter((a) => a.videoId === videoId)
     .map((a) => a.slotId);
@@ -173,6 +180,7 @@ export async function clearAssignmentsForVideo(videoId: string): Promise<string[
   const next = { ...current };
   for (const slotId of orphaned) delete next[slotId];
   cache = next;
+  cacheLoadedAt = Date.now();
   writeDisk(next);
   await writeFirestore(next);
   return orphaned;
@@ -184,7 +192,7 @@ export async function clearAssignmentsForVideo(videoId: string): Promise<string[
  */
 export async function pruneVideoSlotAssignments(liveVideoIds: string[]): Promise<string[]> {
   const live = new Set(liveVideoIds);
-  const current = await getVideoSlotAssignments();
+  const current = await loadVideoSlotAssignments();
   const stale = Object.values(current)
     .filter((a) => !live.has(a.videoId))
     .map((a) => a.slotId);
@@ -192,6 +200,7 @@ export async function pruneVideoSlotAssignments(liveVideoIds: string[]): Promise
   const next = { ...current };
   for (const slotId of stale) delete next[slotId];
   cache = next;
+  cacheLoadedAt = Date.now();
   writeDisk(next);
   await writeFirestore(next);
   return stale;
@@ -210,4 +219,10 @@ export function toPublicSlotUrlMap(map: VideoSlotAssignmentMap): Record<string, 
 /** Test-only: forget the warm cache so a fresh read hits disk/Firestore again. */
 export function __resetVideoSlotCacheForTests(): void {
   cache = null;
+  cacheLoadedAt = 0;
+}
+
+/** Test-only: force the next public read to re-check the durable store. */
+export function __expireVideoSlotCacheForTests(): void {
+  cacheLoadedAt = 0;
 }

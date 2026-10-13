@@ -5,9 +5,10 @@ interface VideoBadgeProps {
   onClick: () => void;
   label: string;
   compact?: boolean;
+  text?: string;
 }
 
-export function VideoBadge({ color, onClick, label, compact = true }: VideoBadgeProps) {
+export function VideoBadge({ color, onClick, label, compact = true, text }: VideoBadgeProps) {
   const width = compact ? 26 : 40;
   const height = compact ? 17 : 26;
 
@@ -22,7 +23,7 @@ export function VideoBadge({ color, onClick, label, compact = true }: VideoBadge
       onPointerDown={(e) => e.stopPropagation()}
       aria-label={`Extra explanation: how ${label} works`}
       title={`Need extra understanding? Open a plain-language guide for ${label}`}
-      className="shrink-0 leading-none bg-transparent border-0 p-0 cursor-pointer hover:opacity-90"
+      className="flex shrink-0 items-center gap-1 leading-none bg-transparent border-0 p-0 cursor-pointer hover:opacity-90"
     >
       <svg viewBox="0 0 30 20" width={width} height={height} aria-hidden>
         <rect
@@ -37,6 +38,14 @@ export function VideoBadge({ color, onClick, label, compact = true }: VideoBadge
         />
         <path d="M12 6 L12 14 L19 10 Z" fill={color} />
       </svg>
+      {text ? (
+        <span
+          className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.16em]"
+          style={{ color }}
+        >
+          {text}
+        </span>
+      ) : null}
     </button>
   );
 }
