@@ -87,6 +87,12 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: Canonical package routes self-test
+        run: npm run test:plans-routes
+
+      - name: Hypercolor surface regression self-test
+        run: npm run test:hypercolor-surfaces
+
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 

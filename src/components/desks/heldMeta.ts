@@ -72,7 +72,9 @@ export const INSTITUTIONAL_CHART_FIRST_HELD = Object.keys(INSTITUTIONAL_HELD_MET
 
 export const RETAIL_CHART_FIRST_HELD = Object.keys(RETAIL_HELD_META).filter((id) => id !== 'ribbon');
 
-export const NEURO_CHART_FIRST_HELD = Object.keys(NEURO_HELD_META);
+// Accessibility profiles remain on the desk: changing sensory load must never
+// require discovering and restoring a hidden file first.
+export const NEURO_CHART_FIRST_HELD = Object.keys(NEURO_HELD_META).filter((id) => id !== 'profiles');
 
 export const FUNDAMENTAL_CHART_FIRST_HELD = Object.keys(FUNDAMENTAL_HELD_META).filter((id) => id !== 'company');
 

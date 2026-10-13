@@ -29,6 +29,7 @@ import AppUpdateBanner from './components/AppUpdateBanner';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
 import { SessionLogoutButton } from './components/session/SessionLogoutButton';
+import { isPlansPath } from './lib/plansRoutes';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -147,11 +148,6 @@ function isEducationPath(path: string): boolean {
 function isLiteracyPath(path: string): boolean {
   const p = path.toLowerCase().trim();
   return p === '/literacy' || p === '/literacy-os';
-}
-
-function isPlansPath(path: string): boolean {
-  const p = path.toLowerCase().trim();
-  return p === '/plans' || p === '/membership' || p === '/pricing';
 }
 
 function isCommunitiesPath(path: string): boolean {

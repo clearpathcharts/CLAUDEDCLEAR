@@ -18,8 +18,11 @@ export const TIER_GRADIENT: Record<TierGradientId, { from: string; to: string }>
   platinum: { from: '#FF007F', to: '#5B00FF' },
 };
 
+/** Hypercolor brand stops, exported so UI and regression contracts share one palette. */
+export const HYPERCOLOR_BRAND_STOPS = ['#5B00FF', '#FF007F', '#FF6A00'] as const;
+
 /** The page-level brand gradient (the "Pick your level" hero sweep). */
-export const BRAND_GRADIENT = 'linear-gradient(110deg, #5b00ff, #ff007f 58%, #ff6a00)';
+export const BRAND_GRADIENT = `linear-gradient(110deg, ${HYPERCOLOR_BRAND_STOPS[0]}, ${HYPERCOLOR_BRAND_STOPS[1]} 58%, ${HYPERCOLOR_BRAND_STOPS[2]})`;
 
 export function isTierGradientId(value: unknown): value is TierGradientId {
   return typeof value === 'string' && value in TIER_GRADIENT;

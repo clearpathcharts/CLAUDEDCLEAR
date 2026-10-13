@@ -379,7 +379,7 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/NeurodivergentTraderDesk.tsx') {
     assert.match(text, /NeurodivergentDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_neuro_v4/);
+    assert.match(text, /clearpath_held_neuro_v5/);
     assert.match(text, /defaultHeld=\{NEURO_CHART_FIRST_HELD\}/);
     assert.match(text, /NEURO_CHART_FIRST_HELD/);
     assert.doesNotMatch(text, /navigateToDesk\('retail'\)/);
@@ -575,6 +575,11 @@ assert.equal(deskSectionOpen((id) => id === 'news', ['news', 'education']), true
 assert.equal(
   deskSectionOpen((id) => NEURO_CHART_FIRST_HELD.includes(id), ['news', 'calendar', 'alerts', 'education', 'simulation']),
   false,
+);
+assert.equal(
+  NEURO_CHART_FIRST_HELD.includes('profiles'),
+  false,
+  'Sensory profile controls must stay reachable on a chart-first first visit.',
 );
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);

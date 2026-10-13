@@ -168,7 +168,10 @@ assert.match(PLAN_CATALOG.platinum.sheetLines.join(' ').toLowerCase(), /bots/);
   // The free-trial sentence was removed from /plans by founder decision. Stripe
   // Checkout still discloses the trial and the first charge date at payment time.
   assert.doesNotMatch(page, /days are free/);
+  assert.match(page, /clearpathtrader\.com\/plans/);
+  assert.doesNotMatch(page, /rel="canonical" href="https:\/\/clearpathtrader\.com\/pricing"/);
   assert.match(app, /<MembershipPricingPage \/>/);
+  assert.match(app, /isPlansPath.*from '\.\/lib\/plansRoutes'/);
 }
 
 console.log('plan-catalog.selftest: ok');

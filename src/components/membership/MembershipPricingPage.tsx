@@ -52,7 +52,7 @@ export default function MembershipPricingPage() {
           name="description"
           content="Choose Basic, Silver, Gold, or Platinum. You only see and unlock the features in the package you pay for."
         />
-        <link rel="canonical" href="https://clearpathtrader.com/pricing" />
+        <link rel="canonical" href="https://clearpathtrader.com/plans" />
       </Helmet>
 
       <a href="#membership-main" className="cp-skip-link">

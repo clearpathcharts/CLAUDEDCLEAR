@@ -57,6 +57,8 @@
     "test:social-os": "tsx scripts/social-os.selftest.ts",
     "test:no-third-party-automation": "tsx scripts/no-third-party-automation.selftest.ts",
     "test:plan-catalog": "tsx scripts/plan-catalog.selftest.ts",
+    "test:plans-routes": "tsx scripts/plans-routes.selftest.ts",
+    "test:hypercolor-surfaces": "tsx scripts/hypercolor-surfaces.selftest.ts",
     "test:community-rooms": "tsx scripts/community-rooms.selftest.ts",
     "test:community-http": "tsx scripts/community-http.selftest.ts",
     "test:membership-offer": "tsx scripts/membership-offer.selftest.ts",

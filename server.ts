@@ -17,6 +17,7 @@ import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
+import { PLANS_CANONICAL_PATH, PLANS_LEGACY_PATHS } from "./src/lib/plansRoutes";
 import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
@@ -4220,6 +4221,14 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
       return next();
     }
 
+    if (
+      (req.method === 'GET' || req.method === 'HEAD') &&
+      PLANS_LEGACY_PATHS.includes(req.path.toLowerCase() as never)
+    ) {
+      const suffix = req.url.slice(req.path.length);
+      return res.redirect(308, `${PLANS_CANONICAL_PATH}${suffix}`);
+    }
+
     const host = req.headers.host || '';
     const isWww = host.startsWith('www.');
     const hasTrailingSlash = req.path !== '/' && req.path.endsWith('/');
@@ -4380,6 +4389,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
+      { path: '/plans', lastmod, changefreq: 'monthly', priority: '0.8' },
       { path: '/literacy', lastmod, changefreq: 'weekly', priority: '0.8' },
       { path: '/learn', lastmod, changefreq: 'weekly', priority: '0.8' },
       { path: '/guides', lastmod, changefreq: 'weekly', priority: '0.8' },
