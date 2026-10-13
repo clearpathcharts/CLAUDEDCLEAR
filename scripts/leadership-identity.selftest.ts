@@ -16,7 +16,7 @@ for (const leader of PUBLIC_LEADERS) {
   assert.doesNotMatch(leader.displayName, /Miller/i, 'public Brent must not expose surname');
 }
 
-for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg']) {
+for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg', 'dustin-shorr.jpg']) {
   const p = path.join(root, 'public/team', img);
   assert.ok(fs.existsSync(p) && fs.statSync(p).size > 1000, `missing ${img}`);
 }

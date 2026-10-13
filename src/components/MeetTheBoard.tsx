@@ -4,20 +4,12 @@ import BoardLoginTerminal from './BoardLoginTerminal';
 import BoardMemberPortal from './BoardMemberPortal';
 import { PUBLIC_LEADERS } from '../content/leadershipPublic';
 
-const boardMembers = [
-  ...PUBLIC_LEADERS.map((leader, index) => ({
-    id: index + 1,
-    name: leader.boardLoginName || leader.displayName,
-    position: leader.roleLine ? `${leader.jobTitle} · ${leader.roleLine}` : leader.jobTitle,
-    image: leader.imageUrl,
-  })),
-  {
-    id: PUBLIC_LEADERS.length + 1,
-    name: 'Dustin Shorr',
-    position: 'Chief Science & Technology Officer',
-    image: 'https://i.postimg.cc/x81LWMbb/Gemini-Generated-Image-x0dd5sx0dd5sx0dd.png',
-  },
-];
+const boardMembers = PUBLIC_LEADERS.map((leader, index) => ({
+  id: index + 1,
+  name: leader.boardLoginName || leader.displayName,
+  position: leader.roleLine ? `${leader.jobTitle} · ${leader.roleLine}` : leader.jobTitle,
+  image: leader.imageUrl,
+}));
 
 export default function MeetTheBoard() {
   const [selectedMember, setSelectedMember] = useState<(typeof boardMembers)[0] | null>(null);
