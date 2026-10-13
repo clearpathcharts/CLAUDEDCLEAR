@@ -280,6 +280,10 @@ export default function ExternalAboutPage() {
             <span className="text-white/10 hidden md:block">•</span>
             <a href="/" className="hover:text-indigo-400 transition-colors">Return to Login</a>
             <span className="text-white/10 hidden md:block">•</span>
+            <a href="/company" className="hover:text-indigo-400 transition-colors">Company</a>
+            <span className="text-white/10 hidden md:block">•</span>
+            <a href="/leadership" className="hover:text-indigo-400 transition-colors">Leadership</a>
+            <span className="text-white/10 hidden md:block">•</span>
             <a href="/press" className="hover:text-indigo-400 transition-colors">Press Kit</a>
             <span className="text-white/10 hidden md:block">•</span>
             <a href="/platform-scope.html" className="hover:text-indigo-400 transition-colors">Platform Scope</a>

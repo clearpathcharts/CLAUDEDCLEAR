@@ -6,7 +6,7 @@
  */
 
 export const PRODUCT_NAME = "ClearPath Trader";
-export const PRODUCT_LEGAL_NAME = "Clear Path Markets Science";
+export const PRODUCT_LEGAL_NAME = "Clear Path Markets Science Corp.";
 export const PRODUCT_URL = "https://clearpathtrader.com";
 
 /** Homepage <title> — keep under ~60 chars for SERP. */

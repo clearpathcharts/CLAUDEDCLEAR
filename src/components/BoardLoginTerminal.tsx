@@ -35,10 +35,13 @@ export default function BoardLoginTerminal({ member, onClose, onSuccess }: Board
     
     // Alphanumeric Name Mapping (Full Name to Phone Keypad)
     const memberCodes: Record<string, string> = {
-      'Richard Anthony': '74242732684669', // RICHARDANTHONY
-      'Brent Miller': '27368645537',      // BRENTMILLER
-      'Bryan Weber': '2792693237',         // BRYANWEBER
-      'Dustin Shorr': '38784674677'        // DUSTINSHORR
+      'Richard Anthony Floyd': '74242732684669', // legacy board keypad
+      'Richard Anthony': '74242732684669',
+      Brent: '27368645537', // legacy BRENTMILLER keypad
+      'Brent Miller': '27368645537',
+      'Brian Weber': '2742693237',
+      'Bryan Weber': '2792693237', // legacy spelling
+      'Dustin Shorr': '38784674677',
     };
 
     setTimeout(() => {

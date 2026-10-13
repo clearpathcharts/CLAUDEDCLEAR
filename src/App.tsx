@@ -15,6 +15,9 @@ import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PressKitPage from './components/PressKitPage';
+import CompanyPage from './components/CompanyPage';
+import LeadershipPage from './components/LeadershipPage';
+import FounderPage from './components/FounderPage';
 import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
@@ -383,6 +386,12 @@ export default function App() {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/affiliate-terms') {
     content = <AffiliateTermsPage />;
+  } else if (currentPath === '/company') {
+    content = <CompanyPage />;
+  } else if (currentPath === '/leadership') {
+    content = <LeadershipPage />;
+  } else if (currentPath === '/founder') {
+    content = <FounderPage />;
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {

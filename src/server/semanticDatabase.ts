@@ -43,6 +43,9 @@ import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { deskCanonicalPath, isTraderDeskId, TRADER_DESK_IDS, TRADER_DESKS } from '../lib/traderDesks';
+import { organizationSchema, leadershipPersonSchemas, personSchema } from './organizationSchema';
+import { FOUNDER_LEADER } from '../content/leadershipPublic';
+import { COMPANY_META_DESCRIPTION, ORG_LEGAL_NAME } from '../content/organizationPublic';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -327,6 +330,7 @@ const CANONICAL_ALIASES: Record<string, string> = {
   '/encyclopedia-of-indicators': '/indicators',
   '/clearpath-education': '/education',
   '/literacy-os': '/literacy',
+  '/press-kit': '/press',
 };
 
 export function enrichHtmlWithMetadata(
@@ -346,27 +350,13 @@ export function enrichHtmlWithMetadata(
     deskCanonicalPath(pathClean) ?? CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
 
-  // Organization + WebSite schema (brand trust — no personal founder attribution)
-  const orgSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": `${baseUrl}/#organization`,
-    "name": "ClearPathTrader",
-    "legalName": "Clear Path Markets Science",
-    "alternateName": ["Clear Path Markets Science", "ClearPath Trader", "ClearPathTrader.com"],
-    "url": baseUrl,
-    "logo": `${baseUrl}/logo.png`,
-    "description": PRODUCT_WHAT_IT_IS,
-    "disambiguatingDescription": PRODUCT_DISAMBIGUATION,
-    "knowsAbout": PRODUCT_KNOWS_ABOUT,
-    "sameAs": [] as string[],
-  };
+  const orgSchema = organizationSchema(baseUrl);
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "ClearPathTrader",
-    "alternateName": "Clear Path Markets Science",
+    "alternateName": "Clear Path Markets Science Corp.",
     "url": baseUrl,
     "inLanguage": "en-US",
     "publisher": { "@id": `${baseUrl}/#organization` },
@@ -434,6 +424,72 @@ export function enrichHtmlWithMetadata(
       "name": "About ClearPath Trader",
       "description": description,
       "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
+    });
+  } else if (pathClean === '/company') {
+    title = 'Company | Clear Path Markets Science Corp.';
+    description = COMPANY_META_DESCRIPTION;
+    keywords = 'Clear Path Markets Science Corp, ClearPath Trader, Delaware corporation, trading education, fintech education';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Company', url: '/company' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      about: { '@id': `${baseUrl}/#organization` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/leadership') {
+    title = 'Leadership | ClearPath Trader';
+    description =
+      'Leadership for Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO).';
+    keywords = 'ClearPath Trader leadership, Richard Floyd founder, Clear Path Markets Science';
+    schemas.push(...leadershipPersonSchemas(baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Leadership', url: '/leadership' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/founder') {
+    title = 'Founder | Richard Floyd — ClearPath Trader';
+    description = `Richard Anthony Floyd, founder and CEO of ClearPath Trader (${ORG_LEGAL_NAME}).`;
+    keywords = 'Richard Floyd, ClearPath Trader founder, Clear Path Markets Science';
+    schemas.push(personSchema(FOUNDER_LEADER, baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Founder', url: '/founder' },
+    ]));
+  } else if (pathClean === '/press' || pathClean === '/press-kit') {
+    title = 'Press Kit | Richard Floyd, Founder of ClearPath Trader';
+    description =
+      'Official press kit for Richard Floyd, founder of ClearPathTrader.com — bio, facts, and media contact.';
+    keywords = 'Richard Floyd press, ClearPath Trader founder, Clear Path Markets Science media';
+    schemas.push(personSchema(FOUNDER_LEADER, baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Press', url: '/press' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/press#webpage`,
+      url: `${baseUrl}/press`,
+      name: title,
+      description,
+      primaryImageOfPage: { '@type': 'ImageObject', url: `${baseUrl}${FOUNDER_LEADER.imageUrl}` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
     });
   } else if (pathClean === '/accessibility') {
     title = "Accessibility Statement | ClearPath Trader";

@@ -4367,6 +4367,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
       { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
       { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
+      { path: '/company', lastmod, changefreq: 'monthly', priority: '0.88' },
+      { path: '/leadership', lastmod, changefreq: 'monthly', priority: '0.88' },
+      { path: '/founder', lastmod, changefreq: 'monthly', priority: '0.87' },
+      { path: '/press', lastmod, changefreq: 'monthly', priority: '0.9' },
       { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
@@ -4612,6 +4616,9 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   const SEO_PAGES = [
     '/',
     '/about',
+    '/company',
+    '/leadership',
+    '/founder',
     '/press',
     '/press-kit',
     '/if-trading-and-chatgpt-had-a-baby',
