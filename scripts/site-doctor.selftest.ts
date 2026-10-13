@@ -90,7 +90,10 @@ assert.match(
 // 2. Check ids are derived from the real source, never guessed. (A stale draft of
 //    this test asserted "waitlist", but siteDoctor.ts calls it "waitlist_convert".)
 const sourceCheckIds = [
-  ...new Set([...doctor.matchAll(/\bid:\s*["']([a-z0-9_]+)["']/g)].map((m) => m[1])),
+  ...new Set([
+    ...[...doctor.matchAll(/\bid:\s*["']([a-z0-9_]+)["']/g)].map((m) => m[1]),
+    ...[...doctor.matchAll(/durableFirestoreCheck\(\s*["']([a-z0-9_]+)["']/g)].map((m) => m[1]),
+  ]),
 ].sort();
 assert.ok(
   sourceCheckIds.length >= 12,
