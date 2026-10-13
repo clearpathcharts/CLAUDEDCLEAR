@@ -90,6 +90,9 @@ jobs:
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 
+      - name: Community HTTP authorization + throttle self-test
+        run: npm run test:community-http
+
       - name: Glitch audit regressions (founder inboxes, ribbon, membership cliffs)
         run: npm run test:glitch-audit
 

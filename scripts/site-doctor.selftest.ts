@@ -93,8 +93,8 @@ const sourceCheckIds = [
   ...new Set([...doctor.matchAll(/\bid:\s*["']([a-z0-9_]+)["']/g)].map((m) => m[1])),
 ].sort();
 assert.ok(
-  sourceCheckIds.length >= 8,
-  `expected at least 8 Site Doctor checks, found ${sourceCheckIds.length}`,
+  sourceCheckIds.length >= 12,
+  `expected at least 12 Site Doctor checks, found ${sourceCheckIds.length}`,
 );
 assert.ok(
   sourceCheckIds.includes('waitlist_convert'),
@@ -104,6 +104,38 @@ assert.ok(
   !sourceCheckIds.includes('waitlist'),
   'There is no check called "waitlist" — assert the real id, waitlist_convert.',
 );
+for (const id of [
+  'stripe_checkout',
+  'ceo_video_bucket',
+  'video_slot_storage',
+  'community_storage',
+]) {
+  assert.ok(sourceCheckIds.includes(id), `Site Doctor must declare check id "${id}".`);
+}
+
+const stripeCheckout = functionBody(doctor, 'checkStripeCheckout');
+assert.match(stripeCheckout, /MEMBERSHIP_CHECKOUT_ENABLED/);
+assert.match(stripeCheckout, /getStripeConfigReport/);
+assert.doesNotMatch(stripeCheckout, /createMembershipCheckoutSession|getStripeClient/);
+assert.match(stripeCheckout, /isProd/);
+
+const ceoVideoBucket = functionBody(doctor, 'checkCeoVideoBucket');
+assert.match(ceoVideoBucket, /getCeoVideoStorageStatus/);
+assert.doesNotMatch(ceoVideoBucket, /listCeoVideos|requireBucket/);
+assert.match(ceoVideoBucket, /isProd/);
+
+for (const [name, id] of [
+  ['checkVideoSlotStorage', 'video_slot_storage'],
+  ['checkCommunityStorage', 'community_storage'],
+] as const) {
+  const body = functionBody(doctor, name);
+  assert.match(body, new RegExp(`["']${id}["']`));
+  assert.match(body, /durableFirestoreCheck/);
+}
+assert.match(doctor, /checks\.push\(checkStripeCheckout\(\)\)/);
+assert.match(doctor, /checks\.push\(checkCeoVideoBucket\(\)\)/);
+assert.match(doctor, /checks\.push\(checkVideoSlotStorage\(\)\)/);
+assert.match(doctor, /checks\.push\(checkCommunityStorage\(\)\)/);
 
 // 3. SITE_DOCTOR_ENABLED gating, and a sane interval floor so a bad env value
 //    cannot turn the hourly pulse into a hot loop against Twelve Data.
@@ -191,6 +223,25 @@ async function main() {
   assert.equal(secrets!.ok, false, 'core_secrets must fail when TWELVEDATA_API_KEY is absent.');
   assert.match(secrets!.detail, /TWELVEDATA_API_KEY/, 'core_secrets must name the missing key.');
 
+  const stripe = report.checks.find((c) => c.id === 'stripe_checkout');
+  assert.ok(stripe, 'The sweep must include Stripe checkout readiness.');
+  assert.equal(stripe!.ok, false);
+  assert.equal(stripe!.severity, 'warn', 'Missing Stripe configuration is a warning outside production.');
+  assert.match(stripe!.detail, /STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET/);
+
+  const videoBucket = report.checks.find((c) => c.id === 'ceo_video_bucket');
+  assert.ok(videoBucket, 'The sweep must include CEO video bucket readiness.');
+  assert.equal(videoBucket!.ok, true, 'Missing founder video storage is allowed in local development.');
+  assert.equal(videoBucket!.severity, 'info');
+
+  for (const id of ['video_slot_storage', 'community_storage']) {
+    const row = report.checks.find((c) => c.id === id);
+    assert.ok(row, `The sweep must include ${id}.`);
+    assert.equal(row!.ok, true, `${id} may use local files in development.`);
+    assert.equal(row!.severity, 'info');
+    assert.match(row!.detail, /local_file|firestore/);
+  }
+
   assert.ok(report.failCount >= 1, 'A missing vendor key must count as a critical failure.');
   assert.equal(
     report.overall,
@@ -249,6 +300,23 @@ async function main() {
     report.ranAt,
     'getLatestSiteDoctorReport() must return the latest sweep for GET /api/admin/site-doctor.',
   );
+
+  process.env.NODE_ENV = 'production';
+  const productionReport = await siteDoctor.runSiteDoctorSweep();
+  assert.equal(
+    productionReport.checks.find((c) => c.id === 'stripe_checkout')?.severity,
+    'critical',
+    'Missing checkout configuration must be critical in production.',
+  );
+  for (const id of ['video_slot_storage', 'community_storage']) {
+    const row = productionReport.checks.find((c) => c.id === id);
+    assert.equal(row?.ok, false, `${id} must fail closed in production without Firestore.`);
+    assert.equal(row?.severity, 'critical');
+  }
+  const productionBucket = productionReport.checks.find((c) => c.id === 'ceo_video_bucket');
+  assert.equal(productionBucket?.ok, false);
+  assert.equal(productionBucket?.severity, 'warn', 'Founder video storage is important but not a site outage.');
+  process.env.NODE_ENV = 'development';
 
   // SITE_DOCTOR_ENABLED=0 must stop the scheduler arming at all.
   process.env.SITE_DOCTOR_ENABLED = '0';

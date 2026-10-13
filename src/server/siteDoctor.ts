@@ -25,8 +25,15 @@ import { getMarketCandles } from "./marketDataGateway";
 import { getAdminFirestore, getFirebaseAdminStatus } from "./firebaseAdmin";
 import { resolveTimeframePlan } from "../services/marketData";
 import { getLatestTimeframeVerifyReport } from "./timeframeAccuracyVerifier";
-import { getPrivateStorageMeta, hasDurablePrivateStore } from "./privateAuthService";
+import {
+  getPrivateStorageMeta,
+  hasDurablePrivateStore,
+  hasFirestoreDurableStore,
+} from "./privateAuthService";
 import { stripePrivateStoreConfigured } from "./stripePrivateAccountStore";
+import { getStripeConfigReport } from "./stripeService";
+import { CHECKOUT_DISABLED_MESSAGE, MEMBERSHIP_CHECKOUT_ENABLED } from "../lib/paymentsEnabled";
+import { getCeoVideoStorageStatus } from "./ceoVideoStorage";
 
 // UI timeframes list duplicated lightly to avoid circular import issues if any
 const UI_TFS = [
@@ -281,6 +288,84 @@ function checkSecretsPresence(): SiteDoctorCheck {
   };
 }
 
+function checkStripeCheckout(): SiteDoctorCheck {
+  if (!MEMBERSHIP_CHECKOUT_ENABLED) {
+    return {
+      id: "stripe_checkout",
+      label: "Stripe checkout + paid unlock",
+      ok: true,
+      severity: "info",
+      detail: CHECKOUT_DISABLED_MESSAGE,
+    };
+  }
+  const status = getStripeConfigReport();
+  const missing = [
+    status.configured ? null : "STRIPE_SECRET_KEY",
+    status.webhookConfigured ? null : "STRIPE_WEBHOOK_SECRET",
+  ].filter(Boolean);
+  const ok = missing.length === 0;
+  const isProd = process.env.NODE_ENV === "production";
+  return {
+    id: "stripe_checkout",
+    label: "Stripe checkout + paid unlock",
+    ok,
+    severity: ok ? "info" : isProd ? "critical" : "warn",
+    detail: ok
+      ? "Stripe checkout and paid-member webhooks are configured"
+      : `Missing: ${missing.join(", ")}`,
+  };
+}
+
+function checkCeoVideoBucket(): SiteDoctorCheck {
+  const status = getCeoVideoStorageStatus();
+  const isProd = process.env.NODE_ENV === "production";
+  const ok = status.configured || !isProd;
+  return {
+    id: "ceo_video_bucket",
+    label: "CEO explainer video bucket",
+    ok,
+    severity: status.configured ? "info" : isProd ? "warn" : "info",
+    detail: status.configured
+      ? `bucket=${status.bucket} credentials=${status.credentials}`
+      : status.reason || "CEO video storage is not configured",
+  };
+}
+
+function durableFirestoreCheck(
+  id: "video_slot_storage" | "community_storage",
+  label: string,
+  dataName: string,
+): SiteDoctorCheck {
+  const durable = hasFirestoreDurableStore();
+  const isProd = process.env.NODE_ENV === "production";
+  const ok = durable || !isProd;
+  return {
+    id,
+    label,
+    ok,
+    severity: ok ? "info" : "critical",
+    detail: ok
+      ? `durable=${durable} backing=${durable ? "firestore" : "local_file (dev/CI)"}`
+      : `NON-DURABLE in production — ${dataName} will wipe on redeploy (Firestore Admin offline)`,
+  };
+}
+
+function checkVideoSlotStorage(): SiteDoctorCheck {
+  return durableFirestoreCheck(
+    "video_slot_storage",
+    "Explainer video-slot durability",
+    "video assignments",
+  );
+}
+
+function checkCommunityStorage(): SiteDoctorCheck {
+  return durableFirestoreCheck(
+    "community_storage",
+    "Community post durability",
+    "community posts",
+  );
+}
+
 export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
   if (running) {
     const existing = getLatestSiteDoctorReport();
@@ -293,6 +378,10 @@ export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
     checks.push(checkSecretsPresence());
     checks.push(checkFirebaseAdmin());
     checks.push(await checkPrivateStorage());
+    checks.push(checkStripeCheckout());
+    checks.push(checkCeoVideoBucket());
+    checks.push(checkVideoSlotStorage());
+    checks.push(checkCommunityStorage());
     checks.push(checkWaitlistConversion());
     checks.push(checkTimeframePlans());
     checks.push(checkTimeframeVerifyFreshness());
