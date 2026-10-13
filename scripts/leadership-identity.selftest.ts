@@ -8,6 +8,7 @@ import path from 'node:path';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
 import { PUBLIC_LEADERS } from '../src/content/leadershipPublic.ts';
 import { ORG_INSTAGRAM_URL, ORG_LEGAL_NAME } from '../src/content/organizationPublic.ts';
+import { isPublicIdentityPath } from '../src/lib/publicIdentityRoutes.ts';
 
 const root = process.cwd();
 
@@ -23,12 +24,14 @@ for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg', 'dustin-
 
 const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 assert.match(app, /currentPath === '\/company'/);
-assert.match(app, /currentPath === '\/leadership'/);
+assert.match(app, /currentPath === '\/meet-the-board'/);
+assert.ok(isPublicIdentityPath('/meet-the-board'));
+assert.ok(isPublicIdentityPath('/leadership'));
 assert.match(app, /currentPath === '\/founder'/);
 
 const sitemap = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(sitemap, /path: '\/company'/);
-assert.match(sitemap, /path: '\/leadership'/);
+assert.match(sitemap, /path: '\/meet-the-board'/);
 assert.match(sitemap, /path: '\/press'/);
 
 const html = '<html><head><title>x</title></head><body></body></html>';
@@ -38,7 +41,7 @@ assert.match(enriched, /Clear Path Markets Science Corp/);
 assert.match(enriched, /instagram\.com\/clearpathtrader/);
 assert.match(enriched, /2026-05-12/);
 
-const leadershipHtml = enrichHtmlWithMetadata(html, '/leadership');
+const leadershipHtml = enrichHtmlWithMetadata(html, '/meet-the-board');
 assert.match(leadershipHtml, /Brian Weber/);
 assert.match(leadershipHtml, /Chief Communications Officer/);
 assert.match(leadershipHtml, /#brent-cco/);

@@ -36,12 +36,6 @@ export function organizationSchema(baseUrl: string = ORG_BASE_URL) {
 }
 
 export function personSchema(leader: (typeof PUBLIC_LEADERS)[number], baseUrl: string = ORG_BASE_URL) {
-  const path =
-    leader.id === 'richard-floyd'
-      ? '/press'
-      : leader.id === 'brent' || leader.id === 'brian-weber'
-        ? '/leadership'
-        : '/leadership';
   return {
     '@context': 'https://schema.org',
     '@type': 'Person',
@@ -49,7 +43,7 @@ export function personSchema(leader: (typeof PUBLIC_LEADERS)[number], baseUrl: s
     name: leader.displayName,
     jobTitle: leader.jobTitle,
     image: `${baseUrl}${leader.imageUrl}`,
-    url: `${baseUrl}${leader.id === 'richard-floyd' ? '/press' : `/leadership#${leader.id}`}`,
+    url: `${baseUrl}${leader.id === 'richard-floyd' ? '/press' : `/meet-the-board#${leader.id}`}`,
     worksFor: { '@id': `${baseUrl}/#organization` },
     ...(leader.roleLine ? { description: leader.roleLine } : {}),
   };

@@ -1,5 +1,5 @@
 /**
- * Public leadership copy — single source for /leadership, schema, and aligned in-app board display.
+ * Public leadership copy — single source for /meet-the-board, schema, and board portal display.
  * Brent: first name only (clearance). No personal social URLs.
  */
 

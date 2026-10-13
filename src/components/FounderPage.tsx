@@ -51,10 +51,10 @@ export default function FounderPage() {
             Read full press kit
           </a>
           <a
-            href="/leadership"
+            href="/meet-the-board"
             className="inline-flex px-5 py-3 rounded-xl border border-white/20 text-zinc-300 font-bold text-sm uppercase tracking-wider hover:border-[#00E5FF]/50 transition-colors"
           >
-            Leadership team
+            Meet the Board
           </a>
         </div>
 

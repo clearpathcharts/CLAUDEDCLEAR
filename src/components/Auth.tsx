@@ -824,6 +824,15 @@ export default function Auth() {
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
             </a>
+            <a href="/company" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Company
+            </a>
+            <a href="/meet-the-board" className="text-[#FFD700] hover:text-[#00FFFF] transition-colors font-bold">
+              Meet the Board
+            </a>
+            <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors">
+              Press kit
+            </a>
             <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Learn
             </a>

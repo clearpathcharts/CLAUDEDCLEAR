@@ -82,7 +82,6 @@ import { isEducationFamilyTab } from '../education/educationDesks';
 const InteractiveChart = lazy(() =>
   import('./charts/InteractiveChart').then((m) => ({ default: m.InteractiveChart }))
 );
-const MeetTheBoard = lazy(() => import('./MeetTheBoard'));
 const ProfileHub = lazy(() =>
   import('./ProfileHub').then((m) => ({ default: m.ProfileHub }))
 );
@@ -432,7 +431,6 @@ const TabContent = ({
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
       case 'CeoDashboard': return <CeoDashboard />;
-      case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return gate(
         'institutional', 'gold', 'Global Trading Sessions',
         ['Session kill zones', 'Institutional timing windows', 'Liquidity maps'],
@@ -623,6 +621,21 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get('tab') || window.location.hash.replace('#', '');
+    let fromStorage = '';
+    try {
+      fromStorage = localStorage.getItem('clearpath_active_tab') || '';
+    } catch {
+      /* ignore */
+    }
+    if (fromUrl === 'MeetTheBoard' || fromStorage === 'MeetTheBoard' || activeTab === 'MeetTheBoard') {
+      window.location.assign('/meet-the-board');
+    }
+  }, [activeTab]);
   
   const defaultAvatars = [
     { id: 'lion', url: 'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=400&q=80', label: 'Lion' },
@@ -935,7 +948,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'Communities', icon: MessageSquare, label: 'COMMUNITIES' },
       { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
-      { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },
       { id: 'CeoDashboard', icon: Shield, label: 'CEO DASHBOARD' }, 
       { id: 'Logout', icon: LogOut, label: 'LOGOUT' },
     ];
@@ -989,6 +1001,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const seoData = getSeoData();
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'MeetTheBoard' || normalizeTabId(tabId) === 'MeetTheBoard') {
+      window.location.assign('/meet-the-board');
+      return;
+    }
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
     if (nextTab === 'CeoDashboard' && (authLoading || founderResolving)) {
@@ -1195,7 +1211,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'News' || 
           hash === 'Calendar' ||
           hash === 'Biography' || 
-          hash === 'MeetTheBoard' || 
           hash === 'Yours' || 
           hash === 'CpmsApk' || 
           hash === 'AffiliateNetwork' || 

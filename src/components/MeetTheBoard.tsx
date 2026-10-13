@@ -25,8 +25,8 @@ export default function MeetTheBoard() {
         <h2 className="text-2xl font-black uppercase tracking-widest text-indigo-400 mb-2">Executive Board</h2>
         <p className="text-white/60 font-mono text-sm tracking-widest">
           Select a board member to authenticate and access the terminal. Public bios:{' '}
-          <a href="/leadership" className="text-[#00E5FF] hover:underline">
-            /leadership
+          <a href="/meet-the-board" className="text-[#00E5FF] hover:underline">
+            /meet-the-board
           </a>
         </p>
       </div>

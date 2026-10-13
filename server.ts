@@ -4368,7 +4368,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
       { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
       { path: '/company', lastmod, changefreq: 'monthly', priority: '0.88' },
-      { path: '/leadership', lastmod, changefreq: 'monthly', priority: '0.88' },
+      { path: '/meet-the-board', lastmod, changefreq: 'monthly', priority: '0.88' },
       { path: '/founder', lastmod, changefreq: 'monthly', priority: '0.87' },
       { path: '/press', lastmod, changefreq: 'monthly', priority: '0.9' },
       { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
@@ -4617,7 +4617,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/',
     '/about',
     '/company',
-    '/leadership',
+    '/meet-the-board',
     '/founder',
     '/press',
     '/press-kit',
@@ -4688,6 +4688,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
+  });
+
+  // Canonical public board page — /leadership is a legacy alias.
+  app.get('/leadership', (req, res) => {
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    const hash = typeof req.url === 'string' && req.url.includes('#') ? req.url.slice(req.url.indexOf('#')) : '';
+    return res.redirect(301, `/meet-the-board${query}${hash}`);
   });
 
   // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).

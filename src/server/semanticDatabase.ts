@@ -443,15 +443,15 @@ export function enrichHtmlWithMetadata(
       about: { '@id': `${baseUrl}/#organization` },
       isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
     });
-  } else if (pathClean === '/leadership') {
-    title = 'Leadership | ClearPath Trader';
+  } else if (pathClean === '/meet-the-board' || pathClean === '/leadership') {
+    title = 'Meet the Board | ClearPath Trader';
     description =
-      'Leadership for Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO Advisor), Dustin Shorr (Board, Public Relations).';
-    keywords = 'ClearPath Trader leadership, Richard Floyd founder, Clear Path Markets Science';
+      'Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO Advisor), Dustin Shorr (Board, Public Relations). Public page — no login required.';
+    keywords = 'ClearPath Trader board, Meet the Board, Richard Floyd founder, Clear Path Markets Science';
     schemas.push(...leadershipPersonSchemas(baseUrl));
     schemas.push(makeBreadcrumb([
       { name: 'Home', url: '' },
-      { name: 'Leadership', url: '/leadership' },
+      { name: 'Meet the Board', url: '/meet-the-board' },
     ]));
     schemas.push({
       '@context': 'https://schema.org',

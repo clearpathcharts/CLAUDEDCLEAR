@@ -19,8 +19,8 @@ export default function PublicSiteLinks() {
       <a href="/company" className={linkClass}>
         Company
       </a>
-      <a href="/leadership" className={linkClass}>
-        Leadership
+      <a href="/meet-the-board" className={linkClass}>
+        Meet the Board
       </a>
       <a href="/press" className={linkClass}>
         Press kit
