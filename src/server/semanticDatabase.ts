@@ -446,7 +446,7 @@ export function enrichHtmlWithMetadata(
   } else if (pathClean === '/leadership') {
     title = 'Leadership | ClearPath Trader';
     description =
-      'Leadership for Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO).';
+      'Leadership for Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO Advisor).';
     keywords = 'ClearPath Trader leadership, Richard Floyd founder, Clear Path Markets Science';
     schemas.push(...leadershipPersonSchemas(baseUrl));
     schemas.push(makeBreadcrumb([

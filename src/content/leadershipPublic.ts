@@ -36,16 +36,16 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     imageUrl: '/team/brent.jpg',
     schemaKey: 'brent-cco',
     boardLoginName: 'Brent',
-    bio: `Brent serves on the board of directors and leads communications as Chief Communications Officer. His focus is clear, permission-based outreach to members and interested traders — explaining the platform honestly, without hype — and keeping public messaging aligned with ClearPath’s educational mission.`,
+    bio: `Brent serves on the board of directors and leads communications as Chief Communications Officer. His focus is clear, permission-based outreach to members — explaining the platform honestly, without hype — and keeping public messaging aligned with ClearPath’s educational mission.`,
   },
   {
     id: 'brian-weber',
     displayName: 'Brian Weber',
-    jobTitle: 'Chief Financial Officer',
+    jobTitle: 'CFO Advisor',
     imageUrl: '/team/brian-weber.jpg',
     schemaKey: 'brian-weber-cfo',
     boardLoginName: 'Brian Weber',
-    bio: `Brian Weber is Chief Financial Officer of Clear Path Markets Science Corp. He oversees budgeting, financial reporting, and operational finance for ClearPath Trader’s education and analytics platform. His role supports the business behind the product; he does not provide investment advice to users.`,
+    bio: `Brian Weber serves as CFO advisor to Clear Path Markets Science Corp., supporting budgeting, financial reporting, and operational finance guidance for ClearPath Trader’s education and analytics platform. He advises the company; he does not provide investment advice to users and is not a registered investment adviser.`,
   },
 ];
 

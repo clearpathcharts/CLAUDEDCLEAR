@@ -10,7 +10,7 @@ export default function LeadershipPage() {
     <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-x-hidden relative">
       <SEO
         title="Leadership — ClearPath Trader"
-        description="Leadership team for Clear Path Markets Science Corp. and ClearPath Trader: Richard Anthony Floyd, Brent (CCO), and Brian Weber (CFO)."
+        description="Leadership team for Clear Path Markets Science Corp. and ClearPath Trader: Richard Anthony Floyd, Brent (CCO), and Brian Weber (CFO Advisor)."
         canonical="https://clearpathtrader.com/leadership"
       />
       <SurfBackground />
