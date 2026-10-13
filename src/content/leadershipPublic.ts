@@ -16,6 +16,10 @@ export type PublicLeader = {
   schemaKey: string;
   /** Internal board login key (must match BoardLoginTerminal codes) */
   boardLoginName?: string;
+  /** Fine-tune object-cover when source art is waist-up or off-center */
+  portraitObjectPosition?: string;
+  /** Zoom within the portrait frame (1 = default) */
+  portraitZoom?: number;
 };
 
 export const PUBLIC_LEADERS: PublicLeader[] = [
@@ -34,6 +38,8 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     jobTitle: 'Chief Communications Officer',
     roleLine: 'Board of Directors',
     imageUrl: '/team/brent.jpg',
+    portraitObjectPosition: '50% 18%',
+    portraitZoom: 1.55,
     schemaKey: 'brent-cco',
     boardLoginName: 'Brent',
     bio: `Brent serves on the board of directors and leads communications as Chief Communications Officer. His focus is clear, permission-based outreach to members — explaining the platform honestly, without hype — and keeping public messaging aligned with ClearPath’s educational mission.`,

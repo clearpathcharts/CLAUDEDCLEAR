@@ -62,13 +62,21 @@ export default function LeadershipPage() {
               id={leader.id}
               className="flex flex-col md:flex-row gap-6 md:gap-10 rounded-2xl border border-white/10 bg-black/40 p-6 md:p-8"
             >
-              <div className="shrink-0 mx-auto md:mx-0">
+              <div
+                className="shrink-0 mx-auto md:mx-0 w-48 md:w-56 aspect-[4/5] overflow-hidden rounded-2xl border-2 border-white/15 shadow-lg bg-black/60"
+                aria-hidden={false}
+              >
                 <img
                   src={leader.imageUrl}
                   alt={`${leader.displayName}, ${leader.jobTitle}`}
                   width={240}
                   height={300}
-                  className="w-48 md:w-56 rounded-2xl object-cover border-2 border-white/15 shadow-lg"
+                  className="h-full w-full object-cover"
+                  style={{
+                    objectPosition: leader.portraitObjectPosition ?? '50% 50%',
+                    transform: leader.portraitZoom ? `scale(${leader.portraitZoom})` : undefined,
+                    transformOrigin: leader.portraitObjectPosition ?? '50% 50%',
+                  }}
                 />
               </div>
               <div className="space-y-3 text-center md:text-left">

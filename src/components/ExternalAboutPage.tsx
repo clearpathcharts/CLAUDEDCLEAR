@@ -25,9 +25,9 @@ export default function ExternalAboutPage() {
           <div className="w-12 h-12 rounded-xl overflow-hidden shadow-[0_0_20px_#4D00FF]">
             
           </div>
-          <span className="font-black tracking-tighter text-xl uppercase italic text-white flex flex-col leading-none">
+          <span className="font-black tracking-tighter text-xl uppercase text-white flex flex-col leading-none">
             <span>CLEAR PATH MARKETS SCIENCE</span>
-            <span className="text-sm cp-chrome-flame-text">TRADER</span>
+            <span className="text-sm text-[#00FFFF] text-neon-glow">TRADER</span>
           </span>
         </div>
         <div className="flex items-center space-x-6">
@@ -44,17 +44,23 @@ export default function ExternalAboutPage() {
       <main className="relative z-10 max-w-5xl mx-auto px-6 pt-16 pb-20">
         <div className="space-y-16">
           
-          <header className="text-center space-y-6">
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 text-xs font-mono uppercase tracking-widest mb-4">
-              <Building2 size={14} className="mr-2" />
+          <header className="text-center space-y-6 overflow-visible px-2 sm:px-4">
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-[#00FFFF]/35 bg-[#00FFFF]/10 text-[#00FFFF] text-xs font-mono uppercase tracking-widest mb-4">
+              <Building2 size={14} className="mr-2 text-[#FF1493]" />
               Board-Governed Platform
             </div>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic leading-[1.1]">
-              <span className="text-white">About </span>
-              <span className="cp-chrome-flame-text">ClearPath Trader</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase leading-tight overflow-visible max-w-full pb-1 pr-1">
+              <span className="text-white text-neon-glow">About </span>
+              <span className="text-white text-neon-glow">ClearPath </span>
+              <span className="text-[#00FFFF] text-neon-glow inline-block pr-[0.12em]">Trader</span>
             </h1>
-            <p className="text-lg md:text-xl text-gray-400 font-sans max-w-3xl mx-auto leading-relaxed">
-              ClearPath Trader is one <strong className="text-indigo-400 font-normal">educational financial markets site with four trader desks</strong> — Institutional, Fundamental, Retail, and Neurodivergent — plus live charts, encyclopedias, Literacy OS, a macro desk, custom indicators, and accessibility profiles. It is <strong className="text-white font-normal">not</strong> a brokerage, not four brokerages, not a website chatbot, and not aiclearpath.com.
+            <p className="text-lg md:text-xl text-zinc-400 font-sans max-w-3xl mx-auto leading-relaxed">
+              ClearPath Trader is one{' '}
+              <strong className="text-[#00FFFF] font-semibold text-neon-glow">
+                educational financial markets site with four trader desks
+              </strong>{' '}
+              — Institutional, Fundamental, Retail, and Neurodivergent — plus live charts, encyclopedias, Literacy OS, a macro desk, custom indicators, and accessibility profiles. It is{' '}
+              <strong className="text-[#FF1493] font-semibold">not</strong> a brokerage, not four brokerages, not a website chatbot, and not aiclearpath.com.
             </p>
           </header>
 
