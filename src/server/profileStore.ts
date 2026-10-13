@@ -125,6 +125,21 @@ export function writeProfile(uid: string, patch: Partial<StoredProfile>): Stored
   return next;
 }
 
+/**
+ * Stripe webhooks must not ACK until Firestore has the membership row — otherwise
+ * a redeploy can drop paid access on ephemeral disk.
+ */
+export async function writeProfileDurable(uid: string, patch: Partial<StoredProfile>): Promise<StoredProfile> {
+  const next = writeProfile(uid, patch);
+  const db = getAdminFirestore();
+  if (!db) return next;
+  const pushed = await pushProfileToFirestore(next);
+  if (!pushed) {
+    throw new Error(`Durable profile write failed for uid=${uid}`);
+  }
+  return next;
+}
+
 /** Raw local write that does NOT bump updatedAt or re-trigger a Firestore push. */
 function writeLocalRaw(profile: StoredProfile) {
   const id = safeUid(profile.uid);
