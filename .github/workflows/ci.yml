@@ -108,6 +108,9 @@ jobs:
       - name: Chart timeframe catalog + fetch plans
         run: npm run test:chart-timeframes
 
+      - name: Above-fold chart loading + unavailable states
+        run: npm run test:chart-empty-state
+
       - name: Daily Ops catalog + investor letter
         run: npm run test:daily-ops
 

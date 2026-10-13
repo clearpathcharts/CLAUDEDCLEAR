@@ -148,6 +148,8 @@ const OSCILLATOR_INDICATORS = new Set([
   "EFI", "EOM", "VOL", "NETVOL", "VO", "COT",
 ]);
 const OSCILLATOR_SCALE_ID = "oscillator-scale";
+const CHART_STATUS_OVERLAY_CLASS =
+  "absolute inset-0 z-50 flex flex-col items-center justify-start gap-3 px-6 pb-6 pt-14 text-center font-mono";
 
 function uniqueAscendingTimes<T extends { time: number }>(candles: T[]): T[] {
   const out: T[] = [];
@@ -1751,16 +1753,18 @@ export const LightweightCandles = memo(function LightweightCandles({
         ) : null}
         {isLoading && !error && (
           <div
-            className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 p-4 text-center font-mono text-xs"
+            className={`${CHART_STATUS_OVERLAY_CLASS} text-xs`}
             style={{ backgroundColor: paint.background, color: paint.text }}
+            data-testid="chart-loading-state"
           >
             <span className="animate-pulse">Loading {sym} chart…</span>
           </div>
         )}
         {error && (
           <div
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 p-6 text-center font-mono text-sm"
+            className={`${CHART_STATUS_OVERLAY_CLASS} text-sm`}
             style={{ backgroundColor: paint.background, color: paint.text }}
+            data-testid="chart-unavailable-state"
           >
             <span className="text-xs font-bold uppercase tracking-wider text-red-500">Chart data unavailable</span>
             <span>{error}</span>
