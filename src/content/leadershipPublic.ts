@@ -26,7 +26,7 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     imageUrl: '/team/richard-floyd.jpg',
     schemaKey: 'founder-richard-floyd',
     boardLoginName: 'Richard Anthony Floyd',
-    bio: `Richard Floyd founded ClearPath Trader after more than twenty-five years studying and trading markets. He built the platform he needed for clarity over noise — including neurodivergent-friendly design — as a self-taught developer. ClearPath is education and market intelligence, not a brokerage and not financial advice.`,
+    bio: `Richard Floyd founded ClearPath Trader after more than twenty-five years studying and trading markets. Living with autism, ADHD, and the lasting effects of a traumatic brain injury (TBI), he built the chart-first platform he wished existed — less noise, more room for disciplined analysis, including neurodivergent-friendly design. He is a self-taught developer (no CS degree or venture team) and leads Clear Path Markets Science Corp. as founder and CEO. ClearPath is education and market intelligence, not a brokerage and not financial advice.`,
   },
   {
     id: 'brent',
@@ -36,7 +36,7 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     imageUrl: '/team/brent.jpg',
     schemaKey: 'brent-cco',
     boardLoginName: 'Brent',
-    bio: `Brent leads member and customer communications for ClearPath Trader and serves on the board of directors. He helps align outreach with the company’s educational mission and member experience.`,
+    bio: `Brent serves on the board of directors and leads communications as Chief Communications Officer. His focus is clear, permission-based outreach to members and interested traders — explaining the platform honestly, without hype — and keeping public messaging aligned with ClearPath’s educational mission.`,
   },
   {
     id: 'brian-weber',
@@ -45,7 +45,7 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     imageUrl: '/team/brian-weber.jpg',
     schemaKey: 'brian-weber-cfo',
     boardLoginName: 'Brian Weber',
-    bio: `Brian Weber oversees financial planning and reporting for Clear Path Markets Science Corp. as Chief Financial Officer, supporting the company’s educational platform operations.`,
+    bio: `Brian Weber is Chief Financial Officer of Clear Path Markets Science Corp. He oversees budgeting, financial reporting, and operational finance for ClearPath Trader’s education and analytics platform. His role supports the business behind the product; he does not provide investment advice to users.`,
   },
 ];
 
