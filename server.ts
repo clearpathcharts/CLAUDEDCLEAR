@@ -137,6 +137,7 @@ import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
+  createMembershipPortalSession,
   getMembershipStatus,
   pickRicherMembershipReport,
   getStripeConfigReport,
@@ -1557,6 +1558,38 @@ async function startServer() {
       const status = err instanceof StripeServiceError ? err.status : 500;
       if (status >= 500) console.error('[Stripe] checkout session failed:', err);
       res.status(status).json({ error: err?.message || 'Could not start Stripe checkout.' });
+    }
+  });
+
+  /** Stripe Customer Portal — update card, cancel, change plan (Dashboard-configured). */
+  app.post('/api/stripe/create-portal-session', async (req, res) => {
+    if (!MEMBERSHIP_CHECKOUT_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: CHECKOUT_DISABLED_MESSAGE });
+    }
+    let uid = getPrivateSessionUser(req)?.uid || '';
+    if (!uid) {
+      const bearer = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+      if (bearer?.[1] && ensureAdminApp()) {
+        try {
+          const decoded = await getAuth().verifyIdToken(bearer[1].trim());
+          if (decoded.uid) uid = decoded.uid;
+        } catch {
+          /* fall through */
+        }
+      }
+    }
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to manage billing.' });
+    }
+    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
+    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    try {
+      const { url } = await createMembershipPortalSession({ uid, origin });
+      res.json({ ok: true, url });
+    } catch (err: any) {
+      const status = err instanceof StripeServiceError ? err.status : 500;
+      if (status >= 500) console.error('[Stripe] portal session failed:', err);
+      res.status(status).json({ error: err?.message || 'Could not open billing portal.' });
     }
   });
 

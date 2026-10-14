@@ -8,6 +8,7 @@ import {
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
+import { ManageBillingButton } from './ManageBillingButton';
 import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
@@ -94,6 +95,7 @@ export default function MembershipPricingPage() {
                 Choose a package
                 <ChevronDown size={17} aria-hidden="true" />
               </a>
+              {user ? <ManageBillingButton className="membership-hero__portal" /> : null}
             </div>
           </div>
 
@@ -111,6 +113,7 @@ export default function MembershipPricingPage() {
               <ShieldCheck size={15} aria-hidden="true" />
               You only unlock what you pay for
             </div>
+            {user ? <ManageBillingButton className="membership-review-card__portal" /> : null}
           </aside>
         </section>
 

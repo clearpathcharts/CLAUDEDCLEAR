@@ -90,6 +90,9 @@ jobs:
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 
+      - name: Stripe billing hardening self-test
+        run: npm run test:stripe-billing
+
       - name: Glitch audit regressions (founder inboxes, ribbon, membership cliffs)
         run: npm run test:glitch-audit
 

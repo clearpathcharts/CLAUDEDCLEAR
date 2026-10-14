@@ -27,8 +27,9 @@
  */
 import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
-import { readProfile, writeProfile, type StoredProfile } from './profileStore';
+import { readProfile, writeProfile, writeProfileDurable, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
+import { claimStripeWebhookEvent } from './stripeWebhookDedup';
 import { membershipMonthlyCents } from '../content/membershipPricing';
 import { tierRankOf } from '../lib/entitlements';
 
@@ -145,6 +146,88 @@ export function getStripeConfigReport() {
   };
 }
 
+/** Ensure a Dashboard Price ID matches the /plans catalog (amount, currency, interval). */
+export async function validateConfiguredPrice(
+  stripe: Stripe,
+  priceId: string,
+  expectedCents: number,
+): Promise<void> {
+  const price = await stripe.prices.retrieve(priceId);
+  if (!price.active) {
+    throw new StripeServiceError('Configured Stripe price is inactive.', 503);
+  }
+  if (price.currency !== 'usd') {
+    throw new StripeServiceError('Configured Stripe price must be USD.', 503);
+  }
+  if (price.unit_amount !== expectedCents) {
+    throw new StripeServiceError(
+      `Stripe price ${priceId} is ${price.unit_amount} cents; catalog expects ${expectedCents}.`,
+      503,
+    );
+  }
+  if (price.recurring?.interval !== 'month') {
+    throw new StripeServiceError('Configured Stripe price must be monthly.', 503);
+  }
+}
+
+const BLOCKING_SUB_STATUSES = new Set<Stripe.Subscription.Status>([
+  'active',
+  'trialing',
+  'past_due',
+  'unpaid',
+]);
+
+export async function getOrCreateStripeCustomer(
+  stripe: Stripe,
+  uid: string,
+  email?: string,
+): Promise<string> {
+  const profile = readProfile(uid);
+  const stored = profile?.membership?.stripeCustomerId;
+  if (stored) {
+    try {
+      const existing = await stripe.customers.retrieve(stored);
+      if (!(existing as Stripe.DeletedCustomer).deleted) return stored;
+    } catch {
+      /* create or search below */
+    }
+  }
+  try {
+    const found = await stripe.customers.search({
+      query: `metadata['uid']:'${uid.replace(/'/g, '')}'`,
+      limit: 1,
+    });
+    const hit = found.data[0];
+    if (hit?.id) return hit.id;
+  } catch (err: any) {
+    console.warn('[Stripe] customer search skipped:', err?.message || err);
+  }
+  const created = await stripe.customers.create({
+    email: email?.trim() || undefined,
+    metadata: { uid },
+  });
+  return created.id;
+}
+
+async function assertNoConflictingSubscription(stripe: Stripe, uid: string, customerId: string): Promise<void> {
+  const mem = readProfile(uid)?.membership;
+  if (mem && membershipGrantsAccess(mem.status) && mem.stripeSubscriptionId) {
+    throw new StripeServiceError(
+      'You already have an active membership. Open Manage billing to change or cancel your plan.',
+      409,
+    );
+  }
+  const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
+  for (const sub of subs.data) {
+    if (BLOCKING_SUB_STATUSES.has(sub.status)) {
+      throw new StripeServiceError(
+        'You already have a Stripe subscription on this account. Use Manage billing instead of starting a second checkout.',
+        409,
+      );
+    }
+  }
+}
+
 export async function createMembershipCheckoutSession(input: {
   uid: string;
   email?: string;
@@ -164,7 +247,13 @@ export async function createMembershipCheckoutSession(input: {
     throw new StripeServiceError('Packages are billed monthly only.', 400);
   }
 
+  const customerId = await getOrCreateStripeCustomer(stripe, input.uid, input.email);
+  await assertNoConflictingSubscription(stripe, input.uid, customerId);
+
   const dashboardPriceId = (process.env[def.priceEnvMonthly] || '').trim();
+  if (dashboardPriceId) {
+    await validateConfiguredPrice(stripe, dashboardPriceId, def.monthlyCents);
+  }
   const catalogProductId = dashboardPriceId ? null : await findCatalogProductId(stripe, def.billsAs);
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = dashboardPriceId
     ? { price: dashboardPriceId, quantity: 1 }
@@ -205,8 +294,9 @@ export async function createMembershipCheckoutSession(input: {
     allow_promotion_codes: true,
     success_url: `${input.origin}/?membership=success&tier=${input.tier}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${input.origin}/?membership=cancelled`,
+    customer: customerId,
+    customer_update: input.email ? { name: 'auto', address: 'auto' } : undefined,
   };
-  if (input.email) params.customer_email = input.email;
 
   const session = await stripe.checkout.sessions.create({
     ...params,
@@ -216,6 +306,28 @@ export async function createMembershipCheckoutSession(input: {
 
   if (!session.url) {
     throw new StripeServiceError('Stripe did not return a checkout URL.', 502);
+  }
+  return { url: session.url };
+}
+
+export async function createMembershipPortalSession(input: {
+  uid: string;
+  origin: string;
+}): Promise<{ url: string }> {
+  const stripe = getStripeClient();
+  if (!stripe) {
+    throw new StripeServiceError('Stripe is not configured on this server (STRIPE_SECRET_KEY missing).', 503);
+  }
+  const customerId = readProfile(input.uid)?.membership?.stripeCustomerId;
+  if (!customerId) {
+    throw new StripeServiceError('No billing profile yet — subscribe first, then manage billing here.', 404);
+  }
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: `${input.origin.replace(/\/$/, '')}/plans?billing=return`,
+  });
+  if (!session.url) {
+    throw new StripeServiceError('Stripe did not return a billing portal URL.', 502);
   }
   return { url: session.url };
 }
@@ -236,10 +348,10 @@ export function verifyStripeWebhook(rawBody: Buffer, signature: string): Stripe.
 
 type MembershipRecord = NonNullable<StoredProfile['membership']>;
 
-function saveMembership(
+async function saveMembershipDurable(
   uid: string,
-  patch: Partial<MembershipRecord> & { tier: string; status: MembershipRecord['status'] }
-): MembershipRecord {
+  patch: Partial<MembershipRecord> & { tier: string; status: MembershipRecord['status'] },
+): Promise<MembershipRecord> {
   const prev = readProfile(uid)?.membership;
   const next: MembershipRecord = {
     ...prev,
@@ -249,7 +361,7 @@ function saveMembership(
   if ((patch.status === 'active' || patch.status === 'trialing') && !prev?.activatedAt) {
     next.activatedAt = new Date().toISOString();
   }
-  writeProfile(uid, { membership: next });
+  await writeProfileDurable(uid, { membership: next });
   console.log(`[Stripe] membership ${patch.status} → uid=${uid} tier=${patch.tier}`);
   return next;
 }
@@ -282,7 +394,8 @@ function mapSubscriptionStatus(status: Stripe.Subscription.Status): MembershipRe
   return 'canceled';
 }
 
-const LIVE_MEMBERSHIP_STATUS = new Set(['active', 'trialing', 'past_due']);
+/** Paid access while Stripe is current — past_due/unpaid do not grant features. */
+const LIVE_MEMBERSHIP_STATUS = new Set<MembershipRecord['status']>(['active', 'trialing']);
 
 export type MembershipWrite = {
   tier: string;
@@ -326,7 +439,7 @@ export function resolveSubscriptionMembershipWrite(
 }
 
 export function membershipGrantsAccess(status: string | null | undefined): boolean {
-  return status === 'active' || status === 'trialing' || status === 'past_due';
+  return status === 'active' || status === 'trialing';
 }
 
 async function expandMembershipUids(primaryUid: string, email?: string | null): Promise<string[]> {
@@ -365,7 +478,6 @@ async function saveMembershipFanout(
   primaryUid: string,
   incoming: MembershipWrite,
   email?: string | null,
-  interval?: string,
 ): Promise<'wrote' | 'kept' | 'skipped'> {
   const ids = await expandMembershipUids(primaryUid, email);
   rememberMembershipLinks(ids);
@@ -377,13 +489,48 @@ async function saveMembershipFanout(
       kept = true;
       continue;
     }
-    const record = saveMembership(id, decision);
+    await saveMembershipDurable(id, decision);
     wrote = true;
-    if (id === primaryUid) creditAffiliateResidual(primaryUid, record, interval);
   }
   if (wrote) return 'wrote';
   if (kept) return 'kept';
   return 'skipped';
+}
+
+async function uidFromStripeCustomer(stripe: Stripe, customerId: string): Promise<string | null> {
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    if ((customer as Stripe.DeletedCustomer).deleted) return null;
+    const uid = String((customer as Stripe.Customer).metadata?.uid || '').trim();
+    if (uid) return uid;
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
+async function membershipFromSubscription(sub: Stripe.Subscription): Promise<{
+  uid: string;
+  tier: string;
+  write: MembershipWrite;
+} | null> {
+  const uid = String(sub.metadata?.uid || '').trim();
+  if (!uid) return null;
+  const rawTier = String(sub.metadata?.tier || '').trim();
+  const stored = readProfile(uid)?.membership;
+  const tier = rawTier || (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
+  if (!tier) return null;
+  return {
+    uid,
+    tier,
+    write: {
+      tier,
+      status: mapSubscriptionStatus(sub.status),
+      stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
+      stripeSubscriptionId: sub.id,
+      currentPeriodEnd: subscriptionPeriodEnd(sub),
+    },
+  };
 }
 
 function subscriptionPeriodEnd(sub: Stripe.Subscription): string | undefined {
@@ -396,10 +543,17 @@ function subscriptionPeriodEnd(sub: Stripe.Subscription): string | undefined {
 
 /** Process a verified Stripe event. Idempotent — safe on webhook retries. */
 export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled: boolean }> {
+  const claimed = await claimStripeWebhookEvent(event.id);
+  if (!claimed) {
+    console.log(`[Stripe] duplicate webhook ${event.id} (${event.type}) — skipped.`);
+    return { handled: true };
+  }
+
+  const stripe = getStripeClient();
+
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
-      // Tier comes only from server-written session metadata, so it always matches what was charged.
       const uid = String(session.metadata?.uid || session.client_reference_id || '').trim();
       const tier = String(session.metadata?.tier || '').trim();
       if (!uid || !isMembershipTier(tier)) {
@@ -424,28 +578,111 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
-      const uid = String(sub.metadata?.uid || '').trim();
-      if (!uid) return { handled: false };
-      const rawTier = String(sub.metadata?.tier || '').trim();
-      const stored = readProfile(uid)?.membership;
-      const tier = rawTier || (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
-      if (!tier) {
-        console.warn('[Stripe] subscription event missing tier metadata — skipped.');
-        return { handled: false };
+      const parsed =
+        (await membershipFromSubscription(sub)) ||
+        (stripe && typeof sub.customer === 'string'
+          ? await (async () => {
+              const uid = await uidFromStripeCustomer(stripe, sub.customer as string);
+              if (!uid) return null;
+              const stored = readProfile(uid)?.membership;
+              const tier =
+                String(sub.metadata?.tier || '').trim() ||
+                (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
+              if (!tier) return null;
+              return {
+                uid,
+                tier,
+                write: {
+                  tier,
+                  status:
+                    event.type === 'customer.subscription.deleted'
+                      ? ('canceled' as const)
+                      : mapSubscriptionStatus(sub.status),
+                  stripeCustomerId: sub.customer as string,
+                  stripeSubscriptionId: sub.id,
+                  currentPeriodEnd: subscriptionPeriodEnd(sub),
+                },
+              };
+            })()
+          : null);
+      if (!parsed) return { handled: false };
+      const outcome = await saveMembershipFanout(parsed.uid, parsed.write, null);
+      return { handled: outcome !== 'skipped' };
+    }
+    case 'invoice.paid': {
+      const invoice = event.data.object as Stripe.Invoice;
+      if (invoice.status !== 'paid') return { handled: false };
+      const subId =
+        typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
+      if (!subId || !stripe) return { handled: false };
+      const sub = await stripe.subscriptions.retrieve(subId);
+      const parsed = await membershipFromSubscription(sub);
+      if (!parsed) return { handled: false };
+      const activeWrite: MembershipWrite = { ...parsed.write, status: 'active' };
+      const outcome = await saveMembershipFanout(parsed.uid, activeWrite, null);
+      if (outcome !== 'skipped' && invoice.amount_paid > 0) {
+        const record = readProfile(parsed.uid)?.membership;
+        if (record) {
+          creditAffiliateResidual(parsed.uid, { ...record, status: 'active' }, String(sub.metadata?.interval || 'month'));
+        }
       }
-      const status =
-        event.type === 'customer.subscription.deleted' ? 'canceled' : mapSubscriptionStatus(sub.status);
+      return { handled: outcome !== 'skipped' };
+    }
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subId =
+        typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
+      if (!subId || !stripe) return { handled: false };
+      const sub = await stripe.subscriptions.retrieve(subId);
+      const parsed = await membershipFromSubscription(sub);
+      if (!parsed) return { handled: false };
+      const outcome = await saveMembershipFanout(
+        parsed.uid,
+        { ...parsed.write, status: 'past_due' },
+        null,
+      );
+      return { handled: outcome !== 'skipped' };
+    }
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge;
+      const customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer?.id;
+      if (!customerId || !stripe) return { handled: false };
+      const uid = await uidFromStripeCustomer(stripe, customerId);
+      if (!uid) return { handled: false };
+      const mem = readProfile(uid)?.membership;
+      if (!mem?.tier) return { handled: false };
       const outcome = await saveMembershipFanout(
         uid,
         {
-          tier,
-          status,
-          stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
-          stripeSubscriptionId: sub.id,
-          currentPeriodEnd: subscriptionPeriodEnd(sub),
+          tier: mem.tier,
+          status: 'canceled',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: mem.stripeSubscriptionId,
         },
         null,
-        String(sub.metadata?.interval || 'month'),
+      );
+      return { handled: outcome !== 'skipped' };
+    }
+    case 'charge.dispute.created': {
+      const dispute = event.data.object as Stripe.Dispute;
+      const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id;
+      if (!chargeId || !stripe) return { handled: false };
+      const charge = await stripe.charges.retrieve(chargeId);
+      const customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer?.id;
+      if (!customerId) return { handled: false };
+      const uid = await uidFromStripeCustomer(stripe, customerId);
+      if (!uid) return { handled: false };
+      const mem = readProfile(uid)?.membership;
+      if (!mem?.tier) return { handled: false };
+      const outcome = await saveMembershipFanout(
+        uid,
+        {
+          tier: mem.tier,
+          status: 'canceled',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: mem.stripeSubscriptionId,
+        },
+        null,
       );
       return { handled: outcome !== 'skipped' };
     }
