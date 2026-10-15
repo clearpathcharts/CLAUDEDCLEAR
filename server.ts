@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -4402,6 +4402,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       { path: '/meet-the-board', lastmod, changefreq: 'monthly', priority: '0.88' },
       { path: '/founder', lastmod, changefreq: 'monthly', priority: '0.87' },
       { path: '/press', lastmod, changefreq: 'monthly', priority: '0.9' },
+      { path: '/plans', lastmod, changefreq: 'weekly', priority: '0.86' },
+      { path: '/brokers', lastmod, changefreq: 'monthly', priority: '0.75' },
       { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
       { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
@@ -4585,6 +4587,13 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         const enriched = enrichHtml(renderStaticAboutForBots(), '/about', res);
         return sendUncachedHtml(res, enriched);
       }
+      if (!wantLiveSpa && isSearchEngineBot(req.get('user-agent'))) {
+        const identityHtml = renderStaticIdentityPageForBots(pathClean);
+        if (identityHtml) {
+          const enriched = enrichHtml(identityHtml, req.path, res);
+          return sendUncachedHtml(res, enriched);
+        }
+      }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
         const enriched = enrichHtml(renderUnknownRegionNotFound(req.path), req.path, res);
@@ -4652,6 +4661,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/founder',
     '/press',
     '/press-kit',
+    '/plans',
+    '/brokers',
     '/if-trading-and-chatgpt-had-a-baby',
     '/trading-ai',
     '/macro',
@@ -4719,6 +4730,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
+  });
+
+  app.get(['/membership', '/pricing'], (req, res) => {
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `/plans${query}`);
   });
 
   // Canonical public board page — /leadership is a legacy alias.

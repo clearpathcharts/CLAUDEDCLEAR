@@ -90,6 +90,9 @@ jobs:
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 
+      - name: Identity public pages SEO self-test
+        run: npm run test:identity-pages-seo
+
       - name: Stripe billing hardening self-test
         run: npm run test:stripe-billing
 
