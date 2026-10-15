@@ -559,6 +559,19 @@ async function startServer() {
     return next(err);
   });
 
+  // Retired dashboard deep link — canonical membership is /plans (301 for crawlers).
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const pathLower = req.path.toLowerCase();
+    if (pathLower === '/' || pathLower === '/index.html') {
+      const tab = typeof req.query.tab === 'string' ? req.query.tab : '';
+      if (/^membership$/i.test(tab)) {
+        return res.redirect(301, '/plans');
+      }
+    }
+    return next();
+  });
+
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
   app.use((req, res, next) => {

@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import DeskRoute from './components/desks/DeskRoute';
 import { BrandMark } from './components/brand/BrandMark';
+import { redirectLegacyMembershipDashboardUrl } from './lib/retiredMembershipDashboardUrl';
 import {
   hasDashboardTabIntent,
   isDeskPath,
@@ -300,6 +301,10 @@ export default function App() {
     };
     window.addEventListener('clearpath-set-profile', onSetProfile as EventListener);
     return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
+  }, []);
+
+  useEffect(() => {
+    redirectLegacyMembershipDashboardUrl();
   }, []);
 
   // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
