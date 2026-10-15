@@ -29,7 +29,11 @@ import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, writeProfileDurable, type StoredProfile } from './profileStore';
 import { markReferredPaid } from './affiliateService';
-import { claimStripeWebhookEvent } from './stripeWebhookDedup';
+import {
+  beginStripeWebhookEvent,
+  completeStripeWebhookEvent,
+  releaseStripeWebhookEvent,
+} from './stripeWebhookDedup';
 import { membershipMonthlyCents } from '../content/membershipPricing';
 import { tierRankOf } from '../lib/entitlements';
 
@@ -45,6 +49,7 @@ export type BillingInterval = 'month' | 'year';
 
 export const PLAN_TRIAL_DAYS = 15;
 export const LAUNCH_TRIAL_DAYS = 15;
+export const STRIPE_MEMBERSHIP_SYNC_COOLDOWN_MS = 15 * 60 * 1000;
 
 type PaidPackage = 'silver' | 'gold' | 'platinum';
 
@@ -187,7 +192,10 @@ export async function getOrCreateStripeCustomer(
   if (stored) {
     try {
       const existing = await stripe.customers.retrieve(stored);
-      if (!(existing as Stripe.DeletedCustomer).deleted) return stored;
+      if (!(existing as Stripe.DeletedCustomer).deleted) {
+        persistStripeCustomerId(uid, stored);
+        return stored;
+      }
     } catch {
       /* create or search below */
     }
@@ -198,7 +206,10 @@ export async function getOrCreateStripeCustomer(
       limit: 1,
     });
     const hit = found.data[0];
-    if (hit?.id) return hit.id;
+    if (hit?.id) {
+      persistStripeCustomerId(uid, hit.id);
+      return hit.id;
+    }
   } catch (err: any) {
     console.warn('[Stripe] customer search skipped:', err?.message || err);
   }
@@ -206,7 +217,26 @@ export async function getOrCreateStripeCustomer(
     email: email?.trim() || undefined,
     metadata: { uid },
   });
+  persistStripeCustomerId(uid, created.id);
   return created.id;
+}
+
+function persistStripeCustomerId(uid: string, customerId: string) {
+  const prev = readProfile(uid)?.membership;
+  if (prev?.stripeCustomerId === customerId) return;
+  writeProfile(uid, {
+    membership: {
+      tier: prev?.tier ?? '',
+      status: prev?.status ?? 'canceled',
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: prev?.stripeSubscriptionId,
+      currentPeriodEnd: prev?.currentPeriodEnd,
+      activatedAt: prev?.activatedAt,
+      updatedAt: new Date().toISOString(),
+      affiliateCredited: prev?.affiliateCredited,
+      stripeSyncedAt: prev?.stripeSyncedAt,
+    },
+  });
 }
 
 async function assertNoConflictingSubscription(stripe: Stripe, uid: string, customerId: string): Promise<void> {
@@ -292,10 +322,13 @@ export async function createMembershipCheckoutSession(input: {
       metadata: { uid: input.uid, tier: input.tier, interval: input.interval },
     },
     allow_promotion_codes: true,
+    billing_address_collection: 'required',
+    phone_number_collection: { enabled: true },
+    tax_id_collection: { enabled: true },
     success_url: `${input.origin}/?membership=success&tier=${input.tier}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${input.origin}/?membership=cancelled`,
     customer: customerId,
-    customer_update: input.email ? { name: 'auto', address: 'auto' } : undefined,
+    customer_update: { name: 'auto', address: 'auto' },
   };
 
   const session = await stripe.checkout.sessions.create({
@@ -318,7 +351,19 @@ export async function createMembershipPortalSession(input: {
   if (!stripe) {
     throw new StripeServiceError('Stripe is not configured on this server (STRIPE_SECRET_KEY missing).', 503);
   }
-  const customerId = readProfile(input.uid)?.membership?.stripeCustomerId;
+  let customerId = readProfile(input.uid)?.membership?.stripeCustomerId;
+  if (!customerId) {
+    try {
+      const found = await stripe.customers.search({
+        query: `metadata['uid']:'${input.uid.replace(/'/g, '')}'`,
+        limit: 1,
+      });
+      customerId = found.data[0]?.id;
+      if (customerId) persistStripeCustomerId(input.uid, customerId);
+    } catch {
+      /* fall through */
+    }
+  }
   if (!customerId) {
     throw new StripeServiceError('No billing profile yet — subscribe first, then manage billing here.', 404);
   }
@@ -442,6 +487,87 @@ export function membershipGrantsAccess(status: string | null | undefined): boole
   return status === 'active' || status === 'trialing';
 }
 
+/**
+ * Pull live subscription state from Stripe when webhooks may have been missed.
+ * Throttled per uid via membership.stripeSyncedAt.
+ */
+export async function reconcileStripeMembershipForUid(
+  uid: string,
+  options?: { force?: boolean },
+): Promise<boolean> {
+  const stripe = getStripeClient();
+  if (!stripe) return false;
+
+  let customerId = readProfile(uid)?.membership?.stripeCustomerId;
+  if (!customerId) {
+    try {
+      const found = await stripe.customers.search({
+        query: `metadata['uid']:'${uid.replace(/'/g, '')}'`,
+        limit: 1,
+      });
+      customerId = found.data[0]?.id;
+      if (customerId) persistStripeCustomerId(uid, customerId);
+    } catch (err: any) {
+      console.warn('[Stripe] reconcile customer search failed:', err?.message || err);
+      return false;
+    }
+  }
+  if (!customerId) return false;
+
+  const mem = readProfile(uid)?.membership;
+  const syncedAt = mem?.stripeSyncedAt ? Date.parse(mem.stripeSyncedAt) : 0;
+  if (!options?.force && syncedAt && Date.now() - syncedAt < STRIPE_MEMBERSHIP_SYNC_COOLDOWN_MS) {
+    return false;
+  }
+
+  const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 25 });
+  let best: Stripe.Subscription | null = null;
+  let bestRank = -1;
+  for (const sub of subs.data) {
+    if (sub.status === 'canceled' || sub.status === 'incomplete_expired') continue;
+    const mapped = mapSubscriptionStatus(sub.status);
+    const stored = readProfile(uid)?.membership;
+    const rawTier = String(sub.metadata?.tier || '').trim();
+    const tier = rawTier || (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
+    if (!tier) continue;
+    const rank = tierRankOf(tier);
+    const score = rank * 10 + (membershipGrantsAccess(mapped) ? 2 : mapped === 'past_due' ? 1 : 0);
+    const bestScore =
+      best && bestRank >= 0
+        ? bestRank * 10 +
+          (membershipGrantsAccess(mapSubscriptionStatus(best.status))
+            ? 2
+            : mapSubscriptionStatus(best.status) === 'past_due'
+              ? 1
+              : 0)
+        : -1;
+    if (score > bestScore) {
+      best = sub;
+      bestRank = rank;
+    }
+  }
+
+  const stamp = new Date().toISOString();
+  if (!best) {
+    if (mem) {
+      writeProfile(uid, { membership: { ...mem, stripeSyncedAt: stamp } });
+    }
+    return false;
+  }
+
+  const parsed = await membershipFromSubscription(best);
+  if (!parsed) {
+    if (mem) writeProfile(uid, { membership: { ...mem, stripeSyncedAt: stamp } });
+    return false;
+  }
+  const outcome = await saveMembershipFanout(parsed.uid, parsed.write, null);
+  const after = readProfile(uid)?.membership;
+  if (after) {
+    writeProfile(uid, { membership: { ...after, stripeSyncedAt: stamp } });
+  }
+  return outcome !== 'skipped';
+}
+
 async function expandMembershipUids(primaryUid: string, email?: string | null): Promise<string[]> {
   const ids = new Set<string>();
   if (primaryUid) ids.add(primaryUid);
@@ -533,6 +659,13 @@ async function membershipFromSubscription(sub: Stripe.Subscription): Promise<{
   };
 }
 
+function subscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
+  const sub = (invoice as Stripe.Invoice & { subscription?: string | { id?: string } | null }).subscription;
+  if (typeof sub === 'string') return sub;
+  if (sub && typeof sub === 'object' && typeof sub.id === 'string') return sub.id;
+  return null;
+}
+
 function subscriptionPeriodEnd(sub: Stripe.Subscription): string | undefined {
   // current_period_end moved from the subscription to its items on newer API versions.
   const raw =
@@ -541,14 +674,7 @@ function subscriptionPeriodEnd(sub: Stripe.Subscription): string | undefined {
   return typeof raw === 'number' ? new Date(raw * 1000).toISOString() : undefined;
 }
 
-/** Process a verified Stripe event. Idempotent — safe on webhook retries. */
-export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled: boolean }> {
-  const claimed = await claimStripeWebhookEvent(event.id);
-  if (!claimed) {
-    console.log(`[Stripe] duplicate webhook ${event.id} (${event.type}) — skipped.`);
-    return { handled: true };
-  }
-
+async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boolean }> {
   const stripe = getStripeClient();
 
   switch (event.type) {
@@ -575,6 +701,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
       );
       return { handled: outcome !== 'skipped' };
     }
+    case 'customer.subscription.created':
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription;
@@ -612,8 +739,7 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
     case 'invoice.paid': {
       const invoice = event.data.object as Stripe.Invoice;
       if (invoice.status !== 'paid') return { handled: false };
-      const subId =
-        typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
+      const subId = subscriptionIdFromInvoice(invoice);
       if (!subId || !stripe) return { handled: false };
       const sub = await stripe.subscriptions.retrieve(subId);
       const parsed = await membershipFromSubscription(sub);
@@ -628,10 +754,23 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
       }
       return { handled: outcome !== 'skipped' };
     }
+    case 'invoice.payment_action_required': {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subId = subscriptionIdFromInvoice(invoice);
+      if (!subId || !stripe) return { handled: false };
+      const sub = await stripe.subscriptions.retrieve(subId);
+      const parsed = await membershipFromSubscription(sub);
+      if (!parsed) return { handled: false };
+      const outcome = await saveMembershipFanout(
+        parsed.uid,
+        { ...parsed.write, status: 'past_due' },
+        null,
+      );
+      return { handled: outcome !== 'skipped' };
+    }
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice;
-      const subId =
-        typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id;
+      const subId = subscriptionIdFromInvoice(invoice);
       if (!subId || !stripe) return { handled: false };
       const sub = await stripe.subscriptions.retrieve(subId);
       const parsed = await membershipFromSubscription(sub);
@@ -688,6 +827,23 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled:
     }
     default:
       return { handled: false };
+  }
+}
+
+/** Process a verified Stripe event. Idempotent — safe on webhook retries. */
+export async function handleStripeEvent(event: Stripe.Event): Promise<{ handled: boolean }> {
+  const began = await beginStripeWebhookEvent(event.id);
+  if (!began) {
+    console.log(`[Stripe] duplicate webhook ${event.id} (${event.type}) — skipped.`);
+    return { handled: true };
+  }
+  try {
+    const result = await processStripeEvent(event);
+    await completeStripeWebhookEvent(event.id);
+    return result;
+  } catch (err) {
+    await releaseStripeWebhookEvent(event.id);
+    throw err;
   }
 }
 

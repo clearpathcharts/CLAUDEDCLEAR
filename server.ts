@@ -148,6 +148,7 @@ import {
   StripeServiceError,
   verifyStripeWebhook,
 } from './src/server/stripeService';
+import { requireMembershipFeature, resolveMembershipReportForRequest } from './src/server/membershipAccess';
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
 import {
@@ -1439,48 +1440,10 @@ async function startServer() {
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    const uids = new Set<string>();
-    if (sessionUser?.uid) uids.add(sessionUser.uid);
-
-    const header = req.get('authorization') || '';
-    const bearer = header.match(/^Bearer\s+(.+)$/i);
-    if (bearer?.[1] && ensureAdminApp()) {
-      try {
-        const decoded = await getAuth().verifyIdToken(bearer[1].trim());
-        const bearerEmail = String(decoded.email || '').trim().toLowerCase();
-        const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
-        const sameInbox = Boolean(bearerEmail && sessionEmail && bearerEmail === sessionEmail);
-        // Google-only members, or the same inbox as the private session.
-        // A different Google account in the same browser must not inherit this plan.
-        if (decoded.uid && (!sessionUser?.uid || sameInbox)) uids.add(decoded.uid);
-      } catch {
-        /* private cookie can still authorize */
-      }
-    }
-
+    const { uids, status } = await resolveMembershipReportForRequest(req, { syncStripe: true });
     if (uids.size === 0) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
     }
-
-    // Sync from Firestore first so Stripe webhooks processed on other
-    // instances (or before a redeploy) are always reflected here.
-    for (const uid of uids) await refreshProfileFromDurable(uid);
-    for (const uid of [...uids]) {
-      for (const extra of readProfile(uid)?.membershipLinkedUids || []) {
-        if (extra) uids.add(extra);
-      }
-    }
-    for (const uid of uids) await refreshProfileFromDurable(uid);
-    if (uids.size > 1) {
-      for (const id of uids) {
-        const others = [...uids].filter((uid) => uid !== id);
-        const prev = readProfile(id)?.membershipLinkedUids || [];
-        const merged = [...new Set([...prev, ...others])];
-        if (merged.length > prev.length) writeProfile(id, { membershipLinkedUids: merged });
-      }
-    }
-    const status = pickRicherMembershipReport([...uids].map((uid) => getMembershipStatus(uid)));
     const effectiveTier = status.active ? status.tier : 'basic';
     const pack = entitlementsFor(effectiveTier);
     res.json({
@@ -2306,6 +2269,10 @@ async function startServer() {
     }
     try {
       const uid = await resolveAuthenticatedUid(req);
+      if (uid) {
+        const gate = await requireMembershipFeature(req, res, 'indaCreator');
+        if (!gate.ok) return;
+      }
       const payload = {
         question,
         userName: req.body?.userName,
@@ -2356,6 +2323,8 @@ async function startServer() {
 
   // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
   app.get('/api/workspace/assets', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
@@ -2376,6 +2345,8 @@ async function startServer() {
   });
 
   app.post('/api/workspace/assets', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
@@ -2420,6 +2391,8 @@ async function startServer() {
   });
 
   app.delete('/api/workspace/assets/:id', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2459,6 +2432,8 @@ async function startServer() {
   });
 
   app.get('/api/workspace/notes', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2479,6 +2454,8 @@ async function startServer() {
   });
 
   app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2631,6 +2608,8 @@ async function startServer() {
 
   app.post('/api/fundamentals', async (req, res) => {
     try {
+      const gate = await requireMembershipFeature(req, res, 'premiumResearch');
+      if (!gate.ok) return;
       const { id, country } = req.body;
       if (!id) {
         return res.status(400).json({ error: "Missing required property: 'id' is required." });
@@ -2686,6 +2665,8 @@ async function startServer() {
 
   app.post('/api/institutional', async (req, res) => {
     try {
+      const gate = await requireMembershipFeature(req, res, 'institutional');
+      if (!gate.ok) return;
       const { id, candles, params } = req.body;
       if (!id || !candles) {
         return res.status(400).json({ error: "Missing required properties: 'id' and 'candles' are required." });
@@ -2757,6 +2738,8 @@ async function startServer() {
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
+    const gate = await requireMembershipFeature(req, res, 'encyclopedia');
+    if (!gate.ok) return;
 
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
@@ -2807,6 +2790,8 @@ Frame your explanation with advanced professional rigor, making it scannable, st
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
+    const gate = await requireMembershipFeature(req, res, 'expandedAi');
+    if (!gate.ok) return;
 
     const displayName = userName && typeof userName === 'string' ? userName.trim().slice(0, 40) : 'friend';
     const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';

@@ -20,7 +20,11 @@ assert.equal(membershipGrantsAccess('trialing'), true);
 assert.equal(membershipGrantsAccess('past_due'), false, 'past_due must not unlock paid features');
 assert.equal(membershipGrantsAccess('canceled'), false);
 
-assert.match(stripeSrc, /claimStripeWebhookEvent/);
+assert.match(stripeSrc, /beginStripeWebhookEvent/);
+assert.match(stripeSrc, /releaseStripeWebhookEvent/);
+assert.match(stripeSrc, /reconcileStripeMembershipForUid/);
+assert.match(stripeSrc, /billing_address_collection: 'required'/);
+assert.match(stripeSrc, /tax_id_collection/);
 assert.match(stripeSrc, /writeProfileDurable/);
 assert.match(stripeSrc, /validateConfiguredPrice/);
 assert.match(stripeSrc, /getOrCreateStripeCustomer/);
@@ -34,6 +38,10 @@ assert.doesNotMatch(stripeSrc, /customer_email:/);
 
 assert.match(profileStore, /export async function writeProfileDurable/);
 assert.match(server, /create-portal-session/);
+assert.match(server, /requireMembershipFeature/);
+
+const membershipAccess = fs.readFileSync(path.join(root, 'src/server/membershipAccess.ts'), 'utf8');
+assert.match(membershipAccess, /resolveMembershipReportForRequest/);
 
 const kept = resolveSubscriptionMembershipWrite(
   { tier: 'platinum', status: 'active', stripeSubscriptionId: 'sub_high' },
