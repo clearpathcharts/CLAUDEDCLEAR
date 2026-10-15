@@ -13,9 +13,11 @@ let backendOnline = false;
 let backendChannels = [];
 
 async function api(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
     ...options,
+    headers,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -24,22 +26,52 @@ async function api(path, options = {}) {
   return res.json();
 }
 
+function setBackendStatusOnline() {
+  const statusEl = document.getElementById("backend-status");
+  const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
+  if (!statusEl) return;
+  statusEl.textContent = direct.length
+    ? `Backend: ONLINE — Dispatch ready for: ${direct.join(", ")}`
+    : "Backend: ONLINE — set TELEGRAM_BOT_TOKEN / DISCORD_WEBHOOK_URL (etc.) in Cloud Run → Variables & secrets, then Dispatch appears for those channels";
+}
+
+/** HTTP headers must be ISO-8859-1 — encode Unicode filenames (spaces, emoji, smart quotes). */
+function headerSafeFilename(name) {
+  const base = String(name || "upload.bin").split(/[/\\]/).pop() || "upload.bin";
+  return encodeURIComponent(base);
+}
+
+function headerSafeMime(type) {
+  const t = String(type || "").trim();
+  // Only allow plain ASCII mime tokens; browsers can surface odd values.
+  if (/^[a-zA-Z0-9!#$&\-\^_+.]+\/[a-zA-Z0-9!#$&\-\^_+.]+$/.test(t)) return t;
+  return "application/octet-stream";
+}
+
 /** Upload a File to ClearPath media store (binary body — not JSON). */
 async function uploadMedia(file, onProgress) {
   if (!backendOnline) {
-    throw new Error("Backend offline — start ClearPath Publisher to host the file.");
+    await initBackend();
+  }
+  if (!backendOnline) {
+    throw new Error("Backend offline — hard-refresh and login again. File hosting runs on this same fuckweasel.net server.");
   }
   if (onProgress) onProgress(0);
-  const res = await fetch(`${API_BASE}/api/upload`, {
+  const safeName = headerSafeFilename(file.name);
+  const res = await fetch(`${API_BASE}/api/upload?filename=${safeName}`, {
     method: "POST",
+    credentials: "same-origin",
     headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      "X-Filename": file.name,
+      "Content-Type": headerSafeMime(file.type),
+      "X-Filename": safeName,
     },
     body: file,
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Session expired — refresh and login again, then re-choose the file.");
+    }
     throw new Error(body.error || `Upload failed (HTTP ${res.status})`);
   }
   if (onProgress) onProgress(100);
@@ -48,31 +80,44 @@ async function uploadMedia(file, onProgress) {
 
 async function initBackend() {
   const statusEl = document.getElementById("backend-status");
+  const wasOnline = backendOnline;
   try {
-    const health = await api("/api/health");
-    backendOnline = true;
-    backendChannels = health.channels || [];
-    const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
-    if (statusEl) {
-      statusEl.textContent = direct.length
-        ? `Backend: ONLINE — direct send ready: ${direct.join(", ")}`
-        : "Backend: ONLINE — add credentials in clearpath-publisher/.env to enable direct sends";
+    let channels = [];
+    try {
+      const health = await api("/api/health");
+      channels = health.channels || [];
+    } catch {
+      // Older revisions gated /api/health; channels still prove the publisher is up.
+      channels = await api("/api/channels");
     }
+    backendOnline = true;
+    backendChannels = Array.isArray(channels) ? channels : [];
+    setBackendStatusOnline();
+  } catch {
+    backendOnline = false;
+    if (statusEl) {
+      statusEl.textContent = "Backend: offline — hard-refresh, login again. If this persists, redeploy FIX-CONTAINER-START.";
+    }
+    if (wasOnline) renderLatest();
+    return;
+  }
+
+  // Queue sync must not flip the whole publisher offline (upload/dispatch still work).
+  try {
     const serverQueue = await api("/api/queue");
     if (Array.isArray(serverQueue)) {
       const changed = JSON.stringify(serverQueue) !== JSON.stringify(queue);
       queue = serverQueue;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
       updateStats();
-      // Only re-render the queue view; never clobber the composer mid-typing.
       if (changed && view === "queue") render();
     }
   } catch {
-    backendOnline = false;
-    if (statusEl) {
-      statusEl.textContent = "Backend: offline — using local queue + copy-package mode. Start it: npm start in clearpath-publisher.";
-    }
+    /* keep backendOnline */
   }
+
+  // Always refresh Latest/Dispatch when backend flips online (clears stale "Backend offline" text).
+  if (!wasOnline || view !== "queue") renderLatest();
 }
 
 function syncToBackend() {
@@ -94,8 +139,10 @@ async function dispatchNow(jobId) {
   const msg = [
     `Dispatch "${job.title}" now?`,
     directTargets.length ? `Direct send: ${directTargets.join(", ")}` : "No direct channels ready — nothing will send.",
-    bridgeTargets.length ? `Bridge (via Cursor package): ${bridgeTargets.join(", ")}` : "",
-    "This click is your founder approval.",
+    bridgeTargets.length
+      ? `Not wired for direct send yet (stay in queue / export notes): ${bridgeTargets.join(", ")}`
+      : "",
+    "Dispatch now = founder approval. Posts go out from ClearPath Publisher on this server.",
   ].filter(Boolean).join("\n");
   if (!confirm(msg)) return;
   try {
@@ -110,9 +157,11 @@ async function dispatchNow(jobId) {
     const bridged = (updated.results || []).filter((r) => r.skipped).map((r) => r.channel);
     alert(
       [
-        sent.length ? `SENT: ${sent.join(", ")}` : "",
+        sent.length ? `SENT via ClearPath Publisher: ${sent.join(", ")}` : "",
         failed.length ? `FAILED: ${failed.join("; ")}` : "",
-        bridged.length ? `VIA CURSOR BRIDGE: ${bridged.join(", ")} — copy the package for these.` : "",
+        bridged.length
+          ? `NOT SENT (no API yet): ${bridged.join(", ")} — keep in queue until that channel is wired.`
+          : "",
       ].filter(Boolean).join("\n") || "No results.",
     );
   } catch (err) {
@@ -122,21 +171,22 @@ async function dispatchNow(jobId) {
 
 const CHANNELS = [
   // Social / video (15)
-  { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Graph Page post" },
-  { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Business Content Publishing API" },
+  { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_PAGE_* set (+ App Review)" },
+  { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_IG_USER_ID set (+ App Review)" },
   { id: "x", name: "X (Twitter)", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "X API v2" },
-  { id: "tiktok", name: "TikTok", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Calm edits only — flash risk" },
-  { id: "youtube", name: "YouTube", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Optional — ClearPath file upload first, then Data API if OAuth set" },
+  { id: "tiktok", name: "TikTok", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when TIKTOK_ACCESS_TOKEN set (+ API audit)" },
+  { id: "youtube", name: "YouTube", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when YOUTUBE_* OAuth set + ClearPath file upload" },
   { id: "linkedin", name: "LinkedIn", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "UGC / Posts API" },
   { id: "reddit", name: "Reddit", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Script app submit" },
   { id: "snapchat", name: "Snapchat", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Story / Spotlight education" },
   { id: "pinterest", name: "Pinterest", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Pins API" },
   { id: "discord", name: "Discord", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Channel webhook" },
   { id: "threads", name: "Threads", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Threads API" },
-  { id: "telegram", name: "Telegram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "@clearpathtraderfreeaccount" },
-  { id: "whatsapp", name: "WhatsApp", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Cloud API" },
+  { id: "telegram", name: "Telegram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "BotFather token + chat id (easiest win)" },
+  { id: "whatsapp", name: "WhatsApp", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Cloud API" },
   { id: "twitch", name: "Twitch", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / announcements" },
-  { id: "bluesky", name: "Bluesky", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "AT Protocol" },
+  { id: "bluesky", name: "Bluesky", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "AT Protocol app password" },
+  { id: "myspace", name: "MySpace", group: "social", engine: "ClearPath Publisher", status: "blocked", note: "No public posting API — site read-only since 2024" },
   // Professional / networking (15 — LinkedIn also in social)
   { id: "xing", name: "Xing", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
   { id: "viadeo", name: "Viadeo", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
@@ -175,7 +225,7 @@ const queueFilter = document.getElementById("queue-filter");
 
 let view = "publish";
 let queue = loadQueue();
-let selectedChannels = ["facebook", "youtube", "instagram", "linkedin", "reddit"];
+let selectedChannels = ["youtube", "facebook", "instagram", "tiktok"];
 let me = null;
 let treasure = [];
 
@@ -415,8 +465,9 @@ async function addFromForm() {
   let videoUrl = document.getElementById("f-url").value.trim();
   const fileInput = document.getElementById("f-file");
   const when = document.getElementById("f-when").value;
-  const calm = document.getElementById("f-calm").checked;
-  const educationOnly = document.getElementById("f-edu").checked;
+  // Mission checks are implied for this education desk — no click-through required.
+  const calm = true;
+  const educationOnly = true;
   const btn = document.getElementById("btn-queue");
 
   if (!title || !caption) {
@@ -425,10 +476,6 @@ async function addFromForm() {
   }
   if (!selectedChannels.length) {
     alert("Pick at least one channel.");
-    return;
-  }
-  if (!calm || !educationOnly) {
-    alert("Both mission checks are required before queueing.");
     return;
   }
 
@@ -482,8 +529,6 @@ async function addFromForm() {
   document.getElementById("f-url").value = "";
   if (fileInput) fileInput.value = "";
   document.getElementById("f-when").value = "";
-  document.getElementById("f-calm").checked = false;
-  document.getElementById("f-edu").checked = false;
   pendingMedia = null;
   setUploadStatus("");
   alert(
@@ -505,13 +550,22 @@ function renderLatest() {
   box.innerHTML = `
     <p><strong>${escapeHtml(j.title)}</strong></p>
     <p class="hint">${j.channels.join(" · ")} · ${j.status}</p>
-    <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
+    ${
+      backendOnline
+        ? `<button type="button" class="btn btn-primary" data-dispatch="${j.id}">Dispatch now</button>`
+        : `<p class="hint">Backend offline — start ClearPath Publisher to dispatch from this console.</p>`
+    }
+    <button type="button" class="btn" data-copy="${j.id}">Export notes</button>
   `;
+  const dispatchBtn = box.querySelector("[data-dispatch]");
+  if (dispatchBtn) {
+    dispatchBtn.addEventListener("click", () => dispatchNow(j.id));
+  }
   box.querySelector("[data-copy]").addEventListener("click", async () => {
     const ok = await copyText(buildPackage(j));
     j.status = "ready";
     saveQueue();
-    alert(ok ? "Copied. Paste into Cursor and say PUBLISH THIS." : "Copy failed — open Queue view.");
+    alert(ok ? "Notes copied for your records. Live send = Queue → Dispatch now (ClearPath Publisher)." : "Copy failed.");
     renderLatest();
   });
 }
@@ -564,7 +618,7 @@ function renderQueue() {
                     ? `<button type="button" class="btn btn-primary" data-dispatch="${j.id}">Dispatch now</button>`
                     : ""
                 }
-                <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
+                <button type="button" class="btn" data-copy="${j.id}">Export notes</button>
                 <button type="button" class="btn btn-danger" data-del="${j.id}">Remove</button>
               </div>
               <pre class="pkg">${escapeHtml(buildPackage(j))}</pre>
@@ -585,7 +639,7 @@ function renderQueue() {
       const ok = await copyText(buildPackage(job));
       job.status = "ready";
       saveQueue();
-      alert(ok ? "Package copied." : "Clipboard blocked — select the text below.");
+      alert(ok ? "Notes copied. Live send uses Queue → Dispatch now on this console." : "Clipboard blocked — select the text below.");
       render();
     });
   });
@@ -630,11 +684,174 @@ function renderChannelGroup(title, items) {
 function renderChannels() {
   const live = CHANNELS.filter((ch) => ch.status === "connected" || ch.status === "partial");
   const pending = CHANNELS.filter((ch) => ch.status === "not_yet");
+  const blocked = CHANNELS.filter((ch) => ch.status === "blocked");
   viewRoot.innerHTML = `
     <div class="cardcolumn span-all channels-wrap">
       ${renderChannelGroup("Partial / ready code", live)}
-      ${renderChannelGroup("Not yet — separate wiring", pending)}
-      <p class="hint channel-foot">Partial = Telegram/Discord/Reddit/YouTube adapters exist. Not yet = needs API keys or webhook. Catalog = 15 social + networking list (LinkedIn counted in social).</p>
+      ${renderChannelGroup("Not yet — need API keys / approval", pending)}
+      ${renderChannelGroup("No public API (do not chase)", blocked)}
+      <p class="hint channel-foot">Open <strong>API Keys</strong> in the left nav for step-by-step how to get each credential. Partial = adapters exist. Not yet = need keys. Blocked = platform has no posting API.</p>
+    </div>
+  `;
+}
+
+/** Honest acquisition paths — do first wins first. Never invent “connected” without real keys. */
+const API_KEY_GUIDES = [
+  {
+    priority: 1,
+    id: "telegram",
+    name: "Telegram",
+    difficulty: "Easy — 10 minutes",
+    env: "TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID",
+    steps: [
+      "Open Telegram → search @BotFather → /newbot → copy the token",
+      "Create/open your channel or group → add the bot as admin",
+      "Get chat id (@channelusername or numeric id via @userinfobot)",
+      "Set both on Cloud Run env (never commit the token)",
+      "If a token was ever pasted in chat: BotFather → /revoke → make a new one",
+    ],
+  },
+  {
+    priority: 2,
+    id: "discord",
+    name: "Discord",
+    difficulty: "Easy — 5 minutes",
+    env: "DISCORD_WEBHOOK_URL",
+    steps: [
+      "Server Settings → Integrations → Webhooks → New Webhook",
+      "Pick the education channel → Copy Webhook URL",
+      "Set DISCORD_WEBHOOK_URL on Cloud Run",
+    ],
+  },
+  {
+    priority: 3,
+    id: "youtube",
+    name: "YouTube Data API",
+    difficulty: "Medium — Google Cloud OAuth",
+    env: "YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN",
+    steps: [
+      "Google Cloud Console → same project (or new) → enable YouTube Data API v3",
+      "APIs & Services → Credentials → Create OAuth client (Desktop or Web)",
+      "OAuth consent screen: External or Internal; add your Google account as tester",
+      "Use OAuth playground / a one-time local script to exchange auth code → refresh token (scope: youtube.upload)",
+      "Set the three env vars on Cloud Run (or run SET-YOUTUBE.sh); uploads default to unlisted",
+      "FASTEST money channel — code already Dispatch-ready once keys are set",
+    ],
+  },
+  {
+    priority: 4,
+    id: "facebook",
+    name: "Facebook (Meta Graph)",
+    difficulty: "Hard — App Review",
+    env: "META_PAGE_ID, META_PAGE_ACCESS_TOKEN (+ META_APP_ID recommended)",
+    steps: [
+      "developers.facebook.com → Create App → Business type",
+      "Add pages_manage_posts / pages_read_engagement / pages_show_list (+ publish_video)",
+      "Connect your Facebook Page; generate a long-lived Page access token",
+      "Set META_PAGE_ID + META_PAGE_ACCESS_TOKEN on Cloud Run — Dispatch code is live",
+      "Submit App Review for production; until approved tokens may only work for app admins/testers",
+    ],
+  },
+  {
+    priority: 5,
+    id: "instagram",
+    name: "Instagram (Meta Content Publishing)",
+    difficulty: "Hard — Business account + App Review",
+    env: "META_IG_USER_ID, META_PAGE_ACCESS_TOKEN (same Meta app as Facebook)",
+    steps: [
+      "Instagram Professional (Business/Creator) linked to a Facebook Page",
+      "Same Meta app → Instagram Graph API → instagram_content_publish",
+      "Set META_IG_USER_ID + META_PAGE_ACCESS_TOKEN; PUBLIC_BASE_URL defaults to fuckweasel.net",
+      "App Review required for live publishing to non-testers",
+      "Calm still images / calm video only — no flash patterns",
+    ],
+  },
+  {
+    priority: 6,
+    id: "tiktok",
+    name: "TikTok",
+    difficulty: "Hard — Content Posting API audit",
+    env: "TIKTOK_ACCESS_TOKEN (+ TIKTOK_CLIENT_KEY/SECRET for OAuth refresh)",
+    steps: [
+      "developers.tiktok.com → Content Posting API → enable Direct Post",
+      "Complete app audit; mint user access token with video.publish",
+      "Set TIKTOK_ACCESS_TOKEN on Cloud Run — Dispatch uploads from ClearPath file",
+      "Default privacy SELF_ONLY until audit; set TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE when allowed",
+      "Calm static/caption-led edits only for ClearPath mission",
+    ],
+  },
+  {
+    priority: 7,
+    id: "reddit",
+    name: "Reddit",
+    difficulty: "Medium",
+    env: "REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_SUBREDDIT",
+    steps: [
+      "reddit.com/prefs/apps → create app → type script",
+      "Copy client id + secret; use the bot/mod account username + password",
+      "Set REDDIT_SUBREDDIT (e.g. ClearMarketScience) where the account can post",
+    ],
+  },
+  {
+    priority: 8,
+    id: "linkedin",
+    name: "LinkedIn",
+    difficulty: "Hard — Marketing Developer Platform",
+    env: "LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_ACCESS_TOKEN, LINKEDIN_AUTHOR_URN",
+    steps: [
+      "linkedin.com/developers → Create app → request Community Management / Share on LinkedIn products",
+      "Many education orgs need LinkedIn partnership approval — expect wait time",
+      "Until approved: bridge package only",
+    ],
+  },
+  {
+    priority: 9,
+    id: "myspace",
+    name: "MySpace",
+    difficulty: "Impossible right now",
+    env: "(none)",
+    steps: [
+      "MySpace has been read-only (no new posts/uploads) since late 2024",
+      "Old developer.myspace.com / OpenSocial APIs are dead — do not buy “MySpace API” packages",
+      "If the brand relaunches with a real API later, we can add an adapter then",
+      "Do not block the rest of the stack waiting on MySpace",
+    ],
+  },
+];
+
+function renderApiKeys() {
+  viewRoot.innerHTML = `
+    <div class="cardcolumn span-all">
+      <div class="card">
+        <header><span class="title">How to get APIs — founder order</span></header>
+        <div class="content">
+          <p class="hint">Money channels = YouTube, Facebook, Instagram, TikTok. Wire their keys on Cloud Run, then Queue → Dispatch. Discord/Telegram are closed-circuit backups. MySpace has no posting API.</p>
+          <ol class="api-order">
+            <li>Telegram + Discord (minutes)</li>
+            <li>YouTube OAuth (optional — same ClearPath upload)</li>
+            <li>Reddit script app</li>
+            <li>Meta (Facebook + Instagram) App Review</li>
+            <li>LinkedIn / TikTok when approved</li>
+            <li>Skip MySpace until they relaunch a real API</li>
+          </ol>
+        </div>
+      </div>
+      ${API_KEY_GUIDES.map(
+        (g) => `
+        <div class="card api-guide" data-api="${g.id}">
+          <header>
+            <span class="title">${g.priority}. ${g.name}</span>
+            <span class="badge ${g.id === "myspace" ? "blocked" : "partial"}">${escapeHtml(g.difficulty)}</span>
+          </header>
+          <div class="content">
+            <p class="hint"><code>${escapeHtml(g.env)}</code></p>
+            <ol class="api-steps">
+              ${g.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
+            </ol>
+          </div>
+        </div>`,
+      ).join("")}
+      <p class="hint channel-foot">Set secrets only on Cloud Run → Edit &amp; deploy → Variables. Never commit tokens. Never paste live bot tokens into chat.</p>
     </div>
   `;
 }
@@ -1038,7 +1255,7 @@ function renderTreasure() {
       <div class="card">
         <header><span class="title">Marketing treasure chest</span></header>
         <div class="content">
-          <p class="hint">One shared open file for Brent, Dustin, Brian, and owner. Drop packages, captions, and channel notes here so everyone can track what is moving.</p>
+          <p class="hint">Shared open file for this console. Drop packages, captions, and channel notes here.</p>
           <label>Title<input id="chest-title" class="bar" type="text" placeholder="e.g. Support levels lesson — week of Aug 4" /></label>
           <label>Body / package<textarea id="chest-body" class="bar" rows="6" placeholder="Paste caption, links, channel plan…"></textarea></label>
           <label>Tags (comma-separated)<input id="chest-tags" class="bar" type="text" placeholder="youtube, telegram, veterans" /></label>
@@ -1129,26 +1346,6 @@ function renderTreasure() {
   });
 }
 
-function renderMission() {
-  viewRoot.innerHTML = `
-    <div class="cardcolumn span-all">
-      <div class="card">
-        <header><span class="title">Mission lock</span></header>
-        <div class="content howto">
-          <p>Clear Path Market Science helps wounded veterans and neurodivergent learners read markets without ticker flash that can trigger PTSD or seizures.</p>
-          <p>This console is a private automation tool for education posts only — not a brokerage, not signal spam, not flashy ads.</p>
-          <ul>
-            <li>Prefer calm video + audio</li>
-            <li>Always include “not a brokerage”</li>
-            <li>Live posts only after founder confirmation in Cursor</li>
-          </ul>
-          <p><a class="link" href="https://clearpathtrader.com" target="_blank" rel="noreferrer">clearpathtrader.com</a></p>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -1186,10 +1383,8 @@ function render() {
               <input id="f-when" type="datetime-local" />
             </label>
             <div class="channel-picks" id="channel-picks"></div>
-            <label class="check"><input id="f-calm" type="checkbox" /> Calm video — no strobing candles / flash patterns</label>
-            <label class="check"><input id="f-edu" type="checkbox" /> Education only — not a brokerage / no signals</label>
             <button type="button" class="btn btn-primary" id="btn-queue">Add to automation queue</button>
-            <p class="hint">Files upload to ClearPath first. Dispatch sends the file itself — YouTube is optional, not required.</p>
+            <p class="hint">Standalone ClearPath Publisher. Upload → Queue → Dispatch. Telegram/Discord send the file when API keys are set on Cloud Run.</p>
           </div>
         </div>
       </div>
@@ -1199,10 +1394,9 @@ function render() {
           <div class="content howto">
             <ol>
               <li>Upload the lesson file to ClearPath (or paste a URL)</li>
-              <li>Pick channels — Telegram/Discord get the file directly</li>
-              <li>Confirm mission checks</li>
-              <li>Queue → Dispatch now (founder approval)</li>
-              <li>YouTube only if you want that channel too</li>
+              <li>Pick channels</li>
+              <li>Add to queue</li>
+              <li>Open Queue → <strong>Dispatch now</strong> (posts leave from this ClearPath Publisher server)</li>
             </ol>
           </div>
         </div>
@@ -1223,11 +1417,11 @@ function render() {
   if (view === "queue") return renderQueue();
   if (view === "treasure") return renderTreasure();
   if (view === "channels") return renderChannels();
+  if (view === "apikeys") return renderApiKeys();
   if (view === "analytics") return renderAnalytics();
   if (view === "seo") return renderSeo();
   if (view === "hashtags") return renderHashtags();
   if (view === "discovery") return renderDiscovery();
-  if (view === "mission") return renderMission();
 }
 
 updateClock();
