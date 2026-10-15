@@ -331,6 +331,9 @@ const CANONICAL_ALIASES: Record<string, string> = {
   '/clearpath-education': '/education',
   '/literacy-os': '/literacy',
   '/press-kit': '/press',
+  '/membership': '/plans',
+  '/pricing': '/plans',
+  '/leadership': '/meet-the-board',
 };
 
 export function enrichHtmlWithMetadata(
@@ -471,6 +474,53 @@ export function enrichHtmlWithMetadata(
       { name: 'Home', url: '' },
       { name: 'Founder', url: '/founder' },
     ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'ProfilePage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      mainEntity: { '@id': `${baseUrl}/#${FOUNDER_LEADER.schemaKey}` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/plans' || pathClean === '/membership' || pathClean === '/pricing') {
+    title = 'Membership Plans | ClearPath Trader';
+    description =
+      'ClearPath Trader membership tiers: Basic (free), Silver, Gold, and Platinum. Feature comparison for the educational financial markets platform — not a brokerage.';
+    keywords =
+      'ClearPath Trader plans, membership, Silver Gold Platinum, trading education platform, not a broker';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Plans', url: '/plans' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/plans#webpage`,
+      url: `${baseUrl}/plans`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/brokers') {
+    title = 'US Broker Connections | ClearPath Trader';
+    description =
+      'Connect an existing United States brokerage account to ClearPath through secure broker-authorized pass-through integrations. ClearPath is not a broker-dealer.';
+    keywords = 'ClearPath Trader brokers, Alpaca OAuth, pass-through broker connection, not a broker-dealer';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Brokers', url: '/brokers' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/brokers#webpage`,
+      url: `${baseUrl}/brokers`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
   } else if (pathClean === '/press' || pathClean === '/press-kit') {
     title = 'Press Kit | Richard Floyd, Founder of ClearPath Trader';
     description =

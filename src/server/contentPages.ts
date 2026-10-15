@@ -56,6 +56,16 @@ import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { TRADER_DESK_IDS, TRADER_DESKS, isTraderDeskId } from '../lib/traderDesks';
+import { PUBLIC_LEADERS, FOUNDER_LEADER } from '../content/leadershipPublic';
+import {
+  COMPANY_META_DESCRIPTION,
+  ORG_FOUNDING_DATE,
+  ORG_JURISDICTION_LABEL,
+  ORG_LEGAL_NAME,
+  ORG_PRODUCT_HISTORY_YEARS,
+} from '../content/organizationPublic';
+import { MEMBERSHIP_PLANS } from '../content/membershipPricing';
+import { NEVER_BROKER_DEALER } from '../lib/passThroughBrokerModel';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -1693,6 +1703,86 @@ function renderAboutPage(): string {
 <h2>What we do not do</h2>
 <ul>${nots}</ul>
 <p><a href="/?live=1">Open the terminal</a> · <a href="/faq">FAQ</a> · <a href="/platform-scope.html">Platform scope</a></p>`;
+}
+
+function renderIdentityCompanyBody(): string {
+  const incYear = new Date(`${ORG_FOUNDING_DATE}T12:00:00`).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Company' }])}
+<h1>${escapeHtml(ORG_LEGAL_NAME)}</h1>
+<p class="lead">${escapeHtml(COMPANY_META_DESCRIPTION)}</p>
+<p><strong>Form:</strong> ${escapeHtml(ORG_JURISDICTION_LABEL)} · <strong>Incorporated:</strong> ${escapeHtml(incYear)} · Platform history ~${ORG_PRODUCT_HISTORY_YEARS} years.</p>
+<p>${escapeHtml(PRODUCT_WHAT_IT_IS)} Four trader desks: ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}.</p>
+<p><a href="/meet-the-board">Meet the Board</a> · <a href="/press">Press kit</a> · <a href="/about">About</a></p>`;
+}
+
+function renderIdentityMeetTheBoardBody(): string {
+  const cards = PUBLIC_LEADERS.map(
+    (l) => `<section id="${escapeHtml(l.id)}"><h2>${escapeHtml(l.displayName)}</h2>
+<p><strong>${escapeHtml(l.jobTitle)}</strong>${l.roleLine ? ` · ${escapeHtml(l.roleLine)}` : ''}</p>
+<p>${escapeHtml(l.bio)}</p></section>`,
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Meet the Board' }])}
+<h1>Meet the Board</h1>
+<p class="lead">Leadership of ${escapeHtml(ORG_LEGAL_NAME)} (ClearPath Trader). Public page — no login required.</p>
+${cards}
+<p><a href="/company">Company</a> · <a href="/founder">Founder</a> · <a href="/press">Press</a></p>`;
+}
+
+function renderIdentityFounderBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Founder' }])}
+<h1>${escapeHtml(FOUNDER_LEADER.displayName)}</h1>
+<p><strong>${escapeHtml(FOUNDER_LEADER.jobTitle)}</strong> · ${escapeHtml(ORG_LEGAL_NAME)}</p>
+<p>${escapeHtml(FOUNDER_LEADER.bio)}</p>
+<p><a href="/press">Full press kit</a> · <a href="/meet-the-board">Meet the Board</a></p>`;
+}
+
+function renderIdentityPressBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Press' }])}
+<h1>Press Kit — ${escapeHtml(FOUNDER_LEADER.displayName)}</h1>
+<p class="lead">Official media page for the founder of ClearPath Trader (${escapeHtml(ORG_LEGAL_NAME)}).</p>
+<p>${escapeHtml(FOUNDER_LEADER.bio)}</p>
+<p><a href="/company">Company facts</a> · <a href="/meet-the-board">Board</a></p>`;
+}
+
+function renderIdentityPlansBody(): string {
+  const rows = MEMBERSHIP_PLANS.map(
+    (p) => `<li><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(p.priceLabel)}/month (feature sheet; sign in to subscribe on this site)</li>`,
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Plans' }])}
+<h1>Membership plans</h1>
+<p class="lead">Educational platform tiers for ClearPath Trader. Not a brokerage. Not investment advice.</p>
+<ul>${rows}</ul>
+<p><a href="/?live=1">Open the terminal</a> to compare features when signed in.</p>`;
+}
+
+function renderIdentityBrokersBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Brokers' }])}
+<h1>US broker connections</h1>
+<p class="lead">Connect an existing United States brokerage account through broker-authorized pass-through integrations.</p>
+<p>${escapeHtml(NEVER_BROKER_DEALER)}</p>
+<p><a href="/plans">Plans</a> · <a href="/desk">Trader desks</a></p>`;
+}
+
+const IDENTITY_BOT_PATHS: Record<string, () => string> = {
+  '/company': renderIdentityCompanyBody,
+  '/meet-the-board': renderIdentityMeetTheBoardBody,
+  '/founder': renderIdentityFounderBody,
+  '/press': renderIdentityPressBody,
+  '/press-kit': renderIdentityPressBody,
+  '/plans': renderIdentityPlansBody,
+  '/brokers': renderIdentityBrokersBody,
+};
+
+/** Crawlable identity & commerce pages for search bots (humans keep the React SPA). */
+export function renderStaticIdentityPageForBots(pathClean: string): string | null {
+  const key = pathClean.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const render = IDENTITY_BOT_PATHS[key];
+  if (!render) return null;
+  const canonical = key === '/press-kit' ? '/press' : key;
+  return renderShell(canonical, render(), 'en');
 }
 
 /** Crawlable homepage HTML for search bots (humans still get the SPA shell). */

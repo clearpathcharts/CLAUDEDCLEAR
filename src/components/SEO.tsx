@@ -15,7 +15,8 @@ const SEO: React.FC<SEOProps> = ({
   canonical 
 }) => {
   const siteName = "CLEAR PATH MARKETS SCIENCE";
-  const defaultDescription = "Premium market market science interface and market research terminal. High-fidelity data visualization and analysis.";
+  const defaultDescription =
+    'ClearPath Trader — educational financial markets site with four trader desks, charts, and research. Not a brokerage or financial advice.';
   const defaultKeywords = "analysis, market data, market science, clear path markets science, financial terminal";
 
   const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | Clear Insights Terminal`;

@@ -87,7 +87,7 @@ const ProfileHub = lazy(() =>
 );
 const AffiliateDashboard = lazy(() => import('./profile/AffiliateDashboard'));
 const YoursPage = lazy(() => import('./yours/YoursPage'));
-const MembershipTab = lazy(() => import('./MembershipTab'));
+import { redirectLegacyMembershipDashboardUrl } from '../lib/retiredMembershipDashboardUrl';
 const NewsPanel = lazy(() => import('./NewsPanel'));
 const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
 const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
@@ -138,8 +138,9 @@ const RETIRED_TABS: Record<string, string> = {
   Intelligence: 'News',
   Leaderboard: 'News',
   ReferralDesk: 'Yours',
-  // Broken PIN gate removed from the site — old links land on Memberships.
-  Founders: 'Membership',
+  // In-dashboard membership tab retired — use /plans.
+  Membership: 'StrictlyCharts',
+  Founders: 'StrictlyCharts',
   CpmsApk: 'ClearPathEducation',
 };
 
@@ -325,7 +326,7 @@ const TabContent = ({
       requiredTier={requiredTier}
       featureTitle={featureTitle}
       perks={perks}
-      onUpgrade={() => setActiveTab('Membership')}
+      onUpgrade={() => { window.location.assign('/plans'); }}
     >
       {node}
     </FeatureGate>
@@ -368,7 +369,7 @@ const TabContent = ({
       case 'News': return <NewsPanel />;
       case 'Communities': return (
         <Suspense fallback={<TabLoading />}>
-          <CommunityHub onUpgrade={() => setActiveTab('Membership')} />
+          <CommunityHub onUpgrade={() => { window.location.assign('/plans'); }} />
         </Suspense>
       );
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
@@ -378,7 +379,6 @@ const TabContent = ({
         <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />
       );
       case 'Yours': return <YoursPage />;
-      case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
       case 'Workspace': return gate(
         'workspace', 'platinum', 'Workspace Desk',
         ['Bots / automation desk', 'Platinum sheet tools', 'Future features first'],
@@ -622,9 +622,17 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   }, []);
 
   useEffect(() => {
+    redirectLegacyMembershipDashboardUrl();
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get('tab') || window.location.hash.replace('#', '');
+    if (/^membership$/i.test(fromUrl)) {
+      redirectLegacyMembershipDashboardUrl();
+      return;
+    }
     let fromStorage = '';
     try {
       fromStorage = localStorage.getItem('clearpath_active_tab') || '';
@@ -938,7 +946,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     const allMenuItems = [
       { id: 'Yours', icon: User, label: 'YOURS' },
       { id: 'TheRiver', icon: Cpu, label: 'INDACREATOR' },
-      { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
+      { id: 'Plans', icon: Crown, label: 'PLANS', href: '/plans' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
       { id: 'ClearPathEducation', icon: Book, label: 'CLEARPATH EDUCATION' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
@@ -1000,6 +1008,10 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const seoData = getSeoData();
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'Plans' || tabId === 'Membership' || /^membership$/i.test(tabId)) {
+      window.location.assign('/plans');
+      return;
+    }
     if (tabId === 'MeetTheBoard' || normalizeTabId(tabId) === 'MeetTheBoard') {
       window.location.assign('/meet-the-board');
       return;
@@ -1195,7 +1207,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders']);
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders', 'Membership']);
+        if (hash === 'Membership' || /^membership$/i.test(hash)) {
+          redirectLegacyMembershipDashboardUrl();
+          return;
+        }
         if (retiredTabs.has(hash)) {
           setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
         } else {

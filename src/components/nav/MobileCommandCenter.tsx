@@ -169,7 +169,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         {
           title: "ACCOUNT",
           items: ACCOUNT_ITEMS.filter((i) =>
-            ["Biography", "Membership"].includes(i.id),
+            i.id === "Biography",
           ),
         },
       ]

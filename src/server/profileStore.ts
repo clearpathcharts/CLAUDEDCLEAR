@@ -46,6 +46,8 @@ export type StoredProfile = {
     updatedAt?: string;
     /** Referrer credited on first real (post-trial) payment. */
     affiliateCredited?: boolean;
+    /** Last successful pull from Stripe API (membership/me reconcile). */
+    stripeSyncedAt?: string;
   };
   /**
    * Other uids that share this Stripe membership (private account + Firebase).
