@@ -310,6 +310,7 @@ import {
 } from './src/server/secrets';
 import { fetchCftcLegacyHistory } from './src/server/cftcCot';
 import { fetchFmpDeskNews, fetchFmpEconomicWire } from './src/server/fmpNewsWire';
+import { fetchFreeFinanceNews, freeNewsAsDeskWire } from './src/server/freeFinanceNews';
 import {
   resolveAuthenticatedUid,
   requireCatalogAdmin,
@@ -3431,21 +3432,26 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // News API
-  app.get('/api/news', (req, res) => {
+  // News API — publisher RSS only. Local JSON fixtures are not a live wire.
+  app.get('/api/news', async (_req, res) => {
     try {
-      const newsPath = path.join(process.cwd(), 'news_data.json');
-      if (fs.existsSync(newsPath)) {
-        const data = safeReadTextFile(newsPath);
-        res.json(JSON.parse(data));
-      } else {
-        res.json([]);
-      }
+      res.json(await fetchPublicWireFallback());
     } catch (error) {
       console.error('[API Error] News fetch failed:', error);
       res.status(500).json({ error: 'Failed to synchronize news data' });
     }
   });
+
+  /** Real publisher RSS when NewsData and FMP both come back empty. Never invents a title. */
+  async function fetchPublicWireFallback() {
+    try {
+      const pack = await fetchFreeFinanceNews({ includeFmp: false });
+      return freeNewsAsDeskWire(pack.items);
+    } catch (error) {
+      console.info('[Public wire] RSS fallback unavailable:', error instanceof Error ? error.message : error);
+      return [];
+    }
+  }
 
   // NewsData Live Ingress API with fallback
   app.get('/api/newsdata/latest', async (req, res) => {
@@ -3494,43 +3500,8 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       const fmpNews = await fetchFmpDeskNews();
       if (fmpNews.length) return res.json(fmpNews);
 
-      // Fallback: Union of news_data.json and master_news.json
-      const newsList: any[] = [];
-      const newsPath = path.join(process.cwd(), 'news_data.json');
-      if (fs.existsSync(newsPath)) {
-        try {
-          const local = JSON.parse(safeReadTextFile(newsPath));
-          local.forEach((item: any) => {
-            newsList.push({
-              title: item.title,
-              source: 'LOCAL',
-              category: (item.category || 'GENERAL').toUpperCase(),
-              pubDate: new Date().toISOString()
-            });
-          });
-        } catch (e) {
-          console.info('[NewsData Info] local parsing offset:', e);
-        }
-      }
-
-      const masterPath = path.join(process.cwd(), 'master_news.json');
-      if (fs.existsSync(masterPath)) {
-        try {
-          const master = JSON.parse(safeReadTextFile(masterPath));
-          master.forEach((item: any) => {
-            newsList.push({
-              title: item.title,
-              source: (item.source || 'MASTER').toUpperCase(),
-              category: 'MARKET',
-              pubDate: new Date().toISOString()
-            });
-          });
-        } catch (e) {
-          console.info('[NewsData Info] master parsing offset:', e);
-        }
-      }
-
-      res.json(newsList);
+      const rss = await fetchPublicWireFallback();
+      res.json(rss);
     } catch (error) {
       console.error('[NewsData Route Error]', error);
       // Honest empty — never invent INTERNAL marketing headlines
@@ -3591,47 +3562,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       const fmpHeadlines = await fetchFmpDeskNews();
       if (fmpHeadlines.length) return res.json(fmpHeadlines);
 
-      // Fallback: filter local curated news files for economy-related titles (if present)
-      const newsList: any[] = [];
-      const pushEconomic = (item: any, source: string) => {
-        const title = String(item.title || '');
-        const hay = `${title} ${item.category || ''} ${item.description || ''}`.toLowerCase();
-        const isEconomic =
-          /econom|fed|fomc|cpi|inflation|gdp|payroll|unemployment|ecb|boj|rate decision|treasury|macro/.test(
-            hay
-          );
-        if (!isEconomic || !title.trim()) return;
-        newsList.push({
-          title,
-          source: source.toUpperCase(),
-          category: (item.category || 'ECONOMY').toString().toUpperCase(),
-          pubDate: item.pubDate || undefined,
-          link: item.link || item.url || undefined,
-          description: item.description || undefined,
-        });
-      };
-
-      const newsPath = path.join(process.cwd(), 'news_data.json');
-      if (fs.existsSync(newsPath)) {
-        try {
-          const local = JSON.parse(safeReadTextFile(newsPath));
-          if (Array.isArray(local)) local.forEach((item: any) => pushEconomic(item, 'LOCAL'));
-        } catch (e) {
-          console.info('[Economic News] local parse skip:', e);
-        }
-      }
-
-      const masterPath = path.join(process.cwd(), 'master_news.json');
-      if (fs.existsSync(masterPath)) {
-        try {
-          const master = JSON.parse(safeReadTextFile(masterPath));
-          if (Array.isArray(master)) master.forEach((item: any) => pushEconomic(item, item.source || 'MASTER'));
-        } catch (e) {
-          console.info('[Economic News] master parse skip:', e);
-        }
-      }
-
-      res.json(newsList);
+      res.json(await fetchPublicWireFallback());
     } catch (error) {
       console.error('[Economic News Route Error]', error);
       res.json([]);
@@ -4050,19 +3981,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Master Updates API
-  app.get('/api/master-updates', (req, res) => {
-    try {
-      const masterNewsPath = path.join(process.cwd(), 'master_news.json');
-      if (fs.existsSync(masterNewsPath)) {
-        const data = safeReadTextFile(masterNewsPath);
-        res.json(JSON.parse(data));
-      } else {
-        res.json([]);
-      }
-    } catch (error) {
-      res.status(500).json({ error: 'Master synchronization failed' });
-    }
+  // Master updates — no fabricated regulatory rows. Publisher headlines live on /api/news.
+  app.get('/api/master-updates', (_req, res) => {
+    res.json([]);
   });
 
   // Google Grounded Search News & Sentiment API Route

@@ -24,8 +24,21 @@ import {
   type TraderDeskId,
 } from '../lib/traderDesks';
 import { SessionLogoutButton } from './session/SessionLogoutButton';
+import { fetchQuotesMap } from '../lib/clientMarketCache';
+import { resolveQuotePrice } from '../lib/resolveQuotePrice';
 
 const PublicLiveChart = lazy(() => import('./PublicLiveChart'));
+
+const BROADCAST_QUOTES = [
+  { label: 'DXY INDEX', symbol: 'DXY' },
+  { label: 'BTC/USD', symbol: 'BTC/USD' },
+  { label: 'USD/JPY', symbol: 'USD/JPY' },
+] as const;
+
+function formatBroadcastPrice(symbol: string, value: number): string {
+  const text = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return symbol.startsWith('BTC') ? `$${text}` : text;
+}
 
 // ==========================================
 // 1. PARTICLE CANVAS COMPONENT
@@ -175,6 +188,31 @@ export default function Auth() {
   const [privateLoginOpen, setPrivateLoginOpen] = useState(false);
   const [privateLoginMode, setPrivateLoginMode] = useState<'login' | 'register'>('login');
   const [activationEmail, setActivationEmail] = useState('');
+  const [broadcastPrices, setBroadcastPrices] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancel = false;
+    const loadBroadcast = async () => {
+      try {
+        const quotes = await fetchQuotesMap(BROADCAST_QUOTES.map((row) => row.symbol));
+        if (cancel) return;
+        const next: Record<string, string> = {};
+        for (const row of BROADCAST_QUOTES) {
+          const price = resolveQuotePrice(quotes[row.symbol] as { close?: string | number; price?: string | number; error?: unknown });
+          if (price != null) next[row.symbol] = formatBroadcastPrice(row.symbol, price);
+        }
+        setBroadcastPrices(next);
+      } catch {
+        if (!cancel) setBroadcastPrices({});
+      }
+    };
+    void loadBroadcast();
+    const timer = window.setInterval(loadBroadcast, 60_000);
+    return () => {
+      cancel = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const openPrivateLogin = (mode: 'login' | 'register' = 'login') => {
     setPrivateLoginMode(mode);
@@ -591,9 +629,12 @@ export default function Auth() {
             </AnimatePresence>
           </div>
           <div className="hidden md:flex items-center gap-6 shrink-0 font-mono text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
-            <span>DXY INDEX: <strong className="text-zinc-300">104.82</strong></span>
-            <span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>
-            <span>USD/JPY: <strong className="text-zinc-300">156.42</strong></span>
+            {BROADCAST_QUOTES.map((row) => (
+              <span key={row.symbol}>
+                {row.label}:{' '}
+                <strong className="text-zinc-300">{broadcastPrices[row.symbol] || 'DATA UNAVAILABLE'}</strong>
+              </span>
+            ))}
           </div>
         </div>
       </div>
