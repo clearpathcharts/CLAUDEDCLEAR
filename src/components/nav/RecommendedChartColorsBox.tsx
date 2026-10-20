@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useChartColorPreference } from "../../hooks/useChartColorPreference";
 import {
   CEO_DAILY_COLOR_ROWS,
@@ -7,17 +7,104 @@ import {
   normalizeChartHex,
 } from "../../lib/charts/ceoDailyColors";
 
+/** Bumped so an older open box does not keep stealing chart height. */
+export const CHART_COLORS_BOX_STORAGE_KEY = "clearpath_chart_colors_box_v1";
+export const CHART_LAYOUT_EVENT = "clearpath-chart-layout";
+
+function readColorsCollapsed(): boolean {
+  try {
+    return localStorage.getItem(CHART_COLORS_BOX_STORAGE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Tab-bar box: any chart background, plus the CEO daily trading colors.
+ * Starts collapsed so the home chart can fill the window.
  * Display preference only — not financial advice.
  */
 export function RecommendedChartColorsBox({ compact = false }: { compact?: boolean }) {
   const pref = useChartColorPreference();
   const selected = pref.backgroundHex;
+  const [collapsed, setCollapsed] = useState(readColorsCollapsed);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHART_COLORS_BOX_STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {
+      /* storage blocked — this visit still collapses */
+    }
+    const notify = () => window.dispatchEvent(new Event(CHART_LAYOUT_EVENT));
+    notify();
+    const raf = window.requestAnimationFrame(notify);
+    return () => window.cancelAnimationFrame(raf);
+  }, [collapsed]);
+
+  const toggle = (
+    <button
+      type="button"
+      data-testid="toggle-chart-colors-box"
+      aria-expanded={!collapsed}
+      onClick={() => setCollapsed((open) => !open)}
+      className="rounded-full border border-[#00F5FF]/40 px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider text-[#00F5FF] hover:bg-[#00F5FF]/15"
+    >
+      {collapsed ? "Show colors" : "Hide colors"}
+    </button>
+  );
+
+  const ceoButton = (
+    <button
+      type="button"
+      data-testid="apply-ceo-daily-colors"
+      aria-pressed={pref.ceoDaily}
+      onClick={() => pref.applyCeoDaily()}
+      className={`rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider ${
+        pref.ceoDaily
+          ? "border-[#00F5FF] bg-[#00F5FF]/15 text-[#00F5FF]"
+          : "border-white/20 text-zinc-200 hover:border-[#00F5FF]/50"
+      }`}
+    >
+      {pref.ceoDaily ? "CEO daily colors on" : "Use CEO daily colors"}
+    </button>
+  );
+
+  const themeButton = pref.ceoDaily || selected ? (
+    <button
+      type="button"
+      onClick={() => pref.clearPreference()}
+      className="rounded-full border border-white/15 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-zinc-400 hover:text-white"
+    >
+      Chart theme
+    </button>
+  ) : null;
+
+  if (collapsed) {
+    return (
+      <section
+        data-testid="recommended-chart-colors"
+        data-collapsed="true"
+        aria-label="ClearPath recommended colors for your charts"
+        className="rounded-xl border border-[#00F5FF]/25 bg-black/80 px-3 py-1.5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="min-w-0 font-mono text-[10px] font-black uppercase tracking-[0.14em] text-white">
+            ClearPath recommended colors
+          </p>
+          <div className="flex shrink-0 items-center gap-1">
+            {ceoButton}
+            {themeButton}
+            {toggle}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
       data-testid="recommended-chart-colors"
+      data-collapsed="false"
       aria-label="ClearPath recommended colors for your charts"
       className="rounded-xl border border-[#00F5FF]/25 bg-black/80 px-3 py-2"
     >
@@ -31,28 +118,9 @@ export function RecommendedChartColorsBox({ compact = false }: { compact?: boole
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            data-testid="apply-ceo-daily-colors"
-            aria-pressed={pref.ceoDaily}
-            onClick={() => pref.applyCeoDaily()}
-            className={`rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider ${
-              pref.ceoDaily
-                ? "border-[#00F5FF] bg-[#00F5FF]/15 text-[#00F5FF]"
-                : "border-white/20 text-zinc-200 hover:border-[#00F5FF]/50"
-            }`}
-          >
-            {pref.ceoDaily ? "CEO daily colors on" : "Use CEO daily colors"}
-          </button>
-          {pref.ceoDaily || selected ? (
-            <button
-              type="button"
-              onClick={() => pref.clearPreference()}
-              className="rounded-full border border-white/15 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-zinc-400 hover:text-white"
-            >
-              Chart theme
-            </button>
-          ) : null}
+          {ceoButton}
+          {themeButton}
+          {toggle}
         </div>
       </div>
 

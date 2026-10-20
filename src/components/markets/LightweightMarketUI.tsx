@@ -157,11 +157,17 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
     if (isNarrowViewport) return;
     remeasureDesktopCharts();
     const raf = window.requestAnimationFrame(remeasureDesktopCharts);
+    const onLayout = () => {
+      remeasureDesktopCharts();
+      window.requestAnimationFrame(remeasureDesktopCharts);
+    };
     window.addEventListener('resize', remeasureDesktopCharts);
+    window.addEventListener('clearpath-chart-layout', onLayout);
     window.visualViewport?.addEventListener('resize', remeasureDesktopCharts);
     return () => {
       window.cancelAnimationFrame(raf);
       window.removeEventListener('resize', remeasureDesktopCharts);
+      window.removeEventListener('clearpath-chart-layout', onLayout);
       window.visualViewport?.removeEventListener('resize', remeasureDesktopCharts);
     };
   }, [isNarrowViewport, remeasureDesktopCharts]);
