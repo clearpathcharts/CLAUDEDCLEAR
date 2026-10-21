@@ -7,8 +7,8 @@ import {
   normalizeChartHex,
 } from "../../lib/charts/ceoDailyColors";
 
-/** Bumped so an older open box does not keep stealing chart height. */
-export const CHART_COLORS_BOX_STORAGE_KEY = "clearpath_chart_colors_box_v1";
+/** Bumped so a previously open box does not stay open and steal chart height. */
+export const CHART_COLORS_BOX_STORAGE_KEY = "clearpath_chart_colors_box_v2";
 export const CHART_LAYOUT_EVENT = "clearpath-chart-layout";
 
 function readColorsCollapsed(): boolean {
@@ -41,15 +41,15 @@ export function RecommendedChartColorsBox({ compact = false }: { compact?: boole
     return () => window.cancelAnimationFrame(raf);
   }, [collapsed]);
 
-  const toggle = (
+  const closeButton = (
     <button
       type="button"
-      data-testid="toggle-chart-colors-box"
-      aria-expanded={!collapsed}
-      onClick={() => setCollapsed((open) => !open)}
-      className="rounded-full border border-[#00F5FF]/40 px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider text-[#00F5FF] hover:bg-[#00F5FF]/15"
+      data-testid="close-chart-colors-box"
+      aria-label="Close recommended colors"
+      onClick={() => setCollapsed(true)}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-white bg-black text-xl font-black leading-none text-white hover:border-[#00F5FF] hover:text-[#00F5FF]"
     >
-      {collapsed ? "Show colors" : "Hide colors"}
+      ×
     </button>
   );
 
@@ -81,23 +81,19 @@ export function RecommendedChartColorsBox({ compact = false }: { compact?: boole
 
   if (collapsed) {
     return (
-      <section
-        data-testid="recommended-chart-colors"
-        data-collapsed="true"
-        aria-label="ClearPath recommended colors for your charts"
-        className="rounded-xl border border-[#00F5FF]/25 bg-black/80 px-3 py-1.5"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="min-w-0 font-mono text-[10px] font-black uppercase tracking-[0.14em] text-white">
-            ClearPath recommended colors
-          </p>
-          <div className="flex shrink-0 items-center gap-1">
-            {ceoButton}
-            {themeButton}
-            {toggle}
-          </div>
-        </div>
-      </section>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          data-testid="toggle-chart-colors-box"
+          data-collapsed="true"
+          aria-expanded={false}
+          aria-label="Show recommended chart colors"
+          onClick={() => setCollapsed(false)}
+          className="rounded-full border border-white/20 px-2 py-0.5 font-mono text-[9px] font-black uppercase tracking-wider text-zinc-300 hover:border-[#00F5FF] hover:text-[#00F5FF]"
+        >
+          Colors
+        </button>
+      </div>
     );
   }
 
@@ -118,9 +114,9 @@ export function RecommendedChartColorsBox({ compact = false }: { compact?: boole
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {closeButton}
           {ceoButton}
           {themeButton}
-          {toggle}
         </div>
       </div>
 
