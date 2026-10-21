@@ -168,6 +168,9 @@ export default function CeoVideoLibrary({
   // Only groups the founder has deliberately opened or closed land here; the
   // rest fall back to the default for the current filter state.
   const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
+  const [clipIds, setClipIds] = useState<['', '', ''] | [string, string, string]>(['', '', '']);
+  const [merging, setMerging] = useState(false);
+  const [mergeNote, setMergeNote] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
@@ -190,6 +193,30 @@ export default function CeoVideoLibrary({
   useEffect(() => {
     void load();
   }, [load]);
+
+  const mergeThreeClips = async () => {
+    setMerging(true);
+    setMergeNote(null);
+    setError(null);
+    try {
+      const headers = await getHeaders();
+      const res = await fetch('/api/ceo/videos/merge', {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoIds: clipIds }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || `Could not join the clips (${res.status})`);
+      setMergeNote('Joined. The new 30-second video is at the top of the library. Pick it under Where each video plays.');
+      setClipIds(['', '', '']);
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Could not join the three clips.');
+    } finally {
+      setMerging(false);
+    }
+  };
 
   const patchUpload = (key: string, patch: Partial<UploadRow>) =>
     setUploads((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -446,6 +473,59 @@ export default function CeoVideoLibrary({
       <p className="m-0 text-xs uppercase tracking-widest text-zinc-500">
         Up to {maxMb} MB each · MP4, MOV, WebM, M4V, MKV · you can pick several at once
       </p>
+
+      <div
+        data-ceo-video-merge
+        className="space-y-3 rounded-2xl border border-[#00FFFF]/30 bg-black/40 px-5 py-5"
+      >
+        <p className="m-0 text-sm font-black uppercase tracking-widest text-[#00FFFF]">
+          Join 3 Flow clips into one 30-second tab video
+        </p>
+        <p className="m-0 text-sm leading-relaxed text-zinc-300">
+          Google Flow stops at about 10 seconds. Upload the three clips first, then pick them in play order.
+          The joined video shows up in the library so you can put it on that tab.
+        </p>
+        <div className="grid gap-3 md:grid-cols-3">
+          {([0, 1, 2] as const).map((index) => (
+            <label key={index} className="block space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                Clip {index + 1}
+              </span>
+              <select
+                data-ceo-video-merge-clip={index + 1}
+                disabled={!storage?.configured || merging || !videos.length}
+                value={clipIds[index]}
+                onChange={(e) =>
+                  setClipIds((prev) => {
+                    const next = [...prev] as [string, string, string];
+                    next[index] = e.target.value;
+                    return next;
+                  })
+                }
+                className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+              >
+                <option value="">Choose a clip</option>
+                {videos.map((video) => (
+                  <option key={video.id} value={video.id}>
+                    {video.originalName || video.filename}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          data-ceo-video-merge-go
+          disabled={!storage?.configured || merging || clipIds.some((id) => !id)}
+          onClick={() => void mergeThreeClips()}
+          className={`${BTN} min-h-[64px] bg-[#00FFFF] px-6 text-sm text-black hover:bg-[#6ffcff]`}
+        >
+          {merging ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : null}
+          Merge into one 30-second video
+        </button>
+        {mergeNote ? <p className="m-0 text-sm text-emerald-300">{mergeNote}</p> : null}
+      </div>
 
       {uploads.length ? (
         <ul className="m-0 list-none space-y-3 p-0">

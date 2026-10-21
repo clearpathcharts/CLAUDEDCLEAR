@@ -1,13 +1,15 @@
 /**
  * CEO explainer-video library:
  * - every route is founder-gated (401 unauthenticated, 403 without the action header)
- * - storage is durable-bucket only — no local-disk write path, in prod or anywhere
+ * - uploads go straight to the bucket; joining three clips uses a temp folder and ffmpeg only
  * - filename / MIME / size validation holds
  * - "storage not configured" is an honest state, never a fake success
  *
  * Run: npx tsx scripts/ceo-videos.selftest.ts
  */
 import assert from 'node:assert/strict';
+import { normalizeMergeVideoIds, ffmpegConcatArgs, TAB_EXPLAINER_CLIP_COUNT } from '../src/server/ceoVideoMerge';
+import { CeoVideoStorageError } from '../src/server/ceoVideoStorage';
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
@@ -62,7 +64,26 @@ assert.doesNotMatch(envExample, /VITE_CEO_VIDEO/, 'bucket config is never a VITE
 
 // ----------------------------------------------------------- unit checks ----
 
+function assertMergeRules() {
+  const ids = ['a'.repeat(16), 'b'.repeat(16), 'c'.repeat(16)];
+  assert.equal(TAB_EXPLAINER_CLIP_COUNT, 3);
+  assert.deepEqual(normalizeMergeVideoIds(ids), ids);
+  const args = ffmpegConcatArgs(['one.mp4', 'two.mp4', 'three.mp4'], 'out.mp4');
+  assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=0[v]')), true);
+  assert.equal(args[args.length - 1], 'out.mp4');
+  for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
+    assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
+  }
+  const root = path.resolve('.');
+  const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
+  assert.match(docker, /ffmpeg/);
+  const ui = fs.readFileSync(path.join(root, 'src/components/CeoVideoLibrary.tsx'), 'utf8');
+  assert.match(ui, /Merge into one 30-second video/);
+  assert.match(ui, /\/api\/ceo\/videos\/merge/);
+}
+
 async function main() {
+  assertMergeRules();
   const storage = await import('../src/server/ceoVideoStorage.ts');
 
   assert.equal(storage.sanitizeVideoFilename('../../etc/passwd'), 'passwd');
@@ -123,6 +144,7 @@ async function main() {
     for (const [method, route] of [
       ['GET', '/api/ceo/videos'],
       ['POST', '/api/ceo/videos/upload-url'],
+      ['POST', '/api/ceo/videos/merge'],
       ['POST', '/api/ceo/videos/abc/finalize'],
       ['DELETE', '/api/ceo/videos/abc'],
     ] as const) {
@@ -182,6 +204,15 @@ async function main() {
     const mintBody = (await mint.json()) as any;
     assert.equal(mintBody.error, 'storage_not_configured');
     assert.equal(mintBody.uploadUrl, undefined);
+
+    const shortMerge = await call('/api/ceo/videos/merge', {
+      method: 'POST',
+      headers: founder,
+      body: JSON.stringify({ videoIds: ['a'.repeat(16)] }),
+    });
+    assert.equal(shortMerge.status, 400, 'fewer than three clips must be refused before storage is touched');
+    const shortBody = (await shortMerge.json()) as { error?: string };
+    assert.equal(shortBody.error, 'need_three_clips');
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
   }
