@@ -703,7 +703,7 @@ function renderEncyclopediaHub(): string {
   ).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Encyclopedia' }])}
 <h1>Financial Encyclopedia</h1>
-<p class="lead">A crawlable knowledge base of equities, crypto, forex, commodities, and macro concepts — ${counts.stocks.toLocaleString()} stock profiles, ${counts.crypto.toLocaleString()} crypto assets, ${counts.forex.toLocaleString()} FX pairs, and more.</p>
+<p class="lead">A free student encyclopedia of stocks, crypto, forex, commodities, and economics. No ads and no sales pitches. ${counts.stocks.toLocaleString()} stock study pages, ${counts.crypto.toLocaleString()} crypto pages, ${counts.forex.toLocaleString()} FX pairs, and more. These are study notes, not investment advice, and not a claim that no other finance reference exists.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
 <h2>Browse by market</h2>
@@ -1672,8 +1672,8 @@ function renderHomeForBots(): string {
   return `${breadcrumbHtml([{ name: 'Home' }])}
 <h1>${escapeHtml(PRODUCT_HOME_H1)}</h1>
 <p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
-<h2>Four trader desks on one website</h2>
-<p>One educational terminal. Four workstations for four kinds of traders — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four brokerages and not four ways to place trades.</p>
+<h2>One chart site, four desks</h2>
+<p>One chart website. Four workspaces — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four companies and not four brokers.</p>
 <ul>
 <li><a href="/desk/institutional">Institutional Trader</a> — flow, liquidity, options, macro, and news around a multi-chart workspace.</li>
 <li><a href="/desk/fundamental">Fundamental Trader</a> — statements, earnings, valuation, peers, filings, and FRED macro.</li>
