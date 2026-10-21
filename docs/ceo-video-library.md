@@ -5,6 +5,10 @@ Founder-only page inside the CEO Dashboard: **CEO DASHBOARD → 🎬 EXPLAINER V
 under the CEO Dashboard title — **UPLOAD & PLACE VIDEOS** opens the tab and scrolls to it.
 
 1. **Upload** a video and wait for the bar to fill.
+   Google Flow clips stop around 10 seconds. Upload the three pieces, then use
+   **Join 3 Flow clips into one 30-second tab video** and pick them in play order.
+   `POST /api/ceo/videos/merge` with `{ videoIds: [first, second, third] }` writes
+   one new MP4 into the library. The server image includes `ffmpeg` for that join.
 2. Scroll to **Where each video plays**. The fifteen **Nav play icons** are open at
    the top. The CEO button has no play icon and no slot — nobody but you ever
    sees the CEO dashboard, so there is nothing to explain to visitors. Every section walkthrough below is folded up with a `3 of 7 filled`

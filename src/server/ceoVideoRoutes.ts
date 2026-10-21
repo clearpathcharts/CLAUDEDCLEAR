@@ -28,6 +28,7 @@ import {
   setVideoSlotAssignment,
   type VideoSlotAssignmentMap,
 } from './videoSlotStore';
+import { mergeCeoVideos } from './ceoVideoMerge';
 
 /** Bind the resumable session to the calling site, not to an arbitrary page. */
 function callerOrigin(req: Request): string | undefined {
@@ -141,6 +142,16 @@ export function createCeoVideoRouter(): Router {
     }
     try {
       res.json({ ok: true, cleared: await clearVideoSlotAssignment(slot.id) });
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /** Join exactly three library clips, in order, into one MP4. */
+  router.post('/merge', async (req, res) => {
+    try {
+      const video = await mergeCeoVideos(req.body?.videoIds);
+      res.status(201).json({ ok: true, video });
     } catch (error) {
       fail(res, error);
     }
