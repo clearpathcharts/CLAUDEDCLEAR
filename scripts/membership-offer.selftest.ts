@@ -46,8 +46,10 @@ assert.match(stripeService, /subscription_data: \{[\s\S]*?metadata: \{ uid: inpu
 assert.equal(hook.includes("tier: 'platinum'"), false);
 assert.equal(hook.includes('PAYMENTS_OFF'), false);
 assert.equal(gate.includes('PAYMENTS_ENABLED === false'), false);
+const access = read('src/server/membershipAccess.ts');
 assert.equal(server.includes("entitlementsFor('platinum')"), false);
-assert.match(server, /pickRicherMembershipReport/);
-assert.match(server, /getMembershipStatus\(/);
+assert.match(server, /resolveMembershipReportForRequest\(/);
+assert.match(access, /pickRicherMembershipReport/);
+assert.match(access, /getMembershipStatus\(/);
 
 console.log('ok membership-offer · one package + per-package Stripe checkout');

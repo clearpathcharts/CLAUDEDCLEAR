@@ -138,8 +138,6 @@ import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/broke
 import {
   createMembershipCheckoutSession,
   createMembershipPortalSession,
-  getMembershipStatus,
-  pickRicherMembershipReport,
   getStripeConfigReport,
   handleStripeEvent,
   isBillingInterval,
