@@ -17,7 +17,6 @@ import {
 import { MobileCommandCenter } from "./MobileCommandCenter";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
-import { RecommendedChartColorsBox } from "./RecommendedChartColorsBox";
 
 interface ClearNavProps {
   activeTab: string;
@@ -411,8 +410,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             )}
           </div>
         </div>
-
-        <RecommendedChartColorsBox />
       </div>
     </>
   );
