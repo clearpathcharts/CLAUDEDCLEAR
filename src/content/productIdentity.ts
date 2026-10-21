@@ -49,7 +49,7 @@ export const PRODUCT_FEATURE_LIST = [
   "Literacy OS — financial vocabulary and study system",
   "Macro desk (yields, central banks, sovereign context)",
   "13 accessibility / neurodivergent UI profiles (ADHD, autism, dyslexia, low-stim, and more)",
-  "INDACREATOR — ClearPath's own indicator tool. You paste indicator code, it compiles here, and it draws on our charts. It is not another company's platform and does not promise the same results.",
+  "INDACREATOR — ClearPath's Pine Script interpreter. Paste an indicator you already wrote and it draws on our charts. No fee to bring your own code over. We are not another company's platform, and the drawing may not match their chart exactly.",
   "In-app C.P.T. Buddy mentor (education and navigation, not lead-gen)",
   "News, research, and social context beside the chart — not a separate chatbot site",
 ];
@@ -97,6 +97,6 @@ export const IDENTITY_FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "What does ClearPath Trader include besides charts?",
     answer:
-      `The four desks are four ways to use the same chart site. You also get a free student encyclopedia with no ads or sales pitches, an indicator encyclopedia, lessons, and INDACREATOR, which is our own indicator tool.`,
+      `The four desks are four ways to use the same chart site. You also get a free student encyclopedia with no ads or sales pitches, an indicator encyclopedia, lessons, and INDACREATOR, our Pine Script interpreter. Paste an indicator you already wrote and it runs on our charts. There is no fee to bring your own code over. The drawing may not match another site's chart exactly.`,
   },
 ];
