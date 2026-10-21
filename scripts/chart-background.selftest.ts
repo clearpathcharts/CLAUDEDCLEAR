@@ -64,7 +64,9 @@ const market = fs.readFileSync(path.join(root, 'src/components/markets/Lightweig
 assert.match(market, /ChartBackgroundToggle/);
 
 const nav = fs.readFileSync(path.join(root, 'src/components/nav/ClearNav.tsx'), 'utf8');
-assert.match(nav, /RecommendedChartColorsBox/);
+const mobileNav = fs.readFileSync(path.join(root, 'src/components/nav/MobileCommandCenter.tsx'), 'utf8');
+assert.doesNotMatch(nav, /RecommendedChartColorsBox/);
+assert.doesNotMatch(mobileNav, /RecommendedChartColorsBox/);
 const box = fs.readFileSync(path.join(root, 'src/components/nav/RecommendedChartColorsBox.tsx'), 'utf8');
 assert.match(box, /ClearPath recommended colors for your charts/);
 assert.match(box, /Not financial advice/);
