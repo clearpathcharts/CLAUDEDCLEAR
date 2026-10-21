@@ -942,6 +942,51 @@ details.relative summary::-webkit-details-marker {
   filter: saturate(1.42) contrast(1.16) brightness(1.06);
 }
 
+@keyframes cp-path-drift {
+  from { transform: scale(1.05) translate3d(0, 0, 0); }
+  to { transform: scale(1.1) translate3d(-1.4%, 0.8%, 0); }
+}
+
+.cp-path-drift {
+  animation: cp-path-drift 18s ease-in-out infinite alternate;
+  transform-origin: 50% 30%;
+}
+
+.cp-path-candles {
+  position: absolute;
+  z-index: 4;
+  left: 7%;
+  right: 7%;
+  top: 16%;
+  height: 26%;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  opacity: 0.42;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.cp-path-candles span {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 1px;
+  transform-origin: bottom center;
+  animation: cp-candle-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes cp-candle-breathe {
+  0%, 100% { transform: scaleY(0.45); opacity: 0.45; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-path-drift,
+  .cp-path-candles span {
+    animation: none !important;
+  }
+}
+
 img:not(.cp-path-art):not(.no-color-boost):not([data-no-color-boost]) {
   filter: saturate(1.22) contrast(1.08) brightness(1.03);
 }
@@ -964,6 +1009,13 @@ html[data-reduced-sensory="true"] img,
 html[data-high-contrast="true"] .cp-path-art,
 html[data-high-contrast="true"] img {
   filter: none !important;
+}
+
+html[data-reduced-sensory="true"] .cp-path-drift,
+html[data-reduced-sensory="true"] .cp-path-candles span,
+html[data-high-contrast="true"] .cp-path-drift,
+html[data-high-contrast="true"] .cp-path-candles span {
+  animation: none !important;
 }
 
 /* Rest of site — same neon lift as the homepage path cards. */
