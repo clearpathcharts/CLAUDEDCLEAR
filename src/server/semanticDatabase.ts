@@ -814,8 +814,8 @@ export function enrichHtmlWithMetadata(
       }
     }
   } else if (canonicalPath === '/encyclopedia') {
-    title = "Financial Encyclopedia: Stocks, Crypto, Forex & Commodities | ClearPathTrader";
-    description = "Explore the ClearPath financial encyclopedia — company profiles, crypto assets, forex pairs, commodities, and economic concepts in one knowledge base.";
+    title = "Free Student Finance Encyclopedia | ClearPathTrader";
+    description = "A free student encyclopedia of stocks, crypto, forex, commodities, and economics. No ads and no sales pitches. Study pages, not investment advice.";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Encyclopedia", url: "/encyclopedia" }
@@ -1530,7 +1530,7 @@ ${hreflangTags}
         <p><strong>${escAttr(PRODUCT_HOME_H1)}</strong></p>
         <p>${safeHomeDesc}</p>
         <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One educational financial markets site — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-app mentor — it does not greet visitors, capture leads, or book appointments.</p>
-        <p><a href="/desk">Four trader desks</a> · <a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
+        <p><a href="/desk">One chart site, four desks</a> · <a href="/encyclopedia">Free student encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
     // Always replace any existing noscript so an older deploy's <h1> inside noscript cannot linger.

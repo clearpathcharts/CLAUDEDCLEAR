@@ -139,7 +139,7 @@ export function buildAppUpdateManifest(): AppUpdateManifest {
       apkSha256,
       releaseNotes: env(
         'APP_UPDATE_ANDROID_NOTES',
-        'A newer ClearPath Cinema / Trader Android build is available.',
+        'A newer ClearPath Trader Android build is available.',
       ),
     },
     policy: {

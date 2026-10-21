@@ -65,7 +65,7 @@ function HueMoon({
       type="button"
       data-color-chart-moon
       aria-label="Full rainbow hue moon"
-      title="Full rainbow — same 24-bit range as TradingView, NinjaTrader, and Bloomberg"
+      title="Full color range"
       onPointerDown={pick}
       onPointerMove={(e) => {
         if (e.buttons) pick(e);
@@ -282,7 +282,7 @@ export default function ColorChartPicker({
 
       <div className="color-chart-panel">
         <p className="color-chart-count" data-color-chart-count>
-          {COLOR_CHART_SWATCH_COUNT} named colors · full 24-bit moon — TradingView, NinjaTrader, Bloomberg
+          {COLOR_CHART_SWATCH_COUNT} named colors · full color range
         </p>
         <div className="color-chart-spectrum">
           <HueMoon hue={wheelHue} onHue={pickHue} />
