@@ -4,6 +4,7 @@
  * Run: npm run test:quote-price-resolve
  */
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { resolveQuotePrice, withTapePrice } from "../src/lib/resolveQuotePrice.ts";
 import { resolveMarketAsset } from "../src/constants/marketAssets.ts";
 import { getRegistryAsset, searchEnabledAssets } from "../src/constants/assetRegistry.ts";
@@ -36,6 +37,11 @@ assert.ok(searchEnabledAssets("ETH", 25).some((a) => a.symbol === "ETHUSD"));
 const taped = withTapePrice({ close: "4022.13", price: "2382.40", symbol: "XAUUSD" });
 assert.equal(taped.price, 4022.13);
 assert.equal(taped.close, "4022.13");
+
+const authSource = fs.readFileSync("src/components/Auth.tsx", "utf8");
+assert.doesNotMatch(authSource, /77,979\.87|104\.82|156\.42/);
+assert.match(authSource, /fetchQuotesMap/);
+assert.match(authSource, /DATA UNAVAILABLE/);
 
 const emptyScan = (symbol: string): PatternScanResult => ({
   scannedBars: 12,

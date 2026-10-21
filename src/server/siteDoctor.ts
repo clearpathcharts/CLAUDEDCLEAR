@@ -20,7 +20,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { getTwelveDataApiKey, getSessionSecret, getSecretPresenceReport } from "./secrets";
+import { getTwelveDataApiKey, getSessionSecret, getSecretPresenceReport, getFmpApiKey, getFredApiKey, buildFmpStableSymbolUrl } from "./secrets";
 import { getMarketCandles } from "./marketDataGateway";
 import { getAdminFirestore, getFirebaseAdminStatus } from "./firebaseAdmin";
 import { resolveTimeframePlan } from "../services/marketData";
@@ -265,6 +265,63 @@ function checkTimeframeVerifyFreshness(): SiteDoctorCheck {
   };
 }
 
+async function checkFmpQuote(): Promise<SiteDoctorCheck> {
+  const key = getFmpApiKey();
+  if (!key) {
+    return {
+      id: "fmp",
+      label: "FMP fundamentals",
+      ok: false,
+      severity: "warn",
+      detail: "FMP_API_KEY missing — live quotes stay on Twelve Data; statements stay blank",
+    };
+  }
+  const url = buildFmpStableSymbolUrl("quote", "AAPL", key, { limit: 1 });
+  if (!url) {
+    return {
+      id: "fmp",
+      label: "FMP fundamentals",
+      ok: false,
+      severity: "warn",
+      detail: "FMP quote URL could not be built",
+    };
+  }
+  const t0 = Date.now();
+  try {
+    const res = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(8000) });
+    return {
+      id: "fmp",
+      label: "FMP fundamentals",
+      ok: res.ok,
+      severity: res.ok ? "info" : "warn",
+      detail: res.ok ? "AAPL quote ok" : `FMP returned ${res.status}`,
+      latencyMs: Date.now() - t0,
+    };
+  } catch (e: any) {
+    return {
+      id: "fmp",
+      label: "FMP fundamentals",
+      ok: false,
+      severity: "warn",
+      detail: e?.message || String(e),
+      latencyMs: Date.now() - t0,
+    };
+  }
+}
+
+function checkFredKey(): SiteDoctorCheck {
+  const ok = Boolean(getFredApiKey());
+  return {
+    id: "fred",
+    label: "FRED macro series",
+    ok,
+    severity: ok ? "info" : "warn",
+    detail: ok
+      ? "FRED_API_KEY present"
+      : "FRED_API_KEY missing — FED/CPI/GDP/NFP cells stay DATA UNAVAILABLE",
+  };
+}
+
 function checkSecretsPresence(): SiteDoctorCheck {
   const rep = getSecretPresenceReport();
   const need = ["TWELVEDATA_API_KEY", "SESSION_SECRET"] as const;
@@ -297,6 +354,8 @@ export async function runSiteDoctorSweep(): Promise<SiteDoctorReport> {
     checks.push(checkTimeframePlans());
     checks.push(checkTimeframeVerifyFreshness());
     checks.push(await checkTwelveData());
+    checks.push(await checkFmpQuote());
+    checks.push(checkFredKey());
 
     const failCount = checks.filter((c) => !c.ok && c.severity === "critical").length;
     const warnCount = checks.filter((c) => c.severity === "warn").length;

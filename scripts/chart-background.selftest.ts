@@ -69,5 +69,10 @@ const box = fs.readFileSync(path.join(root, 'src/components/nav/RecommendedChart
 assert.match(box, /ClearPath recommended colors for your charts/);
 assert.match(box, /Not financial advice/);
 assert.match(box, /Use CEO daily colors/);
+assert.match(box, /clearpath_chart_colors_box_v2/);
+assert.match(box, /Close recommended colors/);
+assert.match(box, /Show recommended chart colors/);
+assert.match(box, /clearpath-chart-layout/);
+assert.match(market, /clearpath-chart-layout/);
 
 console.log('chart-background.selftest: ok');
