@@ -15,8 +15,6 @@ function SharpPathImage({
   height,
   alt,
   fillFrame = false,
-  liveCharts = false,
-  accent = '#00FFFF',
 }: {
   webp: string;
   png: string;
@@ -24,11 +22,9 @@ function SharpPathImage({
   height: number;
   alt: string;
   fillFrame?: boolean;
-  liveCharts?: boolean;
-  accent?: string;
 }) {
   return (
-    <span className={`relative block overflow-hidden ${fillFrame ? 'h-full w-full' : 'w-full'}`}>
+    <span className={`relative block ${fillFrame ? 'h-full w-full' : 'w-full'}`}>
       <picture className={fillFrame ? 'block h-full w-full' : undefined}>
         <source type="image/webp" srcSet={webp} />
         <img
@@ -40,7 +36,7 @@ function SharpPathImage({
           draggable={false}
           className={
             fillFrame
-              ? `pointer-events-none block h-full w-full object-cover object-top cp-path-art${liveCharts ? ' cp-path-drift' : ''}`
+              ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
               : 'pointer-events-none block h-auto w-full cp-path-art'
           }
           style={{
@@ -49,20 +45,6 @@ function SharpPathImage({
           }}
         />
       </picture>
-      {liveCharts ? (
-        <span className="cp-path-candles" aria-hidden="true">
-          {[42, 68, 36, 80, 54, 90, 48, 74, 33, 86, 58, 44, 77, 39, 92, 61, 47, 83].map((bar, index) => (
-            <span
-              key={bar + index}
-              style={{
-                height: `${bar}%`,
-                background: accent,
-                animationDelay: `${index * 0.14}s`,
-              }}
-            />
-          ))}
-        </span>
-      ) : null}
       <span
         className="pointer-events-none absolute right-2 top-[22%] z-10 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:right-3"
         data-path-watermark=""
@@ -110,8 +92,6 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                   height={card.height}
                   alt={`${card.title}. ${card.tagline}.`}
                   fillFrame
-                  liveCharts
-                  accent={card.accent}
                 />
               </button>
             </li>
