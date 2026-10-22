@@ -40,6 +40,11 @@ export default function PublicLiveChart() {
 
   const changeProfile = (id: ThemeProfileId) => {
     setProfileId(id);
+    try {
+      localStorage.setItem(PROFILE_STORAGE_KEY, id);
+    } catch {
+      /* storage blocked — the chart still repaints for this visit */
+    }
     applyNeuroProfile(id);
   };
 
