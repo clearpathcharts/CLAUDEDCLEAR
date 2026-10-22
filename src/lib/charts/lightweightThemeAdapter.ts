@@ -13,7 +13,7 @@ export function lightweightThemeAdapter(profile: ThemeProfile) {
       borderUpColor: profile.borderUpColor,
       borderDownColor: profile.borderDownColor,
     },
-    profile.id === "low_stim_emergency" ? 0.65 : 1.05,
+    0,
   );
 
   return {

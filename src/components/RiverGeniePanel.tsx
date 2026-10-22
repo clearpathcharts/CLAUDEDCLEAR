@@ -26,7 +26,7 @@ export interface RiverGenieWorkstationContext {
 const STORAGE_KEY = 'river_genie_messages';
 const PRESETS = [
   'I want to build a custom indicator — help me describe it.',
-  'I have Pine code from TradingView — what should I do next?',
+  'I have indicator code — what should I do next?',
   'Recommend a simple trend indicator I can run on ClearPath charts.',
   'Fix my compile error and rewrite the script.',
 ];

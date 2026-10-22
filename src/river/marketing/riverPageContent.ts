@@ -10,7 +10,7 @@ export const RIVER_PAGE_CONTENT = {
     eyebrow: "ClearPath AI Coding System",
     title: "INDACREATOR",
     subtitle:
-      "Import Pine Script from TradingView — or describe what you want. River Genie writes the code, INDACREATOR compiles it honestly, and one click applies it to every chart.",
+      "INDACREATOR is ClearPath's Pine Script interpreter. Paste an indicator you already wrote, including Pine from another chart site. It runs here on our charts. Bringing your own code over is free for a limited time only, and that offer is subject to availability and change. ClearPath is not that other site, and the drawing may not match their chart exactly.",
     badge: "Pine Script v4 / v5 / v6 · River Genie AI",
 
     videos: {

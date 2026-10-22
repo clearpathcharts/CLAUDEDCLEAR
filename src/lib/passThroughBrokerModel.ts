@@ -9,7 +9,7 @@ export const NEVER_BROKER_DEALER =
   'ClearPath Trader is not a broker-dealer, introducing broker, or exchange — now or in the future. We will never hold customer funds or securities.';
 
 export const PASS_THROUGH_SUMMARY =
-  'Optional OAuth connects your existing account at a licensed broker (Alpaca first). You authorize the link; orders you submit from the chart are sent to that broker. Same pass-through model as TradingView + Alpaca.';
+  'Optional OAuth connects your existing account at a licensed broker (Alpaca first). You authorize the link. Orders you submit from the chart are sent to that broker. That broker holds the money. ClearPath is only the screen.';
 
 export const PASS_THROUGH_ORDER_DISCLAIMER =
   'Orders are executed by your connected licensed broker, not by ClearPath. You are responsible for every submission. Not investment advice.';

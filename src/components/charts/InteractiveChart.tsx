@@ -381,7 +381,7 @@ export function InteractiveChart({ title, profileId, initialTimeframe = "1h", th
 
                 {/* Subtitle with mock volume details */}
                 <p className="text-[9px] text-zinc-500 font-mono tracking-wide mb-4 leading-relaxed uppercase">
-                  Exhaustive TradingView indicator suite. Toggle elements to plot dynamic analytics onto the live graph overlay.
+                  ClearPath indicator list. Turn one on to draw it on this chart.
                 </p>
 
                 {/* Live Ichimoku settings panel when active */}

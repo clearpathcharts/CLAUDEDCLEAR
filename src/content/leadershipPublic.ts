@@ -53,16 +53,6 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     boardLoginName: 'Brian Weber',
     bio: `Brian Weber serves as CFO advisor to Clear Path Markets Science Corp., supporting budgeting, financial reporting, and operational finance guidance for ClearPath Trader’s education and analytics platform. He advises the company; he does not provide investment advice to users and is not a registered investment adviser.`,
   },
-  {
-    id: 'dustin-shorr',
-    displayName: 'Dustin Shorr',
-    jobTitle: 'Public Relations',
-    roleLine: 'Board of Directors',
-    imageUrl: '/team/dustin-shorr.jpg',
-    schemaKey: 'dustin-shorr-board-pr',
-    boardLoginName: 'Dustin Shorr',
-    bio: `Dustin Shorr serves on the board of directors and leads public relations for Clear Path Markets Science Corp. He helps present ClearPath Trader’s educational mission clearly to the public, media, and community partners — accurately, professionally, and without hype.`,
-  },
 ];
 
 export function leaderById(id: string): PublicLeader | undefined {

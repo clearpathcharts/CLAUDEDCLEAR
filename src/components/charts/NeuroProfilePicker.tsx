@@ -68,11 +68,21 @@ export function NeuroProfilePicker({ activeProfileId, onProfileChange, compact =
                   : undefined
               }
             >
-              <span
-                className="block text-[9px] font-black uppercase tracking-wide leading-tight"
-                style={{ color: isActive ? p.borderA : undefined }}
-              >
-                {p.label}
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm border border-white/30"
+                  style={{ background: p.upColor }}
+                />
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-sm border border-white/30"
+                  style={{ background: p.downColor }}
+                />
+                <span
+                  className="block text-[9px] font-black uppercase tracking-wide leading-tight"
+                  style={{ color: isActive ? p.borderA : undefined }}
+                >
+                  {p.label}
+                </span>
               </span>
               <span className="mt-0.5 block truncate text-[8px] font-mono uppercase text-zinc-500">
                 {id.replace(/_/g, ' ')}

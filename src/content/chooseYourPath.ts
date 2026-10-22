@@ -8,6 +8,8 @@ export type PathCard = {
   profileId: AdvancedProfileId;
   png: string;
   webp: string;
+  /** Looping silent clip. The still image stays until this file exists. */
+  mp4?: string;
   width: number;
   height: number;
   accent: string;
@@ -22,6 +24,7 @@ export const PATH_CARDS: PathCard[] = [
     profileId: 'focus_mode',
     png: '/paths/institutional-trader.png',
     webp: '/paths/institutional-trader.webp',
+    mp4: '/paths/institutional-trader.mp4',
     width: 512,
     height: 735,
     accent: '#FF1493',
@@ -34,6 +37,7 @@ export const PATH_CARDS: PathCard[] = [
     profileId: 'calm_focus',
     png: '/paths/fundamental-trader.png',
     webp: '/paths/fundamental-trader.webp',
+    mp4: '/paths/fundamental-trader.mp4',
     width: 533,
     height: 735,
     accent: '#FF7A00',
@@ -46,6 +50,7 @@ export const PATH_CARDS: PathCard[] = [
     profileId: 'standard_red_green',
     png: '/paths/retail-trader.png',
     webp: '/paths/retail-trader.webp',
+    mp4: '/paths/retail-trader.mp4',
     width: 481,
     height: 735,
     accent: '#00FFFF',
