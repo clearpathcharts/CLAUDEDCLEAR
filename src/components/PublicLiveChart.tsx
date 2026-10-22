@@ -11,6 +11,7 @@ import {
 import { NARROW_CHART_MQ, isNarrowChartViewport } from '../lib/charts/chartOverlayPrefs';
 import { TimeframeMenu } from './charts/TimeframeMenu';
 import { themeProfiles, type ThemeProfileId } from '../lib/theme/profiles';
+import { applyNeuroProfile } from './desks/neuro/neuroProfile';
 
 /** Same key the desks and Auth use, so a choice made here survives sign-in. */
 const PROFILE_STORAGE_KEY = 'clearpath_current_profile_id';
@@ -39,11 +40,7 @@ export default function PublicLiveChart() {
 
   const changeProfile = (id: ThemeProfileId) => {
     setProfileId(id);
-    try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, id);
-    } catch {
-      /* storage blocked — the chart still repaints for this visit */
-    }
+    applyNeuroProfile(id);
   };
 
   useEffect(() => {
