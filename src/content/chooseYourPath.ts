@@ -24,6 +24,7 @@ export const PATH_CARDS: PathCard[] = [
     profileId: 'focus_mode',
     png: '/paths/institutional-trader.png',
     webp: '/paths/institutional-trader.webp',
+    mp4: '/paths/institutional-trader.mp4',
     width: 512,
     height: 735,
     accent: '#FF1493',
