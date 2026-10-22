@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PATH_CARDS, NEURODIVERGENT_BANNER } from '../content/chooseYourPath';
 import type { TraderDeskId } from '../lib/traderDesks';
 import { BrandMark } from './brand/BrandMark';
@@ -25,12 +25,14 @@ function SharpPathImage({
   alt: string;
   fillFrame?: boolean;
 }) {
+  const [videoFailed, setVideoFailed] = useState(false);
   const frameClass = fillFrame
     ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
     : 'pointer-events-none block h-auto w-full cp-path-art';
+  const showVideo = Boolean(mp4) && !videoFailed;
   return (
     <span className={`relative block ${fillFrame ? 'h-full w-full' : 'w-full'}`}>
-      {mp4 ? (
+      {showVideo ? (
         <video
           src={mp4}
           poster={png}
@@ -42,6 +44,7 @@ function SharpPathImage({
           loop
           playsInline
           preload="auto"
+          onError={() => setVideoFailed(true)}
           className={frameClass}
         />
       ) : (
@@ -91,16 +94,13 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
         <ul className="relative z-20 grid grid-cols-3 gap-2 sm:gap-5 lg:gap-8 items-stretch isolate">
           {PATH_CARDS.map((card) => (
             <li key={card.id} className="relative z-10 min-w-0 w-full">
-              <button
-                type="button"
+              <div
                 data-path-card={card.id}
-                onClick={() => onChoosePath(card.id)}
-                className="cp-path-card block w-full aspect-[533/735] rounded-2xl overflow-hidden border bg-black text-left cursor-pointer"
+                className="cp-path-card relative block w-full aspect-[533/735] rounded-2xl overflow-hidden border bg-black text-left"
                 style={{
                   borderColor: `${card.accent}CC`,
                   boxShadow: `0 0 28px ${card.accent}88, 0 0 64px ${card.accent}40`,
                 }}
-                aria-label={`Private Login to open ${card.title}`}
               >
                 <SharpPathImage
                   webp={card.webp}
@@ -111,7 +111,13 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                   alt={`${card.title}. ${card.tagline}.`}
                   fillFrame
                 />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onChoosePath(card.id)}
+                  className="absolute inset-0 z-20 cursor-pointer bg-transparent"
+                  aria-label={`Private Login to open ${card.title}`}
+                />
+              </div>
             </li>
           ))}
         </ul>
