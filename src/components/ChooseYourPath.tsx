@@ -11,6 +11,7 @@ type Props = {
 function SharpPathImage({
   webp,
   png,
+  mp4,
   width,
   height,
   alt,
@@ -18,33 +19,49 @@ function SharpPathImage({
 }: {
   webp: string;
   png: string;
+  mp4?: string;
   width: number;
   height: number;
   alt: string;
   fillFrame?: boolean;
 }) {
+  const frameClass = fillFrame
+    ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
+    : 'pointer-events-none block h-auto w-full cp-path-art';
   return (
     <span className={`relative block ${fillFrame ? 'h-full w-full' : 'w-full'}`}>
-      <picture className={fillFrame ? 'block h-full w-full' : undefined}>
-        <source type="image/webp" srcSet={webp} />
-        <img
-          src={png}
-          alt={alt}
+      {mp4 ? (
+        <video
+          src={mp4}
+          poster={png}
+          aria-label={alt}
           width={width}
           height={height}
-          decoding="async"
-          draggable={false}
-          className={
-            fillFrame
-              ? 'pointer-events-none block h-full w-full object-cover object-top cp-path-art'
-              : 'pointer-events-none block h-auto w-full cp-path-art'
-          }
-          style={{
-            maxWidth: fillFrame ? '100%' : `${width}px`,
-            imageRendering: 'auto',
-          }}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          className={frameClass}
         />
-      </picture>
+      ) : (
+        <picture className={fillFrame ? 'block h-full w-full' : undefined}>
+          <source type="image/webp" srcSet={webp} />
+          <img
+            src={png}
+            alt={alt}
+            width={width}
+            height={height}
+            decoding="async"
+            draggable={false}
+            className={frameClass}
+            style={{
+              maxWidth: fillFrame ? '100%' : `${width}px`,
+              imageRendering: 'auto',
+            }}
+          />
+        </picture>
+      )}
       <span
         className="pointer-events-none absolute right-2 top-[22%] z-10 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)] sm:right-3"
         data-path-watermark=""
@@ -88,6 +105,7 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                 <SharpPathImage
                   webp={card.webp}
                   png={card.png}
+                  mp4={card.mp4}
                   width={card.width}
                   height={card.height}
                   alt={`${card.title}. ${card.tagline}.`}
