@@ -111,6 +111,16 @@ export default function ChooseYourPath({ onChoosePath }: Props) {
                   alt={`${card.title}. ${card.tagline}.`}
                   fillFrame
                 />
+                <span
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-1 py-2 text-center text-[10px] font-black uppercase tracking-wider text-white sm:py-3 sm:text-base"
+                  style={{
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.94) 45%, rgba(0,0,0,0))',
+                    color: card.accent,
+                    textShadow: `0 0 10px ${card.accent}`,
+                  }}
+                >
+                  {card.id}
+                </span>
                 <button
                   type="button"
                   onClick={() => onChoosePath(card.id)}
