@@ -496,7 +496,7 @@ export const CATALOG: CatalogItem[] = [
   },
   {
     id: "human_board",
-    title: "Check in with one board member (Brian, Dustin, or Brent)",
+    title: "Check in with one board member (Brian or Brent)",
     why: "Weekly, not daily nagging",
     kind: "human",
     cadence: "weekly",

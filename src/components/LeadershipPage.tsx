@@ -21,7 +21,7 @@ export default function LeadershipPage() {
     <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-x-hidden relative">
       <SEO
         title="Meet the Board — ClearPath Trader"
-        description="Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd, Brent (CCO), Brian Weber (CFO Advisor), and Dustin Shorr (board, public relations). No login required."
+        description="Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd, Brent (CCO), and Brian Weber (CFO Advisor). No login required."
         canonical={MEET_THE_BOARD_CANONICAL}
       />
       <SurfBackground />

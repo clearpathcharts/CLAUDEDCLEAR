@@ -41,7 +41,6 @@ export default function BoardLoginTerminal({ member, onClose, onSuccess }: Board
       'Brent Miller': '27368645537',
       'Brian Weber': '2742693237',
       'Bryan Weber': '2792693237', // legacy spelling
-      'Dustin Shorr': '38784674677',
     };
 
     setTimeout(() => {
