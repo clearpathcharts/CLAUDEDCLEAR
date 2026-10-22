@@ -503,27 +503,39 @@ export const LightweightCandles = memo(function LightweightCandles({
   const activeCustomTheme = (safeProfileId === "calm_focus") ? (customTheme || savedTheme) : null;
   const [backgroundMode] = useChartBackgroundMode();
   const colorPref = useChartColorPreference();
+  const profileOwnsLook = safeProfileId !== "calm_focus";
+  const useCeoDaily = colorPref.ceoDaily && !profileOwnsLook;
   const paint = useMemo(() => {
     const fallback = {
       background: activeCustomTheme?.background || profile.bgBottom,
       text: activeCustomTheme?.text || profile.text,
       grid: activeCustomTheme?.grid || profile.grid,
     };
-    const chosenBg = colorPref.ceoDaily
+    const chosenBg = useCeoDaily
       ? colorPref.backgroundHex || CEO_DAILY_TRADING_COLORS.chartBackground
-      : colorPref.backgroundHex;
+      : profileOwnsLook
+        ? null
+        : colorPref.backgroundHex;
     const base = chartBackgroundColors(backgroundMode, fallback, chosenBg);
-    if (colorPref.ceoDaily || colorPref.backgroundHex) {
+    if (profileOwnsLook) {
+      return {
+        background: profile.bgBottom,
+        text: profile.text,
+        grid: profile.grid,
+        frame: undefined as string | undefined,
+      };
+    }
+    if (useCeoDaily || colorPref.backgroundHex) {
       const background = base.background;
       return {
         background,
-        text: colorPref.ceoDaily
+        text: useCeoDaily
           ? isLightChartBackground(background)
             ? CEO_DAILY_TRADING_COLORS.secondaryBackground
             : CEO_DAILY_TRADING_COLORS.priceLabels
           : base.text,
-        grid: colorPref.ceoDaily ? CEO_DAILY_TRADING_COLORS.chartGrid : base.grid,
-        frame: colorPref.ceoDaily ? CEO_DAILY_TRADING_COLORS.secondaryBackground : undefined,
+        grid: useCeoDaily ? CEO_DAILY_TRADING_COLORS.chartGrid : base.grid,
+        frame: useCeoDaily ? CEO_DAILY_TRADING_COLORS.secondaryBackground : undefined,
       };
     }
     return {
@@ -532,7 +544,7 @@ export const LightweightCandles = memo(function LightweightCandles({
       grid: visualPaint?.grid || base.grid,
       frame: undefined as string | undefined,
     };
-  }, [backgroundMode, activeCustomTheme, profile, visualPaint, colorPref.ceoDaily, colorPref.backgroundHex]);
+  }, [backgroundMode, activeCustomTheme, profile, profileOwnsLook, useCeoDaily, visualPaint, colorPref.backgroundHex]);
 
   // Use custom theme if provided, otherwise fallback to profile-based theme
   const theme = useMemo(() => {
@@ -626,7 +638,7 @@ export const LightweightCandles = memo(function LightweightCandles({
       };
     }
 
-    const rawCandleColors = colorPref.ceoDaily
+    const rawCandleColors = useCeoDaily
       ? {
           upColor: CEO_DAILY_TRADING_COLORS.bullishCandle,
           downColor: CEO_DAILY_TRADING_COLORS.bearishCandle,
@@ -635,7 +647,16 @@ export const LightweightCandles = memo(function LightweightCandles({
           borderUpColor: CEO_DAILY_TRADING_COLORS.bullishCandle,
           borderDownColor: CEO_DAILY_TRADING_COLORS.bearishCandle,
         }
-      : {
+      : profileOwnsLook
+        ? {
+            upColor: profile.upColor,
+            downColor: profile.downColor,
+            wickUpColor: profile.wickUpColor,
+            wickDownColor: profile.wickDownColor,
+            borderUpColor: profile.borderUpColor,
+            borderDownColor: profile.borderDownColor,
+          }
+        : {
           upColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.upColor),
           downColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.downColor),
           wickUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.wickUpColor || activeCustomTheme.wickUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.wickUpColor),
@@ -643,10 +664,10 @@ export const LightweightCandles = memo(function LightweightCandles({
           borderUpColor: visualPaint?.candleUp || (activeCustomTheme ? (activeCustomTheme.borderUpColor || activeCustomTheme.borderUp || activeCustomTheme.upColor || activeCustomTheme.candleUp) : theme.candleSeries.borderUpColor),
           borderDownColor: visualPaint?.candleDown || (activeCustomTheme ? (activeCustomTheme.borderDownColor || activeCustomTheme.borderDown || activeCustomTheme.downColor || activeCustomTheme.candleDown) : theme.candleSeries.borderDownColor),
         };
-    // CEO daily colors keep a brighter wick than the body. Other themes stay matched.
-    const vividCandles = colorPref.ceoDaily
+    // CEO daily colors keep a brighter wick than the body. A chosen neuro profile keeps its own inks.
+    const vividCandles = useCeoDaily
       ? { ...rawCandleColors, borderVisible: false as const }
-      : cleanCandleSeriesOptions(rawCandleColors, activeCustomTheme ? 1.05 : 0);
+      : cleanCandleSeriesOptions(rawCandleColors, profileOwnsLook ? 0 : (activeCustomTheme ? 1.05 : 0));
     candleColorsRef.current = { up: vividCandles.upColor, down: vividCandles.downColor };
 
     const series = addStyledPriceSeries(chart, seriesStyle, vividCandles);
