@@ -1400,7 +1400,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                       ? 'p-0 min-h-0'
                       : activeTab === 'CeoDashboard' ? 'min-w-0 px-0 sm:px-6 lg:px-12 pb-16 pt-4 sm:pt-8 min-h-[50vh]' : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
                   }`}>
-                    {activeTab !== 'CeoDashboard' && activeTab !== 'Fundamentals' && (
+                    {activeTab !== 'CeoDashboard' &&
+                      activeTab !== 'Fundamentals' &&
+                      activeTab !== 'Discovery' && (
                       <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
                         <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
                       </div>
