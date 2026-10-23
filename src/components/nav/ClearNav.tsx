@@ -17,6 +17,11 @@ import {
 import { MobileCommandCenter } from "./MobileCommandCenter";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
+import {
+  NAV_BRIGHT_VIOLET_TAB_IDS,
+  navBrightVioletDesktopActive,
+  navBrightVioletDesktopIdle,
+} from "./navAccentColors";
 
 interface ClearNavProps {
   activeTab: string;
@@ -148,11 +153,15 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       item.id === "ClearPathEducation" ||
       item.id === "LiteracyOS";
 
+    const isBrightViolet = NAV_BRIGHT_VIOLET_TAB_IDS.has(item.id);
+
     const isOrange =
-      isSecondaryGroup || index % 2 === 1;
+      !isBrightViolet && (isSecondaryGroup || index % 2 === 1);
 
     let classes =
       "text-[#4D00FF] border border-[#4D00FF]/55 hover:bg-[#4D00FF]/20";
+
+    if (isBrightViolet) classes = navBrightVioletDesktopIdle;
 
     if (isOrange)
       classes =
@@ -173,6 +182,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       else if (isCyan)
         classes =
           "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]";
+      else if (isBrightViolet) classes = navBrightVioletDesktopActive;
       else if (isOrange)
         classes =
           "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]";

@@ -56,7 +56,7 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
   ywc: {
     id: 'ywc',
     title: 'Y.W.C. — Your World Connected',
-    color: '#FF2E9A',
+    color: '#BF00FF',
     text: vo('ywc'),
     quiz: [
       {
@@ -96,7 +96,7 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
   charts: {
     id: 'charts',
     title: 'Charts',
-    color: '#FF7B00',
+    color: '#BF00FF',
     text: vo('charts'),
     quiz: [
       {
@@ -372,6 +372,12 @@ export function getExplainContent(id: string): ExplainContent | undefined {
   return explainContentLibrary[key];
 }
 
+const NAV_TAB_BADGE_COLORS: Record<string, string> = {
+  Yours: '#BF00FF',
+  StrictlyCharts: '#BF00FF',
+  Communities: '#BF00FF',
+};
+
 export function explainColorForNavTab(tabId: string): string {
-  return getExplainContent(tabId)?.color || '#00E5FF';
+  return NAV_TAB_BADGE_COLORS[tabId] ?? getExplainContent(tabId)?.color ?? '#00E5FF';
 }

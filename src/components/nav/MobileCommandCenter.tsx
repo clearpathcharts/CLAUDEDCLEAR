@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
+import {
+  navBrightVioletMobileActive,
+  navBrightVioletMobileIdle,
+} from "./navAccentColors";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -52,8 +56,8 @@ const WORK_ITEMS: NavItem[] = [
     id: "Yours",
     icon: Users,
     label: "Y.W.C. HUB",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+    colorClass: navBrightVioletMobileIdle,
+    glowClass: navBrightVioletMobileActive,
   },
   {
     id: "News",
@@ -66,8 +70,8 @@ const WORK_ITEMS: NavItem[] = [
     id: "Communities",
     icon: MessageSquare,
     label: "COMMUNITIES",
-    colorClass: "text-[#FF1493] border-[#FF1493]/25 hover:bg-[#FF1493]/10",
-    glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+    colorClass: navBrightVioletMobileIdle,
+    glowClass: navBrightVioletMobileActive,
   },
 ];
 
@@ -221,8 +225,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
             ${
               activeTab === "StrictlyCharts"
-                ? "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]"
-                : "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10"
+                ? `${navBrightVioletMobileActive} border`
+                : `${navBrightVioletMobileIdle} border`
             }
           `}
           style={{ fontFamily: "'Cinzel', serif" }}
@@ -286,8 +290,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
                 text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
                 ${
                   isOpen
-                    ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
-                    : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
+                    ? `${navBrightVioletMobileActive} border`
+                    : `${navBrightVioletMobileIdle} border`
                 }
               `}
               style={{ fontFamily: "'Cinzel', serif" }}
