@@ -1,12 +1,11 @@
 /**
- * In-house team accounts (Brent / Dustin / Brian / owner).
- * Passwords come ONLY from Cloud Run env — never commit secrets.
+ * Founder login — typically a single owner account from Cloud Run env.
+ * Passwords come ONLY from Cloud Run — never commit secrets.
  *
  * TEAM_USERS format (comma-separated):
- *   brent:password1:member,dustin:password2:member,brian:password3:member,owner:password4:owner
+ *   owner:password:owner
  *
- * Or individual vars:
- *   TEAM_BRENT_PASSWORD / TEAM_DUSTIN_PASSWORD / TEAM_BRIAN_PASSWORD / TEAM_OWNER_PASSWORD
+ * Or: TEAM_OWNER_PASSWORD / APP_PASSWORD
  */
 import crypto from "crypto";
 
@@ -37,19 +36,11 @@ export function loadTeamUsers() {
       .filter((u) => u.username && u.password);
   }
 
-  const users = [];
-  const named = [
-    ["brent", process.env.TEAM_BRENT_PASSWORD, "member"],
-    ["dustin", process.env.TEAM_DUSTIN_PASSWORD, "member"],
-    ["brian", process.env.TEAM_BRIAN_PASSWORD, "member"],
-    ["owner", process.env.TEAM_OWNER_PASSWORD || process.env.APP_PASSWORD, "owner"],
-  ];
-  for (const [username, password, role] of named) {
-    if (clean(password)) {
-      users.push({ username, password: clean(password), role });
-    }
+  const ownerPass = clean(process.env.TEAM_OWNER_PASSWORD || process.env.APP_PASSWORD);
+  if (ownerPass) {
+    return [{ username: "owner", password: ownerPass, role: "owner" }];
   }
-  return users;
+  return [];
 }
 
 export function findUser(username, password) {
