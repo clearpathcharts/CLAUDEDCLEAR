@@ -39,31 +39,46 @@ export default function CeoCommitmentStatementPage() {
         </button>
       </nav>
 
-      <main className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-16 print:max-w-none print:p-0">
+      <main className="relative z-10 mx-auto max-w-5xl px-4 py-10 sm:px-6 md:py-16 print:max-w-none print:p-0">
         <article className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#09090b]/95 shadow-[0_30px_100px_rgba(0,0,0,0.55)] print:rounded-none print:border-0 print:bg-white print:shadow-none">
-          <header className="relative overflow-hidden border-b border-white/10 px-6 py-10 text-center sm:px-10 md:px-14 md:py-14 print:border-slate-300">
+          <header className="relative overflow-hidden border-b border-white/10 px-6 py-10 sm:px-10 md:px-14 md:py-14 print:border-slate-300">
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#00E5FF] via-[#FFD700] to-[#FF1493] print:bg-slate-900" />
-            <div className="relative">
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400 print:text-slate-600">
-                Clear Path Markets Science Corp.
-              </p>
-              <p className="mt-2 text-sm font-black uppercase tracking-[0.35em] text-[#00E5FF] print:text-slate-800">
-                ClearPathTrader
-              </p>
-              <div className="mx-auto my-7 h-px w-24 bg-[#FFD700]/60 print:bg-slate-400" />
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#FFD700]/30 bg-[#FFD700]/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#FFD700] print:border-slate-400 print:text-slate-700">
-                <BadgeCheck size={15} aria-hidden="true" />
-                Certified Statement
+            <div className="relative grid items-center gap-8 md:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] md:gap-10">
+              <figure className="mx-auto w-full max-w-[19rem] overflow-hidden rounded-2xl border border-white/15 bg-black shadow-[0_20px_60px_rgba(0,0,0,0.45)] print:border-slate-300 print:shadow-none">
+                <img
+                  src="/images/richard-floyd-ceo-statement.jpg"
+                  alt="Richard Floyd, Founder and Chief Executive Officer of ClearPathTrader"
+                  width={1079}
+                  height={1292}
+                  className="aspect-[4/5] w-full object-cover object-top"
+                />
+                <figcaption className="border-t border-white/10 bg-black/80 px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400 print:border-slate-300 print:bg-white print:text-slate-600">
+                  Richard Floyd · Founder &amp; CEO
+                </figcaption>
+              </figure>
+
+              <div className="text-center md:text-left">
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400 print:text-slate-600">
+                  Clear Path Markets Science Corp.
+                </p>
+                <p className="mt-2 text-sm font-black uppercase tracking-[0.35em] text-[#00E5FF] print:text-slate-800">
+                  ClearPathTrader
+                </p>
+                <div className="mx-auto my-7 h-px w-24 bg-[#FFD700]/60 md:mx-0 print:bg-slate-400" />
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#FFD700]/30 bg-[#FFD700]/5 px-4 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-[#FFD700] print:border-slate-400 print:text-slate-700">
+                  <BadgeCheck size={15} aria-hidden="true" />
+                  Certified Statement
+                </div>
+                <h1
+                  className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-5xl print:text-slate-950"
+                  style={{ fontFamily: "'Cinzel', serif" }}
+                >
+                  Two-Year Voluntary Salary Waiver
+                  <span className="mt-2 block text-xl text-zinc-400 sm:text-2xl md:text-3xl print:text-slate-600">
+                    &amp; Customer-First Commitment
+                  </span>
+                </h1>
               </div>
-              <h1
-                className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-5xl print:text-slate-950"
-                style={{ fontFamily: "'Cinzel', serif" }}
-              >
-                Two-Year Voluntary Salary Waiver
-                <span className="mt-2 block text-xl text-zinc-400 sm:text-2xl md:text-3xl print:text-slate-600">
-                  &amp; Customer-First Commitment
-                </span>
-              </h1>
             </div>
           </header>
 
