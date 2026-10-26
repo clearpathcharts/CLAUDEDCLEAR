@@ -66,6 +66,12 @@ import {
 } from '../content/organizationPublic';
 import { MEMBERSHIP_PLANS } from '../content/membershipPricing';
 import { NEVER_BROKER_DEALER } from '../lib/passThroughBrokerModel';
+import {
+  CEO_COMMITMENT_DETAILS,
+  CEO_COMMITMENT_INTRO,
+  CEO_COMMITMENT_SECTIONS,
+  CEO_COMMITMENT_SIGNATURE,
+} from '../content/ceoCommitmentStatement';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -1739,6 +1745,36 @@ function renderIdentityFounderBody(): string {
 <p><a href="/press">Full press kit</a> · <a href="/meet-the-board">Meet the Board</a></p>`;
 }
 
+function renderCeoCommitmentStatementBody(): string {
+  const details = CEO_COMMITMENT_DETAILS.map(
+    ([label, value]) => `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</li>`,
+  ).join('\n');
+  const intro = CEO_COMMITMENT_INTRO.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n');
+  const sections = CEO_COMMITMENT_SECTIONS.map(
+    (section, index) => `<section><h2>${index + 1}. ${escapeHtml(section.title)}</h2>
+${section.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}</section>`,
+  ).join('\n');
+
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: "CEO's Certified Statement" }])}
+<h1>CEO's Certified Statement</h1>
+<p class="lead">Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment</p>
+<p><strong>Clear Path Markets Science Corp. · ClearPathTrader</strong></p>
+<ul>${details}</ul>
+<h2>Official Statement</h2>
+${intro}
+${sections}
+<section><h2>Digital Signature</h2>
+<p><em>${escapeHtml(CEO_COMMITMENT_SIGNATURE.notation)}</em></p>
+<p><strong>${escapeHtml(CEO_COMMITMENT_SIGNATURE.name)}</strong><br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.title)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.company)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.product)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.location)}</p>
+<p><strong>Date:</strong> ${escapeHtml(CEO_COMMITMENT_SIGNATURE.date)}</p>
+<p>${escapeHtml(CEO_COMMITMENT_SIGNATURE.disclaimer)}</p></section>
+<p><a href="/company">Company</a> · <a href="/founder">Founder</a> · <a href="/meet-the-board">Meet the Board</a></p>`;
+}
+
 function renderIdentityPressBody(): string {
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Press' }])}
 <h1>Press Kit — ${escapeHtml(FOUNDER_LEADER.displayName)}</h1>
@@ -1770,6 +1806,7 @@ const IDENTITY_BOT_PATHS: Record<string, () => string> = {
   '/company': renderIdentityCompanyBody,
   '/meet-the-board': renderIdentityMeetTheBoardBody,
   '/founder': renderIdentityFounderBody,
+  '/ceo-statement': renderCeoCommitmentStatementBody,
   '/press': renderIdentityPressBody,
   '/press-kit': renderIdentityPressBody,
   '/plans': renderIdentityPlansBody,

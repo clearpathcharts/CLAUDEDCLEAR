@@ -46,6 +46,7 @@ import { deskCanonicalPath, isTraderDeskId, TRADER_DESK_IDS, TRADER_DESKS } from
 import { organizationSchema, leadershipPersonSchemas, personSchema } from './organizationSchema';
 import { FOUNDER_LEADER } from '../content/leadershipPublic';
 import { COMPANY_META_DESCRIPTION, ORG_LEGAL_NAME } from '../content/organizationPublic';
+import { CEO_COMMITMENT_META } from '../content/ceoCommitmentStatement';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -482,6 +483,27 @@ export function enrichHtmlWithMetadata(
       name: title,
       description,
       mainEntity: { '@id': `${baseUrl}/#${FOUNDER_LEADER.schemaKey}` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/ceo-statement') {
+    title = CEO_COMMITMENT_META.title;
+    description = CEO_COMMITMENT_META.description;
+    keywords =
+      'Richard Floyd salary waiver, ClearPath Trader CEO statement, customer-first commitment, Clear Path Markets Science';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: "CEO's Certified Statement", url: '/ceo-statement' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      datePublished: '2026-09-13',
+      author: { '@id': `${baseUrl}/#${FOUNDER_LEADER.schemaKey}` },
+      about: { '@id': `${baseUrl}/#organization` },
       isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
     });
   } else if (pathClean === '/plans' || pathClean === '/membership' || pathClean === '/pricing') {

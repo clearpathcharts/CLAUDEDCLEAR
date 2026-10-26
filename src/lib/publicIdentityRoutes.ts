@@ -8,6 +8,7 @@ export function isPublicIdentityPath(pathname: string): boolean {
     path === '/meet-the-board' ||
     path === '/leadership' ||
     path === '/founder' ||
+    path === '/ceo-statement' ||
     path === '/press' ||
     path === '/press-kit'
   );

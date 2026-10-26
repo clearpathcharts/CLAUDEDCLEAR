@@ -14,6 +14,7 @@ const paths = [
   '/company',
   '/meet-the-board',
   '/founder',
+  '/ceo-statement',
   '/press',
   '/plans',
   '/brokers',
@@ -43,9 +44,18 @@ const board = enrichHtmlWithMetadata(shell, '/meet-the-board');
 assert.match(board, /"@type": "Person"/);
 assert.match(board, /Brian Weber/);
 
+const statement = renderStaticIdentityPageForBots('/ceo-statement');
+assert.match(statement!, /Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment/);
+assert.match(statement!, /subject to applicable corporate approvals and accounting requirements/);
+assert.match(statement!, /does not independently verify identity or establish a cryptographic digital signature/);
+const statementMeta = enrichHtmlWithMetadata(shell, '/ceo-statement');
+assert.match(statementMeta, /CEO's Certified Statement/);
+assert.match(statementMeta, /datePublished": "2026-09-13"/);
+
 const server = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
 assert.match(server, /path: '\/plans'/);
 assert.match(server, /path: '\/brokers'/);
+assert.match(server, /path: '\/ceo-statement'/);
 assert.match(server, /redirect\(301, `\/plans/);
 
 console.log('identity-pages-seo.selftest: ok');
