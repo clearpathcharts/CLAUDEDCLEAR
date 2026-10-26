@@ -28,6 +28,9 @@ export default function PublicSiteLinks() {
       <a href="/founder" className={linkClass}>
         Founder
       </a>
+      <a href="/ceo-statement" className={linkClass}>
+        CEO statement
+      </a>
       <a href="/accessibility" className={linkClass}>
         Accessibility
       </a>

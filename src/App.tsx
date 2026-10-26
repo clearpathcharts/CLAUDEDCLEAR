@@ -19,6 +19,7 @@ import PressKitPage from './components/PressKitPage';
 import CompanyPage from './components/CompanyPage';
 import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
 import FounderPage from './components/FounderPage';
+import CeoCommitmentStatementPage from './components/CeoCommitmentStatementPage';
 import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
@@ -416,6 +417,8 @@ export default function App() {
     );
   } else if (currentPath === '/founder') {
     content = <FounderPage />;
+  } else if (currentPath === '/ceo-statement') {
+    content = <CeoCommitmentStatementPage />;
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {
