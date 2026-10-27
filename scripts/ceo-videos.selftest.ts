@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {
   normalizeMergeVideoIds,
   normalizeMergeTitle,
+  extractMergeVideoIdsFromBody,
   ffmpegConcatArgs,
   TAB_EXPLAINER_CLIP_COUNT,
 } from '../src/server/ceoVideoMerge';
@@ -79,6 +80,13 @@ function assertMergeRules() {
   assert.equal(args[args.length - 1], 'out.mp4');
   assert.equal(normalizeMergeTitle('  My title  ', 'fallback'), 'My title');
   assert.equal(normalizeMergeTitle('   ', 'fallback'), 'fallback');
+  const hex = ['a'.repeat(16), 'b'.repeat(16), 'c'.repeat(16)];
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: hex[0], clip2Id: hex[1], clip3Id: hex[2] }),
+    hex
+  );
+  assert.deepEqual(extractMergeVideoIdsFromBody({ videoIds: hex }), hex);
+  assert.deepEqual(normalizeMergeVideoIds(hex.map((id) => id.toUpperCase())), hex);
   for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
     assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
   }
