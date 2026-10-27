@@ -75,7 +75,8 @@ function assertMergeRules() {
   assert.equal(TAB_EXPLAINER_CLIP_COUNT, 3);
   assert.deepEqual(normalizeMergeVideoIds(ids), ids);
   const args = ffmpegConcatArgs(['one.mp4', 'two.mp4', 'three.mp4'], 'out.mp4');
-  assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=0[v]')), true);
+  assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=1[v][a]')), true);
+  assert.ok(args.includes('-c:a') && args.includes('aac'), 'merge output must encode AAC audio');
   assert.equal(args.some((arg) => arg.includes('scale=1280:720')), true);
   assert.equal(args[args.length - 1], 'out.mp4');
   assert.equal(normalizeMergeTitle('  My title  ', 'fallback'), 'My title');
