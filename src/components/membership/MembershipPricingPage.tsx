@@ -9,6 +9,7 @@ import {
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
 import { ManageBillingButton } from './ManageBillingButton';
+import { trackMarketingCta } from '../MarketingAttributionTracker';
 import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
@@ -18,7 +19,8 @@ const planAccentVars = (id: MembershipPlanPrice['id']) => tierAccentVars(id);
 function readOfferedPlan(): MembershipPlanId {
   if (typeof window === 'undefined') return 'basic';
   try {
-    const q = new URLSearchParams(window.location.search).get('package');
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('package') || params.get('offer');
     if (q === 'basic' || q === 'silver' || q === 'gold' || q === 'platinum') return q;
   } catch {
     /* ignore */
@@ -36,6 +38,7 @@ export default function MembershipPricingPage() {
 
   const choosePlan = (id: MembershipPlanId) => {
     setOfferedId(id);
+    trackMarketingCta(id, `${id}_plan_selected`);
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('package', id);

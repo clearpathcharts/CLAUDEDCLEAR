@@ -102,6 +102,16 @@ export const frontendErrorLimiter = rateLimit({
   message: { error: 'Too many error reports.' },
 });
 
+/** Anonymous first-party marketing beacons — burst guard, not an analytics counter. */
+export const marketingEventLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `marketing:${clientIp(req)}`,
+  message: { error: 'Too many marketing events.' },
+});
+
 export const brokerOAuthStartLimiter = rateLimit({
   windowMs: 60_000,
   max: 10,

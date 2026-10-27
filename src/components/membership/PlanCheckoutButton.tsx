@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { MembershipPlanId } from '../../content/membershipPricing';
 import { membershipAuthHeaders } from '../../hooks/useMembership';
+import { trackMarketingCta } from '../MarketingAttributionTracker';
 
 export function PlanCheckoutButton({
   planId,
@@ -17,6 +18,7 @@ export function PlanCheckoutButton({
   const startCheckout = async () => {
     setBusy(true);
     setError('');
+    trackMarketingCta(planId, `${planId}_checkout`);
     try {
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',

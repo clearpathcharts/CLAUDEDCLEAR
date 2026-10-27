@@ -13,6 +13,7 @@ const metadata = JSON.parse(read('data/marketing/clearpath-marketing-metadata.js
   audiences: Array<{ id: string; destination: string }>;
   keywordClusters: Array<{ id: string; destination: string; keywords: string[] }>;
   pageMetadata: Array<{ path: string; title: string; description: string; primaryKeyword: string }>;
+  campaign: { pilotChannels: string[] };
   distribution: { approvalRule: string; vendorNotes: Array<{ name: string; decision: string }> };
 };
 
@@ -21,6 +22,7 @@ assert.ok(metadata.brand.prohibitedClaims.length >= 5);
 assert.ok(metadata.audiences.length >= 6);
 assert.ok(metadata.keywordClusters.length >= 8);
 assert.ok(metadata.pageMetadata.length >= 6);
+assert.ok(!metadata.campaign.pilotChannels.includes('X'));
 
 const keywords = metadata.keywordClusters.flatMap((cluster) => cluster.keywords);
 assert.ok(keywords.length >= 75, `expected at least 75 keywords, got ${keywords.length}`);
@@ -46,6 +48,6 @@ assert.match(component, /Open ClearPath Social OS/);
 
 const ceo = read('src/components/CeoDashboard.tsx');
 assert.match(ceo, /import MarketingCampaignDesk/);
-assert.match(ceo, /<MarketingCampaignDesk \/>/);
+assert.match(ceo, /<MarketingCampaignDesk getHeaders=\{founderApiHeaders\} \/>/);
 
 console.log('marketing-campaign.selftest: ok');

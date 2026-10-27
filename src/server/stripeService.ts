@@ -36,6 +36,7 @@ import {
 } from './stripeWebhookDedup';
 import { membershipMonthlyCents } from '../content/membershipPricing';
 import { tierRankOf } from '../lib/entitlements';
+import { recordMarketingConversion, recordMarketingTrial } from './marketingFunnelService';
 
 export type MembershipTierId =
   | 'silver'
@@ -699,6 +700,13 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
         },
         email,
       );
+      if (outcome !== 'skipped' && subscribed) {
+        try {
+          await recordMarketingTrial(uid, tier);
+        } catch (error: any) {
+          console.warn('[Stripe] marketing trial attribution skipped:', error?.message || error);
+        }
+      }
       return { handled: outcome !== 'skipped' };
     }
     case 'customer.subscription.created':
@@ -750,6 +758,11 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
         const record = readProfile(parsed.uid)?.membership;
         if (record) {
           creditAffiliateResidual(parsed.uid, { ...record, status: 'active' }, String(sub.metadata?.interval || 'month'));
+        }
+        try {
+          await recordMarketingConversion(parsed.uid, parsed.tier);
+        } catch (error: any) {
+          console.warn('[Stripe] marketing conversion attribution skipped:', error?.message || error);
         }
       }
       return { handled: outcome !== 'skipped' };
