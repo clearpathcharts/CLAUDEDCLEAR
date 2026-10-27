@@ -87,6 +87,12 @@ function assertMergeRules() {
   );
   assert.deepEqual(extractMergeVideoIdsFromBody({ videoIds: hex }), hex);
   assert.deepEqual(normalizeMergeVideoIds(hex.map((id) => id.toUpperCase())), hex);
+  const pair = [ids[0], ids[1]];
+  assert.deepEqual(normalizeMergeVideoIds(pair), pair);
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: pair[0], clip2Id: pair[1] }),
+    pair
+  );
   for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
     assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
   }
@@ -94,13 +100,16 @@ function assertMergeRules() {
   const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
   assert.match(docker, /ffmpeg/);
   const ui = fs.readFileSync(path.join(root, 'src/components/CeoVideoLibrary.tsx'), 'utf8');
-  assert.match(ui, /Merge into one 30-second video/);
+  assert.match(ui, /Merge 3 clips into one/);
   assert.match(ui, /\/api\/ceo\/videos\/merge/);
   assert.match(ui, /data-ceo-video-merge-title/);
   assert.match(ui, /data-ceo-video-merge-slot/);
   assert.match(ui, /data-ceo-video-merge-error/);
   assert.match(ui, /data-ceo-video-merged/);
   assert.match(ui, /data-ceo-video-merge-autofill/);
+  assert.match(ui, /data-ceo-video-merge-clip-count/);
+  assert.match(ui, /data-ceo-video-catalog/);
+  assert.match(ui, /data-ceo-video-catalog-remove/);
 }
 
 async function main() {
@@ -231,9 +240,9 @@ async function main() {
       headers: founder,
       body: JSON.stringify({ videoIds: ['a'.repeat(16)] }),
     });
-    assert.equal(shortMerge.status, 400, 'fewer than three clips must be refused before storage is touched');
+    assert.equal(shortMerge.status, 400, 'fewer than two clips must be refused before storage is touched');
     const shortBody = (await shortMerge.json()) as { error?: string };
-    assert.equal(shortBody.error, 'need_three_clips');
+    assert.equal(shortBody.error, 'need_clips');
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
   }

@@ -19,6 +19,10 @@ import {
 } from './ceoVideoStorage';
 import { getStorage } from 'firebase-admin/storage';
 
+/** Flow tab explainers: join 2 (~20s) or 3 (~30s) short clips. */
+export const MERGE_CLIP_MIN = 2;
+export const MERGE_CLIP_MAX = 3;
+/** Section walkthroughs still use seven beats; merge allows 2–3 clips only. */
 export const TAB_EXPLAINER_CLIP_COUNT = 3;
 const ID_PATTERN = /^[a-f0-9]{16}$/;
 
@@ -46,42 +50,44 @@ export function extractMergeVideoIdsFromBody(body: unknown): unknown {
   const c1 = record.clip1Id ?? record.clip1 ?? record.clip_1;
   const c2 = record.clip2Id ?? record.clip2 ?? record.clip_2;
   const c3 = record.clip3Id ?? record.clip3 ?? record.clip_3;
-  if (c1 != null && c2 != null && c3 != null) return [c1, c2, c3];
+  if (c1 != null && c2 != null) {
+    const fromFields = [c1, c2, c3]
+      .map((item) => (item == null ? '' : String(item).trim()))
+      .filter(Boolean);
+    if (fromFields.length >= MERGE_CLIP_MIN) {
+      return fromFields.slice(0, MERGE_CLIP_MAX);
+    }
+  }
   return undefined;
 }
 
 export function normalizeMergeVideoIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
     throw new CeoVideoStorageError(
-      'Merge needs three clip ids (videoIds array or clip1Id, clip2Id, clip3Id). Tap Refresh, re-pick Clip 1–3, then merge again.',
+      'Merge needs two or three clip ids (videoIds array or clip1Id + clip2Id, optional clip3Id). Tap Refresh, re-pick clips, then merge again.',
       400,
-      'need_three_clips'
+      'need_clips'
     );
   }
-  if (value.length !== TAB_EXPLAINER_CLIP_COUNT) {
+  const ids = value
+    .map((item) => String(item ?? '').trim().toLowerCase())
+    .filter((id) => id.length > 0);
+  if (ids.length < MERGE_CLIP_MIN || ids.length > MERGE_CLIP_MAX) {
     throw new CeoVideoStorageError(
-      `Received ${value.length} clip id(s). Pick exactly three different clips, in play order.`,
+      `Received ${ids.length} clip id(s). Pick two or three different clips, in play order.`,
       400,
-      'need_three_clips'
-    );
-  }
-  const ids = value.map((item) => String(item ?? '').trim().toLowerCase());
-  if (ids.some((id) => !id)) {
-    throw new CeoVideoStorageError(
-      'One of the three clip slots is empty. Pick Clip 1, Clip 2, and Clip 3, then merge.',
-      400,
-      'need_three_clips'
+      'need_clips'
     );
   }
   if (ids.some((id) => !ID_PATTERN.test(id))) {
     throw new CeoVideoStorageError(
-      `A clip id is not a valid library id (${ids.join(', ')}). Tap Refresh, then pick all three again.`,
+      `A clip id is not a valid library id (${ids.join(', ')}). Tap Refresh, then pick your clips again.`,
       400,
       'bad_id'
     );
   }
-  if (new Set(ids).size !== TAB_EXPLAINER_CLIP_COUNT) {
-    throw new CeoVideoStorageError('Pick three different clips.', 400, 'duplicate_clip');
+  if (new Set(ids).size !== ids.length) {
+    throw new CeoVideoStorageError('Pick different clips — the same upload cannot be used twice.', 400, 'duplicate_clip');
   }
   return ids;
 }
@@ -133,7 +139,7 @@ function runFfmpeg(args: string[]): Promise<void> {
       child.kill();
       reject(
         new CeoVideoStorageError(
-          'Joining the three clips took too long and was stopped.',
+          'Joining the clips took too long and was stopped.',
           504,
           'merge_timeout'
         )
@@ -144,7 +150,7 @@ function runFfmpeg(args: string[]): Promise<void> {
       if (error.code === 'ENOENT') {
         reject(
           new CeoVideoStorageError(
-            'ffmpeg is not installed on this server, so the three clips cannot be joined yet.',
+            'ffmpeg is not installed on this server, so clips cannot be joined yet.',
             503,
             'ffmpeg_missing'
           )
@@ -208,7 +214,7 @@ export async function mergeCeoVideos(
   }
   if (!clips) {
     throw new CeoVideoStorageError(
-      'One of those clips is not in the library yet. Tap Refresh, then pick all three again.',
+      'One of those clips is not in the library yet. Tap Refresh, then pick your clips again.',
       404,
       'not_found'
     );
@@ -231,12 +237,13 @@ export async function mergeCeoVideos(
     }
 
     const id = crypto.randomBytes(8).toString('hex');
-    const filename = sanitizeVideoFilename('tab-explainer-30s.mp4');
+    const filename = sanitizeVideoFilename(`tab-explainer-${clips.length}-clips.mp4`);
     const objectPath = `${CEO_VIDEO_PREFIX}${id}/${filename}`;
     const names = clips.map((clip) => clip.originalName || clip.filename).join(' + ');
+    const approxSeconds = clips.length * 10;
     const displayName = normalizeMergeTitle(
       options?.title,
-      `30s tab explainer (${names})`.slice(0, 200)
+      `~${approxSeconds}s combined (${clips.length} clips: ${names})`.slice(0, 200)
     );
     await bucket.upload(output, {
       destination: objectPath,

@@ -24,6 +24,7 @@ import {
   Search,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 
 type CeoVideo = {
@@ -205,6 +206,7 @@ export default function CeoVideoLibrary({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteNote, setDeleteNote] = useState<string | null>(null);
   const [savingSlotId, setSavingSlotId] = useState<string | null>(null);
   const [savedSlotId, setSavedSlotId] = useState<string | null>(null);
   const [slotQuery, setSlotQuery] = useState('');
@@ -212,6 +214,7 @@ export default function CeoVideoLibrary({
   // Only groups the founder has deliberately opened or closed land here; the
   // rest fall back to the default for the current filter state.
   const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
+  const [mergeClipCount, setMergeClipCount] = useState<2 | 3>(3);
   const [clipIds, setClipIds] = useState<['', '', ''] | [string, string, string]>(['', '', '']);
   const [mergeTitle, setMergeTitle] = useState('');
   const [mergeSlotId, setMergeSlotId] = useState('');
@@ -245,24 +248,39 @@ export default function CeoVideoLibrary({
     void load();
   }, [load]);
 
-  const mergeThreeClips = async () => {
-    const videoIds = [
+  const mergeClips = async () => {
+    const picked = [
       String(clipIds[0] ?? '').trim().toLowerCase(),
       String(clipIds[1] ?? '').trim().toLowerCase(),
-      String(clipIds[2] ?? '').trim().toLowerCase(),
-    ] as [string, string, string];
-    if (videoIds.some((id) => !id)) {
-      setMergeError('Pick Clip 1, Clip 2, and Clip 3 — merge needs exactly three different uploads.');
+      mergeClipCount === 3 ? String(clipIds[2] ?? '').trim().toLowerCase() : '',
+    ].filter(Boolean);
+    const videoIds =
+      mergeClipCount === 3
+        ? ([
+            String(clipIds[0] ?? '').trim().toLowerCase(),
+            String(clipIds[1] ?? '').trim().toLowerCase(),
+            String(clipIds[2] ?? '').trim().toLowerCase(),
+          ] as [string, string, string])
+        : ([
+            String(clipIds[0] ?? '').trim().toLowerCase(),
+            String(clipIds[1] ?? '').trim().toLowerCase(),
+          ] as [string, string]);
+    if (picked.length !== mergeClipCount) {
+      setMergeError(
+        mergeClipCount === 3
+          ? 'Pick Clip 1, Clip 2, and Clip 3 — three different uploads in play order.'
+          : 'Pick Clip 1 and Clip 2 — two different uploads in play order.'
+      );
       return;
     }
     if (videoIds.some((id) => !isValidLibraryVideoId(id))) {
       setMergeError(
-        'One or more clips are not wired to a library id. Tap Refresh, then pick all three clips again (not just the filenames).'
+        'One or more clips are not wired to a library id. Tap Refresh, then pick your clips again (not just the filenames).'
       );
       return;
     }
-    if (new Set(videoIds).size < 3) {
-      setMergeError('Pick three different clips — the same upload cannot be used twice.');
+    if (new Set(videoIds).size < videoIds.length) {
+      setMergeError('Pick different clips — the same upload cannot be used twice.');
       return;
     }
     setMerging(true);
@@ -273,7 +291,7 @@ export default function CeoVideoLibrary({
       if (!catalog?.videos?.length) {
         throw new Error('Video library did not load. Tap Refresh, then try merge again.');
       }
-      for (let i = 0; i < 3; i += 1) {
+      for (let i = 0; i < videoIds.length; i += 1) {
         if (!catalog.videos.some((v) => v.id.toLowerCase() === videoIds[i])) {
           throw new Error(
             `Clip ${i + 1} is not in the library yet. Tap Refresh, wait a few seconds, then merge again.`
@@ -289,7 +307,8 @@ export default function CeoVideoLibrary({
           videoIds,
           clip1Id: videoIds[0],
           clip2Id: videoIds[1],
-          clip3Id: videoIds[2],
+          clip3Id: videoIds.length > 2 ? videoIds[2] : undefined,
+          clipCount: mergeClipCount,
           title: mergeTitle.trim() || undefined,
           slotId: mergeSlotId.trim() || undefined,
         }),
@@ -326,28 +345,43 @@ export default function CeoVideoLibrary({
         window.setTimeout(() => setHighlightVideoId(null), 12_000);
       }
     } catch (err: any) {
-      setMergeError(err?.message || 'Could not join the three clips.');
+      setMergeError(err?.message || 'Could not join the clips.');
     } finally {
       setMerging(false);
     }
   };
 
-  const fillClipsFromLatestThree = (catalog?: CeoVideo[]) => {
+  const fillClipsFromLatest = (count: 2 | 3 = mergeClipCount, catalog?: CeoVideo[]) => {
     const list = catalog ?? videos;
     const singles = list.filter((v) => !isMergedVideo(v));
-    if (singles.length < 3) {
-      setMergeError('Upload at least three separate clips first (not counting older combined videos).');
+    if (singles.length < count) {
+      setMergeError(
+        `Upload at least ${count} separate clips first (not counting older combined videos).`
+      );
       return false;
     }
     const latest = [...singles]
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
-      .slice(0, 3)
+      .slice(0, count)
       .reverse();
-    setClipIds([latest[0]!.id, latest[1]!.id, latest[2]!.id] as [string, string, string]);
+    setClipIds([
+      latest[0]!.id,
+      latest[1]!.id,
+      count === 3 ? latest[2]!.id : '',
+    ] as [string, string, string]);
     setMergeError(null);
-    setMergeNote('Filled Clip 1–3 from your three newest uploads (oldest → newest). Tap Merge when ready.');
+    setMergeNote(
+      count === 3
+        ? 'Filled Clip 1–3 from your three newest uploads (oldest → newest). Tap Merge when ready.'
+        : 'Filled Clip 1–2 from your two newest uploads (oldest → newest). Tap Merge when ready.'
+    );
     return true;
   };
+
+  const mergeSlotsReady =
+    Boolean(clipIds[0]) &&
+    Boolean(clipIds[1]) &&
+    (mergeClipCount === 2 || Boolean(clipIds[2]));
 
   const patchUpload = (key: string, patch: Partial<UploadRow>) =>
     setUploads((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -403,8 +437,14 @@ export default function CeoVideoLibrary({
       }
     }
     const catalog = await load();
-    if (picked.length === 3 && catalog?.videos?.length) {
-      fillClipsFromLatestThree(catalog.videos);
+    if (
+      catalog?.videos?.length &&
+      (picked.length === mergeClipCount || (picked.length === 3 && mergeClipCount === 3))
+    ) {
+      fillClipsFromLatest(
+        picked.length >= 3 ? 3 : picked.length >= 2 ? 2 : mergeClipCount,
+        catalog.videos
+      );
     }
   };
 
@@ -462,12 +502,69 @@ export default function CeoVideoLibrary({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Delete failed (${res.status})`);
+      const cleared = Array.isArray(body.clearedSlots) ? body.clearedSlots.length : 0;
+      setDeleteNote(
+        cleared > 0
+          ? `Removed “${libraryLabel(video)}” from the catalog and cleared ${cleared} slot assignment(s).`
+          : `Removed “${libraryLabel(video)}” from the catalog.`
+      );
+      window.setTimeout(() => setDeleteNote(null), 8000);
+      setClipIds((prev) => {
+        const next = [...prev] as [string, string, string];
+        for (let i = 0; i < 3; i += 1) {
+          if (next[i] === video.id) next[i] = '';
+        }
+        return next;
+      });
+      if (highlightVideoId === video.id) setHighlightVideoId(null);
       await load();
     } catch (err: any) {
       setError(err?.message || 'Could not delete that video.');
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const renderCatalogRemoveControl = (video: CeoVideo, compact: boolean) => {
+    const confirming = confirmDeleteId === video.id;
+    const busy = deletingId === video.id;
+    return (
+      <button
+        type="button"
+        data-ceo-video-catalog-remove={video.id}
+        disabled={busy}
+        title={
+          confirming
+            ? 'Tap again to permanently delete from Cloud Storage'
+            : 'Remove from catalog (file deleted on server)'
+        }
+        aria-label={
+          confirming ? `Confirm delete ${libraryLabel(video)}` : `Delete ${libraryLabel(video)} from catalog`
+        }
+        onClick={() => void handleDelete(video)}
+        className={
+          compact
+            ? `flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors disabled:opacity-50 ${
+                confirming
+                  ? 'border-red-400 bg-red-500 text-white hover:bg-red-400'
+                  : 'border-red-500/40 text-red-300 hover:border-red-400 hover:bg-red-500/20'
+              }`
+            : `flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-50 ${
+                confirming
+                  ? 'border-red-400 bg-red-500 text-white hover:bg-red-400'
+                  : 'border-red-500/50 text-red-300 hover:bg-red-500/15'
+              }`
+        }
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        ) : confirming ? (
+          <span className="text-[10px] font-black uppercase">OK</span>
+        ) : (
+          <X className="h-5 w-5" aria-hidden="true" />
+        )}
+      </button>
+    );
   };
 
   const storage = payload?.storage;
@@ -610,17 +707,97 @@ export default function CeoVideoLibrary({
         Up to {maxMb} MB each · MP4, MOV, WebM, M4V, MKV · you can pick several at once
       </p>
 
+      {deleteNote ? (
+        <p
+          data-ceo-video-delete-note
+          className="m-0 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+        >
+          {deleteNote}
+        </p>
+      ) : null}
+
+      {payload && storage?.configured && videos.length > 0 ? (
+        <section
+          data-ceo-video-catalog
+          className="space-y-3 rounded-2xl border border-zinc-600 bg-zinc-950/80 px-5 py-4"
+        >
+          <header className="space-y-1">
+            <h3 className="m-0 text-sm font-black uppercase tracking-widest text-zinc-200">
+              Video catalog ({videos.length})
+            </h3>
+            <p className="m-0 text-xs leading-relaxed text-zinc-400">
+              Tap the red <strong className="text-red-300">X</strong> to delete a duplicate from Cloud Storage.
+              Tap <strong className="text-white">X</strong> again to confirm. Assignments on the site are cleared
+              automatically.
+            </p>
+          </header>
+          <ul className="m-0 max-h-[min(420px,50vh)] list-none space-y-2 overflow-y-auto p-0 pr-1">
+            {videos.map((video) => (
+              <li
+                key={`catalog-${video.id}`}
+                data-ceo-video-catalog-row={video.id}
+                className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                  isMergedVideo(video) ? 'border-[#FF1493]/40 bg-[#FF1493]/5' : 'border-zinc-700 bg-black/40'
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`m-0 truncate text-sm ${
+                      isMergedVideo(video) ? MERGED_TITLE_CLASS : 'text-white'
+                    }`}
+                  >
+                    {libraryLabel(video)}
+                  </p>
+                  <p className="m-0 font-mono text-[10px] text-zinc-500">
+                    {video.id} · {formatSize(video.sizeBytes)} · {formatDate(video.uploadedAt)}
+                  </p>
+                </div>
+                {renderCatalogRemoveControl(video, true)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <div
         data-ceo-video-merge
         className="space-y-3 rounded-2xl border border-[#00FFFF]/30 bg-black/40 px-5 py-5"
       >
         <p className="m-0 text-sm font-black uppercase tracking-widest text-[#00FFFF]">
-          Join 3 Flow clips into one 30-second tab video
+          Join Flow clips into one tab video
         </p>
         <p className="m-0 text-sm leading-relaxed text-zinc-300">
-          Google Flow stops at about 10 seconds. Upload the three clips first, then pick them in play order.
-          The joined video shows up in the library so you can put it on that tab.
+          Google Flow stops at about 10 seconds. Upload your clips first, then pick them in play order (two or
+          three). The joined video shows up in the library so you can put it on that tab.
         </p>
+        <div
+          data-ceo-video-merge-clip-count
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label="How many clips to join"
+        >
+          {([2, 3] as const).map((n) => (
+            <button
+              key={n}
+              type="button"
+              disabled={!storage?.configured || merging}
+              onClick={() => {
+                setMergeClipCount(n);
+                if (n === 2) {
+                  setClipIds((prev) => [prev[0], prev[1], ''] as [string, string, string]);
+                }
+                setMergeError(null);
+              }}
+              className={`min-h-[48px] rounded-xl border px-4 text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-50 ${
+                mergeClipCount === n
+                  ? 'border-[#00FFFF] bg-[#00FFFF]/15 text-[#00FFFF]'
+                  : 'border-zinc-600 text-zinc-300 hover:border-zinc-400'
+              }`}
+            >
+              Join {n} clips
+            </button>
+          ))}
+        </div>
         {videos.some((v) => !isValidLibraryVideoId(v.id)) ? (
           <p className="m-0 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
             Some uploads are missing a library id — merge cannot use them. Tap <strong className="text-white">Refresh</strong>
@@ -670,57 +847,68 @@ export default function CeoVideoLibrary({
             </select>
           </label>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {([0, 1, 2] as const).map((index) => (
-            <label key={index} className="block space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                Clip {index + 1}
-              </span>
-              <select
-                data-ceo-video-merge-clip={index + 1}
-                disabled={!storage?.configured || merging || !videos.length}
-                value={clipIds[index]}
-                onChange={(e) =>
-                  setClipIds((prev) => {
-                    const next = [...prev] as [string, string, string];
-                    next[index] = e.target.value;
-                    return next;
-                  })
-                }
-                className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
-              >
-                <option value="">Choose a clip</option>
-                <VideoSelectOptions videos={videos} />
-              </select>
-            </label>
-          ))}
+        <div className={`grid gap-3 ${mergeClipCount === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+          {([0, 1, 2] as const)
+            .filter((index) => mergeClipCount === 3 || index < 2)
+            .map((index) => (
+              <label key={index} className="block space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  Clip {index + 1}
+                </span>
+                <select
+                  data-ceo-video-merge-clip={index + 1}
+                  disabled={!storage?.configured || merging || !videos.length}
+                  value={clipIds[index]}
+                  onChange={(e) =>
+                    setClipIds((prev) => {
+                      const next = [...prev] as [string, string, string];
+                      next[index] = e.target.value;
+                      return next;
+                    })
+                  }
+                  className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+                >
+                  <option value="">Choose a clip</option>
+                  <VideoSelectOptions videos={videos} />
+                </select>
+              </label>
+            ))}
         </div>
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
             data-ceo-video-merge-autofill
-            disabled={!storage?.configured || merging || videos.length < 3}
-            onClick={() => fillClipsFromLatestThree()}
+            disabled={
+              !storage?.configured ||
+              merging ||
+              videos.filter((v) => !isMergedVideo(v)).length < mergeClipCount
+            }
+            onClick={() => fillClipsFromLatest(mergeClipCount)}
             className={`${BTN} min-h-[52px] border border-[#FF1493]/50 px-4 text-xs text-[#FF1493] hover:bg-[#FF1493]/10`}
           >
-            Use my 3 newest single clips
+            Use my {mergeClipCount} newest single clips
           </button>
         </div>
-        {clipIds.some((id) => !id) ? (
+        {!mergeSlotsReady ? (
           <p className="m-0 text-sm text-amber-200">
-            Pick all three clips above (or upload three at once — they auto-fill). Merge stays off until Clip 1–3
-            are set.
+            {mergeClipCount === 3
+              ? 'Pick Clip 1–3 in play order (or upload three at once — they auto-fill). Merge stays off until all three are set.'
+              : 'Pick Clip 1 and Clip 2 in play order. Merge stays off until both are set.'}
           </p>
         ) : null}
         <button
           type="button"
           data-ceo-video-merge-go
-          disabled={!storage?.configured || merging || clipIds.some((id) => !id)}
-          onClick={() => void mergeThreeClips()}
+          disabled={!storage?.configured || merging || !mergeSlotsReady}
+          onClick={() => void mergeClips()}
           className={`${BTN} min-h-[64px] bg-[#00FFFF] px-6 text-sm text-black hover:bg-[#6ffcff]`}
         >
           {merging ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : null}
-          {merging ? 'Joining clips… (up to 5 min)' : 'Merge into one 30-second video'}
+          {merging
+            ? 'Joining clips… (up to 5 min)'
+            : mergeClipCount === 3
+              ? 'Merge 3 clips into one ~30s video'
+              : 'Merge 2 clips into one ~20s video'}
         </button>
         {mergeError ? (
           <p
@@ -968,7 +1156,8 @@ export default function CeoVideoLibrary({
               preload="metadata"
               className="aspect-video w-full rounded-xl bg-black"
             />
-            <div className="space-y-1">
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1 space-y-1">
               {isMergedVideo(video) ? (
                 <span className="inline-block rounded-lg border border-[#FF1493]/50 bg-[#FF1493]/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
                   Combined video
@@ -990,6 +1179,8 @@ export default function CeoVideoLibrary({
                   allUsers → Storage Object Viewer on the bucket.
                 </p>
               ) : null}
+              </div>
+              {renderCatalogRemoveControl(video, false)}
             </div>
             <p className="m-0 break-all rounded-lg bg-black/60 px-3 py-2 font-mono text-[11px] text-zinc-400">
               {video.url}
@@ -1031,7 +1222,7 @@ export default function CeoVideoLibrary({
                   ? 'Deleting…'
                   : confirmDeleteId === video.id
                     ? 'Tap again to delete'
-                    : 'Delete'}
+                    : 'Delete from catalog'}
               </button>
             </div>
           </li>

@@ -147,7 +147,7 @@ export function createCeoVideoRouter(): Router {
     }
   });
 
-  /** Join exactly three library clips, in order, into one MP4. */
+  /** Join two or three library clips, in order, into one MP4. */
   router.post('/merge', async (req, res) => {
     try {
       const video = await mergeCeoVideos(req.body, { title: req.body?.title });
