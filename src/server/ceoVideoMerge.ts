@@ -22,17 +22,63 @@ import { getStorage } from 'firebase-admin/storage';
 export const TAB_EXPLAINER_CLIP_COUNT = 3;
 const ID_PATTERN = /^[a-f0-9]{16}$/;
 
+/** Accept every shape the CEO panel may POST after cache / proxy quirks. */
+export function extractMergeVideoIdsFromBody(body: unknown): unknown {
+  if (!body || typeof body !== 'object') return undefined;
+  const record = body as Record<string, unknown>;
+  const raw = record.videoIds ?? record.video_ids ?? record.clips;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        return JSON.parse(trimmed) as unknown;
+      } catch {
+        /* fall through */
+      }
+    }
+    const parts = trimmed
+      .split(/[,|\n]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length) return parts;
+  }
+  const c1 = record.clip1Id ?? record.clip1 ?? record.clip_1;
+  const c2 = record.clip2Id ?? record.clip2 ?? record.clip_2;
+  const c3 = record.clip3Id ?? record.clip3 ?? record.clip_3;
+  if (c1 != null && c2 != null && c3 != null) return [c1, c2, c3];
+  return undefined;
+}
+
 export function normalizeMergeVideoIds(value: unknown): string[] {
-  if (!Array.isArray(value) || value.length !== TAB_EXPLAINER_CLIP_COUNT) {
+  if (!Array.isArray(value)) {
     throw new CeoVideoStorageError(
-      'Pick exactly three clips, in the order they should play.',
+      'Merge needs three clip ids (videoIds array or clip1Id, clip2Id, clip3Id). Tap Refresh, re-pick Clip 1–3, then merge again.',
       400,
       'need_three_clips'
     );
   }
-  const ids = value.map((item) => String(item || '').trim());
+  if (value.length !== TAB_EXPLAINER_CLIP_COUNT) {
+    throw new CeoVideoStorageError(
+      `Received ${value.length} clip id(s). Pick exactly three different clips, in play order.`,
+      400,
+      'need_three_clips'
+    );
+  }
+  const ids = value.map((item) => String(item ?? '').trim().toLowerCase());
+  if (ids.some((id) => !id)) {
+    throw new CeoVideoStorageError(
+      'One of the three clip slots is empty. Pick Clip 1, Clip 2, and Clip 3, then merge.',
+      400,
+      'need_three_clips'
+    );
+  }
   if (ids.some((id) => !ID_PATTERN.test(id))) {
-    throw new CeoVideoStorageError('One of those clips is not a library video.', 400, 'bad_id');
+    throw new CeoVideoStorageError(
+      `A clip id is not a valid library id (${ids.join(', ')}). Tap Refresh, then pick all three again.`,
+      400,
+      'bad_id'
+    );
   }
   if (new Set(ids).size !== TAB_EXPLAINER_CLIP_COUNT) {
     throw new CeoVideoStorageError('Pick three different clips.', 400, 'duplicate_clip');
@@ -133,10 +179,13 @@ export function normalizeMergeTitle(value: unknown, fallback: string): string {
 }
 
 export async function mergeCeoVideos(
-  videoIds: unknown,
+  bodyOrIds: unknown,
   options?: { title?: unknown }
 ): Promise<CeoVideo> {
-  const ids = normalizeMergeVideoIds(videoIds);
+  const extracted =
+    extractMergeVideoIdsFromBody(bodyOrIds) ??
+    (Array.isArray(bodyOrIds) ? bodyOrIds : undefined);
+  const ids = normalizeMergeVideoIds(extracted);
   const status = getCeoVideoStorageStatus();
   if (!status.configured || !status.bucket) {
     throw new CeoVideoStorageError(

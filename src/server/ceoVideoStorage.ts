@@ -20,7 +20,13 @@ import firebaseConfig from '../../firebase-applet-config.json';
 export const CEO_VIDEO_PREFIX = 'ceo-videos/';
 
 /** Upload ids are server-minted hex so no caller-supplied path ever reaches GCS. */
-const ID_PATTERN = /^[a-f0-9]{16}$/;
+export const CEO_VIDEO_ID_PATTERN = /^[a-f0-9]{16}$/;
+
+const ID_PATTERN = CEO_VIDEO_ID_PATTERN;
+
+export function isCeoVideoLibraryId(value: unknown): boolean {
+  return CEO_VIDEO_ID_PATTERN.test(String(value ?? '').trim().toLowerCase());
+}
 
 export const CEO_VIDEO_CONTENT_TYPES = [
   'video/mp4',

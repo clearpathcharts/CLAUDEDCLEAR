@@ -150,7 +150,7 @@ export function createCeoVideoRouter(): Router {
   /** Join exactly three library clips, in order, into one MP4. */
   router.post('/merge', async (req, res) => {
     try {
-      const video = await mergeCeoVideos(req.body?.videoIds, { title: req.body?.title });
+      const video = await mergeCeoVideos(req.body, { title: req.body?.title });
       const slotId = String(req.body?.slotId || '').trim();
       let assignment = null;
       if (slotId) {

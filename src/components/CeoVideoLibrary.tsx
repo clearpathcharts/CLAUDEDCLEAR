@@ -40,6 +40,11 @@ type CeoVideo = {
 };
 
 const MERGED_TITLE_CLASS = 'text-[#FF1493] font-black drop-shadow-[0_0_12px_rgba(255,20,147,0.45)]';
+const LIBRARY_VIDEO_ID = /^[a-f0-9]{16}$/i;
+
+function isValidLibraryVideoId(id: string): boolean {
+  return LIBRARY_VIDEO_ID.test(String(id || '').trim());
+}
 
 function isMergedVideo(video: CeoVideo): boolean {
   return Boolean(video.merged || video.originalName.startsWith('★'));
@@ -52,8 +57,9 @@ function libraryLabel(video: CeoVideo): string {
 }
 
 function VideoSelectOptions({ videos }: { videos: CeoVideo[] }) {
-  const combined = videos.filter(isMergedVideo);
-  const singles = videos.filter((v) => !isMergedVideo(v));
+  const usable = videos.filter((v) => isValidLibraryVideoId(v.id));
+  const combined = usable.filter(isMergedVideo);
+  const singles = usable.filter((v) => !isMergedVideo(v));
   return (
     <>
       {combined.length > 0 ? (
@@ -240,22 +246,50 @@ export default function CeoVideoLibrary({
   }, [load]);
 
   const mergeThreeClips = async () => {
-    if (clipIds.some((id) => !id)) {
+    const videoIds = [
+      String(clipIds[0] ?? '').trim().toLowerCase(),
+      String(clipIds[1] ?? '').trim().toLowerCase(),
+      String(clipIds[2] ?? '').trim().toLowerCase(),
+    ] as [string, string, string];
+    if (videoIds.some((id) => !id)) {
       setMergeError('Pick Clip 1, Clip 2, and Clip 3 — merge needs exactly three different uploads.');
+      return;
+    }
+    if (videoIds.some((id) => !isValidLibraryVideoId(id))) {
+      setMergeError(
+        'One or more clips are not wired to a library id. Tap Refresh, then pick all three clips again (not just the filenames).'
+      );
+      return;
+    }
+    if (new Set(videoIds).size < 3) {
+      setMergeError('Pick three different clips — the same upload cannot be used twice.');
       return;
     }
     setMerging(true);
     setMergeNote(null);
     setMergeError(null);
     try {
-      await load();
+      const catalog = await load();
+      if (!catalog?.videos?.length) {
+        throw new Error('Video library did not load. Tap Refresh, then try merge again.');
+      }
+      for (let i = 0; i < 3; i += 1) {
+        if (!catalog.videos.some((v) => v.id.toLowerCase() === videoIds[i])) {
+          throw new Error(
+            `Clip ${i + 1} is not in the library yet. Tap Refresh, wait a few seconds, then merge again.`
+          );
+        }
+      }
       const headers = await getHeaders();
       const res = await fetch('/api/ceo/videos/merge', {
         method: 'POST',
-        headers: { ...headers, 'content-type': 'application/json' },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          videoIds: clipIds,
+          videoIds,
+          clip1Id: videoIds[0],
+          clip2Id: videoIds[1],
+          clip3Id: videoIds[2],
           title: mergeTitle.trim() || undefined,
           slotId: mergeSlotId.trim() || undefined,
         }),
@@ -587,6 +621,12 @@ export default function CeoVideoLibrary({
           Google Flow stops at about 10 seconds. Upload the three clips first, then pick them in play order.
           The joined video shows up in the library so you can put it on that tab.
         </p>
+        {videos.some((v) => !isValidLibraryVideoId(v.id)) ? (
+          <p className="m-0 rounded-xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            Some uploads are missing a library id — merge cannot use them. Tap <strong className="text-white">Refresh</strong>
+            , then re-upload if a clip still will not appear in the dropdown.
+          </p>
+        ) : null}
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block space-y-1 md:col-span-2">
             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
