@@ -85,6 +85,7 @@
     "test:site-doctor": "tsx scripts/site-doctor.selftest.ts",
     "test:daily-pattern-review": "tsx scripts/daily-pattern-review.selftest.ts",
     "test:marketing-campaign": "tsx scripts/marketing-campaign.selftest.ts",
+    "test:marketing-funnel": "tsx scripts/marketing-funnel.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
     "test:company-catalog": "tsx scripts/company-catalog.selftest.ts",
     "test:generator-legitimacy": "tsx scripts/generator-legitimacy.selftest.ts",

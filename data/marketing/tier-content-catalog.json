@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-27",
+  "campaign": "clearpath_tier_funnels",
+  "goals": {
+    "membersPerTier": 25000,
+    "membersPerCycle": 100000,
+    "cycleBehavior": "Start a new visible cycle after 100,000 attributed member signups while preserving completed-cycle and lifetime totals."
+  },
+  "channels": [
+    "instagram",
+    "tiktok",
+    "youtube",
+    "facebook",
+    "linkedin",
+    "threads",
+    "bluesky",
+    "reddit",
+    "pinterest",
+    "discord",
+    "telegram"
+  ],
+  "excludedChannels": [
+    "x"
+  ],
+  "tiers": [
+    {
+      "id": "basic",
+      "label": "Free / Basic",
+      "accent": "#00E5FF",
+      "destination": "/plans?offer=basic",
+      "promise": "Start with a chart-first workspace and learn the market without a paid subscription.",
+      "poster": {
+        "id": "basic-chart-first",
+        "title": "START WITH THE CHART",
+        "subtitle": "Free Basic access · Learn without the noise",
+        "assetUrl": "/marketing/posters/basic-chart-first.svg",
+        "alt": "ClearPath Trader Free Basic poster: Start with the chart. Free Basic access and chart-first education.",
+        "cta": "Explore Free Basic",
+        "utmContent": "basic_chart_first_poster"
+      },
+      "videos": [
+        {
+          "id": "basic-15s-chart-first",
+          "durationSeconds": 15,
+          "hook": "What if your trading screen started with the chart instead of the noise?",
+          "beats": [
+            "Open on a crowded-interface silhouette",
+            "Cut to the ClearPath Basic chart",
+            "Show five indicators and simple drawing tools",
+            "End on the free Basic offer"
+          ],
+          "voiceover": "ClearPath Basic keeps the chart first. Start with essential indicators, drawing tools, watchlists, and plain-English education—free.",
+          "cta": "Explore Free Basic at ClearPathTrader.com",
+          "utmContent": "basic_chart_first_video"
+        },
+        {
+          "id": "basic-30s-first-chart-lesson",
+          "durationSeconds": 30,
+          "hook": "Your first chart lesson should not feel like a casino.",
+          "beats": [
+            "Show one clean candle chart",
+            "Explain price, time, and volume in three labels",
+            "Open the free encyclopedia",
+            "Invite the viewer to continue learning"
+          ],
+          "voiceover": "Price, time, and volume come before predictions. ClearPath Basic pairs a clean chart with free educational references so you can learn what you are seeing.",
+          "cta": "Start with Free Basic",
+          "utmContent": "basic_first_lesson_video"
+        }
+      ]
+    },
+    {
+      "id": "silver",
+      "label": "Silver",
+      "accent": "#C0C7D1",
+      "destination": "/plans?offer=silver",
+      "promise": "Build a larger learning workspace with intraday charts, replay, education, and customization.",
+      "poster": {
+        "id": "silver-build-workspace",
+        "title": "BUILD YOUR WORKSPACE",
+        "subtitle": "Four charts · Replay · Education · More control",
+        "assetUrl": "/marketing/posters/silver-build-workspace.svg",
+        "alt": "ClearPath Trader Silver poster: Build your workspace with four charts, replay, education, and customization.",
+        "cta": "Compare Silver",
+        "utmContent": "silver_workspace_poster"
+      },
+      "videos": [
+        {
+          "id": "silver-20s-four-chart-workspace",
+          "durationSeconds": 20,
+          "hook": "One market rarely tells the whole story.",
+          "beats": [
+            "Start with one chart",
+            "Expand into a four-chart workspace",
+            "Show intraday timeframes and replay",
+            "Close on Silver comparison"
+          ],
+          "voiceover": "Silver expands the workspace to four charts and adds intraday views, market replay, education, and customization. More context without losing the chart.",
+          "cta": "Compare Silver at ClearPathTrader.com",
+          "utmContent": "silver_four_chart_video"
+        },
+        {
+          "id": "silver-30s-replay-learn",
+          "durationSeconds": 30,
+          "hook": "Pause the market. Rewind the lesson.",
+          "beats": [
+            "Show a historical move",
+            "Activate market replay",
+            "Mark structure with drawing tools",
+            "Open the related education entry"
+          ],
+          "voiceover": "Market replay lets you study completed price action without pretending you knew the outcome. Silver combines replay, drawing tools, and education for deliberate practice.",
+          "cta": "See what Silver includes",
+          "utmContent": "silver_replay_video"
+        }
+      ]
+    },
+    {
+      "id": "gold",
+      "label": "Gold",
+      "accent": "#FFD54A",
+      "destination": "/plans?offer=gold",
+      "promise": "Study chart patterns and bring your own indicator logic into a ten-chart workspace.",
+      "poster": {
+        "id": "gold-pattern-literacy",
+        "title": "SEE THE PATTERN. LEARN THE STRUCTURE.",
+        "subtitle": "Pattern Overlay · INDACREATOR · Ten-chart workspace",
+        "assetUrl": "/marketing/posters/gold-pattern-literacy.svg",
+        "alt": "ClearPath Trader Gold poster: Learn chart structure with Pattern Overlay, INDACREATOR, and a ten-chart workspace.",
+        "cta": "Explore Gold",
+        "utmContent": "gold_pattern_literacy_poster"
+      },
+      "videos": [
+        {
+          "id": "gold-20s-pattern-overlay",
+          "durationSeconds": 20,
+          "hook": "A pattern label is not a trade signal. It is a lesson in structure.",
+          "beats": [
+            "Show an unlabeled chart",
+            "Enable Pattern Overlay",
+            "Highlight boundaries and invalidation",
+            "Display the educational disclaimer"
+          ],
+          "voiceover": "Gold can mark supported chart patterns on the chart you are already reading. Use the overlay to study structure—not as a promise or prediction.",
+          "cta": "Explore Pattern Overlay in Gold",
+          "utmContent": "gold_pattern_overlay_video"
+        },
+        {
+          "id": "gold-30s-indacreator",
+          "durationSeconds": 30,
+          "hook": "Bring indicator logic you already wrote into your ClearPath chart.",
+          "beats": [
+            "Open INDACREATOR",
+            "Paste a short indicator example",
+            "Render it on the chart",
+            "Show the portability limitation"
+          ],
+          "voiceover": "INDACREATOR interprets supported Pine-style indicator logic on ClearPath charts. Results may differ from another platform, but your learning and experimentation stay in one workspace.",
+          "cta": "See Gold features",
+          "utmContent": "gold_indacreator_video"
+        }
+      ]
+    },
+    {
+      "id": "platinum",
+      "label": "Platinum",
+      "accent": "#BF7CFF",
+      "destination": "/plans?offer=platinum",
+      "promise": "Bring the complete workspace together with the AI Pattern Scanner and supported automation tools.",
+      "poster": {
+        "id": "platinum-pattern-scanner",
+        "title": "SCAN FOR STRUCTURE. VERIFY ON THE CHART.",
+        "subtitle": "AI Pattern Scanner · Complete ClearPath workspace",
+        "assetUrl": "/marketing/posters/platinum-pattern-scanner.svg",
+        "alt": "ClearPath Trader Platinum poster: Scan for chart structure and verify it on the chart with the AI Pattern Scanner.",
+        "cta": "Explore Platinum",
+        "utmContent": "platinum_pattern_scanner_poster"
+      },
+      "videos": [
+        {
+          "id": "platinum-20s-scanner-workflow",
+          "durationSeconds": 20,
+          "hook": "Scanning is the beginning of analysis—not the end.",
+          "beats": [
+            "Open the AI Pattern Scanner",
+            "Surface a supported pattern candidate",
+            "Open it on the chart",
+            "Verify structure and limitations"
+          ],
+          "voiceover": "Platinum uses the AI Pattern Scanner to surface supported pattern candidates. You still inspect the chart, study the structure, and make your own decisions.",
+          "cta": "Explore the Platinum workflow",
+          "utmContent": "platinum_scanner_workflow_video"
+        },
+        {
+          "id": "platinum-30s-one-workspace",
+          "durationSeconds": 30,
+          "hook": "Charts, education, patterns, and your tools—together.",
+          "beats": [
+            "Move through the four trader desks",
+            "Show indicators and Pattern Overlay",
+            "Show AI Pattern Scanner candidates",
+            "Return to the chart-first workspace"
+          ],
+          "voiceover": "Platinum brings the ClearPath workspace together: charts, indicators, replay, education, Pattern Overlay, INDACREATOR, and the AI Pattern Scanner. Educational tools—not financial advice.",
+          "cta": "Compare Platinum",
+          "utmContent": "platinum_complete_workspace_video"
+        }
+      ]
+    }
+  ],
+  "requiredDisclaimer": "Educational content only. Not financial advice. ClearPath Trader is not a brokerage.",
+  "metricool": {
+    "status": "not_connected_to_clearpath",
+    "note": "Reach, impressions, watch time, saves, and platform engagement remain DATA UNAVAILABLE in ClearPath until a Metricool API or approved export is connected."
+  }
+}

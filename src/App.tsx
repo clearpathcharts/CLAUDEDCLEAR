@@ -31,6 +31,7 @@ import { useFounderAccess } from './hooks/useFounderAccess';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
+import MarketingAttributionTracker from './components/MarketingAttributionTracker';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
 import { SessionLogoutButton } from './components/session/SessionLogoutButton';
@@ -565,6 +566,7 @@ export default function App() {
 
   return (
     <>
+      <MarketingAttributionTracker key={`${currentPath}${currentSearch}`} />
       {content}
       {user ? <SessionLogoutButton variant="fixed" /> : null}
       <ExplainDeepLink />
