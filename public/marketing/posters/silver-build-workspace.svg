@@ -21,8 +21,8 @@
     <path d="M115 950l80-60 70 35 85-80 90 15"/>
     <path d="M600 900l70-35 75 55 65-110 85 40"/>
   </g>
-  <text x="80" y="1125" fill="#e6e9ee" font-family="Arial, sans-serif" font-size="34">Four charts · Replay · Education · More control</text>
+  <text x="80" y="1125" fill="#e6e9ee" font-family="Arial, sans-serif" font-size="34">Four charts - Replay - Education - More control</text>
   <rect x="80" y="1175" width="320" height="82" rx="16" fill="#c0c7d1"/>
   <text x="126" y="1228" fill="#101319" font-family="Arial, sans-serif" font-size="30" font-weight="800">COMPARE SILVER</text>
-  <text x="80" y="1315" fill="#7f8793" font-family="Arial, sans-serif" font-size="22">Educational content only · Not financial advice · Not a brokerage</text>
+  <text x="80" y="1315" fill="#7f8793" font-family="Arial, sans-serif" font-size="22">Educational content only - Not financial advice - Not a brokerage</text>
 </svg>

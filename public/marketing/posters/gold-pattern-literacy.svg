@@ -21,8 +21,8 @@
     <circle cx="520" cy="60" r="18" fill="#ffd54a"/>
   </g>
   <rect x="75" y="1040" width="930" height="4" fill="url(#gold)"/>
-  <text x="75" y="1115" fill="#f8e9bd" font-family="Arial, sans-serif" font-size="33">Pattern Overlay · INDACREATOR · Ten-chart workspace</text>
+  <text x="75" y="1115" fill="#f8e9bd" font-family="Arial, sans-serif" font-size="33">Pattern Overlay - INDACREATOR - Ten-chart workspace</text>
   <rect x="75" y="1170" width="305" height="82" rx="16" fill="url(#gold)"/>
   <text x="130" y="1223" fill="#1a1202" font-family="Arial, sans-serif" font-size="30" font-weight="800">EXPLORE GOLD</text>
-  <text x="75" y="1315" fill="#8f825f" font-family="Arial, sans-serif" font-size="22">Educational content only · Not financial advice · Not a brokerage</text>
+  <text x="75" y="1315" fill="#8f825f" font-family="Arial, sans-serif" font-size="22">Educational content only - Not financial advice - Not a brokerage</text>
 </svg>
