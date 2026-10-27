@@ -8,7 +8,13 @@
  * Run: npx tsx scripts/ceo-videos.selftest.ts
  */
 import assert from 'node:assert/strict';
-import { normalizeMergeVideoIds, ffmpegConcatArgs, TAB_EXPLAINER_CLIP_COUNT } from '../src/server/ceoVideoMerge';
+import {
+  normalizeMergeVideoIds,
+  normalizeMergeTitle,
+  extractMergeVideoIdsFromBody,
+  ffmpegConcatArgs,
+  TAB_EXPLAINER_CLIP_COUNT,
+} from '../src/server/ceoVideoMerge';
 import { CeoVideoStorageError } from '../src/server/ceoVideoStorage';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,7 +76,23 @@ function assertMergeRules() {
   assert.deepEqual(normalizeMergeVideoIds(ids), ids);
   const args = ffmpegConcatArgs(['one.mp4', 'two.mp4', 'three.mp4'], 'out.mp4');
   assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=0[v]')), true);
+  assert.equal(args.some((arg) => arg.includes('scale=1280:720')), true);
   assert.equal(args[args.length - 1], 'out.mp4');
+  assert.equal(normalizeMergeTitle('  My title  ', 'fallback'), 'My title');
+  assert.equal(normalizeMergeTitle('   ', 'fallback'), 'fallback');
+  const hex = ['a'.repeat(16), 'b'.repeat(16), 'c'.repeat(16)];
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: hex[0], clip2Id: hex[1], clip3Id: hex[2] }),
+    hex
+  );
+  assert.deepEqual(extractMergeVideoIdsFromBody({ videoIds: hex }), hex);
+  assert.deepEqual(normalizeMergeVideoIds(hex.map((id) => id.toUpperCase())), hex);
+  const pair = [ids[0], ids[1]];
+  assert.deepEqual(normalizeMergeVideoIds(pair), pair);
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: pair[0], clip2Id: pair[1] }),
+    pair
+  );
   for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
     assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
   }
@@ -78,8 +100,16 @@ function assertMergeRules() {
   const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
   assert.match(docker, /ffmpeg/);
   const ui = fs.readFileSync(path.join(root, 'src/components/CeoVideoLibrary.tsx'), 'utf8');
-  assert.match(ui, /Merge into one 30-second video/);
+  assert.match(ui, /Merge 3 clips into one/);
   assert.match(ui, /\/api\/ceo\/videos\/merge/);
+  assert.match(ui, /data-ceo-video-merge-title/);
+  assert.match(ui, /data-ceo-video-merge-slot/);
+  assert.match(ui, /data-ceo-video-merge-error/);
+  assert.match(ui, /data-ceo-video-merged/);
+  assert.match(ui, /data-ceo-video-merge-autofill/);
+  assert.match(ui, /data-ceo-video-merge-clip-count/);
+  assert.match(ui, /data-ceo-video-catalog/);
+  assert.match(ui, /data-ceo-video-catalog-remove/);
 }
 
 async function main() {
@@ -210,9 +240,9 @@ async function main() {
       headers: founder,
       body: JSON.stringify({ videoIds: ['a'.repeat(16)] }),
     });
-    assert.equal(shortMerge.status, 400, 'fewer than three clips must be refused before storage is touched');
+    assert.equal(shortMerge.status, 400, 'fewer than two clips must be refused before storage is touched');
     const shortBody = (await shortMerge.json()) as { error?: string };
-    assert.equal(shortBody.error, 'need_three_clips');
+    assert.equal(shortBody.error, 'need_clips');
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
   }

@@ -899,7 +899,7 @@ export default function CeoDashboard() {
 
       <ChooseYourPath onChoosePath={navigateToDesk} />
 
-      <MarketingCampaignDesk />
+      <MarketingCampaignDesk getHeaders={founderApiHeaders} />
 
       <CeoAlwaysOnMonitor />
             <DailyOpsDesk

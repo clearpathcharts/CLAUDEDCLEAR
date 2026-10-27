@@ -13,6 +13,7 @@ import {
   publicProfileUrl,
 } from "../lib/profileUsername";
 import { sequenceAccentVars } from "../lib/tierGradients";
+import { TEMP_HIDE_AFFILIATE_SURFACE } from "../config/founderUiToggles";
 import "../styles/tierGradient.css";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
@@ -509,7 +510,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </div>
         )}
 
-        {onNavigate && (
+        {onNavigate && !TEMP_HIDE_AFFILIATE_SURFACE ? (
           <button
             type="button"
             onClick={() => onNavigate('AffiliateNetwork')}
@@ -517,7 +518,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           >
             🔥 Affiliate Network
           </button>
-        )}
+        ) : null}
         <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
           {[
             "Followers: 12,450",
@@ -865,36 +866,12 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           />
         )}
 
-        {/* COMMUNITY INCENTIVES */}
-        <div className="cp-grad-edge bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl relative overflow-hidden">
-          <div className="text-[20px] md:text-[28px] mb-6 font-orbitron font-bold bg-gradient-to-r from-[#ff2ea6] to-[#00e5ff] text-transparent bg-clip-text w-fit">
-            COMMUNITY INCENTIVES
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            {[
-              { emoji: "☕", label: "Coffees Earned", count: 12 },
-              { emoji: "🍦", label: "Ice Cream Rewards", count: 4 },
-              { emoji: "🥧", label: "Pie Rewards", count: 1 },
-              { emoji: "🥇", label: "Gold Trophies", count: 2 },
-            ].map((reward, i) => (
-              <div
-                key={reward.label}
-                style={sequenceAccentVars(i)}
-                className="cp-stat-tile rounded-[22px] p-6 text-center flex flex-col items-center justify-center"
-              >
-                <div className="text-[52px] mb-3 leading-none">{reward.emoji}</div>
-                <div className="text-[#999] text-sm">{reward.label}</div>
-                <h2 className="text-2xl font-bold mt-1">{reward.count}</h2>
-              </div>
-            ))}
-          </div>
-
+        <div>
           <button
             type="button"
             disabled={isSaving}
             onClick={handleSaveProfile}
-            className="mt-6 bg-gradient-to-r from-[#00e5ff] to-[#ff2ea6] border-none py-4 md:py-[18px] px-8 rounded-[18px] text-[15px] md:text-[17px] font-bold text-white w-full cursor-pointer shadow-[0_0_18px_rgba(0,229,255,0.45)] hover:opacity-90 transition-all uppercase tracking-wider flex items-center justify-center gap-2 animate-none"
+            className="bg-gradient-to-r from-[#00e5ff] to-[#ff2ea6] border-none py-4 md:py-[18px] px-8 rounded-[18px] text-[15px] md:text-[17px] font-bold text-white w-full cursor-pointer shadow-[0_0_18px_rgba(0,229,255,0.45)] hover:opacity-90 transition-all uppercase tracking-wider flex items-center justify-center gap-2 animate-none"
           >
             {isSaving ? (
               <>

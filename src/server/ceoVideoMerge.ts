@@ -19,32 +19,93 @@ import {
 } from './ceoVideoStorage';
 import { getStorage } from 'firebase-admin/storage';
 
+/** Flow tab explainers: join 2 (~20s) or 3 (~30s) short clips. */
+export const MERGE_CLIP_MIN = 2;
+export const MERGE_CLIP_MAX = 3;
+/** Section walkthroughs still use seven beats; merge allows 2–3 clips only. */
 export const TAB_EXPLAINER_CLIP_COUNT = 3;
 const ID_PATTERN = /^[a-f0-9]{16}$/;
 
+/** Accept every shape the CEO panel may POST after cache / proxy quirks. */
+export function extractMergeVideoIdsFromBody(body: unknown): unknown {
+  if (!body || typeof body !== 'object') return undefined;
+  const record = body as Record<string, unknown>;
+  const raw = record.videoIds ?? record.video_ids ?? record.clips;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        return JSON.parse(trimmed) as unknown;
+      } catch {
+        /* fall through */
+      }
+    }
+    const parts = trimmed
+      .split(/[,|\n]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length) return parts;
+  }
+  const c1 = record.clip1Id ?? record.clip1 ?? record.clip_1;
+  const c2 = record.clip2Id ?? record.clip2 ?? record.clip_2;
+  const c3 = record.clip3Id ?? record.clip3 ?? record.clip_3;
+  if (c1 != null && c2 != null) {
+    const fromFields = [c1, c2, c3]
+      .map((item) => (item == null ? '' : String(item).trim()))
+      .filter(Boolean);
+    if (fromFields.length >= MERGE_CLIP_MIN) {
+      return fromFields.slice(0, MERGE_CLIP_MAX);
+    }
+  }
+  return undefined;
+}
+
 export function normalizeMergeVideoIds(value: unknown): string[] {
-  if (!Array.isArray(value) || value.length !== TAB_EXPLAINER_CLIP_COUNT) {
+  if (!Array.isArray(value)) {
     throw new CeoVideoStorageError(
-      'Pick exactly three clips, in the order they should play.',
+      'Merge needs two or three clip ids (videoIds array or clip1Id + clip2Id, optional clip3Id). Tap Refresh, re-pick clips, then merge again.',
       400,
-      'need_three_clips'
+      'need_clips'
     );
   }
-  const ids = value.map((item) => String(item || '').trim());
-  if (ids.some((id) => !ID_PATTERN.test(id))) {
-    throw new CeoVideoStorageError('One of those clips is not a library video.', 400, 'bad_id');
+  const ids = value
+    .map((item) => String(item ?? '').trim().toLowerCase())
+    .filter((id) => id.length > 0);
+  if (ids.length < MERGE_CLIP_MIN || ids.length > MERGE_CLIP_MAX) {
+    throw new CeoVideoStorageError(
+      `Received ${ids.length} clip id(s). Pick two or three different clips, in play order.`,
+      400,
+      'need_clips'
+    );
   }
-  if (new Set(ids).size !== TAB_EXPLAINER_CLIP_COUNT) {
-    throw new CeoVideoStorageError('Pick three different clips.', 400, 'duplicate_clip');
+  if (ids.some((id) => !ID_PATTERN.test(id))) {
+    throw new CeoVideoStorageError(
+      `A clip id is not a valid library id (${ids.join(', ')}). Tap Refresh, then pick your clips again.`,
+      400,
+      'bad_id'
+    );
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new CeoVideoStorageError('Pick different clips — the same upload cannot be used twice.', 400, 'duplicate_clip');
   }
   return ids;
 }
 
-/** Video-only concat so a silent Flow export still joins with the others. */
+/**
+ * Video-only concat. Each clip is scaled/padded to the same frame size first —
+ * Google Flow exports often disagree on resolution, which makes raw concat fail.
+ */
 export function ffmpegConcatArgs(inputs: string[], output: string): string[] {
-  const filter =
-    inputs.map((_, index) => `[${index}:v:0]`).join('') +
-    `concat=n=${inputs.length}:v=1:a=0[v]`;
+  const n = inputs.length;
+  const normalized = inputs
+    .map(
+      (_, index) =>
+        `[${index}:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p[v${index}]`
+    )
+    .join(';');
+  const stacked = inputs.map((_, index) => `[v${index}]`).join('');
+  const filter = `${normalized};${stacked}concat=n=${n}:v=1:a=0[v]`;
   return [
     '-y',
     ...inputs.flatMap((file) => ['-i', file]),
@@ -78,18 +139,18 @@ function runFfmpeg(args: string[]): Promise<void> {
       child.kill();
       reject(
         new CeoVideoStorageError(
-          'Joining the three clips took too long and was stopped.',
+          'Joining the clips took too long and was stopped.',
           504,
           'merge_timeout'
         )
       );
-    }, 120_000);
+    }, 300_000);
     child.on('error', (error: NodeJS.ErrnoException) => {
       clearTimeout(timer);
       if (error.code === 'ENOENT') {
         reject(
           new CeoVideoStorageError(
-            'ffmpeg is not installed on this server, so the three clips cannot be joined yet.',
+            'ffmpeg is not installed on this server, so clips cannot be joined yet.',
             503,
             'ffmpeg_missing'
           )
@@ -115,8 +176,22 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-export async function mergeCeoVideos(videoIds: unknown): Promise<CeoVideo> {
-  const ids = normalizeMergeVideoIds(videoIds);
+export function normalizeMergeTitle(value: unknown, fallback: string): string {
+  const trimmed = String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, 200);
+  return trimmed || fallback;
+}
+
+export async function mergeCeoVideos(
+  bodyOrIds: unknown,
+  options?: { title?: unknown }
+): Promise<CeoVideo> {
+  const extracted =
+    extractMergeVideoIdsFromBody(bodyOrIds) ??
+    (Array.isArray(bodyOrIds) ? bodyOrIds : undefined);
+  const ids = normalizeMergeVideoIds(extracted);
   const status = getCeoVideoStorageStatus();
   if (!status.configured || !status.bucket) {
     throw new CeoVideoStorageError(
@@ -125,12 +200,25 @@ export async function mergeCeoVideos(videoIds: unknown): Promise<CeoVideo> {
       'storage_not_configured'
     );
   }
-  const library = await listCeoVideos();
-  const ordered = ids.map((id) => library.find((video) => video.id === id));
-  if (ordered.some((video) => !video)) {
-    throw new CeoVideoStorageError('One of those clips is no longer in the library.', 404, 'not_found');
+  let clips: CeoVideo[] | null = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const library = await listCeoVideos();
+    const ordered = ids.map((id) => library.find((video) => video.id === id));
+    if (!ordered.some((video) => !video)) {
+      clips = ordered as CeoVideo[];
+      break;
+    }
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    }
   }
-  const clips = ordered as CeoVideo[];
+  if (!clips) {
+    throw new CeoVideoStorageError(
+      'One of those clips is not in the library yet. Tap Refresh, then pick your clips again.',
+      404,
+      'not_found'
+    );
+  }
 
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cp-merge-'));
   try {
@@ -149,17 +237,25 @@ export async function mergeCeoVideos(videoIds: unknown): Promise<CeoVideo> {
     }
 
     const id = crypto.randomBytes(8).toString('hex');
-    const filename = sanitizeVideoFilename('tab-explainer-30s.mp4');
+    const filename = sanitizeVideoFilename(`tab-explainer-${clips.length}-clips.mp4`);
     const objectPath = `${CEO_VIDEO_PREFIX}${id}/${filename}`;
     const names = clips.map((clip) => clip.originalName || clip.filename).join(' + ');
+    const approxSeconds = clips.length * 10;
+    const displayName = normalizeMergeTitle(
+      options?.title,
+      `~${approxSeconds}s combined (${clips.length} clips: ${names})`.slice(0, 200)
+    );
     await bucket.upload(output, {
       destination: objectPath,
       metadata: {
         contentType: 'video/mp4',
         cacheControl: 'public, max-age=31536000, immutable',
         metadata: {
-          originalName: `30s tab explainer (${names})`.slice(0, 200),
+          originalName: displayName.startsWith('★ ')
+            ? displayName
+            : `★ ${displayName}`,
           uploadedBy: 'ceo-video-merge',
+          merged: 'yes',
         },
       },
     });

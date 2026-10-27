@@ -134,6 +134,8 @@ import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
 import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
+import { createAdminMarketingRouter, createPublicMarketingRouter } from './src/server/marketingFunnelRoutes';
+import { MARKETING_ATTRIBUTION_COOKIE, recordMarketingSignup } from './src/server/marketingFunnelService';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
@@ -878,6 +880,11 @@ async function startServer() {
       }
 
       const user = result.user;
+      try {
+        await recordMarketingSignup(user.uid, req.cookies?.[MARKETING_ATTRIBUTION_COOKIE]);
+      } catch (marketingError: any) {
+        console.warn('[Marketing] signup attribution skipped:', marketingError?.message || marketingError);
+      }
       // Affiliate: ensure code for new member + attribute from cookie/body
       try {
         ensureAffiliateMember(user.uid);
@@ -903,6 +910,8 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+  app.use('/api/marketing', createPublicMarketingRouter());
+  app.use('/api/admin/marketing', requireFounderOrCatalogAdmin, createAdminMarketingRouter());
 
   // Founder-only explainer-video library. Same gate as the disaster backup:
   // founder session / Bearer / catalog secret, plus the CEO Dashboard action header.

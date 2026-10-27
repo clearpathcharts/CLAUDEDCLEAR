@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import marketingMetadata from '../../data/marketing/clearpath-marketing-metadata.json';
+import MarketingFunnelDashboard from './MarketingFunnelDashboard';
 
 type KeywordCluster = (typeof marketingMetadata.keywordClusters)[number];
 
@@ -23,7 +24,7 @@ const ROLLOUT = [
   },
   {
     phase: '2 · Controlled pilot',
-    action: 'Run two content pillars on YouTube, TikTok, Instagram, LinkedIn, X, and Reddit.',
+    action: 'Run two content pillars on YouTube, TikTok, Instagram, LinkedIn, Threads, Bluesky, and Reddit.',
     gate: 'Every public draft requires founder review; use platform-native copy.',
   },
   {
@@ -57,7 +58,11 @@ function saveJson(filename: string, value: unknown) {
   URL.revokeObjectURL(url);
 }
 
-export default function MarketingCampaignDesk() {
+export default function MarketingCampaignDesk({
+  getHeaders,
+}: {
+  getHeaders: () => Promise<Record<string, string>>;
+}) {
   const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(false);
   const socialOsUrl =
@@ -157,6 +162,8 @@ export default function MarketingCampaignDesk() {
             <p className="mt-1 text-xs text-emerald-100/60">No autonomous public posting or ad spend</p>
           </div>
         </div>
+
+        <MarketingFunnelDashboard getHeaders={getHeaders} />
 
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-xl border border-amber-400/20 bg-amber-500/[0.05] p-5">

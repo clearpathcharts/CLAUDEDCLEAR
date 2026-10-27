@@ -72,6 +72,7 @@ import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 import FeatureGate from './FeatureGate';
 import SectionGuideOffer from './sectionGuides/SectionGuideOffer';
+import { SECTION_GUIDE_OFFER_EXCLUDED_TABS } from '../config/founderUiToggles';
 import { useMembership } from '../hooks/useMembership';
 import { useAppShell } from '../contexts/AppShellContext';
 import { isAppShell as detectAppShell } from '../lib/appShell';
@@ -1402,7 +1403,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                   }`}>
                     {activeTab !== 'CeoDashboard' &&
                       activeTab !== 'Fundamentals' &&
-                      activeTab !== 'Discovery' && (
+                      !SECTION_GUIDE_OFFER_EXCLUDED_TABS.has(activeTab) && (
                       <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
                         <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
                       </div>

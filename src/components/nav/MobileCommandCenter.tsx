@@ -21,6 +21,7 @@ import {
   navBrightVioletMobileActive,
   navBrightVioletMobileIdle,
 } from "./navAccentColors";
+import { TEMP_HIDE_AFFILIATE_SURFACE } from "../../config/founderUiToggles";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -112,18 +113,29 @@ const ACCOUNT_ITEMS: NavItem[] = [
     colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
     glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
   },
-  {
-    id: "AffiliateNetwork",
-    icon: Network,
-    label: "AFFILIATE",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
-  },
+  ...(TEMP_HIDE_AFFILIATE_SURFACE
+    ? []
+    : [
+        {
+          id: "AffiliateNetwork",
+          icon: Network,
+          label: "AFFILIATE",
+          colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
+          glowClass:
+            "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+        } as NavItem,
+      ]),
   // MEMBERSHIPS removed — "PLANS & PRICING" in PAGE_LINKS is the single way in.
 ];
 
 /** Standalone pages — full navigation, not Dashboard tabs. */
-const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; colorClass: string }[] = [
+const PAGE_LINKS: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  colorClass: string;
+  explainContentId?: string;
+}[] = [
   {
     href: "/brokers",
     icon: Landmark,
@@ -135,6 +147,7 @@ const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; colorC
     icon: Crown,
     label: "PLANS & PRICING",
     colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    explainContentId: "Membership",
   },
 ];
 
@@ -387,15 +400,22 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               {PAGE_LINKS.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center w-full min-h-[52px] rounded-xl border px-4 mb-2 transition-all duration-200 active:scale-[0.98] bg-white/[0.03] ${link.colorClass}`}
-                    style={{ fontFamily: "'Cinzel', serif" }}
-                  >
-                    <Icon className="w-4 h-4 mr-3 shrink-0" />
-                    <span className="flex-1 text-left text-xs font-black tracking-wider">{link.label}</span>
-                  </a>
+                  <div key={link.href} className="flex items-center gap-1 mb-2">
+                    <a
+                      href={link.href}
+                      className={`flex flex-1 items-center min-h-[52px] rounded-xl border px-4 transition-all duration-200 active:scale-[0.98] bg-white/[0.03] ${link.colorClass}`}
+                      style={{ fontFamily: "'Cinzel', serif" }}
+                    >
+                      <Icon className="w-4 h-4 mr-3 shrink-0" />
+                      <span className="flex-1 text-left text-xs font-black tracking-wider">{link.label}</span>
+                    </a>
+                    {link.explainContentId ? (
+                      <ExplainTrigger
+                        contentId={link.explainContentId}
+                        color={explainColorForNavTab(link.explainContentId)}
+                      />
+                    ) : null}
+                  </div>
                 );
               })}
             </div>

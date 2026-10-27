@@ -84,6 +84,13 @@ const home = enrichHtmlWithMetadata(shell, '/');
 assert.equal(countH1(home), 1, 'enriched homepage SPA shell must keep exactly one <h1>');
 assert.doesNotMatch(home, /<noscript>[\s\S]*<h1/i, 'noscript must not add a second <h1>');
 
+const publicHomepage = fs.readFileSync(path.resolve('src', 'components', 'Auth.tsx'), 'utf8');
+assert.ok(
+  (publicHomepage.match(/href="\/ceo-statement"/g) || []).length >= 3,
+  'public homepage must link CEO Commitment from desktop nav, mobile menu, and footer',
+);
+assert.match(publicHomepage, />\s*CEO Commitment\s*</);
+
 // Simulate stale deploy that still had an H1 inside noscript — enrich must demote it.
 const stale = shell.replace(
   '<div id="root">',
