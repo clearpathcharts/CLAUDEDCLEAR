@@ -66,7 +66,10 @@ export default function MarketingFunnelDashboard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const getHeadersRef = useRef(getHeaders);
-  getHeadersRef.current = getHeaders;
+
+  useEffect(() => {
+    getHeadersRef.current = getHeaders;
+  }, [getHeaders]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,8 +80,11 @@ export default function MarketingFunnelDashboard({
         headers,
         credentials: 'include',
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.message || body.error || `Analytics failed (${response.status})`);
+      if (!response.ok) {
+        const failed = await response.json().catch(() => ({}));
+        throw new Error(failed.message || failed.error || `Analytics failed (${response.status})`);
+      }
+      const body = await response.json();
       setAnalytics(body as MarketingAnalytics);
     } catch (loadError: any) {
       setError(loadError?.message || 'Marketing analytics unavailable.');

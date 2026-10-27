@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MembershipPlanId } from '../../content/membershipPricing';
 import { membershipAuthHeaders } from '../../hooks/useMembership';
-import { trackMarketingCta } from '../MarketingAttributionTracker';
+import { trackMarketingCta } from '../../lib/marketingAttribution';
 
 export function PlanCheckoutButton({
   planId,

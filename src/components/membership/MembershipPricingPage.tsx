@@ -9,7 +9,7 @@ import {
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
 import { ManageBillingButton } from './ManageBillingButton';
-import { trackMarketingCta } from '../MarketingAttributionTracker';
+import { trackMarketingCta } from '../../lib/marketingAttribution';
 import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
