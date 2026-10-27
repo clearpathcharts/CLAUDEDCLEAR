@@ -11,6 +11,7 @@
  * never has to squeeze through Cloud Run's ~32 MB request limit.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { notifyVideoSlotAssignmentsChanged } from '../hooks/useVideoSlotUrl';
 import {
   AlertTriangle,
   Check,
@@ -64,7 +65,7 @@ function VideoSelectOptions({ videos }: { videos: CeoVideo[] }) {
   return (
     <>
       {combined.length > 0 ? (
-        <optgroup label="Combined videos (magenta ★)">
+        <optgroup label="Combined videos">
           {combined.map((video) => (
             <option key={video.id} value={video.id}>
               {libraryLabel(video)}
@@ -80,6 +81,66 @@ function VideoSelectOptions({ videos }: { videos: CeoVideo[] }) {
         ))}
       </optgroup>
     </>
+  );
+}
+
+/** Native `<select>` cannot paint options pink — show the real color under the control. */
+function VideoLibrarySelect({
+  id,
+  value,
+  onChange,
+  videos,
+  disabled,
+  placeholder = 'Choose a clip',
+  dataMergeClip,
+  dataSlotSelect,
+}: {
+  id?: string;
+  value: string;
+  onChange: (videoId: string) => void;
+  videos: CeoVideo[];
+  disabled?: boolean;
+  placeholder?: string;
+  dataMergeClip?: number;
+  dataSlotSelect?: boolean;
+}) {
+  const selected = value ? videos.find((v) => v.id === value) : undefined;
+  const merged = selected ? isMergedVideo(selected) : false;
+  return (
+    <div className="w-full space-y-1">
+      <select
+        id={id}
+        data-ceo-video-merge-clip={dataMergeClip}
+        data-ceo-video-slot-select={dataSlotSelect ? true : undefined}
+        disabled={disabled}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50 ${
+          merged ? `${MERGED_TITLE_CLASS} font-black` : 'text-white'
+        }`}
+      >
+        <option value="">{placeholder}</option>
+        <VideoSelectOptions videos={videos} />
+      </select>
+      {selected ? (
+        <p
+          data-ceo-video-picker-preview
+          className={`m-0 truncate text-xs ${merged ? MERGED_TITLE_CLASS : 'text-zinc-400'}`}
+        >
+          {merged ? (
+            <>
+              <span className={MERGED_TITLE_CLASS}>{libraryLabel(selected)}</span>
+              <span className="text-zinc-500"> — live on the site when this row shows Saved</span>
+            </>
+          ) : (
+            <>
+              {libraryLabel(selected)}
+              <span className="text-zinc-500"> — delete duplicate singles with X in the catalog above</span>
+            </>
+          )}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -333,6 +394,7 @@ export default function CeoVideoLibrary({
       setClipIds(['', '', '']);
       setMergeTitle('');
       setMergeSlotId('');
+      notifyVideoSlotAssignmentsChanged();
       await load();
       if (mergedId) {
         setHighlightVideoId(mergedId);
@@ -477,6 +539,7 @@ export default function CeoVideoLibrary({
       if (!res.ok) throw new Error(body.message || body.error || `Could not save that (${res.status})`);
       setSavedSlotId(slot.id);
       window.setTimeout(() => setSavedSlotId((id) => (id === slot.id ? null : id)), 2500);
+      notifyVideoSlotAssignmentsChanged();
       await load();
     } catch (err: any) {
       setError(err?.message || 'Could not change what plays there.');
@@ -517,6 +580,7 @@ export default function CeoVideoLibrary({
         return next;
       });
       if (highlightVideoId === video.id) setHighlightVideoId(null);
+      notifyVideoSlotAssignmentsChanged();
       await load();
     } catch (err: any) {
       setError(err?.message || 'Could not delete that video.');
@@ -572,8 +636,10 @@ export default function CeoVideoLibrary({
   const videos = payload?.videos || [];
   const slots = payload?.slots || [];
   const assignedCount = slots.filter((s) => s.assignment).length;
+  const videoForId = (videoId: string) => videos.find((v) => v.id === videoId);
+
   const nameForVideoId = (videoId: string) => {
-    const video = videos.find((v) => v.id === videoId);
+    const video = videoForId(videoId);
     return video ? libraryLabel(video) : 'this video';
   };
 
@@ -855,22 +921,19 @@ export default function CeoVideoLibrary({
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
                   Clip {index + 1}
                 </span>
-                <select
-                  data-ceo-video-merge-clip={index + 1}
+                <VideoLibrarySelect
+                  dataMergeClip={index + 1}
                   disabled={!storage?.configured || merging || !videos.length}
                   value={clipIds[index]}
-                  onChange={(e) =>
+                  onChange={(videoId) =>
                     setClipIds((prev) => {
                       const next = [...prev] as [string, string, string];
-                      next[index] = e.target.value;
+                      next[index] = videoId;
                       return next;
                     })
                   }
-                  className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
-                >
-                  <option value="">Choose a clip</option>
-                  <VideoSelectOptions videos={videos} />
-                </select>
+                  videos={videos}
+                />
               </label>
             ))}
         </div>
@@ -1095,23 +1158,35 @@ export default function CeoVideoLibrary({
                                   slot.assignment ? 'text-emerald-300' : 'text-zinc-600'
                                 }`}
                               >
-                                {slot.assignment
-                                  ? `Now playing: ${nameForVideoId(slot.assignment.videoId)}`
-                                  : 'Nothing here yet — visitors read the written explanation instead.'}
+                                {slot.assignment ? (
+                                  <>
+                                    Now playing:{' '}
+                                    <span
+                                      className={
+                                        videoForId(slot.assignment.videoId) &&
+                                        isMergedVideo(videoForId(slot.assignment.videoId)!)
+                                          ? MERGED_TITLE_CLASS
+                                          : 'text-emerald-300'
+                                      }
+                                    >
+                                      {nameForVideoId(slot.assignment.videoId)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  'Nothing here yet — visitors read the written explanation instead.'
+                                )}
                               </p>
                             </div>
                             <div className="flex min-w-[260px] flex-1 items-center gap-3">
-                              <select
+                              <VideoLibrarySelect
                                 id={selectId}
-                                data-ceo-video-slot-select
+                                dataSlotSelect
                                 disabled={busy || !videos.length}
+                                placeholder="Nothing yet"
                                 value={slot.assignment?.videoId || ''}
-                                onChange={(e) => void handleSlotChange(slot, e.target.value)}
-                                className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
-                              >
-                                <option value="">Nothing yet</option>
-                                <VideoSelectOptions videos={videos} />
-                              </select>
+                                onChange={(videoId) => void handleSlotChange(slot, videoId)}
+                                videos={videos}
+                              />
                               <span
                                 aria-live="polite"
                                 className="min-w-[72px] text-xs font-black uppercase tracking-widest text-emerald-300"
