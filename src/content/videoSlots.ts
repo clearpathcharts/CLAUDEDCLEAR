@@ -126,9 +126,9 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
   {
     id: 'nav.memberships',
     groupId: NAV_VIDEO_SLOT_GROUP_ID,
-    label: 'Nav play icon — PLANS / Memberships',
-    where: `${NAV_BADGE} PLANS link and the Memberships page`,
-    explains: 'how the membership tiers compare',
+    label: 'Nav play icon — PLANS (gold link)',
+    where: `${NAV_BADGE} gold PLANS button in the secondary nav (and mobile menu → PLANS & PRICING)`,
+    explains: 'how the membership tiers compare on /plans',
   },
   {
     id: 'nav.education',

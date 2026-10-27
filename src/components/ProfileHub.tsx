@@ -13,6 +13,7 @@ import {
   publicProfileUrl,
 } from "../lib/profileUsername";
 import { sequenceAccentVars } from "../lib/tierGradients";
+import { TEMP_HIDE_AFFILIATE_SURFACE } from "../config/founderUiToggles";
 import "../styles/tierGradient.css";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
@@ -509,7 +510,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </div>
         )}
 
-        {onNavigate && (
+        {onNavigate && !TEMP_HIDE_AFFILIATE_SURFACE ? (
           <button
             type="button"
             onClick={() => onNavigate('AffiliateNetwork')}
@@ -517,7 +518,7 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           >
             🔥 Affiliate Network
           </button>
-        )}
+        ) : null}
         <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
           {[
             "Followers: 12,450",
