@@ -40,11 +40,20 @@ export function normalizeMergeVideoIds(value: unknown): string[] {
   return ids;
 }
 
-/** Video-only concat so a silent Flow export still joins with the others. */
+/**
+ * Video-only concat. Each clip is scaled/padded to the same frame size first —
+ * Google Flow exports often disagree on resolution, which makes raw concat fail.
+ */
 export function ffmpegConcatArgs(inputs: string[], output: string): string[] {
-  const filter =
-    inputs.map((_, index) => `[${index}:v:0]`).join('') +
-    `concat=n=${inputs.length}:v=1:a=0[v]`;
+  const n = inputs.length;
+  const normalized = inputs
+    .map(
+      (_, index) =>
+        `[${index}:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p[v${index}]`
+    )
+    .join(';');
+  const stacked = inputs.map((_, index) => `[v${index}]`).join('');
+  const filter = `${normalized};${stacked}concat=n=${n}:v=1:a=0[v]`;
   return [
     '-y',
     ...inputs.flatMap((file) => ['-i', file]),
@@ -115,7 +124,18 @@ function runFfmpeg(args: string[]): Promise<void> {
   });
 }
 
-export async function mergeCeoVideos(videoIds: unknown): Promise<CeoVideo> {
+export function normalizeMergeTitle(value: unknown, fallback: string): string {
+  const trimmed = String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, 200);
+  return trimmed || fallback;
+}
+
+export async function mergeCeoVideos(
+  videoIds: unknown,
+  options?: { title?: unknown }
+): Promise<CeoVideo> {
   const ids = normalizeMergeVideoIds(videoIds);
   const status = getCeoVideoStorageStatus();
   if (!status.configured || !status.bucket) {
@@ -152,13 +172,17 @@ export async function mergeCeoVideos(videoIds: unknown): Promise<CeoVideo> {
     const filename = sanitizeVideoFilename('tab-explainer-30s.mp4');
     const objectPath = `${CEO_VIDEO_PREFIX}${id}/${filename}`;
     const names = clips.map((clip) => clip.originalName || clip.filename).join(' + ');
+    const displayName = normalizeMergeTitle(
+      options?.title,
+      `30s tab explainer (${names})`.slice(0, 200)
+    );
     await bucket.upload(output, {
       destination: objectPath,
       metadata: {
         contentType: 'video/mp4',
         cacheControl: 'public, max-age=31536000, immutable',
         metadata: {
-          originalName: `30s tab explainer (${names})`.slice(0, 200),
+          originalName: displayName,
           uploadedBy: 'ceo-video-merge',
         },
       },
