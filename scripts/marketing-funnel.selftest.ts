@@ -66,9 +66,19 @@ async function main() {
   assert.ok(catalog.excludedChannels.includes('x'));
   for (const tier of catalog.tiers) {
     assert.ok(tier.videos.length >= 2);
+    const posterPath = path.join(repoRoot, 'public', tier.poster.assetUrl.replace(/^\//, ''));
+    assert.ok(fs.existsSync(posterPath), `poster missing for ${tier.id}`);
+    const posterBytes = fs.readFileSync(posterPath);
     assert.ok(
-      fs.existsSync(path.join(repoRoot, 'public', tier.poster.assetUrl.replace(/^\//, ''))),
-      `poster missing for ${tier.id}`,
+      posterBytes.every((byte) => byte <= 0x7f),
+      `poster must remain ASCII-safe XML for ${tier.id}`,
+    );
+    const poster = posterBytes.toString('utf8');
+    assert.match(poster, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+    assert.doesNotMatch(
+      poster,
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/,
+      `poster contains an XML-illegal control character for ${tier.id}`,
     );
   }
 

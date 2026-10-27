@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
-  <title id="title">ClearPath Trader Platinum  Scan for structure and verify on the chart</title>
+  <title id="title">ClearPath Trader Platinum - Scan for structure and verify on the chart</title>
   <desc id="desc">AI Pattern Scanner and the complete ClearPath workspace. Educational only, not financial advice.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
@@ -21,8 +21,8 @@
     <circle cx="490" cy="65" r="22" fill="#bf7cff"/>
     <path d="M490 25v80M450 65h80" stroke="#ffffff" stroke-width="3"/>
   </g>
-  <text x="75" y="1085" fill="#eadbfa" font-family="Arial, sans-serif" font-size="32">AI Pattern Scanner · Complete ClearPath workspace</text>
+  <text x="75" y="1085" fill="#eadbfa" font-family="Arial, sans-serif" font-size="32">AI Pattern Scanner - Complete ClearPath workspace</text>
   <rect x="75" y="1145" width="370" height="84" rx="16" fill="#bf7cff"/>
   <text x="125" y="1199" fill="#160522" font-family="Arial, sans-serif" font-size="29" font-weight="800">EXPLORE PLATINUM</text>
-  <text x="75" y="1315" fill="#8f779d" font-family="Arial, sans-serif" font-size="22">Educational content only · Not financial advice · Not a brokerage</text>
+  <text x="75" y="1315" fill="#8f779d" font-family="Arial, sans-serif" font-size="22">Educational content only - Not financial advice - Not a brokerage</text>
 </svg>
