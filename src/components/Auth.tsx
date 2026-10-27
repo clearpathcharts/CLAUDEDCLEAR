@@ -475,6 +475,12 @@ export default function Auth() {
             >
               Trading × AI
             </a>
+            <a
+              href="/ceo-statement"
+              className="auth-nav-tab-label shrink-0 border border-[#FFD700]/35 bg-[#FFD700]/10 px-2.5 py-1 rounded-lg text-[#FFD700] hover:text-white transition-colors"
+            >
+              CEO Commitment
+            </a>
             <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
             <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
             <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
@@ -525,6 +531,12 @@ export default function Auth() {
             className="auth-nav-tab-label shrink-0 text-[#FF1493] hover:text-[#00FFFF] transition-colors border border-[#FF1493]/30 bg-[#FF1493]/10 px-2.5 py-1 rounded-lg"
           >
             Trading × AI
+          </a>
+          <a
+            href="/ceo-statement"
+            className="auth-nav-tab-label shrink-0 border border-[#FFD700]/35 bg-[#FFD700]/10 px-2.5 py-1 rounded-lg text-[#FFD700] hover:text-white transition-colors"
+          >
+            CEO Commitment
           </a>
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
@@ -829,6 +841,9 @@ export default function Auth() {
             </a>
             <a href="/meet-the-board" className="text-[#FFD700] hover:text-[#00FFFF] transition-colors font-bold">
               Meet the Board
+            </a>
+            <a href="/ceo-statement" className="text-[#FFD700] hover:text-white transition-colors font-bold">
+              CEO Commitment
             </a>
             <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors">
               Press kit
