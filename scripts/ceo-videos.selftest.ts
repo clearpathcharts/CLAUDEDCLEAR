@@ -8,7 +8,12 @@
  * Run: npx tsx scripts/ceo-videos.selftest.ts
  */
 import assert from 'node:assert/strict';
-import { normalizeMergeVideoIds, ffmpegConcatArgs, TAB_EXPLAINER_CLIP_COUNT } from '../src/server/ceoVideoMerge';
+import {
+  normalizeMergeVideoIds,
+  normalizeMergeTitle,
+  ffmpegConcatArgs,
+  TAB_EXPLAINER_CLIP_COUNT,
+} from '../src/server/ceoVideoMerge';
 import { CeoVideoStorageError } from '../src/server/ceoVideoStorage';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,7 +75,10 @@ function assertMergeRules() {
   assert.deepEqual(normalizeMergeVideoIds(ids), ids);
   const args = ffmpegConcatArgs(['one.mp4', 'two.mp4', 'three.mp4'], 'out.mp4');
   assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=0[v]')), true);
+  assert.equal(args.some((arg) => arg.includes('scale=1280:720')), true);
   assert.equal(args[args.length - 1], 'out.mp4');
+  assert.equal(normalizeMergeTitle('  My title  ', 'fallback'), 'My title');
+  assert.equal(normalizeMergeTitle('   ', 'fallback'), 'fallback');
   for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
     assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
   }
@@ -80,6 +88,9 @@ function assertMergeRules() {
   const ui = fs.readFileSync(path.join(root, 'src/components/CeoVideoLibrary.tsx'), 'utf8');
   assert.match(ui, /Merge into one 30-second video/);
   assert.match(ui, /\/api\/ceo\/videos\/merge/);
+  assert.match(ui, /data-ceo-video-merge-title/);
+  assert.match(ui, /data-ceo-video-merge-slot/);
+  assert.match(ui, /data-ceo-video-merge-error/);
 }
 
 async function main() {

@@ -169,8 +169,11 @@ export default function CeoVideoLibrary({
   // rest fall back to the default for the current filter state.
   const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
   const [clipIds, setClipIds] = useState<['', '', ''] | [string, string, string]>(['', '', '']);
+  const [mergeTitle, setMergeTitle] = useState('');
+  const [mergeSlotId, setMergeSlotId] = useState('');
   const [merging, setMerging] = useState(false);
   const [mergeNote, setMergeNote] = useState<string | null>(null);
+  const [mergeError, setMergeError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
@@ -197,22 +200,41 @@ export default function CeoVideoLibrary({
   const mergeThreeClips = async () => {
     setMerging(true);
     setMergeNote(null);
-    setError(null);
+    setMergeError(null);
     try {
       const headers = await getHeaders();
       const res = await fetch('/api/ceo/videos/merge', {
         method: 'POST',
         headers: { ...headers, 'content-type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ videoIds: clipIds }),
+        body: JSON.stringify({
+          videoIds: clipIds,
+          title: mergeTitle.trim() || undefined,
+          slotId: mergeSlotId.trim() || undefined,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Could not join the clips (${res.status})`);
-      setMergeNote('Joined. The new 30-second video is at the top of the library. Pick it under Where each video plays.');
+      const slotLabel = mergeSlotId
+        ? slots.find((s) => s.id === mergeSlotId)?.label
+        : null;
+      if (body.slotWarning) {
+        setMergeNote(`${body.slotWarning} It is at the top of the library as “${body.video?.originalName || 'merged video'}”.`);
+      } else if (slotLabel) {
+        setMergeNote(
+          `Joined as “${body.video?.originalName || mergeTitle || '30s video'}” and assigned to ${slotLabel}. It also appears at the top of the library.`
+        );
+      } else {
+        setMergeNote(
+          `Joined as “${body.video?.originalName || mergeTitle || '30s video'}”. Scroll to Where each video plays and pick a row, or choose a play icon above before merging next time.`
+        );
+      }
       setClipIds(['', '', '']);
+      setMergeTitle('');
+      setMergeSlotId('');
       await load();
     } catch (err: any) {
-      setError(err?.message || 'Could not join the three clips.');
+      setMergeError(err?.message || 'Could not join the three clips.');
     } finally {
       setMerging(false);
     }
@@ -485,6 +507,49 @@ export default function CeoVideoLibrary({
           Google Flow stops at about 10 seconds. Upload the three clips first, then pick them in play order.
           The joined video shows up in the library so you can put it on that tab.
         </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="block space-y-1 md:col-span-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              Title in the library
+            </span>
+            <input
+              type="text"
+              data-ceo-video-merge-title
+              disabled={!storage?.configured || merging}
+              value={mergeTitle}
+              onChange={(e) => setMergeTitle(e.target.value)}
+              placeholder="e.g. Memberships — 30s walkthrough"
+              className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white placeholder:text-zinc-600 focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+            />
+          </label>
+          <label className="block space-y-1 md:col-span-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              Put it on the site (optional)
+            </span>
+            <select
+              data-ceo-video-merge-slot
+              disabled={!storage?.configured || merging || !slots.length}
+              value={mergeSlotId}
+              onChange={(e) => setMergeSlotId(e.target.value)}
+              className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
+            >
+              <option value="">Choose later under “Where each video plays”</option>
+              {groups.map((group) => {
+                const groupSlots = slots.filter((s) => (s.groupId || NAV_GROUP_ID) === group.id);
+                if (!groupSlots.length) return null;
+                return (
+                  <optgroup key={group.id} label={group.label}>
+                    {groupSlots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.label} — {slot.where}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
+            </select>
+          </label>
+        </div>
         <div className="grid gap-3 md:grid-cols-3">
           {([0, 1, 2] as const).map((index) => (
             <label key={index} className="block space-y-1">
@@ -524,6 +589,14 @@ export default function CeoVideoLibrary({
           {merging ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : null}
           Merge into one 30-second video
         </button>
+        {mergeError ? (
+          <p
+            data-ceo-video-merge-error
+            className="m-0 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+          >
+            {mergeError}
+          </p>
+        ) : null}
         {mergeNote ? <p className="m-0 text-sm text-emerald-300">{mergeNote}</p> : null}
       </div>
 
