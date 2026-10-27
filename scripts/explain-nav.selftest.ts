@@ -4,6 +4,7 @@
  * Run: npm run test:explain-nav
  */
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   NAV_TAB_EXPLAIN_IDS,
   explainContentLibrary,
@@ -59,6 +60,9 @@ for (const id of NAV_IDS) {
 
 assert.equal(getExplainContent('river_genie')?.id, 'indacreator');
 assert.equal(getExplainContent('charts')?.title, 'Charts');
+const clearNav = fs.readFileSync(new URL('../src/components/nav/ClearNav.tsx', import.meta.url), 'utf8');
+assert.match(clearNav, /nav-plans-link[\s\S]{0,400}explainContentId:\s*['"]Membership['"]/);
+assert.match(clearNav, /ExplainTrigger[\s\S]{0,80}link\.explainContentId/);
 assert.equal(getExplainContent('ExplainMode')?.id, 'explain');
 assert.equal(getExplainContent('Exit')?.id, 'exit');
 assert.equal(getExplainContent('gold-bar')?.id, 'gold-bar');
