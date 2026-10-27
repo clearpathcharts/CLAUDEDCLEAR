@@ -93,19 +93,26 @@ export function normalizeMergeVideoIds(value: unknown): string[] {
 }
 
 /**
- * Video-only concat. Each clip is scaled/padded to the same frame size first —
+ * Concat video + audio. Each clip is scaled/padded to the same frame size first —
  * Google Flow exports often disagree on resolution, which makes raw concat fail.
+ * Audio is resampled to stereo 48 kHz so clips with different codecs still join.
  */
 export function ffmpegConcatArgs(inputs: string[], output: string): string[] {
   const n = inputs.length;
-  const normalized = inputs
+  const videoNorm = inputs
     .map(
       (_, index) =>
         `[${index}:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p[v${index}]`
     )
     .join(';');
-  const stacked = inputs.map((_, index) => `[v${index}]`).join('');
-  const filter = `${normalized};${stacked}concat=n=${n}:v=1:a=0[v]`;
+  const audioNorm = inputs
+    .map(
+      (_, index) =>
+        `[${index}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,asetpts=PTS-STARTPTS[a${index}]`
+    )
+    .join(';');
+  const stacked = inputs.map((_, index) => `[v${index}][a${index}]`).join('');
+  const filter = `${videoNorm};${audioNorm};${stacked}concat=n=${n}:v=1:a=1[v][a]`;
   return [
     '-y',
     ...inputs.flatMap((file) => ['-i', file]),
@@ -113,10 +120,16 @@ export function ffmpegConcatArgs(inputs: string[], output: string): string[] {
     filter,
     '-map',
     '[v]',
+    '-map',
+    '[a]',
     '-c:v',
     'libx264',
     '-pix_fmt',
     'yuv420p',
+    '-c:a',
+    'aac',
+    '-b:a',
+    '192k',
     '-movflags',
     '+faststart',
     output,
