@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-26",
+  "brand": {
+    "name": "ClearPath Trader",
+    "legalName": "Clear Path Markets Science Corp.",
+    "url": "https://clearpathtrader.com",
+    "category": "Educational financial markets site",
+    "positioning": "One chart site with four desks: Institutional, Fundamental, Retail, and Neurodivergent.",
+    "promise": "Charts first. Education over hype. Clarity over cognitive clutter.",
+    "requiredDisclaimer": "Educational content only. Not financial advice. ClearPath Trader is not a brokerage.",
+    "prohibitedClaims": [
+      "Guaranteed returns or profit",
+      "Risk-free trading",
+      "Best or number-one claims without independent evidence",
+      "Brokerage, custody, or execution claims",
+      "Invented live-data coverage, customer counts, or performance statistics"
+    ]
+  },
+  "audiences": [
+    {
+      "id": "learning-traders",
+      "label": "Learning traders",
+      "need": "Plain-English market education beside a usable chart",
+      "destination": "/education"
+    },
+    {
+      "id": "neurodivergent-traders",
+      "label": "Neurodivergent and focus-first traders",
+      "need": "Predictable, lower-stimulation chart layouts",
+      "destination": "/desk/neurodivergent"
+    },
+    {
+      "id": "retail-traders",
+      "label": "Self-directed retail traders",
+      "need": "A chart-first workspace with news and education nearby",
+      "destination": "/desk/retail"
+    },
+    {
+      "id": "fundamental-researchers",
+      "label": "Fundamental researchers",
+      "need": "Company and macro context in one research desk",
+      "destination": "/desk/fundamental"
+    },
+    {
+      "id": "advanced-market-readers",
+      "label": "Advanced market readers",
+      "need": "Institutional-style context around a multi-chart workspace",
+      "destination": "/desk/institutional"
+    },
+    {
+      "id": "students-and-educators",
+      "label": "Students and educators",
+      "need": "Free financial and indicator reference material",
+      "destination": "/encyclopedia"
+    }
+  ],
+  "keywordClusters": [
+    {
+      "id": "brand",
+      "intent": "navigational",
+      "destination": "/",
+      "keywords": [
+        "ClearPath Trader",
+        "Clear Path Markets Science",
+        "clearpathtrader.com",
+        "ClearPath trading education",
+        "ClearPath market charts"
+      ]
+    },
+    {
+      "id": "chart-first-platform",
+      "intent": "commercial investigation",
+      "destination": "/",
+      "keywords": [
+        "chart first trading platform",
+        "market analysis platform for beginners",
+        "financial market intelligence terminal",
+        "multi asset charting website",
+        "stock forex crypto commodity charts",
+        "trading education with live charts",
+        "market research and charting platform",
+        "clear trading interface",
+        "less cluttered trading charts",
+        "trading dashboard without distractions"
+      ]
+    },
+    {
+      "id": "neurodivergent",
+      "intent": "problem aware",
+      "destination": "/desk/neurodivergent",
+      "keywords": [
+        "neurodivergent trading platform",
+        "ADHD friendly trading platform",
+        "autism friendly charting platform",
+        "low stimulation trading interface",
+        "accessible stock charts",
+        "focus friendly trading dashboard",
+        "calm trading interface",
+        "dyslexia friendly financial charts",
+        "sensory friendly market analysis",
+        "predictable trading interface"
+      ]
+    },
+    {
+      "id": "education",
+      "intent": "informational",
+      "destination": "/education",
+      "keywords": [
+        "learn how to read stock charts",
+        "trading education for beginners",
+        "financial market education",
+        "technical analysis lessons",
+        "market structure education",
+        "risk management education for traders",
+        "plain English trading education",
+        "how financial indicators work",
+        "learn forex chart analysis",
+        "learn crypto chart analysis"
+      ]
+    },
+    {
+      "id": "encyclopedia",
+      "intent": "informational",
+      "destination": "/encyclopedia",
+      "keywords": [
+        "financial encyclopedia",
+        "trading terms glossary",
+        "stock market terminology",
+        "forex terminology glossary",
+        "crypto trading glossary",
+        "financial literacy reference",
+        "market indicators encyclopedia",
+        "free trading education resources",
+        "technical analysis glossary",
+        "investment vocabulary for students"
+      ]
+    },
+    {
+      "id": "indicators-and-patterns",
+      "intent": "informational",
+      "destination": "/indicators",
+      "keywords": [
+        "technical indicators encyclopedia",
+        "chart pattern recognition",
+        "automatic chart pattern detection",
+        "how to use technical indicators",
+        "candlestick pattern education",
+        "moving average explained",
+        "RSI indicator explained",
+        "MACD indicator explained",
+        "support and resistance education",
+        "chart patterns for beginners"
+      ]
+    },
+    {
+      "id": "four-desks",
+      "intent": "feature",
+      "destination": "/",
+      "keywords": [
+        "institutional trading desk software",
+        "fundamental analysis research desk",
+        "retail trader charting desk",
+        "neurodivergent trader desk",
+        "four trading workspaces",
+        "institutional market analysis tools",
+        "company fundamentals dashboard",
+        "retail market analysis dashboard",
+        "multi workspace trading platform",
+        "trader workspace for different learning styles"
+      ]
+    },
+    {
+      "id": "asset-markets",
+      "intent": "informational",
+      "destination": "/encyclopedia",
+      "keywords": [
+        "stock market charts and education",
+        "forex charts and education",
+        "crypto charts and education",
+        "commodity charts and education",
+        "multi asset market analysis",
+        "economic data for traders",
+        "company fundamentals education",
+        "macroeconomic research dashboard",
+        "market news beside charts",
+        "CFTC COT education"
+      ]
+    },
+    {
+      "id": "comparison",
+      "intent": "commercial investigation",
+      "destination": "/about",
+      "keywords": [
+        "charting platform alternative",
+        "trading platform with less clutter",
+        "educational charting platform",
+        "market terminal for independent traders",
+        "charting software for visual learners",
+        "financial terminal for students",
+        "trading dashboard for ADHD",
+        "accessible market analysis software"
+      ]
+    }
+  ],
+  "pageMetadata": [
+    {
+      "path": "/",
+      "title": "ClearPath Trader | One Chart Site, Four Desks",
+      "description": "One chart site with four desks: Institutional, Fundamental, Retail, and Neurodivergent. Free student encyclopedia, no ads or sales pitches. Not a brokerage.",
+      "primaryKeyword": "chart first trading platform"
+    },
+    {
+      "path": "/education",
+      "title": "Financial Market Education | ClearPath Trader",
+      "description": "Learn market structure, chart reading, indicators, and risk vocabulary in plain English. Educational content only, not financial advice.",
+      "primaryKeyword": "financial market education"
+    },
+    {
+      "path": "/encyclopedia",
+      "title": "Free Financial Encyclopedia | ClearPath Trader",
+      "description": "A free student reference for market terms, companies, stocks, forex, crypto, commodities, and economic concepts.",
+      "primaryKeyword": "financial encyclopedia"
+    },
+    {
+      "path": "/indicators",
+      "title": "Technical Indicators Encyclopedia | ClearPath Trader",
+      "description": "Learn what technical indicators measure, how traders interpret them, and where their limitations matter.",
+      "primaryKeyword": "technical indicators encyclopedia"
+    },
+    {
+      "path": "/desk/neurodivergent",
+      "title": "Neurodivergent Trading Desk | ClearPath Trader",
+      "description": "The same market data in calmer, more predictable chart layouts designed for different sensory and focus needs.",
+      "primaryKeyword": "neurodivergent trading platform"
+    },
+    {
+      "path": "/desk/fundamental",
+      "title": "Fundamental Research Desk | ClearPath Trader",
+      "description": "Study company statements, earnings, valuation, peers, filings, and macroeconomic context in one research workspace.",
+      "primaryKeyword": "fundamental analysis research desk"
+    }
+  ],
+  "campaign": {
+    "name": "Clarity Before Scale",
+    "objective": "Earn qualified visits to the relevant ClearPath learning or desk page and learn which message creates meaningful engagement.",
+    "primaryCta": "Explore the desk that fits how you analyze markets.",
+    "contentPillars": [
+      "Chart literacy in plain English",
+      "Clarity-first product demonstrations",
+      "Neurodivergent and accessible interface design",
+      "Founder-built product story",
+      "Four desks, one chart site",
+      "Free encyclopedia and indicator education"
+    ],
+    "pilotChannels": [
+      "YouTube",
+      "TikTok",
+      "Instagram",
+      "LinkedIn",
+      "X",
+      "Reddit"
+    ],
+    "measurement": [
+      "Qualified visits by UTM campaign and content pillar",
+      "Education or desk page engagement",
+      "Returning visitors",
+      "Account starts and completed registrations",
+      "Cost per qualified visit for paid tests",
+      "Saves, meaningful comments, and video completion rate"
+    ]
+  },
+  "hashtags": {
+    "brand": [
+      "#ClearPathTrader",
+      "#MarketClarity",
+      "#TradingEducation"
+    ],
+    "education": [
+      "#FinancialLiteracy",
+      "#TechnicalAnalysis",
+      "#ChartReading",
+      "#MarketEducation"
+    ],
+    "accessibility": [
+      "#Neurodivergent",
+      "#AccessibleDesign",
+      "#ADHDFriendly",
+      "#CalmTechnology"
+    ]
+  },
+  "distribution": {
+    "ownedSystem": "ClearPath Social OS",
+    "approvalRule": "Draft and review before every public post. No automatic publishing without founder approval.",
+    "utmTemplate": "utm_source={platform}&utm_medium={organic_social|paid_social}&utm_campaign=clarity_before_scale&utm_content={pillar}_{creative}",
+    "recommendedPilot": "Use the existing Social OS first. Add a third-party scheduler only if account connection, analytics, or approval needs exceed the owned system.",
+    "vendorNotes": [
+      {
+        "name": "Mega",
+        "fit": "SEO, paid Google/Meta campaigns, conversion, and website operations",
+        "decision": "Not the first choice for global organic social scheduling; evaluate later for a bounded SEO or paid-media pilot."
+      },
+      {
+        "name": "Buffer",
+        "fit": "Simple, low-cost multi-network scheduling",
+        "decision": "Good fallback pilot if direct Social OS credentials become too costly to maintain."
+      },
+      {
+        "name": "Metricool",
+        "fit": "Cross-channel analytics, competitor tracking, and reporting",
+        "decision": "Best candidate when the immediate gap is measurement rather than content generation."
+      },
+      {
+        "name": "Hootsuite with compliance tooling",
+        "fit": "Approval workflows, archiving, permissions, and regulated-industry governance",
+        "decision": "Consider only when team size or regulatory supervision requirements justify enterprise cost."
+      }
+    ]
+  }
+}

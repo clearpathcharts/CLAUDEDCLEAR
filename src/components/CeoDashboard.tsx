@@ -16,6 +16,7 @@ import { logoutPrivateAccount } from '../api/privateAuth';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
 import ChooseYourPath from './ChooseYourPath';
 import CeoHiddenFeatures from './CeoHiddenFeatures';
+import MarketingCampaignDesk from './MarketingCampaignDesk';
 import { navigateToDesk, TRADER_DESK_STORAGE_KEY } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
@@ -897,6 +898,8 @@ export default function CeoDashboard() {
       <CeoHiddenFeatures />
 
       <ChooseYourPath onChoosePath={navigateToDesk} />
+
+      <MarketingCampaignDesk />
 
       <CeoAlwaysOnMonitor />
             <DailyOpsDesk
