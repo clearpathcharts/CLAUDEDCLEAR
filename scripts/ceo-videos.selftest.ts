@@ -91,6 +91,8 @@ function assertMergeRules() {
   assert.match(ui, /data-ceo-video-merge-title/);
   assert.match(ui, /data-ceo-video-merge-slot/);
   assert.match(ui, /data-ceo-video-merge-error/);
+  assert.match(ui, /data-ceo-video-merged/);
+  assert.match(ui, /data-ceo-video-merge-autofill/);
 }
 
 async function main() {

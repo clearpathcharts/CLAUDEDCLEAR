@@ -36,7 +36,45 @@ type CeoVideo = {
   uploadedAt: string;
   url: string;
   publicRead: boolean | null;
+  merged?: boolean;
 };
+
+const MERGED_TITLE_CLASS = 'text-[#FF1493] font-black drop-shadow-[0_0_12px_rgba(255,20,147,0.45)]';
+
+function isMergedVideo(video: CeoVideo): boolean {
+  return Boolean(video.merged || video.originalName.startsWith('★'));
+}
+
+function libraryLabel(video: CeoVideo): string {
+  const name = video.originalName || video.filename;
+  if (isMergedVideo(video)) return name.startsWith('★') ? name : `★ ${name}`;
+  return name;
+}
+
+function VideoSelectOptions({ videos }: { videos: CeoVideo[] }) {
+  const combined = videos.filter(isMergedVideo);
+  const singles = videos.filter((v) => !isMergedVideo(v));
+  return (
+    <>
+      {combined.length > 0 ? (
+        <optgroup label="Combined videos (magenta ★)">
+          {combined.map((video) => (
+            <option key={video.id} value={video.id}>
+              {libraryLabel(video)}
+            </option>
+          ))}
+        </optgroup>
+      ) : null}
+      <optgroup label="Single uploads">
+        {singles.map((video) => (
+          <option key={video.id} value={video.id}>
+            {libraryLabel(video)}
+          </option>
+        ))}
+      </optgroup>
+    </>
+  );
+}
 
 type StorageStatus = {
   configured: boolean;
@@ -174,9 +212,10 @@ export default function CeoVideoLibrary({
   const [merging, setMerging] = useState(false);
   const [mergeNote, setMergeNote] = useState<string | null>(null);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [highlightVideoId, setHighlightVideoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<LibraryPayload | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -184,10 +223,13 @@ export default function CeoVideoLibrary({
       const res = await fetch('/api/ceo/videos', { headers, credentials: 'include' });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || `Video library failed (${res.status})`);
-      setPayload(body as LibraryPayload);
+      const next = body as LibraryPayload;
+      setPayload(next);
+      return next;
     } catch (err: any) {
       setError(err?.message || 'Could not load the video library.');
       setPayload(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -198,10 +240,15 @@ export default function CeoVideoLibrary({
   }, [load]);
 
   const mergeThreeClips = async () => {
+    if (clipIds.some((id) => !id)) {
+      setMergeError('Pick Clip 1, Clip 2, and Clip 3 — merge needs exactly three different uploads.');
+      return;
+    }
     setMerging(true);
     setMergeNote(null);
     setMergeError(null);
     try {
+      await load();
       const headers = await getHeaders();
       const res = await fetch('/api/ceo/videos/merge', {
         method: 'POST',
@@ -229,15 +276,43 @@ export default function CeoVideoLibrary({
           `Joined as “${body.video?.originalName || mergeTitle || '30s video'}”. Scroll to Where each video plays and pick a row, or choose a play icon above before merging next time.`
         );
       }
+      const mergedId = String(body.video?.id || '');
       setClipIds(['', '', '']);
       setMergeTitle('');
       setMergeSlotId('');
       await load();
+      if (mergedId) {
+        setHighlightVideoId(mergedId);
+        window.setTimeout(() => {
+          document.querySelector(`[data-ceo-video-card-id="${mergedId}"]`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        }, 200);
+        window.setTimeout(() => setHighlightVideoId(null), 12_000);
+      }
     } catch (err: any) {
       setMergeError(err?.message || 'Could not join the three clips.');
     } finally {
       setMerging(false);
     }
+  };
+
+  const fillClipsFromLatestThree = (catalog?: CeoVideo[]) => {
+    const list = catalog ?? videos;
+    const singles = list.filter((v) => !isMergedVideo(v));
+    if (singles.length < 3) {
+      setMergeError('Upload at least three separate clips first (not counting older combined videos).');
+      return false;
+    }
+    const latest = [...singles]
+      .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
+      .slice(0, 3)
+      .reverse();
+    setClipIds([latest[0]!.id, latest[1]!.id, latest[2]!.id] as [string, string, string]);
+    setMergeError(null);
+    setMergeNote('Filled Clip 1–3 from your three newest uploads (oldest → newest). Tap Merge when ready.');
+    return true;
   };
 
   const patchUpload = (key: string, patch: Partial<UploadRow>) =>
@@ -293,7 +368,10 @@ export default function CeoVideoLibrary({
         patchUpload(rows[i]!.key, { state: 'error', message: err?.message || 'Upload failed.' });
       }
     }
-    await load();
+    const catalog = await load();
+    if (picked.length === 3 && catalog?.videos?.length) {
+      fillClipsFromLatestThree(catalog.videos);
+    }
   };
 
   const handleCopy = async (video: CeoVideo) => {
@@ -363,8 +441,10 @@ export default function CeoVideoLibrary({
   const videos = payload?.videos || [];
   const slots = payload?.slots || [];
   const assignedCount = slots.filter((s) => s.assignment).length;
-  const nameForVideoId = (videoId: string) =>
-    videos.find((v) => v.id === videoId)?.originalName || 'this video';
+  const nameForVideoId = (videoId: string) => {
+    const video = videos.find((v) => v.id === videoId);
+    return video ? libraryLabel(video) : 'this video';
+  };
 
   // Fall back to one synthetic group if an older server build sends no groups,
   // so the page still lists every slot instead of rendering nothing.
@@ -570,15 +650,28 @@ export default function CeoVideoLibrary({
                 className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
               >
                 <option value="">Choose a clip</option>
-                {videos.map((video) => (
-                  <option key={video.id} value={video.id}>
-                    {video.originalName || video.filename}
-                  </option>
-                ))}
+                <VideoSelectOptions videos={videos} />
               </select>
             </label>
           ))}
         </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            data-ceo-video-merge-autofill
+            disabled={!storage?.configured || merging || videos.length < 3}
+            onClick={() => fillClipsFromLatestThree()}
+            className={`${BTN} min-h-[52px] border border-[#FF1493]/50 px-4 text-xs text-[#FF1493] hover:bg-[#FF1493]/10`}
+          >
+            Use my 3 newest single clips
+          </button>
+        </div>
+        {clipIds.some((id) => !id) ? (
+          <p className="m-0 text-sm text-amber-200">
+            Pick all three clips above (or upload three at once — they auto-fill). Merge stays off until Clip 1–3
+            are set.
+          </p>
+        ) : null}
         <button
           type="button"
           data-ceo-video-merge-go
@@ -587,7 +680,7 @@ export default function CeoVideoLibrary({
           className={`${BTN} min-h-[64px] bg-[#00FFFF] px-6 text-sm text-black hover:bg-[#6ffcff]`}
         >
           {merging ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : null}
-          Merge into one 30-second video
+          {merging ? 'Joining clips… (up to 5 min)' : 'Merge into one 30-second video'}
         </button>
         {mergeError ? (
           <p
@@ -789,11 +882,7 @@ export default function CeoVideoLibrary({
                                 className="min-h-[60px] w-full rounded-xl border border-zinc-600 bg-black px-4 text-sm text-white focus:border-[#00FFFF] focus:outline-none focus:ring-2 focus:ring-[#00FFFF] disabled:opacity-50"
                               >
                                 <option value="">Nothing yet</option>
-                                {videos.map((video) => (
-                                  <option key={video.id} value={video.id}>
-                                    {video.originalName}
-                                  </option>
-                                ))}
+                                <VideoSelectOptions videos={videos} />
                               </select>
                               <span
                                 aria-live="polite"
@@ -825,7 +914,13 @@ export default function CeoVideoLibrary({
           <li
             key={video.id}
             data-ceo-video-card
-            className="space-y-4 rounded-2xl border border-indigo-500/30 bg-zinc-950 p-4"
+            data-ceo-video-card-id={video.id}
+            data-ceo-video-merged={isMergedVideo(video) ? '1' : undefined}
+            className={`space-y-4 rounded-2xl bg-zinc-950 p-4 ${
+              isMergedVideo(video)
+                ? 'border-2 border-[#FF1493]/70 shadow-[0_0_28px_rgba(255,20,147,0.25)]'
+                : 'border border-indigo-500/30'
+            } ${highlightVideoId === video.id ? 'ring-4 ring-[#FF1493]/50' : ''}`}
           >
             <video
               src={video.url}
@@ -834,7 +929,18 @@ export default function CeoVideoLibrary({
               className="aspect-video w-full rounded-xl bg-black"
             />
             <div className="space-y-1">
-              <p className="m-0 break-all font-mono text-sm text-white">{video.originalName}</p>
+              {isMergedVideo(video) ? (
+                <span className="inline-block rounded-lg border border-[#FF1493]/50 bg-[#FF1493]/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#FF1493]">
+                  Combined video
+                </span>
+              ) : null}
+              <p
+                className={`m-0 break-all font-mono text-sm ${
+                  isMergedVideo(video) ? MERGED_TITLE_CLASS : 'text-white'
+                }`}
+              >
+                {libraryLabel(video)}
+              </p>
               <p className="m-0 text-xs uppercase tracking-widest text-zinc-500">
                 {formatSize(video.sizeBytes)} · {formatDate(video.uploadedAt)}
               </p>

@@ -92,7 +92,7 @@ function runFfmpeg(args: string[]): Promise<void> {
           'merge_timeout'
         )
       );
-    }, 120_000);
+    }, 300_000);
     child.on('error', (error: NodeJS.ErrnoException) => {
       clearTimeout(timer);
       if (error.code === 'ENOENT') {
@@ -145,12 +145,25 @@ export async function mergeCeoVideos(
       'storage_not_configured'
     );
   }
-  const library = await listCeoVideos();
-  const ordered = ids.map((id) => library.find((video) => video.id === id));
-  if (ordered.some((video) => !video)) {
-    throw new CeoVideoStorageError('One of those clips is no longer in the library.', 404, 'not_found');
+  let clips: CeoVideo[] | null = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const library = await listCeoVideos();
+    const ordered = ids.map((id) => library.find((video) => video.id === id));
+    if (!ordered.some((video) => !video)) {
+      clips = ordered as CeoVideo[];
+      break;
+    }
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    }
   }
-  const clips = ordered as CeoVideo[];
+  if (!clips) {
+    throw new CeoVideoStorageError(
+      'One of those clips is not in the library yet. Tap Refresh, then pick all three again.',
+      404,
+      'not_found'
+    );
+  }
 
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cp-merge-'));
   try {
@@ -182,8 +195,11 @@ export async function mergeCeoVideos(
         contentType: 'video/mp4',
         cacheControl: 'public, max-age=31536000, immutable',
         metadata: {
-          originalName: displayName,
+          originalName: displayName.startsWith('★ ')
+            ? displayName
+            : `★ ${displayName}`,
           uploadedBy: 'ceo-video-merge',
+          merged: 'yes',
         },
       },
     });
