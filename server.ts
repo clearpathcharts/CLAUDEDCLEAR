@@ -187,12 +187,14 @@ import {
 } from './src/server/intelligenceWebhookService';
 import {
   getLatestTimeframeVerifyReport,
+  hydrateTimeframeVerifyReportFromStore,
   runTimeframeAccuracyVerify,
   startTimeframeAccuracyScheduler,
   verifyTimeframeVerifyCronSecret,
 } from './src/server/timeframeAccuracyVerifier';
 import {
   getLatestSiteDoctorReport,
+  hydrateSiteDoctorReportFromStore,
   runSiteDoctorSweep,
   startSiteDoctorScheduler,
 } from './src/server/siteDoctor';
@@ -4900,17 +4902,31 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
     console.log('[STARTUP] Social OS disconnected from this host (use npm run dev:social-os / Dockerfile.social-os)');
 
-    try {
-      startTimeframeAccuracyScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
-    }
+    void (async () => {
+      try {
+        await Promise.all([
+          hydrateSiteDoctorReportFromStore(),
+          hydrateTimeframeVerifyReportFromStore(),
+        ]);
+      } catch (e: any) {
+        console.warn(
+          '[STARTUP] Diagnostics Firestore hydrate failed:',
+          e?.message || e
+        );
+      }
 
-    try {
-      startSiteDoctorScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
-    }
+      try {
+        startTimeframeAccuracyScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
+      }
+
+      try {
+        startSiteDoctorScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
+      }
+    })();
 
     try {
       startDailyOpsScheduler();

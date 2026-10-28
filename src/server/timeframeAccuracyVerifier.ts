@@ -23,6 +23,10 @@ import {
 import { getMarketCandles } from "./marketDataGateway";
 import { getTwelveDataApiKey } from "./secrets";
 import { getDeckCriticalAssets } from "../constants/assetRegistry";
+import {
+  readDiagnosticsLatest,
+  writeDiagnosticsLatest,
+} from "./diagnosticsReportStore";
 
 export const UI_TIMEFRAMES = [
   "1m",
@@ -262,28 +266,62 @@ async function fetchPlannedCandles(
   return candles;
 }
 
-function persistReport(report: TimeframeVerifyReport) {
+function writeLocalReport(report: TimeframeVerifyReport, includeHistory = true) {
   try {
     if (!fs.existsSync(REPORT_DIR)) {
       fs.mkdirSync(REPORT_DIR, { recursive: true });
     }
-    const stamp = report.ranAt.replace(/[:.]/g, "-");
     fs.writeFileSync(
       path.join(REPORT_DIR, "latest.json"),
       JSON.stringify(report, null, 2),
       "utf8"
     );
-    fs.writeFileSync(
-      path.join(REPORT_DIR, `${stamp}.json`),
-      JSON.stringify(report, null, 2),
-      "utf8"
-    );
+    if (includeHistory) {
+      const stamp = report.ranAt.replace(/[:.]/g, "-");
+      fs.writeFileSync(
+        path.join(REPORT_DIR, `${stamp}.json`),
+        JSON.stringify(report, null, 2),
+        "utf8"
+      );
+    }
   } catch (e: any) {
     console.warn(
-      "[TimeframeVerify] Failed to persist report:",
+      "[TimeframeVerify] Failed to persist report locally:",
       e?.message || e
     );
   }
+}
+
+function persistReport(report: TimeframeVerifyReport) {
+  writeLocalReport(report);
+  void writeDiagnosticsLatest("timeframe_verify", report);
+}
+
+/** Restore latest verify report from Firestore when local disk is empty or older. */
+export async function hydrateTimeframeVerifyReportFromStore(): Promise<void> {
+  const remote = await readDiagnosticsLatest<TimeframeVerifyReport>(
+    "timeframe_verify"
+  );
+  if (!remote?.ranAt) return;
+  let localMs = 0;
+  try {
+    const p = path.join(REPORT_DIR, "latest.json");
+    if (fs.existsSync(p)) {
+      const local = JSON.parse(
+        fs.readFileSync(p, "utf8")
+      ) as TimeframeVerifyReport;
+      localMs = local?.ranAt ? new Date(local.ranAt).getTime() : 0;
+    }
+  } catch {
+    /* ignore */
+  }
+  const remoteMs = new Date(remote.ranAt).getTime();
+  if (localMs >= remoteMs) return;
+  latestReport = remote;
+  writeLocalReport(remote, false);
+  console.log(
+    `[TimeframeVerify] Hydrated latest report from Firestore (ranAt=${remote.ranAt})`
+  );
 }
 
 export function getLatestTimeframeVerifyReport(): TimeframeVerifyReport | null {
