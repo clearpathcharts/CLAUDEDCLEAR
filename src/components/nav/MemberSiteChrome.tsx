@@ -24,7 +24,10 @@ export function MemberSiteChrome({
   const { logout } = useAuth();
 
   return (
-    <div data-member-site-chrome className="shrink-0">
+    <div
+      data-member-site-chrome
+      className="sticky top-0 z-[110] shrink-0 border-b border-white/10 bg-black/95 backdrop-blur-xl"
+    >
       {!lean ? <BreakingNewsTicker /> : null}
       {/* CEO tab stays off this bar — founder opens /ceo or the desk CEO pill. */}
       <ClearNav
