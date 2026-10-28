@@ -47,7 +47,7 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
     goHomeFromDesk();
   };
   return (
-    <header className="sticky top-0 z-[100] shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
+    <header className="z-[90] shrink-0 border-b border-white/10 bg-black/90 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <a
@@ -165,8 +165,9 @@ export default function TraderDeskChrome({ active, satellitePane = null }: Props
           onClick={onHome}
           data-desk-home
           className={`${founder ? '' : 'ml-auto '}rounded-md border border-white/15 px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-widest text-zinc-400 hover:text-white`}
+          title="Default institutional desk view"
         >
-          Home
+          Desk home
         </a>
       </nav>
 

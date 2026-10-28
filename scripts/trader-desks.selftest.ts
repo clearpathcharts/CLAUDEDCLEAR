@@ -21,6 +21,7 @@ import {
   isSessionOpen,
   isTraderDeskId,
   memberHomeDeskHref,
+  memberDashboardTabHref,
   parseDeskPath,
   shouldStayOnPublicHome,
 } from '../src/lib/traderDesks.ts';
@@ -87,6 +88,10 @@ assert.equal(
 assert.equal(
   memberHomeDeskHref({ search: '?profile=calm_focus', remembered: 'fundamental' }),
   '/desk/fundamental?profile=calm_focus',
+);
+assert.equal(
+  memberDashboardTabHref('Yours', '?profile=calm_focus'),
+  '/?profile=calm_focus&tab=Yours#Yours',
 );
 
 assert.equal(isSessionOpen(8, 7, 16), true);
@@ -437,10 +442,11 @@ for (const rel of srcFiles) {
     assert.match(text, /href=\{CEO_DASHBOARD_HREF\}/);
     assert.match(text, /useFounderAccess/);
     assert.match(text, /\{founder \? \(/);
-    assert.match(text, /sticky top-0 z-\[100\]/);
+    assert.match(text, /z-\[90\] shrink-0/);
     // Home = institutional desk, in-app. `/?choose=1` rendered the public
     // landing page for a signed-in member and read as a logout.
     assert.match(text, /data-desk-home/);
+    assert.match(text, /Desk home/);
     assert.match(text, /goHomeFromDesk\(\)/);
     assert.match(text, /href=\{homeHref\}/);
     assert.doesNotMatch(text, /\/\?choose=1/);
@@ -509,6 +515,16 @@ for (const rel of srcFiles) {
     assert.match(text, /DeferredDeskBuddy/);
     assert.match(text, /satellitePane \? null : <DeferredDeskBuddy/);
     assert.match(text, /DeskColorChartDock/);
+    assert.match(text, /MemberSiteChrome/);
+    assert.match(text, /AppShellProvider/);
+  }
+  if (rel === 'src/components/nav/MemberSiteChrome.tsx') {
+    assert.match(text, /BreakingNewsTicker/);
+    assert.match(text, /ClearNav/);
+    assert.match(text, /data-member-site-chrome/);
+    assert.match(text, /navigateMemberTab/);
+    assert.match(text, /isFounder=\{false\}/);
+    assert.doesNotMatch(text, /useFounderAccess/);
   }
   if (rel === 'src/components/desks/DeskColorChartDock.tsx') {
     assert.match(text, /ColorChartPicker/);

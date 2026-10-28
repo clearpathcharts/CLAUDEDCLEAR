@@ -21,6 +21,8 @@ import { PRODUCT_URL } from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
 import DeskErrorBoundary from './DeskErrorBoundary';
+import { activeTabForDesk, MemberSiteChrome } from '../nav/MemberSiteChrome';
+import { AppShellProvider } from '../../contexts/AppShellContext';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -104,6 +106,7 @@ function DeskShell({
       <a href="#desk-main" className="cp-skip-link">
         Skip to desk
       </a>
+      <MemberSiteChrome activeTab={activeTabForDesk(deskId)} />
       <TraderDeskChrome active={deskId} satellitePane={satellitePane} />
       <main
         id="desk-main"
@@ -138,6 +141,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   }, [deskId]);
 
   return (
+    <AppShellProvider>
     <DeskAppearanceProvider deskId={deskId}>
       <Helmet>
         <title>{seo.title}</title>
@@ -157,5 +161,6 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} satellitePane={satellitePane} />
       {satellitePane ? null : <DeferredDeskBuddy deskId={deskId} />}
     </DeskAppearanceProvider>
+    </AppShellProvider>
   );
 }
