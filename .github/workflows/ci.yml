@@ -108,6 +108,9 @@ jobs:
       - name: Site Doctor sweep (fails closed with no vendor key)
         run: npm run test:site-doctor
 
+      - name: Diagnostics Firestore mirror (Site Doctor + TF verify)
+        run: npm run test:diagnostics-store
+
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
 

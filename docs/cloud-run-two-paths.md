@@ -86,3 +86,7 @@ Optional fix (no second deploy trigger):
 2. Cloud Scheduler → daily job (~**02:30 America/New_York**) → HTTP **POST** `https://clearpathtrader.com/api/cron/timeframe-verify` with header `x-timeframe-verify-cron-secret: <same secret>`.
 
 That wakes the service and runs the same suite as CEO **Run now**. Site Doctor will warn if an instance has been up ~30h with no verify report on disk.
+
+## Site Doctor / TF verify reports after redeploy
+
+Latest hourly Site Doctor and daily timeframe-verify JSON also sync to Firestore collection **`ops_diagnostics`** (`site_doctor_latest`, `timeframe_verify_latest`) when Firebase Admin is configured on Cloud Run. On boot, the server hydrates local cache from Firestore if the remote report is newer — CEO Dashboard should not show “pending first sweep” solely because a new revision replaced ephemeral disk.

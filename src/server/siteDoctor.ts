@@ -27,6 +27,10 @@ import { resolveTimeframePlan } from "../services/marketData";
 import { getLatestTimeframeVerifyReport } from "./timeframeAccuracyVerifier";
 import { getPrivateStorageMeta, hasDurablePrivateStore } from "./privateAuthService";
 import { stripePrivateStoreConfigured } from "./stripePrivateAccountStore";
+import {
+  readDiagnosticsLatest,
+  writeDiagnosticsLatest,
+} from "./diagnosticsReportStore";
 
 // UI timeframes list duplicated lightly to avoid circular import issues if any
 const UI_TFS = [
@@ -69,7 +73,7 @@ function intervalMs(): number {
   return Number.isFinite(n) && n >= 60_000 ? n : 3_600_000;
 }
 
-function persist(report: SiteDoctorReport) {
+function writeLocalReport(report: SiteDoctorReport, includeHistory = true) {
   try {
     if (!fs.existsSync(REPORT_DIR)) fs.mkdirSync(REPORT_DIR, { recursive: true });
     fs.writeFileSync(
@@ -77,15 +81,37 @@ function persist(report: SiteDoctorReport) {
       JSON.stringify(report, null, 2),
       "utf8"
     );
-    const stamp = report.ranAt.replace(/[:.]/g, "-");
-    fs.writeFileSync(
-      path.join(REPORT_DIR, `${stamp}.json`),
-      JSON.stringify(report, null, 2),
-      "utf8"
-    );
+    if (includeHistory) {
+      const stamp = report.ranAt.replace(/[:.]/g, "-");
+      fs.writeFileSync(
+        path.join(REPORT_DIR, `${stamp}.json`),
+        JSON.stringify(report, null, 2),
+        "utf8"
+      );
+    }
   } catch (e: any) {
-    console.warn("[SiteDoctor] persist failed:", e?.message || e);
+    console.warn("[SiteDoctor] local persist failed:", e?.message || e);
   }
+}
+
+function persist(report: SiteDoctorReport) {
+  writeLocalReport(report);
+  void writeDiagnosticsLatest("site_doctor", report);
+}
+
+/** Restore latest sweep from Firestore when local disk is empty or older (post-redeploy). */
+export async function hydrateSiteDoctorReportFromStore(): Promise<void> {
+  const remote = await readDiagnosticsLatest<SiteDoctorReport>("site_doctor");
+  if (!remote?.ranAt) return;
+  const local = loadLatestFromDisk();
+  const remoteMs = new Date(remote.ranAt).getTime();
+  const localMs = local?.ranAt ? new Date(local.ranAt).getTime() : 0;
+  if (localMs >= remoteMs) return;
+  latest = remote;
+  writeLocalReport(remote, false);
+  console.log(
+    `[SiteDoctor] Hydrated latest report from Firestore (ranAt=${remote.ranAt})`
+  );
 }
 
 function loadLatestFromDisk(): SiteDoctorReport | null {
