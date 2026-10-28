@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ClearPath brand (matches nav accent #4D00FF) -->
+    <color name="colorPrimary">#4D00FF</color>
+    <color name="colorPrimaryDark">#2A0088</color>
+    <color name="colorAccent">#00E5FF</color>
+</resources>

@@ -189,6 +189,7 @@ import {
   getLatestTimeframeVerifyReport,
   runTimeframeAccuracyVerify,
   startTimeframeAccuracyScheduler,
+  verifyTimeframeVerifyCronSecret,
 } from './src/server/timeframeAccuracyVerifier';
 import {
   getLatestSiteDoctorReport,
@@ -3084,6 +3085,29 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'VERIFY_FAILED',
+        message: e?.message || 'Timeframe verify failed',
+      });
+    }
+  });
+
+  // Cloud Scheduler: warm instance + run swap-hour suite (set TIMEFRAME_VERIFY_CRON_SECRET on Cloud Run)
+  app.post('/api/cron/timeframe-verify', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const report = await runTimeframeAccuracyVerify({ force: true });
+      res.json({
+        ok: report.summary.ok,
+        passed: report.summary.passed,
+        failed: report.summary.failed,
+        total: report.summary.total,
+        ranAt: report.ranAt,
+      });
     } catch (e: any) {
       res.status(500).json({
         error: 'VERIFY_FAILED',
