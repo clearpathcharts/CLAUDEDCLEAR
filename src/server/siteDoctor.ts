@@ -240,9 +240,23 @@ function checkTimeframePlans(): SiteDoctorCheck {
   };
 }
 
+function isCloudRunRuntime(): boolean {
+  return Boolean(process.env.K_SERVICE);
+}
+
 function checkTimeframeVerifyFreshness(): SiteDoctorCheck {
   const report = getLatestTimeframeVerifyReport();
   if (!report) {
+    const uptimeH = process.uptime() / 3600;
+    if (isCloudRunRuntime() && uptimeH >= 30) {
+      return {
+        id: "timeframe_verify",
+        label: "Daily swap-hour TF verify",
+        ok: false,
+        severity: "warn",
+        detail: `No report on this instance (uptime ${uptimeH.toFixed(1)}h). Swap-hour sweep may have missed while scaled to zero — schedule POST /api/cron/timeframe-verify or Run now on CEO`,
+      };
+    }
     return {
       id: "timeframe_verify",
       label: "Daily swap-hour TF verify",
@@ -256,12 +270,18 @@ function checkTimeframeVerifyFreshness(): SiteDoctorCheck {
     (Date.now() - new Date(report.ranAt).getTime()) / (1000 * 60 * 60);
   const fresh = ageH <= 36;
   const ok = report.summary.ok && fresh;
+  const schedulerNote = fresh
+    ? "scheduler ran"
+    : "report older than 36h (missed daily window?)";
+  const dataNote = report.summary.ok
+    ? "all TF candle checks passed"
+    : "TF candle/plan failures (site can still be up)";
   return {
     id: "timeframe_verify",
     label: "Daily swap-hour TF verify",
     ok,
     severity: report.summary.ok ? (fresh ? "info" : "warn") : "critical",
-    detail: `last=${report.ranAt} ok=${report.summary.ok} passed=${report.summary.passed}/${report.summary.total} ageHours=${ageH.toFixed(1)}`,
+    detail: `${schedulerNote}; ${dataNote}; last=${report.ranAt} passed=${report.summary.passed}/${report.summary.total} ageHours=${ageH.toFixed(1)}`,
   };
 }
 

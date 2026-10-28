@@ -12,6 +12,7 @@
  *   TIMEFRAME_VERIFY_ENABLED=1|0
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -511,4 +512,15 @@ export function stopTimeframeAccuracyScheduler() {
     clearInterval(timer);
     timer = null;
   }
+}
+
+/** Cloud Scheduler / external cron — header `x-timeframe-verify-cron-secret`. */
+export function verifyTimeframeVerifyCronSecret(header?: string): boolean {
+  const secret = process.env.TIMEFRAME_VERIFY_CRON_SECRET?.trim();
+  if (!secret) return false;
+  if (!header) return false;
+  const a = Buffer.from(header);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
