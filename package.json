@@ -83,6 +83,7 @@
     "ingest:rss-catalog": "tsx scripts/ingest-rss-catalog.ts",
     "test:daily-ops": "tsx scripts/daily-ops.selftest.ts",
     "test:site-doctor": "tsx scripts/site-doctor.selftest.ts",
+    "test:diagnostics-store": "tsx scripts/diagnostics-store.selftest.ts",
     "test:daily-pattern-review": "tsx scripts/daily-pattern-review.selftest.ts",
     "test:marketing-campaign": "tsx scripts/marketing-campaign.selftest.ts",
     "test:marketing-funnel": "tsx scripts/marketing-funnel.selftest.ts",
@@ -155,7 +156,7 @@
     "morgan": "^1.10.1",
     "motion": "^12.23.24",
     "node-cron": "^4.2.1",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^10.0.0",
     "openai": "^6.41.0",
     "passport": "^0.7.0",
     "pg": "^8.21.0",
@@ -193,6 +194,6 @@
   },
   "overrides": {
     "uuid": "^11.1.1",
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^10.0.0"
   }
 }

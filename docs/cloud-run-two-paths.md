@@ -75,3 +75,18 @@ curl -sS https://clearpathtrader.com/ | grep -o 'clearpath-build[^<]*'
 ```
 
 If that revision is old, moving traffic to LATEST is the only fix. Cache-busting cannot change an origin that is still serving yesterday's container.
+
+## Daily timeframe verify when min instances = 0
+
+The swap-hour accuracy sweep runs inside the Node process. If Cloud Run scales to zero during **02:00–02:59 America/New_York**, that day’s run may never fire.
+
+Optional fix (no second deploy trigger):
+
+1. Cloud Run → **Variables** → set `TIMEFRAME_VERIFY_CRON_SECRET` to a long random string.
+2. Cloud Scheduler → daily job (~**02:30 America/New_York**) → HTTP **POST** `https://clearpathtrader.com/api/cron/timeframe-verify` with header `x-timeframe-verify-cron-secret: <same secret>`.
+
+That wakes the service and runs the same suite as CEO **Run now**. Site Doctor will warn if an instance has been up ~30h with no verify report on disk.
+
+## Site Doctor / TF verify reports after redeploy
+
+Latest hourly Site Doctor and daily timeframe-verify JSON also sync to Firestore collection **`ops_diagnostics`** (`site_doctor_latest`, `timeframe_verify_latest`) when Firebase Admin is configured on Cloud Run. On boot, the server hydrates local cache from Firestore if the remote report is newer — CEO Dashboard should not show “pending first sweep” solely because a new revision replaced ephemeral disk.

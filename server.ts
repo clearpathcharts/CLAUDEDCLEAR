@@ -187,11 +187,14 @@ import {
 } from './src/server/intelligenceWebhookService';
 import {
   getLatestTimeframeVerifyReport,
+  hydrateTimeframeVerifyReportFromStore,
   runTimeframeAccuracyVerify,
   startTimeframeAccuracyScheduler,
+  verifyTimeframeVerifyCronSecret,
 } from './src/server/timeframeAccuracyVerifier';
 import {
   getLatestSiteDoctorReport,
+  hydrateSiteDoctorReportFromStore,
   runSiteDoctorSweep,
   startSiteDoctorScheduler,
 } from './src/server/siteDoctor';
@@ -3092,6 +3095,29 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
+  // Cloud Scheduler: warm instance + run swap-hour suite (set TIMEFRAME_VERIFY_CRON_SECRET on Cloud Run)
+  app.post('/api/cron/timeframe-verify', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const report = await runTimeframeAccuracyVerify({ force: true });
+      res.json({
+        ok: report.summary.ok,
+        passed: report.summary.passed,
+        failed: report.summary.failed,
+        total: report.summary.total,
+        ranAt: report.ranAt,
+      });
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'VERIFY_FAILED',
+        message: e?.message || 'Timeframe verify failed',
+      });
+    }
+  });
+
   // Hourly Site Doctor report for CEO Dashboard
   app.get('/api/admin/site-doctor', requireFounderOrCatalogAdmin, (_req, res) => {
     const report = getLatestSiteDoctorReport();
@@ -4876,17 +4902,31 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
     console.log('[STARTUP] Social OS disconnected from this host (use npm run dev:social-os / Dockerfile.social-os)');
 
-    try {
-      startTimeframeAccuracyScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
-    }
+    void (async () => {
+      try {
+        await Promise.all([
+          hydrateSiteDoctorReportFromStore(),
+          hydrateTimeframeVerifyReportFromStore(),
+        ]);
+      } catch (e: any) {
+        console.warn(
+          '[STARTUP] Diagnostics Firestore hydrate failed:',
+          e?.message || e
+        );
+      }
 
-    try {
-      startSiteDoctorScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
-    }
+      try {
+        startTimeframeAccuracyScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
+      }
+
+      try {
+        startSiteDoctorScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
+      }
+    })();
 
     try {
       startDailyOpsScheduler();
