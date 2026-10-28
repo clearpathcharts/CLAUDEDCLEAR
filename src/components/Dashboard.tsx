@@ -1438,7 +1438,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
           <div className="w-full mt-auto mb-0 bg-transparent flex flex-col">
             <LegalFooter profile={profile} onShowTerms={() => setShowAdditionalTerms(true)} />
-            {!isAppShell && <BreakingNewsTicker />}
           </div>
         </div>
       </div>

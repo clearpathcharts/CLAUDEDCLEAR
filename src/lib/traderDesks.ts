@@ -208,6 +208,18 @@ export function goHomeFromDesk(): void {
   navigateToDesk('institutional');
 }
 
+/** Dashboard tab deep links — `?tab=` keeps App from auto-redirecting back to a desk. */
+export function memberDashboardTabHref(tabId: string, search?: string): string {
+  const raw = (search ?? (typeof window !== 'undefined' ? window.location.search : '')).replace(
+    /^\?/,
+    ''
+  );
+  const params = new URLSearchParams(raw);
+  params.set('tab', tabId);
+  const qs = params.toString();
+  return qs ? `/?${qs}#${tabId}` : `/?tab=${encodeURIComponent(tabId)}#${tabId}`;
+}
+
 /** FX session windows in UTC hours (inclusive start, exclusive end, wrapping midnight). */
 export const FX_SESSIONS: { id: string; label: string; utcStart: number; utcEnd: number }[] = [
   { id: 'sydney', label: 'Sydney', utcStart: 21, utcEnd: 6 },
