@@ -72,6 +72,15 @@ import {
   CEO_COMMITMENT_SECTIONS,
   CEO_COMMITMENT_SIGNATURE,
 } from '../content/ceoCommitmentStatement';
+import {
+  LANGUAGE_MOCK_PAGE_CSS,
+  isUnknownLanguageMockPath,
+  languageMockHtmlLang,
+  renderLanguageMockLocale,
+  renderLanguageWorldMockIndex,
+  renderUnknownLanguageBody,
+} from './languageWorldMock';
+import { LANGUAGE_MOCK_INDEX_PATH } from '../i18n/top25WorldLanguages';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -261,6 +270,7 @@ const PAGE_CSS = `
     .card-list a.card { transition: none; }
     .card-list a.card:hover { transform: none; }
   }
+${LANGUAGE_MOCK_PAGE_CSS}
 `;
 
 function renderShell(
@@ -1486,6 +1496,16 @@ ${hub ? '' : '<p><a href="/forex">← All forex pairs</a></p>'}
 </article>`;
 }
 
+export function isUnknownLanguagePath(reqPath: string): boolean {
+  return isUnknownLanguageMockPath(reqPath);
+}
+
+/** Crawlable 404 for unknown /languages/:code (noindex). */
+export function renderUnknownLanguageNotFound(reqPath: string): string {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  return renderShell(pathClean, renderUnknownLanguageBody(pathClean), 'en', null, 'noindex, follow');
+}
+
 /** True when path is /regions/:id and :id is not a known hub (should 404, not SPA). */
 export function isUnknownRegionPath(reqPath: string): boolean {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
@@ -1848,6 +1868,8 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/accessibility') body = renderAccessibilityPage();
   else if (pathClean === '/regions') body = renderRegionsIndex();
   else if (parts[0] === 'regions' && parts.length === 2) body = renderRegionalHub(parts[1]);
+  else if (pathClean === LANGUAGE_MOCK_INDEX_PATH) body = renderLanguageWorldMockIndex();
+  else if (parts[0] === 'languages' && parts.length === 2) body = renderLanguageMockLocale(parts[1]);
   else if (pathClean === '/encyclopedia' || pathClean === '/financial-encyclopedia') body = renderEncyclopediaHub();
   else if (pathClean === '/stocks') body = renderStocksHub();
   else if (pathClean === '/crypto') body = renderCryptoHub();
@@ -1887,6 +1909,17 @@ export function renderStaticContentPage(reqPath: string): string | null {
   if (body === null) return null;
   const market =
     parts[0] === 'regions' && parts.length === 2 ? getRegionalMarket(parts[1]) : null;
-  const htmlLang = market?.lang?.split('-')[0] || 'en';
-  return renderShell(pathClean, body, htmlLang, market?.cta);
+  const htmlLang =
+    parts[0] === 'languages'
+      ? languageMockHtmlLang(pathClean)
+      : market?.lang?.split('-')[0] || 'en';
+  const robots =
+    parts[0] === 'languages' ? 'noindex, follow' : undefined;
+  return renderShell(
+    pathClean,
+    body,
+    htmlLang,
+    market?.cta,
+    robots ?? 'index, follow, max-image-preview:large',
+  );
 }

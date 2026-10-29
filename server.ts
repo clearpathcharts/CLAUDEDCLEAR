@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, isUnknownLanguagePath, renderUnknownRegionNotFound, renderUnknownLanguageNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -4633,6 +4633,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         const enriched = enrichHtml(renderUnknownRegionNotFound(req.path), req.path, res);
         return sendUncachedHtml(res, enriched, 404);
       }
+      if (!wantLiveSpa && isUnknownLanguagePath(req.path)) {
+        const enriched = enrichHtml(renderUnknownLanguageNotFound(req.path), req.path, res);
+        return sendUncachedHtml(res, enriched, 404);
+      }
       const isDeskRoute =
         pathClean === '/desk' ||
         pathClean.startsWith('/desk/') ||
@@ -4712,6 +4716,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/accessibility',
     '/regions',
     '/regions/:id',
+    '/languages',
+    '/languages/:code',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
