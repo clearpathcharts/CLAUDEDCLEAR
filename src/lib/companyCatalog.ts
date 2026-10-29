@@ -1,12 +1,12 @@
 /**
- * Educational company directory — public issuers + study-tree subsidiaries.
- * Public issuers canonical to /stocks/{ticker}. Subsidiaries are unique /companies/{slug} pages.
+ * Educational company directory — real public issuers only (canonical /stocks/{ticker}).
+ * Never generate subsidiaries or company names: every listing must be a real issuer.
  * Not a live filing database. Missing financials stay DATA UNAVAILABLE.
  */
 import { getProceduralStocks } from '../utils/searchEngine';
 
 export const COMPANY_DIRECTORY_DISCLAIMER =
-  'Educational corporate-tree directory. Not a live filing database, not a brokerage, and not investment advice. Missing financial cells stay DATA UNAVAILABLE.';
+  'Educational directory of real public issuers. Not a live filing database, not a brokerage, and not investment advice. Missing financial cells stay DATA UNAVAILABLE.';
 
 /** Real majors already have honest stock profiles — do not invent fake subsidiaries for them. */
 export const REAL_MAJOR_TICKERS = new Set([
@@ -20,36 +20,6 @@ export const REAL_MAJOR_TICKERS = new Set([
   'JPM',
 ]);
 
-export const COMPANY_UNITS = [
-  {
-    key: 'logistics-system',
-    label: 'Logistics System',
-    studyAngle: 'how inventory, shipping, and fulfillment costs feed the parent issuer’s margins',
-  },
-  {
-    key: 'digital-engine',
-    label: 'Digital Engine',
-    studyAngle: 'software, data, and automation behind the listed equity’s product story',
-  },
-  {
-    key: 'european-ventures',
-    label: 'European Ventures',
-    studyAngle: 'regional expansion, FX translation, and EU regulatory context for the parent ticker',
-  },
-  {
-    key: 'asian-foundry-group',
-    label: 'Asian Foundry Group',
-    studyAngle: 'manufacturing, supply-chain, and East-Asia production risk for the parent ticker',
-  },
-  {
-    key: 'real-estate-capital',
-    label: 'Real Estate Capital',
-    studyAngle: 'property, leases, and capital-allocation choices that sit off the headline product story',
-  },
-] as const;
-
-export type CompanyUnitKey = (typeof COMPANY_UNITS)[number]['key'];
-
 export type CompanyRecord = {
   slug: string;
   name: string;
@@ -59,7 +29,6 @@ export type CompanyRecord = {
   ticker?: string;
   parentCompany?: string;
   parentTicker?: string;
-  unitKey?: CompanyUnitKey;
   unitLabel?: string;
   capitalTier?: string;
   description: string;
@@ -111,27 +80,6 @@ function publicSeoTitle(stock: any): string {
   return `${ticker} | ClearPathTrader Directory`;
 }
 
-function subsidiarySeoTitle(name: string, ticker: string, unit: (typeof COMPANY_UNITS)[number]): string {
-  const full = `${name} | ClearPathTrader`;
-  if (full.length <= 70) return full;
-  return `${unit.label} · ${ticker} | ClearPathTrader`;
-}
-
-function subsidiaryDescription(name: string, stock: any, unit: (typeof COMPANY_UNITS)[number]): string {
-  const ticker = String(stock.ticker).toUpperCase();
-  const parent = String(stock.company || ticker);
-  const sector = stock.sector || 'equity';
-  return `${name} is an educational study node under ${parent} (${ticker}) in the ${sector} sector. Use it to practice ${unit.studyAngle}. Not a live subsidiary filing — financials stay DATA UNAVAILABLE.`;
-}
-
-function subsidiarySeoDescription(name: string, stock: any, unit: (typeof COMPANY_UNITS)[number]): string {
-  const ticker = String(stock.ticker).toUpperCase();
-  const parent = String(stock.company || ticker);
-  const full = `${name}: educational ${unit.label} study node under ${parent} (${ticker}). Not a live filing — DATA UNAVAILABLE for missing financials.`;
-  if (full.length <= 160) return full;
-  return `Educational ${unit.label} study node under ${ticker}. Not a live filing — DATA UNAVAILABLE for missing financials.`;
-}
-
 let cached: CompanyRecord[] | null = null;
 let bySlug: Map<string, CompanyRecord> | null = null;
 let subsidiariesCached: CompanyRecord[] | null = null;
@@ -175,30 +123,6 @@ function buildCatalog(): void {
       slugs.add(nameSlug);
     }
 
-    if (REAL_MAJOR_TICKERS.has(ticker)) continue;
-
-    for (let i = 0; i < COMPANY_UNITS.length; i++) {
-      const unit = COMPANY_UNITS[i];
-      const parentName = company.replace(/\s+Inc\.?$/i, '').trim() || company;
-      const name = `${parentName} ${unit.label}`;
-      const desc = subsidiaryDescription(name, stock, unit);
-      const rec: CompanyRecord = {
-        slug: takeSlug(slugifyCompanyName(name), `${tickerSlug}-${unit.key}`),
-        name,
-        status: 'Subsidiary',
-        sector: String(stock.sector || ''),
-        industry: stock.industry ? String(stock.industry) : undefined,
-        parentCompany: company,
-        parentTicker: ticker,
-        unitKey: unit.key,
-        unitLabel: unit.label,
-        capitalTier: `Tier ${i + 1}`,
-        description: desc,
-        seoTitle: subsidiarySeoTitle(name, ticker, unit),
-        seoDescription: subsidiarySeoDescription(name, stock, unit),
-      };
-      list.push(rec);
-    }
   }
 
   cached = list;
@@ -260,12 +184,16 @@ export function getCompanySubsidiaries(): CompanyRecord[] {
   return subsidiariesCached;
 }
 
+function publicIssuers(): CompanyRecord[] {
+  return getCompanyCatalog().filter((c) => c.status === 'Public');
+}
+
 export function companyIndexPageCount(): number {
-  return Math.max(1, Math.ceil(getCompanySubsidiaries().length / COMPANY_INDEX_PAGE_SIZE));
+  return Math.max(1, Math.ceil(publicIssuers().length / COMPANY_INDEX_PAGE_SIZE));
 }
 
 export function companyIndexPage(page: number): { page: number; pages: number; rows: CompanyRecord[] } {
-  const rows = getCompanySubsidiaries();
+  const rows = publicIssuers();
   const pages = Math.max(1, Math.ceil(rows.length / COMPANY_INDEX_PAGE_SIZE));
   const p = Number.isFinite(page) ? Math.min(Math.max(1, Math.floor(page)), pages) : 1;
   const start = (p - 1) * COMPANY_INDEX_PAGE_SIZE;

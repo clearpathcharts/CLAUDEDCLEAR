@@ -646,7 +646,7 @@ export default function MasterMarketExplorerView({
                   <div className="flex flex-wrap gap-2 mt-2 items-center">
                     <span className="text-[10px] uppercase font-bold font-mono text-[#00D9FF] bg-[#00D9FF]/10 px-2 py-0.5 border border-[#00D9FF]/25 rounded-md">TICKER: {selectedDetailItem.ticker}</span>
                     <span className="text-[10px] uppercase font-bold font-mono text-zinc-400 bg-neutral-900 px-2 border border-white/5 py-0.5 rounded-md">{selectedDetailItem.exchange}</span>
-                    <span className="text-[10px] font-semibold text-emerald-400 font-mono">VALUE: {selectedDetailItem.marketCap}</span>
+                    <span className="text-[10px] font-semibold text-zinc-400 font-mono">MARKET CAP: DATA UNAVAILABLE</span>
                   </div>
                 </div>
 

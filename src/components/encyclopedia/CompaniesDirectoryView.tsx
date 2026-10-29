@@ -21,8 +21,6 @@ interface Corporation {
   founded: string;
   founders: string[];
   ipoYear: string;
-  marketCapRank: string;
-  marketCap: string;
   products: string[];
   overview: string;
   history: string;
@@ -43,8 +41,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1976',
     founders: ['Steve Jobs', 'Steve Wozniak', 'Ronald Wayne'],
     ipoYear: '1980',
-    marketCapRank: '#1 Globally',
-    marketCap: '$3.2 Trillion',
     products: ['iPhones', 'MacBook computing arrays', 'iOS ecosystem core', 'App Store gatekeeping systems'],
     overview: 'Apple is the leading consumer technologies ecosystem provider, combining highly curated proprietary hardware with closed-loop software systems.',
     history: 'Starting in a garage in Palo Alto, Apple revolutionized human personal computing in the late 1970s, survived near-bankruptcy in the 1990s through Steve Jobs\' reinstatement, and launched the iPhone in 2007, redefining cellular connectivity.',
@@ -62,8 +58,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '2003',
     founders: ['Martin Eberhard', 'Marc Tarpenning', 'Elon Musk (early investor)'],
     ipoYear: '2010',
-    marketCapRank: '#8 Globally',
-    marketCap: '$950 Billion',
     products: ['Model Y/3/S/X electric motors', 'Industrial power Megapacks', 'Full Self-Driving neural path software', 'Optimus Humanoid Robotics'],
     overview: 'Tesla designs electric passenger transport, battery storage architecture, solar collectors, and computational vision-based AI robotics.',
     history: 'Founded to prove electric vehicles could exceed combustion standards, Tesla grew exponentially under Elon Musk, scaling production in Nevada, Shanghai, Berlin, and Texas to lead the global EV transition.',
@@ -81,8 +75,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1993',
     founders: ['Jensen Huang', 'Chris Malachowsky', 'Curtis Priem'],
     ipoYear: '1999',
-    marketCapRank: '#2 Globally',
-    marketCap: '$3.0 Trillion',
     products: ['H100/H200 Tensor-Core GPUs', 'Blackwell Supercomputer systems', 'CUDA programming software', 'GeForce Graphic architectures'],
     overview: 'NVIDIA is the pioneer of GPU computing, creating the absolute logical foundation for neural network training and advanced Artificial Intelligence grids.',
     history: 'Established originally to process real-time 3D gaming graphics, NVIDIA found their parallel processing chips were highly adapted for deep learning algorithms, allowing them to capture a virtual monopoly in modern compute farms.',
@@ -100,8 +92,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1975',
     founders: ['Bill Gates', 'Paul Allen'],
     ipoYear: '1986',
-    marketCapRank: '#3 Globally',
-    marketCap: '$3.1 Trillion',
     products: ['Azure Cloud Services', 'Windows OS layers', 'Office Productivity Suite', 'OpenAI application integrations'],
     overview: 'Microsoft is a global powerhouse spanning enterprise cloud networks, computer operating platforms, enterprise softwares, and gaming systems.',
     history: 'Microsoft dominated personal computer operating software in the 1980s and 1990s. Under Satya Nadella (appointed 2014), the company successfully shifted to cloud computing (Azure) and secured a monumental partnership with OpenAI.',
@@ -119,8 +109,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1994',
     founders: ['Jeff Bezos'],
     ipoYear: '1997',
-    marketCapRank: '#5 Globally',
-    marketCap: '$1.9 Trillion',
     products: ['AWS Cloud infrastructure', 'Amazon retail distribution pipeline', 'Prime subscription systems', 'Digital advertising spaces'],
     overview: 'Amazon is a global titan in digital retail logistics and cloud infrastructure hosting (AWS).',
     history: 'Starting as an online bookstore, Amazon pioneered commercial web infrastructure, reinvested early operating margins to build delivery hubs, and established Amazon Web Services (AWS) in 2006 to host the modern internet.',
@@ -138,8 +126,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1984',
     founders: ['Philips (co-founder)', 'ASM International (co-founder)'],
     ipoYear: '1995',
-    marketCapRank: '#12 Globally',
-    marketCap: '$410 Billion',
     products: ['EUV Photolithography machines', 'DUV Laser systems', 'Yieldstar metrology tools'],
     overview: 'ASML holds a absolute global monopoly on extreme ultraviolet projection technology required to print microprocessors below 5 nanometers.',
     history: 'Born as an experimental joint venture, ASML weathered decades of capital-intensive engineering research to solve light refraction limitations, eventually mastering EUV technology and blocking any competitors.',
@@ -157,8 +143,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1987',
     founders: ['Morris Chang'],
     ipoYear: '1997',
-    marketCapRank: '#6 Globally',
-    marketCap: '$940 Billion',
     products: ['Sub-3nm logic silicon wafers', 'Advanced CoWoS 2.5D physical packaging', 'Embedded microelectronic designs'],
     overview: 'TSMC is the worlds premier contract semiconductor foundry, manufacturing the majority of advanced chips designed globally.',
     history: 'Founded by Morris Chang in Hsinchu Science Park, TSMC invented the purecontract foundry model, freeing designers from building expensive foundries and concentrating advanced fabrication expertise in Taiwan.',
@@ -176,8 +160,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1799 (Predecessors)',
     founders: ['John Pierpont Morgan', 'Aaron Burr'],
     ipoYear: '1969',
-    marketCapRank: '#15 Globally',
-    marketCap: '$600 Billion',
     products: ['Investment Banking services', 'Global Payment clearing networks', 'Corporate Commercial loans', 'Private Banking reserves'],
     overview: 'JPMorgan Chase is the largest bank in the Western world, serving as a critical deposit anchor and custodian of liquid capital.',
     history: 'Evolving through monumental mergers (including Chase Manhattan, Chemical Bank, and Bank One), JPM became the primary stabilizer of global finance, stepping in during historical crises (1907, 2008, 2023 bank runs).',
@@ -195,8 +177,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1882 (Standard Oil)',
     founders: ['John D. Rockefeller'],
     ipoYear: '1920',
-    marketCapRank: '#18 Globally',
-    marketCap: '$520 Billion',
     products: ['Refined petroleum combustibles', 'Liquid Natural Gas exports', 'Industrial synthetic plastics', 'Lubricating chemical feedstocks'],
     overview: 'ExxonMobil is an international oil and gas conglomerate engaged in drilling, refining, shipping, and chemical fabrication of petrochemical assets.',
     history: 'Descended directly from John D. Rockefeller\'s Standard Oil Trust (broken up in 1911), Exxon and Mobil merged in 1999 to re-establish the largest Western oil giant, adapting to deepsea drilling and shale extraction.',
@@ -214,8 +194,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1839 (As textile mill)',
     founders: ['Oliver Chace', 'Warren Buffett (reorganized 1965)'],
     ipoYear: '1965',
-    marketCapRank: '#7 Globally',
-    marketCap: '$980 Billion',
     products: ['Insurance float systems (GEICO)', 'BNSF Railroad transit', 'Berkshire Energy systems', 'Massive equity portfolio blocks'],
     overview: 'Berkshire Hathaway is a diversified holding company acquiring entire businesses and major equity positions, led for decades by Warren Buffett.',
     history: 'Originally a dying New England textile mill, Berkshire was acquired by Warren Buffett in 1965. He redirected the cash flows to purchase high-quality insurance companies, using their premium "float" to acquire compounding cash cow corporations.',
@@ -233,8 +211,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1876',
     founders: ['Col. Eli Lilly'],
     ipoYear: '1952',
-    marketCapRank: '#9 Globally',
-    marketCap: '$840 Billion',
     products: ['Mounjaro peptide therapies', 'Zepbound weight regulators', 'Humalog synthetic insulins', 'Jardiance cardiovascular solutions'],
     overview: 'Eli Lilly discovers, manufactures, and distributes breakthrough clinical pharmaceuticals globally, particularly in endocrinology and oncology.',
     history: 'The first company to mass-produce insulin in the 1920s, Lilly has been a pioneer in metabolic health. They transitioned to modern synthetic biotechnology, launching revolutionary GLP-1 agonists that surged their market value in the 2020s.',
@@ -252,8 +228,6 @@ const REGISTERED_CORPORATIONS: Corporation[] = [
     founded: '1923',
     founders: ['August Krogh', 'Marie Krogh', 'Hans Christian Hagedorn'],
     ipoYear: '1974',
-    marketCapRank: '#10 Globally',
-    marketCap: '$580 Billion',
     products: ['Ozempic diabetes peptide vectors', 'Wegovy weight-loss injection kits', 'Victoza diabetic controllers', 'Insuman delivery pens'],
     overview: 'Novo Nordisk is a global healthcare giant leading diabetic care and chronic endocrine disease solutions using biochemical peptide engineering.',
     history: 'Created in Denmark to deliver newly discovered insulin therapies to Europe, Novo Nordisk spent its entire existence refining protein extraction and delivery, resulting in the groundbreaking discovery of GLP-1 weight regulators.',
@@ -349,8 +323,8 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
           </h1>
           <p className="text-zinc-300 text-sm sm:text-base max-w-4xl leading-relaxed">
             The Library of Alexandria for corporate blueprints. This sector acts as a searchable matrix cataloging 
-            more than <strong className="text-[#00D9FF] font-bold">{catalogTotals.total.toLocaleString()} educational listings</strong>
-            {' '}({catalogTotals.publicIssuers.toLocaleString()} public issuers on stock profiles, {catalogTotals.subsidiaries.toLocaleString()} subsidiary study pages).
+            <strong className="text-[#00D9FF] font-bold">{catalogTotals.total.toLocaleString()} educational listings</strong>
+            {' '}(real public issuers, each on its stock profile).
             Not a live filing database.
           </p>
         </div>
@@ -366,8 +340,8 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
             <span className="text-white font-black text-sm sm:text-base mt-1.5 block">{catalogTotals.publicIssuers.toLocaleString()} on /stocks</span>
           </div>
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Study pages</span>
-            <span className="text-[#00D9FF] font-black text-sm sm:text-base mt-1.5 block">{catalogTotals.subsidiaries.toLocaleString()} crawlable</span>
+            <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Market cap</span>
+            <span className="text-zinc-400 font-black text-sm sm:text-base mt-1.5 block">DATA UNAVAILABLE</span>
           </div>
           <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl">
             <span className="text-zinc-400 block uppercase text-[10px] sm:text-xs tracking-wider">Data Source Toggles</span>
@@ -520,7 +494,7 @@ export default function CompaniesDirectoryView({ selectFileNode }: CompaniesDire
                   setCatalogQuery(e.target.value);
                   setCatalogPage(0);
                 }}
-                placeholder="Search all issuers and study nodes…"
+                placeholder="Search all issuers…"
                 className="w-full bg-[#050916] border border-white/15 rounded-xl py-2 px-3 text-xs text-white placeholder-zinc-500"
               />
               <ul className="flex flex-col gap-1 max-h-[240px] overflow-y-auto">

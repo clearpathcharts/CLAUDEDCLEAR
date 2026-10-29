@@ -27,7 +27,8 @@ import { renderStaticContentPage } from '../src/server/contentPages.ts';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const gCounts = glossaryCatalogCounts();
-assert.ok(gCounts.total >= 1_500, `glossary too small: ${gCounts.total}`);
+assert.ok(gCounts.total >= 500, `glossary too small: ${gCounts.total}`);
+assert.equal(gCounts.procedural, 0, 'glossary must not contain generated prefix+core phrases');
 assert.ok(gCounts.core >= 40, `core terms ${gCounts.core}`);
 assert.ok(gCounts.seed >= 500, `seed terms ${gCounts.seed}`);
 
@@ -109,7 +110,7 @@ assert.ok(counts.companyIndexPages + counts.companyPages <= 50_000);
 
 const idx = renderStaticContentPage('/companies/page/1');
 assert.ok(idx);
-assert.match(idx!, /Company study pages/);
+assert.match(idx!, /Public issuers/);
 
 const stocksHub = renderStaticContentPage('/stocks');
 assert.ok(stocksHub);

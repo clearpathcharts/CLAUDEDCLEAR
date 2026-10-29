@@ -455,7 +455,7 @@ function renderGlossary(): string {
     .join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Glossary' }])}
 <h1>Financial Glossary</h1>
-<p class="lead">${counts.total.toLocaleString()} educational terms: ${counts.core} core practitioner definitions, ${counts.seed.toLocaleString()} dictionary seeds, and ${counts.procedural.toLocaleString()} unique vocabulary-study nodes. ${GLOSSARY_DISCLAIMER}</p>
+<p class="lead">${counts.total.toLocaleString()} educational terms: ${counts.core} core practitioner definitions and ${counts.seed.toLocaleString()} dictionary terms. ${GLOSSARY_DISCLAIMER}</p>
 <article>
 <h2>Browse A–Z</h2>
 <ul class="card-list">${letters}</ul>
@@ -731,7 +731,7 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <li><a class="card" href="/crypto"><h2>Crypto</h2><p>${counts.crypto.toLocaleString()} coins and protocols explained for literacy, not hype.</p></a></li>
 <li><a class="card" href="/forex"><h2>Forex</h2><p>${counts.forex.toLocaleString()} currency pairs with macro drivers.</p></a></li>
 <li><a class="card" href="/commodities"><h2>Commodities</h2><p>${counts.commodities} metals, energy, and agriculture profiles.</p></a></li>
-<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} educational listings — ${counts.companyPages.toLocaleString()} crawlable subsidiary study pages plus public issuers on stock profiles.</p></a></li>
+<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} real public issuers, each with a stock profile.</p></a></li>
 <li><a class="card" href="/markets/bonds"><h2>Bonds</h2><p>Authored knowledge article on fixed income — education, not a live yield feed.</p></a></li>
 </ul>
 <h2>Sectors</h2>
@@ -875,12 +875,12 @@ function renderCompaniesHub(): string {
     { name: 'Companies' },
   ])}
 <h1>Company Directory</h1>
-<p class="lead">${counts.companies.toLocaleString()} educational listings: ${counts.stocks.toLocaleString()} public issuers (canonical on stock profiles) and ${counts.companyPages.toLocaleString()} subsidiary study pages. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
+<p class="lead">${counts.companies.toLocaleString()} real public issuers, each canonical on its stock profile. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
 <h2>Featured public issuers</h2>
 <ul class="card-list">${cards}</ul>
-<p>Every subsidiary study page has its own URL under <code>/companies/{slug}</code> and is listed in <a href="/sitemap-companies.xml">sitemap-companies.xml</a>. Browse the crawlable index at <a href="/companies/page/1">/companies/page/1</a>. Public tickers 301 to <code>/stocks/{ticker}</code>.</p>
+<p>Browse every issuer at <a href="/companies/page/1">/companies/page/1</a>. Company tickers 301 to <code>/stocks/{ticker}</code>.</p>
 <p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a> · <a href="/desk/fundamental">Fundamental trader desk</a></p>
 </article>`;
 }
@@ -1145,7 +1145,7 @@ function renderCompaniesIndexPage(pageRaw: string): string | null {
   const cards = rows
     .map(
       (c) =>
-        `<li><a class="card" href="/companies/${c.slug}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.status)} · ${escapeHtml(c.unitLabel || '')} · ${escapeHtml(c.parentTicker || '')}</p></a></li>`
+        `<li><a class="card" href="/stocks/${escapeHtml(String(c.ticker || '').toLowerCase())}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.ticker || '')} · ${escapeHtml(c.sector)}</p></a></li>`
     )
     .join('\n');
   const prev = page > 1 ? `<a href="/companies/page/${page - 1}">← Previous</a>` : '';
@@ -1156,8 +1156,8 @@ function renderCompaniesIndexPage(pageRaw: string): string | null {
     { name: 'Companies', url: '/companies' },
     { name: `Page ${page}` },
   ])}
-<h1>Company study pages · ${page} / ${pages}</h1>
-<p class="lead">Crawlable index of subsidiary study nodes (${companyIndexPageCount().toLocaleString()} pages). ${COMPANY_DIRECTORY_DISCLAIMER}</p>
+<h1>Public issuers · ${page} / ${pages}</h1>
+<p class="lead">Index of real public issuers (${companyIndexPageCount().toLocaleString()} pages). ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 <article>
 <ul class="card-list">${cards}</ul>
 <p>${prev} ${next}</p>
