@@ -86,15 +86,16 @@ export function normalizeFmpQuote(row: Record<string, unknown>, deskSymbol: stri
   if (!Number.isFinite(price) || price <= 0) return null;
   const prev = Number(row.previousClose ?? row.previous_close);
   const pct = Number(row.changesPercentage ?? row.changePercentage ?? row.percent_change);
-  return {
+  const out: Record<string, string> = {
     symbol: deskSymbol,
     name: String(row.name || deskSymbol),
     close: String(price),
     price: String(price),
-    previous_close: Number.isFinite(prev) ? String(prev) : String(price),
-    percent_change: Number.isFinite(pct) ? String(pct) : '0',
     vendor: 'FMP',
   };
+  if (Number.isFinite(prev) && prev > 0) out.previous_close = String(prev);
+  if (Number.isFinite(pct)) out.percent_change = String(pct);
+  return out;
 }
 
 export function normalizeFmpCandles(raw: unknown, deskSymbol: string, interval: string, limit: number): {

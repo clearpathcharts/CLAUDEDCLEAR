@@ -36,7 +36,7 @@ import {
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
 import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, isUnknownLanguagePath, renderUnknownRegionNotFound, renderUnknownLanguageNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -643,8 +643,20 @@ async function startServer() {
   // Express rate-limit 429s were blanking desks (yellow DATA UNAVAILABLE) while
   // the Venture 610 dashboard still had credits.
 
-  // Initialize WebSockets
-  setupWebSockets(server);
+  // Initialize WebSockets — chat posting requires the same login cookie as the REST API.
+  let sessionMiddleware: express.RequestHandler | null = null;
+  setupWebSockets(server, {
+    resolveSessionUid: (upgradeReq) =>
+      new Promise((resolve) => {
+        if (!sessionMiddleware) return resolve(null);
+        const req = upgradeReq as unknown as express.Request;
+        sessionMiddleware(req, {} as express.Response, () => {
+          const sess = req.session as Parameters<typeof dropStaleAuthSession>[0] | undefined;
+          if (!sess || dropStaleAuthSession(sess) === 'dropped') return resolve(null);
+          resolve(getPrivateSessionUser(req)?.uid || null);
+        });
+      }),
+  });
 
   // Passport & Auth Middleware
   // Never use a guessable/hardcoded signing key — forged cookies = account takeover.
@@ -673,7 +685,7 @@ async function startServer() {
       sessionSecret = crypto.randomBytes(48).toString('hex');
     }
   }
-  app.use(session({
+  sessionMiddleware = session({
     secret: sessionSecret,
     store: createSessionStore(),
     resave: false,
@@ -687,7 +699,8 @@ async function startServer() {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     },
-  }));
+  });
+  app.use(sessionMiddleware);
 
   app.use(passport.initialize());
   app.use(passport.session());
@@ -965,7 +978,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resubmit', async (req, res) => {
+  app.post('/api/auth/private/identity/resubmit', authLoginLimiter, async (req, res) => {
     try {
       const result = await resubmitIdentity({
         currentEmail: req.body?.currentEmail || req.body?.email || '',
@@ -1037,7 +1050,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/decline', async (req, res) => {
+  app.post('/api/auth/private/identity/decline', authLoginLimiter, async (req, res) => {
     try {
       await declineIdentity({
         email: req.body?.email || '',
@@ -1849,7 +1862,7 @@ async function startServer() {
    * Body: { members: [{ email, displayName?, password? }], dryRun?: boolean }
    * Omitting password generates a temp password stored in founder invites.
    */
-  app.post('/api/admin/members/import', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/import', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const members = Array.isArray(req.body?.members) ? req.body.members : [];
       if (!members.length) {
@@ -1892,7 +1905,7 @@ async function startServer() {
    * fresh temp passwords into founder invites. Does not invent the wiped ~4000.
    * Body: { dryRun?: boolean, resetExisting?: boolean } (resetExisting defaults true).
    */
-  app.post('/api/admin/members/emergency-seed', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/emergency-seed', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const result = await seedEmergencyKnownMembers({
         dryRun: Boolean(req.body?.dryRun),
@@ -1916,7 +1929,7 @@ async function startServer() {
    * - No password → emergency path (defaults email to Dawn); returns tempPassword + invite
    * - With password → set that password on durable store (Stripe/Firestore)
    */
-  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const email = String(req.body?.email || DAWN_HOBSON_EMAIL).trim();
       const explicitPassword = String(req.body?.newPassword || req.body?.password || '').trim();
@@ -2016,7 +2029,7 @@ async function startServer() {
   );
 
   /** Founder-only: persist a backup snapshot into Firestore founder_backups. */
-  app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/backup/snapshot', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const result = await persistFounderBackupSnapshot();
       if (result.ok === false) {
@@ -2039,7 +2052,7 @@ async function startServer() {
    * Founder-only: restore private accounts from a disaster backup JSON.
    * Body: { accounts: [...], dryRun?: boolean } or full backup package { privateAccounts: { accounts } }.
    */
-  app.post('/api/admin/backup/restore', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/backup/restore', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const fromPackage = Array.isArray(req.body?.privateAccounts?.accounts)
         ? req.body.privateAccounts.accounts
@@ -4633,6 +4646,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         const enriched = enrichHtml(renderUnknownRegionNotFound(req.path), req.path, res);
         return sendUncachedHtml(res, enriched, 404);
       }
+      if (!wantLiveSpa && isUnknownLanguagePath(req.path)) {
+        const enriched = enrichHtml(renderUnknownLanguageNotFound(req.path), req.path, res);
+        return sendUncachedHtml(res, enriched, 404);
+      }
       const isDeskRoute =
         pathClean === '/desk' ||
         pathClean.startsWith('/desk/') ||
@@ -4712,6 +4729,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/accessibility',
     '/regions',
     '/regions/:id',
+    '/languages',
+    '/languages/:code',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',

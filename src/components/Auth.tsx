@@ -486,7 +486,6 @@ export default function Auth() {
             <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
             <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
             <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
-            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
             <a
               href="/encyclopedia"
               onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
@@ -543,7 +542,6 @@ export default function Auth() {
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
           <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
           <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
-          <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
           <a
             href="/encyclopedia"
             onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
