@@ -199,6 +199,9 @@ const NAV_LINKS = [
 
 const PAGE_CSS = `
   :root { color-scheme: dark; }
+  /* Founder readability floor: every rem on these reference pages scales 1.5x. */
+  html { font-size: 150%; }
+  @media (max-width: 760px) { header.site { position: static; } }
   * { box-sizing: border-box; }
   body { margin: 0; background: #050505; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; }
   header.site { position: sticky; top: 0; z-index: 50; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }

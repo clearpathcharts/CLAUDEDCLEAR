@@ -1,0 +1,22 @@
+{
+  "rollups": {
+    "2026-10-29_42439d8219711a516698": {
+      "id": "2026-10-29_42439d8219711a516698",
+      "date": "2026-10-29",
+      "source": "direct",
+      "medium": "none",
+      "campaign": "unattributed",
+      "content": "unspecified",
+      "targetTier": "basic",
+      "landingPath": "/",
+      "visits": 1,
+      "ctas": 0,
+      "signups": 0,
+      "trials": 0,
+      "conversions": 0,
+      "updatedAt": "2026-10-29T22:10:01.818Z"
+    }
+  },
+  "members": {},
+  "updatedAt": "2026-10-29T22:10:01.818Z"
+}
