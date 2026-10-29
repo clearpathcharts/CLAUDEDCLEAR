@@ -15,6 +15,9 @@ import {
 import ExternalAboutPage from './components/ExternalAboutPage';
 import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PitchIntroLanding from './components/pitch/PitchIntroLanding';
+import InvestorPitchDeck from './components/pitch/InvestorPitchDeck';
+import { parsePitchPath } from './pitch/pitchDeckData';
 import PressKitPage from './components/PressKitPage';
 import CompanyPage from './components/CompanyPage';
 import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
@@ -180,6 +183,11 @@ function isCeoPath(path: string): boolean {
 function isBrokerNetworkPath(path: string): boolean {
   const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
   return p === '/brokers' || p === '/broker-connect';
+}
+
+function isPitchPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/pitch' || p.startsWith('/pitch/');
 }
 
 function PublicLearnShell({
@@ -431,6 +439,14 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isPitchPath(currentPath)) {
+    const pitch = parsePitchPath(currentPath);
+    content =
+      pitch.mode === 'deck' ? (
+        <InvestorPitchDeck slideId={pitch.slideId} />
+      ) : (
+        <PitchIntroLanding />
+      );
   } else if (isBrokerNetworkPath(currentPath)) {
     content = (
       <Suspense
