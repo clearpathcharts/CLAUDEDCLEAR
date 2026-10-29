@@ -111,6 +111,9 @@ jobs:
       - name: Diagnostics Firestore mirror (Site Doctor + TF verify)
         run: npm run test:diagnostics-store
 
+      - name: Investor pitch deck routes
+        run: npm run test:pitch-deck
+
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
 
