@@ -967,10 +967,10 @@ export default function CivilizationEngineView({ selectFileNode }: CivilizationE
 
             <div className="space-y-2">
               {[
-                { id: 'nvda', name: 'Nvidia Corp (NVDA)', sector: 'Compute Autonomy Layer', rate: '88% of Advanced AI Grids' },
-                { id: 'msft', name: 'Microsoft (MSFT)', sector: 'Sovereign Business Plumbings', rate: '92% of Global Corporations' },
-                { id: 'amzn', name: 'Amazon (AMZN)', sector: 'Physical Retail & Warehousing', rate: '44% of Cloud Servers' },
-                { id: 'aapl', name: 'Apple Inc (AAPL)', sector: 'Personal Connected Devices', rate: '1.4B Active Daily Screens' },
+                { id: 'nvda', name: 'Nvidia Corp (NVDA)', sector: 'Compute Autonomy Layer' },
+                { id: 'msft', name: 'Microsoft (MSFT)', sector: 'Sovereign Business Plumbings' },
+                { id: 'amzn', name: 'Amazon (AMZN)', sector: 'Physical Retail & Warehousing' },
+                { id: 'aapl', name: 'Apple Inc (AAPL)', sector: 'Personal Connected Devices' },
               ].map((corp) => (
                 <button
                   id={`corp-choice-${corp.id}`}
@@ -982,14 +982,13 @@ export default function CivilizationEngineView({ selectFileNode }: CivilizationE
                     <span className="font-bold text-xs uppercase font-mono block">{corp.name}</span>
                     <span className="text-[9.5px] text-zinc-500 block leading-none mt-1">{corp.sector}</span>
                   </div>
-                  <span className="font-mono text-[9.5px] text-[#00D9FF] bg-[#00D9FF]/5 px-2 py-0.5 rounded border border-[#00D9FF]/20">{corp.rate}</span>
                 </button>
               ))}
             </div>
 
             <div className="pt-2">
               <span className="text-[9.5px] font-mono text-zinc-500">
-                Sovereign Anti-Trust monitoring score calculated continuously.
+                Concept illustration — no market share figures are shown without a cited source.
               </span>
             </div>
           </div>

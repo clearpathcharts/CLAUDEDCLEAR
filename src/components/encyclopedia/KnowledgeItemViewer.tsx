@@ -36,6 +36,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import Markdown from 'react-markdown';
+import { useLiveQuotes, formatPct, DATA_UNAVAILABLE } from '../../hooks/useLiveQuotes';
 
 interface ViewerProps {
   item: KnowledgeItem;
@@ -395,84 +396,94 @@ const SECTOR_FALLBACK_INFO: Record<string, typeof ENRICHED_DATA['What Is Inflati
 // ==========================================
 // INTERACTIVE FINANCIAL DIRECTORY DATA DECK
 // ==========================================
+const NOT_TRADED_CRYPTO = new Set(['BMONEY', 'BITGOLD', 'DIGICASH', 'EGOLD', 'HASHCASH']);
+const COMMODITY_QUOTE_SYMBOLS: Record<string, string> = { GLD: 'XAU/USD', SLV: 'XAG/USD', WTI: 'WTI/USD' };
+
+/** Vendor quote symbol for a directory entry, or null when no live market exists for it. */
+function directoryQuoteSymbol(kind: 'stocks' | 'forex' | 'crypto' | 'commodities', asset: { id: string; ticker: string }): string | null {
+  if (kind === 'stocks' || kind === 'forex') return asset.ticker;
+  if (kind === 'crypto') return NOT_TRADED_CRYPTO.has(asset.id) ? null : `${asset.ticker}/USD`;
+  return COMMODITY_QUOTE_SYMBOLS[asset.id] ?? null;
+}
+
 const DIRECTORIES_DATA_MAP = {
   stocks: [
-    { id: 'AAPL', name: 'Apple Inc.', ticker: 'AAPL', price: 184.25, change: 1.15, cap: '$2.88 T', rev: '$383 B', employees: '161,000', margin: '26.1%', sector: 'Technology', desc: 'Directs global consumer iOS software and hardware ecosystems.', history: 'Transformed user computing with the iPhone, creating the global mobile software economy.' },
-    { id: 'MSFT', name: 'Microsoft Corporation', ticker: 'MSFT', price: 415.50, change: -0.42, cap: '$3.09 T', rev: '$227 B', employees: '221,005', margin: '35.3%', sector: 'Technology & Cloud', desc: 'Sells corporate enterprise software, cloud computing platforms, and leading AI capabilities.', history: 'Pioneered desktop software computing in the 1980s; now leads enterprise cloud systems.' },
-    { id: 'NVDA', name: 'NVIDIA Corporation', ticker: 'NVDA', price: 875.12, change: 4.85, cap: '$2.19 T', rev: '$60.9 B', employees: '29,600', margin: '57.1%', sector: 'Semiconductors', desc: 'Produces critical Tensor-Core GPUs that power deep artificial intelligence networks.', history: 'Expanded from video game 3D GPUs to master mathematical deep learning microprocessors.' },
-    { id: 'TSLA', name: 'Tesla Inc.', ticker: 'TSLA', price: 175.40, change: -2.31, cap: '$558 B', rev: '$96.7 B', employees: '140,000', margin: '15.5%', sector: 'Automotive & Energy', desc: 'Deploys clean energy, premium electric models, and humanoid kinetics guided by visual AI.', history: 'Pioneered scalable high-performance electric cars and massive gigafactory battery networks.' },
-    { id: 'AMZN', name: 'Amazon.com Inc.', ticker: 'AMZN', price: 178.15, change: 0.85, cap: '$1.85 T', rev: '$574 B', employees: '1,540,500', margin: '5.3%', sector: 'Consumer Services & Cloud', desc: 'Operates key e-commerce pipelines and the world\'s largest cloud computing system (AWS).', history: 'Began as a simple digital bookstore in 1994; expanded to dominate Western cloud.' },
-    { id: 'GOOGL', name: 'Alphabet Inc.', ticker: 'GOOGL', price: 151.60, change: 1.22, cap: '$1.89 T', rev: '$307 B', employees: '182,000', margin: '24.0%', sector: 'Technology & Search', desc: 'Organizes global information via search engines, ad grids, and mobile android systems.', history: 'Invented PageRank, cataloging world info; now trains complex Gemini AI modules.' },
-    { id: 'META', name: 'Meta Platforms Inc.', ticker: 'META', price: 505.30, change: -1.75, cap: '$1.29 T', rev: '$134 B', employees: '67,000', margin: '28.9%', sector: 'Social Media', desc: 'Coordinates digital attention spans via Facebook, Instagram, and WhatsApp apps.', history: 'Pioneered modern web social networking; now building spatial VR virtual devices.' },
-    { id: 'JPM', name: 'JPMorgan Chase & Co.', ticker: 'JPM', price: 194.80, change: 0.35, cap: '$565 B', rev: '$158 B', employees: '310,000', margin: '30.1%', sector: 'Banking & Liquidity', desc: 'Acts as fortress clearing banking node of the Western financial systems.', history: 'Formed via centuries of mergers, saving financial systems during severe runs.' },
-    { id: 'XOM', name: 'Exxon Mobil Corporation', ticker: 'XOM', price: 118.90, change: 0.12, cap: '$471 B', rev: '$344 B', employees: '62,000', margin: '10.5%', sector: 'Energy & Petrochemicals', desc: 'Extracts deep carbon sediments to fuel transport corridors and factories.', history: 'Direct descendant of Standard Oil, fueling the rise of internal combustion.' }
+    { id: 'AAPL', name: 'Apple Inc.', ticker: 'AAPL', sector: 'Technology', desc: 'Directs global consumer iOS software and hardware ecosystems.', history: 'Transformed user computing with the iPhone, creating the global mobile software economy.' },
+    { id: 'MSFT', name: 'Microsoft Corporation', ticker: 'MSFT', sector: 'Technology & Cloud', desc: 'Sells corporate enterprise software, cloud computing platforms, and leading AI capabilities.', history: 'Pioneered desktop software computing in the 1980s; now leads enterprise cloud systems.' },
+    { id: 'NVDA', name: 'NVIDIA Corporation', ticker: 'NVDA', sector: 'Semiconductors', desc: 'Produces critical Tensor-Core GPUs that power deep artificial intelligence networks.', history: 'Expanded from video game 3D GPUs to master mathematical deep learning microprocessors.' },
+    { id: 'TSLA', name: 'Tesla Inc.', ticker: 'TSLA', sector: 'Automotive & Energy', desc: 'Deploys clean energy, premium electric models, and humanoid kinetics guided by visual AI.', history: 'Pioneered scalable high-performance electric cars and massive gigafactory battery networks.' },
+    { id: 'AMZN', name: 'Amazon.com Inc.', ticker: 'AMZN', sector: 'Consumer Services & Cloud', desc: 'Operates key e-commerce pipelines and the world\'s largest cloud computing system (AWS).', history: 'Began as a simple digital bookstore in 1994; expanded to dominate Western cloud.' },
+    { id: 'GOOGL', name: 'Alphabet Inc.', ticker: 'GOOGL', sector: 'Technology & Search', desc: 'Organizes global information via search engines, ad grids, and mobile android systems.', history: 'Invented PageRank, cataloging world info; now trains complex Gemini AI modules.' },
+    { id: 'META', name: 'Meta Platforms Inc.', ticker: 'META', sector: 'Social Media', desc: 'Coordinates digital attention spans via Facebook, Instagram, and WhatsApp apps.', history: 'Pioneered modern web social networking; now building spatial VR virtual devices.' },
+    { id: 'JPM', name: 'JPMorgan Chase & Co.', ticker: 'JPM', sector: 'Banking & Liquidity', desc: 'Acts as fortress clearing banking node of the Western financial systems.', history: 'Formed via centuries of mergers, saving financial systems during severe runs.' },
+    { id: 'XOM', name: 'Exxon Mobil Corporation', ticker: 'XOM', sector: 'Energy & Petrochemicals', desc: 'Extracts deep carbon sediments to fuel transport corridors and factories.', history: 'Direct descendant of Standard Oil, fueling the rise of internal combustion.' }
   ],
   forex: [
-    { id: 'EUR_USD', name: 'Euro / US Dollar', ticker: 'EUR/USD', price: 1.0854, change: 0.15, bid: 1.0853, ask: 1.0855, region: 'Eurozone / USA', desc: 'The most heavily traded liquid currency pair in the world, linking European credit yields with safe spot USD assets.', history: 'Created alongside the Euro currency in 1999 to balance transatlantic trade volumes.' },
-    { id: 'GBP_USD', name: 'British Pound / US Dollar', ticker: 'GBP/USD', price: 1.2642, change: -0.22, bid: 1.2641, ask: 1.2643, region: 'United Kingdom / USA', desc: 'Known as "Cable", tracing the historical transatlantic telegraph links between London and New York credit books.', history: 'Dates back to the 19th century when the telegraph cable connected the two powerhouse markets.' },
-    { id: 'USD_JPY', name: 'US Dollar / Japanese Yen', ticker: 'USD/JPY', price: 151.35, change: 0.42, bid: 151.34, ask: 151.36, region: 'USA / Japan', desc: 'A major funding pair driven by Japan\'s historic zero-interest carry trade policies and bilateral capital outflows.', history: 'Developed into a dominant Asian trading corridor during Japan\'s late-century manufacturing boom.' },
-    { id: 'AUD_USD', name: 'Australian Dollar / US Dollar', ticker: 'AUD/USD', price: 0.6521, change: -0.65, bid: 0.6520, ask: 0.6522, region: 'Australia / USA', desc: 'Often treated as a liquid proxy for global commodity demand, energy exports, and metal pricing cycles.', history: 'Tied heavily to the mining and crop boom cycle in East Asia and Australia.' },
-    { id: 'USD_CAD', name: 'US Dollar / Canadian Dollar', ticker: 'USD/CAD', price: 1.3562, change: 0.18, bid: 1.3561, ask: 1.3563, region: 'USA / Canada', desc: 'Intimately tied to crude energy flows between Canada\'s oil sands and massive refinery grids in the US.', history: 'Stabilized by decades of direct bilateral border trade agreement packages.' },
-    { id: 'USD_CHF', name: 'US Dollar / Swiss Franc', ticker: 'USD/CHF', price: 0.9015, change: -0.11, bid: 0.9014, ask: 0.9016, region: 'USA / Switzerland', desc: 'Representing the pre-eminent safe-haven European fiat reserve asset backed by Switzerland\'s asset security records.', history: 'Supported by Switzerland\'s centuries of sovereign military neutrality and secure private banks.' },
-    { id: 'NZD_USD', name: 'New Zealand Dollar / US Dollar', ticker: 'NZD/USD', price: 0.5985, change: -0.45, bid: 0.5984, ask: 0.5986, region: 'New Zealand / USA', desc: 'Known as the "Kiwi", influenced heavily by trans-oceanic agricultural exports and carry-yield adjustments.', history: 'Refined alongside New Zealand\'s structural currency liberalization policies in the 1980s.' }
+    { id: 'EUR_USD', name: 'Euro / US Dollar', ticker: 'EUR/USD', region: 'Eurozone / USA', desc: 'The most heavily traded liquid currency pair in the world, linking European credit yields with safe spot USD assets.', history: 'Created alongside the Euro currency in 1999 to balance transatlantic trade volumes.' },
+    { id: 'GBP_USD', name: 'British Pound / US Dollar', ticker: 'GBP/USD', region: 'United Kingdom / USA', desc: 'Known as "Cable", tracing the historical transatlantic telegraph links between London and New York credit books.', history: 'Dates back to the 19th century when the telegraph cable connected the two powerhouse markets.' },
+    { id: 'USD_JPY', name: 'US Dollar / Japanese Yen', ticker: 'USD/JPY', region: 'USA / Japan', desc: 'A major funding pair driven by Japan\'s historic zero-interest carry trade policies and bilateral capital outflows.', history: 'Developed into a dominant Asian trading corridor during Japan\'s late-century manufacturing boom.' },
+    { id: 'AUD_USD', name: 'Australian Dollar / US Dollar', ticker: 'AUD/USD', region: 'Australia / USA', desc: 'Often treated as a liquid proxy for global commodity demand, energy exports, and metal pricing cycles.', history: 'Tied heavily to the mining and crop boom cycle in East Asia and Australia.' },
+    { id: 'USD_CAD', name: 'US Dollar / Canadian Dollar', ticker: 'USD/CAD', region: 'USA / Canada', desc: 'Intimately tied to crude energy flows between Canada\'s oil sands and massive refinery grids in the US.', history: 'Stabilized by decades of direct bilateral border trade agreement packages.' },
+    { id: 'USD_CHF', name: 'US Dollar / Swiss Franc', ticker: 'USD/CHF', region: 'USA / Switzerland', desc: 'Representing the pre-eminent safe-haven European fiat reserve asset backed by Switzerland\'s asset security records.', history: 'Supported by Switzerland\'s centuries of sovereign military neutrality and secure private banks.' },
+    { id: 'NZD_USD', name: 'New Zealand Dollar / US Dollar', ticker: 'NZD/USD', region: 'New Zealand / USA', desc: 'Known as the "Kiwi", influenced heavily by trans-oceanic agricultural exports and carry-yield adjustments.', history: 'Refined alongside New Zealand\'s structural currency liberalization policies in the 1980s.' }
   ],
   crypto: [
-    { id: 'AAVE', name: 'Aave', ticker: 'AAVE', price: 92.50, change: 1.45, cap: '$1.35 B', supply: '16.0 M', protocol: 'DeFi (Ethereum PoS)', desc: 'An open-source non-custodial decentralized liquidity protocol.', history: 'Created as ETHLend in 2017 by Stani Kulechov; rebranded to Aave to focus on shared liquidity pools.' },
-    { id: 'ALGO', name: 'Algorand', ticker: 'ALGO', price: 0.18, change: 0.85, cap: '$1.45 B', supply: '10.0 B', protocol: 'Pure Proof of Stake', desc: 'Secure, green carbon-neutral Layer 1 database engineered for scale.', history: 'Founded in 2019 by Turing Award winner Silvio Micali to solve the blockchain scalability trilemma.' },
-    { id: 'APT', name: 'Aptos', ticker: 'APT', price: 9.35, change: 2.12, cap: '$4.12 B', supply: '1.09 B', protocol: 'AptosBFT (Move language)', desc: 'A scalable Layer 1 ledger exploiting parallel transactional architectures.', history: 'Launched in 2022 by ex-Diem engineers seeking high-scale concurrent transaction execution.' },
-    { id: 'ARB', name: 'Arbitrum', ticker: 'ARB', price: 1.15, change: -1.05, cap: '$3.02 B', supply: '10.0 B', protocol: 'Optimistic Rollup', desc: 'A Layer 2 scaling rolling system for the Ethereum virtual ecosystem.', history: 'Unveiled in 2021 by Offchain Labs; quickly became the leader in Layer 2 roll-up TVL.' },
-    { id: 'AVAX', name: 'Avalanche', ticker: 'AVAX', price: 42.15, change: 3.42, cap: '$15.8 B', supply: '436.5 M', protocol: 'Avalanche Consensus (PoS)', desc: 'An open-source decentralized smart execution database featuring rapid sub-second finality and subnets.', history: 'Bootstrapped in 2020 by Emin Gün Sirer to achieve near-instant transactional execution.' },
-    { id: 'BMONEY', name: 'b-money', ticker: 'BMONEY', price: 0.00, change: 0.0, cap: 'N/A', supply: 'N/A', protocol: 'Proof-of-Work (Concept)', desc: 'A major pre-Bitcoin digital cash framework proposing untraceable transactions.', history: 'Designed in 1998 by Wei Dai, defining foundational mechanics for decentralized ledgers.' },
-    { id: 'BNB', name: 'Binance Coin', ticker: 'BNB', price: 585.30, change: 0.12, cap: '$87 B', supply: '147.5 M', protocol: 'BFT Delegated Stake', desc: 'The native gas and settlement coin powering high-volume chain systems and smart-chain pools.', history: 'Launched as an Ethereum token in 2017; evolved into an independent high-speed sovereign network.' },
-    { id: 'BITGOLD', name: 'Bit Gold', ticker: 'BITGOLD', price: 0.00, change: 0.0, cap: 'N/A', supply: 'N/A', protocol: 'Re-usable Proof of Work', desc: 'Nick Szabos unbuilt decentralized puzzle-registry designing digital cash.', history: 'Written in 1998; integrated PoW puzzles to prevent double-spending without central roots.' },
-    { id: 'BTC', name: 'Bitcoin', ticker: 'BTC', price: 68450.00, change: 1.85, cap: '$1.34 T', supply: '19.6 M', protocol: 'Proof of Work (SHA-256)', desc: 'The sovereign decentralized ledger acting as synthetic digital gold with restricted absolute supply mechanics.', history: 'Created in 2009 by the anonymous mathematician Satoshi Nakamoto as a trustless peer-to-peer cash system.' },
-    { id: 'BCH', name: 'Bitcoin Cash', ticker: 'BCH', price: 420.50, change: 0.85, cap: '$8.2 B', supply: '19.6 M', protocol: 'Proof of Work (SHA-256)', desc: 'A block-size scaling fork of Bitcoin engineered for fast peer-to-peer checkouts.', history: 'Split from Bitcoin in 2017 over block size constraints to enhance daily payment speeds.' },
-    { id: 'ADA', name: 'Cardano', ticker: 'ADA', price: 0.5750, change: -2.15, cap: '$20 B', supply: '35.6 B', protocol: 'Ouroboros Proof of Stake', desc: 'A peer-reviewed algorithmic ledger designed for long-term secure smart agreements and tracking.', history: 'Designed by Charles Hoskinson to bring strict formal verification to smart contract ledgers.' },
-    { id: 'LINK', name: 'Chainlink', ticker: 'LINK', price: 18.15, change: 1.22, cap: '$10.6 B', supply: '587.0 M', protocol: 'Oracle Services Network', desc: 'Decentralized oracle infrastructure feeding secure realworld data to smart contracts.', history: 'Bootsrapped in 2017 by Sergey Nazarov, solving the oracle isolation barrier.' },
-    { id: 'ATOM', name: 'Cosmos', ticker: 'ATOM', price: 9.12, change: 0.45, cap: '$3.5 B', supply: '390.9 M', protocol: 'Tendermint BFT PoS', desc: 'The Cosmos network enables sovereign blockchains to interact via the Inter-Blockchain Communication (IBC) protocol.', history: 'Proposed in 2014 by Jae Kwon, initiating the multi-chain interoperability ecosystem.' },
-    { id: 'MANA', name: 'Decentraland', ticker: 'MANA', price: 0.65, change: -1.75, cap: '$1.25 B', supply: '1.8 B', protocol: 'Metaverse Space Token', desc: 'Virtual property landscape hosting user experiences, lands, and visual creations.', history: 'Bootsrapped in 2017 by Ariel Meilich, helping define early spatial digital lands.' },
-    { id: 'DIGICASH', name: 'DigiCash', ticker: 'DIGICASH', price: 0.00, change: 0.0, cap: 'N/A', supply: 'N/A', protocol: 'Cryptographic Blind Signatures', desc: 'Historic pioneering electronic money system implementing private digital currency backings.', history: 'Invented in 1989 by David Chaum; served as the first true functional e-cash model.' },
-    { id: 'DOGE', name: 'Dogecoin', ticker: 'DOGE', price: 0.1650, change: 0.42, cap: '$23.6 B', supply: '144.1 B', protocol: 'Scrypt Proof of Work', desc: 'A Scrypt-based meme currency built for tipping, micro-purchases, and community microtrading.', history: 'Created in 2013 as a joke by Billy Markus & Jackson Palmer; grew to achieve huge liquidity status.' },
-    { id: 'EGOLD', name: 'e-Gold', ticker: 'EGOLD', price: 0.00, change: 0.0, cap: 'N/A', supply: 'N/A', protocol: 'Centralized Metal Ledger', desc: 'Early centralized internet metallic currency facilitating gold trades.', history: 'Founded in 1996 by Douglas Jackson; closed down due to regulatory compliance changes.' },
-    { id: 'ENA', name: 'Ethena', ticker: 'ENA', price: 0.82, change: 1.12, cap: '$1.25 B', supply: '1.5 B', protocol: 'Synthetic Dollar Delta-Hedging', desc: 'Ethereum-based yield builder issuing USDe synthetic dollar pegs.', history: 'Launched in 2024 to create stable internet bonds driven by derivatives hedging.' },
-    { id: 'ETH', name: 'Ethereum', ticker: 'ETH', price: 3485.50, change: -0.75, cap: '$418 B', supply: '120.1 M', protocol: 'Proof of Stake (EVM)', desc: 'The global Turing-complete computing network supporting programmatic contracts and collateral markets.', history: 'Proposed by Vitalik Buterin in 2013 and booted in 2015 to support decentralized programmable assets.' },
-    { id: 'ETC', name: 'Ethereum Classic', ticker: 'ETC', price: 29.35, change: -0.42, cap: '$4.2 B', supply: '146.5 M', protocol: 'Ethash Proof of Work', desc: 'Preserves the original classic Ethereum transaction ledger, sticking to the code-is-law concept.', history: 'Formed in 2016 following the DAO hard fork split to stick strictly to immutability.' },
-    { id: 'FTM', name: 'Fantom', ticker: 'FTM', price: 0.95, change: 4.85, cap: '$2.6 B', supply: '2.8 B', protocol: 'Lachesis DAG Consensus', desc: 'An ultra-fast, highly scalable smart contract ledger optimized for DeFi apps.', history: 'Founded in 2018 by Dr. Ahn Byung Ik; upgraded to the high-efficiency Sonic platform in 2024/2026.' },
-    { id: 'FET', name: 'Fetch.ai (ASI)', ticker: 'FET', price: 2.15, change: 5.12, cap: '$5.2 B', supply: '2.5 B', protocol: 'Machine Learning Agent Nodes', desc: 'Autonomous intelligence framework organizing cooperative micro-economic agents.', history: 'Bootsrapped in 2018; integrated into the Artificial Superintelligence Alliance (ASI) in 2024.' },
-    { id: 'FIL', name: 'Filecoin', ticker: 'FIL', price: 6.12, change: 0.85, cap: '$3.2 B', supply: '540.2 M', protocol: 'PoRep Data Storage Claims', desc: 'A decentralized marketplace linking physical computer storage miners with customers.', history: 'Designed in 2017/2020 by Juan Benet to construct a durable cloud repository alternative.' },
-    { id: 'HASHCASH', name: 'Hashcash', ticker: 'HASHCASH', price: 0.00, change: 0.0, cap: 'N/A', supply: 'N/A', protocol: 'Proof of Work Hash puzzle', desc: 'Pioneering pre-blockchain puzzle mechanism to eliminate web email spam.', history: 'Designed in 1997 by Adam Back, helping inspire the consensus algorithm of Bitcoin.' },
-    { id: 'HBAR', name: 'Hedera Hashgraph', ticker: 'HBAR', price: 0.11, change: -0.15, cap: '$3.8 B', supply: '35.7 B', protocol: 'Hashgraph Gossip Consensus', desc: 'High-speed enterprise-governed consensus ledger for rapid private transfers.', history: 'Architected by Leemon Baird in 2018; powered by a governing board of multi-national enterprise firms.' },
-    { id: 'ICP', name: 'Internet Computer', ticker: 'ICP', price: 12.35, change: 0.42, cap: '$5.7 B', supply: '462.2 M', protocol: 'Threshold Relay Engine', desc: 'Hosting sovereign web software and canisters directly at local server speeds.', history: 'Developed in 2021 by the DFINITY Foundation to serve as public internet hosting.' },
-    { id: 'JUP', name: 'Jupiter', ticker: 'JUP', price: 1.12, change: 3.42, cap: '$1.4 B', supply: '10.0 B', protocol: 'Solana Dex Routing Agent', desc: 'The core liquid swap router and launch mechanism on the Solana chain.', history: 'Debuted in 2024 by creator Meow to aggregate all Solana liquid trade routes.' },
-    { id: 'LTC', name: 'Litecoin', ticker: 'LTC', price: 82.15, change: 0.85, cap: '$6.1 B', supply: '74.2 M', protocol: 'Scrypt Proof of Work', desc: 'Lightweight payments alternative to Bitcoin with rapid transaction windows.', history: 'Eclipsed from Bitcoin codebase in 2011 by Charlie Lee as silver to Bitcoins gold.' },
-    { id: 'MKR', name: 'Maker (Sky)', ticker: 'MKR', price: 2845.00, change: 1.12, cap: '$2.5 B', supply: '920 K', protocol: 'Maker DAO Governance', desc: 'Collateral governing token backing DAI and USDS internet decentralized dollars.', history: 'Formed in 2017 by Rune Christensen; expanded into the Sky system in 2024.' },
-    { id: 'XMR', name: 'Monero', ticker: 'XMR', price: 142.15, change: -1.25, cap: '$2.6 B', supply: '18.4 M', protocol: 'CryptoNote Privacy PoW', desc: 'Strictly secure, untraceable currency ledger using ring stealth shielding.', history: 'Launched in 2014 to ensure secure financial privacy on public networks.' },
-    { id: 'NEAR', name: 'Near Protocol', ticker: 'NEAR', price: 6.85, change: 3.12, cap: '$7.2 B', supply: '1.05 B', protocol: 'Doomslug PoS Sharding', desc: 'User friendly sharded layer-1 database designed to scale decentralized web systems.', history: 'Bootsrapped in 2020 to host simple, fast web apps under native web security.' },
-    { id: 'OP', name: 'Optimism', ticker: 'OP', price: 2.85, change: -1.22, cap: '$3.5 B', supply: '4.2 B', protocol: 'Optimistic Rollup Engine', desc: 'Ethereum scaling Layer 2 that coordinates the collaborative Superchain architecture.', history: 'Unveiled in 2021 by Jinglan Wang; developed the OP Stack engine used by Base and others.' },
-    { id: 'DOT', name: 'Polkadot', ticker: 'DOT', price: 6.85, change: -0.42, cap: '$9.2 B', supply: '1.4 B', protocol: 'Nominated Proof of Stake', desc: 'Connects a network of customized sovereign parachains underneath a core Relay Chain.', history: 'Created in 2020 by Ethereum co-founder Gavin Wood to support multi-chain frameworks.' },
-    { id: 'POL', name: 'Polygon (POL)', ticker: 'POL', price: 0.68, change: 0.12, cap: '$6.2 B', supply: '9.9 B', protocol: 'POS Sidechain / ZK-Rollup', desc: 'A powerful sandbox of scaling channels and sidechains for Ethereum applications.', history: 'Founded as Matic in 2017; revamped to POL to drive collaborative multi-chain pools.' },
-    { id: 'XRP', name: 'Ripple', ticker: 'XRP', price: 0.5840, change: -1.21, cap: '$32 B', supply: '55.0 B', protocol: 'Consensus Ledger', desc: 'A real-time settlements network designed to proxy interbank sovereign transfer corridors.', history: 'Created in 2012 to bypass interbank SWIFT transfer clearing speeds.' },
-    { id: 'SHIB', name: 'Shiba Inu', ticker: 'SHIB', price: 0.000021, change: 4.85, cap: '$12.5 B', supply: '589 T', protocol: 'Shibarium L2 Proof of Stake', desc: 'The popular community-centered token transitioning to an active L2 ecosystem.', history: 'Introduced in 2020 by Ryoshi as an experiment in organic community growth.' },
-    { id: 'SOL', name: 'Solana', ticker: 'SOL', price: 182.15, change: 5.42, cap: '$81 B', supply: '446.5 M', protocol: 'Proof of History (SVM)', desc: 'A high-throughput, low-latency transaction engine optimized for rapid asset swaps and scale micro-orders.', history: 'Invented by Anatoly Yakovenko in 2017 with high clock speed synchronizations.' },
-    { id: 'STX', name: 'Stacks', ticker: 'STX', price: 2.15, change: 3.12, cap: '$3.1 B', supply: '1.4 B', protocol: 'Proof of Transfer (PoX)', desc: 'Smart layer and transaction builder anchored directly onto Bitcoin.', history: 'Founded in 2018 by Muneeb Ali to incorporate smart contracts on Bitcoin core.' },
-    { id: 'XLM', name: 'Stellar', ticker: 'XLM', price: 0.12, change: -0.45, cap: '$3.5 B', supply: '28.9 B', protocol: 'Stellar Consensus Protocol', desc: 'Remittance transactions pipeline for cheap international credit and currency exchange.', history: 'Created in 2014 by Jed McCaleb to enable rapid retail micro-settlements globally.' },
-    { id: 'SUI', name: 'Sui', ticker: 'SUI', price: 1.62, change: 3.82, cap: '$3.8 B', supply: '10.0 B', protocol: 'Narwhal & Tusk DAG PoS', desc: 'High concurrency Layer 1 operating on secure object-based Move program tracks.', history: 'Unveiled in 2023 by Mysten Labs to achieve parallel scale for high speed web apps.' },
-    { id: 'USDT', name: 'Tether', ticker: 'USDT', price: 1.00, change: 0.0, cap: '$110 B', supply: '110 B', protocol: 'Multi-chain Collateral Peg', desc: 'Pre-eminent physical asset-backed dynamic dollar stablecoin.', history: 'Booted in 2014 as Realcoin; serves as the absolute baseline trade asset for digital exchanges.' },
-    { id: 'TON', name: 'Toncoin', ticker: 'TON', price: 6.85, change: 4.12, cap: '$17.2 B', supply: '5.1 B', protocol: 'Byzantine Fault Tolerant PoS', desc: 'Gas and transactional network natively integrated into the Telegram messaging platform.', history: 'Designed by Pavel Durov in 2018; completed and deployed by the TON open community.' },
-    { id: 'TRX', name: 'TRON', ticker: 'TRX', price: 0.11, change: 0.22, cap: '$10.2 B', supply: '87.5 B', protocol: 'Delegated Proof of Stake', desc: 'Fast, cheap decentralized ledger mostly used for global USDT transactions.', history: 'Bootsrapped in 2017 by Justin Sun, quickly becoming a leading stablecoin corridor.' },
-    { id: 'UNI', name: 'Uniswap', ticker: 'UNI', price: 7.85, change: 2.15, cap: '$4.8 B', supply: '1.0 B', protocol: 'Automated Market Maker (AMM)', desc: 'The worlds largest autonomous token exchange protocol, using mathematical pools.', history: 'Written in 2018 by Hayden Adams to prove the viability of constant-product liquidity AMMs.' },
-    { id: 'USDC', name: 'USD Coin', ticker: 'USDC', price: 1.00, change: 0.0, cap: '$32 B', supply: '32 B', protocol: 'Regulated Custody Peg', desc: 'Reserve-audited, fully compliant digital dollar stablecoin.', history: 'Debuted in 2018 by Circle to form a regulated, transparent dollar payment alternative.' },
-    { id: 'VET', name: 'Vechain', ticker: 'VET', price: 0.035, change: -0.15, cap: '$2.5 B', supply: '72.7 B', protocol: 'Proof of Authority', desc: 'Enterprise IoT ledger tracking cargo transport lists with NFC hardware tags.', history: 'Pioneered in 2015 by Sunny Lu to secure absolute supply proof integrity.' },
-    { id: 'WLD', name: 'Worldcoin', ticker: 'WLD', price: 4.85, change: -2.31, cap: '$1.0 B', supply: '10.0 B', protocol: 'Id Verification Proof of Personhood', desc: 'Biometric global identity network verifying humans via eye scanning.', history: 'Co-created in 2023 by Sam Altman to differentiate humans from bots.' },
-    { id: 'ZEC', name: 'Zcash', ticker: 'ZEC', price: 29.85, change: -0.42, cap: '$480 M', supply: '16.3 M', protocol: 'Zero-Knowledge Proofs (SNARKs)', desc: 'Privacy-oriented payment blockchain allowing users to encrypt transaction data.', history: 'Launched in 2016 from cryptographic research into zero-knowledge privacy.' }
+    { id: 'AAVE', name: 'Aave', ticker: 'AAVE', protocol: 'DeFi (Ethereum PoS)', desc: 'An open-source non-custodial decentralized liquidity protocol.', history: 'Created as ETHLend in 2017 by Stani Kulechov; rebranded to Aave to focus on shared liquidity pools.' },
+    { id: 'ALGO', name: 'Algorand', ticker: 'ALGO', protocol: 'Pure Proof of Stake', desc: 'Secure, green carbon-neutral Layer 1 database engineered for scale.', history: 'Founded in 2019 by Turing Award winner Silvio Micali to solve the blockchain scalability trilemma.' },
+    { id: 'APT', name: 'Aptos', ticker: 'APT', protocol: 'AptosBFT (Move language)', desc: 'A scalable Layer 1 ledger exploiting parallel transactional architectures.', history: 'Launched in 2022 by ex-Diem engineers seeking high-scale concurrent transaction execution.' },
+    { id: 'ARB', name: 'Arbitrum', ticker: 'ARB', protocol: 'Optimistic Rollup', desc: 'A Layer 2 scaling rolling system for the Ethereum virtual ecosystem.', history: 'Unveiled in 2021 by Offchain Labs; quickly became the leader in Layer 2 roll-up TVL.' },
+    { id: 'AVAX', name: 'Avalanche', ticker: 'AVAX', protocol: 'Avalanche Consensus (PoS)', desc: 'An open-source decentralized smart execution database featuring rapid sub-second finality and subnets.', history: 'Bootstrapped in 2020 by Emin Gün Sirer to achieve near-instant transactional execution.' },
+    { id: 'BMONEY', name: 'b-money', ticker: 'BMONEY', protocol: 'Proof-of-Work (Concept)', desc: 'A major pre-Bitcoin digital cash framework proposing untraceable transactions.', history: 'Designed in 1998 by Wei Dai, defining foundational mechanics for decentralized ledgers.' },
+    { id: 'BNB', name: 'Binance Coin', ticker: 'BNB', protocol: 'BFT Delegated Stake', desc: 'The native gas and settlement coin powering high-volume chain systems and smart-chain pools.', history: 'Launched as an Ethereum token in 2017; evolved into an independent high-speed sovereign network.' },
+    { id: 'BITGOLD', name: 'Bit Gold', ticker: 'BITGOLD', protocol: 'Re-usable Proof of Work', desc: 'Nick Szabos unbuilt decentralized puzzle-registry designing digital cash.', history: 'Written in 1998; integrated PoW puzzles to prevent double-spending without central roots.' },
+    { id: 'BTC', name: 'Bitcoin', ticker: 'BTC', protocol: 'Proof of Work (SHA-256)', desc: 'The sovereign decentralized ledger acting as synthetic digital gold with restricted absolute supply mechanics.', history: 'Created in 2009 by the anonymous mathematician Satoshi Nakamoto as a trustless peer-to-peer cash system.' },
+    { id: 'BCH', name: 'Bitcoin Cash', ticker: 'BCH', protocol: 'Proof of Work (SHA-256)', desc: 'A block-size scaling fork of Bitcoin engineered for fast peer-to-peer checkouts.', history: 'Split from Bitcoin in 2017 over block size constraints to enhance daily payment speeds.' },
+    { id: 'ADA', name: 'Cardano', ticker: 'ADA', protocol: 'Ouroboros Proof of Stake', desc: 'A peer-reviewed algorithmic ledger designed for long-term secure smart agreements and tracking.', history: 'Designed by Charles Hoskinson to bring strict formal verification to smart contract ledgers.' },
+    { id: 'LINK', name: 'Chainlink', ticker: 'LINK', protocol: 'Oracle Services Network', desc: 'Decentralized oracle infrastructure feeding secure realworld data to smart contracts.', history: 'Bootsrapped in 2017 by Sergey Nazarov, solving the oracle isolation barrier.' },
+    { id: 'ATOM', name: 'Cosmos', ticker: 'ATOM', protocol: 'Tendermint BFT PoS', desc: 'The Cosmos network enables sovereign blockchains to interact via the Inter-Blockchain Communication (IBC) protocol.', history: 'Proposed in 2014 by Jae Kwon, initiating the multi-chain interoperability ecosystem.' },
+    { id: 'MANA', name: 'Decentraland', ticker: 'MANA', protocol: 'Metaverse Space Token', desc: 'Virtual property landscape hosting user experiences, lands, and visual creations.', history: 'Bootsrapped in 2017 by Ariel Meilich, helping define early spatial digital lands.' },
+    { id: 'DIGICASH', name: 'DigiCash', ticker: 'DIGICASH', protocol: 'Cryptographic Blind Signatures', desc: 'Historic pioneering electronic money system implementing private digital currency backings.', history: 'Invented in 1989 by David Chaum; served as the first true functional e-cash model.' },
+    { id: 'DOGE', name: 'Dogecoin', ticker: 'DOGE', protocol: 'Scrypt Proof of Work', desc: 'A Scrypt-based meme currency built for tipping, micro-purchases, and community microtrading.', history: 'Created in 2013 as a joke by Billy Markus & Jackson Palmer; grew to achieve huge liquidity status.' },
+    { id: 'EGOLD', name: 'e-Gold', ticker: 'EGOLD', protocol: 'Centralized Metal Ledger', desc: 'Early centralized internet metallic currency facilitating gold trades.', history: 'Founded in 1996 by Douglas Jackson; closed down due to regulatory compliance changes.' },
+    { id: 'ENA', name: 'Ethena', ticker: 'ENA', protocol: 'Synthetic Dollar Delta-Hedging', desc: 'Ethereum-based yield builder issuing USDe synthetic dollar pegs.', history: 'Launched in 2024 to create stable internet bonds driven by derivatives hedging.' },
+    { id: 'ETH', name: 'Ethereum', ticker: 'ETH', protocol: 'Proof of Stake (EVM)', desc: 'The global Turing-complete computing network supporting programmatic contracts and collateral markets.', history: 'Proposed by Vitalik Buterin in 2013 and booted in 2015 to support decentralized programmable assets.' },
+    { id: 'ETC', name: 'Ethereum Classic', ticker: 'ETC', protocol: 'Ethash Proof of Work', desc: 'Preserves the original classic Ethereum transaction ledger, sticking to the code-is-law concept.', history: 'Formed in 2016 following the DAO hard fork split to stick strictly to immutability.' },
+    { id: 'FTM', name: 'Fantom', ticker: 'FTM', protocol: 'Lachesis DAG Consensus', desc: 'An ultra-fast, highly scalable smart contract ledger optimized for DeFi apps.', history: 'Founded in 2018 by Dr. Ahn Byung Ik; upgraded to the high-efficiency Sonic platform in 2024/2026.' },
+    { id: 'FET', name: 'Fetch.ai (ASI)', ticker: 'FET', protocol: 'Machine Learning Agent Nodes', desc: 'Autonomous intelligence framework organizing cooperative micro-economic agents.', history: 'Bootsrapped in 2018; integrated into the Artificial Superintelligence Alliance (ASI) in 2024.' },
+    { id: 'FIL', name: 'Filecoin', ticker: 'FIL', protocol: 'PoRep Data Storage Claims', desc: 'A decentralized marketplace linking physical computer storage miners with customers.', history: 'Designed in 2017/2020 by Juan Benet to construct a durable cloud repository alternative.' },
+    { id: 'HASHCASH', name: 'Hashcash', ticker: 'HASHCASH', protocol: 'Proof of Work Hash puzzle', desc: 'Pioneering pre-blockchain puzzle mechanism to eliminate web email spam.', history: 'Designed in 1997 by Adam Back, helping inspire the consensus algorithm of Bitcoin.' },
+    { id: 'HBAR', name: 'Hedera Hashgraph', ticker: 'HBAR', protocol: 'Hashgraph Gossip Consensus', desc: 'High-speed enterprise-governed consensus ledger for rapid private transfers.', history: 'Architected by Leemon Baird in 2018; powered by a governing board of multi-national enterprise firms.' },
+    { id: 'ICP', name: 'Internet Computer', ticker: 'ICP', protocol: 'Threshold Relay Engine', desc: 'Hosting sovereign web software and canisters directly at local server speeds.', history: 'Developed in 2021 by the DFINITY Foundation to serve as public internet hosting.' },
+    { id: 'JUP', name: 'Jupiter', ticker: 'JUP', protocol: 'Solana Dex Routing Agent', desc: 'The core liquid swap router and launch mechanism on the Solana chain.', history: 'Debuted in 2024 by creator Meow to aggregate all Solana liquid trade routes.' },
+    { id: 'LTC', name: 'Litecoin', ticker: 'LTC', protocol: 'Scrypt Proof of Work', desc: 'Lightweight payments alternative to Bitcoin with rapid transaction windows.', history: 'Eclipsed from Bitcoin codebase in 2011 by Charlie Lee as silver to Bitcoins gold.' },
+    { id: 'MKR', name: 'Maker (Sky)', ticker: 'MKR', protocol: 'Maker DAO Governance', desc: 'Collateral governing token backing DAI and USDS internet decentralized dollars.', history: 'Formed in 2017 by Rune Christensen; expanded into the Sky system in 2024.' },
+    { id: 'XMR', name: 'Monero', ticker: 'XMR', protocol: 'CryptoNote Privacy PoW', desc: 'Strictly secure, untraceable currency ledger using ring stealth shielding.', history: 'Launched in 2014 to ensure secure financial privacy on public networks.' },
+    { id: 'NEAR', name: 'Near Protocol', ticker: 'NEAR', protocol: 'Doomslug PoS Sharding', desc: 'User friendly sharded layer-1 database designed to scale decentralized web systems.', history: 'Bootsrapped in 2020 to host simple, fast web apps under native web security.' },
+    { id: 'OP', name: 'Optimism', ticker: 'OP', protocol: 'Optimistic Rollup Engine', desc: 'Ethereum scaling Layer 2 that coordinates the collaborative Superchain architecture.', history: 'Unveiled in 2021 by Jinglan Wang; developed the OP Stack engine used by Base and others.' },
+    { id: 'DOT', name: 'Polkadot', ticker: 'DOT', protocol: 'Nominated Proof of Stake', desc: 'Connects a network of customized sovereign parachains underneath a core Relay Chain.', history: 'Created in 2020 by Ethereum co-founder Gavin Wood to support multi-chain frameworks.' },
+    { id: 'POL', name: 'Polygon (POL)', ticker: 'POL', protocol: 'POS Sidechain / ZK-Rollup', desc: 'A powerful sandbox of scaling channels and sidechains for Ethereum applications.', history: 'Founded as Matic in 2017; revamped to POL to drive collaborative multi-chain pools.' },
+    { id: 'XRP', name: 'Ripple', ticker: 'XRP', protocol: 'Consensus Ledger', desc: 'A real-time settlements network designed to proxy interbank sovereign transfer corridors.', history: 'Created in 2012 to bypass interbank SWIFT transfer clearing speeds.' },
+    { id: 'SHIB', name: 'Shiba Inu', ticker: 'SHIB', protocol: 'Shibarium L2 Proof of Stake', desc: 'The popular community-centered token transitioning to an active L2 ecosystem.', history: 'Introduced in 2020 by Ryoshi as an experiment in organic community growth.' },
+    { id: 'SOL', name: 'Solana', ticker: 'SOL', protocol: 'Proof of History (SVM)', desc: 'A high-throughput, low-latency transaction engine optimized for rapid asset swaps and scale micro-orders.', history: 'Invented by Anatoly Yakovenko in 2017 with high clock speed synchronizations.' },
+    { id: 'STX', name: 'Stacks', ticker: 'STX', protocol: 'Proof of Transfer (PoX)', desc: 'Smart layer and transaction builder anchored directly onto Bitcoin.', history: 'Founded in 2018 by Muneeb Ali to incorporate smart contracts on Bitcoin core.' },
+    { id: 'XLM', name: 'Stellar', ticker: 'XLM', protocol: 'Stellar Consensus Protocol', desc: 'Remittance transactions pipeline for cheap international credit and currency exchange.', history: 'Created in 2014 by Jed McCaleb to enable rapid retail micro-settlements globally.' },
+    { id: 'SUI', name: 'Sui', ticker: 'SUI', protocol: 'Narwhal & Tusk DAG PoS', desc: 'High concurrency Layer 1 operating on secure object-based Move program tracks.', history: 'Unveiled in 2023 by Mysten Labs to achieve parallel scale for high speed web apps.' },
+    { id: 'USDT', name: 'Tether', ticker: 'USDT', protocol: 'Multi-chain Collateral Peg', desc: 'Pre-eminent physical asset-backed dynamic dollar stablecoin.', history: 'Booted in 2014 as Realcoin; serves as the absolute baseline trade asset for digital exchanges.' },
+    { id: 'TON', name: 'Toncoin', ticker: 'TON', protocol: 'Byzantine Fault Tolerant PoS', desc: 'Gas and transactional network natively integrated into the Telegram messaging platform.', history: 'Designed by Pavel Durov in 2018; completed and deployed by the TON open community.' },
+    { id: 'TRX', name: 'TRON', ticker: 'TRX', protocol: 'Delegated Proof of Stake', desc: 'Fast, cheap decentralized ledger mostly used for global USDT transactions.', history: 'Bootsrapped in 2017 by Justin Sun, quickly becoming a leading stablecoin corridor.' },
+    { id: 'UNI', name: 'Uniswap', ticker: 'UNI', protocol: 'Automated Market Maker (AMM)', desc: 'The worlds largest autonomous token exchange protocol, using mathematical pools.', history: 'Written in 2018 by Hayden Adams to prove the viability of constant-product liquidity AMMs.' },
+    { id: 'USDC', name: 'USD Coin', ticker: 'USDC', protocol: 'Regulated Custody Peg', desc: 'Reserve-audited, fully compliant digital dollar stablecoin.', history: 'Debuted in 2018 by Circle to form a regulated, transparent dollar payment alternative.' },
+    { id: 'VET', name: 'Vechain', ticker: 'VET', protocol: 'Proof of Authority', desc: 'Enterprise IoT ledger tracking cargo transport lists with NFC hardware tags.', history: 'Pioneered in 2015 by Sunny Lu to secure absolute supply proof integrity.' },
+    { id: 'WLD', name: 'Worldcoin', ticker: 'WLD', protocol: 'Id Verification Proof of Personhood', desc: 'Biometric global identity network verifying humans via eye scanning.', history: 'Co-created in 2023 by Sam Altman to differentiate humans from bots.' },
+    { id: 'ZEC', name: 'Zcash', ticker: 'ZEC', protocol: 'Zero-Knowledge Proofs (SNARKs)', desc: 'Privacy-oriented payment blockchain allowing users to encrypt transaction data.', history: 'Launched in 2016 from cryptographic research into zero-knowledge privacy.' }
   ],
   commodities: [
-    { id: 'GLD', name: 'Gold Bullion', ticker: 'GOLD', price: 2280.50, change: 0.85, unit: 'troy oz', contract: 'COMEX GC Daily', region: 'Underground Reserves / Central Banks', desc: 'The ultimate physical monetary asset with five millennia of zero-party counterparty reserve records.', history: 'Has served as the universal tangible store of value across all human civilizations for over 5,000 years.' },
-    { id: 'SLV', name: 'Silver Bullion', ticker: 'SILVER', price: 26.42, change: 1.15, unit: 'troy oz', contract: 'COMEX SI Daily', region: 'Industrial & Specialty Reserves', desc: 'Bimetallic monetary metal with critical applications in extreme-precision photolithography and solar cell grids.', history: 'Used as standard coin currency alongside gold, acting as the foundation of early monetary systems.' },
-    { id: 'WTI', name: 'Crude Oil (West Texas Intermediate)', ticker: 'CRUDE_OIL', price: 85.30, change: 1.45, unit: 'barrel', contract: 'NYMEX CL Month', region: 'Permian Basin / Cushing Hub', desc: 'The essential carbon fuel source providing high-horsepower energy output for factories, container trucks and farms.', history: 'Propelled the aggregate material surge of the 20th century, becoming the master political raw energy asset.' },
-    { id: 'NG', name: 'Natural Gas', ticker: 'NAT_GAS', price: 1.78, change: -2.31, unit: 'MMBtu', contract: 'NYMEX NG Month', region: 'Henry Hub Pipelines', desc: 'Underground hydrocarbon gas feeding massive heating networks and power grids across whole regions.', history: 'Transitioned from a waste byproduct of oil drills to a premium low-carbon power grid base.' },
-    { id: 'COP', name: 'Copper Premium', ticker: 'COPPER', price: 4.15, change: 0.35, unit: 'lb', contract: 'COMEX HG Daily', region: 'Chilean and North-American Mines', desc: 'Known as "Dr. Copper", a industrial metal acting as a direct physical dial for aggregate electric infrastructure buildouts.', history: 'The oldest metal smelted by mankind; now fundamental to all electric vehicle and modern wire installations.' },
-    { id: 'WHT', name: 'Hard Red Winter Wheat', ticker: 'WHEAT', price: 542.50, change: -0.12, unit: 'bushel', contract: 'CBOT W Daily', region: 'Aero grain elevators', desc: 'The foundational human caloric crop sustainment, critical for national food supplies and avoiding supply collapses.', history: 'Supported the rise of early civilizations in the Fertile Crescent, continuing to feed billions today.' }
+    { id: 'GLD', name: 'Gold Bullion', ticker: 'GOLD', unit: 'troy oz', contract: 'COMEX GC Daily', region: 'Underground Reserves / Central Banks', desc: 'The ultimate physical monetary asset with five millennia of zero-party counterparty reserve records.', history: 'Has served as the universal tangible store of value across all human civilizations for over 5,000 years.' },
+    { id: 'SLV', name: 'Silver Bullion', ticker: 'SILVER', unit: 'troy oz', contract: 'COMEX SI Daily', region: 'Industrial & Specialty Reserves', desc: 'Bimetallic monetary metal with critical applications in extreme-precision photolithography and solar cell grids.', history: 'Used as standard coin currency alongside gold, acting as the foundation of early monetary systems.' },
+    { id: 'WTI', name: 'Crude Oil (West Texas Intermediate)', ticker: 'CRUDE_OIL', unit: 'barrel', contract: 'NYMEX CL Month', region: 'Permian Basin / Cushing Hub', desc: 'The essential carbon fuel source providing high-horsepower energy output for factories, container trucks and farms.', history: 'Propelled the aggregate material surge of the 20th century, becoming the master political raw energy asset.' },
+    { id: 'NG', name: 'Natural Gas', ticker: 'NAT_GAS', unit: 'MMBtu', contract: 'NYMEX NG Month', region: 'Henry Hub Pipelines', desc: 'Underground hydrocarbon gas feeding massive heating networks and power grids across whole regions.', history: 'Transitioned from a waste byproduct of oil drills to a premium low-carbon power grid base.' },
+    { id: 'COP', name: 'Copper Premium', ticker: 'COPPER', unit: 'lb', contract: 'COMEX HG Daily', region: 'Chilean and North-American Mines', desc: 'Known as "Dr. Copper", a industrial metal acting as a direct physical dial for aggregate electric infrastructure buildouts.', history: 'The oldest metal smelted by mankind; now fundamental to all electric vehicle and modern wire installations.' },
+    { id: 'WHT', name: 'Hard Red Winter Wheat', ticker: 'WHEAT', unit: 'bushel', contract: 'CBOT W Daily', region: 'Aero grain elevators', desc: 'The foundational human caloric crop sustainment, critical for national food supplies and avoiding supply collapses.', history: 'Supported the rise of early civilizations in the Fertile Crescent, continuing to feed billions today.' }
   ]
 };
 
@@ -491,9 +502,6 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
   // New States for Interactive Asset Directories lookup
   const [assetSearchQuery, setAssetSearchQuery] = useState('');
   const [selectedAssetId, setSelectedAssetId] = useState<string>('');
-  const [simulatedPrices, setSimulatedPrices] = useState<number[]>([]);
-  const [hoveredPricePoint, setHoveredPricePoint] = useState<{ x: number, price: number, day: number } | null>(null);
-
   // Retrieve enriched data or use sector fallbacks or defaults
   const normalizedTitle = item.title;
   const isCrypto = activeFile === 'encyclopedia/markets/crypto.html' || 
@@ -521,40 +529,6 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
     setSelectedAssetId(defaultId);
     setAssetSearchQuery('');
   }, [item, activeFile]);
-
-  // Generate simulated chart prices when selected asset changes
-  useEffect(() => {
-    if (!selectedAssetId) return;
-    
-    // Find active asset to get baseline rate
-    let baseline = 100;
-    const allAssets = [
-      ...DIRECTORIES_DATA_MAP.stocks,
-      ...DIRECTORIES_DATA_MAP.forex,
-      ...DIRECTORIES_DATA_MAP.crypto,
-      ...DIRECTORIES_DATA_MAP.commodities
-    ];
-    const match = allAssets.find(a => a.id === selectedAssetId);
-    if (match) baseline = match.price;
-
-    // Generate 30 days of realistic trending price movements
-    const pts: number[] = [];
-    let current = baseline * 0.94; // start slightly lower
-    const trendDirection = (selectedAssetId === 'NVDA' || selectedAssetId === 'SOL' || selectedAssetId === 'GLD') ? 0.005 : -0.001; 
-    
-    for (let i = 0; i < 30; i++) {
-      const cycle = Math.sin(i * 0.3) * (baseline * 0.02);
-      const randFactor = (Math.random() - 0.48) * (baseline * 0.03);
-      current = current * (1 + trendDirection) + randFactor + (i === 29 ? 0 : cycle * 0.1);
-      // Bound it safely
-      if (current < 0.01) current = 0.01;
-      pts.push(Number(current.toFixed(selectedAssetId.includes('_') || match?.price && match.price < 50 ? 4 : 2)));
-    }
-    // Make sure final element is exactly current spot rate
-    pts[29] = baseline;
-    setSimulatedPrices(pts);
-    setHoveredPricePoint(null);
-  }, [selectedAssetId]);
 
   const colorClasses = {
     indigo: {
@@ -674,161 +648,39 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
 
   // Active selected asset details
   const activeAssetDetails = activeDirectoryList.find((a: any) => a.id === selectedAssetId) || activeDirectoryList[0];
+  const selectedQuoteSymbol = activeAssetDetails && directoryType ? directoryQuoteSymbol(directoryType, activeAssetDetails as { id: string; ticker: string }) : null;
+  const { get: getAssetQuote, updatedAt: assetQuotesUpdatedAt } = useLiveQuotes(selectedQuoteSymbol ? [selectedQuoteSymbol] : []);
+  const selectedQuote = selectedQuoteSymbol ? getAssetQuote(selectedQuoteSymbol) : null;
 
-  // Interactive mini price line SVG builder
-  const renderInteractiveChart = () => {
-    if (simulatedPrices.length === 0) return null;
-    
-    const width = 500;
-    const height = 180;
-    const padding = 20;
-    const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
-    
-    const minVal = Math.min(...simulatedPrices);
-    const maxVal = Math.max(...simulatedPrices);
-    const valRange = maxVal - minVal || 1;
-    
-    // Convert index, value to X, Y
-    const points = simulatedPrices.map((val, idx) => {
-      const x = padding + (idx / 29) * chartWidth;
-      // Invert Y because SVG coordinates start from top-left
-      const y = padding + chartHeight - ((val - minVal) / valRange) * chartHeight;
-      return { x, y, price: val, day: idx + 1 };
-    });
-
-    // Build the SVG path
-    let d = '';
-    points.forEach((pt, idx) => {
-      if (idx === 0) {
-        d += `M ${pt.x} ${pt.y}`;
-      } else {
-        d += ` L ${pt.x} ${pt.y}`;
-      }
-    });
-
-    // Build filled area path
-    const fillPath = `${d} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
-
-    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const xMouse = e.clientX - rect.left;
-      
-      // Map xMouse to closest index in prices (30 elements)
-      const relativeX = (xMouse - padding) / (rect.width - padding * 2);
-      let idx = Math.round(relativeX * 29);
-      if (idx < 0) idx = 0;
-      if (idx > 29) idx = 29;
-      
-      const pt = points[idx];
-      setHoveredPricePoint({
-        x: pt.x,
-        price: pt.price,
-        day: pt.day
-      });
-    };
-
-    const isUp = (simulatedPrices[simulatedPrices.length - 1] >= simulatedPrices[0]);
-    const strokeColor = isUp ? '#10b981' : '#f43f5e';
-    const glowColor = isUp ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)';
-
+  const renderLiveQuotePanel = () => {
+    const quote = selectedQuoteSymbol ? getAssetQuote(selectedQuoteSymbol) : null;
+    const digits = directoryType === 'forex' ? 4 : 2;
+    const fmt = (n: number | null | undefined) =>
+      n == null ? DATA_UNAVAILABLE : `${directoryType === 'forex' ? '' : '$'}${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
     return (
-      <div className="flex flex-col gap-2 bg-[#02050b]/90 border border-white/5 rounded-2xl p-4">
+      <div className="flex flex-col gap-3 bg-[#02050b]/90 border border-white/5 rounded-2xl p-4">
         <div className="flex justify-between items-center text-left font-mono text-[9px] uppercase tracking-wider text-zinc-500 border-b border-white/5 pb-2">
-          <span>Relative Trajectory (Continuous Simulator Feed)</span>
-          <span className="text-zinc-500 font-bold">30-Day continuous tick history</span>
+          <span>Live quote · market feed</span>
+          <span className="text-zinc-500 font-bold">{assetQuotesUpdatedAt ? assetQuotesUpdatedAt.toLocaleTimeString() : ''}</span>
         </div>
-        <div className="relative h-[130px] w-full">
-          <svg 
-            viewBox={`0 0 ${width} ${height}`} 
-            className="w-full h-full cursor-crosshair overflow-visible"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => setHoveredPricePoint(null)}
-          >
-            <defs>
-              <linearGradient id="chartFillGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={strokeColor} stopOpacity="0.15" />
-                <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-
-            {/* Grid Lines */}
-            <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="3,3" />
-            <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="3,3" />
-            <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="3,3" />
-
-            {/* Line Fill Area */}
-            <path d={fillPath} fill="url(#chartFillGradient)" />
-
-            {/* Price Line */}
-            <path
-              d={d}
-              fill="none"
-              stroke={strokeColor}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ filter: `drop-shadow(0 0 4px ${glowColor})` }}
-            />
-
-            {/* Hover Vertical Guide Line */}
-            {hoveredPricePoint && (
-              <line
-                x1={hoveredPricePoint.x}
-                y1={padding}
-                x2={hoveredPricePoint.x}
-                y2={height - padding}
-                stroke="white"
-                strokeWidth="0.5"
-                strokeOpacity="0.3"
-                strokeDasharray="2,2"
-              />
-            )}
-
-            {/* Hover and endpoint micro indicators */}
-            {hoveredPricePoint ? (
-              <circle
-                cx={hoveredPricePoint.x}
-                cy={points[hoveredPricePoint.day - 1].y}
-                r="4.5"
-                fill="white"
-                stroke={strokeColor}
-                strokeWidth="1.5"
-              />
-            ) : (
-              <circle
-                cx={points[points.length - 1].x}
-                cy={points[points.length - 1].y}
-                r="4"
-                fill={strokeColor}
-                className="animate-pulse"
-              />
-            )}
-          </svg>
-
-          {/* Hover interactive card bubble overlay */}
-          {hoveredPricePoint && (
-            <div 
-              className="absolute bg-[#030816]/95 border border-white/10 px-2 py-1 rounded-lg text-left shadow-lg pointer-events-none z-10 text-[9px] font-mono flex flex-col gap-0.5"
-              style={{
-                left: `${(hoveredPricePoint.x / width) * 100}%`,
-                top: `${(points[hoveredPricePoint.day - 1].y / height) * 105 - 25}%`,
-                transform: 'translateX(-50%)'
-              }}
-            >
-              <span className="text-zinc-500 uppercase font-black">DAY {hoveredPricePoint.day}:</span>
-              <span className="text-white font-extrabold">${hoveredPricePoint.price.toLocaleString(undefined, { minimumFractionDigits: selectedAssetId.includes('_') ? 4 : 2 })}</span>
+        {!selectedQuoteSymbol ? (
+          <p className="text-[10px] font-mono text-zinc-400 uppercase">Historical / not traded — no live price.</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-center font-mono text-[9px]">
+            <div className="flex flex-col">
+              <span className="text-zinc-500">OPEN</span>
+              <span className="text-white font-bold mt-0.5">{fmt(quote?.open)}</span>
             </div>
-          )}
-        </div>
-        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-mono mt-1">
-          <span>Day 1: ${simulatedPrices[0]?.toLocaleString(undefined, { minimumFractionDigits: selectedAssetId.includes('_') ? 4 : 2 })}</span>
-          <span className={`font-bold flex items-center gap-0.5 ${isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-            {isUp ? '+' : ''}{((simulatedPrices[simulatedPrices.length - 1] - simulatedPrices[0]) / simulatedPrices[0] * 100).toFixed(2)}%
-          </span>
-          <span>Day 30: ${simulatedPrices[simulatedPrices.length - 1]?.toLocaleString(undefined, { minimumFractionDigits: selectedAssetId.includes('_') ? 4 : 2 })}</span>
-        </div>
+            <div className="flex flex-col">
+              <span className="text-zinc-500">DAY HIGH</span>
+              <span className="text-white font-bold mt-0.5">{fmt(quote?.high)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-zinc-500">DAY LOW</span>
+              <span className="text-white font-bold mt-0.5">{fmt(quote?.low)}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -870,7 +722,6 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
             {filteredAssets.length > 0 ? (
               filteredAssets.map((asset: any) => {
                 const isSelected = selectedAssetId === asset.id;
-                const isUp = asset.change >= 0;
                 return (
                   <button
                     key={asset.id}
@@ -886,14 +737,6 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
                       <span className="text-[9.5px] font-sans truncate max-w-[100px] mt-0.5 leading-none">{asset.name}</span>
                     </div>
 
-                    <div className="flex flex-col items-end shrink-0">
-                      <span className="text-[10.5px] font-mono leading-none font-bold text-white">
-                        ${asset.price.toLocaleString(undefined, { minimumFractionDigits: directoryType === 'forex' ? 4 : 2 })}
-                      </span>
-                      <span className={`text-[8.5px] font-mono leading-none mt-1 font-bold ${isUp ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isUp ? '▲' : '▼'} {isUp ? '+' : ''}{asset.change}%
-                      </span>
-                    </div>
                   </button>
                 );
               })
@@ -917,15 +760,19 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
                   </div>
                   <div className="text-right flex items-center gap-2 font-mono">
                     <span className="text-[11px] font-black text-white">
-                      ${activeAssetDetails.price.toLocaleString(undefined, { minimumFractionDigits: directoryType === 'forex' ? 4 : 2 })}
+                      {selectedQuote
+                        ? `${directoryType === 'forex' ? '' : '$'}${selectedQuote.price.toLocaleString(undefined, { minimumFractionDigits: directoryType === 'forex' ? 4 : 2 })}`
+                        : selectedQuoteSymbol ? DATA_UNAVAILABLE : 'NOT TRADED'}
                     </span>
-                    <span className={`text-[8.5px] py-0.5 px-2 rounded font-extrabold ${activeAssetDetails.change >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                      {activeAssetDetails.change >= 0 ? '+' : ''}{activeAssetDetails.change}%
-                    </span>
+                    {selectedQuote?.percentChange != null && (
+                      <span className={`text-[8.5px] py-0.5 px-2 rounded font-extrabold ${selectedQuote.percentChange >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                        {formatPct(selectedQuote.percentChange)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {renderInteractiveChart()}
+                {renderLiveQuotePanel()}
               </div>
 
               {/* Right Column: Custom Attribute Information Grid */}
@@ -941,19 +788,19 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Market Cap</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{(activeAssetDetails as any).cap}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Annual Revenue</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{(activeAssetDetails as any).rev}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Employees</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{(activeAssetDetails as any).employees}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Profit Margin</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{(activeAssetDetails as any).margin}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block truncate mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                     </div>
                   )}
@@ -963,11 +810,11 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Bid Price</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{(activeAssetDetails as any).bid}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Ask Price</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{(activeAssetDetails as any).ask}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl col-span-2">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Sovereign Region</span>
@@ -981,11 +828,11 @@ export default function KnowledgeItemViewer({ item, onNavigate, activeFile }: Vi
                     <div className="grid grid-cols-2 gap-2.5">
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Market Cap</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{(activeAssetDetails as any).cap}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Circulating Supply</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{(activeAssetDetails as any).supply}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] tracking-wide block mt-0.5">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl col-span-2">
                         <span className="text-[8px] font-mono uppercase text-zinc-500 block">Consensus Protocol</span>

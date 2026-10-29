@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLiveQuotes, formatPct, DATA_UNAVAILABLE } from '../../hooks/useLiveQuotes';
 import { 
   Network, Flame, Activity, Radio, Tv, ArrowLeft,
   LayoutDashboard, Users, Video, TrendingUp, Calendar, MessageSquare,
@@ -36,12 +37,19 @@ interface Post {
   isPinned?: boolean;
 }
 
+const AFFILIATE_QUOTE_SYMBOLS: Record<string, string> = {
+  EURUSD: 'EUR/USD',
+  BTCUSD: 'BTC/USD',
+  NASDAQ: 'NDX',
+  XAUUSD: 'XAU/USD',
+  SPX: 'SPX',
+  TSLA: 'TSLA',
+  AAPL: 'AAPL',
+};
+
 interface MiniChartData {
   id: string;
   symbol: string;
-  price: number;
-  change: number;
-  points: number[];
   size: 'sm' | 'md' | 'lg';
   indicators: { ema?: boolean; bb?: boolean; rsi?: boolean; };
 }
@@ -205,64 +213,38 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   }, []);
 
   // 2. Watchlist & Live Ticker Rates
-  const [watchlist, setWatchlist] = useState<{ [symbol: string]: { price: number; change: number; isUp: boolean; lastUpdate: string } }>({
-    'EURUSD': { price: 1.08425, change: 0.34, isUp: true, lastUpdate: 'Just now' },
-    'BTCUSD': { price: 68420.50, change: -1.45, isUp: false, lastUpdate: 'Just now' },
-    'NASDAQ': { price: 18450.75, change: 1.12, isUp: true, lastUpdate: 'Just now' },
-    'XAUUSD': { price: 2342.15, change: 0.88, isUp: true, lastUpdate: 'Just now' },
-    'SPX': { price: 5410.20, change: 0.45, isUp: true, lastUpdate: 'Just now' },
-    'TSLA': { price: 184.25, change: -2.35, isUp: false, lastUpdate: 'Just now' },
-    'AAPL': { price: 178.60, change: 0.95, isUp: true, lastUpdate: 'Just now' }
-  });
-
-  // Dynamic price updates simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWatchlist(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(symbol => {
-          const tick = (Math.random() - 0.48) * (next[symbol].price * 0.0005);
-          const oldPrice = next[symbol].price;
-          const newPrice = oldPrice + tick;
-          const isUp = newPrice > oldPrice;
-          const changeTick = (Math.random() - 0.5) * 0.1;
-          const newChange = Number((next[symbol].change + changeTick).toFixed(2));
-          next[symbol] = {
-            price: Number(newPrice.toFixed(symbol === 'BTCUSD' ? 2 : symbol === 'XAUUSD' ? 2 : 5)),
-            change: newChange,
-            isUp,
-            lastUpdate: new Date().toLocaleTimeString()
-          };
-        });
-        return next;
-      });
-    }, 2800);
-    return () => clearInterval(interval);
-  }, []);
+  const liveQuotes = useLiveQuotes(Object.values(AFFILIATE_QUOTE_SYMBOLS));
+  const watchlist = useMemo(() => {
+    const out: { [symbol: string]: { price: number | null; change: number | null; isUp: boolean; lastUpdate: string } } = {};
+    for (const [display, request] of Object.entries(AFFILIATE_QUOTE_SYMBOLS)) {
+      const q = liveQuotes.get(request);
+      out[display] = {
+        price: q?.price ?? null,
+        change: q?.percentChange ?? null,
+        isUp: (q?.percentChange ?? 0) >= 0,
+        lastUpdate: liveQuotes.updatedAt ? liveQuotes.updatedAt.toLocaleTimeString() : '',
+      };
+    }
+    return out;
+  }, [liveQuotes]);
 
   // 3. Mini Charts States
   const [activeCharts, setActiveCharts] = useState<MiniChartData[]>([
-    { id: 'c-eur', symbol: 'EURUSD', price: 1.08425, change: 0.34, points: [1.081, 1.082, 1.0815, 1.083, 1.0825, 1.084, 1.0838, 1.08425], size: 'md', indicators: { ema: true } },
-    { id: 'c-btc', symbol: 'BTCUSD', price: 68420.50, change: -1.45, points: [69100, 68800, 68950, 68600, 68750, 68300, 68450, 68420.50], size: 'md', indicators: { bb: false } },
-    { id: 'c-gold', symbol: 'XAUUSD', price: 2342.15, change: 0.88, points: [2322, 2325, 2330, 2328, 2335, 2332, 2340, 2342.15], size: 'md', indicators: {} }
+    { id: 'c-eur', symbol: 'EURUSD', size: 'md', indicators: { ema: true } },
+    { id: 'c-btc', symbol: 'BTCUSD', size: 'md', indicators: { bb: false } },
+    { id: 'c-gold', symbol: 'XAUUSD', size: 'md', indicators: {} }
   ]);
 
-  const [availableTickers] = useState<string[]>(['EURUSD', 'BTCUSD', 'NASDAQ', 'XAUUSD', 'SPX', 'TSLA', 'AAPL']);
+  const [availableTickers] = useState<string[]>(Object.keys(AFFILIATE_QUOTE_SYMBOLS));
 
   const handleAddChartWidget = (symbol: string) => {
     if (activeCharts.length >= 4) {
       alert("System constraint of maximum 4 simultaneous glowing chart ports reached.");
       return;
     }
-    const rate = watchlist[symbol]?.price || 100.00;
-    const change = watchlist[symbol]?.change || 0.00;
-    const basePts = Array.from({ length: 8 }, () => rate * (1 + (Math.random() - 0.5) * 0.01));
     const newChart: MiniChartData = {
       id: `c-dyn-${Date.now()}`,
       symbol,
-      price: rate,
-      change,
-      points: [...basePts, rate],
       size: 'md',
       indicators: {}
     };
@@ -317,10 +299,8 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
   // 5. Active Streaming Timer Simulation
   useEffect(() => {
     if (isLive) {
-      setViewerCount(Math.floor(Math.random() * 120) + 380);
       liveTimerRef.current = setInterval(() => {
         setLiveDuration(d => d + 1);
-        setViewerCount(v => Math.max(200, v + Math.floor(Math.random() * 19) - 9));
         // Pulsing audio equalizers
         setAudioBars(Array.from({ length: 12 }, () => Math.floor(Math.random() * 24) + 6));
       }, 1000);
@@ -1253,7 +1233,7 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                       <div className="w-[1px] h-6 bg-zinc-850" />
                       <div className="text-xs font-mono text-right">
                         <span className="text-red-500 font-extrabold block text-[8px]">AUDIENCE</span>
-                        <span className="text-[#00ffe1] font-black">{viewerCount} Joined</span>
+                        <span className="text-[#00ffe1] font-black">Not tracked</span>
                       </div>
                     </div>
                   </div>
@@ -2281,9 +2261,11 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                     <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
                       <div>
                         <span className="text-sm font-black text-[#ff007f] font-mono">{ch.symbol}</span>
-                        <span className={`text-[10px] font-mono font-bold ml-2 ${ch.change >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-                          {ch.change >= 0 ? '+' : ''}{ch.change}%
-                        </span>
+                        {watchlist[ch.symbol]?.change != null && (
+                          <span className={`text-[10px] font-mono font-bold ml-2 ${watchlist[ch.symbol].isUp ? 'text-emerald-400' : 'text-rose-500'}`}>
+                            {formatPct(watchlist[ch.symbol].change)}
+                          </span>
+                        )}
                       </div>
                       <button 
                         onClick={() => removeChartWidget(ch.id)}
@@ -2296,11 +2278,11 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                     {/* Numeric display rates */}
                     <div className="flex justify-between items-end">
                       <div>
-                        <span className="text-zinc-550 font-mono uppercase text-[8px] font-bold block">REAL-TIME TELEMETRY RATE:</span>
-                        <span className="text-lg font-mono font-black text-[#00ffe1] tracking-widest">{watchlist[ch.symbol]?.price || ch.price}</span>
+                        <span className="text-zinc-550 font-mono uppercase text-[8px] font-bold block">LIVE QUOTE · MARKET FEED:</span>
+                        <span className="text-lg font-mono font-black text-[#00ffe1] tracking-widest">{watchlist[ch.symbol]?.price ?? DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="text-right text-[9px] font-mono text-zinc-550 border border-white/5 bg-zinc-950 px-2 py-0.5 rounded">
-                        TIME SENSORY: {watchlist[ch.symbol]?.lastUpdate || 'LIVE'}
+                        UPDATED: {watchlist[ch.symbol]?.lastUpdate || '—'}
                       </div>
                     </div>
 
@@ -2315,35 +2297,9 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                         </div>
                       )}
 
-                      {/* Custom indicator lines rendering */}
-                      <svg className="w-full h-full stroke-2 fill-none overflow-visible absolute top-0 bottom-0 left-0 right-0 p-3">
-                        <defs>
-                          <linearGradient id={`grad-${ch.id}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#00ffe1" stopOpacity="0.2" />
-                            <stop offset="100%" stopColor="#00ffe1" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-
-                        {/* Standard Base neon line */}
-                        <path 
-                          d="M 0 60 Q 25 35 50 70 T 100 20 T 150 75 T 200 15 T 300 45" 
-                          className="stroke-[#00ffe1] animate-pulse" 
-                        />
-                        {/* Shifting background area under spark line */}
-                        <path 
-                          d="M 0 60 Q 25 35 50 70 T 100 20 T 150 75 T 200 15 T 300 45 L 300 120 L 0 120 Z" 
-                          fill={`url(#grad-${ch.id})`} 
-                        />
-
-                        {/* Bollinger EMA reference overlay indicator lines */}
-                        {ch.indicators.ema && (
-                          <path 
-                            d="M 0 50 Q 25 25 50 60 T 100 10 T 150 65 T 200 5 T 300 35" 
-                            className="stroke-amber-500/50 stroke-1 stroke-dasharray" 
-                            style={{ strokeDasharray: '4,4' }}
-                          />
-                        )}
-                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center p-3 text-center text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                        Live candles for {ch.symbol} are on the Charts desk — no drawn placeholder line here.
+                      </div>
                     </div>
 
                     {/* Chart Indicator selection buttons inside widgets */}
@@ -2571,10 +2527,10 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                     Sovereign Rate Spectrometer Watchlist
                   </h4>
                   <p className="text-[10px] font-mono text-zinc-555 uppercase tracking-widest mt-1">
-                    Flashing price indicators synced directly with Frankfurt live bus
+                    Source: ClearPath market feed (Twelve Data) · refreshes every minute
                   </p>
                 </div>
-                <span className="text-[8px] bg-emerald-550 text-white px-2 py-0.5 rounded font-mono font-black tracking-widest">REALTIME</span>
+                <span className="text-[8px] bg-emerald-550 text-white px-2 py-0.5 rounded font-mono font-black tracking-widest">LIVE FEED</span>
               </div>
 
               <div className="space-y-2.5">
@@ -2584,21 +2540,23 @@ export default function AffiliateDashboard({ profile, onBack }: { profile: any; 
                     <div key={symbol} className="flex justify-between items-center p-4 bg-black border border-zinc-900 rounded-xl font-mono">
                       <div className="flex items-center gap-3">
                         <span className="font-black text-[#ff007f] text-sm tracking-widest">{symbol}</span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${data.isUp ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-505/10 text-rose-500'}`}>
-                          {data.isUp ? '▲ Ticking Up' : '▼ Receding'}
-                        </span>
+                        {data.change != null && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${data.isUp ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-505/10 text-rose-500'}`}>
+                            {data.isUp ? '▲ Up on day' : '▼ Down on day'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4 text-xs">
                         <div className="text-right">
-                          <span className="text-zinc-555 block text-[8px] font-semibold">TICK RATE:</span>
-                          <span className={`font-black text-sm tracking-wider ${data.isUp ? 'text-emerald-400' : 'text-zinc-200'}`}>
-                            {data.price}
+                          <span className="text-zinc-555 block text-[8px] font-semibold">LAST PRICE:</span>
+                          <span className={`font-black text-sm tracking-wider ${data.price != null && data.isUp ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                            {data.price ?? DATA_UNAVAILABLE}
                           </span>
                         </div>
                         <div className="w-[1px] h-6 bg-zinc-900" />
-                        <span className={`font-black tracking-widest text-[11px] shrink-0 w-16 text-right ${data.change >= 0 ? 'text-emerald-400' : 'text-rose-500'}`}>
-                          {data.change >= 0 ? '+' : ''}{data.change}%
+                        <span className={`font-black tracking-widest text-[11px] shrink-0 w-16 text-right ${data.isUp ? 'text-emerald-400' : 'text-rose-500'}`}>
+                          {formatPct(data.change)}
                         </span>
                       </div>
                     </div>
