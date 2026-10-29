@@ -68,6 +68,7 @@ export type MarketProphetsFetcher = () => Promise<DailyPatternReviewReport["mark
 let latest: DailyPatternReviewReport | null = null;
 let schedulerTimer: ReturnType<typeof setInterval> | null = null;
 let lastFiredReportId: string | null = null;
+const sweepInFlight = new Set<string>();
 let running = false;
 
 function easternDayFromMs(ms: number): string {
@@ -466,19 +467,35 @@ export async function markDailyPatternReviewed(
   return latest;
 }
 
-async function schedulerTick() {
-  if (!isBriefingDay()) return;
+/** Runs due slots; awaited by the cron endpoint so Cloud Run keeps CPU for the sweep. */
+export async function dailyPatternSchedulerTick(): Promise<string[]> {
+  const fired: string[] = [];
+  if (!isBriefingDay()) return fired;
   for (const slot of activeSlots()) {
     const reportId = briefingReportId(easternDateKey(), slot);
     if (lastFiredReportId === reportId) continue;
     const existing = await resolveDailyPatternReviewReport(reportId);
-    if (existing) {
+    if (existing?.rows?.length) {
       lastFiredReportId = reportId;
       continue;
     }
-    lastFiredReportId = reportId;
-    void runDailyPatternSweep({ slot });
+    if (sweepInFlight.has(reportId)) continue;
+    sweepInFlight.add(reportId);
+    try {
+      await runDailyPatternSweep({ slot });
+      lastFiredReportId = reportId;
+      fired.push(reportId);
+    } catch (e) {
+      console.warn(`[DailyPatternReview] Sweep ${reportId} failed; will retry next tick:`, (e as Error)?.message || e);
+    } finally {
+      sweepInFlight.delete(reportId);
+    }
   }
+  return fired;
+}
+
+async function schedulerTick() {
+  await dailyPatternSchedulerTick();
 }
 
 export function startDailyPatternReviewScheduler() {

@@ -212,6 +212,7 @@ import {
   markDailyPatternReviewed,
   publishDailyPatternReview,
   startDailyPatternReviewScheduler,
+  dailyPatternSchedulerTick,
 } from './src/server/dailyPatternReviewService';
 import {
   fireDueSubscriptions,
@@ -3128,6 +3129,21 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         error: 'VERIFY_FAILED',
         message: e?.message || 'Timeframe verify failed',
       });
+    }
+  });
+
+  // Cloud Scheduler (every 10 min): wakes a scaled-to-zero instance and runs due briefing slots
+  // inside the request so Cloud Run keeps CPU allocated. Same secret header as timeframe-verify.
+  app.post('/api/cron/scheduler-tick', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const fired = await dailyPatternSchedulerTick();
+      res.json({ ok: true, dailyPatternReview: fired });
+    } catch (e: any) {
+      res.status(500).json({ error: 'TICK_FAILED', message: e?.message || 'Scheduler tick failed' });
     }
   });
 
