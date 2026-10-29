@@ -14,4 +14,8 @@ assert.ok(slideCount >= 10, `expected 10 pitch slides, saw ${slideCount}`);
 assert.match(data, /\$1\.5M seed financing via SAFE/, 'raise slide must include SAFE');
 assert.match(read('src/components/pitch/InvestorPitchDeck.tsx'), /BrandMark/, 'deck must use flame brand mark');
 
+const pub = read('src/lib/publicIdentityRoutes.ts');
+assert.match(pub, /path === '\/pitch'/, 'pitch must bypass Firebase auth boot spinner');
+assert.match(pub, /path\.startsWith\('\/pitch\/'\)/, 'pitch slides must bypass auth boot');
+
 console.log('pitch-deck.selftest: ok');
