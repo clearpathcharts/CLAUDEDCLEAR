@@ -1191,13 +1191,15 @@ export async function declineIdentity(input: {
   if (!found) throw new PrivateAuthError('Account not found.', 404);
   found = expireIfNeeded(found);
 
-  if (input.password) {
-    const { hash } = await hashPassword(input.password, found.passwordSalt);
-    const a = Buffer.from(hash, 'hex');
-    const b = Buffer.from(found.passwordHash, 'hex');
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      throw new PrivateAuthError('Invalid email or password.', 401);
-    }
+  // Declining locks the account, so it must prove ownership — an email alone is not enough.
+  if (!input.password) {
+    throw new PrivateAuthError('Invalid email or password.', 401);
+  }
+  const { hash } = await hashPassword(input.password, found.passwordSalt);
+  const a = Buffer.from(hash, 'hex');
+  const b = Buffer.from(found.passwordHash, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    throw new PrivateAuthError('Invalid email or password.', 401);
   }
 
   found.identityStatus = 'declined';

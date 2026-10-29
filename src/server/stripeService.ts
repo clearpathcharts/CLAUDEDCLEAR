@@ -797,12 +797,23 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
     }
     case 'charge.refunded': {
       const charge = event.data.object as Stripe.Charge;
+      // Partial refunds / goodwill credits must not revoke paid access.
+      if (!charge.refunded) return { handled: false };
       const customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer?.id;
       if (!customerId || !stripe) return { handled: false };
       const uid = await uidFromStripeCustomer(stripe, customerId);
       if (!uid) return { handled: false };
       const mem = readProfile(uid)?.membership;
       if (!mem?.tier) return { handled: false };
+      if (mem.stripeSubscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(mem.stripeSubscriptionId);
+          // A still-live subscription keeps access; customer.subscription.deleted handles cancellation.
+          if (sub.status === 'active' || sub.status === 'trialing') return { handled: false };
+        } catch {
+          /* subscription missing — fall through to cancel */
+        }
+      }
       const outcome = await saveMembershipFanout(
         uid,
         {
