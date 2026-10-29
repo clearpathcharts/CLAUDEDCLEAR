@@ -142,7 +142,6 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
         ws.send(JSON.stringify({
           type: 'HEARTBEAT',
           status: 'HEALTHY',
-          latency: '0.8ms',
           timestamp: Date.now()
         }));
       }

@@ -59,6 +59,28 @@ import { YwcPersonalCharts } from './YwcPersonalCharts';
 import { YwcChartSection, YwcChartWorkspace } from './YwcLiveChartBento';
 import { YwcMagazineRack } from './YwcMagazineRack';
 import { YwcPublicationHub } from './YwcPublicationHub';
+import { fetchQuotesMap } from '../../lib/clientMarketCache';
+import { resolveQuotePrice, type QuotePriceFields } from '../../lib/resolveQuotePrice';
+
+type MarketWatchRow = {
+  name: string;
+  ticker: string;
+  request: string;
+  decimals: number;
+  value: number | null;
+  pct: number | null;
+  isPositive: boolean;
+};
+
+/** Labels are replaced by the vendor's own symbol/name (index requests may resolve to ETFs). */
+const MARKET_WATCH_SYMBOLS: Array<Pick<MarketWatchRow, 'name' | 'ticker' | 'request' | 'decimals'>> = [
+  { name: 'S&P 500', ticker: 'SPX', request: 'SPX', decimals: 2 },
+  { name: 'NASDAQ 100', ticker: 'NDX', request: 'NDX', decimals: 2 },
+  { name: 'DOW JONES', ticker: 'DJI', request: 'DJI', decimals: 2 },
+  { name: 'BTC / USD', ticker: 'BTC', request: 'BTC/USD', decimals: 2 },
+  { name: 'GOLD (OZ)', ticker: 'XAU', request: 'XAU/USD', decimals: 2 },
+  { name: 'EUR / USD', ticker: 'EUR', request: 'EUR/USD', decimals: 4 },
+];
 
 // Static assets/mock data reflecting the RSS feeds requested by the user
 const CORE_COURSES = [
@@ -89,15 +111,33 @@ export default function YoursPageHub() {
   const [fetchProgress, setFetchProgress] = useState(0);
   const [lastSyncTime, setLastSyncTime] = useState<string>(() => new Date().toLocaleTimeString());
 
-  // Market watch state
-  const [marketIndices, setMarketIndices] = useState([
-    { name: 'S&P 500', ticker: 'SPX', value: 5418.25, change: 12.80, pct: 0.24, isPositive: true },
-    { name: 'NASDAQ 100', ticker: 'NDX', value: 19124.50, change: -48.35, pct: -0.25, isPositive: false },
-    { name: 'DOW JONES', ticker: 'DJI', value: 39605.10, change: 185.00, pct: 0.47, isPositive: true },
-    { name: 'BTC / USD', ticker: 'BTC', value: 68420.00, change: 1240.00, pct: 1.85, isPositive: true },
-    { name: 'GOLD (OZ)', ticker: 'XAU', value: 2364.80, change: 18.20, pct: 0.78, isPositive: true },
-    { name: 'EUR / USD', ticker: 'EUR', value: 1.0824, change: -0.0016, pct: -0.15, isPositive: false }
-  ]);
+  // Market watch — live /api/quotes only; blank when the vendor does not answer.
+  const [marketIndices, setMarketIndices] = useState<MarketWatchRow[]>(() =>
+    MARKET_WATCH_SYMBOLS.map((s) => ({ ...s, value: null, pct: null, isPositive: true })),
+  );
+  const loadMarketWatch = React.useCallback(async () => {
+    try {
+      const quotes = await fetchQuotesMap(MARKET_WATCH_SYMBOLS.map((s) => s.request));
+      setMarketIndices(MARKET_WATCH_SYMBOLS.map((s) => {
+        const q = (quotes[s.request.toUpperCase()] || null) as (QuotePriceFields & { symbol?: string; name?: string; percent_change?: string }) | null;
+        const value = q ? resolveQuotePrice(q) : null;
+        const pct = q?.percent_change != null && Number.isFinite(Number(q.percent_change)) ? Number(q.percent_change) : null;
+        return {
+          ...s,
+          name: q?.name || s.name,
+          ticker: q?.symbol || s.ticker,
+          value,
+          pct,
+          isPositive: (pct ?? 0) >= 0,
+        };
+      }));
+    } catch {
+      setMarketIndices(MARKET_WATCH_SYMBOLS.map((s) => ({ ...s, value: null, pct: null, isPositive: true })));
+    }
+  }, []);
+  useEffect(() => {
+    void loadMarketWatch();
+  }, [loadMarketWatch]);
 
   // Social login OAuth Hub providers (15 platforms)
   const [socialPlatforms, setSocialPlatforms] = useState([
@@ -119,24 +159,31 @@ export default function YoursPageHub() {
   ]);
 
   // Social feed aggregate simulation
-  const [socialFeed, setSocialFeed] = useState<Array<{ id: string, platform: string, author: string, handle: string, content: string, time: string }>>([
-    { id: 's1', platform: 'twitter', author: 'Markus Macro', handle: '@macro_markus', content: 'Aggregated yield spreads show critical resistance on standard OTC benches. CPMS live signals indicating near-term short covering.', time: '10m ago' },
-    { id: 's2', platform: 'discord', author: 'GlowTrader', handle: '#cpms-alpha', content: 'Master patterns setup triggers perfect harmonic long signals on EUR/USD spot desk. Locked in +45 pips! Thanks CPMS intelligence!', time: '24m ago' },
-    { id: 's3', platform: 'linkedin', author: 'Dr. Sarah Pierce', handle: 'Global Risk Officer', content: 'Sovereign liquidity metrics continue to suggest systematic core reserve contraction. Watching the federal auction logs strictly.', time: '1h ago' }
-  ]);
+  const [socialFeed, setSocialFeed] = useState<Array<{ id: string, platform: string, author: string, handle: string, content: string, time: string }>>([]);
   const [newPostText, setNewPostText] = useState('');
 
   // Reader modal story
   const [activeStoryDetails, setActiveStoryDetails] = useState<any | null>(null);
 
-  // Ticker text
-  const tickerItems = [
-    "🔥 BREAKING: Federal Reserves maintain rate thresholds, citing stable employment indices & robust retail metrics...",
-    "⚽ SPORTS: Verstappen secures breathtaking pole-position at Monaco Grand Prix after high-speed final sector duel...",
-    "💹 MARKET WATCH: Bitcoin clears technical resistance at $68,400 as spot exchange volumes reach high threshold limits...",
-    "⚡ TECH: Sub-3nm semiconductor production lines expand inside Arizona facilities to satisfy AI infrastructure demand...",
-    "⚖️ POLITICS: Coordinated energy security package enters congressional debate, offering tax deductions for natural gas utility installations..."
-  ];
+  // Ticker text — live wire headlines only.
+  const [tickerItems, setTickerItems] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/newsdata/latest')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (cancelled || !Array.isArray(data)) return;
+        const titles = data
+          .map((item: { title?: unknown }) => (typeof item?.title === 'string' ? item.title.trim() : ''))
+          .filter(Boolean)
+          .slice(0, 8);
+        setTickerItems(titles);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Simulated live feed item repository representing the sections
   const [newsFeed, setNewsFeed] = useState([
@@ -485,20 +532,7 @@ export default function YoursPageHub() {
         if (idx === steps.length - 1) {
           setIsSimulatingFetch(false);
           setLastSyncTime(new Date().toLocaleTimeString());
-          
-          // Randomize market prices slightly as a visual indicator
-          setMarketIndices(prev => prev.map(item => {
-            const delta = (Math.random() - 0.5) * (item.value * 0.015);
-            const newValue = item.value + delta;
-            const newChange = item.change + (delta * 0.2);
-            return {
-              ...item,
-              value: parseFloat(newValue.toFixed(item.name.includes('EUR') ? 4 : 2)),
-              change: parseFloat(newChange.toFixed(2)),
-              pct: parseFloat(((newChange / (newValue - newChange)) * 100).toFixed(2)),
-              isPositive: newChange >= 0
-            };
-          }));
+          void loadMarketWatch();
         }
       }, step.t);
     });
@@ -783,13 +817,17 @@ export default function YoursPageHub() {
                 </div>
                 
                 <div className="mt-1.5 font-bold font-sans text-sm tracking-tight">
-                  {item.value.toLocaleString(undefined, { minimumFractionDigits: item.name.includes('EUR') ? 4 : 2 })}
+                  {item.value == null
+                    ? <span className="text-[10px] font-mono text-zinc-500">DATA UNAVAILABLE</span>
+                    : item.value.toLocaleString(undefined, { minimumFractionDigits: item.decimals, maximumFractionDigits: item.decimals })}
                 </div>
 
-                <div className={`mt-0.5 text-[10px] font-mono flex items-center gap-1 ${item.isPositive ? 'text-emerald-400' : 'text-rose-500'}`}>
-                  {item.isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                  <span>{item.isPositive ? '+' : ''}{item.pct}%</span>
-                </div>
+                {item.pct != null ? (
+                  <div className={`mt-0.5 text-[10px] font-mono flex items-center gap-1 ${item.isPositive ? 'text-emerald-400' : 'text-rose-500'}`}>
+                    {item.isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                    <span>{item.isPositive ? '+' : ''}{item.pct.toFixed(2)}%</span>
+                  </div>
+                ) : null}
 
                 {/* Subtle side glowing line indicator */}
                 <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${item.isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
@@ -1164,6 +1202,9 @@ export default function YoursPageHub() {
               </div>
 
               <div className="space-y-2 max-h-[220px] overflow-y-auto no-scrollbar">
+                {socialFeed.length === 0 ? (
+                  <p className="text-[10px] font-mono text-zinc-500">No posts yet — yours will appear here.</p>
+                ) : null}
                 {socialFeed.map((item) => (
                   <div key={item.id} className="bg-black/50 border border-white/5 rounded-xl p-3 space-y-1">
                     <div className="flex items-center justify-between text-[10px]">
@@ -1264,24 +1305,14 @@ export default function YoursPageHub() {
           <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-zinc-950 to-transparent z-10 pointer-events-none" />
           
           <div className="flex items-center gap-12 whitespace-nowrap animate-marquee absolute top-1/2 -translate-y-1/2 text-[12px] font-mono text-zinc-300">
-            {tickerItems.map((item, idx) => {
-              const isBreaking = item.startsWith("🔥");
-              const displayText = isBreaking ? item.replace("🔥 BREAKING:", "") : item;
-              return (
-                <span key={idx} className="flex items-center gap-2.5">
-                  <span className="text-[#00f0ff] font-bold">•</span>
-                  {isBreaking ? (
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <Flame className="w-4 h-4 text-[#ff00c8] fill-[#ff00c8] animate-pulse drop-shadow-[0_0_8px_rgba(255,0,200,0.5)]" />
-                      <span className="text-[#ff00c8] font-bold text-[12.5px] uppercase tracking-widest animate-pulse font-mono">BREAKING:</span>
-                      <span className="text-[12px] font-sans font-semibold text-zinc-150">{displayText}</span>
-                    </span>
-                  ) : (
-                    <span>{item}</span>
-                  )}
-                </span>
-              );
-            })}
+            {tickerItems.length === 0 ? (
+              <span className="text-zinc-500">No live wire headlines right now.</span>
+            ) : tickerItems.map((item, idx) => (
+              <span key={idx} className="flex items-center gap-2.5">
+                <span className="text-[#00f0ff] font-bold">•</span>
+                <span>{item}</span>
+              </span>
+            ))}
           </div>
         </div>
 

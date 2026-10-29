@@ -171,6 +171,9 @@ jobs:
       - name: Generator domain legitimacy
         run: npm run test:generator-legitimacy
 
+      - name: No invented market data
+        run: npm run test:no-invented-market-data
+
       - name: Build
         env:
           CLEARPATH_DISABLE_FIRESTORE_ADMIN: '1'
