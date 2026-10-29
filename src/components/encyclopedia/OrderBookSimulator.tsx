@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, TrendingUp, DollarSign, Activity, Settings, RefreshCw, Layers } from 'lucide-react';
+import { PRACTICE_BANNER, PRACTICE_SYMBOL } from '../../lib/practiceSimulation';
 
 interface Order {
   id: string;
@@ -43,7 +44,7 @@ export default function OrderBookSimulator() {
     setAsks(initialAsks);
     setLimitPrice(100.00);
     setLastPrice(100.00);
-    setLog(['System Ready. Order book liquidity initialized at $100.00.']);
+    setLog([`Practice book ready. ${PRACTICE_SYMBOL} liquidity initialized at $100.00 (not market data).`]);
   };
 
   useEffect(() => {
@@ -229,7 +230,8 @@ export default function OrderBookSimulator() {
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-indigo-500" />
-          <h4 className="text-sm font-semibold tracking-wide text-white uppercase font-sans">LOB Depth Engine & Exchange Matcher</h4>
+          <h4 className="text-sm font-semibold tracking-wide text-white uppercase font-sans">LOB Depth Engine & Exchange Matcher · {PRACTICE_SYMBOL}</h4>
+          <span className="ml-2 px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-[9px] font-mono font-black uppercase tracking-wider text-amber-400">{PRACTICE_BANNER}</span>
         </div>
         <button
           onClick={resetBook}
@@ -242,7 +244,7 @@ export default function OrderBookSimulator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ORDER BOOK LEDGER PANEL */}
         <div className="lg:col-span-7 flex flex-col gap-3">
-          <h5 className="text-[10px] uppercase tracking-[0.2em] font-sans text-zinc-500 font-bold">LOB Real-time Depth View</h5>
+          <h5 className="text-[10px] uppercase tracking-[0.2em] font-sans text-zinc-500 font-bold">Practice Depth View ({PRACTICE_SYMBOL})</h5>
           
           <div className="border border-white/5 rounded-xl bg-black/40 overflow-hidden text-xs font-mono">
             {/* Headers */}

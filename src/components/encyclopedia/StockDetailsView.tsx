@@ -33,6 +33,10 @@ import CompanyPage from '../../pages/companies/[company]';
 import RelationshipGraph from '../RelationshipGraph';
 import WhyItMoved from '../WhyItMoved';
 import companies from '../../../data/companies/companies.json';
+import { useLiveQuotes, formatPct, DATA_UNAVAILABLE } from '../../hooks/useLiveQuotes';
+import { PRACTICE_BANNER } from '../../lib/practiceSimulation';
+
+const PRACTICE_INDEX_BASE = 100;
 
 interface StockDetailsViewProps {
   companyKey: string;
@@ -44,11 +48,7 @@ interface StockDetailsData {
   name: string;
   logo: string;
   industry: string;
-  marketCap: string;
-  revenue: string;
-  margins: string;
   desc: string;
-  basePrice: number;
   
   // WHAT THE COMPANY DOES
   operations: {
@@ -78,7 +78,6 @@ interface StockDetailsData {
   competitors: {
     name: string;
     ticker: string;
-    marketCap: string;
     advantage: string;
     threatLevel: 'Low' | 'Medium' | 'Severe';
   }[];
@@ -95,7 +94,6 @@ interface StockDetailsData {
   newsImpacts: {
     id: string;
     headline: string;
-    source: string;
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
     impactPct: number;
     explanation: string;
@@ -129,10 +127,6 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     name: 'Tesla, Inc.',
     logo: '⚡',
     industry: 'Autonomous EV & Ecosystem Energy',
-    marketCap: '$580.4 B',
-    revenue: '$96.7 B',
-    margins: '15.5%',
-    basePrice: 175.40,
     desc: 'Tesla pioneers clean electric mobility networks, high-output grid backup batteries, and distributed robotics stacks powered by end-to-end vision AI.',
     operations: [
       { name: 'Electric mobility (EV)', description: 'Mass production of Model 3/Y/S/X and upcoming next-gen platform.', icon: Cpu, revenueShare: 82, techStack: 'Structural cast chassis, 4680 cells' },
@@ -152,9 +146,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { name: 'Semiconductor Fabrication', path: 'encyclopedia/sectors/semiconductor-sector.html', connection: 'Bespoke vehicle inference silicons require extreme nanometer yields.' }
     ],
     competitors: [
-      { name: 'BYD Auto Group', ticker: '1211.HK', marketCap: '$98.5 B', advantage: 'Absolute vertical control over cheap local battery cells.', threatLevel: 'Severe' },
-      { name: 'Rivian Automotive', ticker: 'RIVN', marketCap: '$11.2 B', advantage: 'Strong organic capture of the premium consumer adventure vehicle tier.', threatLevel: 'Medium' },
-      { name: 'Toyota Motor', ticker: 'TM', marketCap: '$320 B', advantage: 'Ultimate global dealer networks with hybrid vehicle transition margins.', threatLevel: 'Medium' }
+      { name: 'BYD Auto Group', ticker: '1211.HK', advantage: 'Absolute vertical control over cheap local battery cells.', threatLevel: 'Severe' },
+      { name: 'Rivian Automotive', ticker: 'RIVN', advantage: 'Strong organic capture of the premium consumer adventure vehicle tier.', threatLevel: 'Medium' },
+      { name: 'Toyota Motor', ticker: 'TM', advantage: 'Ultimate global dealer networks with hybrid vehicle transition margins.', threatLevel: 'Medium' }
     ],
     history: [
       { year: '2010', title: 'The Risky Initial Float', wallStreetImpact: 'Pioneered pure venture green energy stocks.', story: 'Tesla went public at $17.00 per share. Critics laughed, betting heavily on bankruptcies as the carmaker burned capital to craft early Roadsters.' },
@@ -163,9 +157,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { year: '2024', title: 'The FSD End-to-End Shift', wallStreetImpact: 'Re-rated company from an auto maker to an AI robotics play.', story: 'Removed hand-coded behavioral rules for driving, replacing them with end-to-end neural network video planners.' }
     ],
     newsImpacts: [
-      { id: 'ev_drop', headline: 'Federal Reserve Holds Rates High, Straining Vehicle Financing Lines', source: 'Bloomberg Terminal', sentiment: 'Bearish', impactPct: -6.4, explanation: 'High retail loan quotes force consumers to postpone luxury upgrades. Monthly car lease barriers spike, depressing car deliveries.', relatedMarket: 'US 10-Yr Treasury Yield up' },
-      { id: 'opt_launch', headline: 'CEO Musk Discloses 1,000 Optimus Robots Active on Gigafactory Assembly Lines', source: 'ClearPath Alert Tracker', sentiment: 'Bullish', impactPct: 8.5, explanation: 'Automation reduces warehouse operational labor overheads, suggesting historic profit margin expansions upstream.', relatedMarket: 'NASDAQ Tech Index rises' },
-      { id: 'lith_crash', headline: 'Sovereign Lithium Spot Pricing Collapses 18% as New Salt Flats Open', source: 'Commodity Board Feed', sentiment: 'Bullish', impactPct: 4.2, explanation: 'Input chemical costs drop instantly, widening gross assembly profit capture margins on Model Y vehicles.', relatedMarket: 'Spot Lithium soft' }
+      { id: 'ev_drop', headline: 'Federal Reserve Holds Rates High, Straining Vehicle Financing Lines', sentiment: 'Bearish', impactPct: -6.4, explanation: 'High retail loan quotes force consumers to postpone luxury upgrades. Monthly car lease barriers spike, depressing car deliveries.', relatedMarket: 'US 10-Yr Treasury Yield up' },
+      { id: 'opt_launch', headline: 'CEO Musk Discloses 1,000 Optimus Robots Active on Gigafactory Assembly Lines', sentiment: 'Bullish', impactPct: 8.5, explanation: 'Automation reduces warehouse operational labor overheads, suggesting historic profit margin expansions upstream.', relatedMarket: 'NASDAQ Tech Index rises' },
+      { id: 'lith_crash', headline: 'Sovereign Lithium Spot Pricing Collapses 18% as New Salt Flats Open', sentiment: 'Bullish', impactPct: 4.2, explanation: 'Input chemical costs drop instantly, widening gross assembly profit capture margins on Model Y vehicles.', relatedMarket: 'Spot Lithium soft' }
     ],
     education: {
       title: 'What Is a Growth Stock & Operating Leverage?',
@@ -201,10 +195,6 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     name: 'Apple Inc.',
     logo: '🍎',
     industry: 'Consumer Electronics & Locked Ecosystems',
-    marketCap: '$3.24 T',
-    revenue: '$383.2 B',
-    margins: '26.1%',
-    basePrice: 184.25,
     desc: 'Apple manages the world’s most profitable consumer electronics ecosystem, locking worldwide customers via iOS hardware synergy and services.',
     operations: [
       { name: 'iPhone & Hardware', description: 'Engineering premium devices (iPhone, iPad, Mac) carrying high markup tags.', icon: Cpu, revenueShare: 58, techStack: 'A-series silicon processors, premium titanium hulls' },
@@ -222,9 +212,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { name: 'Telecom Networks & GDP', path: 'encyclopedia/economy/gdp.html', connection: 'High 5G coverage expansions stimulate smartphone demand waves.' }
     ],
     competitors: [
-      { name: 'Samsung Electronics', ticker: 'SMSN.IL', marketCap: '$360 B', advantage: 'Global scale across both high-end and entry-level phone classes.', threatLevel: 'Medium' },
-      { name: 'Alphabet Inc.', ticker: 'GOOGL', marketCap: '$1.89 T', advantage: 'Android Mobile OS commands 70% share of global users.', threatLevel: 'Severe' },
-      { name: 'Huawei Solutions', ticker: 'HUA.UL', marketCap: 'Private', advantage: 'Strong nationalist product capture inside massive Chinese retail markets.', threatLevel: 'Severe' }
+      { name: 'Samsung Electronics', ticker: 'SMSN.IL', advantage: 'Global scale across both high-end and entry-level phone classes.', threatLevel: 'Medium' },
+      { name: 'Alphabet Inc.', ticker: 'GOOGL', advantage: 'Android Mobile OS commands 70% share of global users.', threatLevel: 'Severe' },
+      { name: 'Huawei Solutions', ticker: 'HUA.UL', advantage: 'Strong nationalist product capture inside massive Chinese retail markets.', threatLevel: 'Severe' }
     ],
     history: [
       { year: '1980', title: 'The Initial Public Float', wallStreetImpact: 'Set base computing standards.', story: 'Went public making thousands of early investors rich overnight; Steve Jobs was booted shortly after.' },
@@ -233,8 +223,8 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { year: '2018', title: 'Passing $1 Trillion Cap', wallStreetImpact: 'Proved the compounding force of dividend buyback engines.', story: 'Transitioned from raw product device sales to high-margin subscription service monetization.' }
     ],
     newsImpacts: [
-      { id: 'anti_trust', headline: 'European Commission Imposes $2.1B Fine, Ordering Apple to Open Alternative App Stores', source: 'Wall Street Journal', sentiment: 'Bearish', impactPct: -4.8, explanation: 'Order breaks App Store absolute distribution dominance inside European borders, risking core service fee revenues.', relatedMarket: 'EUR/USD conversion rises' },
-      { id: 'ai_chip', headline: 'Apple Unveils Private Spatial Apple Intelligence Stacks on Advanced TSMC 3nm Wafers', source: 'TechCrunch Feed', sentiment: 'Bullish', impactPct: 6.2, explanation: 'Creates direct demand for consumers to purchase new iPhone upgrades to access hardware-locked AI systems.', relatedMarket: 'TSMC stock surges' }
+      { id: 'anti_trust', headline: 'European Commission Imposes $2.1B Fine, Ordering Apple to Open Alternative App Stores', sentiment: 'Bearish', impactPct: -4.8, explanation: 'Order breaks App Store absolute distribution dominance inside European borders, risking core service fee revenues.', relatedMarket: 'EUR/USD conversion rises' },
+      { id: 'ai_chip', headline: 'Apple Unveils Private Spatial Apple Intelligence Stacks on Advanced TSMC 3nm Wafers', sentiment: 'Bullish', impactPct: 6.2, explanation: 'Creates direct demand for consumers to purchase new iPhone upgrades to access hardware-locked AI systems.', relatedMarket: 'TSMC stock surges' }
     ],
     education: {
       title: 'What Is a Premium Ecosystem Lock-In?',
@@ -270,10 +260,6 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     name: 'NVIDIA Corporation',
     logo: '💚',
     industry: 'High-Performance Semiconductor Systems',
-    marketCap: '$2.98 T',
-    revenue: '$60.9 B',
-    margins: '57.1%',
-    basePrice: 875.12,
     desc: 'NVIDIA prints the high-bandwidth parallel processing Tensor-Core GPUs and CUDA compiler ecosystems that form the physical bedrock of AI.',
     operations: [
       { name: 'Datacenter Server AI (HGX)', description: 'Selling giant H100/H200/Blackwell processing nodes to hyperscaler clouds.', icon: Cpu, revenueShare: 85, techStack: 'Tensor-core matrices, TSMC CoWoS packaging' },
@@ -291,9 +277,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { name: 'AI & Neural Systems', path: 'ai-intelligence.html', connection: 'Provides the parallel hardware processors to train and infer LLMs.' }
     ],
     competitors: [
-      { name: 'Advanced Micro Devices', ticker: 'AMD', marketCap: '$285 B', advantage: 'Open-source software stacks with comparative hardware price-to-performance.', threatLevel: 'Severe' },
-      { name: 'Intel Corporation', ticker: 'INTC', marketCap: '$140 B', advantage: 'Large domestic fabs being built to construct chips independently of Taiwan.', threatLevel: 'Medium' },
-      { name: 'Google (Custom TPU Silicon)', ticker: 'GOOG', marketCap: '$1.89 T', advantage: 'Builds internal tensor units explicitly optimized to skip retail margins.', threatLevel: 'Medium' }
+      { name: 'Advanced Micro Devices', ticker: 'AMD', advantage: 'Open-source software stacks with comparative hardware price-to-performance.', threatLevel: 'Severe' },
+      { name: 'Intel Corporation', ticker: 'INTC', advantage: 'Large domestic fabs being built to construct chips independently of Taiwan.', threatLevel: 'Medium' },
+      { name: 'Google (Custom TPU Silicon)', ticker: 'GOOG', advantage: 'Builds internal tensor units explicitly optimized to skip retail margins.', threatLevel: 'Medium' }
     ],
     history: [
       { year: '1999', title: 'Invented the Modern GPU', wallStreetImpact: 'Unlocked real-time 3D computer graphics.', story: 'Introduced the GeForce 256, offloading mathematical visuals from standard central computer processors.' },
@@ -302,8 +288,8 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { year: '2023', title: 'The Generative AI Boom', wallStreetImpact: 'The fastest valuation growth past $2 Trillion ever witnessed.', story: 'ChatGPT launched on ten-thousand A100 chips, prompting every corporate entity to buy computing nodes.' }
     ],
     newsImpacts: [
-      { id: 'chip_ban', headline: 'US Commerce Department Announces Complete Export Block on Blackwell Chips to Non-Allied Tech Hubs', source: 'Financial Times', sentiment: 'Bearish', impactPct: -8.1, explanation: 'Export rules trim addressable server market size, cutting billions in immediate backlog delivery orders.', relatedMarket: 'USD Index jumps' },
-      { id: 'msft_buy', headline: 'Microsoft Azure Discloses $15B Order for NVIDIA Blackwell Units to Power Open AI v5 Launch', source: 'ClearPath Terminal', sentiment: 'Bullish', impactPct: 9.4, explanation: 'Proves cloud server companies haven\'t finished capex pipelines, maintaining massive backlogs.', relatedMarket: 'MSFT stock up' }
+      { id: 'chip_ban', headline: 'US Commerce Department Announces Complete Export Block on Blackwell Chips to Non-Allied Tech Hubs', sentiment: 'Bearish', impactPct: -8.1, explanation: 'Export rules trim addressable server market size, cutting billions in immediate backlog delivery orders.', relatedMarket: 'USD Index jumps' },
+      { id: 'msft_buy', headline: 'Microsoft Azure Discloses $15B Order for NVIDIA Blackwell Units to Power Open AI v5 Launch', sentiment: 'Bullish', impactPct: 9.4, explanation: 'Proves cloud server companies haven\'t finished capex pipelines, maintaining massive backlogs.', relatedMarket: 'MSFT stock up' }
     ],
     education: {
       title: 'What Is a Supply-Chain Bottleneck & Monopoly Pricing?',
@@ -341,10 +327,6 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     name: 'Microsoft Corporation',
     logo: '🟦',
     industry: 'Enterprise Cloud Infrastructure & Software',
-    marketCap: '$3.38 T',
-    revenue: '$227.6 B',
-    margins: '35.3%',
-    basePrice: 415.50,
     desc: 'Microsoft anchors global enterprises via Windows OS, Azure cloud infrastructure, and leading generative AI copilots inside corporate data.',
     operations: [
       { name: 'Azure Cloud Platform', description: 'Hosting virtual enterprise servers, massive datacenters, and AI model backends.', icon: Cpu, revenueShare: 43, techStack: 'Hyper-V, Azure Resource Manager' },
@@ -362,9 +344,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { name: 'Sovereign Energy Grid', path: 'encyclopedia/markets/commodities.html', connection: 'Server energy demands require extensive direct power allocations.' }
     ],
     competitors: [
-      { name: 'Amazon (AWS)', ticker: 'AMZN', marketCap: '$1.86 T', advantage: 'Created the early cloud market; commands highest developer share.', threatLevel: 'Severe' },
-      { name: 'Alphabet Inc. (Google GCP)', ticker: 'GOOGL', marketCap: '$1.89 T', advantage: 'Deep internal data structures with advanced TPUs for machine training.', threatLevel: 'Severe' },
-      { name: 'Salesforce Solutions', ticker: 'CRM', marketCap: '$260 B', advantage: 'Dominates enterprise relationship databases with thick corporate ties.', threatLevel: 'Medium' }
+      { name: 'Amazon (AWS)', ticker: 'AMZN', advantage: 'Created the early cloud market; commands highest developer share.', threatLevel: 'Severe' },
+      { name: 'Alphabet Inc. (Google GCP)', ticker: 'GOOGL', advantage: 'Deep internal data structures with advanced TPUs for machine training.', threatLevel: 'Severe' },
+      { name: 'Salesforce Solutions', ticker: 'CRM', advantage: 'Dominates enterprise relationship databases with thick corporate ties.', threatLevel: 'Medium' }
     ],
     history: [
       { year: '1986', title: 'The Desktop Initial Float', wallStreetImpact: 'Launches the PC software era.', story: 'Went public at $21.00. Co-founder Bill Gates became a billionaire within a year, enforcing licensing standardizations.' },
@@ -373,8 +355,8 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { year: '2023', title: 'The $13B OpenAI Investment', wallStreetImpact: 'Captured the global pole position in artificial intelligence.', story: 'Locked in early access to high-end GPT models, deploying Copilot across enterprise clients instantly.' }
     ],
     newsImpacts: [
-      { id: 'aws_deal', headline: 'Azure Wins Multi-Year $8B Sovereign Defense Cloud Security Contract Over Peers', source: 'ClearPath Defense Tracker', sentiment: 'Bullish', impactPct: 5.4, explanation: 'Validates Azure security protocols, guaranteeing multi-decade cloud resource billing backlogs.', relatedMarket: 'US Bond Yields flat' },
-      { id: 'grid_short', headline: 'Power Utility Caps Force Delays on Three Microsoft Server Sites in Virginia', source: 'ClearPath Markets Desk', sentiment: 'Bearish', impactPct: -3.8, explanation: 'Local electric grids cannot support high server loads, dragging near-term AI scale speed bounds.', relatedMarket: 'Natural Gas prices uptick' }
+      { id: 'aws_deal', headline: 'Azure Wins Multi-Year $8B Sovereign Defense Cloud Security Contract Over Peers', sentiment: 'Bullish', impactPct: 5.4, explanation: 'Validates Azure security protocols, guaranteeing multi-decade cloud resource billing backlogs.', relatedMarket: 'US Bond Yields flat' },
+      { id: 'grid_short', headline: 'Power Utility Caps Force Delays on Three Microsoft Server Sites in Virginia', sentiment: 'Bearish', impactPct: -3.8, explanation: 'Local electric grids cannot support high server loads, dragging near-term AI scale speed bounds.', relatedMarket: 'Natural Gas prices uptick' }
     ],
     education: {
       title: 'What Is SaaS & Dynamic Expansion Multipliers?',
@@ -410,10 +392,6 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
     name: 'Amazon.com, Inc.',
     logo: '📦',
     industry: 'Logistics Pipelines & Global Web Services',
-    marketCap: '$1.85 T',
-    revenue: '$574.8 B',
-    margins: '5.3%',
-    basePrice: 178.15,
     desc: 'Amazon manages the leading transactional e-commerce pipeline alongside AWS, the virtual compute hub hosting the internet’s infrastructure.',
     operations: [
       { name: 'AWS Cloud Hosting', description: 'Providing virtualized computing, data storage, and server clusters to top governments.', icon: Cpu, revenueShare: 16, techStack: 'AWS EC2, S3 structures, custom Graviton silicon' },
@@ -431,9 +409,9 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { name: 'AI & Neural Systems', path: 'ai-intelligence.html', connection: 'AWS acts as the underlying database layer for top software companies.' }
     ],
     competitors: [
-      { name: 'Walmart Inc.', ticker: 'WMT', marketCap: '$495 B', advantage: 'Unparalleled local grocery logistics networks with physical store pickup sites.', threatLevel: 'Severe' },
-      { name: 'Shopify Corporation', ticker: 'SHOP', marketCap: '$105 B', advantage: 'Empowers independent merchants to bypass Amazon’s locked platform rules.', threatLevel: 'Severe' },
-      { name: 'Microsoft (Azure Cloud)', ticker: 'MSFT', marketCap: '$3.38 T', advantage: 'Deep integration inside legacy enterprise corporate software agreements.', threatLevel: 'Severe' }
+      { name: 'Walmart Inc.', ticker: 'WMT', advantage: 'Unparalleled local grocery logistics networks with physical store pickup sites.', threatLevel: 'Severe' },
+      { name: 'Shopify Corporation', ticker: 'SHOP', advantage: 'Empowers independent merchants to bypass Amazon’s locked platform rules.', threatLevel: 'Severe' },
+      { name: 'Microsoft (Azure Cloud)', ticker: 'MSFT', advantage: 'Deep integration inside legacy enterprise corporate software agreements.', threatLevel: 'Severe' }
     ],
     history: [
       { year: '1997', title: 'The Bookstore IPO Float', wallStreetImpact: 'Redefined venture scale concepts.', story: 'Went public at $18.00 per share. Jeff Bezos emphasized long-term market dominance over near-term profit metrics.' },
@@ -442,8 +420,8 @@ const STOCK_PROFILES_DATABASE: Record<string, StockDetailsData> = {
       { year: '2521', title: 'Pass $1.5 Trillion Cap', wallStreetImpact: 'Proved the compounding force of subscription Prime ecosystems.', story: 'Constructed an unparalleled global shipping framework with robotically driven centers.' }
     ],
     newsImpacts: [
-      { id: 'fuel_spike', headline: 'OPEC Announces Unexpected 1.5M Barrel Fuel Export Cut, Spiking Diesel Overhead Costs', source: 'Commodity Monitor Alerts', sentiment: 'Bearish', impactPct: -4.3, explanation: 'Shipping fuels represent high fulfillment expenditures. Fuel spikes drag down slim direct e-commerce margins.', relatedMarket: 'Brent Crude spikes to $88' },
-      { id: 'aws_ai', headline: 'Amazon Announces Unveiling of Anthropic AI Models Run Scalably on Custom AWS Trainium Silicon', source: 'ClearPath Tech Feed', sentiment: 'Bullish', impactPct: 6.8, explanation: 'Hyperscalers buying custom AWS trainium nodes bypass expensive external margins, locking client clouds.', relatedMarket: 'ASML foundries flat' }
+      { id: 'fuel_spike', headline: 'OPEC Announces Unexpected 1.5M Barrel Fuel Export Cut, Spiking Diesel Overhead Costs', sentiment: 'Bearish', impactPct: -4.3, explanation: 'Shipping fuels represent high fulfillment expenditures. Fuel spikes drag down slim direct e-commerce margins.', relatedMarket: 'Brent Crude spikes to $88' },
+      { id: 'aws_ai', headline: 'Amazon Announces Unveiling of Anthropic AI Models Run Scalably on Custom AWS Trainium Silicon', sentiment: 'Bullish', impactPct: 6.8, explanation: 'Hyperscalers buying custom AWS trainium nodes bypass expensive external margins, locking client clouds.', relatedMarket: 'ASML foundries flat' }
     ],
     education: {
       title: 'What Is Capital Reinvestment & Cloud Subsidies?',
@@ -483,9 +461,12 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
   // TABS STATE
   const [activeTab, setActiveTab] = useState<'does' | 'moves' | 'comps' | 'history' | 'news' | 'moved_today' | 'edu' | 'profile'>('does');
   
-  // DYNAMIC PRICE SIMULATOR
-  const [simulatedPrice, setSimulatedPrice] = useState(profile.basePrice);
-  const [priceHistory, setPriceHistory] = useState<number[]>([]);
+  const { get: getQuote, updatedAt: quoteUpdatedAt } = useLiveQuotes([profile.ticker]);
+  const liveQuote = getQuote(profile.ticker);
+
+  // Practice index for the factor/news lessons — deliberately not the stock's price.
+  const [simulatedPrice, setSimulatedPrice] = useState(PRACTICE_INDEX_BASE);
+  const [priceHistory, setPriceHistory] = useState<number[]>(() => Array(15).fill(PRACTICE_INDEX_BASE));
   const [activeFactors, setActiveFactors] = useState<Record<string, 'neutral' | 'bullish' | 'bearish'>>({});
   const [lastPriceUpdate, setLastPriceUpdate] = useState<'none' | 'up' | 'down'>('none');
   const [tappedMetricValue, setTappedMetricValue] = useState(profile.education.metricDefault);
@@ -493,11 +474,8 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
 
   // Restart settings when profile transitions
   useEffect(() => {
-    setSimulatedPrice(profile.basePrice);
-    setPriceHistory(Array.from({ length: 15 }, (_, i) => {
-      const noise = (Math.random() - 0.5) * (profile.basePrice * 0.05);
-      return profile.basePrice + noise;
-    }));
+    setSimulatedPrice(PRACTICE_INDEX_BASE);
+    setPriceHistory(Array(15).fill(PRACTICE_INDEX_BASE));
     
     // Default neutral factors
     const initFactors: Record<string, 'neutral' | 'bullish' | 'bearish'> = {};
@@ -527,7 +505,7 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
         if (state === 'bearish') multiplier -= 0.05;
       });
 
-      const nextPrice = Math.max(10, profile.basePrice * multiplier);
+      const nextPrice = Math.max(10, PRACTICE_INDEX_BASE * multiplier);
       setLastPriceUpdate(nextPrice > simulatedPrice ? 'up' : (nextPrice < simulatedPrice ? 'down' : 'none'));
       setSimulatedPrice(nextPrice);
       setPriceHistory(history => [...history.slice(1), nextPrice]);
@@ -549,8 +527,9 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
     }, 1500);
   };
 
-  const currentPriceChangePct = ((simulatedPrice - profile.basePrice) / profile.basePrice) * 100;
-  const isUp = simulatedPrice >= profile.basePrice;
+  const currentPriceChangePct = ((simulatedPrice - PRACTICE_INDEX_BASE) / PRACTICE_INDEX_BASE) * 100;
+  const isUp = simulatedPrice >= PRACTICE_INDEX_BASE;
+  const livePct = liveQuote?.percentChange ?? null;
 
   // Render operating metrics calculations
   const eduResults = profile.education.getLeverageResults(tappedMetricValue);
@@ -580,15 +559,19 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
           {/* DYNAMIC REAL-TIME TICKS INDICATOR */}
           <div className="flex items-center gap-3 bg-black/45 border border-white/5 p-3 rounded-2xl shrink-0">
             <div className="flex flex-col text-right">
-              <span className="font-mono text-[8px] text-zinc-500 uppercase font-black tracking-widest leading-none">Simulated Market Feed</span>
-              <span className={`font-mono text-base font-black leading-none mt-1 transition-all duration-300 ${lastPriceUpdate === 'up' ? 'text-emerald-400 scale-105' : (lastPriceUpdate === 'down' ? 'text-rose-400 scale-105' : 'text-white')}`}>
-                ${simulatedPrice.toFixed(2)}
+              <span className="font-mono text-[8px] text-zinc-500 uppercase font-black tracking-widest leading-none">
+                Live price · market feed{quoteUpdatedAt ? ` · ${quoteUpdatedAt.toLocaleTimeString()}` : ''}
+              </span>
+              <span className="font-mono text-base font-black leading-none mt-1 text-white">
+                {liveQuote ? `$${liveQuote.price.toFixed(2)}` : DATA_UNAVAILABLE}
               </span>
             </div>
-            
-            <div className={`p-1.5 px-2.5 rounded-lg text-[9px] font-mono font-black flex items-center gap-0.5 ${currentPriceChangePct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' : 'bg-rose-500/10 text-rose-450 border border-rose-500/25'}`}>
-              {currentPriceChangePct >= 0 ? '+' : ''}{currentPriceChangePct.toFixed(2)}%
-            </div>
+
+            {livePct != null && (
+              <div className={`p-1.5 px-2.5 rounded-lg text-[9px] font-mono font-black flex items-center gap-0.5 ${livePct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' : 'bg-rose-500/10 text-rose-450 border border-rose-500/25'}`}>
+                {formatPct(livePct)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -602,15 +585,15 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
           <div className="md:col-span-4 grid grid-cols-3 gap-2 shrink-0">
             <div className="p-2.5 bg-black/55 border border-white/[0.03] rounded-xl text-left select-noneHome">
               <span className="text-[7.5px] font-mono uppercase text-zinc-500 block leading-none">Market Cap</span>
-              <span className="text-white font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{profile.marketCap}</span>
+              <span className="text-white font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{DATA_UNAVAILABLE}</span>
             </div>
             <div className="p-2.5 bg-black/55 border border-white/[0.03] rounded-xl text-left select-noneHome">
               <span className="text-[7.5px] font-mono uppercase text-zinc-500 block leading-none">Net Revenue</span>
-              <span className="text-white font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{profile.revenue}</span>
+              <span className="text-white font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{DATA_UNAVAILABLE}</span>
             </div>
             <div className="p-2.5 bg-black/55 border border-white/[0.03] rounded-xl text-left select-noneHome">
               <span className="text-[7.5px] font-mono uppercase text-zinc-500 block leading-none">Net Profit</span>
-              <span className="text-[#00D9FF] font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{profile.margins}</span>
+              <span className="text-[#00D9FF] font-black text-[10.5px] tracking-wide block truncate mt-1 leading-none">{DATA_UNAVAILABLE}</span>
             </div>
           </div>
         </div>
@@ -857,7 +840,7 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
                     <div className="grid grid-cols-2 gap-2.5 mb-4 text-left">
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[7.5px] font-mono uppercase text-zinc-500 block leading-none">Market Cap</span>
-                        <span className="text-zinc-200 font-bold text-[10.5px] block truncate mt-1 leading-none">{comp.marketCap}</span>
+                        <span className="text-zinc-200 font-bold text-[10.5px] block truncate mt-1 leading-none">{DATA_UNAVAILABLE}</span>
                       </div>
                       <div className="p-2.5 bg-black/45 border border-white/[0.02] rounded-xl">
                         <span className="text-[7.5px] font-mono uppercase text-zinc-500 block leading-none">Syllabus Threat</span>
@@ -953,10 +936,11 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
               <div className="lg:col-span-7 flex flex-col gap-4">
                 <div className="p-5 bg-black/40 border border-white/5 rounded-3xl flex flex-col gap-1.5">
                   <span className="font-mono text-[9px] uppercase text-[#FF00C8] font-extrabold tracking-wider">Dynamic Sentiment Injector</span>
-                  <h3 className="text-white font-black text-sm uppercase tracking-tight">Simulate Active Market Headline Shocks</h3>
+                  <h3 className="text-white font-black text-sm uppercase tracking-tight">Practice: Hypothetical Headline Shocks</h3>
                   <p className="text-zinc-450 text-[11px] leading-relaxed">
-                    Trigger any simulated news event below to inject a sudden shock into the order book, watching the live simulated price feed adapt in real time as the news processes.
+                    These headlines are made-up practice scenarios, not real news. Tap one to see how a shock like it could move the practice index (starts at {PRACTICE_INDEX_BASE}).
                   </p>
+                  <p className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-black">{PRACTICE_BANNER}</p>
                 </div>
 
                 <div className="flex flex-col gap-2.5">
@@ -969,9 +953,9 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
                         className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer group ${isSelected ? 'bg-[#FF00C8]/10 border-[#FF00C8]/40 shadow-[0_0_15px_rgba(255,0,200,0.06)]' : 'bg-black/60 border-white/5 hover:border-[#FF00C8]/25'}`}
                       >
                         <div className="flex justify-between items-center w-full mb-2">
-                          <span className="font-mono text-[8px] text-zinc-550 uppercase font-black">SOURCE: {news.source}</span>
+                          <span className="font-mono text-[8px] text-amber-400 uppercase font-black">HYPOTHETICAL · NOT REAL NEWS</span>
                           <span className={`py-0.5 px-2.5 rounded font-mono text-[9px] font-black uppercase ${news.sentiment === 'Bullish' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-455 border border-rose-500/20'}`}>
-                            {news.impactPct > 0 ? '+' : ''}{news.impactPct}% Implied Impact
+                            {news.impactPct > 0 ? '+' : ''}{news.impactPct}% practice impact
                           </span>
                         </div>
 
@@ -1114,9 +1098,10 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
                   </p>
 
                   <div className="p-4 bg-black/50 border border-white/5 rounded-2xl text-left select-none mb-4">
-                    <span className="text-zinc-550 font-mono text-[8px] uppercase block">ACTIVE MATRIX SEED VALUE</span>
+                    <span className="text-amber-400 font-mono text-[8px] uppercase block font-black">{PRACTICE_BANNER}</span>
+                    <span className="text-zinc-550 font-mono text-[8px] uppercase block mt-1">PRACTICE INDEX (STARTS AT {PRACTICE_INDEX_BASE})</span>
                     <div className="flex justify-between items-end mt-1">
-                      <span className="text-white text-lg font-mono font-black">${simulatedPrice.toFixed(2)}</span>
+                      <span className="text-white text-lg font-mono font-black">{simulatedPrice.toFixed(2)}</span>
                       <span className={`text-xs font-mono font-black ${isUp ? 'text-emerald-400' : 'text-rose-450'}`}>
                         {currentPriceChangePct >= 0 ? '▲' : '▼'} {currentPriceChangePct >= 0 ? '+' : ''}{currentPriceChangePct.toFixed(1)}%
                       </span>
@@ -1126,8 +1111,8 @@ export default function StockDetailsView({ companyKey, selectFileNode }: StockDe
                   {/* Micro sparkline diagram */}
                   <div className="h-[100px] w-full bg-neutral-950/60 rounded-xl p-3 border border-white/5 flex items-end gap-1 select-none">
                     {priceHistory.map((pt, i) => {
-                      const max = Math.max(...priceHistory, profile.basePrice * 1.5);
-                      const min = Math.min(...priceHistory, profile.basePrice * 0.5);
+                      const max = Math.max(...priceHistory, PRACTICE_INDEX_BASE * 1.5);
+                      const min = Math.min(...priceHistory, PRACTICE_INDEX_BASE * 0.5);
                       const heightPct = ((pt - min) / (max - min)) * 100;
                       return (
                         <div 

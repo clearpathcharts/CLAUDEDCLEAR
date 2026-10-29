@@ -51,6 +51,26 @@ import DynamicCryptoPage from '../../pages/crypto/[coin]';
 import DynamicForexPage from '../../pages/forex/[pair]';
 import DynamicCommodityPage from '../../pages/commodities/[commodity]';
 
+import { useLiveQuotes, formatPct, DATA_UNAVAILABLE, type LiveQuote } from '../../hooks/useLiveQuotes';
+
+const COCKPIT_SYMBOLS = ['SPX', 'DJI', 'XAU/USD', 'BTC/USD'];
+
+function CockpitQuoteValue({ quote, mode }: { quote: LiveQuote | null; mode: 'pct' | 'price' }) {
+  const text = !quote
+    ? DATA_UNAVAILABLE
+    : mode === 'price'
+      ? `$${quote.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+      : quote.percentChange == null
+        ? DATA_UNAVAILABLE
+        : formatPct(quote.percentChange);
+  const tone = !quote || (mode === 'pct' && quote.percentChange == null)
+    ? 'text-zinc-400'
+    : mode === 'price'
+      ? 'text-amber-400'
+      : (quote.percentChange ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400';
+  return <span className={`font-mono text-[9.5px] font-extrabold ${tone}`}>{text}</span>;
+}
+
 interface GlossaryItem {
   term: string;
   definition: string;
@@ -876,37 +896,7 @@ export default function EncyclopediaLayout() {
   // Living Financial Observatory Cockpit Simulator
   const [simProfile, setSimProfile] = useState<'normal' | 'expansion' | 'inflation' | 'panic'>('normal');
   const [simSentiment, setSimSentiment] = useState<number>(72); // 0-100 Greed indicator
-  const [simPrices, setSimPrices] = useState({
-    sp500: { val: 5278.40, change: 1.82 },
-    nasdaq: { val: 16735.02, change: 2.35 },
-    dow: { val: 39872.99, change: 1.42 },
-    gold: { val: 2387.41, change: 0.76 },
-    bitcoin: { val: 66540.21, change: 2.91 },
-    oil: { val: 78.62, change: -0.38 },
-    vix: { val: 14.32, change: -4.21 }
-  });
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSimPrices(prev => {
-        const drift = (min: number, max: number) => Math.random() * (max - min) + min;
-        const applyDrift = (curr: number, scale: number) => {
-          const changePct = drift(-0.04, 0.04) * scale;
-          return +(curr * (1 + changePct / 100)).toFixed(2);
-        };
-        return {
-          sp500: { val: applyDrift(prev.sp500.val, 1), change: +(prev.sp500.change + drift(-0.02, 0.02)).toFixed(2) },
-          nasdaq: { val: applyDrift(prev.nasdaq.val, 1.5), change: +(prev.nasdaq.change + drift(-0.03, 0.03)).toFixed(2) },
-          dow: { val: applyDrift(prev.dow.val, 0.8), change: +(prev.dow.change + drift(-0.01, 0.01)).toFixed(2) },
-          gold: { val: applyDrift(prev.gold.val, 0.5), change: +(prev.gold.change + drift(-0.015, 0.015)).toFixed(2) },
-          bitcoin: { val: applyDrift(prev.bitcoin.val, 4), change: +(prev.bitcoin.change + drift(-0.08, 0.08)).toFixed(2) },
-          oil: { val: applyDrift(prev.oil.val, 1.1), change: +(prev.oil.change + drift(-0.04, 0.04)).toFixed(2) },
-          vix: { val: Math.max(8.5, +(prev.vix.val + drift(-0.1, 0.1)).toFixed(2)), change: +(prev.vix.change + drift(-0.1, 0.1)).toFixed(2) }
-        };
-      });
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
+  const cockpitQuotes = useLiveQuotes(COCKPIT_SYMBOLS);
 
   useEffect(() => {
     const handleUrlRouting = () => {
@@ -974,52 +964,16 @@ export default function EncyclopediaLayout() {
     switch (profile) {
       case 'expansion':
         setSimSentiment(88); // Hyper Greed
-        setSimPrices({
-          sp500: { val: 5490.15, change: 3.12 },
-          nasdaq: { val: 17560.80, change: 4.88 },
-          dow: { val: 40720.50, change: 1.95 },
-          gold: { val: 2120.40, change: -1.25 },
-          bitcoin: { val: 78430.50, change: 8.42 },
-          oil: { val: 68.30, change: -2.35 },
-          vix: { val: 10.45, change: -12.4 }
-        });
         break;
       case 'inflation':
         setSimSentiment(58); // Uneasy Greed
-        setSimPrices({
-          sp500: { val: 4950.40, change: -1.15 },
-          nasdaq: { val: 15410.20, change: -2.05 },
-          dow: { val: 38240.10, change: -0.65 },
-          gold: { val: 2680.50, change: 4.82 },
-          bitcoin: { val: 58900.00, change: -3.15 },
-          oil: { val: 114.20, change: 6.85 },
-          vix: { val: 19.80, change: 14.5 }
-        });
         break;
       case 'panic':
         setSimSentiment(12); // Extreme Fear
-        setSimPrices({
-          sp500: { val: 4520.30, change: -4.85 },
-          nasdaq: { val: 13950.40, change: -6.92 },
-          dow: { val: 35100.80, change: -3.45 },
-          gold: { val: 2490.10, change: 2.15 },
-          bitcoin: { val: 42100.00, change: -12.80 },
-          oil: { val: 56.40, change: -5.12 },
-          vix: { val: 34.60, change: 42.1 }
-        });
         break;
       case 'normal':
       default:
         setSimSentiment(72); // Baseline Greed
-        setSimPrices({
-          sp500: { val: 5278.40, change: 1.82 },
-          nasdaq: { val: 16735.02, change: 2.35 },
-          dow: { val: 39872.99, change: 1.42 },
-          gold: { val: 2387.41, change: 0.76 },
-          bitcoin: { val: 66540.21, change: 2.91 },
-          oil: { val: 78.62, change: -0.38 },
-          vix: { val: 14.32, change: -4.21 }
-        });
         break;
     }
   };
@@ -1731,31 +1685,31 @@ of this software and associated documentation files (the "The Software")...`;
           <div className="absolute top-[18%] left-[24%] bg-black/85 border border-[#00D9FF]/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-[0_5px_15px_rgba(0,0,0,0.7)] z-20 animate-bounce select-none pointer-events-auto" style={{ animationDuration: '4s' }}>
             <span className="w-1.5 h-1.5 bg-[#00D9FF] rounded-full" />
             <span className="font-mono text-[9.5px] text-[#00D9FF] font-black uppercase">S&P 500</span>
-            <span className="font-mono text-[9.5px] text-emerald-400 font-extrabold">+{simPrices.sp500.change}%</span>
+            <CockpitQuoteValue quote={cockpitQuotes.get('SPX')} mode="pct" />
           </div>
 
           <div className="absolute top-[58%] left-[16%] bg-black/85 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-[0_5px_15px_rgba(0,0,0,0.7)] z-20 animate-bounce select-none pointer-events-auto" style={{ animationDuration: '4.5s' }}>
             <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
             <span className="font-mono text-[9.5px] text-amber-300 font-black uppercase">GOLD</span>
-            <span className="font-mono text-[9.5px] text-amber-400 font-extrabold">${simPrices.gold.val.toLocaleString()}</span>
+            <CockpitQuoteValue quote={cockpitQuotes.get('XAU/USD')} mode="price" />
           </div>
 
           <div className="absolute top-[15%] right-[20%] bg-black/85 border border-purple-500/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-[0_5px_15px_rgba(0,0,0,0.7)] z-20 animate-bounce select-none pointer-events-auto" style={{ animationDuration: '5.2s' }}>
             <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
             <span className="font-mono text-[9.5px] text-purple-300 font-black uppercase">₿ BITCOIN</span>
-            <span className="font-mono text-[9.5px] text-emerald-400 font-extrabold">+{simPrices.bitcoin.change}%</span>
+            <CockpitQuoteValue quote={cockpitQuotes.get('BTC/USD')} mode="pct" />
           </div>
 
           <div className="absolute top-[62%] right-[16%] bg-black/85 border border-red-500/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-[0_5px_15px_rgba(0,0,0,0.7)] z-20 animate-bounce select-none pointer-events-auto" style={{ animationDuration: '5.8s' }}>
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-            <span className="font-mono text-[9.5px] text-red-300 font-black uppercase">INFLATION</span>
-            <span className="font-mono text-[9.5px] text-red-400 font-extrabold">{(policyDial / 25).toFixed(1)}%</span>
+            <span className="font-mono text-[9.5px] text-red-300 font-black uppercase">PRACTICE POLICY DIAL</span>
+            <span className="font-mono text-[9.5px] text-red-400 font-extrabold">{policyDial}/100</span>
           </div>
 
           <div className="absolute top-[40%] left-[8%] bg-black/85 border border-indigo-500/40 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-[0_5px_15px_rgba(0,0,0,0.7)] z-20 animate-bounce select-none pointer-events-auto" style={{ animationDuration: '6.4s' }}>
             <span className="w-1.5 h-1.5 bg-indigo-500 opacity-85" />
             <span className="font-mono text-[9.5px] text-indigo-300 font-black uppercase">DOW JONES</span>
-            <span className="font-mono text-[9.5px] text-rose-450 font-extrabold">{simPrices.dow.change}%</span>
+            <CockpitQuoteValue quote={cockpitQuotes.get('DJI')} mode="pct" />
           </div>
         </div>
       );
@@ -2026,9 +1980,9 @@ of this software and associated documentation files (the "The Software")...`;
                 Systemic Core
               </div>
               <span className="text-3xl animate-bounce">🏛️</span>
-              <span className="font-sans font-black text-white text-[11px] uppercase tracking-wider">FEDERAL BENCHMARK RATE</span>
+              <span className="font-sans font-black text-white text-[11px] uppercase tracking-wider">PRACTICE POLICY DIAL</span>
               <span className="text-[20px] font-mono font-black text-amber-400 underline decoration-indigo-500/50">
-                {policyDial.toFixed(2)}%
+                {policyDial}/100
               </span>
               <span className="text-[8px] font-mono text-zinc-500 uppercase leading-none">
                 Stance: {policyDial < 30 ? 'Eased Expansion' : policyDial < 70 ? 'Neutral Orbit' : 'Hawk Restrictive'}
@@ -2062,13 +2016,13 @@ of this software and associated documentation files (the "The Software")...`;
             
             {/* Dynamic visual indicator labels for Liquid Flow rates */}
             <div className="absolute top-[15%] left-[10%] border border-zinc-800 bg-black/75 p-2 rounded-xl text-[8.5px] font-mono text-zinc-400">
-              <div className="text-[#00D9FF] font-black">DXY INDEX: {(80 + policyDial * 3.5).toFixed(1)}</div>
-              <div>scarcity tier: {policyDial > 65 ? 'HIGH SURGE' : 'STABILIZED'}</div>
+              <div className="text-[#00D9FF] font-black">PRACTICE DOLLAR SCARCITY: {policyDial > 65 ? 'HIGH SURGE' : 'STABILIZED'}</div>
+              <div>illustration only — not market data</div>
             </div>
             
             <div className="absolute bottom-[12%] right-[10%] border border-zinc-800 bg-black/75 p-2 rounded-xl text-[8.5px] font-mono text-zinc-400">
-              <div className="text-pink-400 font-black">M2 VELOCITY: {(0.8 + (10 - policyDial) * 0.15).toFixed(2)}x</div>
-              <div>reserve liquidity flows</div>
+              <div className="text-pink-400 font-black">PRACTICE LIQUIDITY FLOW: {policyDial < 35 ? 'WIDE' : policyDial < 70 ? 'NORMAL' : 'NARROW'}</div>
+              <div>illustration only — not market data</div>
             </div>
           </div>
           
