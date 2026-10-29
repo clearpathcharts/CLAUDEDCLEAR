@@ -112,7 +112,7 @@ export default function StockPage({ stock }: StockPageProps) {
             </div>
             <div className="p-3 bg-white/[0.01] border border-white/5 rounded-xl border-[#00D9FF]/10 shadow-[0_0_10px_rgba(0,217,255,0.03)]">
               <span className="text-zinc-550 block uppercase text-[8px]">Market Cap weight</span>
-              <span className="text-[#00D9FF] font-black mt-1 block">{resolvedStock.marketCap || "N/A"}</span>
+              <span className="text-[#00D9FF] font-black mt-1 block">{resolvedStock.marketCap || "DATA UNAVAILABLE"}</span>
             </div>
           </div>
         </div>

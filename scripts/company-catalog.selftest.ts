@@ -1,5 +1,5 @@
 /**
- * Educational company catalog: ~60k listings, crawlable subsidiaries, no fake Apple/Tesla subs.
+ * Company catalog: real public issuers only. No generated subsidiaries, tickers, or company names.
  * Run: npx tsx scripts/company-catalog.selftest.ts
  */
 import assert from 'node:assert/strict';
@@ -7,8 +7,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  COMPANY_UNITS,
-  REAL_MAJOR_TICKERS,
   companyCatalogCounts,
   getCompanyCatalog,
   lookupCompany,
@@ -16,39 +14,41 @@ import {
 import { companyEntries, catalogCounts } from '../src/server/crawlCatalog.ts';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
 import { renderStaticContentPage } from '../src/server/contentPages.ts';
+import { getProceduralStocks, getProceduralCrypto, getProceduralCommodities } from '../src/utils/searchEngine.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const counts = companyCatalogCounts();
-assert.ok(counts.total >= 50_000, `catalog too small: ${counts.total}`);
-assert.ok(counts.publicIssuers >= 8_000, `public issuers ${counts.publicIssuers}`);
-assert.ok(counts.subsidiaries >= 40_000, `subsidiaries ${counts.subsidiaries}`);
-assert.equal(counts.publicIssuers + counts.subsidiaries, counts.total);
+assert.equal(counts.subsidiaries, 0, 'company catalog must not invent subsidiaries');
+assert.equal(counts.publicIssuers, counts.total);
+assert.ok(counts.total >= 50, `catalog unexpectedly small: ${counts.total}`);
+assert.ok(counts.total < 1_000, `catalog grew past the hand-checked list: ${counts.total} — is a generator back?`);
 
 const apiCounts = catalogCounts();
 assert.equal(apiCounts.companies, counts.total);
-assert.equal(apiCounts.companyPages, counts.subsidiaries);
-
-const pages = companyEntries();
-assert.equal(pages.length, counts.subsidiaries);
-assert.ok(pages.length <= 50_000, `sitemap shard limit exceeded: ${pages.length}`);
-assert.ok(pages.every((e) => e.path.startsWith('/companies/')));
+assert.equal(apiCounts.companyPages, 0);
+assert.equal(companyEntries().length, 0);
 
 const aapl = lookupCompany('aapl');
 assert.ok(aapl);
 assert.equal(aapl!.status, 'Public');
 assert.equal(aapl!.ticker, 'AAPL');
+assert.equal(lookupCompany('apple-logistics-system'), null);
 
-for (const unit of COMPANY_UNITS) {
-  const fake = lookupCompany(`apple-${unit.key}`);
-  assert.equal(fake, null, `must not invent Apple ${unit.label}`);
+const stocks = getProceduralStocks();
+assert.equal(stocks.length, counts.total);
+for (const s of stocks) {
+  assert.ok(!('marketCap' in s), `hardcoded market cap on ${s.ticker}`);
+  assert.doesNotMatch(String(s.exchange), /Sovereign Board/);
+  assert.doesNotMatch(String(s.headquarters || ''), / City, Texas$/);
+}
+assert.ok(!stocks.some((s) => s.ticker === 'YDUU' || s.ticker === 'WIEM'), 'generated tickers are back');
+assert.ok(getProceduralCrypto().length < 1_000, 'crypto list grew past the real-coin list — is a generator back?');
+for (const c of getProceduralCommodities()) {
+  assert.doesNotMatch(String(c.name), /Graphene|Magnisium|Silicon Raw|Hardwood|Pork Bellies|Frozen Broilers/);
 }
 
-const catalog = getCompanyCatalog();
-for (const rec of catalog) {
-  if (rec.status === 'Subsidiary' && rec.parentTicker) {
-    assert.ok(!REAL_MAJOR_TICKERS.has(rec.parentTicker), `fake sub under ${rec.parentTicker}`);
-  }
+for (const rec of getCompanyCatalog()) {
   assert.ok(rec.seoTitle.length <= 70, `title too long: ${rec.seoTitle}`);
   assert.doesNotMatch(rec.seoTitle, /…/);
   assert.ok(rec.seoDescription.length <= 160, `desc too long (${rec.seoDescription.length}): ${rec.slug}`);
@@ -56,33 +56,14 @@ for (const rec of catalog) {
   assert.doesNotMatch(rec.seoDescription, /…/);
 }
 
-function metaName(html: string, name: string): string {
-  const re = new RegExp(`<meta[^>]+name="${name}"[^>]*>`, 'i');
-  const tag = html.match(re)?.[0] || '';
-  return tag.match(/content="([^"]*)"/i)?.[1] || '';
-}
-
-const sample = catalog.find((c) => c.status === 'Subsidiary');
-assert.ok(sample);
-const html = renderStaticContentPage(`/companies/${sample!.slug}`);
-assert.ok(html);
-const enriched = enrichHtmlWithMetadata(html!, `/companies/${sample!.slug}`);
-assert.match(enriched, /<title>/i);
-assert.match(enriched, /DATA UNAVAILABLE/);
-assert.match(enriched, /rel="canonical"/i);
-assert.doesNotMatch(enriched, /guaranteed returns|buy now|order ticket/i);
-assert.equal(
-  (enriched.match(/<meta name="robots" content="noindex/) || []).length,
-  0,
-);
-const metaDesc = metaName(enriched, 'description');
-assert.ok(metaDesc.length >= 50 && metaDesc.length <= 160, `meta desc ${metaDesc.length}: ${metaDesc}`);
-assert.doesNotMatch(metaDesc, /…/);
-assert.match(metaDesc, /DATA UNAVAILABLE|Not a live filing/i);
+const indexHtml = renderStaticContentPage('/companies/page/1');
+assert.ok(indexHtml);
+assert.match(indexHtml!, /href="\/stocks\/aapl"/);
+assert.doesNotMatch(indexHtml!, /study node|Subsidiary/i);
 
 const missing = enrichHtmlWithMetadata(
   fs.readFileSync(path.join(root, 'index.html'), 'utf8'),
-  '/companies/this-slug-does-not-exist-zz',
+  '/companies/apple-logistics-system',
 );
 assert.match(missing, /noindex/);
 
@@ -95,7 +76,6 @@ const dir = fs.readFileSync(path.join(root, 'src/components/encyclopedia/Compani
 assert.match(dir, /getCompanyCatalog/);
 assert.doesNotMatch(dir, /62,541/);
 assert.doesNotMatch(dir, /\$120\+ Trillion/);
+assert.doesNotMatch(dir, /marketCap: '/);
 
-console.log(
-  `company-catalog.selftest: ok total=${counts.total} public=${counts.publicIssuers} subsidiaries=${counts.subsidiaries}`,
-);
+console.log(`company-catalog.selftest: ok issuers=${counts.total}`);

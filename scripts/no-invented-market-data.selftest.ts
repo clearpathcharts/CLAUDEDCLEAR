@@ -28,6 +28,9 @@ const BANNED: Array<{ pattern: RegExp; why: string }> = [
   },
   { pattern: /lastUpdate:\s*['"]Just now['"]/, why: 'static value labelled as freshly updated' },
   { pattern: /Simulated Market Feed|REAL-TIME TELEMETRY RATE|synced directly with Frankfurt/i, why: 'simulated numbers labelled as a live feed' },
+  { pattern: /seededRandom\s*\(/, why: 'seeded generator — tickers, coins, companies, and terms must come from real lists' },
+  { pattern: /fromCharCode\(\s*\d+\s*\+\s*Math\.floor\(/, why: 'generated ticker/symbol letters' },
+  { pattern: /(list|catalog|out)\.length\s*<\s*\d{4,}/, why: 'padding a market catalog to a target size' },
 ];
 
 /**
@@ -98,6 +101,9 @@ const canaries = [
   "{ headline: 'x', source: 'Bloomberg Terminal' }",
   "{ label: 'GOLD RESERVE DESK', val: '$2,364.80', chg: '+$18.2' }",
   "{ label: 'DXY EXCHANGE RATE', val: '104.12' }",
+  'const r1 = seededRandom(seed);',
+  'const char1 = String.fromCharCode(65 + Math.floor(r1 * 26));',
+  'for (let i = 1; list.length < 20112; i++) {',
 ];
 for (const c of canaries) {
   assert.ok(BANNED.some(({ pattern }) => pattern.test(c)), `guard regression: canary not caught: ${c}`);

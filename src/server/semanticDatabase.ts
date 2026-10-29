@@ -659,7 +659,7 @@ export function enrichHtmlWithMetadata(
   } else if (pathClean === '/glossary') {
     const gCounts = glossaryCatalogCounts();
     title = "Financial Glossary: Trading Terms Defined | ClearPathTrader";
-    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus unique vocabulary-study nodes. Not a live data feed.`;
+    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus authored dictionary terms. Not a live data feed.`;
     keywords = "financial glossary, trading terms, leverage, liquidity, margin, volatility, order book";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
@@ -1015,7 +1015,7 @@ export function enrichHtmlWithMetadata(
       '/companies': {
         title: 'Company Directory | ClearPathTrader Encyclopedia',
         description:
-          'Educational company directory: public issuers on stock profiles plus subsidiary study pages. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
+          'Educational directory of real public issuers on stock profiles. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
         crumb: 'Companies',
       },
     };
