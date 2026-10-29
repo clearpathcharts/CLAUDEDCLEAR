@@ -119,19 +119,60 @@ class FirestoreSessionStore extends session.Store {
   }
 }
 
-/** Prefer Firestore; warn and use memory when Admin is offline. */
-export function createSessionStore(): Store {
-  const db = getAdminFirestore();
-  if (db) {
-    console.log('[Session] Using Firestore session store (multi-instance safe)');
-    memoryFallback = null;
-    return new FirestoreSessionStore();
+/**
+ * The session middleware is wired before `probeAdminFirestore()` resolves, so the
+ * backend is chosen per call: Firestore once durable, memory until then (and in dev/CI).
+ * Sessions written to memory during the boot window are still readable afterwards.
+ */
+class AdaptiveSessionStore extends session.Store {
+  private readonly durable = new FirestoreSessionStore();
+  private announcedDurable = false;
+
+  constructor(private readonly memory: MemorySessionFallback) {
+    super();
   }
-  console.warn(
-    '[Session] Firestore Admin offline — in-memory sessions only (single Cloud Run instance / dev).'
-  );
+
+  private useDurable(): boolean {
+    const ok = getAdminFirestore() !== null;
+    if (ok && !this.announcedDurable) {
+      this.announcedDurable = true;
+      console.log('[Session] Firestore session store active (multi-instance safe)');
+    }
+    return ok;
+  }
+
+  get(sid: string, callback: (err: unknown, session?: session.SessionData | null) => void) {
+    if (!this.useDurable()) return this.memory.get(sid, callback);
+    this.durable.get(sid, (err, sess) => {
+      if (err || sess) return callback(err, sess);
+      this.memory.get(sid, callback);
+    });
+  }
+
+  set(sid: string, sess: session.SessionData, callback?: (err?: unknown) => void) {
+    if (!this.useDurable()) return this.memory.set(sid, sess, callback);
+    this.memory.destroy(sid);
+    this.durable.set(sid, sess, callback);
+  }
+
+  destroy(sid: string, callback?: (err?: unknown) => void) {
+    this.memory.destroy(sid);
+    if (!this.useDurable()) return callback?.();
+    this.durable.destroy(sid, callback);
+  }
+
+  touch(sid: string, sess: session.SessionData, callback?: (err?: unknown) => void) {
+    this.set(sid, sess, callback);
+  }
+}
+
+/** Firestore when Admin is durable, in-memory until then (dev / CI / boot window). */
+export function createSessionStore(): Store {
   memoryFallback = new MemorySessionFallback();
-  return memoryFallback;
+  if (!getAdminFirestore()) {
+    console.log('[Session] Firestore not probed yet — memory until durable store is ready.');
+  }
+  return new AdaptiveSessionStore(memoryFallback);
 }
 
 /** Delete login cookies only. Never touches private_accounts, waitlist, or profiles. */
@@ -142,7 +183,7 @@ export async function purgeExpressSessionCookiesOnly(): Promise<{
   const db = getAdminFirestore();
   if (db) {
     const snap = await db.collection(COLLECTION).get();
-    let deleted = 0;
+    let deleted = memoryFallback?.clearAll() ?? 0;
     const chunk = 400;
     for (let i = 0; i < snap.docs.length; i += chunk) {
       const batch = db.batch();

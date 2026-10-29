@@ -28,11 +28,17 @@ function testLruMap() {
   assert.equal(map.size, 3);
 }
 
-function testSessionStoreFactory() {
+async function testSessionStoreFactory() {
   const store = createSessionStore();
   assert.ok(store);
   assert.equal(typeof store.get, 'function');
   assert.equal(typeof store.set, 'function');
+  const sess = { cookie: { maxAge: 60_000 }, privateUser: { uid: 'u1' } } as any;
+  await new Promise<void>((resolve, reject) => store.set('sid-1', sess, (err) => (err ? reject(err) : resolve())));
+  const loaded = await new Promise<any>((resolve, reject) =>
+    store.get('sid-1', (err, s) => (err ? reject(err) : resolve(s))),
+  );
+  assert.equal(loaded?.privateUser?.uid, 'u1', 'session round-trips before Firestore is durable');
 }
 
 function testRateLimitersExport() {
@@ -62,7 +68,7 @@ async function testChatRoomMemoryFallback() {
 
 async function main() {
   testLruMap();
-  testSessionStoreFactory();
+  await testSessionStoreFactory();
   testRateLimitersExport();
   await testChatRoomMemoryFallback();
   console.log('scale-resilience.selftest: OK');
