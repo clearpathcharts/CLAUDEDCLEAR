@@ -665,9 +665,7 @@ export async function getMarketQuote(symbol: string, apiKey: string) {
           exchange: "ICEUS",
           datetime: new Date().toISOString().substring(0, 10),
           timestamp: Math.floor(Date.now() / 1000),
-          open: (prevClose).toString(),
-          high: (Math.max(price, prevClose) + 0.1).toString(),
-          low: (Math.min(price, prevClose) - 0.1).toString(),
+          // Session open/high/low cannot be derived from component closes — leave them absent.
           close: price.toString(),
           volume: "0",
           previous_close: prevClose.toString(),

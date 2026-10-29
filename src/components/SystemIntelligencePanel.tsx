@@ -110,13 +110,19 @@ export default function SystemIntelligencePanel() {
             {/* latency */}
             <div className="min-w-0">
               <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">PIPELINE LATENCY</span>
-              <span className="text-cyan-400 font-extrabold text-sm sm:text-base">{health.latencyMs || 24}ms</span>
+              <span className="text-cyan-400 font-extrabold text-sm sm:text-base">
+                {typeof health.latencyMs === 'number' ? `${health.latencyMs}ms` : 'DATA UNAVAILABLE'}
+              </span>
             </div>
 
             {/* quota */}
             <div className="min-w-0">
               <span className="text-zinc-400 text-[11px] sm:text-xs uppercase font-bold block tracking-wide">API ALLOWANCE</span>
-              <span className="text-white font-bold text-sm sm:text-base">{health.rateLimitRemaining || '8'} / {health.rateLimitLimit || '8'} REQS</span>
+              <span className="text-white font-bold text-sm sm:text-base">
+                {health.rateLimitRemaining != null && health.rateLimitLimit != null
+                  ? `${health.rateLimitRemaining} / ${health.rateLimitLimit} REQS`
+                  : 'DATA UNAVAILABLE'}
+              </span>
             </div>
 
           </div>

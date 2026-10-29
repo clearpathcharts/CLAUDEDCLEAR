@@ -107,7 +107,6 @@ export function setupWebSockets(server: Server) {
         ws.send(JSON.stringify({
           type: 'HEARTBEAT',
           status: 'HEALTHY',
-          latency: '0.8ms',
           timestamp: Date.now()
         }));
       }

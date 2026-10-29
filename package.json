@@ -91,6 +91,7 @@
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
     "test:company-catalog": "tsx scripts/company-catalog.selftest.ts",
     "test:generator-legitimacy": "tsx scripts/generator-legitimacy.selftest.ts",
+    "test:no-invented-market-data": "tsx scripts/no-invented-market-data.selftest.ts",
     "update:disposable-domains": "bash scripts/update-disposable-domains.sh",
     "lint": "tsc --noEmit",
     "audit:crawl": "node scripts/crawl-audit.mjs",
