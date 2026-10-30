@@ -6,7 +6,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { isSmtpConfigured, sendTransactionalEmail } from './registrationEmail';
+import { esc, isSmtpConfigured, sendTransactionalEmail } from './registrationEmail';
 import { getTwelveDataApiKey } from './secrets';
 import { getMarketQuote } from './marketDataGateway';
 import { getAdminFirestore } from './firebaseAdmin';
@@ -347,7 +347,7 @@ export async function fireDueSubscriptions(
     const html = `
       <div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:24px">
         <p style="color:#D4AF37;letter-spacing:2px;text-transform:uppercase;font-size:12px">Chart pulse · ${sub.intervalMinutes}m</p>
-        <h1 style="color:#00FFFF;font-size:20px">${line}</h1>
+        <h1 style="color:#00FFFF;font-size:20px">${esc(line)}</h1>
         <p style="color:#aaa;font-size:13px">Educational price snapshot you scheduled on your chart. Not a trade recommendation.</p>
         <p style="color:#666;font-size:12px">— ClearPath Trader</p>
       </div>
