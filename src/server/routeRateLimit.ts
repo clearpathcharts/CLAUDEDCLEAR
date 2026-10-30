@@ -101,6 +101,29 @@ export const aiChatLimiter = rateLimit({
   message: { error: 'Too many AI requests. Slow down for a minute.' },
 });
 
+/** Routes that spend paid vendor quota (Twelve Data, FMP, FRED, NewsData, CFTC). */
+export const MARKET_DATA_ROUTES = [
+  '/api/quote',
+  '/api/quotes',
+  '/api/candles',
+  '/api/market/history',
+  '/api/newsdata/latest',
+  '/api/economic/news',
+  '/api/fred/observations',
+  '/api/fmp',
+  '/api/cot/history',
+  '/api/news/search',
+] as const;
+
+export const marketDataLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `mkt:${clientIp(req)}`,
+  message: { error: 'Too many market data requests. Wait a minute and try again.' },
+});
+
 export const frontendErrorLimiter = rateLimit({
   windowMs: 60_000,
   max: 30,
