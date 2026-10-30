@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoldBarChartVideoTrigger } from "../explain/GoldBarChartVideoTrigger";
 import { usePageAutoUpdate } from "../../hooks/usePageAutoUpdate";
+import { membershipAuthHeaders } from "../../hooks/useMembership";
 
 export const CHART_PULSE_INTERVALS = [5, 10, 15, 30] as const;
 export type ChartPulseInterval = (typeof CHART_PULSE_INTERVALS)[number];
@@ -86,7 +87,8 @@ let statusInflight: Promise<PulseStatus | null> | null = null;
 async function loadPulseStatus(force = false): Promise<PulseStatus | null> {
   if (!force && statusCache) return statusCache;
   if (!force && statusInflight) return statusInflight;
-  statusInflight = fetch("/api/chart-pulse/status")
+  statusInflight = membershipAuthHeaders()
+    .then((headers) => fetch("/api/chart-pulse/status", { credentials: "include", headers }))
     .then(async (res) => {
       if (!res.ok) return null;
       const data = (await res.json()) as PulseStatus;
@@ -241,7 +243,8 @@ export function ChartLocalTimeAndPulse({
       if (turningOff) {
         await fetch("/api/chart-pulse/unsubscribe", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { ...(await membershipAuthHeaders()), "Content-Type": "application/json" },
           body: JSON.stringify({
             slotId,
             intervalMinutes: interval,
@@ -254,10 +257,6 @@ export function ChartLocalTimeAndPulse({
         return;
       }
 
-      if (contact.channel === "email" && !contact.email.trim() && !status?.sessionEmail) {
-        setHint("Enter the email that should receive this pulse.");
-        return;
-      }
       if (contact.channel === "sms" && !contact.phone.trim()) {
         setHint("Enter a phone with country code (e.g. +15551234567).");
         return;
@@ -266,17 +265,22 @@ export function ChartLocalTimeAndPulse({
       await requestBrowserNotify();
       const res = await fetch("/api/chart-pulse/subscribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { ...(await membershipAuthHeaders()), "Content-Type": "application/json" },
         body: JSON.stringify({
           slotId,
           symbol: sym,
           intervalMinutes: interval,
           channel: contact.channel,
-          email: contact.email,
           phone: contact.phone,
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setArmed((prev) => (prev.includes(interval) ? prev : [...prev, interval]));
+        setHint(typeof data.error === "string" ? data.error : "Sign in for email or text pulses. Browser alert armed.");
+        return;
+      }
       if (!res.ok) {
         setHint(typeof data.error === "string" ? data.error : "Could not arm this pulse.");
         return;
@@ -385,10 +389,11 @@ export function ChartLocalTimeAndPulse({
       {contact.channel === "email" ? (
         <input
           type="email"
-          value={contact.email}
-          onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
-          placeholder={status?.sessionEmail || "email for pulses"}
-          aria-label="Email for chart pulses"
+          value={status?.sessionEmail || ""}
+          readOnly
+          placeholder="sign in for email pulses"
+          title="Pulses go to your account email"
+          aria-label="Account email for chart pulses"
           className="w-[160px] shrink-0 bg-black/60 border border-rose-500/30 rounded-md px-2 py-0.5 font-mono text-[10px] text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-rose-400/40"
         />
       ) : (

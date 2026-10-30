@@ -17,6 +17,7 @@ delete process.env.TWILIO_ACCOUNT_SID;
 delete process.env.TWILIO_AUTH_TOKEN;
 delete process.env.TWILIO_FROM;
 
+const repoRoot = process.cwd();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-pulse-'));
 process.chdir(tmp);
 
@@ -131,6 +132,30 @@ async function main() {
   assert.ok(queued.fired >= 1);
   const queuedRow = pulse.listSubscriptionsForOwner('uid:test').find((r) => r.slotId === 'market-2');
   assert.equal(queuedRow?.lastDelivery, 'queued_no_transport');
+
+  const anon = pulse.upsertSubscription({
+    ownerKey: 'anon:abc123',
+    slotId: 'market-3',
+    symbol: 'GBPUSD',
+    intervalMinutes: 5,
+    channel: 'email',
+    email: 'victim@example.com',
+    now: Date.now() - 10 * 60_000,
+  });
+  assert.equal(anon.ok, true);
+  const anonSends: string[] = [];
+  await pulse.fireDueSubscriptions(Date.now(), {
+    fetchQuote: async () => ({ close: '1.2700' }),
+    sendEmail: async (payload) => {
+      anonSends.push(payload.to);
+      return true;
+    },
+  });
+  assert.deepEqual(anonSends, [], 'signed-out pulses never deliver email or SMS');
+
+  const server = fs.readFileSync(path.join(repoRoot, 'server.ts'), 'utf8');
+  assert.match(server, /const member = await chartPulseMember\(req\);\s*if \(!member\) \{\s*return res\.status\(401\)/, 'subscribe requires a signed-in member');
+  assert.doesNotMatch(server, /typeof body\.email === 'string' && body\.email\.trim\(\) \? body\.email/, 'pulse email must be the account email');
 
   console.log('chart-pulse.selftest: ok');
 }
