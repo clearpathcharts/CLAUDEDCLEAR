@@ -55,3 +55,6 @@ data/marketing/funnel-local.json
 *service-account*.json
 *serviceAccount*.json
 
+
+# Member inbox local fallback (contains member emails)
+data/member-inbox/
