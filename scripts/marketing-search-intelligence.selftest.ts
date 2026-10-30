@@ -109,9 +109,11 @@ assert.match(intelligence.governance.brandRule, /ClearPath Trader/);
 
 const component = read('src/components/MarketingCampaignDesk.tsx');
 assert.match(component, /global-search-intelligence\.json/);
-assert.match(component, /Global search intelligence/);
-assert.match(component, /Download search CSV/);
-assert.match(component, /Claim review queue/);
-assert.match(component, /Platform language map/);
+assert.match(component, /GlobalSearchIntelligencePanel/);
+const panel = read('src/components/GlobalSearchIntelligencePanel.tsx');
+assert.match(panel, /Global search intelligence/);
+assert.match(panel, /Download search CSV/);
+assert.match(panel, /Claim review queue/);
+assert.match(panel, /Platform language map/);
 
 console.log('marketing-search-intelligence.selftest: ok');
