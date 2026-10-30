@@ -335,6 +335,7 @@ import {
   markMemberMessagesRead,
 } from './src/server/memberInboxService';
 import { memberInboxLimiter } from './src/server/routeRateLimit';
+import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
 import {
   listMembershipGrants,
   revokeMembershipGrant,
@@ -886,9 +887,7 @@ async function startServer() {
       });
 
       if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
+        const origin = linkOrigin(req);
         const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
         const emailSent = await sendIdentityConfirmEmail({
           to: result.user.email,
@@ -1019,9 +1018,7 @@ async function startServer() {
       }
 
       if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
+        const origin = linkOrigin(req);
         const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
         const emailSent = await sendIdentityConfirmEmail({
           to: result.user.email,
@@ -1093,9 +1090,7 @@ async function startServer() {
         email: req.body?.email || '',
         password: req.body?.password || '',
       });
-      const origin =
-        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-        `${req.protocol}://${req.get('host')}`;
+      const origin = linkOrigin(req);
       const confirmUrl = buildIdentityConfirmUrl(origin, reminted.rawChallengeToken);
       const emailSent = await sendIdentityConfirmEmail({
         to: reminted.user.email,
@@ -1216,16 +1211,7 @@ async function startServer() {
     }
   });
 
-  const publicSiteOrigin = (req: express.Request) => {
-    const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    if (fromEnv) return fromEnv;
-    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
-    if (host && !isProd) {
-      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
-      return `${proto}://${host}`;
-    }
-    return 'https://clearpathtrader.com';
-  };
+  const publicSiteOrigin = (req: express.Request) => linkOrigin(req);
 
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
@@ -1567,8 +1553,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Invalid membership tier. Use silver, gold, or platinum (legacy: pro, proplus, premium, ultimate).' });
     }
     const interval = isBillingInterval(req.body?.interval) ? req.body.interval : 'month';
-    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    const origin = linkOrigin(req);
     try {
       const { url } = await createMembershipCheckoutSession({
         uid,
@@ -1605,8 +1590,7 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Sign in to manage billing.' });
     }
-    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    const origin = linkOrigin(req);
     try {
       const { url } = await createMembershipPortalSession({ uid, origin });
       res.json({ ok: true, url });
@@ -4439,7 +4423,8 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
 
     // Normalizes paths: forces lowercase, removes www, strips trailing slashes
     if (isWww || hasTrailingSlash || isCapitalized) {
-      const canonicalHost = isWww ? host.slice(4) : host;
+      const bareHost = isWww ? host.slice(4) : host;
+      const canonicalHost = isProd && !isOwnHost(bareHost) ? 'clearpathtrader.com' : bareHost;
       let cleanPath = req.path;
       if (hasTrailingSlash) {
         cleanPath = cleanPath.slice(0, -1);
