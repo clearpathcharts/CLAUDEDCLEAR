@@ -41,6 +41,23 @@ export async function resolveAuthenticatedUid(req: Request): Promise<string | nu
   }
 }
 
+/** Signed-in member email from the private session, or a Firebase token with a verified email. */
+export async function resolveAuthenticatedMemberEmail(req: Request): Promise<string | null> {
+  const sessionUser = getPrivateSessionUser(req);
+  if (sessionUser?.email) return sessionUser.email.trim().toLowerCase();
+
+  const match = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+  if (!match?.[1]) return null;
+  try {
+    if (!ensureAdminApp()) return null;
+    const decoded = await getAuth().verifyIdToken(match[1].trim());
+    if (!decoded.email || decoded.email_verified !== true) return null;
+    return decoded.email.trim().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export function requirePrivateSession(req: Request, res: Response, next: NextFunction): void {
   const user = getPrivateSessionUser(req);
   if (!user?.uid) {
