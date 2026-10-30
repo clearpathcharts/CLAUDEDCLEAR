@@ -67,4 +67,15 @@ assert.equal(fakeLogin.session.boardAccess, true);
 assert.equal((planted as any).privateUser, undefined, 'the pre-login session never becomes authenticated');
 assert.doesNotMatch(serverCode, /applyGrantedSession\(req\.session as any/, 'sign-in routes must use grantFreshSession');
 
+const limiterAt = serverCode.indexOf('app.use([...MARKET_DATA_ROUTES], marketDataLimiter)');
+assert.ok(limiterAt > 0, 'paid market-data routes need marketDataLimiter');
+const { MARKET_DATA_ROUTES } = await import('../src/server/routeRateLimit.ts');
+for (const route of MARKET_DATA_ROUTES) {
+  const escaped = route.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+  const re = new RegExp(`app\\.(get|post)\\('${escaped}(['/])`, 'g');
+  for (const m of serverCode.matchAll(re)) {
+    assert.ok((m.index ?? 0) > limiterAt, `${route} is registered before marketDataLimiter`);
+  }
+}
+
 console.log('auth-hardening.selftest: ok');

@@ -335,7 +335,7 @@ import {
   listSentMessages,
   markMemberMessagesRead,
 } from './src/server/memberInboxService';
-import { memberInboxLimiter } from './src/server/routeRateLimit';
+import { MARKET_DATA_ROUTES, marketDataLimiter, memberInboxLimiter } from './src/server/routeRateLimit';
 import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
 import {
   listMembershipGrants,
@@ -3147,6 +3147,8 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       });
     }
   });
+
+  app.use([...MARKET_DATA_ROUTES], marketDataLimiter);
 
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
