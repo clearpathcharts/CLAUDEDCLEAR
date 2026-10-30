@@ -25,6 +25,7 @@ assert.deepEqual(parseRecipientList('A@X.com, a@x.com\nb@y.com'), ['a@x.com', 'b
 assert.equal(inbox.validateNewMessage({ subject: 's', body: 'b', severity: 'evil' }).severity, 'info');
 
 const all = await createInboxMessage({ subject: 'Site update', body: 'New charts.', severity: 'update' }, 'founder');
+await new Promise((r) => setTimeout(r, 5));
 const targeted = await createInboxMessage(
   { subject: 'Security notice', body: 'Change your password.', severity: 'security', audience: 'list', recipients: 'alice@example.com' },
   'founder',

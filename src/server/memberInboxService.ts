@@ -103,14 +103,19 @@ export function validateNewMessage(input: {
   return { subject, body, severity, audience, recipients };
 }
 
+function newestFirst(a: InboxMessage, b: InboxMessage): number {
+  return b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id);
+}
+
 export async function createInboxMessage(
   input: Parameters<typeof validateNewMessage>[0],
   createdBy: string,
 ): Promise<InboxMessage> {
+  const now = Date.now();
   const msg: InboxMessage = {
     ...validateNewMessage(input),
-    id: `${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}`,
-    createdAt: new Date().toISOString(),
+    id: `${now.toString(36)}-${crypto.randomBytes(6).toString('hex')}`,
+    createdAt: new Date(now).toISOString(),
     createdBy: createdBy || 'founder',
   };
   const db = getAdminFirestore();
@@ -148,7 +153,7 @@ export async function listSentMessages(limit = 100): Promise<InboxMessage[]> {
   } else {
     rows = readJson<InboxMessage[]>(LOCAL_MESSAGES, []);
   }
-  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+  return rows.sort(newestFirst).slice(0, limit);
 }
 
 async function messagesForEmail(email: string): Promise<InboxMessage[]> {
@@ -182,7 +187,7 @@ export async function getMemberInbox(rawEmail: string): Promise<{ messages: Memb
   if (!isEmail(email)) return { messages: [], unread: 0 };
   const [msgs, read] = await Promise.all([messagesForEmail(email), readIdsFor(email)]);
   const messages = msgs
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .sort(newestFirst)
     .slice(0, INBOX_LIMITS.memberListSize)
     .map(({ id, subject, body, severity, createdAt }) => ({
       id,
