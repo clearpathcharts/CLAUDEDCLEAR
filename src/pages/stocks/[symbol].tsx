@@ -28,8 +28,7 @@ export default function StockPage({ stock }: StockPageProps) {
 
   const resolvedStock = useMemo(() => {
     if (stock) return stock;
-    const allStocks = getProceduralStocks();
-    return allStocks.find(s => s.ticker === symbol) || allStocks[0];
+    return getProceduralStocks().find((s) => s.ticker === symbol) || null;
   }, [stock, symbol]);
 
   const movesList = useMemo(() => {
@@ -45,26 +44,31 @@ export default function StockPage({ stock }: StockPageProps) {
     if (!resolvedStock) return [];
     const allStocks = getProceduralStocks();
     // find other stocks in the same industry
-    const list = allStocks
-      .filter(s => s.industry === resolvedStock.industry && s.ticker !== resolvedStock.ticker)
+    return allStocks
+      .filter((s) => s.industry === resolvedStock.industry && s.ticker !== resolvedStock.ticker)
       .slice(0, 3)
-      .map(s => `${s.company} (${s.ticker})`);
-    return list.length > 0 ? list : [`Apex ${resolvedStock.industry} Corp`, `NextGen ${resolvedStock.ticker} Labs`];
+      .map((s) => `${s.company} (${s.ticker})`);
   }, [resolvedStock]);
 
   if (!resolvedStock) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#030408] text-white">
-        <span className="font-mono text-xs text-zinc-550 uppercase">Loading instrument cache...</span>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[#030408] text-white p-6 text-center">
+        <span className="font-mono text-xs text-zinc-400 uppercase">{symbol} is not in the ClearPath company directory.</span>
+        <button
+          onClick={() => window.history.pushState({}, '', '/financial-encyclopedia')}
+          className="px-6 py-3 bg-white/5 border border-white/10 font-bold font-mono text-xs uppercase tracking-wider text-white rounded-xl"
+        >
+          ← Back to Financial Encyclopedia
+        </button>
       </div>
     );
   }
 
-  // Determine procedurally an IPO year and info
-  const ipoYear = resolvedStock.founded + Math.floor((2026 - resolvedStock.founded) * 0.15) + 2;
-  const ipoHistory = `Listed on the ${resolvedStock.exchange} in ${ipoYear} with a tier-1 offering. The listing cemented the company's capital backing for its ${resolvedStock.industry} division, establishing baseline market float and liquid equity profiles.`;
-
-  const companyHistory = `Founded in ${resolvedStock.founded} in ${resolvedStock.headquarters}, ${resolvedStock.company} originated as a bespoke private developer matching regional asset queries. Spurred by rapid capitalization in the late 1990s and early 2000s, it successfully structured its operations around the ${resolvedStock.sector} sector, emerging as a foundational component of global supply metrics.`;
+  const companyHistory =
+    resolvedStock.founded && resolvedStock.headquarters
+      ? `${resolvedStock.company} was founded in ${resolvedStock.founded} and is headquartered in ${resolvedStock.headquarters}.`
+      : "DATA UNAVAILABLE";
+  const ipoHistory = "DATA UNAVAILABLE — no verified listing-history source is connected yet.";
 
   const educationalCtx = `A ${resolvedStock.sector} stock's valuation represents a fractional residual claim on corporate assets and cash flows. Secondary pricing moves dynamically on a discounted cash flow (DCF) framework, accounting for terminal inflation expectations, enterprise risk premiums, and sector rotating triggers. When general markets experience interest hikes, high-capex equity streams see discounts in their long-duration valuations.`;
 
@@ -141,9 +145,13 @@ export default function StockPage({ stock }: StockPageProps) {
             </span>
             <h3 className="text-white font-black text-xs uppercase">Market Competitors</h3>
             <ul className="list-disc pl-5 font-mono text-[10.5px] text-zinc-350 flex flex-col gap-1.5 mt-1 select-text">
-              {competitors.map((comp, idx) => (
-                <li key={idx} className="hover:text-white transition-all">{comp}</li>
-              ))}
+              {competitors.length === 0 ? (
+                <li className="list-none -ml-5 text-zinc-500">DATA UNAVAILABLE</li>
+              ) : (
+                competitors.map((comp, idx) => (
+                  <li key={idx} className="hover:text-white transition-all">{comp}</li>
+                ))
+              )}
             </ul>
           </div>
 
@@ -154,8 +162,6 @@ export default function StockPage({ stock }: StockPageProps) {
             <h3 className="text-white font-black text-xs uppercase">Related Industries</h3>
             <div className="flex flex-wrap gap-1.5 mt-1 font-mono text-[9px]">
               <span className="px-2 py-1 bg-white/5 rounded text-zinc-300 uppercase">{resolvedStock.industry}</span>
-              <span className="px-2 py-1 bg-white/5 rounded text-zinc-300 uppercase">{resolvedStock.sector} Logistics</span>
-              <span className="px-2 py-1 bg-white/5 rounded text-zinc-300 uppercase">Global Venture Pipelines</span>
             </div>
           </div>
 

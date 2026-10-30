@@ -78,4 +78,15 @@ for (const route of MARKET_DATA_ROUTES) {
   }
 }
 
+const { esc } = await import('../src/server/registrationEmail.ts');
+assert.equal(esc(`<a href="https://evil.example">Rick's</a> & co`), '&lt;a href=&quot;https://evil.example&quot;&gt;Rick&#39;s&lt;/a&gt; &amp; co');
+const mailSrc = read('src/server/registrationEmail.ts').replace(/\r\n/g, '\n');
+const htmlBlocks = [...mailSrc.matchAll(/const html = `([\s\S]*?)`;|html: `([^`]*)`/g)].map((m) => m[1] ?? m[2]);
+assert.ok(htmlBlocks.length >= 6, 'email html templates found');
+for (const block of htmlBlocks) {
+  for (const m of block.matchAll(/\$\{([^}]+)\}/g)) {
+    assert.match(m[1].trim(), /^esc\(/, `email HTML must escape \${${m[1]}}`);
+  }
+}
+
 console.log('auth-hardening.selftest: ok');

@@ -1,0 +1,570 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-30",
+  "name": "ClearPath Trader Global Search Intelligence",
+  "source": "Founder-provided computer science class strategy, normalized for ClearPath product truth",
+  "positioningHypothesis": "There is no such thing as one chart for every mind.",
+  "purpose": [
+    "Connect ClearPath Trader with people researching charting, market education, financial data, and professional market-analysis workflows.",
+    "Match platform-native language to the audience and destination instead of pasting one hashtag list everywhere.",
+    "Measure qualified visits, registrations, trials, and paid conversions without claiming unverified search volume or rankings."
+  ],
+  "highPriorityTerms": [
+    "ClearPath Trader",
+    "trading software",
+    "trading charts",
+    "technical analysis",
+    "trading education",
+    "quantitative trading",
+    "institutional trading",
+    "financial market intelligence",
+    "neurodivergent trading platform"
+  ],
+  "masterGroups": [
+    {
+      "category": "Retail Trading",
+      "audience": "Retail traders",
+      "keywords": [
+        "stock trading",
+        "forex trading",
+        "day trading",
+        "swing trading",
+        "options trading",
+        "futures trading",
+        "cryptocurrency trading",
+        "technical analysis",
+        "trading strategies",
+        "trading indicators",
+        "stock market analysis",
+        "trading charts",
+        "live market data",
+        "trading platforms",
+        "trading software"
+      ]
+    },
+    {
+      "category": "Fundamental Trading",
+      "audience": "Fundamental traders",
+      "keywords": [
+        "fundamental analysis",
+        "financial statements analysis",
+        "earnings reports",
+        "company valuation",
+        "economic indicators",
+        "macroeconomic analysis",
+        "financial modeling",
+        "dividend investing",
+        "institutional ownership",
+        "equity research"
+      ]
+    },
+    {
+      "category": "Institutional Trading",
+      "audience": "Institutional market readers",
+      "keywords": [
+        "institutional trading",
+        "institutional investors",
+        "hedge fund trading",
+        "portfolio management",
+        "asset management",
+        "order flow analysis",
+        "market microstructure",
+        "liquidity analysis",
+        "smart money concepts",
+        "market depth",
+        "Level 2 market data",
+        "volume profile",
+        "execution algorithms",
+        "market structure",
+        "professional trading software"
+      ]
+    },
+    {
+      "category": "Quantitative and Algorithmic Trading",
+      "audience": "Quantitative researchers and algorithmic traders",
+      "keywords": [
+        "quantitative trading",
+        "algorithmic trading",
+        "quantitative analysis",
+        "quantitative finance",
+        "statistical arbitrage",
+        "automated trading systems",
+        "trading algorithms",
+        "backtesting strategies",
+        "machine learning trading",
+        "AI trading analytics",
+        "high frequency trading",
+        "systematic trading",
+        "mathematical finance",
+        "predictive analytics",
+        "quantitative research"
+      ]
+    },
+    {
+      "category": "Financial Data",
+      "audience": "Financial data analysts",
+      "keywords": [
+        "financial data analytics",
+        "real time financial data",
+        "market data analytics",
+        "financial data visualization",
+        "stock market data",
+        "forex market data",
+        "historical market data",
+        "financial data intelligence",
+        "market research tools",
+        "financial market intelligence"
+      ]
+    },
+    {
+      "category": "Brokerage and Hedge Fund Technology",
+      "audience": "Financial technology professionals",
+      "keywords": [
+        "brokerage technology",
+        "trading infrastructure",
+        "financial technology",
+        "fintech trading platforms",
+        "prime brokerage",
+        "hedge fund technology",
+        "portfolio analytics",
+        "risk management systems",
+        "institutional market data",
+        "trading desk technology",
+        "multi asset trading",
+        "financial market research",
+        "investment management software",
+        "trading terminal",
+        "professional market analysis"
+      ]
+    },
+    {
+      "category": "Beginner Trading and Education",
+      "audience": "New traders and students",
+      "keywords": [
+        "learn how to trade",
+        "trading for beginners",
+        "stock market for beginners",
+        "forex for beginners",
+        "how to read stock charts",
+        "how to read candlestick charts",
+        "learn technical analysis",
+        "trading education",
+        "financial literacy",
+        "understanding the stock market",
+        "how to analyze stocks",
+        "trading psychology",
+        "risk management for traders",
+        "trading courses",
+        "investment education",
+        "how to use trading indicators",
+        "chart pattern recognition",
+        "support and resistance",
+        "trading strategies for beginners",
+        "financial market education"
+      ]
+    }
+  ],
+  "platforms": [
+    {
+      "platform": "Facebook",
+      "type": "social discovery",
+      "language": "English",
+      "keywords": [
+        "stock trading",
+        "forex trading",
+        "trading education",
+        "technical analysis",
+        "stock market analysis",
+        "trading strategies",
+        "financial literacy",
+        "market analysis",
+        "trading charts",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Instagram",
+      "type": "visual discovery",
+      "language": "English",
+      "keywords": [
+        "#trading",
+        "#stockmarket",
+        "#forextrader",
+        "#technicalanalysis",
+        "#tradingstrategy",
+        "#chartanalysis",
+        "#marketanalysis",
+        "#tradingeducation",
+        "#financialmarkets",
+        "#ClearPathTrader"
+      ]
+    },
+    {
+      "platform": "TikTok",
+      "type": "short-form discovery",
+      "language": "English",
+      "keywords": [
+        "#trading",
+        "#daytrading",
+        "#forex",
+        "#stockmarket",
+        "#tradingtips",
+        "#technicalanalysis",
+        "#tradingeducation",
+        "#financialliteracy",
+        "#marketanalysis",
+        "#ClearPathTrader"
+      ]
+    },
+    {
+      "platform": "YouTube",
+      "type": "video search",
+      "language": "English",
+      "keywords": [
+        "how to read trading charts",
+        "technical analysis for beginners",
+        "chart pattern education",
+        "financial market education",
+        "multi chart trading workspace",
+        "trading indicators explained",
+        "neurodivergent trading workspace",
+        "market structure education",
+        "ClearPath Trader tutorial",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "LinkedIn",
+      "type": "professional discovery",
+      "language": "English",
+      "keywords": [
+        "financial market intelligence",
+        "financial data visualization",
+        "institutional market analysis",
+        "quantitative finance",
+        "market research tools",
+        "accessible financial technology",
+        "financial education technology",
+        "market data analytics",
+        "Clear Path Markets Science",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Threads",
+      "type": "conversation discovery",
+      "language": "English",
+      "keywords": [
+        "chart reading",
+        "market education",
+        "technical indicators",
+        "trading psychology",
+        "financial literacy",
+        "market structure",
+        "accessible charts",
+        "chart patterns",
+        "#ClearPathTrader"
+      ]
+    },
+    {
+      "platform": "Bluesky",
+      "type": "conversation discovery",
+      "language": "English",
+      "keywords": [
+        "open financial education",
+        "market data visualization",
+        "accessible technology",
+        "technical analysis education",
+        "financial literacy",
+        "chart reading",
+        "neurodivergent design",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Reddit",
+      "type": "community research",
+      "language": "English",
+      "keywords": [
+        "learn technical analysis",
+        "charting software discussion",
+        "trading education resources",
+        "market structure education",
+        "financial encyclopedia",
+        "accessible trading interface",
+        "multi asset charting",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Pinterest",
+      "type": "visual search",
+      "language": "English",
+      "keywords": [
+        "candlestick chart guide",
+        "technical indicator guide",
+        "chart pattern education",
+        "financial literacy infographic",
+        "trading glossary",
+        "market structure diagram",
+        "stock chart education",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Discord",
+      "type": "community topics",
+      "language": "English",
+      "keywords": [
+        "trading education community",
+        "chart analysis discussion",
+        "financial literacy community",
+        "market structure learning",
+        "technical indicator education",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "Telegram",
+      "type": "channel discovery",
+      "language": "English",
+      "keywords": [
+        "forex trading",
+        "stock market analysis",
+        "trading education",
+        "technical analysis",
+        "fundamental analysis",
+        "market intelligence",
+        "economic news",
+        "trading charts",
+        "financial markets",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "WhatsApp",
+      "type": "share and community language",
+      "language": "English",
+      "keywords": [
+        "stock market education",
+        "trading for beginners",
+        "technical analysis",
+        "financial education",
+        "market analysis",
+        "live market charts",
+        "stock market learning",
+        "financial data",
+        "ClearPath Trader"
+      ],
+      "note": "Use in business descriptions, community names, and share copy; WhatsApp is not a conventional public hashtag search engine."
+    },
+    {
+      "platform": "Bing",
+      "type": "web search",
+      "language": "English",
+      "keywords": [
+        "trading platform for beginners",
+        "technical analysis software",
+        "stock market analysis tools",
+        "real time market data",
+        "quantitative trading software",
+        "multi asset charting software",
+        "financial market analytics",
+        "advanced trading indicators",
+        "stock market research tools",
+        "financial data visualization",
+        "ClearPath Trader"
+      ]
+    },
+    {
+      "platform": "VK",
+      "type": "social discovery",
+      "language": "Russian",
+      "keywords": [
+        "Форекс трейдинг",
+        "Фондовый рынок",
+        "Технический анализ",
+        "Обучение трейдингу",
+        "Индикаторы для трейдинга",
+        "Финансовые рынки",
+        "Анализ рынка",
+        "Торговые стратегии",
+        "Фундаментальный анализ",
+        "Торговля акциями"
+      ],
+      "note": "Russian copy requires human translation review before publication."
+    },
+    {
+      "platform": "Meta Ads",
+      "type": "paid audience concepts",
+      "language": "English",
+      "keywords": [
+        "day trading",
+        "forex",
+        "stocks",
+        "investing",
+        "quantitative finance",
+        "financial analytics",
+        "institutional trading",
+        "trading education",
+        "technical analysis",
+        "financial literacy"
+      ],
+      "note": "Treat these as audience concepts only. Available interests and financial-services ad policies change."
+    }
+  ],
+  "brandAcquisitionTerms": [
+    "advanced trading charts",
+    "multi chart trading platform",
+    "professional charting software",
+    "custom trading indicators",
+    "trading analysis platform",
+    "advanced market analytics",
+    "financial market intelligence",
+    "trading platform for neurodivergent traders",
+    "customizable trading dashboard",
+    "multi asset trading charts",
+    "professional forex charts",
+    "advanced technical analysis tools",
+    "trading platform with multiple indicators",
+    "financial data visualization",
+    "trading software for different learning styles"
+  ],
+  "officialBrandTerms": [
+    "ClearPath Trader",
+    "ClearPathTrader",
+    "Clear Path Markets Science",
+    "clearpathtrader.com",
+    "#ClearPathTrader",
+    "#ClearPathTrading",
+    "#ClearPathCharts",
+    "#ClearPathMarkets",
+    "#ClearPathMarketScience",
+    "#ClearPathEducation",
+    "#ClearPathTechnology",
+    "#ClearPathCommunity"
+  ],
+  "neurodivergentTerms": [
+    "neurodivergent traders",
+    "ADHD traders",
+    "autistic traders",
+    "trading with ADHD",
+    "trading with autism",
+    "accessible trading software",
+    "simplified trading charts",
+    "customizable trading interfaces",
+    "cognitive accessibility",
+    "neurodiversity in finance",
+    "ADHD financial education",
+    "visual trading analysis",
+    "distraction free trading",
+    "focus based trading",
+    "accessible financial technology",
+    "trading for different learning styles",
+    "dyslexia friendly trading software",
+    "financial technology accessibility",
+    "neurodivergent financial education",
+    "ClearPath Trader"
+  ],
+  "audienceAllocation": [
+    {
+      "audience": "Retail traders",
+      "allocationPercent": 25,
+      "purpose": "Broad product discovery and charting use cases"
+    },
+    {
+      "audience": "Beginners and students",
+      "allocationPercent": 20,
+      "purpose": "Trading education and onboarding"
+    },
+    {
+      "audience": "Fundamental traders",
+      "allocationPercent": 10,
+      "purpose": "Company, economic, and valuation analysis"
+    },
+    {
+      "audience": "Institutional market readers",
+      "allocationPercent": 15,
+      "purpose": "Professional workflows and market structure education"
+    },
+    {
+      "audience": "Quantitative traders",
+      "allocationPercent": 10,
+      "purpose": "Quantitative research and systematic workflow education"
+    },
+    {
+      "audience": "Financial data professionals",
+      "allocationPercent": 10,
+      "purpose": "Market data and analytics"
+    },
+    {
+      "audience": "Neurodivergent traders",
+      "allocationPercent": 10,
+      "purpose": "Accessible and customizable chart experiences"
+    }
+  ],
+  "researchOnlyTerms": [
+    {
+      "term": "Level 2 market data",
+      "reason": "Do not publish as a ClearPath feature claim unless a verified vendor feed is configured."
+    },
+    {
+      "term": "execution algorithms",
+      "reason": "Educational research only; ClearPath is not an execution venue or brokerage."
+    },
+    {
+      "term": "automated trading systems",
+      "reason": "Do not imply autonomous order execution."
+    },
+    {
+      "term": "machine learning trading",
+      "reason": "Do not imply predictive performance or autonomous trading."
+    },
+    {
+      "term": "AI trading analytics",
+      "reason": "Pattern candidates must be verified on-chart and are not advice."
+    },
+    {
+      "term": "high frequency trading",
+      "reason": "Not a ClearPath product capability."
+    },
+    {
+      "term": "prime brokerage",
+      "reason": "ClearPath is not a brokerage and does not provide prime-broker services."
+    },
+    {
+      "term": "brokerage technology",
+      "reason": "Research topic only; never describe ClearPath as a broker."
+    },
+    {
+      "term": "hedge fund technology",
+      "reason": "Do not imply institutional customer adoption without evidence."
+    },
+    {
+      "term": "risk management systems",
+      "reason": "Do not imply regulated risk controls or guarantees."
+    }
+  ],
+  "queryOnlyPatterns": [
+    "best *",
+    "* alternative"
+  ],
+  "excludedPlatforms": [
+    {
+      "platform": "X",
+      "reason": "Founder excluded X from the campaign."
+    },
+    {
+      "platform": "Telegram X",
+      "reason": "Telegram X is a Telegram client, not a separate distribution or search network; its terms belong under Telegram."
+    }
+  ],
+  "governance": {
+    "approvalRule": "Founder review is required before public posting, paid targeting, or metadata changes.",
+    "truthRule": "A search term is not automatically an approved product claim.",
+    "volumeRule": "Do not claim rankings, trend status, or search volume without current measured data.",
+    "accessibilityRule": "Describe sensory and focus settings factually; do not present hashtags as medical or accessibility certifications.",
+    "brandRule": "Use ClearPath Trader as the primary brand spelling and ClearPathTrader for handles and hashtags.",
+    "reviewCadence": "Review monthly using impressions, qualified visits, click-through rate, engagement, registrations, trials, and paid conversions."
+  }
+}

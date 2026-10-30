@@ -12,7 +12,6 @@ import {
   normalizeProfileUsername,
   publicProfileUrl,
 } from "../lib/profileUsername";
-import { sequenceAccentVars } from "../lib/tierGradients";
 import { TEMP_HIDE_AFFILIATE_SURFACE } from "../config/founderUiToggles";
 import "../styles/tierGradient.css";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
@@ -519,18 +518,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
             🔥 Affiliate Network
           </button>
         ) : null}
-        <div className="mt-8 flex flex-col gap-4 text-sm md:text-base">
-          {[
-            "Followers: 12,450",
-            "Connected Platforms: 11",
-            "Verified Challenges: 7",
-            "Community Rewards Earned: 42",
-          ].map((stat, i) => (
-            <div key={stat} style={sequenceAccentVars(i)} className="cp-stat-tile rounded-[18px] p-4">
-              {stat}
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* MAIN */}
