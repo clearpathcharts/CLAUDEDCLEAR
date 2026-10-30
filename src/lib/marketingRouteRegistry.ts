@@ -241,15 +241,18 @@ export function mergeApprovedMarketingKeywords(pathname: string, existing: strin
 
 export function assertMarketingRouteRegistryIntegrity() {
   const duplicateExplicitTerms = new Set<string>();
-  const seenExplicitTerms = new Set<string>();
+  const seenExplicitTerms = new Map<string, string>();
   for (const rule of routeRegistry.routeRules) {
     if (!allowedPaths.has(rule.canonicalPath)) {
       throw new Error(`Marketing route is not allowlisted: ${rule.canonicalPath}`);
     }
     for (const keyword of rule.keywords) {
       const normalized = normalizeKeyword(keyword);
-      if (seenExplicitTerms.has(normalized)) duplicateExplicitTerms.add(normalized);
-      seenExplicitTerms.add(normalized);
+      const existingPath = seenExplicitTerms.get(normalized);
+      if (existingPath && existingPath !== rule.canonicalPath) {
+        duplicateExplicitTerms.add(normalized);
+      }
+      seenExplicitTerms.set(normalized, rule.canonicalPath);
     }
   }
   if (duplicateExplicitTerms.size > 0) {
