@@ -57,4 +57,14 @@ assert.equal(isValidReportId('2026-10-29_premarket'), true);
 for (const bad of ['../secrets', '..\\x', 'a/b', '', 'x'.repeat(65)]) assert.equal(isValidReportId(bad), false, bad);
 assert.equal(await resolveDailyPatternReviewReport('../../package'), null);
 
+const { grantFreshSession } = await import('../src/server/authSessionGeneration.ts');
+const planted = { id: 'attacker-known', regenerate(cb: (err?: unknown) => void) { fakeLogin.session = { id: 'fresh' } as any; cb(); } };
+const fakeLogin: { session: any } = { session: planted };
+await grantFreshSession(fakeLogin, { uid: 'u1' }, { boardAccess: true });
+assert.equal(fakeLogin.session.id, 'fresh', 'login must regenerate the session id');
+assert.deepEqual(fakeLogin.session.privateUser, { uid: 'u1' });
+assert.equal(fakeLogin.session.boardAccess, true);
+assert.equal((planted as any).privateUser, undefined, 'the pre-login session never becomes authenticated');
+assert.doesNotMatch(serverCode, /applyGrantedSession\(req\.session as any/, 'sign-in routes must use grantFreshSession');
+
 console.log('auth-hardening.selftest: ok');
