@@ -12,6 +12,8 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import marketingMetadata from '../../data/marketing/clearpath-marketing-metadata.json';
+import searchIntelligence from '../../data/marketing/global-search-intelligence.json';
+import GlobalSearchIntelligencePanel from './GlobalSearchIntelligencePanel';
 import MarketingFunnelDashboard from './MarketingFunnelDashboard';
 
 type KeywordCluster = (typeof marketingMetadata.keywordClusters)[number];
@@ -45,6 +47,14 @@ const VENDOR_LINKS: Record<string, string> = {
   Metricool: 'https://metricool.com/pricing/',
   'Hootsuite with compliance tooling': 'https://www.hootsuite.com/financial-services',
 };
+
+const SEARCH_INTELLIGENCE_TERM_COUNT = new Set([
+  ...searchIntelligence.masterGroups.flatMap((group) => group.keywords),
+  ...searchIntelligence.platforms.flatMap((platform) => platform.keywords),
+  ...searchIntelligence.brandAcquisitionTerms,
+  ...searchIntelligence.officialBrandTerms,
+  ...searchIntelligence.neurodivergentTerms,
+].map((term) => term.toLowerCase())).size;
 
 function saveJson(filename: string, value: unknown) {
   const blob = new Blob([`${JSON.stringify(value, null, 2)}\n`], { type: 'application/json' });
@@ -138,11 +148,16 @@ export default function MarketingCampaignDesk({
       </header>
 
       <div className="space-y-8 px-5 py-6 md:px-7">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-xl border border-white/10 bg-black/30 p-4">
             <p className="m-0 text-[10px] uppercase tracking-widest text-zinc-500">Keyword map</p>
             <p className="mt-1 text-2xl font-black text-white">{keywordCount}</p>
             <p className="mt-1 text-xs text-zinc-400">{marketingMetadata.keywordClusters.length} intent clusters</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+            <p className="m-0 text-[10px] uppercase tracking-widest text-zinc-500">Search database</p>
+            <p className="mt-1 text-2xl font-black text-white">{SEARCH_INTELLIGENCE_TERM_COUNT}</p>
+            <p className="mt-1 text-xs text-zinc-400">Unique research terms</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-4">
             <p className="m-0 text-[10px] uppercase tracking-widest text-zinc-500">Audience routes</p>
@@ -150,9 +165,9 @@ export default function MarketingCampaignDesk({
             <p className="mt-1 text-xs text-zinc-400">Each points to a relevant page</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-            <p className="m-0 text-[10px] uppercase tracking-widest text-zinc-500">Pilot channels</p>
-            <p className="mt-1 text-2xl font-black text-white">{marketingMetadata.campaign.pilotChannels.length}</p>
-            <p className="mt-1 text-xs text-zinc-400">Learn first, then expand globally</p>
+            <p className="m-0 text-[10px] uppercase tracking-widest text-zinc-500">Search channels</p>
+            <p className="mt-1 text-2xl font-black text-white">{searchIntelligence.platforms.length}</p>
+            <p className="mt-1 text-xs text-zinc-400">Platform-native language maps</p>
           </div>
           <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/[0.06] p-4">
             <p className="m-0 flex items-center gap-1 text-[10px] uppercase tracking-widest text-emerald-300">
@@ -164,6 +179,8 @@ export default function MarketingCampaignDesk({
         </div>
 
         <MarketingFunnelDashboard getHeaders={getHeaders} />
+
+        <GlobalSearchIntelligencePanel />
 
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-xl border border-amber-400/20 bg-amber-500/[0.05] p-5">
