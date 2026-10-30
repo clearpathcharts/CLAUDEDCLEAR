@@ -114,6 +114,7 @@ import {
   dropStaleAuthSession,
   getAuthKickStatus,
   getAuthSessionGeneration,
+  grantFreshSession,
   kickAllMemberSessions,
   loadDurableAuthGeneration,
 } from './src/server/authSessionGeneration';
@@ -928,7 +929,7 @@ async function startServer() {
         console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
       }
       const sessionUser = buildClientSessionUser(user);
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -981,7 +982,7 @@ async function startServer() {
       }
 
       const sessionUser = buildClientSessionUser(result.user);
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1008,7 +1009,7 @@ async function startServer() {
 
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
-        applyGrantedSession(req.session as any, sessionUser);
+        await grantFreshSession(req, sessionUser);
         try {
           ensureAffiliateMember(result.user.uid);
         } catch {
@@ -1151,7 +1152,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', boardVerifyLimiter, (req, res) => {
+  app.post('/api/auth/board/verify', boardVerifyLimiter, async (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1176,8 +1177,7 @@ async function startServer() {
       privateAccount: false,
       boardAccess: true,
     };
-    (req.session as any).boardAccess = true;
-    applyGrantedSession(req.session as any, sessionUser);
+    await grantFreshSession(req, sessionUser, { boardAccess: true });
     res.json({ ok: true, user: sessionUser });
   });
 
@@ -1768,7 +1768,7 @@ async function startServer() {
         emailVerified: true,
         privateAccount: true,
       };
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({
         ok: true,
         user: sessionUser,

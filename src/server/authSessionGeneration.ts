@@ -122,6 +122,26 @@ export function applyGrantedSession(
   session.authGeneration = getAuthSessionGeneration();
 }
 
+/**
+ * Sign-in: issue a brand-new session id before granting the user, so a cookie
+ * planted or captured before login never becomes an authenticated session.
+ */
+export async function grantFreshSession(
+  req: { session?: unknown },
+  user: unknown,
+  extra?: Record<string, unknown>,
+): Promise<void> {
+  const current = req.session as { regenerate?: (cb: (err?: unknown) => void) => void } | undefined;
+  if (!current) return;
+  if (typeof current.regenerate === 'function') {
+    await new Promise<void>((resolve, reject) => current.regenerate!((err) => (err ? reject(err) : resolve())));
+  }
+  const fresh = req.session as Record<string, unknown> | undefined;
+  if (!fresh) return;
+  if (extra) Object.assign(fresh, extra);
+  applyGrantedSession(fresh, user);
+}
+
 export function dropStaleAuthSession(session: {
   privateUser?: unknown;
   boardAccess?: unknown;
