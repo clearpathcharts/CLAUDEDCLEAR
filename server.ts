@@ -114,6 +114,7 @@ import {
   dropStaleAuthSession,
   getAuthKickStatus,
   getAuthSessionGeneration,
+  grantFreshSession,
   kickAllMemberSessions,
   loadDurableAuthGeneration,
 } from './src/server/authSessionGeneration';
@@ -335,6 +336,12 @@ import {
   markMemberMessagesRead,
 } from './src/server/memberInboxService';
 import { memberInboxLimiter } from './src/server/routeRateLimit';
+import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
+import {
+  listMembershipGrants,
+  revokeMembershipGrant,
+  saveMembershipGrants,
+} from './src/server/membershipGrants';
 import {
   AFFILIATE_COOKIE,
   AFFILIATE_COOKIE_MAX_AGE_MS,
@@ -875,15 +882,13 @@ async function startServer() {
         password: req.body?.password || '',
         displayName: req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
 
       if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
+        const origin = linkOrigin(req);
         const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
         const emailSent = await sendIdentityConfirmEmail({
           to: result.user.email,
@@ -924,7 +929,7 @@ async function startServer() {
         console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
       }
       const sessionUser = buildClientSessionUser(user);
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -977,7 +982,7 @@ async function startServer() {
       }
 
       const sessionUser = buildClientSessionUser(result.user);
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -997,14 +1002,14 @@ async function startServer() {
         newEmail: req.body?.newEmail || req.body?.email || '',
         newDisplayName: req.body?.newDisplayName || req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
 
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
-        applyGrantedSession(req.session as any, sessionUser);
+        await grantFreshSession(req, sessionUser);
         try {
           ensureAffiliateMember(result.user.uid);
         } catch {
@@ -1014,9 +1019,7 @@ async function startServer() {
       }
 
       if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
+        const origin = linkOrigin(req);
         const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
         const emailSent = await sendIdentityConfirmEmail({
           to: result.user.email,
@@ -1088,9 +1091,7 @@ async function startServer() {
         email: req.body?.email || '',
         password: req.body?.password || '',
       });
-      const origin =
-        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-        `${req.protocol}://${req.get('host')}`;
+      const origin = linkOrigin(req);
       const confirmUrl = buildIdentityConfirmUrl(origin, reminted.rawChallengeToken);
       const emailSent = await sendIdentityConfirmEmail({
         to: reminted.user.email,
@@ -1151,7 +1152,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', boardVerifyLimiter, (req, res) => {
+  app.post('/api/auth/board/verify', boardVerifyLimiter, async (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1176,8 +1177,7 @@ async function startServer() {
       privateAccount: false,
       boardAccess: true,
     };
-    (req.session as any).boardAccess = true;
-    applyGrantedSession(req.session as any, sessionUser);
+    await grantFreshSession(req, sessionUser, { boardAccess: true });
     res.json({ ok: true, user: sessionUser });
   });
 
@@ -1211,16 +1211,7 @@ async function startServer() {
     }
   });
 
-  const publicSiteOrigin = (req: express.Request) => {
-    const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    if (fromEnv) return fromEnv;
-    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
-    if (host && !isProd) {
-      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
-      return `${proto}://${host}`;
-    }
-    return 'https://clearpathtrader.com';
-  };
+  const publicSiteOrigin = (req: express.Request) => linkOrigin(req);
 
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
@@ -1399,32 +1390,39 @@ async function startServer() {
     res.json({ founder: Boolean(sessionUser && isFounderEmail(sessionUser.email)) });
   });
 
-  const chartPulseOwnerKey = (req: express.Request): string => {
-    const user = getPrivateSessionUser(req);
-    if (user?.uid) return `uid:${user.uid}`;
-    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
-    return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
-  };
-
-  app.get('/api/chart-pulse/status', (req, res) => {
-    const user = getPrivateSessionUser(req);
+  app.get('/api/chart-pulse/status', async (req, res) => {
+    const member = await chartPulseMember(req);
     res.json({
       ...getChartPulseDeliveryStatus(),
-      sessionEmail: user?.email || null,
-      subscriptions: listSubscriptionsForOwner(chartPulseOwnerKey(req)),
+      sessionEmail: member?.email || null,
+      subscriptions: member ? listSubscriptionsForOwner(member.ownerKey) : [],
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, (req, res) => {
+  /** Member-owned pulse key + the account email deliveries go to; null when signed out. */
+  const chartPulseMember = async (req: express.Request): Promise<{ ownerKey: string; email: string } | null> => {
+    const user = getPrivateSessionUser(req);
+    if (user?.uid && user.email) return { ownerKey: `uid:${user.uid}`, email: user.email };
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return null;
+    return { ownerKey: `member:${crypto.createHash('sha256').update(email).digest('hex').slice(0, 24)}`, email };
+  };
+
+  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
-    const sessionEmail = getPrivateSessionUser(req)?.email;
-    const email = typeof body.email === 'string' && body.email.trim() ? body.email : sessionEmail;
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) {
+      return res.status(401).json({
+        error: 'Sign in to get pulse emails or texts. Browser alerts still work while this tab is open.',
+      });
+    }
+    const email = member.email;
     const result = upsertSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       symbol: String(body.symbol || ''),
       intervalMinutes: body.intervalMinutes,
@@ -1449,15 +1447,17 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) return res.json({ ok: true, removed: 0 });
     const channel: ChartPulseChannel | undefined =
       body.channel === 'sms' || body.channel === 'email' ? body.channel : undefined;
     const result = removeSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       intervalMinutes: body.intervalMinutes,
       channel,
@@ -1553,8 +1553,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Invalid membership tier. Use silver, gold, or platinum (legacy: pro, proplus, premium, ultimate).' });
     }
     const interval = isBillingInterval(req.body?.interval) ? req.body.interval : 'month';
-    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    const origin = linkOrigin(req);
     try {
       const { url } = await createMembershipCheckoutSession({
         uid,
@@ -1591,8 +1590,7 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Sign in to manage billing.' });
     }
-    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    const origin = linkOrigin(req);
     try {
       const { url } = await createMembershipPortalSession({ uid, origin });
       res.json({ ok: true, url });
@@ -1755,7 +1753,7 @@ async function startServer() {
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
       // FOUNDER_FIREBASE_UID is set) the founder uid — email alone can be
       // spoofed via federated providers that skip email verification.
-      if (!isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
+      if (decoded.email_verified !== true || !isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
@@ -1770,7 +1768,7 @@ async function startServer() {
         emailVerified: true,
         privateAccount: true,
       };
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({
         ok: true,
         user: sessionUser,
@@ -1932,6 +1930,44 @@ async function startServer() {
     } catch (e: any) {
       console.warn('[MemberInbox] delete failed', e?.message || e);
       res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  /** Complimentary (founder-granted) memberships, keyed by email. */
+  app.get('/api/admin/membership-grants', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      res.json({ grants: await listMembershipGrants() });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] list failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/admin/membership-grants', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    const body = req.body || {};
+    const emails = Array.isArray(body.emails) ? body.emails.slice(0, 1000) : [];
+    if (emails.length === 0) return res.status(400).json({ error: 'emails[] required' });
+    const expiresAt = body.expiresAt ? new Date(String(body.expiresAt)) : null;
+    if (expiresAt && Number.isNaN(expiresAt.getTime())) return res.status(400).json({ error: 'Invalid expiresAt' });
+    try {
+      const granted = await saveMembershipGrants(emails, {
+        tier: String(body.tier || ''),
+        reason: String(body.reason || ''),
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
+        grantedBy: getPrivateSessionUser(req)?.email || 'founder',
+      });
+      res.status(201).json({ granted: granted.length });
+    } catch (e: any) {
+      res.status(400).json({ error: e?.message || 'Grant failed' });
+    }
+  });
+
+  app.delete('/api/admin/membership-grants/:email', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    try {
+      res.json({ removed: await revokeMembershipGrant(req.params.email) });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] revoke failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
     }
   });
 
@@ -4387,7 +4423,8 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
 
     // Normalizes paths: forces lowercase, removes www, strips trailing slashes
     if (isWww || hasTrailingSlash || isCapitalized) {
-      const canonicalHost = isWww ? host.slice(4) : host;
+      const bareHost = isWww ? host.slice(4) : host;
+      const canonicalHost = isProd && !isOwnHost(bareHost) ? 'clearpathtrader.com' : bareHost;
       let cleanPath = req.path;
       if (hasTrailingSlash) {
         cleanPath = cleanPath.slice(0, -1);

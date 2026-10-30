@@ -628,11 +628,7 @@ export function assertCleanText(
  */
 export function moderateBodyFields(...fields: string[]) {
   return async (req: any, res: any, next: any) => {
-    const actorKey =
-      req.body?.uid ||
-      req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() ||
-      req.ip ||
-      'anonymous';
+    const actorKey = req.session?.privateUser?.uid || req.ip || 'anonymous';
 
     try {
       await hydrateModerationActor(actorKey);

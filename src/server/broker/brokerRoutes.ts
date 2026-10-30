@@ -4,6 +4,7 @@
  */
 import { Router, type Request, type Response } from 'express';
 import { getPrivateSessionUser, requirePrivateSession } from '../authGuards';
+import { isOwnHost } from '../siteOrigin';
 import {
   brokerOAuthCallbackLimiter,
   brokerOAuthStartLimiter,
@@ -46,7 +47,8 @@ function safeBrokerReturnTo(raw: unknown): string {
 }
 
 function hostFromReq(req: Request): string | undefined {
-  return String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0]?.trim() || undefined;
+  const host = String(req.get('host') || '').trim();
+  return host && isOwnHost(host) ? host : undefined;
 }
 
 export function createBrokerRouter(): Router {

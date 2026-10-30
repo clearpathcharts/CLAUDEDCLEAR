@@ -58,3 +58,4 @@ data/marketing/funnel-local.json
 
 # Member inbox local fallback (contains member emails)
 data/member-inbox/
+data/membership-grants.json

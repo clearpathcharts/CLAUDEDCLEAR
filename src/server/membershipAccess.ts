@@ -7,6 +7,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getPrivateSessionUser } from './authGuards';
 import { isFounderEmail, isFounderFirebaseUid } from '../lib/founder';
 import { readProfile, refreshProfileFromDurable, writeProfile } from './profileStore';
+import { grantReportForEmails } from './membershipGrants';
 import {
   getMembershipStatus,
   pickRicherMembershipReport,
@@ -16,9 +17,16 @@ import {
 import { hasFeatureForRank, tierRankOf, type FeatureKey, FEATURE_MIN_TIER, TIER_LABEL } from '../lib/entitlements';
 
 export async function collectAuthorizedMembershipUids(req: Request): Promise<Set<string>> {
+  return (await collectAuthorizedMembers(req)).uids;
+}
+
+/** Signed-in uids plus emails trusted for complimentary grants (private session, or a verified Google email). */
+async function collectAuthorizedMembers(req: Request): Promise<{ uids: Set<string>; emails: Set<string> }> {
   const sessionUser = getPrivateSessionUser(req);
   const uids = new Set<string>();
+  const emails = new Set<string>();
   if (sessionUser?.uid) uids.add(sessionUser.uid);
+  if (sessionUser?.uid && sessionUser.email) emails.add(sessionUser.email.trim().toLowerCase());
 
   const header = req.get('authorization') || '';
   const bearer = header.match(/^Bearer\s+(.+)$/i);
@@ -28,12 +36,15 @@ export async function collectAuthorizedMembershipUids(req: Request): Promise<Set
       const bearerEmail = String(decoded.email || '').trim().toLowerCase();
       const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
       const sameInbox = Boolean(bearerEmail && sessionEmail && bearerEmail === sessionEmail);
-      if (decoded.uid && (!sessionUser?.uid || sameInbox)) uids.add(decoded.uid);
+      if (decoded.uid && (!sessionUser?.uid || sameInbox)) {
+        uids.add(decoded.uid);
+        if (bearerEmail && decoded.email_verified === true) emails.add(bearerEmail);
+      }
     } catch {
       /* private cookie can still authorize */
     }
   }
-  return uids;
+  return { uids, emails };
 }
 
 async function founderBypass(req: Request): Promise<boolean> {
@@ -44,7 +55,7 @@ async function founderBypass(req: Request): Promise<boolean> {
     const decoded = await getAuth().verifyIdToken(bearer[1].trim());
     const email = String(decoded.email || '').trim().toLowerCase();
     const uid = String(decoded.uid || '');
-    return isFounderEmail(email) && isFounderFirebaseUid(uid);
+    return decoded.email_verified === true && isFounderEmail(email) && isFounderFirebaseUid(uid);
   } catch {
     return false;
   }
@@ -72,7 +83,7 @@ export async function resolveMembershipReportForRequest(req: Request, options?: 
   uids: Set<string>;
   status: MembershipStatusReport;
 }> {
-  const uids = await collectAuthorizedMembershipUids(req);
+  const { uids, emails } = await collectAuthorizedMembers(req);
   if (uids.size === 0) {
     return { uids, status: { active: false, tier: null, status: null } };
   }
@@ -86,7 +97,9 @@ export async function resolveMembershipReportForRequest(req: Request, options?: 
       }
     }
   }
-  const status = pickRicherMembershipReport([...uids].map((uid) => getMembershipStatus(uid)));
+  const reports = [...uids].map((uid) => getMembershipStatus(uid));
+  const grant = await grantReportForEmails(emails);
+  const status = pickRicherMembershipReport(grant ? [...reports, grant] : reports);
   return { uids, status };
 }
 
