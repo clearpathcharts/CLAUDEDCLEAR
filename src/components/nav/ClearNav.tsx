@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { MobileCommandCenter } from "./MobileCommandCenter";
+import { MemberInboxBell } from "../inbox/MemberInboxBell";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
 import {
@@ -318,6 +319,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
               renderNavButton(item, index, false)
             )}
             <div className="flex items-center gap-1 shrink-0 snap-start">
+              <MemberInboxBell />
               <ExplainModeToggle />
               <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
             </div>

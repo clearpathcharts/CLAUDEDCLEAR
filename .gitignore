@@ -48,3 +48,13 @@ public/og-image.png
 .env
 .env.local
 
+
+# Member data / PII exports — never commit
+data/email-ops/
+data/marketing/funnel-local.json
+*service-account*.json
+*serviceAccount*.json
+
+
+# Member inbox local fallback (contains member emails)
+data/member-inbox/

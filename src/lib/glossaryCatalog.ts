@@ -1,6 +1,6 @@
 /**
  * Educational glossary catalog — core practitioner terms + seed dictionary +
- * unique procedural vocabulary nodes. Missing vendor cells stay DATA UNAVAILABLE.
+ * authored dictionary terms only (no generated phrases). Missing vendor cells stay DATA UNAVAILABLE.
  */
 import { REAL_GLOSSARY_TERMS } from '../components/encyclopedia/RealGlossaryData';
 import { GLOSSARY_TERMS as CORE_GLOSSARY_TERMS } from '../server/contentData';

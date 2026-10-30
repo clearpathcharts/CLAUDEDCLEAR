@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLiveQuotes, formatPct, DATA_UNAVAILABLE } from '../../hooks/useLiveQuotes';
 import { motion, AnimatePresence } from 'motion/react';
 import * as d3 from 'd3';
 import { 
@@ -373,168 +374,49 @@ export default function TerminalConfigWidget() {
   );
 }
 
-// Lightweight realistic D3 sparkline for EUR/USD real-time scalping telemetry
+// EUR/USD last price from the vendor feed; bid/ask/spread are not in the quote payload.
 function EurUsdSparkline() {
-  const [ticks, setTicks] = useState<number[]>(() => {
-    const initial = [];
-    let current = 1.08520;
-    for (let i = 0; i < 40; i++) {
-      current += (Math.random() - 0.5) * 0.00008;
-      initial.push(current);
-    }
-    return initial;
-  });
-
-  const [spread, setSpread] = useState<string>('0.2');
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTicks((prev) => {
-        const last = prev[prev.length - 1];
-        const change = (Math.random() - 0.5) * 0.00006;
-        let next = last + change;
-        
-        // Logical EUR/USD boundaries
-        if (next < 1.08200) next = 1.08220;
-        if (next > 1.08800) next = 1.08780;
-
-        // Spread updates dynamically
-        const nextSpread = (0.2 + Math.random() * 0.3).toFixed(1);
-        setSpread(nextSpread);
-
-        return [...prev.slice(1), next];
-      });
-    }, 400); // 400ms tick updates config
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const currentPrice = ticks[ticks.length - 1];
-  const initialPrice = ticks[0];
-  const prevPrice = ticks[ticks.length - 2] || currentPrice;
-  const priceDiff = currentPrice - prevPrice;
-  const isUp = currentPrice >= prevPrice;
-
-  // D3 dimensions and scales
-  const width = 280;
-  const height = 48;
-  const margin = { top: 3, right: 3, bottom: 3, left: 3 };
-
-  const xScale = d3.scaleLinear()
-    .domain([0, ticks.length - 1])
-    .range([margin.left, width - margin.right]);
-
-  const minVal = d3.min(ticks) || 1.08300;
-  const maxVal = d3.max(ticks) || 1.08700;
-  const padding = (maxVal - minVal) * 0.1 || 0.0001;
-
-  const yScale = d3.scaleLinear()
-    .domain([minVal - padding, maxVal + padding])
-    .range([height - margin.bottom, margin.top]);
-
-  const lineGenerator = d3.line<number>()
-    .x((_, i) => xScale(i))
-    .y((d) => yScale(d))
-    .curve(d3.curveMonotoneX);
-
-  const areaGenerator = d3.area<number>()
-    .x((_, i) => xScale(i))
-    .y0(height - margin.bottom)
-    .y1((d) => yScale(d))
-    .curve(d3.curveMonotoneX);
-
-  const pathData = lineGenerator(ticks) || '';
-  const areaData = areaGenerator(ticks) || '';
-
-  const midVal = (minVal + maxVal) / 2;
-
-  const lastX = xScale(ticks.length - 1);
-  const lastY = yScale(currentPrice);
-
-  const trendColor = currentPrice >= initialPrice ? '#00D9FF' : '#FF00C8';
+  const { get, updatedAt } = useLiveQuotes(['EUR/USD']);
+  const quote = get('EUR/USD');
+  const pct = quote?.percentChange ?? null;
+  const isUp = (pct ?? 0) >= 0;
 
   return (
     <div className="p-3 bg-black/40 border border-white/5 rounded-xl flex flex-col gap-2 relative overflow-hidden">
-      <div 
-        className="absolute -right-12 -bottom-12 w-24 h-24 rounded-full blur-2xl opacity-5 pointer-events-none transition-all duration-500" 
-        style={{ backgroundColor: trendColor }}
-      />
-
       <div className="flex justify-between items-start">
         <div className="space-y-0.5 text-left">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#00D9FF] animate-pulse" />
             <span className="font-sans text-[8.5px] text-zinc-400 font-extrabold uppercase tracking-widest">
-              EUR/USD Scalper Feed
+              EUR/USD · Market Feed
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="font-mono text-sm font-black text-white tracking-tight">
-              {currentPrice.toFixed(5)}
+              {quote ? quote.price.toFixed(5) : DATA_UNAVAILABLE}
             </span>
-            <span className={`font-mono text-[9px] font-bold ${isUp ? 'text-[#00D9FF]' : 'text-[#FF00C8]'}`}>
-              {isUp ? '▲' : '▼'} {priceDiff >= 0 ? '+' : ''}{(priceDiff * 10000).toFixed(1)}p
-            </span>
+            {pct != null && (
+              <span className={`font-mono text-[9px] font-bold ${isUp ? 'text-[#00D9FF]' : 'text-[#FF00C8]'}`}>
+                {formatPct(pct)}
+              </span>
+            )}
           </div>
         </div>
-
         <div className="text-right space-y-0.5">
-          <span className="font-mono text-[8px] text-zinc-500 uppercase block font-bold tracking-widest">
-            SPREAD
-          </span>
+          <span className="font-mono text-[8px] text-zinc-500 uppercase block font-bold tracking-widest">UPDATED</span>
           <span className="font-mono text-[10px] text-[#00D9FF] font-black tracking-tight block">
-            {spread} Pips
+            {updatedAt ? updatedAt.toLocaleTimeString() : '—'}
           </span>
         </div>
       </div>
-
-      {/* D3 Svg Sparkline container */}
-      <div className="relative w-full h-[48px] bg-[#03010b] rounded-lg p-1 border border-white/[0.03] overflow-hidden">
-        <svg 
-          viewBox={`0 0 ${width} ${height}`} 
-          className="w-full h-full"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="sparkline-grad-eur-usd" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={trendColor} stopOpacity="0.2" />
-              <stop offset="100%" stopColor={trendColor} stopOpacity="0.0" />
-            </linearGradient>
-          </defs>
-
-          {/* Median center dotted grid anchor */}
-          <line 
-            x1="0" 
-            x2={width} 
-            y1={yScale(midVal)} 
-            y2={yScale(midVal)} 
-            stroke="white" 
-            strokeWidth="0.5" 
-            strokeDasharray="1,6" 
-            opacity="0.1" 
-          />
-
-          {/* Area under the line */}
-          <path d={areaData} fill="url(#sparkline-grad-eur-usd)" />
-
-          {/* Line stroke */}
-          <path d={pathData} stroke={trendColor} strokeWidth="1.25" fill="none" className="transition-all duration-300" />
-
-          {/* Last current point pin */}
-          <circle cx={lastX} cy={lastY} r="2" fill={trendColor} />
-          <circle cx={lastX} cy={lastY} r="5" fill="none" stroke={trendColor} strokeWidth="0.5" opacity="0.6" className="animate-ping" />
-        </svg>
-      </div>
-
-      {/* Live Transaction / Action Logs */}
       <div className="grid grid-cols-2 gap-2 text-[8px] font-mono text-zinc-500 border-t border-white/5 pt-1">
         <div className="flex items-center gap-1.5 text-left">
-          <span className="text-zinc-600 font-bold uppercase">BID:</span>
-          <span className="text-zinc-300 font-semibold">{(currentPrice - 0.00001).toFixed(5)}</span>
+          <span className="text-zinc-600 font-bold uppercase">DAY HIGH:</span>
+          <span className="text-zinc-300 font-semibold">{quote?.high != null ? quote.high.toFixed(5) : DATA_UNAVAILABLE}</span>
         </div>
         <div className="flex items-center gap-1.5 justify-end text-right">
-          <span className="text-zinc-600 font-bold uppercase">ASK:</span>
-          <span className="text-[#00D9FF] font-semibold">{(currentPrice + parseFloat(spread) * 0.0001).toFixed(5)}</span>
+          <span className="text-zinc-600 font-bold uppercase">DAY LOW:</span>
+          <span className="text-zinc-300 font-semibold">{quote?.low != null ? quote.low.toFixed(5) : DATA_UNAVAILABLE}</span>
         </div>
       </div>
     </div>

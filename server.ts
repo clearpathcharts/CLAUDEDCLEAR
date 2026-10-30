@@ -212,6 +212,7 @@ import {
   markDailyPatternReviewed,
   publishDailyPatternReview,
   startDailyPatternReviewScheduler,
+  dailyPatternSchedulerTick,
 } from './src/server/dailyPatternReviewService';
 import {
   fireDueSubscriptions,
@@ -323,7 +324,17 @@ import {
   requireIntelligenceAdmin,
   requirePrivateSession,
   getPrivateSessionUser,
+  resolveAuthenticatedMemberEmail,
 } from './src/server/authGuards';
+import {
+  InboxError,
+  createInboxMessage,
+  deleteInboxMessage,
+  getMemberInbox,
+  listSentMessages,
+  markMemberMessagesRead,
+} from './src/server/memberInboxService';
+import { memberInboxLimiter } from './src/server/routeRateLimit';
 import {
   AFFILIATE_COOKIE,
   AFFILIATE_COOKIE_MAX_AGE_MS,
@@ -1857,6 +1868,73 @@ async function startServer() {
     }
   });
 
+  // ---- Member inbox: founder notices (security, site updates) shown in-app ----
+  app.get('/api/member/inbox', memberInboxLimiter, async (req, res) => {
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    try {
+      res.json(await getMemberInbox(email));
+    } catch (e: any) {
+      console.warn('[MemberInbox] list failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/member/inbox/read', memberInboxLimiter, async (req, res) => {
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    const ids =
+      req.body?.all === true
+        ? ('all' as const)
+        : Array.isArray(req.body?.ids)
+          ? req.body.ids.map(String).filter((s: string) => /^[a-z0-9-]{1,64}$/.test(s)).slice(0, 100)
+          : [];
+    try {
+      res.json({ marked: await markMemberMessagesRead(email, ids) });
+    } catch (e: any) {
+      console.warn('[MemberInbox] mark read failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.get('/api/admin/member-messages', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      res.json({ messages: await listSentMessages() });
+    } catch (e: any) {
+      console.warn('[MemberInbox] admin list failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/admin/member-messages', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    try {
+      const sender = getPrivateSessionUser(req)?.email || 'founder';
+      const msg = await createInboxMessage(req.body || {}, sender);
+      res.status(201).json({
+        id: msg.id,
+        audience: msg.audience,
+        recipientCount: msg.recipients?.length ?? null,
+        createdAt: msg.createdAt,
+      });
+    } catch (e: any) {
+      if (e instanceof InboxError) return res.status(e.status).json({ error: e.message });
+      console.warn('[MemberInbox] send failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.delete('/api/admin/member-messages/:id', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    const id = String(req.params.id || '');
+    if (!/^[a-z0-9-]{1,64}$/.test(id)) return res.status(400).json({ error: 'Invalid id' });
+    try {
+      const removed = await deleteInboxMessage(id);
+      res.status(removed ? 200 : 404).json({ removed });
+    } catch (e: any) {
+      console.warn('[MemberInbox] delete failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
   /**
    * Founder-only: bulk-import private members into durable Firestore.
    * Body: { members: [{ email, displayName?, password? }], dryRun?: boolean }
@@ -3128,6 +3206,21 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         error: 'VERIFY_FAILED',
         message: e?.message || 'Timeframe verify failed',
       });
+    }
+  });
+
+  // Cloud Scheduler (every 10 min): wakes a scaled-to-zero instance and runs due briefing slots
+  // inside the request so Cloud Run keeps CPU allocated. Same secret header as timeframe-verify.
+  app.post('/api/cron/scheduler-tick', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const fired = await dailyPatternSchedulerTick();
+      res.json({ ok: true, dailyPatternReview: fired });
+    } catch (e: any) {
+      res.status(500).json({ error: 'TICK_FAILED', message: e?.message || 'Scheduler tick failed' });
     }
   });
 
