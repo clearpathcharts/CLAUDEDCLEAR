@@ -35,4 +35,26 @@ const founderGates: Array<[string, RegExp]> = [
 ];
 for (const [rel, pattern] of founderGates) assert.match(read(rel), pattern, `${rel}: founder gate must require a verified email`);
 
+const { siteOrigin, isOwnHost } = await import('../src/server/siteOrigin.ts');
+const fakeReq = (host: string) => ({ protocol: 'https', get: (n: string) => (n.toLowerCase() === 'host' ? host : undefined) }) as any;
+const savedEnv = { NODE_ENV: process.env.NODE_ENV, PUBLIC_SITE_URL: process.env.PUBLIC_SITE_URL, SITE_URL: process.env.SITE_URL };
+delete process.env.PUBLIC_SITE_URL;
+delete process.env.SITE_URL;
+process.env.NODE_ENV = 'production';
+assert.equal(siteOrigin(fakeReq('evil.example')), 'https://clearpathtrader.com', 'production links never follow the Host header');
+process.env.NODE_ENV = savedEnv.NODE_ENV;
+if (savedEnv.PUBLIC_SITE_URL !== undefined) process.env.PUBLIC_SITE_URL = savedEnv.PUBLIC_SITE_URL;
+if (savedEnv.SITE_URL !== undefined) process.env.SITE_URL = savedEnv.SITE_URL;
+assert.equal(isOwnHost('www.clearpathtrader.com'), true);
+assert.equal(isOwnHost('clearpathtrader.com.evil.example'), false);
+assert.equal(isOwnHost('evilclearpathtrader.com'), false);
+
+const serverCode = read('server.ts');
+assert.doesNotMatch(serverCode, /\$\{req\.protocol\}:\/\/\$\{req\.get\('host'\)\}/, 'build links with siteOrigin(req), not the Host header');
+
+const { isValidReportId, resolveDailyPatternReviewReport } = await import('../src/server/dailyPatternReviewStore.ts');
+assert.equal(isValidReportId('2026-10-29_premarket'), true);
+for (const bad of ['../secrets', '..\\x', 'a/b', '', 'x'.repeat(65)]) assert.equal(isValidReportId(bad), false, bad);
+assert.equal(await resolveDailyPatternReviewReport('../../package'), null);
+
 console.log('auth-hardening.selftest: ok');

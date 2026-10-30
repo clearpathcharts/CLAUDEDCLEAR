@@ -16,7 +16,13 @@ function ensureDir() {
   if (!fs.existsSync(DIR)) fs.mkdirSync(DIR, { recursive: true });
 }
 
+/** Report ids are `YYYY-MM-DD_slot`; anything else could walk out of DIR. */
+export function isValidReportId(reportId: unknown): reportId is string {
+  return typeof reportId === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(reportId);
+}
+
 function fileFor(reportId: string) {
+  if (!isValidReportId(reportId)) throw new Error("Invalid report id");
   return path.join(DIR, `${reportId}.json`);
 }
 
@@ -118,6 +124,7 @@ export async function persistDailyPatternReviewReport(
 export async function resolveDailyPatternReviewReport(
   reportId: string,
 ): Promise<DailyPatternReviewReport | null> {
+  if (!isValidReportId(reportId)) return null;
   return (
     loadDailyPatternReviewFromDisk(reportId) ||
     (await loadDailyPatternReviewFromFirestore(reportId)) ||
