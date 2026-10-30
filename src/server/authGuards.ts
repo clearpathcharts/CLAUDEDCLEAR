@@ -175,7 +175,7 @@ export async function requireFounderOrCatalogAdmin(
       }
       try {
         const decoded = await getAuth().verifyIdToken(match[1].trim());
-        if (isFounderEmail(decoded.email) && isFounderFirebaseUid(decoded.uid)) {
+        if (decoded.email_verified === true && isFounderEmail(decoded.email) && isFounderFirebaseUid(decoded.uid)) {
           next();
           return;
         }

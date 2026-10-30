@@ -55,7 +55,7 @@ async function founderBypass(req: Request): Promise<boolean> {
     const decoded = await getAuth().verifyIdToken(bearer[1].trim());
     const email = String(decoded.email || '').trim().toLowerCase();
     const uid = String(decoded.uid || '');
-    return isFounderEmail(email) && isFounderFirebaseUid(uid);
+    return decoded.email_verified === true && isFounderEmail(email) && isFounderFirebaseUid(uid);
   } catch {
     return false;
   }

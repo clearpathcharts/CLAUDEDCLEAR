@@ -6,8 +6,7 @@ import rateLimit from 'express-rate-limit';
 import type { Request } from 'express';
 
 function clientIp(req: Request): string {
-  const fwd = req.headers['x-forwarded-for'];
-  if (typeof fwd === 'string' && fwd.trim()) return fwd.split(',')[0].trim();
+  // trust proxy = 1: req.ip is the address Google's front end saw; the left of X-Forwarded-For is client-supplied.
   return req.ip || 'unknown';
 }
 
