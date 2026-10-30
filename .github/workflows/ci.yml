@@ -49,6 +49,8 @@ jobs:
         run: npm run test:affiliate
       - name: Member inbox self-test
         run: npm run test:member-inbox
+      - name: Membership grants self-test
+        run: npm run test:membership-grants
 
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable

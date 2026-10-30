@@ -9,6 +9,8 @@ import {
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
 import { ManageBillingButton } from './ManageBillingButton';
+import { useMembership } from '../../hooks/useMembership';
+import { planOf } from '../../lib/planCatalog';
 import { trackMarketingCta } from '../../lib/marketingAttribution';
 import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
@@ -30,6 +32,10 @@ function readOfferedPlan(): MembershipPlanId {
 
 export default function MembershipPricingPage() {
   const { user } = useAuth();
+  const { membership } = useMembership();
+  const complimentary = Boolean(user && membership?.active && membership.status === 'complimentary');
+  const compPlan = complimentary ? planOf(membership?.tier ?? 'basic') : null;
+  const coveredByComp = (id: MembershipPlanId) => Boolean(compPlan && planOf(id).rank <= compPlan.rank);
   const [offeredId, setOfferedId] = useState<MembershipPlanId>(readOfferedPlan);
   const offered = useMemo(
     () => MEMBERSHIP_PLANS.find((plan) => plan.id === offeredId) ?? MEMBERSHIP_PLANS[0],
@@ -98,8 +104,23 @@ export default function MembershipPricingPage() {
                 Choose a package
                 <ChevronDown size={17} aria-hidden="true" />
               </a>
-              {user ? <ManageBillingButton className="membership-hero__portal" /> : null}
+              {user && !complimentary ? <ManageBillingButton className="membership-hero__portal" /> : null}
             </div>
+            {compPlan ? (
+              <div className="membership-review-card" data-testid="complimentary-plan" style={planAccentVars(compPlan.id)}>
+                <p>Your plan</p>
+                <strong>{compPlan.label} membership · complimentary{membership?.currentPeriodEnd ? '' : ' for life'}</strong>
+                <span>
+                  Active at no cost to you. You will never be charged for {compPlan.label}.
+                  {compPlan.id !== 'platinum' ? ' You can upgrade to Platinum at any time.' : ''}
+                </span>
+                {compPlan.id !== 'platinum' ? (
+                  <button type="button" className="membership-primary-button" onClick={() => choosePlan('platinum')}>
+                    Upgrade to Platinum
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <aside className="membership-review-card" aria-label="Package checkout">
@@ -116,7 +137,7 @@ export default function MembershipPricingPage() {
               <ShieldCheck size={15} aria-hidden="true" />
               You only unlock what you pay for
             </div>
-            {user ? <ManageBillingButton className="membership-review-card__portal" /> : null}
+            {user && !complimentary ? <ManageBillingButton className="membership-review-card__portal" /> : null}
           </aside>
         </section>
 
@@ -173,6 +194,10 @@ export default function MembershipPricingPage() {
             {offered.id === 'basic' ? (
               <a href={user ? '/desk/institutional' : '/'} className="membership-plan-card__button membership-plan-card__button--link">
                 Continue with Basic
+              </a>
+            ) : coveredByComp(offered.id) ? (
+              <a href="/desk/institutional" className="membership-plan-card__button membership-plan-card__button--link">
+                Included in your complimentary {compPlan?.label}
               </a>
             ) : user ? (
               <PlanCheckoutButton
