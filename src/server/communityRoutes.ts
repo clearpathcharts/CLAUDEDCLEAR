@@ -12,7 +12,8 @@ import { canonicalizePlanId } from '../lib/planCatalog';
 import { getPrivateSessionUser } from './authGuards';
 import { addCommunityPost, deleteCommunityPost, listCommunityPosts } from './communityStore';
 import { refreshProfileFromDurable } from './profileStore';
-import { getMembershipStatus } from './stripeService';
+import { getMembershipStatus, pickRicherMembershipReport } from './stripeService';
+import { grantReportForEmails } from './membershipGrants';
 
 const postGap = new Map<string, number>();
 const POST_GAP_MS = 8_000;
@@ -21,7 +22,8 @@ async function viewer(req: Parameters<typeof getPrivateSessionUser>[0]) {
   const user = getPrivateSessionUser(req);
   if (!user?.uid) return null;
   await refreshProfileFromDurable(user.uid);
-  const status = getMembershipStatus(user.uid);
+  const grant = user.email ? await grantReportForEmails([user.email]) : null;
+  const status = pickRicherMembershipReport(grant ? [getMembershipStatus(user.uid), grant] : [getMembershipStatus(user.uid)]);
   const tier = status.active ? canonicalizePlanId(status.tier) : 'basic';
   const founder = isFounderEmail(user.email);
   const authorName = publicName(user.displayName, user.email);

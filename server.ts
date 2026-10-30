@@ -336,6 +336,11 @@ import {
 } from './src/server/memberInboxService';
 import { memberInboxLimiter } from './src/server/routeRateLimit';
 import {
+  listMembershipGrants,
+  revokeMembershipGrant,
+  saveMembershipGrants,
+} from './src/server/membershipGrants';
+import {
   AFFILIATE_COOKIE,
   AFFILIATE_COOKIE_MAX_AGE_MS,
   TIER_PRICE_CENTS,
@@ -1932,6 +1937,44 @@ async function startServer() {
     } catch (e: any) {
       console.warn('[MemberInbox] delete failed', e?.message || e);
       res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  /** Complimentary (founder-granted) memberships, keyed by email. */
+  app.get('/api/admin/membership-grants', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      res.json({ grants: await listMembershipGrants() });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] list failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/admin/membership-grants', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    const body = req.body || {};
+    const emails = Array.isArray(body.emails) ? body.emails.slice(0, 1000) : [];
+    if (emails.length === 0) return res.status(400).json({ error: 'emails[] required' });
+    const expiresAt = body.expiresAt ? new Date(String(body.expiresAt)) : null;
+    if (expiresAt && Number.isNaN(expiresAt.getTime())) return res.status(400).json({ error: 'Invalid expiresAt' });
+    try {
+      const granted = await saveMembershipGrants(emails, {
+        tier: String(body.tier || ''),
+        reason: String(body.reason || ''),
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
+        grantedBy: getPrivateSessionUser(req)?.email || 'founder',
+      });
+      res.status(201).json({ granted: granted.length });
+    } catch (e: any) {
+      res.status(400).json({ error: e?.message || 'Grant failed' });
+    }
+  });
+
+  app.delete('/api/admin/membership-grants/:email', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    try {
+      res.json({ removed: await revokeMembershipGrant(req.params.email) });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] revoke failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
     }
   });
 
