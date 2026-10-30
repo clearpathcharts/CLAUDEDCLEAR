@@ -226,9 +226,12 @@ export function getApprovedKeywordsForPath(pathname: string): string[] {
 
 export function mergeApprovedMarketingKeywords(pathname: string, existing: string): string {
   const seen = new Set<string>();
+  const existingKeywords = existing.split(',').map((keyword) => keyword.trim());
+  const linkedKeywords = getApprovedKeywordsForPath(pathname);
   const merged = [
-    ...existing.split(',').map((keyword) => keyword.trim()),
-    ...getApprovedKeywordsForPath(pathname),
+    ...existingKeywords.slice(0, 8),
+    ...linkedKeywords,
+    ...existingKeywords.slice(8),
   ].filter((keyword) => {
     if (!keyword || keyword.startsWith('#')) return false;
     const normalized = normalizeKeyword(keyword);
