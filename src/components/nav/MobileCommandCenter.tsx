@@ -22,6 +22,7 @@ import {
   navBrightVioletMobileIdle,
 } from "./navAccentColors";
 import { TEMP_HIDE_AFFILIATE_SURFACE } from "../../config/founderUiToggles";
+import { MemberInboxBell } from "../inbox/MemberInboxBell";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -208,6 +209,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         "
       >
         <div className="flex items-center justify-around gap-1">
+        <MemberInboxBell />
         {isFounder ? (
           <div className="flex items-center gap-1">
             <button

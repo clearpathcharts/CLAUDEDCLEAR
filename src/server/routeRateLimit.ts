@@ -11,6 +11,15 @@ function clientIp(req: Request): string {
   return req.ip || 'unknown';
 }
 
+export const memberInboxLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `inbox:${clientIp(req)}`,
+  message: { error: 'Too many inbox requests. Wait a minute and try again.' },
+});
+
 export const authLoginLimiter = rateLimit({
   windowMs: 60_000,
   max: 12,

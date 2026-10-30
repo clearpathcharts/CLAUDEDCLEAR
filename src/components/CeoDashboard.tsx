@@ -10,6 +10,7 @@ import DailyOpsDesk from './DailyOpsDesk';
 import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import CeoVideoLibrary from './CeoVideoLibrary';
+import { MemberMessagesDesk } from './inbox/MemberMessagesDesk';
 import { FOUNDER_EMAILS, isFounderAuthUser } from '../lib/founder';
 import { useFounderAccess } from '../hooks/useFounderAccess';
 import { logoutPrivateAccount } from '../api/privateAuth';
@@ -120,7 +121,7 @@ function formatJoined(value?: string | null): string {
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'videos'>(() => {
+  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'videos' | 'messages'>(() => {
     try {
       return window.location.hash === '#videos' ? 'videos' : 'system';
     } catch {
@@ -935,6 +936,16 @@ export default function CeoDashboard() {
           MEMBERS / ALL USERS
         </button>
         <button
+          onClick={() => setCeoTab('messages')}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'messages'
+              ? 'text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/5 shadow-[0_12px_24px_-12px_rgba(0,255,255,0.4)]'
+              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+          }`}
+        >
+          ✉️ MEMBER MESSAGES
+        </button>
+        <button
           data-ceo-videos-tab
           onClick={openVideoLibrary}
           className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
@@ -949,6 +960,8 @@ export default function CeoDashboard() {
 
       {ceoTab === 'videos' ? (
         <CeoVideoLibrary getHeaders={founderApiHeaders} />
+      ) : ceoTab === 'messages' ? (
+        <MemberMessagesDesk getHeaders={founderApiHeaders} />
       ) : ceoTab === 'members' ? (
         <div className="space-y-8">
           {showsUnauthorized && (
