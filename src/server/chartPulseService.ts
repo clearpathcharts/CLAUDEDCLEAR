@@ -331,6 +331,8 @@ export async function fireDueSubscriptions(
   let fired = 0;
 
   for (const sub of rows) {
+    // Signed-out visitors could aim email/SMS at any address; only member-owned pulses deliver.
+    if (!sub.ownerKey.startsWith('uid:') && !sub.ownerKey.startsWith('member:')) continue;
     const due = Date.parse(sub.nextFireAt);
     if (!Number.isFinite(due) || due > now) continue;
 

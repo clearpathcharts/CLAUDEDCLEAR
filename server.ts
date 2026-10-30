@@ -1404,32 +1404,39 @@ async function startServer() {
     res.json({ founder: Boolean(sessionUser && isFounderEmail(sessionUser.email)) });
   });
 
-  const chartPulseOwnerKey = (req: express.Request): string => {
-    const user = getPrivateSessionUser(req);
-    if (user?.uid) return `uid:${user.uid}`;
-    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
-    return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
-  };
-
-  app.get('/api/chart-pulse/status', (req, res) => {
-    const user = getPrivateSessionUser(req);
+  app.get('/api/chart-pulse/status', async (req, res) => {
+    const member = await chartPulseMember(req);
     res.json({
       ...getChartPulseDeliveryStatus(),
-      sessionEmail: user?.email || null,
-      subscriptions: listSubscriptionsForOwner(chartPulseOwnerKey(req)),
+      sessionEmail: member?.email || null,
+      subscriptions: member ? listSubscriptionsForOwner(member.ownerKey) : [],
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, (req, res) => {
+  /** Member-owned pulse key + the account email deliveries go to; null when signed out. */
+  const chartPulseMember = async (req: express.Request): Promise<{ ownerKey: string; email: string } | null> => {
+    const user = getPrivateSessionUser(req);
+    if (user?.uid && user.email) return { ownerKey: `uid:${user.uid}`, email: user.email };
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return null;
+    return { ownerKey: `member:${crypto.createHash('sha256').update(email).digest('hex').slice(0, 24)}`, email };
+  };
+
+  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
-    const sessionEmail = getPrivateSessionUser(req)?.email;
-    const email = typeof body.email === 'string' && body.email.trim() ? body.email : sessionEmail;
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) {
+      return res.status(401).json({
+        error: 'Sign in to get pulse emails or texts. Browser alerts still work while this tab is open.',
+      });
+    }
+    const email = member.email;
     const result = upsertSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       symbol: String(body.symbol || ''),
       intervalMinutes: body.intervalMinutes,
@@ -1454,15 +1461,17 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) return res.json({ ok: true, removed: 0 });
     const channel: ChartPulseChannel | undefined =
       body.channel === 'sms' || body.channel === 'email' ? body.channel : undefined;
     const result = removeSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       intervalMinutes: body.intervalMinutes,
       channel,
