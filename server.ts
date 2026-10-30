@@ -880,7 +880,7 @@ async function startServer() {
         password: req.body?.password || '',
         displayName: req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
@@ -1002,7 +1002,7 @@ async function startServer() {
         newEmail: req.body?.newEmail || req.body?.email || '',
         newDisplayName: req.body?.newDisplayName || req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
@@ -1760,7 +1760,7 @@ async function startServer() {
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
       // FOUNDER_FIREBASE_UID is set) the founder uid — email alone can be
       // spoofed via federated providers that skip email verification.
-      if (!isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
+      if (decoded.email_verified !== true || !isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',

@@ -43,6 +43,7 @@
     "test:affiliate": "tsx scripts/affiliate.selftest.ts",
     "test:member-inbox": "tsx scripts/member-inbox.selftest.ts",
     "test:membership-grants": "tsx scripts/membership-grants.selftest.ts",
+    "test:auth-hardening": "tsx scripts/auth-hardening.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:waitlist-convert": "tsx scripts/waitlist-convert.selftest.ts",
     "test:private-durable": "tsx scripts/private-durable.selftest.ts",
