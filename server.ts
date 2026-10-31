@@ -122,7 +122,6 @@ import {
   aiChatLimiter,
   authForgotPasswordLimiter,
   authLoginLimiter,
-  authLookupLimiter,
   authRegisterLimiter,
   authResetPasswordLimiter,
   boardVerifyLimiter,
@@ -247,7 +246,6 @@ import {
   getPrivateStorageMeta,
   hasDurablePrivateStore,
   listPrivateMembersSafe,
-  lookupPrivateUser,
   findPrivateUserByEmail,
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
@@ -803,16 +801,6 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', authLookupLimiter, async (req, res) => {
-    try {
-      const result = await lookupPrivateUser(req.body?.email || '');
-      res.json(result);
-    } catch (error: any) {
-      const status = error instanceof PrivateAuthError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Lookup failed.' });
-    }
-  });
-
   app.post('/api/auth/private/register', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerPrivateUser({
@@ -4933,6 +4921,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   app.get(`/${tiktokVerifyName}`, sendTiktokVerify);
   // TikTok modal asks for file under the Terms URL prefix
   app.get(`/terms.html/${tiktokVerifyName}`, sendTiktokVerify);
+
+  // Unknown API paths answer JSON 404 instead of falling through to the SPA shell.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
 
   // 4. Vite / Static Serving
   if (isDev) {
