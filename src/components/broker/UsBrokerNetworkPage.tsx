@@ -25,6 +25,13 @@ import './usBrokerNetwork.css';
 const PAGE_PATH = '/brokers';
 
 function BrokerLogo({ broker }: { broker: UsBrokerCard }) {
+  if (!broker.logoUseApproved) {
+    return (
+      <div className="broker-logo-locker broker-logo-locker--dark">
+        <span className="broker-logo-wordmark">{broker.name}</span>
+      </div>
+    );
+  }
   return (
     <div className={`broker-logo-locker broker-logo-locker--${broker.logoSurface}`}>
       <img src={broker.logo} alt={`${broker.name} official logo`} loading="lazy" decoding="async" />
@@ -353,8 +360,8 @@ export default function UsBrokerNetworkPage() {
             <p>{BROKER_STATUS_NOTE} {PASS_THROUGH_ORDER_DISCLAIMER}</p>
             <p className="broker-disclosure__marks">
               Broker names and logos belong to their respective owners. Appearance in this directory does not imply
-              endorsement or an active integration. Every logo shown is an unmodified file from the firm’s official
-              website or published brand kit.
+              endorsement or an active integration. ClearPath is not affiliated with these firms. Logos appear only
+              after the firm grants written permission; until then the name is shown as plain text.
             </p>
           </div>
         </section>

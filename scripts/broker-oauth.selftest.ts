@@ -97,7 +97,11 @@ function testUsBrokerNetworkPage() {
   assert.match(page, /useBrokerConnection\(true\)/);
   assert.match(page, /startAlpacaConnect\(PAGE_PATH\)/);
   assert.match(page, /broker\.integration === 'available'/);
-  assert.match(page, /Every logo shown is an unmodified file/);
+  assert.match(page, /Logos appear only\s+after the firm grants written permission/);
+  assert.match(page, /if \(!broker\.logoUseApproved\)/);
+  for (const broker of US_BROKER_CATALOG) {
+    assert.equal(typeof broker.logoUseApproved, 'boolean', `${broker.name} has an explicit logo permission flag`);
+  }
   assert.doesNotMatch(page, /start(?:Schwab|Tradier|TradeStation|Ibkr|Tastytrade|Etrade|Webull|Tradovate)Connect/);
 
   const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
