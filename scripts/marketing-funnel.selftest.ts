@@ -3,6 +3,7 @@
  * Run: npx tsx scripts/marketing-funnel.selftest.ts
  */
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -76,24 +77,13 @@ async function main() {
       `social poster must be a PNG for ${tier.id}`,
     );
     const metadata = await sharp(posterBytes).metadata();
-    assert.equal(metadata.width, 1080);
-    assert.equal(metadata.height, 1350);
-
-    const sourcePath = path.join(repoRoot, 'public', tier.poster.sourceSvgUrl.replace(/^\//, ''));
-    assert.ok(fs.existsSync(sourcePath), `poster source missing for ${tier.id}`);
-    const sourceBytes = fs.readFileSync(sourcePath);
-    assert.ok(
-      sourceBytes.every((byte) => byte <= 0x7f),
-      `poster source must remain ASCII-safe XML for ${tier.id}`,
-    );
-    const source = sourceBytes.toString('utf8');
-    assert.match(source, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
-    assert.match(source, /data:image\/png;base64,/, `poster must embed the brand mark for ${tier.id}`);
-    assert.match(source, /clearpathtrader\.com/, `poster must show the destination for ${tier.id}`);
-    assert.doesNotMatch(
-      source,
-      /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/,
-      `poster source contains an XML-illegal control character for ${tier.id}`,
+    assert.equal(metadata.width, tier.poster.width);
+    assert.equal(metadata.height, tier.poster.height);
+    assert.equal(metadata.width / metadata.height, 4 / 5);
+    assert.equal(
+      crypto.createHash('sha256').update(posterBytes).digest('hex'),
+      tier.poster.sha256,
+      `poster must match the founder-approved artwork for ${tier.id}`,
     );
   }
 

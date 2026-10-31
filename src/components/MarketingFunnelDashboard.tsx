@@ -264,7 +264,7 @@ export default function MarketingFunnelDashboard({
                       <Download size={12} /> Social-ready PNG
                     </a>
                     <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500">
-                      <Image size={12} /> 1080 × 1350
+                      <Image size={12} /> {tier.poster.width} × {tier.poster.height}
                     </span>
                   </div>
                 </div>
