@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
-import { setupWebSockets } from './websockets';
+import { setupWebSockets, wsDisplayName } from './websockets';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
@@ -108,7 +108,7 @@ import {
   hydratePasswordResetsFromFirestore,
   mintPasswordResetToken,
 } from './src/server/passwordResetStore';
-import { createSessionStore } from './src/server/firestoreSessionStore';
+import { createSessionStore, purgeSessionsForEmail } from './src/server/firestoreSessionStore';
 import {
   applyGrantedSession,
   dropStaleAuthSession,
@@ -612,7 +612,8 @@ async function startServer() {
         sessionMiddleware(req, {} as express.Response, () => {
           const sess = req.session as Parameters<typeof dropStaleAuthSession>[0] | undefined;
           if (!sess || dropStaleAuthSession(sess) === 'dropped') return resolve(null);
-          resolve(getPrivateSessionUser(req)?.uid || null);
+          const member = getPrivateSessionUser(req);
+          resolve(member ? { uid: member.uid, name: wsDisplayName(member.displayName) } : null);
         });
       }),
   });
@@ -1233,6 +1234,9 @@ async function startServer() {
     } catch {
       /* ignore */
     }
+    await purgeSessionsForEmail(sessionUser.email).catch((err) =>
+      console.error('[change-password] Could not sign member out of other sessions:', err),
+    );
     req.session.destroy((err) => {
       res.clearCookie('cpt.sid', {
         path: '/',
@@ -1282,6 +1286,9 @@ async function startServer() {
     }
     try {
       await resetPrivateUserPassword({ email: record.email, password: newPassword });
+      await purgeSessionsForEmail(record.email).catch((err) =>
+        console.error('[reset-password] Could not sign member out of old sessions:', err),
+      );
       return res.json({ ok: true });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 400;
@@ -1991,6 +1998,7 @@ async function startServer() {
       const explicitPassword = String(req.body?.newPassword || req.body?.password || '').trim();
       if (!explicitPassword) {
         const result = await emergencyResetMemberPassword(email);
+        await purgeSessionsForEmail(result.email).catch(() => {});
         return res.json({
           ok: true,
           email: result.email,
@@ -2007,6 +2015,7 @@ async function startServer() {
         newPassword: explicitPassword,
         tempPassword: explicitPassword,
       });
+      await purgeSessionsForEmail(user.email).catch(() => {});
       res.json({
         ok: true,
         email: user.email,
@@ -2272,14 +2281,14 @@ async function startServer() {
   });
 
   app.post('/api/river/catalog/public', requirePrivateSession, moderateBodyFields('pineSource', 'description'), (req, res) => {
-    const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
+    const { name, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
       return res.status(400).json({ error: 'pineSource is required.' });
     }
     try {
       const entry = savePublicEntry({
         name: name || 'Untitled Indicator',
-        author: author || 'Community',
+        author: wsDisplayName((req.session as any)?.privateUser?.displayName),
         description: description || '',
         pineSource,
         pineVersion: typeof pineVersion === 'number' ? pineVersion : null,

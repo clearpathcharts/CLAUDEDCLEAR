@@ -10,15 +10,23 @@ import {
   type ChatRoomMessage,
 } from './src/server/chatRoomStore';
 
-/** Resolves the signed-in uid from the upgrade request's session cookie, or null. */
-export type WsSessionUidResolver = (req: IncomingMessage) => Promise<string | null>;
+/** Signed-in identity from the server session or a verified ID token — never from the client message. */
+export type WsIdentity = { uid: string; name: string };
 
-async function verifyFirebaseIdToken(token: unknown): Promise<string | null> {
+/** Resolves the signed-in identity from the upgrade request's session cookie, or null. */
+export type WsSessionUidResolver = (req: IncomingMessage) => Promise<WsIdentity | null>;
+
+export function wsDisplayName(raw: unknown): string {
+  const name = String(raw || '').trim().slice(0, 64);
+  return name || 'Member';
+}
+
+async function verifyFirebaseIdToken(token: unknown): Promise<WsIdentity | null> {
   if (typeof token !== 'string' || !token.trim()) return null;
   try {
     if (!ensureAdminApp()) return null;
     const decoded = await getAuth().verifyIdToken(token.trim());
-    return decoded.uid || null;
+    return decoded.uid ? { uid: decoded.uid, name: wsDisplayName(decoded.name) } : null;
   } catch {
     return null;
   }
@@ -116,9 +124,13 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
 
   wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     let uid: string | null = null;
+    let authorName = 'Member';
     const sessionUidReady: Promise<void> = (options.resolveSessionUid?.(req) ?? Promise.resolve(null))
       .then((resolved) => {
-        if (resolved && !uid) uid = resolved;
+        if (resolved && !uid) {
+          uid = resolved.uid;
+          authorName = resolved.name;
+        }
       })
       .catch(() => {});
 
@@ -163,7 +175,10 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
 
         if (parsed.type === 'CHAT_AUTH') {
           const verified = await verifyFirebaseIdToken(parsed.idToken);
-          if (verified) uid = verified;
+          if (verified) {
+            uid = verified.uid;
+            authorName = verified.name;
+          }
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'CHAT_AUTH_RESULT', signedIn: Boolean(uid), timestamp: Date.now() }));
           }
@@ -176,7 +191,7 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
           broadcastToAll({
             type: 'SOCIAL_CONNECT_BROADCAST',
             platform: parsed.platform,
-            handle: parsed.handle,
+            handle: authorName,
             timestamp: Date.now()
           });
         } else if (parsed.type === 'SOCIAL_POST') {
@@ -187,7 +202,7 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
           const newPost: SocialPost = {
             id: 'post_' + Math.random().toString(36).slice(2, 11),
             platform: parsed.platform,
-            handle: String(parsed.handle || 'Guest').slice(0, 64),
+            handle: authorName,
             text,
             timestamp: Date.now()
           };
@@ -237,7 +252,7 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
           if (!CHAT_ROOM_IDS.includes(roomId as (typeof CHAT_ROOM_IDS)[number])) return;
           if (!uid) return sendSignInRequired(ws, parsed.type);
           const text = String(parsed.text || '').trim().slice(0, 2000);
-          const author = String(parsed.author || 'Guest').trim().slice(0, 64);
+          const author = authorName;
           if (!text) return;
           const moderation = assertCleanText(`${author}\n${text}`, { actorKey: uid });
           if (moderation.ok === false) {
