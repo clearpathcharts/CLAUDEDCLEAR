@@ -17,6 +17,8 @@ export type BrokerConnectionRecord = {
   scopes: string | null;
   connectedAt: string;
   updatedAt: string;
+  /** When the user pressed ALLOW on the broker's required authorization disclosure. */
+  disclosureAcceptedAt?: string | null;
 };
 
 export type BrokerPublicStatus = {
@@ -35,4 +37,5 @@ export type AlpacaOAuthPendingState = {
   uid: string;
   returnTo: string;
   createdAt: number;
+  disclosureAcceptedAt: string;
 };

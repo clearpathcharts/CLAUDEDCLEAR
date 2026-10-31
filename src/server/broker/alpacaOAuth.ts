@@ -43,6 +43,7 @@ export function createAlpacaOAuthState(uid: string, returnTo: string): AlpacaOAu
     uid,
     returnTo,
     createdAt: Date.now(),
+    disclosureAcceptedAt: new Date().toISOString(),
   };
 }
 
@@ -121,6 +122,7 @@ export async function persistAlpacaConnection(input: {
   expiresIn: number | null;
   scope: string | null;
   accountId?: string | null;
+  disclosureAcceptedAt?: string | null;
 }): Promise<void> {
   const environment: BrokerEnvironment = isAlpacaPaperMode() ? 'paper' : 'live';
   const now = new Date().toISOString();
@@ -140,6 +142,7 @@ export async function persistAlpacaConnection(input: {
     scopes: input.scope,
     connectedAt: now,
     updatedAt: now,
+    disclosureAcceptedAt: input.disclosureAcceptedAt ?? null,
   });
 }
 

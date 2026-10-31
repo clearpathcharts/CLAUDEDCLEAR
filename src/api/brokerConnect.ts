@@ -43,10 +43,14 @@ export async function fetchBrokerStatus(): Promise<BrokerStatusResponse> {
   return res.json();
 }
 
-/** Starts Alpaca OAuth — browser navigates to authorize URL (session cookie required). */
-export function startAlpacaConnect(returnTo = '/?tab=Biography#Biography'): void {
+/**
+ * Starts Alpaca OAuth — browser navigates to authorize URL (session cookie required).
+ * Call only from useAlpacaConnectGate after the user pressed ALLOW on the disclosure.
+ */
+export function startAlpacaConnect(returnTo: string, disclosureAccepted: true): void {
   const q = encodeURIComponent(returnTo);
-  window.location.href = `/api/broker/alpaca/authorize?returnTo=${q}`;
+  const ack = disclosureAccepted ? '&disclosure=accepted' : '';
+  window.location.href = `/api/broker/alpaca/authorize?returnTo=${q}${ack}`;
 }
 
 export async function disconnectAlpaca(): Promise<void> {
