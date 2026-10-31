@@ -89,4 +89,38 @@ for (const block of htmlBlocks) {
   }
 }
 
+const serverSrc = read('server.ts').replace(/\r\n/g, '\n');
+for (const route of ["'/api/auth/private/reset-password'", "'/api/auth/private/change-password'", "'/api/admin/members/reset-password'"]) {
+  const start = serverSrc.indexOf(`app.post(${route}`);
+  assert.ok(start >= 0, `${route} route found`);
+  const body = serverSrc.slice(start, serverSrc.indexOf('\n  });\n', start));
+  assert.match(body, /purgeSessionsForEmail\(/, `${route} must sign the member out of every other session`);
+}
+
+const wsSrc = read('websockets.ts');
+assert.doesNotMatch(wsSrc, /parsed\.(author|handle)/, 'chat author / post handle must come from the server identity, not the client message');
+assert.doesNotMatch(serverSrc, /author:\s*author\s*\|\|/, 'catalog author must come from the session, not the request body');
+
+const { purgeSessionsForEmail, createSessionStore } = await import('../src/server/firestoreSessionStore.ts');
+const store = createSessionStore();
+const put = (sid: string, email: string) =>
+  new Promise<void>((resolve) => store.set(sid, { cookie: { maxAge: 60_000 }, privateUser: { uid: sid, email } } as any, () => resolve()));
+const has = (sid: string) => new Promise<boolean>((resolve) => store.get(sid, (_e, s) => resolve(Boolean(s))));
+await put('a1', 'Member@Example.com');
+await put('a2', 'member@example.com');
+await put('b1', 'other@example.com');
+assert.equal(await purgeSessionsForEmail('member@example.com'), 2);
+assert.equal(await has('a1'), false);
+assert.equal(await has('a2'), false);
+assert.equal(await has('b1'), true, 'other members stay signed in');
+
+const { FOUNDER_SESSION_MAX_AGE_MS } = await import('../src/server/authSessionGeneration.ts');
+const { FOUNDER_EMAILS } = await import('../src/lib/founder.ts');
+const founderReq: any = { session: { cookie: { maxAge: 7 * 86400_000 } } };
+await grantFreshSession(founderReq, { uid: 'f', email: FOUNDER_EMAILS[0] });
+assert.equal(founderReq.session.cookie.maxAge, FOUNDER_SESSION_MAX_AGE_MS);
+const memberReq: any = { session: { cookie: { maxAge: 7 * 86400_000 } } };
+await grantFreshSession(memberReq, { uid: 'm', email: 'member@example.com' });
+assert.equal(memberReq.session.cookie.maxAge, 7 * 86400_000);
+
 console.log('auth-hardening.selftest: ok');
