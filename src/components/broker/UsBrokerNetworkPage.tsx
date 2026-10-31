@@ -11,7 +11,8 @@ import {
   Unplug,
   WalletCards,
 } from 'lucide-react';
-import { disconnectAlpaca, startAlpacaConnect } from '../../api/brokerConnect';
+import { disconnectAlpaca } from '../../api/brokerConnect';
+import { useAlpacaConnectGate } from './AlpacaAuthorizeDisclosure';
 import { useAuth } from '../../contexts/FirebaseContext';
 import { useBrokerConnection } from '../../hooks/useBrokerConnection';
 import {
@@ -64,10 +65,10 @@ export default function UsBrokerNetworkPage() {
     [],
   );
 
+  const { requestConnect, disclosure } = useAlpacaConnectGate();
   const connectAlpaca = () => {
-    setBusy(true);
     setError('');
-    startAlpacaConnect(PAGE_PATH);
+    requestConnect(PAGE_PATH);
   };
 
   const disconnect = async () => {
@@ -88,6 +89,7 @@ export default function UsBrokerNetworkPage() {
 
   return (
     <div className="broker-network">
+      {disclosure}
       <Helmet>
         <title>US Broker Connections | ClearPath Trader</title>
         <meta

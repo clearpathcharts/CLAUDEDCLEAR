@@ -95,7 +95,8 @@ function testUsBrokerNetworkPage() {
   const page = fs.readFileSync(path.join(root, 'src/components/broker/UsBrokerNetworkPage.tsx'), 'utf8');
   assert.match(page, /Your broker\./);
   assert.match(page, /useBrokerConnection\(true\)/);
-  assert.match(page, /startAlpacaConnect\(PAGE_PATH\)/);
+  assert.match(page, /requestConnect\(PAGE_PATH\)/);
+  assert.match(page, /\{disclosure\}/);
   assert.match(page, /broker\.integration === 'available'/);
   assert.match(page, /Logos appear only\s+after the firm grants written permission/);
   assert.match(page, /if \(!broker\.logoUseApproved\)/);
@@ -114,6 +115,23 @@ function testUsBrokerNetworkPage() {
   const chip = fs.readFileSync(path.join(root, 'src/components/broker/BrokerDeskChip.tsx'), 'utf8');
   assert.match(chip, /href="\/brokers"/);
   assert.doesNotMatch(chip, /startAlpacaConnect/);
+
+  // Alpaca OAuth DDQ: the authorization disclosure must be accepted before any connect.
+  assert.match(routes, /req\.query\.disclosure !== 'accepted'/);
+  assert.match(routes, /disclosureAcceptedAt,/);
+  const srcDir = path.join(root, 'src');
+  const walk = (dir: string): string[] =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(path.join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(dir, e.name)] : [],
+    );
+  for (const file of walk(srcDir)) {
+    const rel = path.relative(root, file).split(path.sep).join('/');
+    if (rel === 'src/api/brokerConnect.ts' || rel === 'src/components/broker/AlpacaAuthorizeDisclosure.tsx') continue;
+    assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /startAlpacaConnect\(/, `${rel} must connect via useAlpacaConnectGate`);
+  }
+  const model = fs.readFileSync(path.join(root, 'src/lib/passThroughBrokerModel.ts'), 'utf8');
+  assert.match(model, /access to your account information and authorization to place transactions at your direction/);
+  assert.match(model, /Alpaca does not warrant or guarantee that/);
 }
 
 async function main() {
