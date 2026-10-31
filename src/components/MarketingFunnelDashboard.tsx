@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, Film, Image, RefreshCw, Users } from 'lucide-react';
+import { Copy, Download, ExternalLink, Film, Image, Link2, RefreshCw, Users } from 'lucide-react';
 import tierContentCatalog from '../../data/marketing/tier-content-catalog.json';
 
 type TierId = 'basic' | 'silver' | 'gold' | 'platinum';
@@ -55,6 +55,103 @@ function rate(value: number | null): string {
 
 function tierLabel(tier: TierId): string {
   return tier === 'basic' ? 'Free / Basic' : tier[0].toUpperCase() + tier.slice(1);
+}
+
+const CONNECTOR_CREATIVES = [
+  { id: 'poster', label: 'Poster' },
+  { id: 'video_15s', label: '15-second video' },
+  { id: 'video_30s', label: '30-second video' },
+] as const;
+
+function FunnelConnectorPanel() {
+  const [source, setSource] = useState(tierContentCatalog.channels[0] || 'instagram');
+  const [creative, setCreative] = useState<(typeof CONNECTOR_CREATIVES)[number]['id']>('poster');
+  const [copiedTier, setCopiedTier] = useState<string | null>(null);
+
+  const copyConnector = async (tier: string, url: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopiedTier(tier);
+    window.setTimeout(() => setCopiedTier(null), 1800);
+  };
+
+  return (
+    <section className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.04] p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h3 className="m-0 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-cyan-100">
+            <Link2 size={17} /> Funnel URL connector
+          </h3>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-zinc-400">
+            Choose the publishing channel and creative, then copy the matching tier URL into Metricool.
+            Every link redirects to the correct offer with first-party attribution attached.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">
+            Channel
+            <select
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              className="mt-1 block rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-xs text-white"
+            >
+              {[...tierContentCatalog.channels, 'email', 'qr'].map((channel) => (
+                <option key={channel} value={channel}>
+                  {channel}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">
+            Creative
+            <select
+              value={creative}
+              onChange={(event) =>
+                setCreative(event.target.value as (typeof CONNECTOR_CREATIVES)[number]['id'])
+              }
+              className="mt-1 block rounded-lg border border-white/15 bg-black/50 px-3 py-2 text-xs text-white"
+            >
+              {CONNECTOR_CREATIVES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {tierContentCatalog.tiers.map((tier) => {
+          const url = `https://clearpathtrader.com/go/${tier.id}/${source}/${creative}`;
+          return (
+            <article key={tier.id} className="rounded-lg border border-white/10 bg-black/25 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="m-0 text-xs font-black uppercase tracking-wider" style={{ color: tier.accent }}>
+                  {tier.label}
+                </p>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-zinc-500 hover:text-cyan-200"
+                  aria-label={`Open ${tier.label} connector`}
+                >
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+              <p className="mt-2 break-all font-mono text-[11px] text-zinc-300">{url}</p>
+              <button
+                type="button"
+                onClick={() => void copyConnector(tier.id, url)}
+                className="mt-3 inline-flex items-center gap-1 rounded-md border border-white/15 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-zinc-200 hover:bg-white/5"
+              >
+                <Copy size={12} /> {copiedTier === tier.id ? 'Copied' : 'Copy URL'}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 export default function MarketingFunnelDashboard({
@@ -180,6 +277,8 @@ export default function MarketingFunnelDashboard({
           <p className="mt-4 text-sm text-zinc-500">Loading first-party funnel data…</p>
         ) : null}
       </section>
+
+      <FunnelConnectorPanel />
 
       <section>
         <h3 className="m-0 text-sm font-black uppercase tracking-widest text-white">First-party conversion funnel</h3>

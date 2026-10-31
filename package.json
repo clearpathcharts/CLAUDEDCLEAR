@@ -92,6 +92,7 @@
     "test:daily-pattern-review": "tsx scripts/daily-pattern-review.selftest.ts",
     "test:marketing-campaign": "tsx scripts/marketing-campaign.selftest.ts",
     "test:marketing-funnel": "tsx scripts/marketing-funnel.selftest.ts",
+    "test:marketing-funnel-connectors": "tsx scripts/marketing-funnel-connectors.selftest.ts",
     "test:marketing-search-intelligence": "tsx scripts/marketing-search-intelligence.selftest.ts",
     "test:encyclopedia": "tsx scripts/encyclopedia.selftest.ts",
     "test:company-catalog": "tsx scripts/company-catalog.selftest.ts",

@@ -136,7 +136,11 @@ import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
 import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
-import { createAdminMarketingRouter, createPublicMarketingRouter } from './src/server/marketingFunnelRoutes';
+import {
+  createAdminMarketingRouter,
+  createMarketingConnectorRouter,
+  createPublicMarketingRouter,
+} from './src/server/marketingFunnelRoutes';
 import { MARKETING_ATTRIBUTION_COOKIE, recordMarketingSignup } from './src/server/marketingFunnelService';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
@@ -879,6 +883,7 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+  app.use('/go', createMarketingConnectorRouter());
   app.use('/api/marketing', createPublicMarketingRouter());
   app.use('/api/admin/marketing', requireFounderOrCatalogAdmin, createAdminMarketingRouter());
 
