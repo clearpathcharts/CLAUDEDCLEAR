@@ -10,10 +10,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getAdminFirestore } from './firebaseAdmin';
 import { purgeExpressSessionCookiesOnly } from './firestoreSessionStore';
+import { isFounderEmail } from '../lib/founder';
 
 export const DEFAULT_AUTH_SESSION_GENERATION = 2;
 export const AUTH_GENERATION_COLLECTION = 'founder_ops';
 export const AUTH_GENERATION_DOC = 'auth_session_generation';
+/** Founder sessions unlock backups, member resets and key diagnostics, so they expire sooner than members' 7 days. */
+export const FOUNDER_SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 const FILE = path.join(process.cwd(), 'data', 'auth-session-generation.json');
 
@@ -140,6 +143,11 @@ export async function grantFreshSession(
   if (!fresh) return;
   if (extra) Object.assign(fresh, extra);
   applyGrantedSession(fresh, user);
+  const email = (user as { email?: unknown } | null)?.email;
+  const cookie = fresh.cookie as { maxAge?: number } | undefined;
+  if (cookie && isFounderEmail(typeof email === 'string' ? email : '')) {
+    cookie.maxAge = FOUNDER_SESSION_MAX_AGE_MS;
+  }
 }
 
 export function dropStaleAuthSession(session: {
