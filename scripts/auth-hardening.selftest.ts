@@ -97,6 +97,10 @@ for (const route of ["'/api/auth/private/reset-password'", "'/api/auth/private/c
   assert.match(body, /purgeSessionsForEmail\(/, `${route} must sign the member out of every other session`);
 }
 
+assert.doesNotMatch(serverSrc, /\/api\/auth\/private\/lookup/, 'no public "does this email have an account?" endpoint');
+const apiNotFound = serverSrc.indexOf("app.use('/api', (_req, res) => {");
+assert.ok(apiNotFound > 0 && apiNotFound < serverSrc.indexOf('// 4. Vite / Static Serving'), 'unknown /api paths must 404 before the SPA shell');
+
 const wsSrc = read('websockets.ts');
 assert.doesNotMatch(wsSrc, /parsed\.(author|handle)/, 'chat author / post handle must come from the server identity, not the client message');
 assert.doesNotMatch(serverSrc, /author:\s*author\s*\|\|/, 'catalog author must come from the session, not the request body');
