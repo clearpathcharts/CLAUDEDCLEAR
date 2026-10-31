@@ -57,15 +57,6 @@ export const boardVerifyLimiter = rateLimit({
 });
 
 /** Private-account email lookup — throttle account enumeration sweeps. */
-export const authLookupLimiter = rateLimit({
-  windowMs: 60_000,
-  max: 15,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => `lookup:${clientIp(req)}`,
-  message: { error: 'Too many lookups. Wait a minute and try again.' },
-});
-
 /** Password-reset token consumption — tokens are 192-bit, throttle anyway. */
 export const authResetPasswordLimiter = rateLimit({
   windowMs: 60_000,

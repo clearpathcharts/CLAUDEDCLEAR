@@ -585,33 +585,6 @@ export function getPrivateStorageMeta(): {
 }
 
 /** Existence check only — never leak displayName (email enumeration hardening). */
-export async function lookupPrivateUser(email: string): Promise<{
-  exists: boolean;
-  identityStatus?: IdentityStatus;
-}> {
-  const normalized = normalizeEmail(email);
-  if (!normalized || !normalized.includes('@')) {
-    throw new PrivateAuthError('Enter a valid email address.');
-  }
-  if (isProdEnv() && !hasDurablePrivateStore()) {
-    throw new PrivateAuthError(
-      'Private account lookup unavailable: durable store is offline in production.',
-      503
-    );
-  }
-  let found = await findUserRecordByEmail(normalized);
-  if (!found) return { exists: false };
-  found = expireIfNeeded(found);
-  if (found.identityStatus === 'expired') {
-    await persistUser(found);
-  }
-  const out: { exists: boolean; identityStatus?: IdentityStatus } = { exists: true };
-  if (found.identityStatus && found.identityStatus !== 'ok') {
-    out.identityStatus = found.identityStatus;
-  }
-  return out;
-}
-
 /** Admin-only: resolve uid for grant/badge tooling. Prefer durable store. */
 export async function findPrivateUserByEmail(email: string): Promise<PublicPrivateUser | null> {
   const normalized = normalizeEmail(email);
