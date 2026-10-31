@@ -1,0 +1,60 @@
+CLEARPATH MONEY CHANNELS — DOWNLOAD PACK
+========================================
+
+This folder is everything you need for fuckweasel.net money channels:
+YouTube · Facebook · Instagram · TikTok
+
+Discord is closed-circuit. It will not acquire paying students.
+
+────────────────────────────────────────
+OPTION A — Cloud Shell (recommended)
+────────────────────────────────────────
+
+1. Upload this whole folder (or the .zip) to Cloud Shell
+2. Unzip if needed:
+     cd ~
+     unzip -o clearpath-money-channels.zip -d ~/clearpath-money-channels
+3. Redeploy the console:
+     bash ~/clearpath-money-channels/RUN-REDEPLOY.sh
+4. Read the money-channel checklist:
+     cat ~/clearpath-money-channels/MONEY-CHANNELS.txt
+5. Fastest money path = YouTube:
+     cd ~/clearpath-money-channels/env-templates
+     nano youtube.env          # paste your 3 Google OAuth values
+     set -a; source youtube.env; set +a
+     bash ../scripts/SET-YOUTUBE.sh
+6. Meta (Facebook + Instagram):
+     nano meta.env
+     set -a; source meta.env; set +a
+     bash ../scripts/SET-META.sh
+7. TikTok:
+     nano tiktok.env
+     set -a; source tiktok.env; set +a
+     bash ../scripts/SET-TIKTOK.sh
+
+────────────────────────────────────────
+OPTION B — Clone from GitHub (no upload)
+────────────────────────────────────────
+
+cd ~
+rm -rf ~/CLAUDEDCLEAR-fix
+gh repo clone clearpathcharts/CLAUDEDCLEAR ~/CLAUDEDCLEAR-fix -- --depth 1 --branch cursor/marketing-team-auth-bootstrap-2373
+bash ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/FIX-CONTAINER-START.sh
+cat ~/CLAUDEDCLEAR-fix/scripts/marketingdept-bootstrap/MONEY-CHANNELS.txt
+
+────────────────────────────────────────
+What’s inside
+────────────────────────────────────────
+
+START-HERE.txt          ← you are here
+MONEY-CHANNELS.txt      ← full checklist
+CLOUD-SHELL-FIX.txt     ← short Cloud Shell block
+RUN-REDEPLOY.sh         ← deploy this pack to Cloud Run
+scripts/                ← SET-YOUTUBE / SET-META / SET-TIKTOK / ONE-LOGIN / etc.
+env-templates/          ← fill-in files for keys (never commit filled ones)
+publisher-bundle/       ← full ClearPath Publisher + Dispatch console
+
+Service: clearpath-automation-console
+Project: gen-lang-client-0282858983
+Region:  europe-west1
+Site:    https://fuckweasel.net
