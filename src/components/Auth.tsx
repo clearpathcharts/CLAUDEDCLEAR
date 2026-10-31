@@ -241,8 +241,8 @@ export default function Auth() {
   // Floating live alerts for cinematic immersive feel
   const [announcements] = useState<string[]>([
     "Private Login open — create your account with email + password.",
-    "Quantitative nodes linked for real-time market data ingestion.",
-    "Macroeconomic intelligence data clusters verified."
+    "Prices come from licensed data vendors; missing values show DATA UNAVAILABLE.",
+    "COT positioning is sourced from official CFTC.gov reports."
   ]);
   const [curAnnIdx, setCurAnnIdx] = useState(0);
 
@@ -599,11 +599,6 @@ export default function Auth() {
                 {announcements[curAnnIdx]}
               </motion.span>
             </AnimatePresence>
-          </div>
-          <div className="hidden md:flex items-center gap-6 shrink-0 font-mono text-zinc-500 text-[9px] font-bold tracking-widest uppercase">
-            <span>DXY INDEX: <strong className="text-zinc-300">104.82</strong></span>
-            <span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>
-            <span>USD/JPY: <strong className="text-zinc-300">156.42</strong></span>
           </div>
         </div>
       </div>

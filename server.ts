@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
-import { setupWebSockets } from './websockets';
+import { setupWebSockets, wsDisplayName } from './websockets';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
@@ -108,7 +108,7 @@ import {
   hydratePasswordResetsFromFirestore,
   mintPasswordResetToken,
 } from './src/server/passwordResetStore';
-import { createSessionStore } from './src/server/firestoreSessionStore';
+import { createSessionStore, purgeSessionsForEmail } from './src/server/firestoreSessionStore';
 import {
   applyGrantedSession,
   dropStaleAuthSession,
@@ -130,6 +130,7 @@ import {
   frontendErrorLimiter,
 } from './src/server/routeRateLimit';
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
+import { PayloadTooLargeError, assertSafePublicUrl, safePublicFetch } from './src/server/safePublicFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
@@ -335,7 +336,7 @@ import {
   listSentMessages,
   markMemberMessagesRead,
 } from './src/server/memberInboxService';
-import { MARKET_DATA_ROUTES, marketDataLimiter, memberInboxLimiter } from './src/server/routeRateLimit';
+import { MARKET_DATA_ROUTES, URL_PROXY_ROUTES, marketDataLimiter, memberInboxLimiter, urlProxyLimiter } from './src/server/routeRateLimit';
 import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
 import {
   listMembershipGrants,
@@ -395,71 +396,7 @@ function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cw
   return fs.readFileSync(real, 'utf8');
 }
 
-// SSRF PROTECTION
-// The stream and RSS proxies fetch caller-supplied URLs. Without validation they
-// can be abused to reach internal-only targets (cloud metadata at 169.254.169.254,
-// loopback services, RFC1918 hosts, etc.). We only allow http(s) and reject any URL
-// whose resolved address falls inside a private/reserved range.
-function isPrivateIp(ip: string): boolean {
-  // Normalise IPv4-mapped IPv6 addresses (e.g. ::ffff:169.254.169.254)
-  const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
-  const addr = mapped ? mapped[1] : ip;
-
-  if (net.isIPv4(addr)) {
-    const [a, b] = addr.split('.').map(Number);
-    if (a === 10) return true;                       // 10.0.0.0/8
-    if (a === 127) return true;                      // loopback
-    if (a === 0) return true;                         // "this" network
-    if (a === 169 && b === 254) return true;         // link-local / cloud metadata
-    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a === 192 && b === 168) return true;         // 192.168.0.0/16
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
-    if (a >= 224) return true;                        // multicast / reserved
-    return false;
-  }
-
-  const lower = addr.toLowerCase();
-  if (lower === '::1' || lower === '::') return true; // loopback / unspecified
-  if (lower.startsWith('fe80')) return true;          // link-local
-  if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique-local fc00::/7
-  return false;
-}
-
-async function assertSafePublicUrl(rawUrl: string): Promise<URL> {
-  let parsed: URL;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new Error('Invalid URL');
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('Only http(s) URLs are permitted');
-  }
-  const hostname = parsed.hostname.replace(/^\[|\]$/g, '');
-  if (!hostname) {
-    throw new Error('Missing host');
-  }
-  // Block obvious loopback aliases before any DNS work
-  if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
-    throw new Error('Blocked host');
-  }
-  // If the host is already a literal IP, validate it directly
-  if (net.isIP(hostname)) {
-    if (isPrivateIp(hostname)) throw new Error('Blocked private address');
-    return parsed;
-  }
-  // Otherwise resolve every A/AAAA record and reject if any points inside a private range
-  const resolved = await dnsPromises.lookup(hostname, { all: true });
-  if (!resolved.length) {
-    throw new Error('Host did not resolve');
-  }
-  for (const { address } of resolved) {
-    if (isPrivateIp(address)) {
-      throw new Error('Blocked private address');
-    }
-  }
-  return parsed;
-}
+// SSRF PROTECTION lives in src/server/safePublicFetch.ts (connect-time IP checks, no redirects, byte cap).
 
 async function startServer() {
   const app = express();
@@ -671,7 +608,8 @@ async function startServer() {
         sessionMiddleware(req, {} as express.Response, () => {
           const sess = req.session as Parameters<typeof dropStaleAuthSession>[0] | undefined;
           if (!sess || dropStaleAuthSession(sess) === 'dropped') return resolve(null);
-          resolve(getPrivateSessionUser(req)?.uid || null);
+          const member = getPrivateSessionUser(req);
+          resolve(member ? { uid: member.uid, name: wsDisplayName(member.displayName) } : null);
         });
       }),
   });
@@ -1291,6 +1229,9 @@ async function startServer() {
     } catch {
       /* ignore */
     }
+    await purgeSessionsForEmail(sessionUser.email).catch((err) =>
+      console.error('[change-password] Could not sign member out of other sessions:', err),
+    );
     req.session.destroy((err) => {
       res.clearCookie('cpt.sid', {
         path: '/',
@@ -1340,6 +1281,9 @@ async function startServer() {
     }
     try {
       await resetPrivateUserPassword({ email: record.email, password: newPassword });
+      await purgeSessionsForEmail(record.email).catch((err) =>
+        console.error('[reset-password] Could not sign member out of old sessions:', err),
+      );
       return res.json({ ok: true });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 400;
@@ -2049,6 +1993,7 @@ async function startServer() {
       const explicitPassword = String(req.body?.newPassword || req.body?.password || '').trim();
       if (!explicitPassword) {
         const result = await emergencyResetMemberPassword(email);
+        await purgeSessionsForEmail(result.email).catch(() => {});
         return res.json({
           ok: true,
           email: result.email,
@@ -2065,6 +2010,7 @@ async function startServer() {
         newPassword: explicitPassword,
         tempPassword: explicitPassword,
       });
+      await purgeSessionsForEmail(user.email).catch(() => {});
       res.json({
         ok: true,
         email: user.email,
@@ -2330,14 +2276,14 @@ async function startServer() {
   });
 
   app.post('/api/river/catalog/public', requirePrivateSession, moderateBodyFields('pineSource', 'description'), (req, res) => {
-    const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
+    const { name, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
       return res.status(400).json({ error: 'pineSource is required.' });
     }
     try {
       const entry = savePublicEntry({
         name: name || 'Untitled Indicator',
-        author: author || 'Community',
+        author: wsDisplayName((req.session as any)?.privateUser?.displayName),
         description: description || '',
         pineSource,
         pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
@@ -3149,6 +3095,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   app.use([...MARKET_DATA_ROUTES], marketDataLimiter);
+  app.use([...URL_PROXY_ROUTES], urlProxyLimiter);
 
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
@@ -3850,30 +3797,20 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
     const STREAM_PROXY_TIMEOUT_MS = 15_000;
     const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
-      if (!response.ok) {
+      const response = await safePublicFetch(url, { timeoutMs: STREAM_PROXY_TIMEOUT_MS, maxBytes: STREAM_PROXY_MAX_BYTES });
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
-      }
-
-      const contentLength = Number(response.headers.get('content-length') || 0);
-      if (contentLength > STREAM_PROXY_MAX_BYTES) {
-        return res.status(413).json({ error: 'Upstream payload too large' });
       }
 
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
 
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = response.contentType;
       const isM3u8 = url.includes('.m3u8') || url.includes('.m3u') || contentType.includes('mpegurl') || contentType.includes('application/x-mpegURL');
 
       if (isM3u8) {
-        const text = await response.text();
-        if (text.length > STREAM_PROXY_MAX_BYTES) {
-          return res.status(413).json({ error: 'Upstream playlist too large' });
-        }
+        const text = response.body.toString('utf8');
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -3910,18 +3847,13 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       } else {
         // Transparent binary segment forwarding for TS chunks loaded through the proxy
         res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = Buffer.from(await response.arrayBuffer());
-        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
-          return res.status(413).json({ error: 'Upstream segment too large' });
-        }
-        return res.send(buffer);
+        return res.send(response.body);
       }
     } catch (error: any) {
-      console.error('[Stream Proxy Error]', error);
+      console.error('[Stream Proxy Error]', error?.message || error);
+      if (error instanceof PayloadTooLargeError) return res.status(413).json({ error: 'Upstream payload too large' });
       const status = error?.name === 'AbortError' ? 504 : 502;
-      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
-    } finally {
-      clearTimeout(timeout);
+      res.status(status).json({ error: 'Failed to proxy stream details' });
     }
   });
 

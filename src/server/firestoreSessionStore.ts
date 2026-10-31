@@ -17,6 +17,15 @@ type StoredSession = {
   expiresAt: number;
 };
 
+function sessionBelongsTo(json: string, email: string): boolean {
+  try {
+    const parsed = JSON.parse(json) as { privateUser?: { email?: unknown } };
+    return String(parsed?.privateUser?.email || '').trim().toLowerCase() === email;
+  } catch {
+    return false;
+  }
+}
+
 class MemorySessionFallback extends session.Store {
   private readonly rows = new Map<string, StoredSession>();
 
@@ -54,6 +63,17 @@ class MemorySessionFallback extends session.Store {
 
   size(): number {
     return this.rows.size;
+  }
+
+  clearForEmail(email: string): number {
+    let n = 0;
+    for (const [sid, row] of this.rows) {
+      if (sessionBelongsTo(row.json, email)) {
+        this.rows.delete(sid);
+        n += 1;
+      }
+    }
+    return n;
   }
 
   clearAll(): number {
@@ -173,6 +193,23 @@ export function createSessionStore(): Store {
     console.log('[Session] Firestore not probed yet — memory until durable store is ready.');
   }
   return new AdaptiveSessionStore(memoryFallback);
+}
+
+/** Sign one member out everywhere (e.g. after a password reset). Login cookies only. */
+export async function purgeSessionsForEmail(rawEmail: string): Promise<number> {
+  const email = String(rawEmail || '').trim().toLowerCase();
+  if (!email.includes('@')) return 0;
+  let deleted = memoryFallback?.clearForEmail(email) ?? 0;
+  const db = getAdminFirestore();
+  if (!db) return deleted;
+  const snap = await db.collection(COLLECTION).get();
+  const mine = snap.docs.filter((doc) => sessionBelongsTo(String((doc.data() as StoredSession)?.json || ''), email));
+  for (let i = 0; i < mine.length; i += 400) {
+    const batch = db.batch();
+    for (const doc of mine.slice(i, i + 400)) batch.delete(doc.ref);
+    await batch.commit();
+  }
+  return deleted + mine.length;
 }
 
 /** Delete login cookies only. Never touches private_accounts, waitlist, or profiles. */

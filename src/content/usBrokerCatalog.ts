@@ -6,6 +6,8 @@ export type UsBrokerCard = {
   legalName: string;
   logo: string;
   logoSurface: 'dark' | 'light';
+  /** Written permission from the firm to show its logo. Until true, the card shows the name as plain text. */
+  logoUseApproved: boolean;
   assetClasses: string[];
   integration: BrokerIntegrationState;
   sourceLabel: string;
@@ -24,6 +26,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Alpaca Securities LLC',
     logo: '/images/brokers/alpaca.png',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options'],
     integration: 'available',
     sourceLabel: 'Alpaca newsroom',
@@ -36,6 +39,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Charles Schwab & Co., Inc.',
     logo: '/images/brokers/schwab.svg',
     logoSurface: 'light',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options', 'Futures'],
     integration: 'planned',
     sourceLabel: 'Schwab website',
@@ -48,6 +52,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Tradier Brokerage, Inc.',
     logo: '/images/brokers/tradier.svg',
     logoSurface: 'light',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options'],
     integration: 'planned',
     sourceLabel: 'Tradier attribution guidelines',
@@ -60,6 +65,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'TradeStation Securities, Inc.',
     logo: '/images/brokers/tradestation.png',
     logoSurface: 'light',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options', 'Futures'],
     integration: 'planned',
     sourceLabel: 'TradeStation brand kit',
@@ -72,6 +78,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Interactive Brokers LLC',
     logo: '/images/brokers/ibkr.png',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options', 'Futures', 'FX'],
     integration: 'planned',
     sourceLabel: 'Interactive Brokers website',
@@ -84,6 +91,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'tastytrade, Inc.',
     logo: '/images/brokers/tastytrade.svg',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options', 'Futures'],
     integration: 'planned',
     sourceLabel: 'tastytrade developer site',
@@ -96,6 +104,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'E*TRADE from Morgan Stanley',
     logo: '/images/brokers/etrade.svg',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options', 'Futures'],
     integration: 'planned',
     sourceLabel: 'E*TRADE website',
@@ -108,6 +117,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Webull Financial LLC',
     logo: '/images/brokers/webull.svg',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Stocks', 'ETFs', 'Options'],
     integration: 'planned',
     sourceLabel: 'Webull website',
@@ -120,6 +130,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     legalName: 'Tradovate, LLC',
     logo: '/images/brokers/tradovate.png',
     logoSurface: 'dark',
+    logoUseApproved: false,
     assetClasses: ['Futures'],
     integration: 'planned',
     sourceLabel: 'Tradovate website',

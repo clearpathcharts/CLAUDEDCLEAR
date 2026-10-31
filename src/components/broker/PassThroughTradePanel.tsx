@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBrokerConnection } from '../../hooks/useBrokerConnection';
-import { submitAlpacaOrder, startAlpacaConnect } from '../../api/brokerConnect';
+import { submitAlpacaOrder } from '../../api/brokerConnect';
+import { useAlpacaConnectGate } from './AlpacaAuthorizeDisclosure';
 import {
   NEVER_BROKER_DEALER,
   PASS_THROUGH_ORDER_DISCLAIMER,
@@ -17,6 +18,7 @@ type Props = {
  */
 export default function PassThroughTradePanel({ symbol }: Props) {
   const { loading, alpaca, account, refresh } = useBrokerConnection(true);
+  const { requestConnect, disclosure } = useAlpacaConnectGate();
   const [qty, setQty] = useState('1');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [ack, setAck] = useState(false);
@@ -45,15 +47,16 @@ export default function PassThroughTradePanel({ symbol }: Props) {
   if (!alpaca.connected) {
     return (
       <div className="shrink-0 flex flex-wrap items-center gap-2 border-t border-[var(--desk-border)] px-3 py-2">
+        {disclosure}
         <p className="text-[10px] text-[var(--desk-muted)] max-w-xl leading-relaxed">
           {PASS_THROUGH_SUMMARY}
         </p>
         <button
           type="button"
-          onClick={() => startAlpacaConnect('/desk/retail')}
+          onClick={() => requestConnect('/desk/retail')}
           className="rounded-md border border-cyan-500/50 bg-cyan-500/15 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-cyan-100"
         >
-          Connect {alpaca.label}
+          Link your brokerage account
         </button>
       </div>
     );

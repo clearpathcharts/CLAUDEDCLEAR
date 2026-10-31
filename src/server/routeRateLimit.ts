@@ -115,6 +115,18 @@ export const MARKET_DATA_ROUTES = [
   '/api/news/search',
 ] as const;
 
+/** Routes that fetch a caller-supplied URL on the server's bandwidth. */
+export const URL_PROXY_ROUTES = ['/api/stream-proxy', '/api/rss', '/api/podcast', '/api/literacy/watch-check'] as const;
+
+export const urlProxyLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `proxy:${clientIp(req)}`,
+  message: { error: 'Too many requests. Wait a minute and try again.' },
+});
+
 export const marketDataLimiter = rateLimit({
   windowMs: 60_000,
   max: 300,

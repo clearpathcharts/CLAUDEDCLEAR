@@ -31,6 +31,14 @@ const BANNED: Array<{ pattern: RegExp; why: string }> = [
   { pattern: /seededRandom\s*\(/, why: 'seeded generator — tickers, coins, companies, and terms must come from real lists' },
   { pattern: /fromCharCode\(\s*\d+\s*\+\s*Math\.floor\(/, why: 'generated ticker/symbol letters' },
   { pattern: /(list|catalog|out)\.length\s*<\s*\d{4,}/, why: 'padding a market catalog to a target size' },
+  {
+    pattern: /\b(BTC|ETH|EUR|GBP|USD|XAU|DXY)[A-Z/ ]*(INDEX)?:\s*<strong[^>]*>\s*\$?\d/i,
+    why: 'frozen ticker strip shown as a live price',
+  },
+  { pattern: /year:\s*20(2[5-9]|[3-9]\d)\b[^\n]*(spReturn|dxy|m2Billions)\s*:/, why: 'historical series row for a year without published data' },
+  { pattern: /Followers:\s*[\d,]+|Community Rewards Earned:\s*\d/, why: 'hardcoded profile stats shown to every member' },
+  { pattern: /(Apex|NextGen)\s*\$\{/, why: 'generated competitor names' },
+  { pattern: /fully compliant digital dollar/i, why: 'unqualified regulatory claim' },
 ];
 
 /**
@@ -104,6 +112,10 @@ const canaries = [
   'const r1 = seededRandom(seed);',
   'const char1 = String.fromCharCode(65 + Math.floor(r1 * 26));',
   'for (let i = 1; list.length < 20112; i++) {',
+  '<span>BTC/USD: <strong className="text-zinc-300">$77,979.87</strong></span>',
+  '<span>DXY INDEX: <strong className="x">104.82</strong></span>',
+  "{ year: 2026, label: 'Modern Frontier', spReturn: 6150, dxy: 103.8 }",
+  '"Followers: 12,450",',
 ];
 for (const c of canaries) {
   assert.ok(BANNED.some(({ pattern }) => pattern.test(c)), `guard regression: canary not caught: ${c}`);
