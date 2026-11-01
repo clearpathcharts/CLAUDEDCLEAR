@@ -131,6 +131,10 @@ import {
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { PayloadTooLargeError, assertSafePublicUrl, safePublicFetch } from './src/server/safePublicFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
+
+const SEMANTIC_LINK_MAX_CHARS = 5000;
+const INDICATOR_MAX_CANDLES = 5000;
+const INDICATOR_MAX_SETTING = 1000;
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
@@ -518,6 +522,22 @@ async function startServer() {
     }
     return next(err);
   });
+
+  // Internal exception text (paths, vendor errors, stack fragments) must never reach visitors.
+  if (process.env.NODE_ENV === 'production') {
+    app.use('/api', (req, res, next) => {
+      const sendJson = res.json.bind(res);
+      res.json = (body?: any) => {
+        if (res.statusCode === 500 && body && typeof body === 'object' && !Array.isArray(body)) {
+          console.error('[api 500]', req.method, req.path, body.error || body.message || '');
+          const { stack: _stack, details: _details, message: _message, ...rest } = body;
+          return sendJson({ ...rest, error: 'Server error. Please try again.' });
+        }
+        return sendJson(body);
+      };
+      next();
+    });
+  }
 
   // Retired dashboard deep link — canonical membership is /plans (301 for crawlers).
   app.use((req, res, next) => {
@@ -1016,7 +1036,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resend', async (req, res) => {
+  app.post('/api/auth/private/identity/resend', authLoginLimiter, async (req, res) => {
     try {
       const reminted = await remintIdentityChallenge({
         email: req.body?.email || '',
@@ -1684,7 +1704,7 @@ async function startServer() {
           message: 'Firebase Admin cannot verify Google login right now.',
         });
       }
-      const decoded = await getAuth().verifyIdToken(match[1].trim());
+      const decoded = await getAuth().verifyIdToken(match[1].trim(), true);
       const founderEmail = String(decoded.email || '').trim().toLowerCase();
       const founderUid = String(decoded.uid || '');
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
@@ -1965,7 +1985,7 @@ async function startServer() {
       res.json({
         ...result,
         howToSend:
-          'Open “Show invite passwords”, copy email + tempPassword for Dawn and the other known members, and send privately. They log in via Private Login.',
+          'Temporary passwords are never stored. Use CEO Dashboard → Invite emails → SEND EMAIL for each member: it issues a fresh password and emails it directly.',
       });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1995,7 +2015,7 @@ async function startServer() {
           tempPassword: result.tempPassword,
           user: { email: result.email, displayName: result.displayName },
           howToSend:
-            'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+            'Send this email + tempPassword to the member privately now — it is shown only once and is not stored. They log in via Private Login, then should change password.',
         });
       }
       const user = await resetPrivateUserPassword({
@@ -2390,7 +2410,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/waitlist', async (req, res) => {
+  app.post('/api/registrations/waitlist', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
       res.json(result);
@@ -2400,7 +2420,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/identity', async (req, res) => {
+  app.post('/api/registrations/identity', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerIdentity(req.body || {});
       res.json(result);
@@ -2677,11 +2697,19 @@ async function startServer() {
     res.json(IndicatorRegistry);
   });
 
-  app.post('/api/indicators', (req, res) => {
+  app.post('/api/indicators', marketDataLimiter, (req, res) => {
     try {
       const { indicator, candles, settings } = req.body;
       if (!indicator || !candles) {
         return res.status(400).json({ error: "Missing required properties: 'indicator' and 'candles' are required." });
+      }
+      if (!Array.isArray(candles) || candles.length > INDICATOR_MAX_CANDLES) {
+        return res.status(400).json({ error: `candles must be an array of at most ${INDICATOR_MAX_CANDLES} bars` });
+      }
+      const oversized = settings && typeof settings === 'object'
+        && Object.values(settings).some((v) => typeof v === 'number' && Math.abs(v) > INDICATOR_MAX_SETTING);
+      if (oversized) {
+        return res.status(400).json({ error: `indicator settings must be at most ${INDICATOR_MAX_SETTING}` });
       }
       const result = IndicatorEngine.calculate(indicator, candles, settings);
       res.json(result);
@@ -3796,8 +3824,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         throw new Error(`Failed to fetch target URL: ${response.status}`);
       }
 
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      // Proxied bytes come from arbitrary hosts: never let them render as a page on this origin.
+      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
 
       const contentType = response.contentType;
       const isM3u8 = url.includes('.m3u8') || url.includes('.m3u') || contentType.includes('mpegurl') || contentType.includes('application/x-mpegURL');
@@ -3838,8 +3867,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         return res.send(rewrittenLines.join('\n'));
       } else {
-        // Transparent binary segment forwarding for TS chunks loaded through the proxy
-        res.setHeader('Content-Type', contentType || 'video/MP2T');
+        const mediaType = (contentType || 'video/MP2T').split(';')[0].trim().toLowerCase();
+        if (!/^(video|audio)\//.test(mediaType) && mediaType !== 'application/octet-stream') {
+          return res.status(415).json({ error: 'Only stream playlists and media segments can be proxied' });
+        }
+        res.setHeader('Content-Type', mediaType);
+        res.setHeader('Content-Disposition', 'attachment');
         return res.send(response.body);
       }
     } catch (error: any) {
@@ -4188,143 +4221,6 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', requirePrivateSession, async (req, res) => {
-    const { q } = req.query;
-    if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) {
-      return res.json({ 
-        error: 'API key missing', 
-        message: 'The GEMINI_API_KEY environment variable is not defined. Please configure it in your Settings > Secrets panel.',
-        demo: true,
-        summary: `Simulated results for "${q}": The platform's GEMINI_API_KEY is not defined. Set it in Secrets to turn on live Google Search.`,
-        overallSentiment: "Bullish",
-        sentimentScore: 78,
-        headlines: [
-          {
-            id: "demo-1",
-            title: `Federal Reserve Signals Growth Alignment for ${q}`,
-            description: "Institutional desks report a substantial surge in interest rate stabilization and volume parameters.",
-            sentiment: "Bullish",
-            sentimentScore: 82,
-            date: "1 hour ago",
-            sourceName: "Institutional Research (Demo)"
-          },
-          {
-            id: "demo-2",
-            title: `Global Capital Flow Drift Anchored on ${q}`,
-            description: "Secondary market makers increased liquid inventory indices by 13.5% over the weekend.",
-            sentiment: "Neutral",
-            sentimentScore: 50,
-            date: "3 hours ago",
-            sourceName: "System Wire (Demo)"
-          }
-        ],
-        citations: [
-          { title: "Clear Path Markets Reference Desk", uri: "https://ai.studio/build" }
-        ]
-      });
-    }
-
-    try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
-
-      const prompt = `You are an elite institutional financial analyst. Perform a live Google Search query to pull recent news headlines, sentiment, and market discussions for: "${q}".
-Analyze the latest news, blogs, and public discussions. Return a structured briefing.
-The output MUST be a valid JSON object matching the following structure exactly:
-{
-  "summary": "A 2-3 sentence overview of the current sentiment, institutional backing, and recent developments regarding this topic.",
-  "overallSentiment": "Bullish" | "Bearish" | "Neutral",
-  "sentimentScore": 75,
-  "headlines": [
-    {
-      "id": "search-item-1",
-      "title": "Clear concise 1-line news headline",
-      "description": "A 1-2 sentence detailed summary of what occurred, why it matters, and the market impact.",
-      "sentiment": "Bullish" | "Bearish" | "Neutral",
-      "sentimentScore": 85,
-      "date": "e.g., 2 hours ago or Today",
-      "sourceName": "e.g., Bloomberg, AP, or Yahoo Finance"
-    }
-  ]
-}
-Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do not output anything other than the exact JSON structure.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
-      });
-
-      let text = response.text || '';
-      // Clean up markdown block wraps if model ignores instructions
-      if (text.startsWith('```')) {
-        text = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      }
-
-      let parsedData;
-      try {
-        parsedData = JSON.parse(text);
-      } catch (e) {
-        console.warn('[Gemini News Search Parse Failure]', text, e);
-        // Fallback placeholder structure if JSON parsing failed
-        parsedData = {
-          summary: "Live news pulled successfully, but could not structure all news into JSON. Raw parsing overview: " + text.slice(0, 300),
-          overallSentiment: "Neutral",
-          sentimentScore: 50,
-          headlines: [
-            {
-              id: "fallback-1",
-              title: `Live news updates for ${q}`,
-              description: text.slice(0, 500) || "Recent news analysis completed with active search grounding.",
-              sentiment: "Neutral",
-              sentimentScore: 50,
-              date: "Recent",
-              sourceName: "Google Search Grounding"
-            }
-          ]
-        };
-      }
-
-      // Extract real grounding citations to display to the user
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      const citations = chunks
-        .filter((chunk: any) => chunk.web?.uri)
-        .map((chunk: any) => ({
-          title: chunk.web.title || 'Web Resource',
-          uri: chunk.web.uri
-        }));
-
-      res.json({
-        ...parsedData,
-        citations: citations.length > 0 ? citations : [
-          { title: "Grounded Google Search Reference", uri: "https://www.google.com" }
-        ]
-      });
-
-    } catch (err: any) {
-      console.error('[Gemini Grounded Search News Error]', err);
-      res.status(500).json({ 
-        error: 'Failed search grounding', 
-        message: err.message || 'The Google Search Grounding query failed or is currently ratelimited.' 
-      });
-    }
-  });
-
   // Programmatic local binaries initialization for SEO branding
   ensureSeoAssetsExist();
 
@@ -4607,10 +4503,13 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(SEMANTIC_RECORDS);
   });
 
-  app.post('/api/semantic/link', (req, res) => {
+  app.post('/api/semantic/link', marketDataLimiter, (req, res) => {
     const { text } = req.body;
     if (typeof text !== 'string') {
       return res.status(400).json({ error: 'text is required and must be a string' });
+    }
+    if (text.length > SEMANTIC_LINK_MAX_CHARS) {
+      return res.status(413).json({ error: `text must be at most ${SEMANTIC_LINK_MAX_CHARS} characters` });
     }
     res.json({ linkedText: semanticLinkContent(text) });
   });

@@ -119,7 +119,7 @@ function broadcastChatRoom(roomId: string, payload: Record<string, unknown>) {
  * Handles real-time pushes for prices, news, and system alerts.
  */
 export function setupWebSockets(server: Server, options: { resolveSessionUid?: WsSessionUidResolver } = {}) {
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({ server, maxPayload: 16 * 1024 });
   wssInstance = wss;
 
   wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
@@ -190,7 +190,7 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
           // Broadcast that user connected to gateway
           broadcastToAll({
             type: 'SOCIAL_CONNECT_BROADCAST',
-            platform: parsed.platform,
+            platform: String(parsed.platform || '').slice(0, 32) as SocialPost['platform'],
             handle: authorName,
             timestamp: Date.now()
           });
@@ -201,7 +201,7 @@ export function setupWebSockets(server: Server, options: { resolveSessionUid?: W
           if (!assertCleanText(text, { actorKey: uid }).ok) return;
           const newPost: SocialPost = {
             id: 'post_' + Math.random().toString(36).slice(2, 11),
-            platform: parsed.platform,
+            platform: String(parsed.platform || '').slice(0, 32) as SocialPost['platform'],
             handle: authorName,
             text,
             timestamp: Date.now()
