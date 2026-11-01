@@ -175,7 +175,7 @@ export default function CeoDashboard() {
   const [inviteMailMsg, setInviteMailMsg] = useState<string | null>(null);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
+  const [resetEmail, setResetEmail] = useState('');
   const [apiUnlocked, setApiUnlocked] = useState(false);
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [catalogSecretInput, setCatalogSecretInput] = useState(() => {

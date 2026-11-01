@@ -131,6 +131,10 @@ import {
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { PayloadTooLargeError, assertSafePublicUrl, safePublicFetch } from './src/server/safePublicFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
+
+const SEMANTIC_LINK_MAX_CHARS = 5000;
+const INDICATOR_MAX_CANDLES = 5000;
+const INDICATOR_MAX_SETTING = 1000;
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
@@ -1011,7 +1015,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resend', async (req, res) => {
+  app.post('/api/auth/private/identity/resend', authLoginLimiter, async (req, res) => {
     try {
       const reminted = await remintIdentityChallenge({
         email: req.body?.email || '',
@@ -1679,7 +1683,7 @@ async function startServer() {
           message: 'Firebase Admin cannot verify Google login right now.',
         });
       }
-      const decoded = await getAuth().verifyIdToken(match[1].trim());
+      const decoded = await getAuth().verifyIdToken(match[1].trim(), true);
       const founderEmail = String(decoded.email || '').trim().toLowerCase();
       const founderUid = String(decoded.uid || '');
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
@@ -2385,7 +2389,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/waitlist', async (req, res) => {
+  app.post('/api/registrations/waitlist', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
       res.json(result);
@@ -2395,7 +2399,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/identity', async (req, res) => {
+  app.post('/api/registrations/identity', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerIdentity(req.body || {});
       res.json(result);
@@ -2672,11 +2676,19 @@ async function startServer() {
     res.json(IndicatorRegistry);
   });
 
-  app.post('/api/indicators', (req, res) => {
+  app.post('/api/indicators', marketDataLimiter, (req, res) => {
     try {
       const { indicator, candles, settings } = req.body;
       if (!indicator || !candles) {
         return res.status(400).json({ error: "Missing required properties: 'indicator' and 'candles' are required." });
+      }
+      if (!Array.isArray(candles) || candles.length > INDICATOR_MAX_CANDLES) {
+        return res.status(400).json({ error: `candles must be an array of at most ${INDICATOR_MAX_CANDLES} bars` });
+      }
+      const oversized = settings && typeof settings === 'object'
+        && Object.values(settings).some((v) => typeof v === 'number' && Math.abs(v) > INDICATOR_MAX_SETTING);
+      if (oversized) {
+        return res.status(400).json({ error: `indicator settings must be at most ${INDICATOR_MAX_SETTING}` });
       }
       const result = IndicatorEngine.calculate(indicator, candles, settings);
       res.json(result);
@@ -3791,8 +3803,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         throw new Error(`Failed to fetch target URL: ${response.status}`);
       }
 
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      // Proxied bytes come from arbitrary hosts: never let them render as a page on this origin.
+      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
 
       const contentType = response.contentType;
       const isM3u8 = url.includes('.m3u8') || url.includes('.m3u') || contentType.includes('mpegurl') || contentType.includes('application/x-mpegURL');
@@ -3833,8 +3846,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         return res.send(rewrittenLines.join('\n'));
       } else {
-        // Transparent binary segment forwarding for TS chunks loaded through the proxy
-        res.setHeader('Content-Type', contentType || 'video/MP2T');
+        const mediaType = (contentType || 'video/MP2T').split(';')[0].trim().toLowerCase();
+        if (!/^(video|audio)\//.test(mediaType) && mediaType !== 'application/octet-stream') {
+          return res.status(415).json({ error: 'Only stream playlists and media segments can be proxied' });
+        }
+        res.setHeader('Content-Type', mediaType);
+        res.setHeader('Content-Disposition', 'attachment');
         return res.send(response.body);
       }
     } catch (error: any) {
@@ -4184,7 +4201,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', requirePrivateSession, async (req, res) => {
+  app.get('/api/news/search', requirePrivateSession, aiChatLimiter, async (req, res) => {
     const { q } = req.query;
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ error: 'Search query is required' });
@@ -4602,10 +4619,13 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json(SEMANTIC_RECORDS);
   });
 
-  app.post('/api/semantic/link', (req, res) => {
+  app.post('/api/semantic/link', marketDataLimiter, (req, res) => {
     const { text } = req.body;
     if (typeof text !== 'string') {
       return res.status(400).json({ error: 'text is required and must be a string' });
+    }
+    if (text.length > SEMANTIC_LINK_MAX_CHARS) {
+      return res.status(413).json({ error: `text must be at most ${SEMANTIC_LINK_MAX_CHARS} characters` });
     }
     res.json({ linkedText: semanticLinkContent(text) });
   });
