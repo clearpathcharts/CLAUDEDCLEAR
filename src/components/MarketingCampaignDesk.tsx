@@ -15,6 +15,7 @@ import marketingMetadata from '../../data/marketing/clearpath-marketing-metadata
 import searchIntelligence from '../../data/marketing/global-search-intelligence.json';
 import GlobalSearchIntelligencePanel from './GlobalSearchIntelligencePanel';
 import MarketingFunnelDashboard from './MarketingFunnelDashboard';
+import MarketingIntelligenceDashboard from './MarketingIntelligenceDashboard';
 
 type KeywordCluster = (typeof marketingMetadata.keywordClusters)[number];
 
@@ -181,6 +182,8 @@ export default function MarketingCampaignDesk({
         <MarketingFunnelDashboard getHeaders={getHeaders} />
 
         <GlobalSearchIntelligencePanel />
+
+        <MarketingIntelligenceDashboard getHeaders={getHeaders} />
 
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-xl border border-amber-400/20 bg-amber-500/[0.05] p-5">

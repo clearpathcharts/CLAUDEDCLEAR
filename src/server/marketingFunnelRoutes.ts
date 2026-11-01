@@ -8,6 +8,7 @@ import {
   recordPublicMarketingEvent,
   sanitizeMarketingAttribution,
 } from './marketingFunnelService';
+import { createMarketingIntelligenceRouter } from './marketingIntelligenceRoutes';
 
 export function createPublicMarketingRouter(): Router {
   const router = Router();
@@ -50,6 +51,8 @@ export function createPublicMarketingRouter(): Router {
 
 export function createAdminMarketingRouter(): Router {
   const router = Router();
+
+  router.use('/intelligence', createMarketingIntelligenceRouter());
 
   router.get('/catalog', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
