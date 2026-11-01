@@ -153,4 +153,21 @@ const memberReq: any = { session: { cookie: { maxAge: 7 * 86400_000 } } };
 await grantFreshSession(memberReq, { uid: 'm', email: 'member@example.com' });
 assert.equal(memberReq.session.cookie.maxAge, 7 * 86400_000);
 
+const privateAuthSrc = fs.readFileSync(path.join(root, 'src/server/privateAuthService.ts'), 'utf8');
+assert.doesNotMatch(privateAuthSrc, /'Account not found\.', 404/, 'identity routes must not confirm whether an email is registered');
+assert.match(serverSrc, /\[api 500\]/, 'production 500 bodies must be replaced with a generic message');
+
+const { loginPrivateUser } = await import('../src/server/privateAuthService.ts');
+const probe = `lockout-probe-${Date.now()}@example.com`;
+const loginStatus = async () => {
+  try {
+    await loginPrivateUser({ email: probe, password: 'wrong-password-1' });
+    return 200;
+  } catch (err: any) {
+    return err?.status;
+  }
+};
+for (let i = 0; i < 8; i++) assert.equal(await loginStatus(), 401, 'unknown email answers like a wrong password');
+assert.equal(await loginStatus(), 429, 'ninth failure inside 15 minutes is locked out');
+
 console.log('auth-hardening.selftest: ok');
