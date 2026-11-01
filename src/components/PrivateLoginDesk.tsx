@@ -72,12 +72,12 @@ export default function PrivateLoginDesk({
       const params = new URLSearchParams(window.location.search);
       const identity = params.get('identity');
       if (identity === 'confirmed') {
-        setInfoBanner('Identity confirmed. Sign in with your email and password.');
+        setInfoBanner('Email confirmed. Sign in with your email and password.');
         setStep('login');
       } else if (identity === 'declined') {
         setStep('goodbye');
       } else if (identity === 'invalid') {
-        setError('That confirmation link is invalid or expired.');
+        setError('That confirmation link is invalid or expired. Sign in to get a new one.');
       }
     } catch {
       /* ignore */
@@ -141,8 +141,13 @@ export default function PrivateLoginDesk({
         setAccountEmail(result.user.email);
         setDisplayName(result.user.displayName || '');
         setKnownName(result.user.displayName || 'Member');
-        setStep('real_info');
-        setInfoBanner('Please enter real information to unlock your desk.');
+        if (result.reasons.includes('email_unverified')) {
+          setStep('pending_email');
+          setInfoBanner('Confirm your email first. Click the link we sent, or resend it below.');
+        } else {
+          setStep('real_info');
+          setInfoBanner('Please enter real information to unlock your desk.');
+        }
         setBusy(false);
         return;
       }
@@ -173,10 +178,10 @@ export default function PrivateLoginDesk({
         setDisplayName(result.user.displayName || displayName);
         setInfoBanner(
           result.emailSent
-            ? 'We sent a confirmation email. Please enter real information below, or confirm via the link.'
-            : 'Please enter real information. (Confirmation email could not be sent yet — SMTP may be offline.)'
+            ? 'Check your email. Click the link we sent to activate your account, then sign in.'
+            : 'We could not send the email just now. Press "Resend confirmation email" in a minute.'
         );
-        setStep('real_info');
+        setStep('pending_email');
         setBusy(false);
         return;
       }
@@ -282,7 +287,7 @@ export default function PrivateLoginDesk({
           : step === 'real_info'
             ? 'Please enter real information'
             : step === 'pending_email'
-              ? 'Confirm your identity'
+              ? 'Check your email'
               : step === 'goodbye'
                 ? 'Have a good one.'
                 : 'Private Login';
@@ -593,10 +598,13 @@ export default function PrivateLoginDesk({
             {step === 'pending_email' && (
               <div>
                 <p className="cp-scifi-login-note">
-                  We sent a confirmation link to <span className="font-mono">{email}</span>. Click it to unlock your private desk. The link expires in 48 hours.
+                  If <span className="font-mono">{email}</span> is a new account, we sent a confirmation link there. Click it, then sign in. The link expires in 48 hours.
                 </p>
                 <button type="button" disabled={busy} onClick={handleResend} className="cp-scifi-login-submit">
                   {busy ? 'Sending…' : 'Resend confirmation email'}
+                </button>
+                <button type="button" disabled={busy} onClick={() => { setInfoBanner(''); setStep('login'); }} className="cp-scifi-login-alt">
+                  I confirmed it, sign in
                 </button>
                 <button type="button" disabled={busy} onClick={() => setStep('real_info')} className="cp-scifi-login-alt">
                   Update my information
