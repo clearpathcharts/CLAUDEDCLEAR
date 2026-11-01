@@ -6,6 +6,7 @@ import {
 } from './registrationStore';
 import {
   notifyAdminNewRegistration,
+  sendAccountExistsEmail,
   sendIdentityPreregistrationEmail,
   sendWaitlistConfirmationEmail,
 } from './registrationEmail';
@@ -99,7 +100,11 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
 
   const existing = await findPrivateUserByEmail(emailAddress);
   if (existing) {
-    throw new RegistrationError('This email already has a Private Login. Sign in on the terminal.', 409);
+    // Same answer as a new signup so the waitlist cannot be used to test who is a member.
+    const site = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(/\/$/, '');
+    const emailSent = await sendAccountExistsEmail({ to: emailAddress, loginUrl: `${site}/login` });
+    const activationKey = generateActivationKey();
+    return { success: true, activationKey, emailSent, registrationId: activationKey };
   }
 
   if (!getAdminFirestore() && process.env.NODE_ENV === 'production') {
@@ -143,7 +148,7 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
     details: `Name: ${firstName}\nCountry: ${country}\nExperience: ${input.experienceLevel || 'n/a'}\nMoved to Firestore private_accounts (${user.uid})`,
   });
 
-  return { success: true, activationKey, emailSent, registrationId: user.uid };
+  return { success: true, activationKey, emailSent, registrationId: activationKey };
 }
 
 export async function registerIdentity(input: IdentityInput): Promise<RegistrationResult> {
