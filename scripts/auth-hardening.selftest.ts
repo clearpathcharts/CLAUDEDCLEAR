@@ -101,6 +101,14 @@ assert.doesNotMatch(serverSrc, /\/api\/auth\/private\/lookup/, 'no public "does 
 const apiNotFound = serverSrc.indexOf("app.use('/api', (_req, res) => {");
 assert.ok(apiNotFound > 0 && apiNotFound < serverSrc.indexOf('// 4. Vite / Static Serving'), 'unknown /api paths must 404 before the SPA shell');
 
+const stripeStore = read('src/server/stripePrivateAccountStore.ts');
+assert.doesNotMatch(stripeStore, /metadata\[META\.tempPassword\]\s*=\s*user\./, 'Stripe metadata must never store a plaintext password');
+assert.doesNotMatch(stripeStore, /record\.tempPassword\s*=/, 'Stripe records must not surface a stored temp password');
+const inviteVault = read('src/server/waitlistConvertService.ts');
+assert.match(inviteVault, /tempPassword: FieldValue\.delete\(\)/, 'invite vault must delete, never store, temp passwords');
+assert.doesNotMatch(inviteVault, /tempPassword: typeof d\.tempPassword/, 'invite vault must not read back stored temp passwords');
+assert.doesNotMatch(read('src/server/founderBackupService.ts'), /tempPassword: inv\.tempPassword/, 'backups must not copy temp passwords');
+
 const wsSrc = read('websockets.ts');
 assert.doesNotMatch(wsSrc, /parsed\.(author|handle)/, 'chat author / post handle must come from the server identity, not the client message');
 assert.doesNotMatch(serverSrc, /author:\s*author\s*\|\|/, 'catalog author must come from the session, not the request body');

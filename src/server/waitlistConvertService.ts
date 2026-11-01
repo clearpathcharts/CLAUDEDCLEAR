@@ -5,6 +5,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminFirestore } from './firebaseAdmin';
 import { generateActivationKey, normalizeEmail } from './activationKey';
 import {
@@ -44,7 +45,7 @@ export type FounderInviteSafe = {
   displayName: string;
   uid: string;
   activationKey: string;
-  /** Present only on founder invite export — never in Members list. */
+  /** Only on the in-memory result of the action that issued it — never persisted. */
   tempPassword?: string;
   createdAt: string;
   waitlistSource?: string;
@@ -83,8 +84,11 @@ function appendLocalInvite(invite: FounderInviteSafe & { tempPassword: string })
       rows = [];
     }
   }
-  rows = rows.filter((r) => normalizeEmail(r.email) !== invite.email);
-  rows.push(invite);
+  rows = rows
+    .filter((r) => normalizeEmail(r.email) !== invite.email)
+    .map(({ tempPassword: _drop, ...rest }) => rest);
+  const { tempPassword: _omit, ...stored } = invite;
+  rows.push(stored);
   fs.writeFileSync(filePath, JSON.stringify(rows, null, 2), 'utf8');
 }
 
@@ -99,7 +103,7 @@ async function upsertInvite(invite: FounderInviteSafe & { tempPassword: string }
         displayName: invite.displayName,
         uid: invite.uid,
         activationKey: invite.activationKey,
-        tempPassword: invite.tempPassword,
+        tempPassword: FieldValue.delete(),
         createdAt: invite.createdAt,
         waitlistSource: invite.waitlistSource || 'site_registrations',
       },
@@ -475,7 +479,6 @@ export async function listFounderInvites(): Promise<{
           displayName: String(d.displayName || ''),
           uid: String(d.uid || ''),
           activationKey: String(d.activationKey || ''),
-          tempPassword: typeof d.tempPassword === 'string' ? d.tempPassword : undefined,
           createdAt: String(d.createdAt || ''),
           waitlistSource: typeof d.waitlistSource === 'string' ? d.waitlistSource : undefined,
         };
@@ -490,7 +493,9 @@ export async function listFounderInvites(): Promise<{
   if (fs.existsSync(filePath)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      const invites = (Array.isArray(parsed) ? parsed : []) as FounderInviteSafe[];
+      const invites = ((Array.isArray(parsed) ? parsed : []) as FounderInviteSafe[]).map(
+        ({ tempPassword: _drop, ...rest }) => rest,
+      );
       return { invites, source: invites.length ? 'local' : 'none' };
     } catch {
       /* fall through */

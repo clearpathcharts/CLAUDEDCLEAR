@@ -137,7 +137,6 @@ export async function buildFounderBackupPackage(opts?: {
         displayName: inv.displayName,
         uid: inv.uid,
         activationKey: inv.activationKey,
-        ...(inv.tempPassword ? { tempPassword: inv.tempPassword } : {}),
         createdAt: inv.createdAt,
         ...(inv.waitlistSource ? { waitlistSource: inv.waitlistSource } : {}),
       })),

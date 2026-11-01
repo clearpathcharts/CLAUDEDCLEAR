@@ -1960,7 +1960,7 @@ async function startServer() {
       res.json({
         ...result,
         howToSend:
-          'Open “Show invite passwords”, copy email + tempPassword for Dawn and the other known members, and send privately. They log in via Private Login.',
+          'Temporary passwords are never stored. Use CEO Dashboard → Invite emails → SEND EMAIL for each member: it issues a fresh password and emails it directly.',
       });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1990,7 +1990,7 @@ async function startServer() {
           tempPassword: result.tempPassword,
           user: { email: result.email, displayName: result.displayName },
           howToSend:
-            'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+            'Send this email + tempPassword to the member privately now — it is shown only once and is not stored. They log in via Private Login, then should change password.',
         });
       }
       const user = await resetPrivateUserPassword({
