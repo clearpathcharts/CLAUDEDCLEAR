@@ -29,6 +29,7 @@ mkdir -p "$PUB/lib" "$PUB/adapters" "$PUB/scripts" "$PUB/data" "$UI" "$DEST/scri
 
 cp -f "$SRC/lib/mediaStore.js" "$PUB/lib/mediaStore.js"
 cp -f "$SRC/lib/dispatch.js" "$PUB/lib/dispatch.js"
+cp -f "$SRC/lib/outbound.js" "$PUB/lib/outbound.js"
 cp -f "$SRC/adapters/telegram.js" "$PUB/adapters/telegram.js"
 cp -f "$SRC/adapters/discord.js" "$PUB/adapters/discord.js"
 cp -f "$SRC/adapters/youtube.js" "$PUB/adapters/youtube.js"

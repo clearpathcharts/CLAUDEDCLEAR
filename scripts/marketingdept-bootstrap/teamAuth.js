@@ -52,14 +52,26 @@ export function loadTeamUsers() {
   return users;
 }
 
+function sameSecret(a, b) {
+  const ha = crypto.createHash("sha256").update(String(a)).digest();
+  const hb = crypto.createHash("sha256").update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
 export function findUser(username, password) {
   const u = clean(username).toLowerCase();
   const p = String(password || "");
-  return loadTeamUsers().find((row) => row.username === u && row.password === p) || null;
+  let match = null;
+  for (const row of loadTeamUsers()) {
+    const okUser = sameSecret(row.username, u);
+    const okPass = sameSecret(row.password, p);
+    if (okUser && okPass && !match) match = row;
+  }
+  return match;
 }
 
 export function teamAuthConfigured() {
-  return loadTeamUsers().length > 0 && Boolean(clean(process.env.SESSION_SECRET));
+  return loadTeamUsers().length > 0 && clean(process.env.SESSION_SECRET).length >= 32;
 }
 
 export function listPublicRoster() {

@@ -101,6 +101,33 @@ assert.doesNotMatch(serverSrc, /\/api\/auth\/private\/lookup/, 'no public "does 
 const apiNotFound = serverSrc.indexOf("app.use('/api', (_req, res) => {");
 assert.ok(apiNotFound > 0 && apiNotFound < serverSrc.indexOf('// 4. Vite / Static Serving'), 'unknown /api paths must 404 before the SPA shell');
 
+const stripeStore = read('src/server/stripePrivateAccountStore.ts');
+assert.doesNotMatch(stripeStore, /metadata\[META\.tempPassword\]\s*=\s*user\./, 'Stripe metadata must never store a plaintext password');
+assert.doesNotMatch(stripeStore, /record\.tempPassword\s*=/, 'Stripe records must not surface a stored temp password');
+const inviteVault = read('src/server/waitlistConvertService.ts');
+assert.match(inviteVault, /tempPassword: FieldValue\.delete\(\)/, 'invite vault must delete, never store, temp passwords');
+assert.doesNotMatch(inviteVault, /tempPassword: typeof d\.tempPassword/, 'invite vault must not read back stored temp passwords');
+assert.doesNotMatch(read('src/server/founderBackupService.ts'), /tempPassword: inv\.tempPassword/, 'backups must not copy temp passwords');
+
+const proxyStart = serverSrc.indexOf("app.get('/api/stream-proxy'");
+const proxyBody = serverSrc.slice(proxyStart, serverSrc.indexOf('\n  });\n', proxyStart));
+assert.match(proxyBody, /sandbox; default-src 'none'/, 'stream proxy responses must be sandboxed');
+assert.match(proxyBody, /status\(415\)/, 'stream proxy must refuse non-media content types');
+assert.doesNotMatch(proxyBody, /Access-Control-Allow-Origin', '\*'/, 'stream proxy must not be readable cross-origin');
+for (const [route, guard] of [
+  ["'/api/semantic/link'", 'marketDataLimiter'],
+  ["'/api/indicators'", 'marketDataLimiter'],
+  ["'/api/registrations/waitlist'", 'authRegisterLimiter'],
+  ["'/api/registrations/identity'", 'authRegisterLimiter'],
+  ["'/api/auth/private/identity/resend'", 'authLoginLimiter'],
+]) {
+  assert.match(serverSrc, new RegExp(`app\\.(get|post)\\(${route.replace(/[/]/g, '\\/')}[^\\n]*${guard}`), `${route} must use ${guard}`);
+}
+assert.doesNotMatch(serverSrc, /'\/api\/news\/search'/, 'unused Gemini news search route (fake fallback headlines) must stay removed');
+assert.match(read('src/server/registrationService.ts'), /isFounderEmail\(emailAddress\)\)\s*(\{\s*)?throw new RegistrationError\('This email is reserved\.', 403\)/, 'waitlist must refuse founder emails');
+assert.match(read('websockets.ts'), /maxPayload: 16 \* 1024/, 'websocket frames must be size-capped');
+assert.match(read('src/server/routeRateLimit.ts'), /ipKeyGenerator\(req\.ip\)/, 'rate limits must group IPv6 addresses');
+
 const wsSrc = read('websockets.ts');
 assert.doesNotMatch(wsSrc, /parsed\.(author|handle)/, 'chat author / post handle must come from the server identity, not the client message');
 assert.doesNotMatch(serverSrc, /author:\s*author\s*\|\|/, 'catalog author must come from the session, not the request body');
@@ -126,5 +153,22 @@ assert.equal(founderReq.session.cookie.maxAge, FOUNDER_SESSION_MAX_AGE_MS);
 const memberReq: any = { session: { cookie: { maxAge: 7 * 86400_000 } } };
 await grantFreshSession(memberReq, { uid: 'm', email: 'member@example.com' });
 assert.equal(memberReq.session.cookie.maxAge, 7 * 86400_000);
+
+const privateAuthSrc = fs.readFileSync(path.join(root, 'src/server/privateAuthService.ts'), 'utf8');
+assert.doesNotMatch(privateAuthSrc, /'Account not found\.', 404/, 'identity routes must not confirm whether an email is registered');
+assert.match(serverSrc, /\[api 500\]/, 'production 500 bodies must be replaced with a generic message');
+
+const { loginPrivateUser } = await import('../src/server/privateAuthService.ts');
+const probe = `lockout-probe-${Date.now()}@example.com`;
+const loginStatus = async () => {
+  try {
+    await loginPrivateUser({ email: probe, password: 'wrong-password-1' });
+    return 200;
+  } catch (err: any) {
+    return err?.status;
+  }
+};
+for (let i = 0; i < 8; i++) assert.equal(await loginStatus(), 401, 'unknown email answers like a wrong password');
+assert.equal(await loginStatus(), 429, 'ninth failure inside 15 minutes is locked out');
 
 console.log('auth-hardening.selftest: ok');
