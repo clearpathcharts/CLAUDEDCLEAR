@@ -1164,10 +1164,11 @@ export async function resubmitIdentity(input: {
   });
 
   const oldEmail = found.email;
-  const emailWasSuspectAlready = Boolean(found.identityEmailWasSuspect) || isAwaitingEmailVerification(found);
+  const awaitingEmail = isAwaitingEmailVerification(found);
+  const emailWasSuspectAlready = Boolean(found.identityEmailWasSuspect) || awaitingEmail;
   found.displayName = newDisplayName;
   found.email = newEmail;
-  found.identityRiskReasons = risk.reasons;
+  found.identityRiskReasons = awaitingEmail ? [...risk.reasons, EMAIL_UNVERIFIED_REASON] : risk.reasons;
 
   if (risk.risk === 'suspect') {
     found.identityStatus = 'pending_confirm';

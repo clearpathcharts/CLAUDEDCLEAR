@@ -66,6 +66,18 @@ async function main() {
   const ok = await auth.loginPrivateUser({ email, password });
   assert.equal(ok.kind, 'ok', 'confirmed email can sign in');
 
+  const email3 = 'verify.suspect@gmail.com';
+  await auth.registerPrivateUser({ email: email3, password, displayName: 'Suspect Member' });
+  const suspectEmail = 'verify.suspect+test@gmail.com';
+  const sus = await auth.resubmitIdentity({ currentEmail: email3, password, newEmail: suspectEmail, newDisplayName: 'Suspect Member' });
+  assert.equal(sus.kind, 'still_suspect', 'fixture must hit the still_suspect branch');
+  const susLogin = await auth.loginPrivateUser({ email: suspectEmail, password });
+  assert.ok(
+    susLogin.kind === 'pending_confirm' && susLogin.reasons.includes(auth.EMAIL_UNVERIFIED_REASON),
+    'a suspect resubmit must not drop the unverified-email lock'
+  );
+  assert.equal((await auth.assertSessionIdentityAllowed({ email: suspectEmail })).allowed, false);
+
   const email2 = 'verify.reset@gmail.com';
   await auth.registerPrivateUser({ email: email2, password, displayName: 'Reset Member' });
   await auth.resetPrivateUserPassword({ email: email2, password: 'NewPass123!' });
@@ -79,6 +91,9 @@ async function main() {
   assert.doesNotMatch(registerRoute, /grantFreshSession/, 'signup must not grant a session before the email link');
   assert.match(registerRoute, /sendAccountExistsEmail/, 'existing-email signup gets a notice email, not a 409');
   assert.match(registerRoute, /status\(202\)/);
+  assert.doesNotMatch(registerRoute, /attributeSignup/, 'referral credit must wait for the confirm link');
+  const confirmRoute = serverSrc.slice(serverSrc.indexOf("app.get('/api/auth/private/identity/confirm'"), serverSrc.indexOf("app.post('/api/auth/private/logout'"));
+  assert.match(confirmRoute, /attributeSignup/, 'referral credit is granted when the inbox is confirmed');
   assert.doesNotMatch(registerRoute, /uid: (result\.)?user\.uid/, 'signup response must not expose the account id');
   assert.doesNotMatch(waitlistSrc, /already has a Private Login/, 'waitlist must not reveal existing members');
   assert.doesNotMatch(waitlistSrc, /registrationId: user\.uid/, 'waitlist must not expose the account id');

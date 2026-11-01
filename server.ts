@@ -853,16 +853,6 @@ async function startServer() {
         } catch (marketingError: any) {
           console.warn('[Marketing] signup attribution skipped:', marketingError?.message || marketingError);
         }
-        try {
-          ensureAffiliateMember(user.uid);
-          const fromBody =
-            typeof req.body?.referralCode === 'string' ? req.body.referralCode : '';
-          const fromCookie =
-            typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
-          attributeSignup({ newUid: user.uid, referralCode: fromBody || fromCookie });
-        } catch (affErr: any) {
-          console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
-        }
       }
       // Identical answer for new and existing emails; no session until the inbox link is clicked.
       res.status(202).json({
@@ -1055,7 +1045,16 @@ async function startServer() {
   app.get('/api/auth/private/identity/confirm', async (req, res) => {
     try {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
-      await confirmIdentityByToken(token);
+      const confirmed = await confirmIdentityByToken(token);
+      // Referral credit only counts once the new member has proven they own the inbox.
+      try {
+        ensureAffiliateMember(confirmed.uid);
+        const fromCookie =
+          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
+        attributeSignup({ newUid: confirmed.uid, referralCode: fromCookie });
+      } catch (affErr: any) {
+        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
+      }
       const dest =
         (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
           /\/$/,
