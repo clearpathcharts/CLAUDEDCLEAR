@@ -519,6 +519,22 @@ async function startServer() {
     return next(err);
   });
 
+  // Internal exception text (paths, vendor errors, stack fragments) must never reach visitors.
+  if (process.env.NODE_ENV === 'production') {
+    app.use('/api', (req, res, next) => {
+      const sendJson = res.json.bind(res);
+      res.json = (body?: any) => {
+        if (res.statusCode === 500 && body && typeof body === 'object' && !Array.isArray(body)) {
+          console.error('[api 500]', req.method, req.path, body.error || body.message || '');
+          const { stack: _stack, details: _details, message: _message, ...rest } = body;
+          return sendJson({ ...rest, error: 'Server error. Please try again.' });
+        }
+        return sendJson(body);
+      };
+      next();
+    });
+  }
+
   // Retired dashboard deep link — canonical membership is /plans (301 for crawlers).
   app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
