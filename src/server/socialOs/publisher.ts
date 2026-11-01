@@ -1,6 +1,12 @@
 import { countConfiguredPlatforms, isPlatformConfigured, listPlatformReadiness } from './platforms';
 import { composePostText, getAdapter } from './adapters';
+import { writePublishPackage } from './adapters/helpers';
 import type { PublishMode, SocialOsConfig, SocialPost } from './types';
+
+/** Network sends (APIs, chat bots, webhooks) stay off unless ALLOW_OUTBOUND_DISPATCH is exactly "true". */
+export function outboundDispatchAllowed(): boolean {
+  return (process.env.ALLOW_OUTBOUND_DISPATCH || '').trim().toLowerCase() === 'true';
+}
 
 export function getSocialOsConfig(): SocialOsConfig {
   const dryRunEnv = (process.env.SOCIAL_OS_DRY_RUN || '').toLowerCase();
@@ -56,8 +62,9 @@ export async function publishPost(post: SocialPost): Promise<PublishResult> {
     };
   }
 
-  const adapter = getAdapter(post.platform);
-  const result = await adapter.publish({ post, text });
+  const result = outboundDispatchAllowed()
+    ? await getAdapter(post.platform).publish({ post, text })
+    : await writePublishPackage(post.platform, post, text);
 
   return {
     postId: post.id,

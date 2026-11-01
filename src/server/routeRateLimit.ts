@@ -2,12 +2,12 @@
  * Route-scoped rate limits — auth + AI only (never quote/candle routes).
  * Uses express-rate-limit with in-memory store per instance; still blocks abuse bursts.
  */
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
 function clientIp(req: Request): string {
   // trust proxy = 1: req.ip is the address Google's front end saw; the left of X-Forwarded-For is client-supplied.
-  return req.ip || 'unknown';
+  return req.ip ? ipKeyGenerator(req.ip) : 'unknown';
 }
 
 export const memberInboxLimiter = rateLimit({
@@ -103,7 +103,6 @@ export const MARKET_DATA_ROUTES = [
   '/api/fred/observations',
   '/api/fmp',
   '/api/cot/history',
-  '/api/news/search',
 ] as const;
 
 /** Routes that fetch a caller-supplied URL on the server's bandwidth. */

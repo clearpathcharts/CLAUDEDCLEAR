@@ -175,16 +175,17 @@ export default function CeoDashboard() {
   const [inviteMailMsg, setInviteMailMsg] = useState<string | null>(null);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
+  const [resetEmail, setResetEmail] = useState('');
   const [apiUnlocked, setApiUnlocked] = useState(false);
   const [unlockBusy, setUnlockBusy] = useState(false);
-  const [catalogSecretInput, setCatalogSecretInput] = useState(() => {
+  const [catalogSecretInput, setCatalogSecretInput] = useState('');
+  useEffect(() => {
     try {
-      return sessionStorage.getItem('cp_catalog_admin_secret') || '';
+      sessionStorage.removeItem('cp_catalog_admin_secret');
     } catch {
-      return '';
+      /* ignore */
     }
-  });
+  }, []);
   const [siteDoctor, setSiteDoctor] = useState<SiteDoctorReport | null>(null);
   const [siteDoctorLoading, setSiteDoctorLoading] = useState(false);
   const [siteDoctorError, setSiteDoctorError] = useState<string | null>(null);
@@ -233,12 +234,8 @@ export default function CeoDashboard() {
       const token = await current.getIdToken(true);
       headers.Authorization = `Bearer ${token}`;
     }
-    try {
-      const secret = (sessionStorage.getItem('cp_catalog_admin_secret') || catalogSecretInput || '').trim();
-      if (secret) headers['x-catalog-admin-secret'] = secret;
-    } catch {
-      /* ignore */
-    }
+    const secret = catalogSecretInput.trim();
+    if (secret) headers['x-catalog-admin-secret'] = secret;
     return headers;
   };
 
@@ -288,11 +285,6 @@ export default function CeoDashboard() {
     if (!secret) {
       setConvertMsg('Paste your catalog admin secret first (from your server env CATALOG_ADMIN_SECRET).');
       return;
-    }
-    try {
-      sessionStorage.setItem('cp_catalog_admin_secret', secret);
-    } catch {
-      /* ignore */
     }
     setUnlockBusy(true);
     setConvertMsg(null);
@@ -462,7 +454,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Emergency dry run: ${body.created} would be created, ${body.reset} would get new passwords (${body.members?.length || 0} known survivors).`
-          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Open “Show invite passwords” — send Dawn’s credentials privately.`
+          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) {
         await loadAdminMembers();
@@ -608,7 +600,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Import dry run: ${body.created} would be created, ${body.already} already exist (${body.candidates} rows).`
-          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” if passwords were auto-generated.`
+          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) await loadAdminMembers();
     } catch (err: any) {

@@ -74,8 +74,7 @@ function safeExt(name) {
   return ALLOWED_EXT.has(ext) ? ext : "";
 }
 
-function guessMime(name, provided) {
-  if (provided && provided !== "application/octet-stream") return provided;
+function guessMime(name) {
   return MIME_BY_EXT[safeExt(name)] || "application/octet-stream";
 }
 
@@ -131,10 +130,19 @@ export function mediaLimits() {
   };
 }
 
+const MEDIA_ROOT = path.resolve(UPLOAD_DIR);
+
+function insideMediaRoot(storedName) {
+  const resolved = path.resolve(MEDIA_ROOT, path.basename(String(storedName || "")));
+  return resolved.startsWith(MEDIA_ROOT + path.sep) ? resolved : null;
+}
+
 export function getMedia(id) {
+  if (typeof id !== "string" || !/^media_[a-f0-9]{16}$/.test(id)) return null;
   const item = loadIndex().find((m) => m.id === id);
   if (!item) return null;
-  const filePath = path.join(UPLOAD_DIR, item.storedName);
+  const filePath = insideMediaRoot(item.storedName);
+  if (!filePath) return null;
   if (!fs.existsSync(filePath) && !item.gcsUrl) return null;
   return {
     ...item,
@@ -143,33 +151,24 @@ export function getMedia(id) {
 }
 
 export function resolveMediaForJob(job) {
-  if (!job?.mediaId) {
-    return {
-      videoFilePath: job?.videoFilePath || null,
-      fileName: job?.fileName || null,
-      videoUrl: job?.videoUrl || null,
-      mimeType: job?.mimeType || null,
-      mediaId: null,
-    };
-  }
-  const media = getMedia(job.mediaId);
+  const media = job?.mediaId ? getMedia(job.mediaId) : null;
   if (!media) {
     return {
-      videoFilePath: job.videoFilePath || null,
-      fileName: job.fileName || null,
-      videoUrl: job.videoUrl || null,
-      mimeType: job.mimeType || null,
-      mediaId: job.mediaId,
+      videoFilePath: null,
+      fileName: job?.fileName || null,
+      videoUrl: job?.videoUrl || null,
+      mimeType: null,
+      mediaId: null,
     };
   }
   const relativeUrl = `/media/${media.id}`;
   const absolute = media.gcsUrl || (publicBase() ? `${publicBase()}${relativeUrl}` : relativeUrl);
   return {
     mediaId: media.id,
-    videoFilePath: media.filePath || job.videoFilePath || null,
+    videoFilePath: media.filePath || null,
     fileName: media.originalName || job.fileName || null,
     videoUrl: job.videoUrl || absolute,
-    mimeType: media.mimeType || job.mimeType || null,
+    mimeType: media.mimeType || null,
     size: media.size,
   };
 }
@@ -194,7 +193,7 @@ export async function saveUpload({ buffer, originalName, mimeType, uploadedBy })
   const filePath = path.join(UPLOAD_DIR, storedName);
   fs.writeFileSync(filePath, buffer);
 
-  const mime = guessMime(originalName, mimeType);
+  const mime = guessMime(originalName);
   let gcsUrl = null;
   try {
     gcsUrl = await uploadToGcs(buffer, `clearpath-media/${storedName}`, mime);

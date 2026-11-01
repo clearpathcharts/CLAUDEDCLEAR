@@ -105,11 +105,7 @@
       .then((r) => r.json())
       .then((data) => {
         const el = document.getElementById("roster");
-        if (!data.configured || !data.users?.length) {
-          el.textContent = "Team not configured yet on this server.";
-          return;
-        }
-        el.textContent = "Accounts on this server: " + data.users.join(", ");
+        el.textContent = data.configured ? "" : "Team not configured yet on this server.";
       })
       .catch(() => {
         document.getElementById("roster").textContent = "Could not load roster.";
