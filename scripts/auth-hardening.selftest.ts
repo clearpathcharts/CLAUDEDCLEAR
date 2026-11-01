@@ -120,10 +120,11 @@ for (const [route, guard] of [
   ["'/api/registrations/waitlist'", 'authRegisterLimiter'],
   ["'/api/registrations/identity'", 'authRegisterLimiter'],
   ["'/api/auth/private/identity/resend'", 'authLoginLimiter'],
-  ["'/api/news/search'", 'aiChatLimiter'],
 ]) {
   assert.match(serverSrc, new RegExp(`app\\.(get|post)\\(${route.replace(/[/]/g, '\\/')}[^\\n]*${guard}`), `${route} must use ${guard}`);
 }
+assert.doesNotMatch(serverSrc, /'\/api\/news\/search'/, 'unused Gemini news search route (fake fallback headlines) must stay removed');
+assert.match(read('src/server/registrationService.ts'), /isFounderEmail\(emailAddress\)\)\s*(\{\s*)?throw new RegistrationError\('This email is reserved\.', 403\)/, 'waitlist must refuse founder emails');
 assert.match(read('websockets.ts'), /maxPayload: 16 \* 1024/, 'websocket frames must be size-capped');
 assert.match(read('src/server/routeRateLimit.ts'), /ipKeyGenerator\(req\.ip\)/, 'rate limits must group IPv6 addresses');
 

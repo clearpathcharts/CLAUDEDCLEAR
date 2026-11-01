@@ -103,7 +103,6 @@ export const MARKET_DATA_ROUTES = [
   '/api/fred/observations',
   '/api/fmp',
   '/api/cot/history',
-  '/api/news/search',
 ] as const;
 
 /** Routes that fetch a caller-supplied URL on the server's bandwidth. */
