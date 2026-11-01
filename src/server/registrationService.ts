@@ -90,6 +90,9 @@ export async function registerWaitlist(input: WaitlistInput): Promise<Registrati
     throw new RegistrationError('A valid email address is required.');
   }
   await assertEmailAllowed(emailAddress);
+  if (isFounderEmail(emailAddress)) {
+    throw new RegistrationError('This email is reserved.', 403);
+  }
   if (!country) {
     throw new RegistrationError('Country of residence is required.');
   }
