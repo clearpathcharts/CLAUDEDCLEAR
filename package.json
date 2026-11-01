@@ -45,6 +45,7 @@
     "test:membership-grants": "tsx scripts/membership-grants.selftest.ts",
     "test:auth-hardening": "tsx scripts/auth-hardening.selftest.ts",
     "test:email-verification": "tsx scripts/email-verification.selftest.ts",
+    "test:intent-guides": "tsx scripts/intent-guides.selftest.ts",
     "test:ssrf-guard": "tsx scripts/ssrf-guard.selftest.ts",
     "test:admin-members": "tsx scripts/admin-members.selftest.ts",
     "test:waitlist-convert": "tsx scripts/waitlist-convert.selftest.ts",

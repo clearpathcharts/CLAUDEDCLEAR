@@ -55,6 +55,8 @@ jobs:
         run: npm run test:auth-hardening
       - name: Email verification self-test
         run: npm run test:email-verification
+      - name: Search-intent guides self-test
+        run: npm run test:intent-guides
       - name: SSRF guard self-test
         run: npm run test:ssrf-guard
 

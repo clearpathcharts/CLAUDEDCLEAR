@@ -5062,6 +5062,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         'https://clearpathtrader.com/markets/bonds',
         'https://clearpathtrader.com/companies',
         'https://clearpathtrader.com/encyclopedia',
+        'https://clearpathtrader.com/guides',
+        'https://clearpathtrader.com/learn',
+        'https://clearpathtrader.com/tools/position-size',
+        ...Object.keys(GUIDE_RECORDS).map((id) => `https://clearpathtrader.com/guides/${id}`),
+        ...Object.keys(SEMANTIC_RECORDS).map((id) => `https://clearpathtrader.com/learn/${id}`),
         ...regionalIndexNowUrls(),
       ]).then((r) => {
         if (r.skipped) {

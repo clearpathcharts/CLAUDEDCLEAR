@@ -8,7 +8,7 @@ export const TRADING_REIMAGINED_SHORT_PATH = '/trading-ai';
 export const TRADING_REIMAGINED_SEO = {
   title: 'If Trading and ChatGPT Had a Baby — ClearPath Trader',
   description:
-    'A next-gen trading terminal: AI-assisted analysis, unlimited indicators, automatic chart patterns, customizable layouts, beginner-to-advanced education, and news plus social — all in one place. Built for speed.',
+    'A next-gen trading terminal: AI-assisted analysis, a full indicator library, automatic chart-pattern overlay, customizable layouts, beginner-to-advanced education, and news plus social — all in one place. Built for speed.',
   keywords: [
     'trading platform',
     'AI trading terminal',
@@ -38,7 +38,7 @@ export const TRADING_REIMAGINED_FAQS = [
   {
     question: 'What makes ClearPath Trader different from other trading platforms?',
     answer:
-      'ClearPath combines live charts, unlimited indicators, automatic pattern detection, AI-assisted tools, customizable layouts, social and news feeds, and a full beginner-to-advanced education path — in one terminal without tab-switching.',
+      'ClearPath combines live charts, a full indicator library on paid plans, automatic chart-pattern overlay on Gold, AI-assisted tools, customizable layouts, social and news feeds, and a full beginner-to-advanced education path — in one terminal without tab-switching.',
   },
   {
     question: 'Can beginners use ClearPath Trader?',
