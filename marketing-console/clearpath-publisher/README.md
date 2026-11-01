@@ -1,6 +1,6 @@
 # ClearPath Publisher — backend
 
-Your own publishing engine. No Zapier. No Buffer.
+Your own publishing engine. No third-party automation vendors.
 
 - **Phase 2**: persistent queue (survives browser/PC restarts), scheduler that auto-sends approved posts at their scheduled time
 - **Phase 3**: direct platform APIs — Telegram, Discord, Reddit, YouTube today; Facebook/Instagram/LinkedIn stay on the Cursor bridge until Meta/LinkedIn approve direct API access

@@ -1,7 +1,7 @@
 {
   "name": "clearpath-publisher",
   "version": "1.0.0",
-  "description": "ClearPath Publisher backend — persistent queue, scheduler, and direct platform dispatch. No Zapier, no Buffer.",
+  "description": "ClearPath Publisher backend — persistent queue, scheduler, and direct platform dispatch. No third-party automation vendors.",
   "type": "module",
   "main": "server.js",
   "scripts": {

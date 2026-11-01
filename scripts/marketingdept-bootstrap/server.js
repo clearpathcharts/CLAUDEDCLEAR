@@ -2,7 +2,7 @@
  * ClearPath Publisher + Automation Console (social-only)
  * Founder login (single owner account via TEAM_USERS)
  * Shared marketing treasure chest for all authenticated users
- * NO Zapier / Buffer / Make / CrewAI — never commit secrets
+ * No third-party automation vendors — never commit secrets
  */
 import "dotenv/config";
 import express from "express";
