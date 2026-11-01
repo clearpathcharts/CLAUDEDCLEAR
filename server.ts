@@ -288,7 +288,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
+import { sendAccountExistsEmail, sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -837,50 +837,37 @@ async function startServer() {
         },
       });
 
-      if (result.kind === 'pending_confirm') {
-        const origin = linkOrigin(req);
-        const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
-        const emailSent = await sendIdentityConfirmEmail({
-          to: result.user.email,
-          displayName: result.user.displayName,
-          confirmUrl,
+      const origin = linkOrigin(req);
+      const displayName = String(req.body?.displayName || '').trim().slice(0, 80);
+      let emailSent: boolean;
+      let email: string;
+      if (result.kind === 'already_registered') {
+        email = result.email;
+        emailSent = await sendAccountExistsEmail({ to: email, loginUrl: `${origin}/login` });
+      } else {
+        const user = result.user;
+        email = user.email;
+        emailSent = await sendIdentityConfirmEmail({
+          to: user.email,
+          displayName: user.displayName,
+          confirmUrl: buildIdentityConfirmUrl(origin, result.rawChallengeToken),
         });
-        // Do NOT grant dashboard session while quarantined.
-        return res.status(202).json({
-          ok: true,
-          quarantined: true,
-          identityStatus: 'pending_confirm',
-          emailSent,
-          reasons: result.reasons,
-          user: {
-            uid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            identityStatus: 'pending_confirm',
-          },
-        });
+        try {
+          await recordMarketingSignup(user.uid, req.cookies?.[MARKETING_ATTRIBUTION_COOKIE]);
+        } catch (marketingError: any) {
+          console.warn('[Marketing] signup attribution skipped:', marketingError?.message || marketingError);
+        }
       }
-
-      const user = result.user;
-      try {
-        await recordMarketingSignup(user.uid, req.cookies?.[MARKETING_ATTRIBUTION_COOKIE]);
-      } catch (marketingError: any) {
-        console.warn('[Marketing] signup attribution skipped:', marketingError?.message || marketingError);
-      }
-      // Affiliate: ensure code for new member + attribute from cookie/body
-      try {
-        ensureAffiliateMember(user.uid);
-        const fromBody =
-          typeof req.body?.referralCode === 'string' ? req.body.referralCode : '';
-        const fromCookie =
-          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
-        attributeSignup({ newUid: user.uid, referralCode: fromBody || fromCookie });
-      } catch (affErr: any) {
-        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
-      }
-      const sessionUser = buildClientSessionUser(user);
-      await grantFreshSession(req, sessionUser);
-      res.json({ ok: true, user: sessionUser });
+      // Identical answer for new and existing emails; no session until the inbox link is clicked.
+      res.status(202).json({
+        ok: true,
+        quarantined: true,
+        emailVerificationRequired: true,
+        identityStatus: 'pending_confirm',
+        emailSent,
+        reasons: ['email_unverified'],
+        user: { email, displayName, identityStatus: 'pending_confirm' },
+      });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       res.status(status).json({
@@ -1063,7 +1050,16 @@ async function startServer() {
   app.get('/api/auth/private/identity/confirm', async (req, res) => {
     try {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
-      await confirmIdentityByToken(token);
+      const confirmed = await confirmIdentityByToken(token);
+      // Referral credit only counts once the new member has proven they own the inbox.
+      try {
+        ensureAffiliateMember(confirmed.uid);
+        const fromCookie =
+          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
+        attributeSignup({ newUid: confirmed.uid, referralCode: fromCookie });
+      } catch (affErr: any) {
+        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
+      }
       const dest =
         (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
           /\/$/,

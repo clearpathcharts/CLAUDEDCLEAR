@@ -197,18 +197,18 @@ export async function sendPrivateLoginInviteEmail(params: {
   return sendEmail({ to: params.to, subject, text, html });
 }
 
-/** Ask a quarantined registrant to confirm a real email / identity. */
+/** Confirm-your-email link for new signups (and legacy quarantined registrants). */
 export async function sendIdentityConfirmEmail(params: {
   to: string;
   displayName?: string;
   confirmUrl: string;
 }): Promise<boolean> {
   const greeting = params.displayName ? `Hi ${params.displayName}` : 'Hello';
-  const subject = 'Confirm your ClearPath identity';
+  const subject = 'Confirm your email to activate ClearPath';
   const text = [
     greeting + ',',
     '',
-    'We need you to confirm a real email and name before your private desk unlocks.',
+    'Confirm this email address to activate your ClearPath private desk.',
     '',
     `Confirm here (link expires in 48 hours): ${params.confirmUrl}`,
     '',
@@ -219,12 +219,12 @@ export async function sendIdentityConfirmEmail(params: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
-      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Confirm Your Identity</h1>
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Confirm Your Email</h1>
       <p>${esc(greeting)},</p>
-      <p>We need a real email and name before your private ClearPath desk unlocks.</p>
+      <p>Confirm this email address to activate your private ClearPath desk.</p>
       <p style="margin:28px 0;">
         <a href="${esc(params.confirmUrl)}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
-          Confirm my identity
+          Confirm my email
         </a>
       </p>
       <p style="color:#aaa;font-size:13px;">This link expires in 48 hours. If you did not sign up, ignore this email.</p>
@@ -264,6 +264,36 @@ export async function sendPasswordResetEmail(params: {
         </a>
       </p>
       <p style="color:#aaa;font-size:13px;">If you did not request this, ignore the email. Your current password still works.</p>
+      <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
+    </div>
+  `;
+  return sendEmail({ to: params.to, subject, text, html });
+}
+
+/** Someone tried to sign up with an email that already has an account. */
+export async function sendAccountExistsEmail(params: { to: string; loginUrl: string }): Promise<boolean> {
+  const subject = 'You already have a ClearPath account';
+  const text = [
+    'Hello,',
+    '',
+    'Someone (hopefully you) tried to create a ClearPath account with this email, but it already has one.',
+    '',
+    `Sign in here, or use "Forgot password" if you need a new one: ${params.loginUrl}`,
+    '',
+    'If this was not you, ignore this email. No new account was created and your password was not changed.',
+    '',
+    '— ClearPath Trader',
+  ].join('\n');
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">You Already Have An Account</h1>
+      <p>Someone (hopefully you) tried to create a ClearPath account with this email, but it already has one.</p>
+      <p style="margin:28px 0;">
+        <a href="${esc(params.loginUrl)}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+          Sign in
+        </a>
+      </p>
+      <p style="color:#aaa;font-size:13px;">Use "Forgot password" on the sign-in screen if you need a new password. If this was not you, ignore this email — nothing was changed.</p>
       <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
     </div>
   `;
