@@ -462,7 +462,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Emergency dry run: ${body.created} would be created, ${body.reset} would get new passwords (${body.members?.length || 0} known survivors).`
-          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Open “Show invite passwords” — send Dawn’s credentials privately.`
+          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) {
         await loadAdminMembers();
@@ -608,7 +608,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Import dry run: ${body.created} would be created, ${body.already} already exist (${body.candidates} rows).`
-          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” if passwords were auto-generated.`
+          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) await loadAdminMembers();
     } catch (err: any) {
