@@ -360,10 +360,10 @@ export default function MarketingFunnelDashboard({
                       download
                       className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-zinc-200 hover:bg-white/5"
                     >
-                      <Download size={12} /> Poster SVG
+                      <Download size={12} /> Download poster
                     </a>
                     <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500">
-                      <Image size={12} /> 1080 × 1350
+                      <Image size={12} /> {tier.poster.width} × {tier.poster.height}
                     </span>
                   </div>
                 </div>

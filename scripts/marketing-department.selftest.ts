@@ -230,6 +230,35 @@ async function main() {
       body: JSON.stringify({ assetId: 'b'.repeat(16), platforms: ['instagram'] }),
     });
     assert.equal(plan.status, 404, 'cannot plan posts for an asset that is not in the library');
+
+    assert.equal(body.assets.tierPosters, 4, 'overview reports the four funnel posters separately');
+    const lib = (await (await call('/api/ceo/marketing/assets', { headers: founder })).json()) as any;
+    const posters = lib.assets.filter((a: any) => a.source === 'tier-poster');
+    assert.deepEqual(
+      posters.map((a: any) => a.tier),
+      ['basic', 'silver', 'gold', 'platinum'],
+      'all four tier posters are in the library even without a bucket',
+    );
+    for (const p of posters) {
+      assert.match(p.url, /^https:\/\/clearpathtrader\.com\/marketing\/posters\/[a-z0-9-]+\.jpg$/);
+      assert.ok(fs.existsSync(path.join(process.cwd(), 'public', new URL(p.url).pathname)), `${p.id} file ships with the site`);
+    }
+    const delPoster = await call('/api/ceo/marketing/assets/poster-gold', { method: 'DELETE', headers: founder });
+    assert.equal(delPoster.status, 400, 'tier posters cannot be deleted from the bucket route');
+    const posterPlan = await call('/api/ceo/marketing/outbox/plan', {
+      method: 'POST',
+      headers: founder,
+      body: JSON.stringify({ assetId: 'poster-gold', tier: 'gold', platforms: ['instagram', 'linkedin'] }),
+    });
+    assert.equal(posterPlan.status, 200, 'a tier poster can be planned');
+    const planned = ((await posterPlan.json()) as any).posts as Array<{ id: string; tier: string; trackedLink: string; mediaUrl: string }>;
+    assert.equal(planned.length, 2);
+    for (const post of planned) {
+      assert.equal(post.tier, 'gold');
+      assert.match(post.trackedLink, /\/go\/gold\/(instagram|linkedin)\/poster-gold$/);
+      assert.equal(post.mediaUrl, 'https://clearpathtrader.com/marketing/posters/gold-see-the-pattern.jpg');
+      await outbox.deleteOutboxPost(post.id);
+    }
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
     if (!outboxExisted) fs.rmSync(outboxDir, { recursive: true, force: true });
