@@ -17,7 +17,8 @@ import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
-import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { provenanceHeaders, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
@@ -3412,6 +3413,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates candles — skip a second validateTick here.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
       res.json(data);
     } catch (error: any) {
@@ -3459,8 +3466,14 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates — skip a second validateTick on history.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
-                      const formatted = data.values.map((v: any) => [
+      const formatted = data.values.map((v: any) => [
         new Date(v.datetime).getTime(),
         parseFloat(v.open),
         parseFloat(v.high),
@@ -3468,7 +3481,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         parseFloat(v.close),
         v.volume != null && v.volume !== "" ? parseFloat(v.volume) : undefined,
       ]);
-      
+
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);

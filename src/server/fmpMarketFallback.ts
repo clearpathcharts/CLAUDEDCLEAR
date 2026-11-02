@@ -1,33 +1,47 @@
 /**
  * Second-layer market data: Financial Modeling Prep after Twelve Data.
- * Every desk / registry / typed ticker is proxied (safe charset only).
- * Never fabricates prices. Missing FMP cells stay unavailable.
+ * Same-instrument proxies only. Never fabricates prices. Never swaps spot for
+ * futures (or index for ETF) just to keep a chart populated — missing FMP
+ * cells stay unavailable.
  */
 import { getEnabledAssets, getRegistryAsset } from '../constants/assetRegistry';
+import {
+  buildProvenance,
+  forbiddenSubstitutionReason,
+  isForbiddenPriceSubstitution,
+  type InstrumentProvenance,
+} from '../lib/instrumentIntegrity';
 import { historySymbol } from '../lib/institutional/vendorMaps';
 import { getFmpApiKey } from './secrets';
 
 const FMP_STABLE = 'https://financialmodelingprep.com/stable';
 
-/** Special FMP ids. Everything else is derived from the asset registry. */
+/**
+ * Same-instrument FMP ids only.
+ * Spot metals / energy / DXY must NOT map to futures tickers (GCUSD, CLUSD, …).
+ * Cash-index → ETF (SPX→SPY) is also refused for price fallback — different exposure.
+ */
 export const FMP_QUOTE_SYMBOL: Record<string, string> = {
-  SPX: 'SPY',
-  NDX: 'QQQ',
-  DJI: 'DIA',
   VIX: '^VIX',
   US10Y: '^TNX',
   US30Y: '^TYX',
-  XAUUSD: 'GCUSD',
-  XAGUSD: 'SIUSD',
-  WTI: 'CLUSD',
-  BRENT: 'BZUSD',
-  DXY: 'DXUSD',
-  NATGAS: 'NGUSD',
-  COPPER: 'HGUSD',
 };
 
 function isSafeTicker(raw: string): boolean {
   return /^[A-Z0-9./^=-]{1,24}$/.test(raw) && !raw.includes('..');
+}
+
+function acceptFmpId(deskSymbol: string, candidate: string | null | undefined): string | null {
+  if (!candidate) return null;
+  const id = candidate.trim().toUpperCase();
+  if (!id || !isSafeTicker(id)) return null;
+  if (isForbiddenPriceSubstitution(deskSymbol, id)) return null;
+  // Refuse cash-index → ETF silent swaps on the FMP path.
+  const desk = deskSymbol.trim().toUpperCase().replace(/\//g, '');
+  if ((desk === 'SPX' || desk === 'NDX' || desk === 'DJI') && /^(SPY|QQQ|DIA)$/.test(id.replace(/\//g, ''))) {
+    return null;
+  }
+  return id;
 }
 
 export function fmpQuoteSymbol(deskSymbol: string): string | null {
@@ -35,32 +49,58 @@ export function fmpQuoteSymbol(deskSymbol: string): string | null {
   if (!key || !isSafeTicker(key)) return null;
   const compact = key.replace(/\//g, '');
 
-  if (FMP_QUOTE_SYMBOL[key]) return FMP_QUOTE_SYMBOL[key];
-  if (FMP_QUOTE_SYMBOL[compact]) return FMP_QUOTE_SYMBOL[compact];
+  const fromTable = acceptFmpId(key, FMP_QUOTE_SYMBOL[key] || FMP_QUOTE_SYMBOL[compact]);
+  if (fromTable) return fromTable;
 
   const aliased = historySymbol(compact).symbol.toUpperCase().replace(/\//g, '');
-  if (FMP_QUOTE_SYMBOL[aliased]) return FMP_QUOTE_SYMBOL[aliased];
+  const fromAliasTable = acceptFmpId(key, FMP_QUOTE_SYMBOL[aliased]);
+  if (fromAliasTable) return fromAliasTable;
 
   const asset = getRegistryAsset(compact) || getRegistryAsset(key);
   if (asset) {
-    if (FMP_QUOTE_SYMBOL[asset.symbol]) return FMP_QUOTE_SYMBOL[asset.symbol];
-    if (asset.category === 'forex') return asset.symbol;
+    const fromAssetTable = acceptFmpId(key, FMP_QUOTE_SYMBOL[asset.symbol]);
+    if (fromAssetTable) return fromAssetTable;
+    if (asset.category === 'forex') return acceptFmpId(key, asset.symbol);
     if (asset.category === 'crypto') {
-      return asset.symbol.endsWith('USDT') ? asset.symbol.replace(/USDT$/, 'USD') : asset.symbol;
+      const cryptoId = asset.symbol.endsWith('USDT')
+        ? asset.symbol.replace(/USDT$/, 'USD')
+        : asset.symbol;
+      return acceptFmpId(key, cryptoId);
     }
-    if (asset.category === 'stocks') return asset.symbol;
-    if (asset.category === 'indices') return aliased || asset.symbol;
-    if (asset.category === 'bonds') return FMP_QUOTE_SYMBOL[asset.symbol] || aliased;
+    if (asset.category === 'stocks') return acceptFmpId(key, asset.symbol);
+    if (asset.category === 'bonds') {
+      return acceptFmpId(key, FMP_QUOTE_SYMBOL[asset.symbol] || null);
+    }
+    // Metals / commodities: try the desk's own symbol only (never futures stand-ins).
     if (asset.category === 'metals' || asset.category === 'commodities') {
-      return FMP_QUOTE_SYMBOL[asset.symbol] || asset.symbol;
+      return acceptFmpId(key, asset.symbol);
+    }
+    // Indices: only explicit same-instrument table entries (VIX, yields). No SPX→SPY.
+    if (asset.category === 'indices') {
+      return acceptFmpId(key, FMP_QUOTE_SYMBOL[asset.symbol] || null);
     }
   }
 
-  if (aliased && aliased !== compact && isSafeTicker(aliased)) return aliased;
-  return compact;
+  // Same compact ticker only — never an aliased different instrument.
+  return acceptFmpId(key, compact);
 }
 
-/** Every enabled registry row must have an FMP proxy id. */
+/** Why FMP will not price this desk symbol (null when a same-instrument id exists). */
+export function fmpPriceRefusal(deskSymbol: string): string | null {
+  const key = deskSymbol.trim().toUpperCase().replace(/\s+/g, '');
+  if (fmpQuoteSymbol(key)) return null;
+  const banned = ['GCUSD', 'SIUSD', 'CLUSD', 'BZUSD', 'NGUSD', 'HGUSD', 'DXUSD', 'SPY', 'QQQ', 'DIA'];
+  for (const sub of banned) {
+    const reason = forbiddenSubstitutionReason(key, sub);
+    if (reason) return reason;
+  }
+  return 'No same-instrument FMP symbol for this ticker.';
+}
+
+/**
+ * Same-instrument FMP ids for registry rows that have one.
+ * Metals/commodities without an FMP spot ticker are omitted (honest gap).
+ */
 export function fmpSymbolsForRegistry(): Record<string, string> {
   const out: Record<string, string> = {};
   for (const asset of getEnabledAssets()) {
@@ -81,17 +121,47 @@ export function fmpChartInterval(twelveInterval: string): { kind: 'intraday'; pa
   return { kind: 'eod' };
 }
 
-export function normalizeFmpQuote(row: Record<string, unknown>, deskSymbol: string): Record<string, string> | null {
+export type FmpNormalizedQuote = {
+  symbol: string;
+  name: string;
+  close: string;
+  price: string;
+  vendor: 'FMP';
+  previous_close?: string;
+  percent_change?: string;
+  provenance: InstrumentProvenance;
+};
+
+export function normalizeFmpQuote(
+  row: Record<string, unknown>,
+  deskSymbol: string,
+  providerSymbol?: string,
+): FmpNormalizedQuote | null {
   const price = Number(row.price ?? row.close);
   if (!Number.isFinite(price) || price <= 0) return null;
+  const mapped = providerSymbol || fmpQuoteSymbol(deskSymbol) || deskSymbol;
+  if (isForbiddenPriceSubstitution(deskSymbol, mapped)) return null;
   const prev = Number(row.previousClose ?? row.previous_close);
   const pct = Number(row.changesPercentage ?? row.changePercentage ?? row.percent_change);
-  const out: Record<string, string> = {
+  const exchange = row.exchange != null ? String(row.exchange) : null;
+  const provenance = buildProvenance({
+    requestedSymbol: deskSymbol,
+    provider: 'fmp',
+    providerSymbol: mapped,
+    exchange,
+    currency: row.currency != null ? String(row.currency) : null,
+    priceSource: `fmp:${mapped}`,
+    isFallback: true,
+    isProxy: false,
+    delayed: null,
+  });
+  const out: FmpNormalizedQuote = {
     symbol: deskSymbol,
     name: String(row.name || deskSymbol),
     close: String(price),
     price: String(price),
     vendor: 'FMP',
+    provenance,
   };
   if (Number.isFinite(prev) && prev > 0) out.previous_close = String(prev);
   if (Number.isFinite(pct)) out.percent_change = String(pct);
@@ -103,7 +173,10 @@ export function normalizeFmpCandles(raw: unknown, deskSymbol: string, interval: 
   values: Array<{ datetime: string; open: string; high: string; low: string; close: string; volume: string }>;
   status: 'ok';
   vendor: 'FMP';
+  provenance: InstrumentProvenance;
 } | null {
+  const mapped = fmpQuoteSymbol(deskSymbol);
+  if (!mapped) return null;
   const rows = Array.isArray(raw) ? raw : Array.isArray((raw as { historical?: unknown })?.historical)
     ? ((raw as { historical: unknown[] }).historical)
     : [];
@@ -134,6 +207,14 @@ export function normalizeFmpCandles(raw: unknown, deskSymbol: string, interval: 
     values: values.slice(0, Math.max(1, limit)),
     status: 'ok',
     vendor: 'FMP',
+    provenance: buildProvenance({
+      requestedSymbol: deskSymbol,
+      provider: 'fmp',
+      providerSymbol: mapped,
+      priceSource: `fmp:${mapped}`,
+      isFallback: true,
+      isProxy: false,
+    }),
   };
 }
 
@@ -149,14 +230,14 @@ async function fmpGet(url: string): Promise<unknown> {
   }
 }
 
-export async function fetchFmpQuote(deskSymbol: string): Promise<Record<string, string> | null> {
+export async function fetchFmpQuote(deskSymbol: string): Promise<FmpNormalizedQuote | null> {
   const map = await fetchFmpQuotes([deskSymbol]);
   return map[deskSymbol] ?? null;
 }
 
-export async function fetchFmpQuotes(deskSymbols: string[]): Promise<Record<string, Record<string, string>>> {
+export async function fetchFmpQuotes(deskSymbols: string[]): Promise<Record<string, FmpNormalizedQuote>> {
   const apiKey = getFmpApiKey();
-  const out: Record<string, Record<string, string>> = {};
+  const out: Record<string, FmpNormalizedQuote> = {};
   if (!apiKey || deskSymbols.length === 0) return out;
 
   const rows = deskSymbols
@@ -190,7 +271,7 @@ export async function fetchFmpQuotes(deskSymbols: string[]): Promise<Record<stri
     const want = row.fmp.toUpperCase();
     const rec = byFmp.get(want) || byFmp.get(want.replace(/^\^/, ''));
     if (!rec) continue;
-    const normalized = normalizeFmpQuote(rec, row.desk);
+    const normalized = normalizeFmpQuote(rec, row.desk, row.fmp);
     if (normalized) out[row.desk] = normalized;
   }
   return out;
