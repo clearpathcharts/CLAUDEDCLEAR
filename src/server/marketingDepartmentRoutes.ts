@@ -42,6 +42,7 @@ import { listSeoPings, recordSeoPing } from './seoPingLog';
 import { resolveIndexNowKey, submitIndexNow } from './indexNow';
 import { getMarketingAnalytics } from './marketingFunnelService';
 import { MAX_SIMILARITY, defaultAiWriter } from './marketingCopywriter';
+import tierContentCatalog from '../../data/marketing/tier-content-catalog.json';
 
 const SITEMAP_PAGE_SIZE = 100;
 
@@ -67,13 +68,32 @@ function fail(res: Response, error: unknown): void {
 export type LibraryAsset = Pick<
   MarketingAsset,
   'id' | 'title' | 'kind' | 'contentType' | 'sizeBytes' | 'uploadedAt' | 'url' | 'publicRead'
-> & { source: 'marketing' | 'video-library' };
+> & { source: 'marketing' | 'video-library' | 'tier-poster'; tier?: string };
 
-/** Marketing uploads plus the CEO explainer videos, so Flow clips already uploaded can be posted too. */
+const PUBLIC_SITE = 'https://clearpathtrader.com';
+
+/** The four funnel posters ship with the site in public/marketing/posters, so they never depend on bucket storage. */
+export function tierPosterAssets(): LibraryAsset[] {
+  return tierContentCatalog.tiers.map((tier) => ({
+    id: `poster-${tier.id}`,
+    title: `${tier.label} poster: ${tier.poster.title}`,
+    kind: 'image' as const,
+    contentType: 'image/jpeg',
+    sizeBytes: 0,
+    uploadedAt: '',
+    url: `${PUBLIC_SITE}${tier.poster.assetUrl}`,
+    publicRead: true,
+    source: 'tier-poster' as const,
+    tier: tier.id,
+  }));
+}
+
+/** Tier posters, marketing uploads, and the CEO explainer videos, so Flow clips already uploaded can be posted too. */
 async function listLibrary(): Promise<LibraryAsset[]> {
-  if (!getCeoVideoStorageStatus().configured) return [];
+  const posters = tierPosterAssets();
+  if (!getCeoVideoStorageStatus().configured) return posters;
   const [assets, videos] = await Promise.all([listMarketingAssets(), listCeoVideos()]);
-  return [
+  const uploaded: LibraryAsset[] = [
     ...assets.map<LibraryAsset>((a) => ({
       id: a.id,
       title: a.title,
@@ -97,6 +117,7 @@ async function listLibrary(): Promise<LibraryAsset[]> {
       source: 'video-library',
     })),
   ].sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  return [...posters, ...uploaded];
 }
 
 async function settle<T>(promise: Promise<T>): Promise<{ value: T | null; error: string | null }> {
@@ -158,7 +179,7 @@ export function createMarketingDepartmentRouter(): Router {
       listSeoPings(),
     ]);
 
-    const library = libraryResult.value ?? [];
+    const library = (libraryResult.value ?? []).filter((a) => a.source !== 'tier-poster');
     const outbox = outboxResult.value ?? [];
     const analytics = analyticsResult.value;
 
@@ -180,6 +201,7 @@ export function createMarketingDepartmentRouter(): Router {
         total: library.length,
         images: library.filter((a) => a.kind === 'image').length,
         videos: library.filter((a) => a.kind === 'video').length,
+        tierPosters: tierPosterAssets().length,
       },
       outbox: {
         total: outbox.length,
@@ -248,7 +270,13 @@ export function createMarketingDepartmentRouter(): Router {
     try {
       res.json({ ok: true, storage: getCeoVideoStorageStatus(), assets: await listLibrary() });
     } catch (error) {
-      fail(res, error);
+      console.error('[ceo/marketing] library', (error as Error)?.message);
+      res.json({
+        ok: true,
+        storage: getCeoVideoStorageStatus(),
+        assets: tierPosterAssets(),
+        libraryError: (error as Error)?.message || 'Library listing failed.',
+      });
     }
   });
 
@@ -278,6 +306,10 @@ export function createMarketingDepartmentRouter(): Router {
   router.delete('/assets/:id', async (req, res) => {
     try {
       const id = String(req.params.id || '').toLowerCase();
+      if (id.startsWith('poster-')) {
+        res.status(400).json({ error: 'tier_poster', message: 'Tier posters ship with the site and cannot be deleted here.' });
+        return;
+      }
       const result = await deleteMarketingAsset(id);
       const removedDrafts = await deleteOutboxPostsForAsset(id).catch(() => 0);
       res.json({ ok: true, ...result, removedDrafts });

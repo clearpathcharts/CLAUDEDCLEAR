@@ -14,6 +14,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
+import tierContentCatalog from '../../../data/marketing/tier-content-catalog.json';
 
 type GetHeaders = () => Promise<Record<string, string>>;
 
@@ -26,8 +27,27 @@ type Asset = {
   uploadedAt: string;
   url: string;
   publicRead: boolean | null;
-  source: 'marketing' | 'video-library';
+  source: 'marketing' | 'video-library' | 'tier-poster';
+  tier?: string;
 };
+
+type TierPoster = {
+  title: string;
+  subtitle: string;
+  assetUrl: string;
+  alt: string;
+  cta: string;
+  claims: string[];
+  reviewNote?: string;
+  width: number;
+  height: number;
+};
+
+const TIER_POSTERS = (tierContentCatalog.tiers as Array<{ id: string; label: string; poster: TierPoster }>).map((t) => ({
+  id: t.id,
+  label: t.label,
+  poster: t.poster,
+}));
 
 type Post = {
   id: string;
@@ -308,8 +328,13 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
 
   const openPlanner = (asset: Asset) => {
     setPlanFor(asset);
+    if (asset.tier) setPlanTier(asset.tier);
     setPlanPlatforms(channels);
+    window.setTimeout(() => document.querySelector('[data-mkt-planner]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  const uploadedAssets = assets.filter((a) => a.source !== 'tier-poster');
+  const posterAsset = (tierId: string) => assets.find((a) => a.source === 'tier-poster' && a.tier === tierId);
 
   const createDrafts = async () => {
     if (!planFor) return;
@@ -510,6 +535,66 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
         </p>
       </Bento>
 
+      {/* One section per funnel tier poster */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-mkt-tier-posters>
+        {TIER_POSTERS.map((t) => {
+          const asset = posterAsset(t.id);
+          return (
+            <Bento
+              key={t.id}
+              title={`${t.label} poster`}
+              icon={<ImageIcon size={16} aria-hidden="true" />}
+              accent="text-amber-200"
+              data-mkt-tier-poster={t.id}
+            >
+              <img
+                src={t.poster.assetUrl}
+                alt={t.poster.alt}
+                loading="lazy"
+                width={t.poster.width}
+                height={t.poster.height}
+                className="aspect-[4/5] w-full rounded-lg border border-white/10 bg-black object-contain"
+              />
+              <p className="m-0 mt-3 text-sm font-black text-white">{t.poster.title}</p>
+              <p className="m-0 mt-1 text-xs text-zinc-300">{t.poster.subtitle}</p>
+              <p className="m-0 mt-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Claims on the poster</p>
+              <ul className="m-0 mt-1 list-none space-y-0.5 p-0">
+                {t.poster.claims.map((claim) => (
+                  <li key={claim} className="flex items-center gap-1 text-xs text-emerald-200">
+                    <CheckCircle2 size={12} aria-hidden="true" /> {claim}
+                  </li>
+                ))}
+              </ul>
+              <p className="m-0 mt-2 text-[11px] text-zinc-400">
+                Button: <span className="text-zinc-200">{t.poster.cta}</span> · {t.poster.width} × {t.poster.height}
+              </p>
+              {t.poster.reviewNote ? (
+                <p className="m-0 mt-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-[11px] text-amber-100">
+                  Review: {t.poster.reviewNote}
+                </p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  disabled={!asset}
+                  onClick={() => asset && openPlanner(asset)}
+                  className={`${BTN} flex-1 bg-fuchsia-500 text-black hover:bg-fuchsia-400 disabled:opacity-40`}
+                >
+                  <Send size={12} aria-hidden="true" /> Plan posts
+                </button>
+                <a
+                  href={t.poster.assetUrl}
+                  download
+                  className={`${BTN} border border-white/20 text-zinc-200 hover:bg-white/10`}
+                >
+                  Download
+                </a>
+              </div>
+            </Bento>
+          );
+        })}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Upload */}
         <Bento title="Load media" icon={<Upload size={16} aria-hidden="true" />} accent="text-[#00FFFF]" data-mkt-upload>
@@ -585,7 +670,7 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
 
         {/* Library */}
         <Bento
-          title={`Asset library (${assets.length})`}
+          title={`Asset library (${uploadedAssets.length})`}
           icon={<ImageIcon size={16} aria-hidden="true" />}
           className="lg:col-span-2"
           data-mkt-library
@@ -598,11 +683,11 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
           }
         >
           {overview?.storage.libraryError ? <Unavailable detail={overview.storage.libraryError} /> : null}
-          {!assets.length ? (
+          {!uploadedAssets.length ? (
             <p className="m-0 text-sm text-zinc-400">No assets yet. Load a poster or video on the left to start.</p>
           ) : (
             <ul className="m-0 grid max-h-[520px] list-none grid-cols-2 gap-3 overflow-y-auto p-0 md:grid-cols-3">
-              {assets.map((a) => (
+              {uploadedAssets.map((a) => (
                 <li key={`${a.source}-${a.id}`} className="flex flex-col overflow-hidden rounded-lg border border-white/10 bg-black/40">
                   <div className="aspect-video bg-black">
                     {a.kind === 'image' ? (

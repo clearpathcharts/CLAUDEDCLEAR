@@ -31,13 +31,21 @@
       "destination": "/plans?offer=basic",
       "promise": "Start with a chart-first workspace and learn the market without a paid subscription.",
       "poster": {
-        "id": "basic-chart-first",
-        "title": "START WITH THE CHART",
-        "subtitle": "Free Basic access · Learn without the noise",
-        "assetUrl": "/marketing/posters/basic-chart-first.svg",
-        "alt": "ClearPath Trader Free Basic poster: Start with the chart. Free Basic access and chart-first education.",
+        "id": "basic-chart-first-noise-last",
+        "title": "CHART FIRST. NOISE LAST.",
+        "subtitle": "A focused market workspace with education beside the chart.",
+        "assetUrl": "/marketing/posters/basic-chart-first-noise-last.jpg",
+        "alt": "ClearPath Trader Free / Basic poster: Chart first. Noise last. A focused market workspace with education beside the chart. 1 chart, 5 indicators, neuro layouts.",
         "cta": "Explore Free Basic",
-        "utmContent": "basic_chart_first_poster"
+        "claims": [
+          "1 chart",
+          "5 indicators",
+          "Neuro layouts"
+        ],
+        "reviewNote": "The eyebrow line \"YOU'RE ON THE LIST\" reads like a waitlist confirmation; on an ad it can imply the viewer already signed up.",
+        "width": 819,
+        "height": 1024,
+        "utmContent": "basic_chart_first_noise_last_poster"
       },
       "videos": [
         {
@@ -77,13 +85,20 @@
       "destination": "/plans?offer=silver",
       "promise": "Build a larger learning workspace with intraday charts, replay, education, and customization.",
       "poster": {
-        "id": "silver-build-workspace",
-        "title": "BUILD YOUR WORKSPACE",
-        "subtitle": "Four charts · Replay · Education · More control",
-        "assetUrl": "/marketing/posters/silver-build-workspace.svg",
-        "alt": "ClearPath Trader Silver poster: Build your workspace with four charts, replay, education, and customization.",
+        "id": "silver-more-context",
+        "title": "MORE CONTEXT. SAME CLEAR PATH.",
+        "subtitle": "Four charts, replay, education, and a workspace you control.",
+        "assetUrl": "/marketing/posters/silver-more-context.jpg",
+        "alt": "ClearPath Trader Silver poster: More context. Same clear path. Four charts, replay, education, and a workspace you control. 4 charts, market replay, intraday.",
         "cta": "Compare Silver",
-        "utmContent": "silver_workspace_poster"
+        "claims": [
+          "4 charts",
+          "Market replay",
+          "Intraday"
+        ],
+        "width": 819,
+        "height": 1024,
+        "utmContent": "silver_more_context_poster"
       },
       "videos": [
         {
@@ -123,13 +138,20 @@
       "destination": "/plans?offer=gold",
       "promise": "Study chart patterns and bring your own indicator logic into a ten-chart workspace.",
       "poster": {
-        "id": "gold-pattern-literacy",
+        "id": "gold-see-the-pattern",
         "title": "SEE THE PATTERN. LEARN THE STRUCTURE.",
-        "subtitle": "Pattern Overlay · INDACREATOR · Ten-chart workspace",
-        "assetUrl": "/marketing/posters/gold-pattern-literacy.svg",
-        "alt": "ClearPath Trader Gold poster: Learn chart structure with Pattern Overlay, INDACREATOR, and a ten-chart workspace.",
+        "subtitle": "Pattern Overlay and INDACREATOR inside the chart-first workspace.",
+        "assetUrl": "/marketing/posters/gold-see-the-pattern.jpg",
+        "alt": "ClearPath Trader Gold poster: See the pattern. Learn the structure. Pattern Overlay and INDACREATOR inside the chart-first workspace. 10 charts, pattern overlay, INDACREATOR.",
         "cta": "Explore Gold",
-        "utmContent": "gold_pattern_literacy_poster"
+        "claims": [
+          "10 charts",
+          "Pattern Overlay",
+          "INDACREATOR"
+        ],
+        "width": 819,
+        "height": 1024,
+        "utmContent": "gold_see_the_pattern_poster"
       },
       "videos": [
         {
@@ -169,13 +191,20 @@
       "destination": "/plans?offer=platinum",
       "promise": "Bring the complete workspace together with the AI Pattern Scanner and supported automation tools.",
       "poster": {
-        "id": "platinum-pattern-scanner",
-        "title": "SCAN FOR STRUCTURE. VERIFY ON THE CHART.",
-        "subtitle": "AI Pattern Scanner · Complete ClearPath workspace",
-        "assetUrl": "/marketing/posters/platinum-pattern-scanner.svg",
-        "alt": "ClearPath Trader Platinum poster: Scan for chart structure and verify it on the chart with the AI Pattern Scanner.",
+        "id": "platinum-find-structure",
+        "title": "FIND STRUCTURE. VERIFY ON CHART.",
+        "subtitle": "AI Pattern Scanner with the complete ClearPath workspace.",
+        "assetUrl": "/marketing/posters/platinum-find-structure.jpg",
+        "alt": "ClearPath Trader Platinum poster: Find structure. Verify on chart. AI Pattern Scanner with the complete ClearPath workspace. AI scanner, all indicators, complete desk.",
         "cta": "Explore Platinum",
-        "utmContent": "platinum_pattern_scanner_poster"
+        "claims": [
+          "AI Pattern Scanner",
+          "All indicators",
+          "Complete desk"
+        ],
+        "width": 819,
+        "height": 1024,
+        "utmContent": "platinum_find_structure_poster"
       },
       "videos": [
         {
