@@ -11,6 +11,10 @@ import {
   Unplug,
   WalletCards,
 } from 'lucide-react';
+import {
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
+} from '../../content/productIdentity';
 import { disconnectAlpaca } from '../../api/brokerConnect';
 import { useAlpacaConnectGate } from './AlpacaAuthorizeDisclosure';
 import { useAuth } from '../../contexts/FirebaseContext';
@@ -91,11 +95,12 @@ export default function UsBrokerNetworkPage() {
     <div className="broker-network">
       {disclosure}
       <Helmet>
-        <title>US Broker Connections | ClearPath Trader</title>
+        <title>{withPlatformPositionTitle('US Broker Connections | ClearPath Trader')}</title>
         <meta
           name="description"
           content="Connect an existing United States brokerage account to ClearPath through secure broker-authorized pass-through integrations."
         />
+        <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
         <link rel="canonical" href="https://clearpathtrader.com/brokers" />
       </Helmet>
 

@@ -16,6 +16,8 @@ import {
   PRODUCT_HOME_TITLE,
   PRODUCT_KNOWS_ABOUT,
   PRODUCT_META_DESCRIPTION,
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
@@ -1442,6 +1444,8 @@ export function enrichHtmlWithMetadata(
 
   // Normalize length for SERP/social previews (entity pages may still be long; clamp soft)
   title = clampTitle(title, 70);
+  // Lawyer-required platform position must remain in the crawlable <title> / OG title.
+  title = withPlatformPositionTitle(title);
   description = clampDescription(description, 160);
   // Keywords meta is low-weight for Google; keep a short phrase list (not hashtags — those belong on social posts)
   keywords = keywords
@@ -1505,6 +1509,7 @@ export function enrichHtmlWithMetadata(
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
   const ogTags = `
+    <meta name="clearpath-platform-position" content="${escAttr(PRODUCT_PLATFORM_POSITION)}" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${primaryLocale}" />
 ${noindexPage ? '' : localeAlternates}
