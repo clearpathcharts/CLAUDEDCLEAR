@@ -84,7 +84,7 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
     cta: {
       chartTitle: 'Перенесите знания на живой график',
       chartBody:
-        'ClearPath Trader — бесплатный терминал: живые графики, неограниченные индикаторы, контекст паттернов и обучение от новичка до продвинутого уровня. Не брокер.',
+        'ClearPath Trader — терминал с бесплатным тарифом: живые графики, 5 бесплатных индикаторов (полная библиотека на платных тарифах), разметка паттернов на Gold и обучение от новичка до продвинутого уровня. Не брокер.',
       launchLabel: 'Открыть терминал',
       educationLabel: 'Начать обучение',
       waitlistTitle: 'Private Login — ваш доступ',
@@ -169,7 +169,7 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
     cta: {
       chartTitle: '把知识放到实时图表上',
       chartBody:
-        'ClearPath Trader 是免费市场情报终端：实时图表、无限指标、形态上下文，以及从入门到进阶的教育路径。非券商。',
+        'ClearPath Trader 是提供免费方案的市场情报终端：实时图表、5 个免费指标（付费方案提供完整指标库）、Gold 方案自动形态标注，以及从入门到进阶的教育路径。非券商。',
       launchLabel: '启动终端',
       educationLabel: '开始学习',
       waitlistTitle: 'Private Login 才是真正入口',
@@ -254,7 +254,7 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
     cta: {
       chartTitle: '学んだ内容をライブチャートへ',
       chartBody:
-        'ClearPath Trader は無料のマーケット端末です。ライブチャート、無制限のインジケーター、パターン文脈、初級〜上級の教育。証券会社ではありません。',
+        'ClearPath Trader は無料プランのあるマーケット端末です。ライブチャート、無料で5つのインジケーター（有料プランで全ライブラリ）、Goldでパターン自動表示、初級〜上級の教育。証券会社ではありません。',
       launchLabel: 'ターミナルを開く',
       educationLabel: '学習を始める',
       waitlistTitle: 'Private Login が本番の入口',
@@ -339,7 +339,7 @@ export const REGIONAL_MARKETS: RegionalMarket[] = [
     cta: {
       chartTitle: 'Ilagay ang kaalaman sa live chart',
       chartBody:
-        'Free market intelligence terminal ang ClearPath Trader: live charts, unlimited indicators, pattern context, at beginner-to-advanced education. Hindi brokerage.',
+        'Market intelligence terminal na may libreng plan ang ClearPath Trader: live charts, 5 libreng indicators (buong library sa paid plans), pattern overlay sa Gold, at beginner-to-advanced education. Hindi brokerage.',
       launchLabel: 'Buksan ang terminal',
       educationLabel: 'Simulan ang education',
       waitlistTitle: 'Private Login ang totoong access',

@@ -278,7 +278,7 @@ export const GENERAL_FAQS = [
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
+    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts with 5 free indicators (the full library on paid plans), automatic chart-pattern overlay on Gold, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
   },
   {
     question: "Is ClearPathTrader a brokerage?",
@@ -1586,7 +1586,7 @@ ${hreflangTags}
         <h2>Customization</h2>
         <p>Your platform: colors, layouts, windows, social links, and news without leaving your charts.</p>
         <h2>Indicators</h2>
-        <p>Unlimited indicators, automatic chart pattern marking, and an indicator encyclopedia.</p>
+        <p>5 indicators free and the full library on paid plans, automatic chart pattern marking on Gold, and an indicator encyclopedia.</p>
         <h2>Education</h2>
         <p>Beginner to advanced path in plain language.</p>
       </article>

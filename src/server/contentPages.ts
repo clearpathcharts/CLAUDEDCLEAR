@@ -98,9 +98,11 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Inline markdown: **bold** only (the corpus uses nothing else inline). */
+/** Inline markdown: **bold** and same-site links `[text](/path)` (no external or scheme URLs). */
 function inlineMd(text: string): string {
-  return escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return escapeHtml(text)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((\/[A-Za-z0-9_\-/]*)\)/g, '<a href="$2">$1</a>');
 }
 
 /**
@@ -294,12 +296,12 @@ function renderShell(
       : cta || {
           chartTitle: 'Put this knowledge on a live chart',
           chartBody:
-            'ClearPath Trader is a free educational financial markets site: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
+            'ClearPath Trader is an educational financial markets site with a free plan: live charts, 5 indicators free (the full library on paid plans), automatic chart-pattern overlay on Gold, and a beginner-to-advanced education path.',
           launchLabel: 'Open the site',
           educationLabel: 'Start education',
           waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'There is no waitlist. Create an account with email + password on the site. That email lives in Firestore and survives Cloud Run redeploys.',
+            'There is no waitlist. Create a free account with your email and a password, confirm your email, then sign in.',
           firstNameLabel: 'First name',
           emailLabel: 'Email (updates only)',
           countryLabel: 'Country',

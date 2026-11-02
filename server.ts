@@ -35,7 +35,6 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
-import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, isUnknownLanguagePath, renderUnknownRegionNotFound, renderUnknownLanguageNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
@@ -44,7 +43,7 @@ import {
   submitIndexNow,
   indexNowKeyLocation,
 } from './src/server/indexNow';
-import { REGIONAL_MARKETS, regionalHubEntries, regionalIndexNowUrls } from './src/server/regionalSeo';
+import { REGIONAL_MARKETS } from './src/server/regionalSeo';
 import {
   grantContractorBadgeByEmail,
   seedIndependentContractorBadges,
@@ -53,24 +52,12 @@ import {
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
+import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
+import { SITEMAP_SECTIONS, sectionXml, sitemapIndexXml, priorityIndexNowUrls } from './src/server/siteRegistry';
+import { recordSeoPing } from './src/server/seoPingLog';
 import { buildAppUpdateManifest } from './src/server/appUpdate';
 import {
-  stockEntries,
-  cryptoEntries,
-  forexEntries,
-  commodityEntries,
-  companyEntries,
-  companyIndexEntries,
-  economyEntries,
-  indicatorEntries,
-  educationEntries,
-  uiProfileEntries,
-  encyclopediaHubEntries,
-  glossaryEntries,
-  literacyEntries,
-  knowledgeBaseEntries,
   catalogCounts,
-  sitemapLastmod,
   lookupStock,
   lookupCrypto,
   lookupForex,
@@ -139,7 +126,11 @@ import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
 import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
-import { createAdminMarketingRouter, createPublicMarketingRouter } from './src/server/marketingFunnelRoutes';
+import {
+  createAdminMarketingRouter,
+  createMarketingConnectorRouter,
+  createPublicMarketingRouter,
+} from './src/server/marketingFunnelRoutes';
 import { MARKETING_ATTRIBUTION_COOKIE, recordMarketingSignup } from './src/server/marketingFunnelService';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
@@ -875,6 +866,7 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+  app.use('/go', createMarketingConnectorRouter());
   app.use('/api/marketing', createPublicMarketingRouter());
   app.use('/api/admin/marketing', requireFounderOrCatalogAdmin, createAdminMarketingRouter());
 
@@ -885,6 +877,13 @@ async function startServer() {
     requireFounderOrCatalogAdmin,
     requireFounderActionHeader,
     createCeoVideoRouter()
+  );
+
+  app.use(
+    '/api/ceo/marketing',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    createMarketingDepartmentRouter()
   );
 
   // Public read side: slot id -> playable URL, nothing else. Visitors need this
@@ -4268,59 +4267,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   // Only URLs that serve real content to logged-out visitors (and crawlers)
   // belong here — sitemap URLs that render a login wall get dropped by
   // Google and drag down crawl trust for the rest of the site.
-  const SITEMAP_BASE = 'https://clearpathtrader.com';
 
-  interface SitemapEntry { path: string; lastmod: string; changefreq: string; priority: string; }
-
-  const buildUrlset = (entries: SitemapEntry[]) =>
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.map(e => `  <url>
-    <loc>${SITEMAP_BASE}${e.path}</loc>
-    <lastmod>${e.lastmod}</lastmod>
-    <changefreq>${e.changefreq}</changefreq>
-    <priority>${e.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-  // Cache generated urlsets — procedural catalogs are large (~30k URLs).
-  type CrawlEntryLike = { path: string; lastmod: string; changefreq: string; priority: string };
-  const sitemapCache = new Map<string, string>();
-  const cachedUrlset = (key: string, factory: () => CrawlEntryLike[]) => {
-    let xml = sitemapCache.get(key);
-    if (!xml) {
-      xml = buildUrlset(factory());
-      sitemapCache.set(key, xml);
-    }
-    return xml;
-  };
-
-  const SITEMAP_CHILDREN = [
-    'sitemap-pages.xml',
-    'sitemap-learn.xml',
-    'sitemap-guides.xml',
-    'sitemap-stocks.xml',
-    'sitemap-crypto.xml',
-    'sitemap-forex.xml',
-    'sitemap-commodities.xml',
-    'sitemap-companies.xml',
-    'sitemap-glossary.xml',
-    'sitemap-literacy.xml',
-    'sitemap-knowledge.xml',
-    'sitemap-economy.xml',
-    'sitemap-indicators.xml',
-    'sitemap-education.xml',
-    'sitemap-ui.xml',
-  ];
-
-  app.get('/sitemap.xml', (req, res) => {
+  app.get('/sitemap.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${SITEMAP_CHILDREN.map((name) => `  <sitemap>
-    <loc>${SITEMAP_BASE}/${name}</loc>
-  </sitemap>`).join('\n')}
-</sitemapindex>`);
+    res.send(sitemapIndexXml());
   });
 
   app.get('/api/seo/catalog-counts', (_req, res) => {
@@ -4380,114 +4330,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.get('/sitemap-pages.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    const lastmod = sitemapLastmod();
-    res.send(buildUrlset([
-      { path: '/', lastmod, changefreq: 'daily', priority: '1.0' },
-      // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
-      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
-      { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/company', lastmod, changefreq: 'monthly', priority: '0.88' },
-      { path: '/meet-the-board', lastmod, changefreq: 'monthly', priority: '0.88' },
-      { path: '/founder', lastmod, changefreq: 'monthly', priority: '0.87' },
-      { path: '/ceo-statement', lastmod, changefreq: 'yearly', priority: '0.86' },
-      { path: '/press', lastmod, changefreq: 'monthly', priority: '0.9' },
-      { path: '/plans', lastmod, changefreq: 'weekly', priority: '0.86' },
-      { path: '/brokers', lastmod, changefreq: 'monthly', priority: '0.75' },
-      { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/literacy', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/learn', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/guides', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/glossary', lastmod, changefreq: 'weekly', priority: '0.75' },
-      { path: '/faq', lastmod, changefreq: 'monthly', priority: '0.7' },
-      { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
-      { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
-      { path: '/desk', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/desk/institutional', lastmod, changefreq: 'weekly', priority: '0.9' },
-      { path: '/desk/fundamental', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/retail', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/neurodivergent', lastmod, changefreq: 'weekly', priority: '0.8' },
-      ...encyclopediaHubEntries(),
-      ...regionalHubEntries(),
-    ]));
-  });
-
-  app.get('/sitemap-learn.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(SEMANTIC_RECORDS).map(record => ({
-        path: `/learn/${record.id}`,
-        lastmod: record.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.9',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-guides.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(GUIDE_RECORDS).map(guide => ({
-        path: `/guides/${guide.id}`,
-        lastmod: guide.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.85',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-stocks.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('stocks', stockEntries));
-  });
-  app.get('/sitemap-crypto.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('crypto', cryptoEntries));
-  });
-  app.get('/sitemap-forex.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('forex', forexEntries));
-  });
-  app.get('/sitemap-commodities.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('commodities', commodityEntries));
-  });
-  app.get('/sitemap-companies.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
-  });
-  app.get('/sitemap-glossary.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('glossary', glossaryEntries));
-  });
-  app.get('/sitemap-literacy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('literacy', literacyEntries));
-  });
-  app.get('/sitemap-knowledge.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
-  });
-  app.get('/sitemap-economy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('economy', economyEntries));
-  });
-  app.get('/sitemap-indicators.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('indicators', indicatorEntries));
-  });
-  app.get('/sitemap-education.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('education', educationEntries));
-  });
-  app.get('/sitemap-ui.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('ui', uiProfileEntries));
-  });
+  for (const section of SITEMAP_SECTIONS) {
+    app.get(`/${section.file}`, (_req, res) => {
+      res.header('Content-Type', 'application/xml');
+      res.send(sectionXml(section));
+    });
+  }
 
   // 5. AI-READABLE CONTENT ENDPOINTS
   app.get('/api/semantic/content', (req, res) => {
@@ -5054,16 +4902,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       }
 
       // Notify Bing/Yandex ecosystem (homepage + regional hubs + market pairs).
-      void submitIndexNow([
-        'https://clearpathtrader.com/',
-        'https://clearpathtrader.com/about',
-        'https://clearpathtrader.com/glossary',
-        'https://clearpathtrader.com/literacy',
-        'https://clearpathtrader.com/markets/bonds',
-        'https://clearpathtrader.com/companies',
-        'https://clearpathtrader.com/encyclopedia',
-        ...regionalIndexNowUrls(),
-      ]).then((r) => {
+      void submitIndexNow(priorityIndexNowUrls()).then((r) => {
+        void recordSeoPing('startup', r);
         if (r.skipped) {
           console.log(`[STARTUP] IndexNow skipped: ${r.skipped}`);
         } else {

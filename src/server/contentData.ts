@@ -3,6 +3,8 @@
 // Shared by the static content page renderer and the SEO metadata engine.
 // ==========================================
 
+import { INTENT_GUIDE_RECORDS } from './intentGuides';
+
 export interface GuideRecord {
   id: string;
   title: string;
@@ -181,6 +183,7 @@ Used correctly, leverage is a capital-efficiency tool wrapped around a strict ri
       },
     ],
   },
+  ...INTENT_GUIDE_RECORDS,
 };
 
 export interface GlossaryTerm {
