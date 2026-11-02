@@ -156,6 +156,8 @@ import {
 import {
   AFFILIATE_DISABLED_MESSAGE,
   AFFILIATE_PROGRAM_ENABLED,
+  inspectAffiliateDurableStore,
+  purgeAffiliateDurableStore,
 } from './src/server/affiliateService';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
@@ -1540,6 +1542,36 @@ async function startServer() {
   app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, affiliateGone);
   app.get('/api/admin/affiliate/members', requireCatalogAdmin, affiliateGone);
   app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, affiliateGone);
+
+  /** Read-only: leftover Firestore/local affiliate durable state (not a live rewards desk). */
+  app.get(
+    '/api/admin/affiliate/durable-status',
+    requireFounderOrCatalogAdmin,
+    async (_req, res) => {
+      try {
+        const status = await inspectAffiliateDurableStore();
+        res.json({ ok: true, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...status });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable status failed' });
+      }
+    }
+  );
+
+  /** Delete leftover `app_state/affiliate` + local data/affiliate. Does not touch Stripe or accounts. */
+  app.post(
+    '/api/admin/affiliate/purge-durable',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await purgeAffiliateDurableStore();
+        const status = result.ok ? 200 : 500;
+        res.status(status).json({ ok: result.ok, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...result });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable purge failed' });
+      }
+    }
+  );
 
   /**
    * Founder Google unlock: verified founder Firebase token → Express private session.
@@ -4687,7 +4719,8 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
       // Hydrate redeploy-sensitive stores (profiles/memberships, pending badges)
       // from Firestore BEFORE seeding, so a fresh container never starts blank.
-      // Affiliate durable store is intentionally not hydrated — program removed.
+      // Affiliate durable store is NOT hydrated — program removed. Purge leftover
+      // Firestore `app_state/affiliate` / local data so historical records do not linger.
       try {
         const profiles = await hydrateProfilesFromDurableStore();
         console.log(
@@ -4695,6 +4728,14 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         );
       } catch (e: any) {
         console.warn('[STARTUP] Profiles hydrate skipped:', e?.message || e);
+      }
+      try {
+        const purged = await purgeAffiliateDurableStore();
+        console.log(
+          `[STARTUP] Affiliate durable purge → ok=${purged.ok} firestore=${purged.firestore} localDeleted=${purged.localDeleted} beforeFirestore=${purged.before.firestore} beforeMembers≈${purged.before.approxMembers}${purged.error ? ` error=${purged.error}` : ''}`
+        );
+      } catch (e: any) {
+        console.warn('[STARTUP] Affiliate durable purge skipped:', e?.message || e);
       }
       try {
         const pending = await hydratePendingGrantsFromDurableStore();

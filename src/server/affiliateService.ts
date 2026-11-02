@@ -6,9 +6,14 @@
  * 25% lifetime residuals, payout requests, leaderboard) are inert.
  *
  * This module remains only so boot/tests can assert the program is off
- * and that no code path can credit referrals or write affiliate state.
- * Durable store `app_state/affiliate` is never read or written.
+ * and that no code path can credit referrals. Historical durable state
+ * at Firestore `app_state/affiliate` (and local `data/affiliate`) is
+ * inspected and purged — never hydrated back into a live rewards engine.
  */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { getAdminFirestore } from './firebaseAdmin';
 
 export const AFFILIATE_PROGRAM_ENABLED = false;
 export const AFFILIATE_DISABLED_MESSAGE =
@@ -25,6 +30,11 @@ export const MIN_PAYOUT_CENTS = 0;
 /** Legacy cookie name — never set by this build. */
 export const AFFILIATE_COOKIE = 'cp_affiliate_ref';
 export const AFFILIATE_COOKIE_MAX_AGE_MS = 0;
+
+const DATA_DIR = path.join(process.cwd(), 'data', 'affiliate');
+const STATE_FILE = 'state.json';
+const DURABLE_COLLECTION = 'app_state';
+const DURABLE_DOC = 'affiliate';
 
 export type AffiliateClick = {
   id: string;
@@ -91,6 +101,144 @@ export async function hydrateAffiliateFromDurableStore(): Promise<{
   members: number;
 }> {
   return { source: 'disabled', members: 0 };
+}
+
+export type AffiliateDurableStatus = {
+  localExists: boolean;
+  localBytes: number;
+  firestore: 'present' | 'absent' | 'no_credentials' | 'error';
+  firestoreUpdatedAt: string | null;
+  firestoreBytes: number;
+  /** Best-effort parse of member count from leftover JSON (0 when absent/unreadable). */
+  approxMembers: number;
+  error?: string;
+};
+
+function summarizeLocalState(): { exists: boolean; bytes: number; approxMembers: number } {
+  const fp = path.join(DATA_DIR, STATE_FILE);
+  if (!fs.existsSync(fp)) return { exists: false, bytes: 0, approxMembers: 0 };
+  try {
+    const raw = fs.readFileSync(fp, 'utf8');
+    const parsed = JSON.parse(raw) as { members?: Record<string, unknown> };
+    const approxMembers =
+      parsed.members && typeof parsed.members === 'object' ? Object.keys(parsed.members).length : 0;
+    return { exists: true, bytes: Buffer.byteLength(raw, 'utf8'), approxMembers };
+  } catch {
+    try {
+      return { exists: true, bytes: fs.statSync(fp).size, approxMembers: 0 };
+    } catch {
+      return { exists: true, bytes: 0, approxMembers: 0 };
+    }
+  }
+}
+
+/**
+ * Read-only probe of leftover affiliate durable state.
+ * Does not restore members into any live rewards path.
+ */
+export async function inspectAffiliateDurableStore(): Promise<AffiliateDurableStatus> {
+  const local = summarizeLocalState();
+  const status: AffiliateDurableStatus = {
+    localExists: local.exists,
+    localBytes: local.bytes,
+    firestore: 'no_credentials',
+    firestoreUpdatedAt: null,
+    firestoreBytes: 0,
+    approxMembers: local.approxMembers,
+  };
+
+  const db = getAdminFirestore();
+  if (!db) return status;
+
+  try {
+    const doc = await db.collection(DURABLE_COLLECTION).doc(DURABLE_DOC).get();
+    if (!doc.exists) {
+      status.firestore = 'absent';
+      return status;
+    }
+    status.firestore = 'present';
+    const data = doc.data() || {};
+    status.firestoreUpdatedAt =
+      typeof data.updatedAt === 'string' ? data.updatedAt : null;
+    const json = typeof data.json === 'string' ? data.json : '';
+    status.firestoreBytes = Buffer.byteLength(json, 'utf8');
+    try {
+      const parsed = JSON.parse(json || '{}') as { members?: Record<string, unknown> };
+      const remoteMembers =
+        parsed.members && typeof parsed.members === 'object' ? Object.keys(parsed.members).length : 0;
+      status.approxMembers = Math.max(status.approxMembers, remoteMembers);
+    } catch {
+      /* leave approxMembers as local */
+    }
+    return status;
+  } catch (err: any) {
+    status.firestore = 'error';
+    status.error = err?.message || String(err);
+    return status;
+  }
+}
+
+export type AffiliateDurablePurgeResult = {
+  ok: boolean;
+  localDeleted: boolean;
+  firestore: 'deleted' | 'absent' | 'no_credentials' | 'error';
+  before: AffiliateDurableStatus;
+  error?: string;
+};
+
+/**
+ * Delete leftover affiliate durable state (local file + Firestore doc).
+ * Safe to call repeatedly. Does not touch Stripe, private accounts, or profiles.
+ */
+export async function purgeAffiliateDurableStore(): Promise<AffiliateDurablePurgeResult> {
+  const before = await inspectAffiliateDurableStore();
+  let localDeleted = false;
+
+  try {
+    const fp = path.join(DATA_DIR, STATE_FILE);
+    if (fs.existsSync(fp)) {
+      fs.unlinkSync(fp);
+      localDeleted = true;
+    }
+    if (fs.existsSync(DATA_DIR)) {
+      try {
+        fs.rmdirSync(DATA_DIR);
+      } catch {
+        /* non-empty or race — local state file is what mattered */
+      }
+    }
+  } catch (err: any) {
+    return {
+      ok: false,
+      localDeleted,
+      firestore: 'error',
+      before,
+      error: err?.message || String(err),
+    };
+  }
+
+  const db = getAdminFirestore();
+  if (!db) {
+    return { ok: true, localDeleted, firestore: 'no_credentials', before };
+  }
+
+  try {
+    const ref = db.collection(DURABLE_COLLECTION).doc(DURABLE_DOC);
+    const doc = await ref.get();
+    if (!doc.exists) {
+      return { ok: true, localDeleted, firestore: 'absent', before };
+    }
+    await ref.delete();
+    return { ok: true, localDeleted, firestore: 'deleted', before };
+  } catch (err: any) {
+    return {
+      ok: false,
+      localDeleted,
+      firestore: 'error',
+      before,
+      error: err?.message || String(err),
+    };
+  }
 }
 
 export function monthKey(d = new Date()): string {
