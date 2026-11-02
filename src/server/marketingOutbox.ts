@@ -3,8 +3,9 @@
  *
  * Nothing here posts anywhere. Outbound dispatch is off by founder order; a
  * post only becomes "posted" when the founder pastes the live URL back in.
- * Captions are built from vetted copy (tier-content-catalog promises, the
- * required disclaimer, per-platform keyword lists) — never generated claims.
+ * Each platform's body is written separately by marketingCopywriter (approved
+ * facts only, similarity-checked); the tracked link, required disclaimer and
+ * hashtags are appended here so they can never be dropped.
  *
  * Storage: Firestore doc when Admin is up, local JSON for credential-less dev.
  * In production without Firestore the store refuses writes instead of
@@ -17,6 +18,7 @@ import tierContentCatalog from '../../data/marketing/tier-content-catalog.json';
 import searchIntelligence from '../../data/marketing/global-search-intelligence.json';
 import marketingMetadata from '../../data/marketing/clearpath-marketing-metadata.json';
 import { getAdminFirestore } from './firebaseAdmin';
+import { defaultAiWriter, factsFor, writeUniqueBodies, type AiWriter, type CopySource } from './marketingCopywriter';
 
 export const OUTBOX_STATUSES = ['draft', 'approved', 'posted', 'archived'] as const;
 export type OutboxStatus = (typeof OUTBOX_STATUSES)[number];
@@ -34,6 +36,11 @@ export type OutboxPost = {
   assetTitle: string;
   platform: string;
   tier: OutboxTier;
+  /** Platform-specific wording, without link / disclaimer / hashtags. */
+  body?: string;
+  copySource?: CopySource;
+  /** Highest word-trigram overlap with any other draft or recent post when written (0–1). */
+  similarity?: number;
   caption: string;
   hashtags: string[];
   trackedLink: string;
@@ -118,25 +125,26 @@ export function trackedLinkFor(tier: OutboxTier, platform: string, assetId: stri
   return `https://clearpathtrader.com/go/${tier}/${platform}/${assetId}`;
 }
 
-export function buildCaption(input: {
-  platform: string;
-  tier: OutboxTier;
-  assetTitle: string;
-  trackedLink: string;
-  hashtags: string[];
-}): string {
-  const tier = tierContentCatalog.tiers.find((t) => t.id === input.tier) || tierContentCatalog.tiers[0]!;
+/** Body first, then the parts that must survive any edit: link, disclaimer, then hashtags if they fit. */
+export function buildCaption(input: { platform: string; body: string; trackedLink: string; hashtags: string[] }): string {
   const disclaimer = tierContentCatalog.requiredDisclaimer;
-  const tags = input.hashtags.join(' ');
   const maxChars = PLATFORM_RULES[input.platform]?.maxChars ?? 2200;
-  const full = [input.assetTitle, tier.promise, `${tier.poster.cta}: ${input.trackedLink}`, disclaimer, tags]
-    .filter(Boolean)
-    .join('\n\n');
+  const tags = input.hashtags.join(' ');
+  const full = [input.body, input.trackedLink, disclaimer, tags].filter(Boolean).join('\n\n');
   if (full.length <= maxChars) return full;
-  // Short-form platforms: keep the link and disclaimer, drop the pitch first.
-  const short = [input.assetTitle, input.trackedLink, disclaimer, tags].filter(Boolean).join('\n\n');
-  if (short.length <= maxChars) return short;
-  return [input.trackedLink, disclaimer].join('\n');
+  const noTags = [input.body, input.trackedLink, disclaimer].join('\n\n');
+  if (noTags.length <= maxChars) return noTags;
+  const room = Math.max(0, maxChars - input.trackedLink.length - disclaimer.length - 6);
+  return [input.body.slice(0, room).trim(), input.trackedLink, disclaimer].filter(Boolean).join('\n\n');
+}
+
+const RECENT_FOR_UNIQUENESS = 80;
+
+function recentBodies(posts: OutboxPost[], exclude?: string): string[] {
+  return posts
+    .filter((p) => p.id !== exclude && p.status !== 'archived')
+    .slice(0, RECENT_FOR_UNIQUENESS)
+    .map((p) => p.body || p.caption);
 }
 
 // ── storage ─────────────────────────────────────────────────────────────────
@@ -213,6 +221,7 @@ export async function planOutboxPosts(input: {
   asset: { id: string; kind: 'image' | 'video'; url: string; title: string };
   platforms: unknown;
   tier: unknown;
+  ai?: AiWriter | null;
 }): Promise<OutboxPost[]> {
   const tier = (OUTBOX_TIERS as readonly string[]).includes(String(input.tier)) ? (String(input.tier) as OutboxTier) : 'basic';
   const requested = Array.isArray(input.platforms) ? input.platforms.map((p) => String(p).toLowerCase()) : [];
@@ -220,10 +229,18 @@ export async function planOutboxPosts(input: {
   if (!platforms.length) {
     throw new OutboxError('Pick at least one destination platform.', 400, 'no_platforms');
   }
+  const existing = await readPosts();
+  const bodies = await writeUniqueBodies({
+    platforms,
+    facts: factsFor(tier, input.asset.title),
+    recent: recentBodies(existing),
+    ai: input.ai === undefined ? defaultAiWriter() : input.ai,
+  });
   const now = new Date().toISOString();
   const created = platforms.map<OutboxPost>((platform) => {
     const hashtags = hashtagsFor(platform, tier);
     const trackedLink = trackedLinkFor(tier, platform, input.asset.id);
+    const written = bodies[platform]!;
     return {
       id: crypto.randomBytes(8).toString('hex'),
       assetId: input.asset.id,
@@ -232,7 +249,10 @@ export async function planOutboxPosts(input: {
       assetTitle: input.asset.title,
       platform,
       tier,
-      caption: buildCaption({ platform, tier, assetTitle: input.asset.title, trackedLink, hashtags }),
+      body: written.body,
+      copySource: written.source,
+      similarity: Math.round(written.similarity * 100) / 100,
+      caption: buildCaption({ platform, body: written.body, trackedLink, hashtags }),
       hashtags,
       trackedLink,
       status: 'draft',
@@ -243,9 +263,34 @@ export async function planOutboxPosts(input: {
       postedAt: null,
     };
   });
-  const posts = await readPosts();
-  await writePosts([...created, ...posts]);
+  await writePosts([...created, ...existing]);
   return created;
+}
+
+/** Fresh wording for one draft, checked against everything else in the outbox. */
+export async function rewriteOutboxPost(id: string, ai?: AiWriter | null): Promise<OutboxPost> {
+  const posts = await readPosts();
+  const post = posts.find((p) => p.id === id);
+  if (!post) throw new OutboxError('That post is not in the outbox.', 404, 'not_found');
+  if (post.status === 'posted') throw new OutboxError('Posted posts are kept as they went out.', 400, 'already_posted');
+  const avoid = [...recentBodies(posts, id), post.body || post.caption];
+  const written = (
+    await writeUniqueBodies({
+      platforms: [post.platform],
+      facts: factsFor(post.tier, post.assetTitle),
+      recent: avoid,
+      ai: ai === undefined ? defaultAiWriter() : ai,
+    })
+  )[post.platform]!;
+  post.body = written.body;
+  post.copySource = written.source;
+  post.similarity = Math.round(written.similarity * 100) / 100;
+  post.caption = buildCaption({ platform: post.platform, body: written.body, trackedLink: post.trackedLink, hashtags: post.hashtags });
+  post.status = 'draft';
+  post.approvedAt = null;
+  post.updatedAt = new Date().toISOString();
+  await writePosts(posts);
+  return post;
 }
 
 export async function updateOutboxPost(

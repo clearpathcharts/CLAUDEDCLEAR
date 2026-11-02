@@ -5,6 +5,8 @@
  * - unconnected sources report DATA UNAVAILABLE / NOT CONFIGURED, never a number
  * - drafts carry the tracked link and required disclaimer and fit platform limits
  * - "posted" requires a real https link; nothing auto-posts
+ * - every platform gets its own wording; AI output with claims, invented
+ *   numbers or repeated phrasing is rejected
  *
  * Run: npx tsx scripts/marketing-department.selftest.ts
  */
@@ -20,6 +22,7 @@ process.env.CATALOG_ADMIN_SECRET = 'selftest-catalog-secret';
 delete process.env.CEO_VIDEO_BUCKET;
 delete process.env.FIREBASE_STORAGE_BUCKET;
 delete process.env.METRICOOL_TOKEN;
+delete process.env.GROQ_API_KEY;
 
 const root = path.resolve('.');
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8');
@@ -42,6 +45,9 @@ assert.match(assetsSrc, /createResumableUpload/, 'uploads go direct to the bucke
 
 const outboxSrc = read('src/server/marketingOutbox.ts');
 assert.doesNotMatch(outboxSrc, /fetch\(|axios|graph\.facebook|api\.metricool/i, 'outbox never posts anywhere by itself');
+const copySrc = read('src/server/marketingCopywriter.ts');
+const fetchTargets = [...copySrc.matchAll(/fetch\('([^']+)'/g)].map((m) => m[1]);
+assert.deepEqual(fetchTargets, ['https://api.groq.com/openai/v1/chat/completions'], 'copywriter only talks to the AI writer, never to a social platform');
 
 const ui = read('src/components/marketing/MarketingDepartment.tsx');
 assert.doesNotMatch(ui, /Math\.random/, 'no invented numbers in the UI');
@@ -78,7 +84,7 @@ async function main() {
   const outbox = await import('../src/server/marketingOutbox.ts');
   const catalog = JSON.parse(read('data/marketing/tier-content-catalog.json'));
   const asset = { id: 'a'.repeat(16), kind: 'image' as const, url: 'https://storage.googleapis.com/x/y.png', title: 'Start with the chart' };
-  const drafts = await outbox.planOutboxPosts({ asset, platforms: outbox.MARKETING_CHANNELS, tier: 'gold' });
+  const drafts = await outbox.planOutboxPosts({ asset, platforms: outbox.MARKETING_CHANNELS, tier: 'gold', ai: null });
   assert.equal(drafts.length, outbox.MARKETING_CHANNELS.length, 'one draft per destination');
   for (const d of drafts) {
     assert.equal(d.status, 'draft', 'new posts start as drafts, never posted');
@@ -86,6 +92,46 @@ async function main() {
     assert.ok(d.caption.includes(d.trackedLink), `${d.platform} caption carries the tracked link`);
     assert.ok(d.caption.includes(catalog.requiredDisclaimer), `${d.platform} caption carries the disclaimer`);
   }
+  const copy = await import('../src/server/marketingCopywriter.ts');
+  for (let i = 0; i < drafts.length; i += 1) {
+    assert.equal(drafts[i]!.copySource, 'template', 'no AI key -> built-in writer');
+    for (let j = i + 1; j < drafts.length; j += 1) {
+      const overlap = copy.similarity(drafts[i]!.body!, drafts[j]!.body!);
+      assert.ok(overlap <= copy.MAX_SIMILARITY, `${drafts[i]!.platform} vs ${drafts[j]!.platform} overlap ${overlap.toFixed(2)} is too similar`);
+    }
+  }
+  assert.equal(new Set(drafts.map((d) => d.body)).size, drafts.length, 'no two platforms get the same wording');
+
+  const rewritten = await outbox.rewriteOutboxPost(drafts[1]!.id, null);
+  assert.notEqual(rewritten.body, drafts[1]!.body, 'Rewrite produces new wording');
+  assert.ok(rewritten.caption.includes(catalog.requiredDisclaimer) && rewritten.caption.includes(rewritten.trackedLink));
+
+  const facts = copy.factsFor('gold', 'Start with the chart');
+  const voice = copy.PLATFORM_VOICES.instagram!;
+  assert.match(String(copy.validateBody('Guaranteed profits every week with Gold.', facts, voice)), /claim/);
+  assert.match(String(copy.validateBody('Gold users hit a 70% win rate.', facts, voice)), /claim|number/);
+  assert.match(String(copy.validateBody('Gold is only $4.99 this week.', facts, voice)), /price/);
+  assert.match(String(copy.validateBody('Join 50000 traders on Gold today.', facts, voice)), /number/);
+  assert.equal(copy.validateBody('Gold is $9.93/mo and lets you study chart patterns.', facts, voice), null, 'real price from the plan sheet is allowed');
+
+  // AI that makes claims or repeats itself is thrown out; clean unique AI copy is kept.
+  const liar = async () => 'Guaranteed returns with our signals!';
+  const liarOut = await copy.writeUniqueBodies({ platforms: ['instagram'], facts, recent: [], ai: liar });
+  assert.equal(liarOut.instagram!.source, 'template', 'AI claims are rejected');
+  const parrot = async () => 'Study chart patterns on Gold and bring your own indicator logic into a ten chart workspace today.';
+  const parrotOut = await copy.writeUniqueBodies({ platforms: ['instagram', 'facebook'], facts, recent: [], ai: parrot });
+  assert.equal(parrotOut.instagram!.source, 'ai');
+  assert.equal(parrotOut.facebook!.source, 'template', 'AI repeating itself is rejected for the next platform');
+  let n = 0;
+  const fresh = async () =>
+    [
+      'Gold marks supported chart patterns so you can study structure right on the chart.',
+      'Curious how indicator logic you already wrote looks on a ClearPath chart? Gold lets you try it.',
+    ][n++ % 2]!;
+  const freshOut = await copy.writeUniqueBodies({ platforms: ['instagram', 'facebook'], facts, recent: [], ai: fresh });
+  assert.equal(freshOut.instagram!.source, 'ai');
+  assert.equal(freshOut.facebook!.source, 'ai', 'distinct clean AI copy is kept');
+
   const bluesky = drafts.find((d) => d.platform === 'bluesky')!;
   assert.ok(bluesky.caption.length <= 300, 'Bluesky caption fits 300 chars');
   assert.equal(drafts.find((d) => d.platform === 'reddit')!.hashtags.length, 0, 'no hashtags on Reddit');
