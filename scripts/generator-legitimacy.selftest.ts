@@ -117,9 +117,10 @@ assert.ok(stocksHub);
 assert.match(stocksHub!, /What Is |equity|Stock/i);
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
-assert.match(server, /sitemap-glossary\.xml/);
-assert.match(server, /sitemap-literacy\.xml/);
-assert.match(server, /sitemap-knowledge\.xml/);
+const siteRegistry = fs.readFileSync(path.join(root, 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(siteRegistry, /sitemap-glossary\.xml/);
+assert.match(siteRegistry, /sitemap-literacy\.xml/);
+assert.match(siteRegistry, /sitemap-knowledge\.xml/);
 assert.match(server, /sendEncyclopedia404/);
 
 const dir = fs.readFileSync(
