@@ -52,6 +52,7 @@ public/og-image.png
 # Member data / PII exports — never commit
 data/email-ops/
 data/marketing/funnel-local.json
+data/marketing-outbox/
 *service-account*.json
 *serviceAccount*.json
 

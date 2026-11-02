@@ -115,10 +115,6 @@ assert.equal(grab(satellite, /<link\s+rel="canonical"\s+href="([^"]*)"/i), 'http
 assert.equal(grab(satellite, /<title>([^<]*)<\/title>/i), DESK_SEO.retail.title);
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
-assert.match(server, /\/desk\/institutional/);
-assert.match(server, /\/desk\/fundamental/);
-assert.match(server, /\/desk\/retail/);
-assert.match(server, /\/desk\/neurodivergent/);
 assert.match(server, /app\.get\(\['\/fundamental', '\/fundamental\/:symbol'\]/);
 assert.match(server, /res\.redirect\(301,/);
 assert.match(server, /cleanPath = `\/desk\$\{cleanPath\}`/);
@@ -130,11 +126,11 @@ assert.match(deskRoute, /seo\.title/);
 assert.match(deskRoute, /FundamentalTraderDesk/);
 assert.doesNotMatch(deskRoute, /FundamentalResearchDesk/);
 
-const sitemapChunk = server.slice(server.indexOf("app.get('/sitemap-pages.xml'"));
-assert.match(sitemapChunk, /path: '\/desk\/institutional'/);
-assert.match(sitemapChunk, /path: '\/desk\/fundamental'/);
-assert.match(sitemapChunk, /path: '\/desk\/retail'/);
-assert.match(sitemapChunk, /path: '\/desk\/neurodivergent'/);
+const { listSiteUrls } = await import('../src/server/siteRegistry.ts');
+const sitemapPages = new Set(listSiteUrls('pages').map((row) => row.path));
+for (const desk of ['/desk/institutional', '/desk/fundamental', '/desk/retail', '/desk/neurodivergent']) {
+  assert.ok(sitemapPages.has(desk), `${desk} is in sitemap-pages.xml`);
+}
 
 assert.equal(PRODUCT_FOUR_DESKS.length, 4);
 assert.ok(PRODUCT_HOME_TITLE.length <= 60);
