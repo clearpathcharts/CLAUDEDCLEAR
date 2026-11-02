@@ -91,9 +91,9 @@ async function main() {
   assert.doesNotMatch(registerRoute, /grantFreshSession/, 'signup must not grant a session before the email link');
   assert.match(registerRoute, /sendAccountExistsEmail/, 'existing-email signup gets a notice email, not a 409');
   assert.match(registerRoute, /status\(202\)/);
-  assert.doesNotMatch(registerRoute, /attributeSignup/, 'referral credit must wait for the confirm link');
+  assert.doesNotMatch(registerRoute, /attributeSignup/, 'signup must not run affiliate attribution');
   const confirmRoute = serverSrc.slice(serverSrc.indexOf("app.get('/api/auth/private/identity/confirm'"), serverSrc.indexOf("app.post('/api/auth/private/logout'"));
-  assert.match(confirmRoute, /attributeSignup/, 'referral credit is granted when the inbox is confirmed');
+  assert.doesNotMatch(confirmRoute, /attributeSignup/, 'identity confirm must not run affiliate attribution');
   assert.doesNotMatch(registerRoute, /uid: (result\.)?user\.uid/, 'signup response must not expose the account id');
   assert.doesNotMatch(waitlistSrc, /already has a Private Login/, 'waitlist must not reveal existing members');
   assert.doesNotMatch(waitlistSrc, /registrationId: user\.uid/, 'waitlist must not expose the account id');

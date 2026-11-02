@@ -25,7 +25,6 @@ const SEND_LOG_COLLECTION = 'private_account_invite_sends';
 const SEND_LOG_DIR = path.join(process.cwd(), 'data', 'private_accounts');
 const SEND_LOG_FILE = 'invite_send_log.json';
 const SITE_ORIGIN = 'https://clearpathtrader.com';
-const AFFILIATE_TERMS_URL = `${SITE_ORIGIN}/affiliate-terms`;
 
 export type InviteMailRow = {
   email: string;
@@ -37,7 +36,6 @@ export type InviteMailRow = {
   hasPrivateAccount: boolean;
   inviteCreatedAt?: string;
   activateUrl: string;
-  affiliateTermsUrl: string;
   subject: string;
   body: string;
   sendStatus: 'ready' | 'sent' | 'needs_password' | 'skipped_junk' | 'error';
@@ -107,8 +105,6 @@ function buildEmailCopy(params: {
       `Temporary password: ${params.tempPassword}`,
       '',
       'Please sign in, update your password in your profile, and keep this email private.',
-      '',
-      `Affiliate program (optional): ${AFFILIATE_TERMS_URL}`,
       '',
       '— Rick Floyd',
       'ClearPath Trader',
@@ -223,7 +219,6 @@ export async function listInviteMailRows(): Promise<{
         uid: memberByEmail.get(email)?.uid || '',
         hasPrivateAccount: memberByEmail.has(email),
         activateUrl: buildActivateUrl(email),
-        affiliateTermsUrl: AFFILIATE_TERMS_URL,
         subject: '',
         body: '',
         sendStatus: 'skipped_junk',
@@ -255,7 +250,6 @@ export async function listInviteMailRows(): Promise<{
       hasPrivateAccount: Boolean(member),
       inviteCreatedAt: invite?.createdAt,
       activateUrl: buildActivateUrl(email),
-      affiliateTermsUrl: AFFILIATE_TERMS_URL,
       subject: copy.subject,
       body: copy.body,
       sendStatus,
@@ -367,7 +361,6 @@ export async function sendInviteMailToEmail(rawEmail: string): Promise<InviteMai
     firstName,
     activateUrl: buildActivateUrl(email),
     tempPassword: invite.tempPassword!,
-    affiliateTermsUrl: AFFILIATE_TERMS_URL,
   });
 
   if (!sent) {
