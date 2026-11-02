@@ -63,6 +63,11 @@ for (const rel of ['src/server/contentPages.ts', 'src/server/semanticDatabase.ts
 }
 
 const serverSrc = fs.readFileSync('server.ts', 'utf8');
-assert.match(serverSrc, /Object\.keys\(GUIDE_RECORDS\)\.map\(\(id\) => `https:\/\/clearpathtrader\.com\/guides\/\$\{id\}`\)/, 'guides must be pinged to IndexNow on boot');
+assert.match(serverSrc, /submitIndexNow\(priorityIndexNowUrls\(\)\)/, 'IndexNow boot ping uses the shared priority list');
+const { priorityIndexNowUrls } = await import('../src/server/siteRegistry.ts');
+const pinged = new Set(priorityIndexNowUrls());
+for (const id of ids) {
+  assert.ok(pinged.has(`https://clearpathtrader.com/guides/${id}`), `${id}: must be pinged to IndexNow on boot`);
+}
 
 console.log(`intent-guides.selftest: ok (${ids.length} guides)`);
