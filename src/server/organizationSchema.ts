@@ -9,6 +9,7 @@ import { PUBLIC_LEADERS, FOUNDER_LEADER } from '../content/leadershipPublic';
 import {
   PRODUCT_DISAMBIGUATION,
   PRODUCT_KNOWS_ABOUT,
+  PRODUCT_PLATFORM_POSITION,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
 
@@ -22,6 +23,7 @@ export function organizationSchema(baseUrl: string = ORG_BASE_URL) {
     alternateName: ['Clear Path Markets Science Corp.', 'ClearPath Trader', 'ClearPathTrader.com'],
     url: baseUrl,
     logo: `${baseUrl}/logo.png`,
+    slogan: PRODUCT_PLATFORM_POSITION,
     description: PRODUCT_WHAT_IT_IS,
     disambiguatingDescription: PRODUCT_DISAMBIGUATION,
     knowsAbout: PRODUCT_KNOWS_ABOUT,
