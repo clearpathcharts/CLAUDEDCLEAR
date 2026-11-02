@@ -32,6 +32,7 @@ import {
   outboxStorageMode,
   planOutboxPosts,
   platformKeywords,
+  rewriteOutboxPost,
   platformLabel,
   updateOutboxPost,
   type OutboxPost,
@@ -40,6 +41,7 @@ import { SITEMAP_SECTIONS, listSiteUrls, priorityIndexNowUrls, siteSectionCounts
 import { listSeoPings, recordSeoPing } from './seoPingLog';
 import { resolveIndexNowKey, submitIndexNow } from './indexNow';
 import { getMarketingAnalytics } from './marketingFunnelService';
+import { MAX_SIMILARITY, defaultAiWriter } from './marketingCopywriter';
 
 const SITEMAP_PAGE_SIZE = 100;
 
@@ -185,6 +187,13 @@ export function createMarketingDepartmentRouter(): Router {
         byPlatform: countBy(outbox, (p) => p.platform),
       },
       destinations: destinationsPayload(outbox),
+      copywriter: {
+        mode: defaultAiWriter() ? 'ai' : 'template',
+        detail: defaultAiWriter()
+          ? 'Each platform gets its own wording from the AI writer (approved facts only), checked so no two drafts overlap more than 35%.'
+          : 'No AI key: wording is recombined from approved sentences, still checked so drafts do not repeat each other.',
+        maxSimilarity: MAX_SIMILARITY,
+      },
       publishing: {
         mode: 'manual',
         detail: 'Outbound auto-posting is off. Approve a post, copy it, post it yourself, then paste the live link back.',
@@ -299,6 +308,14 @@ export function createMarketingDepartmentRouter(): Router {
         tier: req.body?.tier,
       });
       res.json({ ok: true, posts });
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  router.post('/outbox/:id/rewrite', async (req, res) => {
+    try {
+      res.json({ ok: true, post: await rewriteOutboxPost(String(req.params.id || '')) });
     } catch (error) {
       fail(res, error);
     }

@@ -37,6 +37,8 @@ type Post = {
   assetTitle: string;
   platform: string;
   tier: string;
+  copySource?: 'ai' | 'template';
+  similarity?: number;
   caption: string;
   hashtags: string[];
   trackedLink: string;
@@ -80,6 +82,7 @@ type Overview = {
   outbox: { total: number; byStatus: Record<string, number> };
   destinations: Destination[];
   publishing: { mode: string; detail: string; metricool: string };
+  copywriter?: { mode: 'ai' | 'template'; detail: string; maxSimilarity: number };
   funnel: { ok: boolean; from?: string; to?: string; storage?: string; totals?: FunnelTotals; error?: string };
   externalReach: { status: string; detail: string };
   sitemap: { totalUrls: number; index: string; sections: Array<{ id: string; label: string; file: string; count: number }> };
@@ -350,6 +353,25 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
       await refresh();
     } catch (err: any) {
       setError(err?.message || 'Update failed.');
+    }
+  };
+
+  const [rewriting, setRewriting] = useState<string | null>(null);
+  const rewritePost = async (post: Post) => {
+    setRewriting(post.id);
+    try {
+      await api(`/outbox/${post.id}/rewrite`, { method: 'POST', body: '{}' });
+      setCaptionEdits((prev) => {
+        const next = { ...prev };
+        delete next[post.id];
+        return next;
+      });
+      flash('Rewritten with fresh wording.');
+      await refresh();
+    } catch (err: any) {
+      setError(err?.message || 'Rewrite failed.');
+    } finally {
+      setRewriting(null);
     }
   };
 
@@ -677,7 +699,8 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
               </button>
             </div>
             <p className="m-0 text-xs text-zinc-500">
-              Captions use your title, the plan's approved pitch, a tracked link per platform, platform search hashtags and the
+              Every platform gets its own wording, written only from approved facts (your title, the plan's pitch and
+              features) and checked so no two drafts read alike. Each one adds its own tracked link, platform hashtags and the
               required disclaimer. Nothing is posted until you approve and post it.
             </p>
           </div>
@@ -705,6 +728,14 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
           </div>
         }
       >
+        {overview?.copywriter ? (
+          <p className="m-0 mb-3 text-xs text-zinc-400" data-mkt-copywriter>
+            <span className="font-mono font-black uppercase tracking-widest text-emerald-300">
+              {overview.copywriter.mode === 'ai' ? 'Unique wording: AI writer' : 'Unique wording: built-in writer'}
+            </span>{' '}
+            · {overview.copywriter.detail}
+          </p>
+        ) : null}
         {overview?.storage.outbox === 'unavailable' ? (
           <Unavailable label="OUTBOX STORAGE UNAVAILABLE" detail="Firestore is not reachable, so drafts cannot be saved durably." />
         ) : null}
@@ -722,7 +753,10 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
                     <span className="text-xs font-black uppercase tracking-widest text-fuchsia-200">
                       {overview?.destinations.find((d) => d.platform === p.platform)?.label || p.platform}
                     </span>
-                    <span className="font-mono text-[10px] uppercase text-zinc-500">→ {p.tier} plan</span>
+                    <span className="font-mono text-[10px] uppercase text-zinc-500">
+                      {p.copySource ? `${p.copySource === 'ai' ? 'AI' : 'built-in'} · ` : ''}
+                      {typeof p.similarity === 'number' ? `${Math.round(p.similarity * 100)}% overlap · ` : ''}→ {p.tier} plan
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     <div className="h-16 w-24 shrink-0 overflow-hidden rounded bg-black">
@@ -763,6 +797,16 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
                     <a href={p.mediaUrl} target="_blank" rel="noreferrer" className={`${BTN} border border-white/20 text-zinc-100`}>
                       <ExternalLink size={12} aria-hidden="true" /> Media
                     </a>
+                    {p.status === 'draft' || p.status === 'approved' ? (
+                      <button
+                        type="button"
+                        disabled={rewriting === p.id}
+                        onClick={() => void rewritePost(p)}
+                        className={`${BTN} border border-fuchsia-400/40 text-fuchsia-100`}
+                      >
+                        <RefreshCw size={12} aria-hidden="true" className={rewriting === p.id ? 'animate-spin' : ''} /> Rewrite
+                      </button>
+                    ) : null}
                     {p.status === 'draft' ? (
                       <button
                         type="button"
