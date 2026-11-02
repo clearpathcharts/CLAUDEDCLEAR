@@ -16,11 +16,45 @@
 // old one has been rotated.
 
 import { LiveDataEnforcementEngine } from "../truth/LiveDataEnforcementEngine";
-import { resolveProviderSymbol } from "../constants/assetRegistry";
+import { resolveProviderSymbol, getRegistryAsset } from "../constants/assetRegistry";
+import {
+  buildProvenance,
+  type InstrumentProvenance,
+} from "../lib/instrumentIntegrity";
 import { historySymbol } from "../lib/institutional/vendorMaps";
 import { fetchFmpCandles, fetchFmpQuote, fetchFmpQuotes } from "./fmpMarketFallback";
 import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
 import { resolveQuotePrice, withTapePrice } from "../lib/resolveQuotePrice";
+
+export type { InstrumentProvenance };
+
+function attachCandleProvenance(
+  deskSymbol: string,
+  providerSymbol: string,
+  data: any,
+  opts: { provider: 'twelvedata' | 'fmp' | 'derived'; isFallback?: boolean; isProxy?: boolean; proxyNote?: string | null },
+): any {
+  if (!data || typeof data !== 'object') return data;
+  const asset = getRegistryAsset(deskSymbol) || getRegistryAsset(deskSymbol.replace(/\//g, ''));
+  const provenance = buildProvenance({
+    requestedSymbol: deskSymbol,
+    provider: opts.provider,
+    providerSymbol,
+    category: asset?.category,
+    exchange: data?.meta?.exchange != null ? String(data.meta.exchange) : null,
+    currency:
+      data?.meta?.currency != null
+        ? String(data.meta.currency)
+        : data?.meta?.currency_quote != null
+          ? String(data.meta.currency_quote)
+          : asset?.quote || null,
+    priceSource: `${opts.provider}:${providerSymbol}`,
+    isFallback: opts.isFallback,
+    isProxy: opts.isProxy,
+    proxyNote: opts.proxyNote,
+  });
+  return { ...data, provenance, vendor: data.vendor || opts.provider.toUpperCase() };
+}
 
 export interface TwelveDataHealth {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE';
@@ -979,18 +1013,28 @@ export async function getMarketCandles(
       }
 
       if (dxyValues.length > 0) {
-        return {
-          meta: {
-            symbol: symbol,
-            interval,
-            currency: "USD",
-            exchange_timezone: "UTC",
-            exchange: "ICEUS",
-            type: "Index"
+        return attachCandleProvenance(
+          symbol,
+          'DXY_DERIVED_FX',
+          {
+            meta: {
+              symbol: symbol,
+              interval,
+              currency: "USD",
+              exchange_timezone: "UTC",
+              exchange: "ICEUS",
+              type: "Index"
+            },
+            values: dxyValues,
+            status: "ok"
           },
-          values: dxyValues,
-          status: "ok"
-        };
+          {
+            provider: 'derived',
+            isFallback: false,
+            isProxy: false,
+            proxyNote: 'DXY derived from six live FX pairs (not DX futures).',
+          },
+        );
       } else {
         // No aligned component data — fail honestly, do not fabricate.
         return candlesWithFmpFallback(
@@ -1003,8 +1047,16 @@ export async function getMarketCandles(
     }
 
     const formatted = formatSymbolForTwelveData(symbol);
+    const alias = historySymbol(symbol.trim().toUpperCase().replace(/\s+/g, ''));
+    const isProxy = Boolean(alias.note) && alias.symbol.toUpperCase() !== symbol.trim().toUpperCase().replace(/\//g, '');
     try {
-      return await fetchCandlesFromAPI(formatted, interval, limit, apiKey, options);
+      const raw = await fetchCandlesFromAPI(formatted, interval, limit, apiKey, options);
+      return attachCandleProvenance(symbol, formatted, raw, {
+        provider: 'twelvedata',
+        isFallback: false,
+        isProxy,
+        proxyNote: isProxy ? alias.note : null,
+      });
     } catch (err) {
       return candlesWithFmpFallback(symbol, interval, limit, err);
     }
