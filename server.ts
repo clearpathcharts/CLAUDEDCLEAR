@@ -1412,7 +1412,7 @@ async function startServer() {
     res.json({ ok: true, removed: result.removed });
   });
 
-  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     const result = await fireDueSubscriptions();
     res.json({ ok: true, ...result });
   });
@@ -1783,7 +1783,7 @@ async function startServer() {
    * Founder-only: convert real waitlist emails → durable Private Login accounts.
    * Body: { dryRun?: boolean }. Never returns temp passwords (use /invites).
    */
-  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
       const result = await convertWaitlistToPrivateAccounts({
@@ -1799,7 +1799,7 @@ async function startServer() {
   });
 
   /** One-click: hide waitlist rows that already have Private Login (mark converted). */
-  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const result = await clearWaitlistAlreadyInPrivateLogin();
       res.json({
@@ -1945,7 +1945,7 @@ async function startServer() {
    * Founder-only: rebuild missing private accounts from Stripe customer emails.
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
-  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     if (!STRIPE_ACCOUNT_RECOVERY_ENABLED) {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: STRIPE_RECOVERY_DISABLED_MESSAGE });
     }
@@ -2220,7 +2220,7 @@ async function startServer() {
    * One-click: send Private Login invite email to one person.
    * If no temp password exists, issues a fresh one, then SMTP-sends.
    */
-  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
       if (!email.trim()) {
@@ -3170,7 +3170,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -3232,7 +3232,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runSiteDoctorSweep();
       res.json(report);
@@ -3255,7 +3255,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const investorId =
         typeof req.body?.investorId === 'string' ? req.body.investorId.trim() : '';
@@ -3331,7 +3331,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const slot =
         req.body?.slot === 'overnight' || req.body?.slot === 'market_close' ? req.body.slot : 'market_close';
