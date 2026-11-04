@@ -5,6 +5,8 @@ type EmailPayload = {
   subject: string;
   html: string;
   text: string;
+  /** Optional From override (e.g. Brent CCO outreach). Falls back to SMTP_FROM. */
+  from?: string;
 };
 
 let transporter: Transporter | null = null;
@@ -51,7 +53,10 @@ export async function sendTransactionalEmail(payload: EmailPayload): Promise<boo
 
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const mailer = getTransporter();
-  const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';
+  const from =
+    (payload.from && payload.from.trim()) ||
+    process.env.SMTP_FROM ||
+    'ClearPath Trader <noreply@clearpathtrader.com>';
 
   if (!mailer) {
     // Never log activation keys / PII when SMTP is unset
@@ -60,7 +65,8 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
   }
 
   try {
-    await mailer.sendMail({ from, ...payload });
+    const { from: _ignored, ...rest } = payload;
+    await mailer.sendMail({ ...rest, from });
     return true;
   } catch (error) {
     console.error('[Registration Email] Send failed:', error);

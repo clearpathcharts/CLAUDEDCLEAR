@@ -132,6 +132,9 @@ jobs:
       - name: Investor pitch deck routes
         run: npm run test:pitch-deck
 
+      - name: Technology opportunity page + Brent communications
+        run: npm run test:investor-tech-opportunity
+
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
 

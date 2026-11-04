@@ -43,6 +43,12 @@ export default function PitchIntroLanding() {
             Open presentation
           </a>
           <a
+            href="/technology-opportunity"
+            className="inline-flex items-center justify-center px-8 py-3 rounded-full text-sm font-black uppercase tracking-widest text-black bg-[#00E5FF] hover:bg-white transition-colors"
+          >
+            Technology &amp; investment page
+          </a>
+          <a
             href="/"
             className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-[#00E5FF]"
           >

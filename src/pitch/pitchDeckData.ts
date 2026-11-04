@@ -110,8 +110,8 @@ export const PITCH_SLIDES: PitchSlide[] = [
     title: 'Membership + education + institutional upsell.',
     bullets: [
       'Tiered plans (Basic → Platinum) with chart entitlements aligned to plan catalog.',
-      'Affiliate network with cookie attribution and account credit.',
-      'Optional API / white-label paths for partners (future).',
+      'Free education + encyclopedia; paid access for analytical software depth.',
+      'No membership affiliate residuals; no broker referral kickbacks as a business model.',
     ],
   },
   {
