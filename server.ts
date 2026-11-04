@@ -53,6 +53,7 @@ import {
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
 import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
+import { createBrentOutreachRouter } from './src/server/brentOutreachRoutes';
 import { SITEMAP_SECTIONS, sectionXml, sitemapIndexXml, priorityIndexNowUrls } from './src/server/siteRegistry';
 import { recordSeoPing } from './src/server/seoPingLog';
 import { buildAppUpdateManifest } from './src/server/appUpdate';
@@ -873,6 +874,9 @@ async function startServer() {
     requireFounderActionHeader,
     createMarketingDepartmentRouter()
   );
+
+  // Brent CCO communications desk — separate from CEO marketing. Send still needs founder-action header.
+  app.use('/api/communications', requireFounderOrCatalogAdmin, createBrentOutreachRouter());
 
   // Public read side: slot id -> playable URL, nothing else. Visitors need this
   // to play the explainer behind a play icon; it exposes no founder-only field.

@@ -17,6 +17,8 @@ import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PitchIntroLanding from './components/pitch/PitchIntroLanding';
 import InvestorPitchDeck from './components/pitch/InvestorPitchDeck';
 import { parsePitchPath } from './pitch/pitchDeckData';
+import TechnologyInvestmentOpportunityPage from './components/investor/TechnologyInvestmentOpportunityPage';
+import BrentMarketingDepartment from './components/investor/BrentMarketingDepartment';
 import PressKitPage from './components/PressKitPage';
 import CompanyPage from './components/CompanyPage';
 import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
@@ -187,6 +189,16 @@ function isBrokerNetworkPath(path: string): boolean {
 function isPitchPath(path: string): boolean {
   const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
   return p === '/pitch' || p.startsWith('/pitch/');
+}
+
+function isTechnologyOpportunityPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/technology-opportunity' || p === '/invest';
+}
+
+function isCommunicationsPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/communications';
 }
 
 function PublicLearnShell({
@@ -426,6 +438,10 @@ export default function App() {
       ) : (
         <PitchIntroLanding />
       );
+  } else if (isTechnologyOpportunityPath(currentPath)) {
+    content = <TechnologyInvestmentOpportunityPage />;
+  } else if (isCommunicationsPath(currentPath)) {
+    content = <BrentMarketingDepartment />;
   } else if (isBrokerNetworkPath(currentPath)) {
     content = (
       <Suspense
