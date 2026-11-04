@@ -55,6 +55,7 @@
     "test:ceo-videos": "tsx scripts/ceo-videos.selftest.ts",
     "test:marketing-department": "tsx scripts/marketing-department.selftest.ts",
     "test:chart-platform-competitors": "tsx scripts/chart-platform-competitors.selftest.ts",
+    "test:metricool-web-tracker": "tsx scripts/metricool-web-tracker.selftest.ts",
     "test:video-slots": "tsx scripts/video-slots.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "explain-flow:print": "tsx scripts/print-explain-flow-scripts.ts",
