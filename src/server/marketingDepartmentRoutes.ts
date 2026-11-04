@@ -43,6 +43,11 @@ import { resolveIndexNowKey, submitIndexNow } from './indexNow';
 import { getMarketingAnalytics } from './marketingFunnelService';
 import { MAX_SIMILARITY, defaultAiWriter } from './marketingCopywriter';
 import tierContentCatalog from '../../data/marketing/tier-content-catalog.json';
+import {
+  chartPlatformCompetitorsByCategory,
+  getChartPlatformCompetitorCatalog,
+  metricoolStarterCompetitors,
+} from './chartPlatformCompetitors';
 
 const SITEMAP_PAGE_SIZE = 100;
 
@@ -221,6 +226,13 @@ export function createMarketingDepartmentRouter(): Router {
         detail: 'Outbound auto-posting is off. Approve a post, copy it, post it yourself, then paste the live link back.',
         metricool: metricoolConfigured() ? 'CONFIGURED' : 'NOT CONFIGURED',
       },
+      competitors: {
+        total: getChartPlatformCompetitorCatalog().competitors.length,
+        catalogVersion: getChartPlatformCompetitorCatalog().version,
+        updated: getChartPlatformCompetitorCatalog().updated,
+        metricoolStarterCount: metricoolStarterCompetitors().length,
+        siteGuidePath: '/guides/charting-platform-landscape',
+      },
       funnel: analytics
         ? { ok: true, from: analytics.from, to: analytics.to, storage: analytics.storage, totals: analytics.totals, tiers: analytics.tiers }
         : { ok: false, error: analyticsResult.error },
@@ -377,6 +389,26 @@ export function createMarketingDepartmentRouter(): Router {
     } catch (error) {
       fail(res, error);
     }
+  });
+
+  router.get('/competitors', (_req, res) => {
+    const catalog = getChartPlatformCompetitorCatalog();
+    res.json({
+      ok: true,
+      generatedAt: new Date().toISOString(),
+      version: catalog.version,
+      updated: catalog.updated,
+      scope: catalog.scope,
+      metricool: {
+        ...catalog.metricool,
+        configured: metricoolConfigured(),
+        configuredDetail: metricoolConfigured()
+          ? 'API token present — social reach can be wired when the Metricool analytics integration ships.'
+          : 'Set METRICOOL_TOKEN, METRICOOL_USER_ID, and METRICOOL_BLOG_ID on Cloud Run to mark the connector configured.',
+      },
+      byCategory: chartPlatformCompetitorsByCategory(),
+      starters: metricoolStarterCompetitors(),
+    });
   });
 
   router.post('/indexnow', async (_req, res) => {

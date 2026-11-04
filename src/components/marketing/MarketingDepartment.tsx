@@ -102,6 +102,13 @@ type Overview = {
   outbox: { total: number; byStatus: Record<string, number> };
   destinations: Destination[];
   publishing: { mode: string; detail: string; metricool: string };
+  competitors?: {
+    total: number;
+    catalogVersion: number;
+    updated: string;
+    metricoolStarterCount: number;
+    siteGuidePath: string;
+  };
   copywriter?: { mode: 'ai' | 'template'; detail: string; maxSimilarity: number };
   funnel: { ok: boolean; from?: string; to?: string; storage?: string; totals?: FunnelTotals; error?: string };
   externalReach: { status: string; detail: string };
@@ -229,8 +236,18 @@ function Unavailable({ label = 'DATA UNAVAILABLE', detail }: { label?: string; d
 const BTN =
   'inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg px-3 text-xs font-black uppercase tracking-widest disabled:opacity-40';
 
+type CompetitorCatalogResponse = {
+  byCategory: Array<{
+    category: { id: string; label: string; description: string };
+    competitors: Array<{ id: string; name: string; website: string; focus: string }>;
+  }>;
+  metricool: { competitorsHelpUrl: string; analyticsPath: string; important: string; configured: boolean };
+  starters: Array<{ id: string; name: string; website: string; focus: string }>;
+};
+
 export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHeaders }) {
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [competitorCatalog, setCompetitorCatalog] = useState<CompetitorCatalogResponse | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -256,12 +273,14 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
     setLoading(true);
     setError(null);
     try {
-      const [ov, lib, box] = await Promise.all([
+      const [ov, lib, box, competitors] = await Promise.all([
         api('/overview'),
         api('/assets').catch(() => ({ assets: [] })),
         api('/outbox').catch(() => ({ posts: [] })),
+        api('/competitors').catch(() => null),
       ]);
       setOverview(ov as Overview);
+      setCompetitorCatalog(competitors as CompetitorCatalogResponse | null);
       setAssets((lib as { assets: Asset[] }).assets || []);
       setPosts((box as { posts: Post[] }).posts || []);
     } catch (err: any) {
@@ -948,6 +967,67 @@ export default function MarketingDepartment({ getHeaders }: { getHeaders: GetHea
               );
             })}
           </ul>
+        )}
+      </Bento>
+
+      <Bento
+        title="Metricool competitor list"
+        icon={<Search size={16} aria-hidden="true" />}
+        accent="text-fuchsia-300"
+        data-mkt-competitors
+        right={
+          overview?.competitors ? (
+            <span className="font-mono text-[11px] text-zinc-400">
+              {overview.competitors.total} brands · v{overview.competitors.catalogVersion}
+            </span>
+          ) : null
+        }
+      >
+        <p className="m-0 text-xs leading-relaxed text-zinc-400">
+          Product names live here and on{' '}
+          <a href={overview?.competitors?.siteGuidePath || '/guides/charting-platform-landscape'} className="text-[#00FFFF] underline">
+            the public landscape guide
+          </a>
+          . In Metricool, add each brand&apos;s official Facebook / Instagram / YouTube — see help link below.
+        </p>
+        {competitorCatalog ? (
+          <>
+            <p className="m-0 mt-2 text-[11px] text-zinc-500">{competitorCatalog.metricool.important}</p>
+            <p className="m-0 mt-2 font-mono text-[10px] text-zinc-500">{competitorCatalog.metricool.analyticsPath}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={competitorCatalog.metricool.competitorsHelpUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={`${BTN} border border-white/15 bg-black/40 text-white`}
+              >
+                Metricool setup <ExternalLink size={14} />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    competitorCatalog.starters.map((s) => s.name).join('\n')
+                  );
+                  flash('Copied free-plan starter names.');
+                }}
+                className={`${BTN} bg-fuchsia-400 text-black`}
+              >
+                Copy 5 starters
+              </button>
+            </div>
+            <ul className="m-0 mt-3 max-h-48 list-none space-y-1 overflow-y-auto p-0 text-[11px] text-zinc-300">
+              {competitorCatalog.byCategory.map((group) => (
+                <li key={group.category.id}>
+                  <span className="font-black uppercase tracking-wider text-zinc-500">{group.category.label}</span>
+                  <span className="text-zinc-600"> · </span>
+                  {group.competitors.map((c) => c.name).join(', ')}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <Unavailable detail="Could not load the competitor catalog." />
         )}
       </Bento>
 

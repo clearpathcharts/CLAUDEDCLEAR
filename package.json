@@ -54,6 +54,8 @@
     "test:ceo-desk-cleanup": "tsx scripts/ceo-desk-cleanup.selftest.ts",
     "test:ceo-videos": "tsx scripts/ceo-videos.selftest.ts",
     "test:marketing-department": "tsx scripts/marketing-department.selftest.ts",
+    "test:chart-platform-competitors": "tsx scripts/chart-platform-competitors.selftest.ts",
+    "test:metricool-web-tracker": "tsx scripts/metricool-web-tracker.selftest.ts",
     "test:video-slots": "tsx scripts/video-slots.selftest.ts",
     "section-guides:print": "tsx scripts/print-section-guide-prompts.ts",
     "explain-flow:print": "tsx scripts/print-explain-flow-scripts.ts",
@@ -106,6 +108,7 @@
     "test:no-invented-market-data": "tsx scripts/no-invented-market-data.selftest.ts",
     "update:disposable-domains": "bash scripts/update-disposable-domains.sh",
     "lint": "tsc --noEmit",
+    "test:dependency-audit": "tsx scripts/dependency-audit.selftest.ts",
     "audit:crawl": "node scripts/crawl-audit.mjs",
     "generate:favicons": "node scripts/generate-favicons.mjs",
     "generate:indicator-svgs": "node scripts/generate-indicator-svgs.mjs",
@@ -152,7 +155,7 @@
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.2",
     "express": "^4.22.1",
     "express-rate-limit": "^8.4.1",
     "express-session": "^1.19.0",
@@ -193,7 +196,6 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vite-plugin-pwa": "^1.2.0",
     "ws": "^8.20.0",
     "zustand": "^5.0.13"
   },
@@ -208,6 +210,17 @@
   },
   "overrides": {
     "uuid": "^11.1.1",
-    "nodemailer": "^10.0.0"
+    "nodemailer": "^10.0.0",
+    "@grpc/grpc-js": "^1.14.7",
+    "minimatch": "^11.0.4",
+    "glob": "^14.0.3",
+    "deepmerge": "^4.3.1",
+    "rimraf": "^6.1.4",
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.12"
+    },
+    "tsx": {
+      "esbuild": "^0.25.12"
+    }
   }
 }

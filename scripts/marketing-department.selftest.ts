@@ -196,6 +196,13 @@ async function main() {
     assert.equal(body.publishing.metricool, 'NOT CONFIGURED');
     assert.equal(body.publishing.mode, 'manual');
     assert.equal(body.destinations.length, outbox.MARKETING_CHANNELS.length);
+    assert.equal(body.competitors.total, 33);
+    assert.equal(body.competitors.siteGuidePath, '/guides/charting-platform-landscape');
+
+    const comp = (await (await call('/api/ceo/marketing/competitors', { headers: founder })).json()) as any;
+    assert.equal(comp.ok, true);
+    assert.equal(comp.byCategory.length, 8);
+    assert.equal(comp.starters.length, 5);
 
     const sm = (await (await call('/api/ceo/marketing/sitemap?section=guides', { headers: founder })).json()) as any;
     assert.equal(sm.total, registry.listSiteUrls('guides').length);

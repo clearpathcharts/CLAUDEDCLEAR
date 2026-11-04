@@ -1,0 +1,306 @@
+{
+  "version": 1,
+  "updated": "2026-11-03",
+  "scope": "Charting terminals, broker workstations, and adjacent research/social tools ClearPath traders compare against.",
+  "metricool": {
+    "competitorsHelpUrl": "https://help.metricool.com/how-to-add-competitors-in-metricool-sgjjg",
+    "analyticsPath": "Analytics → select network (Facebook, Instagram, YouTube, …) → Competitors → Add",
+    "important": "Metricool tracks public social profiles, not desktop software installs. For each brand below, add its official Facebook Page, Instagram professional account, and (on paid plans) YouTube channel or X handle — search by exact brand name inside Metricool.",
+    "starterPlanLimitPerNetwork": 100,
+    "freePlanLimitPerNetwork": 5,
+    "paidPlanLimitPerNetwork": 100,
+    "paidYouTubeLimit": 10,
+    "networksSupported": [
+      "Facebook",
+      "Instagram",
+      "Threads",
+      "Bluesky",
+      "Twitch",
+      "YouTube (paid)",
+      "X (paid add-on)"
+    ],
+    "freePlanStarterIds": [
+      "tradingview",
+      "webull",
+      "ninjatrader",
+      "trendspider",
+      "stocktwits"
+    ],
+    "note": "Starter ($25/mo): up to 100 competitors per network, edit/delete, hashtag finder, unlimited analytics history, LinkedIn, CSV/PDF reports. Free plan stays at 5 fixed competitors. X/Twitter competitor tracking needs the paid X add-on (~$10/mo per X account). YouTube cap is lower (see Metricool help)."
+  },
+  "categories": [
+    {
+      "id": "web-charting-social",
+      "label": "Web charting & trader social",
+      "description": "Browser-first charts, screeners, and community feeds."
+    },
+    {
+      "id": "desktop-futures-pro",
+      "label": "Desktop & professional charting",
+      "description": "Installed platforms for active futures, equities, and multi-monitor workflows."
+    },
+    {
+      "id": "fx-cfd",
+      "label": "FX & CFD platforms",
+      "description": "Broker-branded MetaTrader and proprietary FX terminals."
+    },
+    {
+      "id": "broker-terminal",
+      "label": "Broker & prop workstations",
+      "description": "Licensed broker desktops and institutional execution stacks."
+    },
+    {
+      "id": "automation-scanning",
+      "label": "Automation & scanning",
+      "description": "Rule-based scanners and AI-assisted pattern tools."
+    },
+    {
+      "id": "order-flow",
+      "label": "Order flow & depth",
+      "description": "Heatmaps, footprint, and liquidity visualization."
+    },
+    {
+      "id": "research-data",
+      "label": "Research & market data",
+      "description": "Macro dashboards, terminals, and data vendors adjacent to charting."
+    },
+    {
+      "id": "crypto",
+      "label": "Crypto charting",
+      "description": "Multi-exchange crypto chart hubs."
+    }
+  ],
+  "competitors": [
+    {
+      "id": "tradingview",
+      "name": "TradingView",
+      "website": "https://www.tradingview.com/",
+      "categoryId": "web-charting-social",
+      "focus": "Web charts, Pine Script, ideas community, broker integrations"
+    },
+    {
+      "id": "investing-com",
+      "name": "Investing.com charts",
+      "website": "https://www.investing.com/charts/",
+      "categoryId": "web-charting-social",
+      "focus": "Free web charts and economic calendar alongside news"
+    },
+    {
+      "id": "stockcharts",
+      "name": "StockCharts",
+      "website": "https://stockcharts.com/",
+      "categoryId": "web-charting-social",
+      "focus": "Classic web charting, scan lists, and technical commentary"
+    },
+    {
+      "id": "finviz",
+      "name": "Finviz",
+      "website": "https://finviz.com/",
+      "categoryId": "web-charting-social",
+      "focus": "Equity heatmaps, screeners, and lightweight charts"
+    },
+    {
+      "id": "webull",
+      "name": "Webull",
+      "website": "https://www.webull.com/",
+      "categoryId": "web-charting-social",
+      "focus": "Mobile-first brokerage with integrated charting"
+    },
+    {
+      "id": "stocktwits",
+      "name": "Stocktwits",
+      "website": "https://stocktwits.com/",
+      "categoryId": "web-charting-social",
+      "focus": "Ticker social feed and sentiment adjacent to charts"
+    },
+    {
+      "id": "koyfin",
+      "name": "Koyfin",
+      "website": "https://www.koyfin.com/",
+      "categoryId": "research-data",
+      "focus": "Macro and equity research dashboards with charting"
+    },
+    {
+      "id": "ninjatrader",
+      "name": "NinjaTrader",
+      "website": "https://ninjatrader.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Futures-focused desktop platform and ecosystem"
+    },
+    {
+      "id": "sierra-chart",
+      "name": "Sierra Chart",
+      "website": "https://www.sierrachart.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "High-performance futures and forex charting"
+    },
+    {
+      "id": "multicharts",
+      "name": "MultiCharts",
+      "website": "https://www.multicharts.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Strategy backtesting and multi-broker charting"
+    },
+    {
+      "id": "tradestation",
+      "name": "TradeStation",
+      "website": "https://www.tradestation.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Brokerage plus desktop analysis and EasyLanguage"
+    },
+    {
+      "id": "esignal",
+      "name": "eSignal",
+      "website": "https://www.esignal.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Real-time data and charting for active traders"
+    },
+    {
+      "id": "tc2000",
+      "name": "TC2000 (Worden Brothers)",
+      "website": "https://www.worden.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Equity scanning and Worden-style chart tools"
+    },
+    {
+      "id": "optuma",
+      "name": "Optuma",
+      "website": "https://www.optuma.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Professional Gann and advanced technical analysis"
+    },
+    {
+      "id": "amibroker",
+      "name": "AmiBroker",
+      "website": "https://www.amibroker.com/",
+      "categoryId": "desktop-futures-pro",
+      "focus": "Formula-driven scanning and backtesting"
+    },
+    {
+      "id": "ctrader",
+      "name": "cTrader",
+      "website": "https://ctrader.com/",
+      "categoryId": "fx-cfd",
+      "focus": "FX/CFD platform with cAlgo automation"
+    },
+    {
+      "id": "mt4",
+      "name": "MetaTrader 4 (MT4)",
+      "website": "https://www.metatrader4.com/",
+      "categoryId": "fx-cfd",
+      "focus": "Widely distributed FX terminal and EA ecosystem"
+    },
+    {
+      "id": "mt5",
+      "name": "MetaTrader 5 (MT5)",
+      "website": "https://www.metatrader5.com/",
+      "categoryId": "fx-cfd",
+      "focus": "Multi-asset successor to MT4 with expanded order types"
+    },
+    {
+      "id": "fxcm-trading-station",
+      "name": "FXCM Trading Station",
+      "website": "https://www.fxcm.com/",
+      "categoryId": "fx-cfd",
+      "focus": "FXCM-branded trading and charting stack"
+    },
+    {
+      "id": "oanda-trade",
+      "name": "OANDA Trade",
+      "website": "https://www.oanda.com/",
+      "categoryId": "fx-cfd",
+      "focus": "OANDA web and desktop FX trading interfaces"
+    },
+    {
+      "id": "thinkorswim",
+      "name": "Thinkorswim (Charles Schwab)",
+      "website": "https://www.schwab.com/trading/thinkorswim",
+      "categoryId": "broker-terminal",
+      "focus": "Schwab options and equities workstation"
+    },
+    {
+      "id": "ib-tws",
+      "name": "Interactive Brokers Trader Workstation (TWS)",
+      "website": "https://www.interactivebrokers.com/en/trading/tws.php",
+      "categoryId": "broker-terminal",
+      "focus": "Multi-asset broker desktop with deep order tools"
+    },
+    {
+      "id": "tradovate",
+      "name": "Tradovate",
+      "website": "https://www.tradovate.com/",
+      "categoryId": "broker-terminal",
+      "focus": "Futures brokerage with modern web and mobile charts"
+    },
+    {
+      "id": "trading-technologies",
+      "name": "Trading Technologies (TT)",
+      "website": "https://www.tradingtechnologies.com/",
+      "categoryId": "broker-terminal",
+      "focus": "Institutional futures execution and charting"
+    },
+    {
+      "id": "trendspider",
+      "name": "TrendSpider",
+      "website": "https://trendspider.com/",
+      "categoryId": "automation-scanning",
+      "focus": "Automated trendlines, scanners, and raindrop charts"
+    },
+    {
+      "id": "tickeron",
+      "name": "Tickeron",
+      "website": "https://tickeron.com/",
+      "categoryId": "automation-scanning",
+      "focus": "AI-assisted pattern and signal marketing tools"
+    },
+    {
+      "id": "quantower",
+      "name": "Quantower",
+      "website": "https://www.quantower.com/",
+      "categoryId": "order-flow",
+      "focus": "Multi-broker trading terminal with DOM and analytics"
+    },
+    {
+      "id": "bookmap",
+      "name": "Bookmap",
+      "website": "https://bookmap.com/",
+      "categoryId": "order-flow",
+      "focus": "Liquidity heatmap and order-book visualization"
+    },
+    {
+      "id": "atas",
+      "name": "ATAS",
+      "website": "https://atas.net/",
+      "categoryId": "order-flow",
+      "focus": "Footprint, cluster, and crypto/futures order-flow charts"
+    },
+    {
+      "id": "bloomberg-terminal",
+      "name": "Bloomberg Terminal",
+      "website": "https://www.bloomberg.com/professional/products/bloomberg-terminal/",
+      "categoryId": "research-data",
+      "focus": "Institutional data, news, and analytics terminal"
+    },
+    {
+      "id": "barchart",
+      "name": "Barchart",
+      "website": "https://www.barchart.com/",
+      "categoryId": "research-data",
+      "focus": "Futures and equities quotes, charts, and tools"
+    },
+    {
+      "id": "coinigy",
+      "name": "Coinigy",
+      "website": "https://www.coinigy.com/",
+      "categoryId": "crypto",
+      "focus": "Multi-exchange crypto charting and alerts"
+    },
+    {
+      "id": "cryptowatch",
+      "name": "Cryptowatch",
+      "website": "https://cryptowatch.kraken.com/",
+      "categoryId": "crypto",
+      "focus": "Kraken-owned multi-exchange crypto charts"
+    }
+  ]
+}
