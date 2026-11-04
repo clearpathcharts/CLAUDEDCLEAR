@@ -95,6 +95,7 @@
     "test:site-doctor": "tsx scripts/site-doctor.selftest.ts",
     "test:diagnostics-store": "tsx scripts/diagnostics-store.selftest.ts",
     "test:pitch-deck": "tsx scripts/pitch-deck.selftest.ts",
+    "test:investor-tech-opportunity": "tsx scripts/investor-tech-opportunity.selftest.ts",
     "test:daily-pattern-review": "tsx scripts/daily-pattern-review.selftest.ts",
     "test:marketing-campaign": "tsx scripts/marketing-campaign.selftest.ts",
     "test:marketing-funnel": "tsx scripts/marketing-funnel.selftest.ts",

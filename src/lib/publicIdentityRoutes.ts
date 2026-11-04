@@ -11,6 +11,9 @@ export function isPublicIdentityPath(pathname: string): boolean {
     path === '/press' ||
     path === '/press-kit' ||
     path === '/pitch' ||
-    path.startsWith('/pitch/')
+    path.startsWith('/pitch/') ||
+    path === '/technology-opportunity' ||
+    path === '/invest' ||
+    path === '/communications'
   );
 }
