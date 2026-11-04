@@ -356,9 +356,9 @@ export default function MarketingCampaignDesk({
               <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
                 {chartPlatformCompetitors.competitors.length} charting and terminal brands ClearPath tracks for SEO and
                 founder recon. Metricool itself tracks each brand&apos;s <strong className="font-bold text-zinc-100">public social accounts</strong>{' '}
-                (Facebook Page, Instagram pro, YouTube on paid plans) — not the desktop app name. Free Metricool:{' '}
-                {chartPlatformCompetitors.metricool.freePlanLimitPerNetwork} competitors per network; start with the five
-                starters below before you burn slots.
+                (Facebook Page, Instagram pro, YouTube where supported) — not the desktop app name. Starter plan: up to{' '}
+                {chartPlatformCompetitors.metricool.paidPlanLimitPerNetwork} competitors per network; the five starters
+                below are a sensible first batch, not a hard cap.
               </p>
               <p className="mt-2 text-xs text-zinc-500">
                 Live site guide:{' '}

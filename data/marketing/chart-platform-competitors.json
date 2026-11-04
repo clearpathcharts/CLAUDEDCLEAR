@@ -6,6 +6,7 @@
     "competitorsHelpUrl": "https://help.metricool.com/how-to-add-competitors-in-metricool-sgjjg",
     "analyticsPath": "Analytics → select network (Facebook, Instagram, YouTube, …) → Competitors → Add",
     "important": "Metricool tracks public social profiles, not desktop software installs. For each brand below, add its official Facebook Page, Instagram professional account, and (on paid plans) YouTube channel or X handle — search by exact brand name inside Metricool.",
+    "starterPlanLimitPerNetwork": 100,
     "freePlanLimitPerNetwork": 5,
     "paidPlanLimitPerNetwork": 100,
     "paidYouTubeLimit": 10,
@@ -25,7 +26,7 @@
       "trendspider",
       "stocktwits"
     ],
-    "note": "Free Metricool accounts cannot delete competitors once added — pick the five brands you care about most per network before clicking Add."
+    "note": "Starter ($25/mo): up to 100 competitors per network, edit/delete, hashtag finder, unlimited analytics history, LinkedIn, CSV/PDF reports. Free plan stays at 5 fixed competitors. X/Twitter competitor tracking needs the paid X add-on (~$10/mo per X account). YouTube cap is lower (see Metricool help)."
   },
   "categories": [
     {
