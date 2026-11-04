@@ -1,13 +1,17 @@
 /**
  * Brent (CCO) investor outreach identity.
- * Founder will supply the live mailbox last — keep the env name stable.
+ * Default mailbox from founder; override with BRENT_OUTREACH_EMAIL on Cloud Run if needed.
  */
 
 import { PRODUCT_NAME, PRODUCT_URL } from './productIdentity';
 
-/** Cloud Run / .env: BRENT_OUTREACH_EMAIL. Empty until founder provides it. */
+/** Canonical CCO outreach mailbox (founder-supplied 2026-11-04). */
+export const BRENT_OUTREACH_EMAIL_DEFAULT = 'clearpath.brent@gmail.com';
+
+/** Cloud Run / .env: BRENT_OUTREACH_EMAIL overrides the default. */
 export function brentOutreachEmail(): string {
-  return String(process.env.BRENT_OUTREACH_EMAIL || '').trim().toLowerCase();
+  const fromEnv = String(process.env.BRENT_OUTREACH_EMAIL || '').trim().toLowerCase();
+  return fromEnv || BRENT_OUTREACH_EMAIL_DEFAULT;
 }
 
 export function brentOutreachConfigured(): boolean {

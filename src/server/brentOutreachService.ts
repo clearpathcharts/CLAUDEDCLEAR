@@ -150,7 +150,7 @@ export function buildBrentOutreachDraft(investorId: string): BrentOutreachDraft 
     siteUrl: PRODUCT_URL,
     screenshots: BRENT_OUTREACH_SCREENSHOTS,
     fromConfigured,
-    fromPreview: fromConfigured ? brentFromHeader() : 'BRENT_OUTREACH_EMAIL not set yet',
+    fromPreview: fromConfigured ? brentFromHeader() : 'Brent From unavailable',
     smtpConfigured: isSmtpConfigured(),
   };
 }

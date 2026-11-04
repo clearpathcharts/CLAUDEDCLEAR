@@ -19,7 +19,7 @@ assert.match(read('src/lib/publicIdentityRoutes.ts'), /technology-opportunity/);
 assert.match(read('src/lib/publicIdentityRoutes.ts'), /communications/);
 assert.match(read('server.ts'), /createBrentOutreachRouter/);
 assert.match(read('server.ts'), /\/api\/communications/);
-assert.match(read('.env.example'), /BRENT_OUTREACH_EMAIL=/);
+assert.match(read('.env.example'), /BRENT_OUTREACH_EMAIL=clearpath\.brent@gmail\.com/);
 
 const content = await import('../src/content/investorTechnologyOpportunity.ts');
 assert.match(content.TECH_OPP_META.title, /Technology, Innovation & Investment Opportunity/);
@@ -46,12 +46,16 @@ assert.doesNotMatch(
 assert.match(content.TECH_OPP_CLOSING.investmentClose, /already built the technology/i);
 
 const brent = await import('../src/content/brentOutreach.ts');
+assert.equal(brent.BRENT_OUTREACH_EMAIL_DEFAULT, 'clearpath.brent@gmail.com');
 assert.ok(brent.BRENT_OUTREACH_SCREENSHOTS.length >= 4);
 assert.match(brent.TECHNOLOGY_OPPORTUNITY_URL, /technology-opportunity/);
+assert.equal(brent.brentOutreachEmail(), 'clearpath.brent@gmail.com');
+assert.equal(brent.brentOutreachConfigured(), true);
 
 const svc = await import('../src/server/brentOutreachService.ts');
 const status = svc.brentOutreachStatus();
-assert.equal(status.brentEmailConfigured, false);
+assert.equal(status.brentEmailConfigured, true);
+assert.match(String(status.fromPreview), /clearpath\.brent@gmail\.com/);
 assert.ok(status.investorCount > 100);
 assert.ok(status.screenshotCount >= 4);
 
@@ -64,7 +68,8 @@ assert.match(draft.text, /Chief Communications Officer/);
 assert.match(draft.html, /Website screenshots/i);
 assert.match(draft.html, /technology-opportunity/);
 assert.match(draft.html, /og-image\.png|institutional-trader/);
-assert.equal(draft.fromConfigured, false);
+assert.equal(draft.fromConfigured, true);
+assert.match(draft.fromPreview, /clearpath\.brent@gmail\.com/);
 
 const preview = await svc.sendBrentOutreachEmail({
   investorId: targets[0]!.id,
@@ -81,7 +86,7 @@ const blocked = await svc.sendBrentOutreachEmail({
   confirmSend: true,
 });
 assert.equal(blocked.sent, false);
-assert.equal(blocked.reason, 'brent_email_not_configured');
+assert.equal(blocked.reason, 'smtp_not_configured');
 
 // Pitch deck must not advertise the removed affiliate program.
 assert.doesNotMatch(read('src/pitch/pitchDeckData.ts'), /Affiliate network with cookie attribution/);

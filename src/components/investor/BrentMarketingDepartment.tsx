@@ -173,10 +173,11 @@ export default function BrentMarketingDepartment() {
           </p>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight">Investor outreach for Brent</h1>
           <p className="mt-3 text-zinc-400 max-w-3xl leading-relaxed">
-            Separate from the CEO Marketing Department. Drafts and sends venture / investor notes from Brent’s mailbox,
-            embeds website screenshots, and links the Technology, Innovation &amp; Investment Opportunity page. Paste
-            Brent’s email into Cloud Run env <code className="text-[#00E5FF]">BRENT_OUTREACH_EMAIL</code> when ready —
-            drafts work before that; sends will not.
+            Separate from the CEO Marketing Department. Drafts and sends venture / investor notes from Brent’s mailbox
+            (<code className="text-[#00E5FF]">clearpath.brent@gmail.com</code>), embeds website screenshots, and links
+            the Technology, Innovation &amp; Investment Opportunity page. Override with Cloud Run env{' '}
+            <code className="text-[#00E5FF]">BRENT_OUTREACH_EMAIL</code> if the mailbox changes. Sends still need SMTP
+            on the service.
           </p>
         </div>
 
@@ -191,7 +192,7 @@ export default function BrentMarketingDepartment() {
             {[
               {
                 label: 'Brent From',
-                value: status.brentEmailConfigured ? status.fromPreview : 'Awaiting BRENT_OUTREACH_EMAIL',
+                value: status.fromPreview || 'Brent From unavailable',
               },
               { label: 'SMTP', value: status.smtpConfigured ? 'Configured' : 'Not configured' },
               { label: 'Investors in roster', value: String(status.investorCount) },
