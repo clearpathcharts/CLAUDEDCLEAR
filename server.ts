@@ -35,7 +35,6 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
-import { GUIDE_RECORDS } from './src/server/contentData';
 import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, isUnknownLanguagePath, renderUnknownRegionNotFound, renderUnknownLanguageNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
@@ -44,7 +43,7 @@ import {
   submitIndexNow,
   indexNowKeyLocation,
 } from './src/server/indexNow';
-import { REGIONAL_MARKETS, regionalHubEntries, regionalIndexNowUrls } from './src/server/regionalSeo';
+import { REGIONAL_MARKETS } from './src/server/regionalSeo';
 import {
   grantContractorBadgeByEmail,
   seedIndependentContractorBadges,
@@ -53,24 +52,12 @@ import {
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
+import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
+import { SITEMAP_SECTIONS, sectionXml, sitemapIndexXml, priorityIndexNowUrls } from './src/server/siteRegistry';
+import { recordSeoPing } from './src/server/seoPingLog';
 import { buildAppUpdateManifest } from './src/server/appUpdate';
 import {
-  stockEntries,
-  cryptoEntries,
-  forexEntries,
-  commodityEntries,
-  companyEntries,
-  companyIndexEntries,
-  economyEntries,
-  indicatorEntries,
-  educationEntries,
-  uiProfileEntries,
-  encyclopediaHubEntries,
-  glossaryEntries,
-  literacyEntries,
-  knowledgeBaseEntries,
   catalogCounts,
-  sitemapLastmod,
   lookupStock,
   lookupCrypto,
   lookupForex,
@@ -139,7 +126,11 @@ import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
 import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
-import { createAdminMarketingRouter, createPublicMarketingRouter } from './src/server/marketingFunnelRoutes';
+import {
+  createAdminMarketingRouter,
+  createMarketingConnectorRouter,
+  createPublicMarketingRouter,
+} from './src/server/marketingFunnelRoutes';
 import { MARKETING_ATTRIBUTION_COOKIE, recordMarketingSignup } from './src/server/marketingFunnelService';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
@@ -157,13 +148,17 @@ import { requireMembershipFeature, resolveMembershipReportForRequest } from './s
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
 import {
-  AFFILIATE_PAYOUTS_DISABLED_MESSAGE,
-  AFFILIATE_PAYOUTS_ENABLED,
   CHECKOUT_DISABLED_MESSAGE,
   MEMBERSHIP_CHECKOUT_ENABLED,
   STRIPE_ACCOUNT_RECOVERY_ENABLED,
   STRIPE_RECOVERY_DISABLED_MESSAGE,
 } from './src/lib/paymentsEnabled';
+import {
+  AFFILIATE_DISABLED_MESSAGE,
+  AFFILIATE_PROGRAM_ENABLED,
+  inspectAffiliateDurableStore,
+  purgeAffiliateDurableStore,
+} from './src/server/affiliateService';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -345,25 +340,6 @@ import {
   revokeMembershipGrant,
   saveMembershipGrants,
 } from './src/server/membershipGrants';
-import {
-  AFFILIATE_COOKIE,
-  AFFILIATE_COOKIE_MAX_AGE_MS,
-  TIER_PRICE_CENTS,
-  adminListAffiliates,
-  attributeSignup,
-  ensureAffiliateMember,
-  getAffiliateDashboard,
-  activateAffiliate,
-  adminListPayouts,
-  adminResolvePayout,
-  getLeaderboard,
-  hydrateAffiliateFromDurableStore,
-  markReferredPaid,
-  recordClick,
-  requestAffiliatePayout,
-  resolveCode,
-} from './src/server/affiliateService';
-
 const parser = new RSSParser();
 
 TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
@@ -875,6 +851,7 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+  app.use('/go', createMarketingConnectorRouter());
   app.use('/api/marketing', createPublicMarketingRouter());
   app.use('/api/admin/marketing', requireFounderOrCatalogAdmin, createAdminMarketingRouter());
 
@@ -885,6 +862,13 @@ async function startServer() {
     requireFounderOrCatalogAdmin,
     requireFounderActionHeader,
     createCeoVideoRouter()
+  );
+
+  app.use(
+    '/api/ceo/marketing',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    createMarketingDepartmentRouter()
   );
 
   // Public read side: slot id -> playable URL, nothing else. Visitors need this
@@ -943,11 +927,6 @@ async function startServer() {
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
         await grantFreshSession(req, sessionUser);
-        try {
-          ensureAffiliateMember(result.user.uid);
-        } catch {
-          /* ignore */
-        }
         return res.json({ ok: true, identityStatus: 'ok', user: sessionUser });
       }
 
@@ -1045,16 +1024,7 @@ async function startServer() {
   app.get('/api/auth/private/identity/confirm', async (req, res) => {
     try {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
-      const confirmed = await confirmIdentityByToken(token);
-      // Referral credit only counts once the new member has proven they own the inbox.
-      try {
-        ensureAffiliateMember(confirmed.uid);
-        const fromCookie =
-          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
-        attributeSignup({ newUid: confirmed.uid, referralCode: fromCookie });
-      } catch (affErr: any) {
-        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
-      }
+      await confirmIdentityByToken(token);
       const dest =
         (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
           /\/$/,
@@ -1325,7 +1295,6 @@ async function startServer() {
           });
         }
       }
-      if (user.uid) ensureAffiliateMember(user.uid);
     } catch {
       /* ignore */
     }
@@ -1413,7 +1382,7 @@ async function startServer() {
     res.json({ ok: true, removed: result.removed });
   });
 
-  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     const result = await fireDueSubscriptions();
     res.json({ ok: true, ...result });
   });
@@ -1549,130 +1518,60 @@ async function startServer() {
     }
   });
 
-  // ——— Affiliate / referral rewards ———
-  const siteOrigin = () =>
-    (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
-      /\/$/,
-      ''
-    );
-
-  /** Public share link — sets attribution cookie and redirects home. */
-  app.get('/r/:code', (req, res) => {
-    const code = String(req.params.code || '');
-    const hit = recordClick({
-      code,
-      ip: req.ip,
-      userAgent: req.get('user-agent') || undefined,
+  // ——— Affiliate / referral program removed (not part of business model) ———
+  // Legacy paths answer 410/redirect-home so old bookmarks and share links die cleanly.
+  void AFFILIATE_PROGRAM_ENABLED; // compile-time proof the flag is wired; always false
+  const affiliateGone = (_req: any, res: any) =>
+    res.status(410).json({
+      error: 'AFFILIATE_PROGRAM_REMOVED',
+      message: AFFILIATE_DISABLED_MESSAGE,
     });
-    if (hit.ok && hit.code) {
-      res.cookie(AFFILIATE_COOKIE, hit.code, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-        path: '/',
-      });
-    }
-    const dest = hit.ok ? `/?ref=${encodeURIComponent(hit.code || code)}` : '/';
-    return res.redirect(302, dest);
+
+  /** Former share link — no cookie, no ?ref=, no click ledger. */
+  app.get('/r/:code', (_req, res) => {
+    res.clearCookie('cp_affiliate_ref', { path: '/' });
+    return res.redirect(302, '/');
   });
 
-  app.get('/api/affiliate/me', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to view your affiliate desk.' });
-    }
-    try {
-      const desk = getAffiliateDashboard(sessionUser.uid, siteOrigin());
-      res.json({ ok: true, ...desk });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Affiliate desk failed' });
-    }
-  });
+  app.get('/api/affiliate/me', affiliateGone);
+  app.get('/api/affiliate/leaderboard', affiliateGone);
+  app.post('/api/affiliate/claim', affiliateGone);
+  app.post('/api/affiliate/activate', affiliateGone);
+  app.post('/api/affiliate/payout-request', affiliateGone);
+  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, affiliateGone);
+  app.get('/api/admin/affiliate/members', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, affiliateGone);
 
-  app.get('/api/affiliate/leaderboard', (_req, res) => {
-    try {
-      res.json({ ok: true, ...getLeaderboard(25) });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Leaderboard failed' });
+  /** Read-only: leftover Firestore/local affiliate durable state (not a live rewards desk). */
+  app.get(
+    '/api/admin/affiliate/durable-status',
+    requireFounderOrCatalogAdmin,
+    async (_req, res) => {
+      try {
+        const status = await inspectAffiliateDurableStore();
+        res.json({ ok: true, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...status });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable status failed' });
+      }
     }
-  });
+  );
 
-  app.post('/api/affiliate/claim', (req, res) => {
-    const code = typeof req.body?.code === 'string' ? req.body.code : '';
-    const member = resolveCode(code);
-    if (!member) return res.status(404).json({ error: 'Unknown referral code' });
-    recordClick({ code: member.code, ip: req.ip, userAgent: req.get('user-agent') || undefined });
-    res.cookie(AFFILIATE_COOKIE, member.code, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-      path: '/',
-    });
-    res.json({ ok: true, code: member.code });
-  });
-
-  /** Accept the Affiliate Agreement → referral link goes live. */
-  app.post('/api/affiliate/activate', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to activate your affiliate link.' });
+  /** Delete leftover `app_state/affiliate` + local data/affiliate. Does not touch Stripe or accounts. */
+  app.post(
+    '/api/admin/affiliate/purge-durable',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await purgeAffiliateDurableStore();
+        const status = result.ok ? 200 : 500;
+        res.status(status).json({ ok: result.ok, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...result });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable purge failed' });
+      }
     }
-    try {
-      const member = activateAffiliate(sessionUser.uid);
-      res.json({
-        ok: true,
-        activated: true,
-        activatedAt: member.activatedAt,
-        termsVersion: member.termsVersion,
-        code: member.code,
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Activation failed' });
-    }
-  });
-
-  /** Member requests a cash payout of accumulated affiliate credit. */
-  app.post('/api/affiliate/payout-request', (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to request a payout.' });
-    }
-    const result = requestAffiliatePayout({
-      uid: sessionUser.uid,
-      method: typeof req.body?.method === 'string' ? req.body.method : 'paypal',
-      destination: typeof req.body?.destination === 'string' ? req.body.destination : '',
-    });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
-
-  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    res.json({ ok: true, payouts: adminListPayouts() });
-  });
-
-  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
-    const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
-    if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
-    const result = adminResolvePayout({ payoutId, action });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
-
-  app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
-    res.json({ ok: true, members: adminListAffiliates() });
-  });
+  );
 
   /**
    * Founder Google unlock: verified founder Firebase token → Express private session.
@@ -1784,7 +1683,7 @@ async function startServer() {
    * Founder-only: convert real waitlist emails → durable Private Login accounts.
    * Body: { dryRun?: boolean }. Never returns temp passwords (use /invites).
    */
-  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
       const result = await convertWaitlistToPrivateAccounts({
@@ -1800,7 +1699,7 @@ async function startServer() {
   });
 
   /** One-click: hide waitlist rows that already have Private Login (mark converted). */
-  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const result = await clearWaitlistAlreadyInPrivateLogin();
       res.json({
@@ -1946,7 +1845,7 @@ async function startServer() {
    * Founder-only: rebuild missing private accounts from Stripe customer emails.
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
-  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     if (!STRIPE_ACCOUNT_RECOVERY_ENABLED) {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: STRIPE_RECOVERY_DISABLED_MESSAGE });
     }
@@ -2221,7 +2120,7 @@ async function startServer() {
    * One-click: send Private Login invite email to one person.
    * If no temp password exists, issues a fresh one, then SMTP-sends.
    */
-  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
       if (!email.trim()) {
@@ -2238,24 +2137,6 @@ async function startServer() {
         error: error?.message || 'Failed to send invite email',
       });
     }
-  });
-
-  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
-    const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
-    if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
-    if (!(tierRaw in TIER_PRICE_CENTS)) {
-      return res.status(400).json({ error: 'tier must be plus | premium | ultimate' });
-    }
-    const result = markReferredPaid({
-      referredUid,
-      tier: tierRaw as keyof typeof TIER_PRICE_CENTS,
-    });
-    if (!result.ok) return res.status(400).json({ error: result.error || 'Failed' });
-    res.json({ ok: true, ...result });
   });
 
   // The River — compiler manifest (controlled self-update channel)
@@ -3171,7 +3052,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -3233,7 +3114,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runSiteDoctorSweep();
       res.json(report);
@@ -3256,7 +3137,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const investorId =
         typeof req.body?.investorId === 'string' ? req.body.investorId.trim() : '';
@@ -3332,7 +3213,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const slot =
         req.body?.slot === 'overnight' || req.body?.slot === 'market_close' ? req.body.slot : 'market_close';
@@ -4268,59 +4149,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   // Only URLs that serve real content to logged-out visitors (and crawlers)
   // belong here — sitemap URLs that render a login wall get dropped by
   // Google and drag down crawl trust for the rest of the site.
-  const SITEMAP_BASE = 'https://clearpathtrader.com';
 
-  interface SitemapEntry { path: string; lastmod: string; changefreq: string; priority: string; }
-
-  const buildUrlset = (entries: SitemapEntry[]) =>
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.map(e => `  <url>
-    <loc>${SITEMAP_BASE}${e.path}</loc>
-    <lastmod>${e.lastmod}</lastmod>
-    <changefreq>${e.changefreq}</changefreq>
-    <priority>${e.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-  // Cache generated urlsets — procedural catalogs are large (~30k URLs).
-  type CrawlEntryLike = { path: string; lastmod: string; changefreq: string; priority: string };
-  const sitemapCache = new Map<string, string>();
-  const cachedUrlset = (key: string, factory: () => CrawlEntryLike[]) => {
-    let xml = sitemapCache.get(key);
-    if (!xml) {
-      xml = buildUrlset(factory());
-      sitemapCache.set(key, xml);
-    }
-    return xml;
-  };
-
-  const SITEMAP_CHILDREN = [
-    'sitemap-pages.xml',
-    'sitemap-learn.xml',
-    'sitemap-guides.xml',
-    'sitemap-stocks.xml',
-    'sitemap-crypto.xml',
-    'sitemap-forex.xml',
-    'sitemap-commodities.xml',
-    'sitemap-companies.xml',
-    'sitemap-glossary.xml',
-    'sitemap-literacy.xml',
-    'sitemap-knowledge.xml',
-    'sitemap-economy.xml',
-    'sitemap-indicators.xml',
-    'sitemap-education.xml',
-    'sitemap-ui.xml',
-  ];
-
-  app.get('/sitemap.xml', (req, res) => {
+  app.get('/sitemap.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${SITEMAP_CHILDREN.map((name) => `  <sitemap>
-    <loc>${SITEMAP_BASE}/${name}</loc>
-  </sitemap>`).join('\n')}
-</sitemapindex>`);
+    res.send(sitemapIndexXml());
   });
 
   app.get('/api/seo/catalog-counts', (_req, res) => {
@@ -4380,114 +4212,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.get('/sitemap-pages.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    const lastmod = sitemapLastmod();
-    res.send(buildUrlset([
-      { path: '/', lastmod, changefreq: 'daily', priority: '1.0' },
-      // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
-      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
-      { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/company', lastmod, changefreq: 'monthly', priority: '0.88' },
-      { path: '/meet-the-board', lastmod, changefreq: 'monthly', priority: '0.88' },
-      { path: '/founder', lastmod, changefreq: 'monthly', priority: '0.87' },
-      { path: '/ceo-statement', lastmod, changefreq: 'yearly', priority: '0.86' },
-      { path: '/press', lastmod, changefreq: 'monthly', priority: '0.9' },
-      { path: '/plans', lastmod, changefreq: 'weekly', priority: '0.86' },
-      { path: '/brokers', lastmod, changefreq: 'monthly', priority: '0.75' },
-      { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/literacy', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/learn', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/guides', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/glossary', lastmod, changefreq: 'weekly', priority: '0.75' },
-      { path: '/faq', lastmod, changefreq: 'monthly', priority: '0.7' },
-      { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
-      { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
-      { path: '/desk', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/desk/institutional', lastmod, changefreq: 'weekly', priority: '0.9' },
-      { path: '/desk/fundamental', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/retail', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/neurodivergent', lastmod, changefreq: 'weekly', priority: '0.8' },
-      ...encyclopediaHubEntries(),
-      ...regionalHubEntries(),
-    ]));
-  });
-
-  app.get('/sitemap-learn.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(SEMANTIC_RECORDS).map(record => ({
-        path: `/learn/${record.id}`,
-        lastmod: record.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.9',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-guides.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(GUIDE_RECORDS).map(guide => ({
-        path: `/guides/${guide.id}`,
-        lastmod: guide.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.85',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-stocks.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('stocks', stockEntries));
-  });
-  app.get('/sitemap-crypto.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('crypto', cryptoEntries));
-  });
-  app.get('/sitemap-forex.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('forex', forexEntries));
-  });
-  app.get('/sitemap-commodities.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('commodities', commodityEntries));
-  });
-  app.get('/sitemap-companies.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
-  });
-  app.get('/sitemap-glossary.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('glossary', glossaryEntries));
-  });
-  app.get('/sitemap-literacy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('literacy', literacyEntries));
-  });
-  app.get('/sitemap-knowledge.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
-  });
-  app.get('/sitemap-economy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('economy', economyEntries));
-  });
-  app.get('/sitemap-indicators.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('indicators', indicatorEntries));
-  });
-  app.get('/sitemap-education.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('education', educationEntries));
-  });
-  app.get('/sitemap-ui.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('ui', uiProfileEntries));
-  });
+  for (const section of SITEMAP_SECTIONS) {
+    app.get(`/${section.file}`, (_req, res) => {
+      res.header('Content-Type', 'application/xml');
+      res.send(sectionXml(section));
+    });
+  }
 
   // 5. AI-READABLE CONTENT ENDPOINTS
   app.get('/api/semantic/content', (req, res) => {
@@ -4987,8 +4717,10 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       } catch (e: any) {
         console.warn('[STARTUP] Stripe private-account recovery skipped:', e?.message || e);
       }
-      // Hydrate redeploy-sensitive stores (profiles/memberships, affiliate, pending badges)
+      // Hydrate redeploy-sensitive stores (profiles/memberships, pending badges)
       // from Firestore BEFORE seeding, so a fresh container never starts blank.
+      // Affiliate durable store is NOT hydrated — program removed. Purge leftover
+      // Firestore `app_state/affiliate` / local data so historical records do not linger.
       try {
         const profiles = await hydrateProfilesFromDurableStore();
         console.log(
@@ -4998,10 +4730,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.warn('[STARTUP] Profiles hydrate skipped:', e?.message || e);
       }
       try {
-        const aff = await hydrateAffiliateFromDurableStore();
-        console.log(`[STARTUP] Affiliate durable store → source=${aff.source} members=${aff.members}`);
+        const purged = await purgeAffiliateDurableStore();
+        console.log(
+          `[STARTUP] Affiliate durable purge → ok=${purged.ok} firestore=${purged.firestore} localDeleted=${purged.localDeleted} beforeFirestore=${purged.before.firestore} beforeMembers≈${purged.before.approxMembers}${purged.error ? ` error=${purged.error}` : ''}`
+        );
       } catch (e: any) {
-        console.warn('[STARTUP] Affiliate hydrate skipped:', e?.message || e);
+        console.warn('[STARTUP] Affiliate durable purge skipped:', e?.message || e);
       }
       try {
         const pending = await hydratePendingGrantsFromDurableStore();
@@ -5054,16 +4788,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       }
 
       // Notify Bing/Yandex ecosystem (homepage + regional hubs + market pairs).
-      void submitIndexNow([
-        'https://clearpathtrader.com/',
-        'https://clearpathtrader.com/about',
-        'https://clearpathtrader.com/glossary',
-        'https://clearpathtrader.com/literacy',
-        'https://clearpathtrader.com/markets/bonds',
-        'https://clearpathtrader.com/companies',
-        'https://clearpathtrader.com/encyclopedia',
-        ...regionalIndexNowUrls(),
-      ]).then((r) => {
+      void submitIndexNow(priorityIndexNowUrls()).then((r) => {
+        void recordSeoPing('startup', r);
         if (r.skipped) {
           console.log(`[STARTUP] IndexNow skipped: ${r.skipped}`);
         } else {

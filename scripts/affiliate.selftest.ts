@@ -1,9 +1,7 @@
 /**
- * Smoke test for affiliate attribution + rewards ladder.
+ * Assert membership affiliate / referral program stays fully disabled,
+ * and leftover durable state can be purged without recreating rewards.
  * Run: npx tsx scripts/affiliate.selftest.ts
- *
- * Forces local-only durable storage so CI (no Firebase credentials) never
- * initializes a lazy ADC client that crashes the process mid-test.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -14,91 +12,109 @@ process.env.CLEARPATH_DISABLE_FIRESTORE_ADMIN = '1';
 delete process.env.FIREBASE_SERVICE_ACCOUNT;
 delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-aff-'));
-process.chdir(tmp);
-
 async function main() {
-  const { getAdminFirestore, hasFirebaseAdminCredentials } = await import(
-    '../src/server/firebaseAdmin.ts'
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-aff-purge-'));
+  const prevCwd = process.cwd();
+  process.chdir(tmp);
+
+  try {
+    const aff = await import('../src/server/affiliateService.ts');
+
+    assert.equal(aff.AFFILIATE_PROGRAM_ENABLED, false);
+    assert.equal(aff.AFFILIATE_RESIDUAL_RATE, 0);
+    assert.equal(Object.keys(aff.TIER_PRICE_CENTS).length, 0);
+
+    const click = aff.recordClick({ code: 'ANYCODE1', ip: '1.2.3.4' });
+    assert.equal(click.ok, false);
+
+    const attributed = aff.attributeSignup({ newUid: 'user_b', referralCode: 'ANYCODE1' });
+    assert.equal(attributed.attributed, false);
+
+    const paid = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro', periodKey: '2026-08-01' });
+    assert.equal(paid.ok, false);
+    assert.equal(paid.creditCents, 0);
+
+    const payout = aff.requestAffiliatePayout({
+      uid: 'user_a',
+      method: 'paypal',
+      destination: 'a@b.c',
+    });
+    assert.equal(payout.ok, false);
+
+    const desk = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
+    assert.equal(desk.disabled, true);
+    assert.equal(desk.shareUrl, null);
+    assert.equal(desk.creditCents, 0);
+    assert.equal(desk.discountPercent, 0);
+
+    const board = aff.getLeaderboard(25);
+    assert.equal(board.disabled, true);
+    assert.equal(board.leaders.length, 0);
+
+    const hydrate = await aff.hydrateAffiliateFromDurableStore();
+    assert.equal(hydrate.source, 'disabled');
+    assert.equal(hydrate.members, 0);
+
+    // Plant leftover local durable state (as a prior Cloud Run instance might have left).
+    const dataDir = path.join(tmp, 'data', 'affiliate');
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(dataDir, 'state.json'),
+      JSON.stringify({
+        members: { user_a: { uid: 'user_a', code: 'OLDCODE1', successfulReferrals: 2, creditCents: 500, discountPercent: 10 } },
+        codeToUid: { OLDCODE1: 'user_a' },
+        clicks: [{ id: '1', code: 'OLDCODE1', referrerUid: 'user_a', at: '2026-01-01T00:00:00.000Z' }],
+        ledger: [],
+        payouts: [],
+      }),
+      'utf8'
+    );
+
+    const before = await aff.inspectAffiliateDurableStore();
+    assert.equal(before.localExists, true);
+    assert.ok(before.localBytes > 0);
+    assert.equal(before.approxMembers, 1);
+    assert.equal(before.firestore, 'no_credentials');
+
+    const purged = await aff.purgeAffiliateDurableStore();
+    assert.equal(purged.ok, true);
+    assert.equal(purged.localDeleted, true);
+    assert.equal(purged.firestore, 'no_credentials');
+    assert.equal(fs.existsSync(path.join(dataDir, 'state.json')), false);
+
+    const after = await aff.inspectAffiliateDurableStore();
+    assert.equal(after.localExists, false);
+    assert.equal(after.approxMembers, 0);
+
+    // Idempotent second purge
+    const purged2 = await aff.purgeAffiliateDurableStore();
+    assert.equal(purged2.ok, true);
+    assert.equal(purged2.localDeleted, false);
+  } finally {
+    process.chdir(prevCwd);
+  }
+
+  // No live attribution routes or residual credit hook in the server/Stripe paths.
+  const serverSrc = fs.readFileSync(path.join(prevCwd, 'server.ts'), 'utf8');
+  assert.equal(/attributeSignup\s*\(/.test(serverSrc), false, 'server must not attribute signups');
+  assert.equal(/ensureAffiliateMember\s*\(/.test(serverSrc), false, 'server must not mint affiliate members');
+  assert.equal(/recordClick\s*\(/.test(serverSrc), false, 'server must not record referral clicks');
+  assert.equal(/markReferredPaid\s*\(/.test(serverSrc), false, 'server must not mark referred paid');
+  assert.equal(
+    /app\.get\(\s*['"]\/r\/:code['"]/.test(serverSrc),
+    true,
+    'legacy /r/:code should still answer (gone redirect)',
   );
-  assert.equal(hasFirebaseAdminCredentials(), false);
-  assert.equal(getAdminFirestore(), null);
+  assert.match(serverSrc, /AFFILIATE_PROGRAM_REMOVED|affiliate program removed/i);
+  assert.match(serverSrc, /purgeAffiliateDurableStore/);
+  assert.match(serverSrc, /\/api\/admin\/affiliate\/purge-durable/);
+  assert.match(serverSrc, /\/api\/admin\/affiliate\/durable-status/);
 
-  const aff = await import('../src/server/affiliateService.ts');
+  const stripeSrc = fs.readFileSync(path.join(prevCwd, 'src/server/stripeService.ts'), 'utf8');
+  assert.equal(/markReferredPaid/.test(stripeSrc), false, 'Stripe must not credit affiliate residuals');
+  assert.equal(/creditAffiliateResidual/.test(stripeSrc), false, 'Stripe residual helper must be gone');
 
-  const a = aff.ensureAffiliateMember('user_a');
-  const b = aff.ensureAffiliateMember('user_b');
-  assert.ok(a.code.length >= 6);
-  assert.notEqual(a.code, b.code);
-
-  // Dormant link: no clicks, no attribution before the Agreement is accepted
-  const dormantClick = aff.recordClick({ code: a.code, ip: '1.2.3.4' });
-  assert.equal(dormantClick.ok, false);
-  const dormantAttr = aff.attributeSignup({ newUid: 'user_b', referralCode: a.code });
-  assert.equal(dormantAttr.attributed, false);
-
-  // Activate → link goes live
-  const activated = aff.activateAffiliate('user_a');
-  assert.ok(activated.activatedAt);
-  assert.equal(activated.termsVersion, (await import('../src/content/affiliateTerms.ts')).AFFILIATE_TERMS_VERSION);
-
-  const click = aff.recordClick({ code: a.code, ip: '1.2.3.4' });
-  assert.equal(click.ok, true);
-
-  const attributed = aff.attributeSignup({ newUid: 'user_b', referralCode: a.code });
-  assert.equal(attributed.attributed, true);
-  assert.equal(attributed.referrerUid, 'user_a');
-
-  const desk = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
-  assert.equal(desk.monthSignups, 1);
-  assert.equal(desk.discountPercent, 10);
-  assert.ok(desk.shareUrl.includes(`/r/${a.code}`));
-
-  // Self-referral blocked
-  const self = aff.attributeSignup({ newUid: 'user_a', referralCode: a.code });
-  assert.equal(self.attributed, false);
-
-  const paid = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro', periodKey: '2026-08-01' });
-  assert.equal(paid.ok, true);
-  assert.equal(paid.creditCents, Math.round(aff.TIER_PRICE_CENTS.pro * aff.AFFILIATE_RESIDUAL_RATE));
-
-  const desk2 = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
-  assert.equal(desk2.creditCents, paid.creditCents);
-
-  // Idempotent within the same billing period
-  const paid2 = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro', periodKey: '2026-08-01' });
-  assert.equal(paid2.ok, true);
-  assert.equal(paid2.creditCents, 0);
-
-  // Lifetime residual: the NEXT billing period credits again
-  const paid3 = aff.markReferredPaid({ referredUid: 'user_b', tier: 'pro', periodKey: '2026-09-01' });
-  assert.equal(paid3.ok, true);
-  assert.equal(paid3.creditCents, Math.round(aff.TIER_PRICE_CENTS.pro * aff.AFFILIATE_RESIDUAL_RATE));
-
-  const desk3 = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
-  assert.equal(desk3.creditCents, (paid.creditCents || 0) + (paid3.creditCents || 0));
-
-  // Payouts: below minimum rejected, at/above minimum reserved, admin settle deducts
-  const tooSmall = aff.requestAffiliatePayout({ uid: 'user_a', method: 'paypal', destination: 'a@b.c' });
-  assert.equal(tooSmall.ok, false); // 2 × $2.49 < $25 minimum
-
-  // Boost credit over the minimum via an ultimate-yearly period
-  aff.markReferredPaid({ referredUid: 'user_b', tier: 'ultimate', amountCents: 77940, periodKey: 'y-2026' });
-  const req1 = aff.requestAffiliatePayout({ uid: 'user_a', method: 'paypal', destination: 'a@b.c' });
-  assert.equal(req1.ok, true);
-  assert.ok((req1.payout?.amountCents || 0) >= aff.MIN_PAYOUT_CENTS);
-
-  // Second request while one is pending → nothing available
-  const req2 = aff.requestAffiliatePayout({ uid: 'user_a', method: 'paypal', destination: 'a@b.c' });
-  assert.equal(req2.ok, false);
-
-  const settled = aff.adminResolvePayout({ payoutId: req1.payout!.id, action: 'paid' });
-  assert.equal(settled.ok, true);
-  const desk4 = aff.getAffiliateDashboard('user_a', 'https://clearpathtrader.com');
-  assert.equal(desk4.creditCents, 0);
-  assert.equal(desk4.payout.availableCents, 0);
-
-  console.log('affiliate.selftest: ok');
+  console.log('affiliate.selftest: ok (program disabled + durable purge)');
 }
 
 main().catch((err) => {

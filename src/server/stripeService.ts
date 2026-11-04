@@ -28,7 +28,6 @@
 import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
 import { readProfile, writeProfile, writeProfileDurable, type StoredProfile } from './profileStore';
-import { markReferredPaid } from './affiliateService';
 import {
   beginStripeWebhookEvent,
   completeStripeWebhookEvent,
@@ -412,27 +411,6 @@ async function saveMembershipDurable(
   return next;
 }
 
-/**
- * Lifetime residual: credit the referrer 25% of every paid billing period.
- * Idempotent per period (keyed on currentPeriodEnd), so webhook retries and
- * repeated subscription.updated events never double-credit.
- */
-function creditAffiliateResidual(uid: string, record: MembershipRecord, interval?: string) {
-  if (record.status !== 'active') return;
-  const def = TIER_DEFS[record.tier as MembershipTierId];
-  const amountCents = def && interval !== 'year' ? def.monthlyCents : undefined;
-  try {
-    markReferredPaid({
-      referredUid: uid,
-      tier: record.tier,
-      amountCents,
-      periodKey: record.currentPeriodEnd || 'first',
-    });
-  } catch (err: any) {
-    console.warn('[Stripe] affiliate residual credit skipped:', err?.message || err);
-  }
-}
-
 function mapSubscriptionStatus(status: Stripe.Subscription.Status): MembershipRecord['status'] {
   if (status === 'active') return 'active';
   if (status === 'trialing') return 'trialing';
@@ -755,10 +733,6 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
       const activeWrite: MembershipWrite = { ...parsed.write, status: 'active' };
       const outcome = await saveMembershipFanout(parsed.uid, activeWrite, null);
       if (outcome !== 'skipped' && invoice.amount_paid > 0) {
-        const record = readProfile(parsed.uid)?.membership;
-        if (record) {
-          creditAffiliateResidual(parsed.uid, { ...record, status: 'active' }, String(sub.metadata?.interval || 'month'));
-        }
         try {
           await recordMarketingConversion(parsed.uid, parsed.tier);
         } catch (error: any) {

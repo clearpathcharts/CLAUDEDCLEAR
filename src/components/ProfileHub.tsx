@@ -12,7 +12,6 @@ import {
   normalizeProfileUsername,
   publicProfileUrl,
 } from "../lib/profileUsername";
-import { TEMP_HIDE_AFFILIATE_SURFACE } from "../config/founderUiToggles";
 import "../styles/tierGradient.css";
 export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNavigate?: (tab: string) => void }) => {
   const { user } = useAuth();
@@ -509,15 +508,6 @@ export const ProfileHub = ({ user: themeProfile, onNavigate }: { user: any, onNa
           </div>
         )}
 
-        {onNavigate && !TEMP_HIDE_AFFILIATE_SURFACE ? (
-          <button
-            type="button"
-            onClick={() => onNavigate('AffiliateNetwork')}
-            className="w-full cp-affiliate-btn flex items-center justify-center gap-2 mt-6 uppercase tracking-wider text-xs sm:text-sm py-3.5 select-none font-bold font-mono"
-          >
-            🔥 Affiliate Network
-          </button>
-        ) : null}
       </div>
 
       {/* MAIN */}

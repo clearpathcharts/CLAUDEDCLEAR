@@ -3,7 +3,6 @@ export function isPublicIdentityPath(pathname: string): boolean {
   const path = (pathname || '/').replace(/\/$/, '') || '/';
   return (
     path === '/about' ||
-    path === '/affiliate-terms' ||
     path === '/company' ||
     path === '/meet-the-board' ||
     path === '/leadership' ||

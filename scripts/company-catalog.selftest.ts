@@ -68,8 +68,9 @@ const missing = enrichHtmlWithMetadata(
 assert.match(missing, /noindex/);
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
-assert.match(server, /sitemap-companies\.xml/);
-assert.match(server, /companyEntries/);
+const siteRegistry = fs.readFileSync(path.join(root, 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(siteRegistry, /sitemap-companies\.xml/);
+assert.match(siteRegistry, /companyEntries/);
 assert.match(server, /res\.redirect\(301, `\/stocks\//);
 
 const dir = fs.readFileSync(path.join(root, 'src/components/encyclopedia/CompaniesDirectoryView.tsx'), 'utf8');

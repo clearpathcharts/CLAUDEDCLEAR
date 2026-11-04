@@ -90,7 +90,7 @@ export default function ExternalAboutPage() {
               Search engines sometimes mix us up with unrelated “ClearPath” products that greet website visitors, capture leads, and book appointments. That is a different company. ClearPath Trader is an <strong className="text-white">educational financial markets site</strong>: charts, indicators, education, and research. C.P.T. Buddy lives <em>inside</em> this site to teach markets — it does not sit on someone else’s homepage as a sales widget.
             </p>
             <ul className="text-gray-400 text-sm md:text-base space-y-2 list-disc pl-5">
-              <li>Live multi-asset charts + unlimited indicators + automatic pattern context</li>
+              <li>Live multi-asset charts + full indicator library on paid plans + automatic pattern overlay on Gold</li>
               <li>Financial encyclopedia + indicator encyclopedia + beginner-to-advanced education</li>
               <li>Literacy OS, macro desk, INDACREATOR / River Genie</li>
               <li>13 neurodivergent / accessibility UI profiles</li>

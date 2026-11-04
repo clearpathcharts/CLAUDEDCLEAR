@@ -98,6 +98,26 @@ for (const route of ["'/api/auth/private/reset-password'", "'/api/auth/private/c
 }
 
 assert.doesNotMatch(serverSrc, /\/api\/auth\/private\/lookup/, 'no public "does this email have an account?" endpoint');
+
+// Founder mutators that can create accounts / send mail / run ops must require the action header
+// (defense-in-depth on top of SameSite=Lax + founder auth).
+for (const route of [
+  "'/api/admin/members/convert-waitlist'",
+  "'/api/admin/members/waitlist/clear-released'",
+  "'/api/admin/members/recover-from-stripe'",
+  "'/api/admin/members/invite-mail/send'",
+  "'/api/admin/site-doctor/run'",
+  "'/api/admin/daily-ops/run'",
+  "'/api/admin/daily-pattern-review/run'",
+  "'/api/chart-pulse/test-fire'",
+  "'/api/diagnostics/timeframe-verify/run'",
+]) {
+  const start = serverSrc.indexOf(`app.post(${route}`);
+  assert.ok(start >= 0, `${route} route found`);
+  const head = serverSrc.slice(start, start + 220);
+  assert.match(head, /requireFounderActionHeader/, `${route} must require the founder action header`);
+}
+
 const apiNotFound = serverSrc.indexOf("app.use('/api', (_req, res) => {");
 assert.ok(apiNotFound > 0 && apiNotFound < serverSrc.indexOf('// 4. Vite / Static Serving'), 'unknown /api paths must 404 before the SPA shell');
 

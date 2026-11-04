@@ -53,9 +53,10 @@ assert.match(statementMeta, /CEO's Certified Statement/);
 assert.match(statementMeta, /datePublished": "2026-09-13"/);
 
 const server = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
-assert.match(server, /path: '\/plans'/);
-assert.match(server, /path: '\/brokers'/);
-assert.match(server, /path: '\/ceo-statement'/);
+const siteRegistry = fs.readFileSync(path.join(process.cwd(), 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(siteRegistry, /\['\/plans'/);
+assert.match(siteRegistry, /\['\/brokers'/);
+assert.match(siteRegistry, /\['\/ceo-statement'/);
 assert.match(server, /redirect\(301, `\/plans/);
 
 console.log('identity-pages-seo.selftest: ok');

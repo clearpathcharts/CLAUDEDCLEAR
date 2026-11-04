@@ -55,6 +55,8 @@ jobs:
         run: npm run test:auth-hardening
       - name: Email verification self-test
         run: npm run test:email-verification
+      - name: Search-intent guides self-test
+        run: npm run test:intent-guides
       - name: SSRF guard self-test
         run: npm run test:ssrf-guard
 
@@ -75,6 +77,9 @@ jobs:
 
       - name: CEO explainer-video library (founder gate + durable storage only)
         run: npm run test:ceo-videos
+
+      - name: CEO Marketing Department (founder gate + sitemap parity + honest metrics)
+        run: npm run test:marketing-department
 
       - name: Explainer-video slots (founder gate + safe public read)
         run: npm run test:video-slots
