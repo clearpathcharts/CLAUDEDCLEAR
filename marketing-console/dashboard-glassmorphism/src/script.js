@@ -182,49 +182,18 @@ async function dispatchNow(jobId) {
 }
 
 const ALL_CHANNELS = [
-  // Social / video (15)
-  { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_PAGE_* set (+ App Review)" },
-  { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when META_IG_USER_ID set (+ App Review)" },
-  { id: "x", name: "X (Twitter)", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "X API v2" },
-  { id: "tiktok", name: "TikTok", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when TIKTOK_ACCESS_TOKEN set (+ API audit)" },
-  { id: "youtube", name: "YouTube", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Direct Dispatch when YOUTUBE_* OAuth set + ClearPath file upload" },
-  { id: "linkedin", name: "LinkedIn", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "UGC / Posts API" },
-  { id: "reddit", name: "Reddit", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Script app submit" },
-  { id: "snapchat", name: "Snapchat", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Story / Spotlight education" },
-  { id: "pinterest", name: "Pinterest", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Pins API" },
-  { id: "discord", name: "Discord", group: "social", engine: "ClearPath Publisher", status: "partial", note: "Channel webhook" },
-  { id: "threads", name: "Threads", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Threads API" },
-  { id: "telegram", name: "Telegram", group: "social", engine: "ClearPath Publisher", status: "partial", note: "BotFather token + chat id (easiest win)" },
-  { id: "whatsapp", name: "WhatsApp", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Cloud API" },
-  { id: "twitch", name: "Twitch", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / announcements" },
-  { id: "bluesky", name: "Bluesky", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "AT Protocol app password" },
-  { id: "myspace", name: "MySpace", group: "social", engine: "ClearPath Publisher", status: "blocked", note: "No public posting API — site read-only since 2024" },
-  // Professional / networking (15 — LinkedIn also in social)
-  { id: "xing", name: "Xing", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "viadeo", name: "Viadeo", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "shapr", name: "Shapr", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "lunchclub", name: "Lunchclub", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "polywork", name: "Polywork", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "wellfound", name: "Wellfound (AngelList)", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "fishbowl", name: "Fishbowl", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "blind", name: "Blind", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "opportunity", name: "Opportunity", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "meetup", name: "Meetup", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "API or webhook" },
-  { id: "alignable", name: "Alignable", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "bark", name: "Bark", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "gust", name: "Gust", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
-  { id: "researchgate", name: "ResearchGate", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
+  { id: "youtube", name: "YouTube", group: "search", engine: "YouTube Data API", status: "partial", note: "Search engine. Dispatch-ready when OAuth is set + MP4 uploaded." },
+  { id: "google", name: "Google", group: "search", engine: "Public /watch + Search Console", status: "connected", note: "Hardwired. Dispatch publishes an indexable lesson page." },
+  { id: "bing", name: "Bing", group: "search", engine: "IndexNow", status: "connected", note: "Hardwired. Same lesson page is pinged to IndexNow." },
+  { id: "reddit", name: "Reddit", group: "launch", engine: "Reddit API", status: "not_yet", note: "Needs subreddit + script app keys." },
+  { id: "facebook", name: "Facebook Page", group: "launch", engine: "Meta Graph", status: "not_yet", note: "Needs Page ID + long-lived Page token." },
 ];
 const CHANNELS = ALL_CHANNELS.filter((ch) => !BLOCKED_CHANNEL_IDS.has(ch.id));
 
 const DISCOVERY = [
-  { rank: 1, name: "Google Search Console", status: "not_yet" },
-  { rank: 2, name: "Bing Webmaster + IndexNow", status: "not_yet" },
-  { rank: 3, name: "YouTube", status: "connected" },
-  { rank: 4, name: "GA4", status: "not_yet" },
-  { rank: 5, name: "Gmail", status: "connected" },
-  { rank: 14, name: "Apple Podcasts", status: "not_yet" },
-  { rank: 15, name: "Spotify Podcasts", status: "not_yet" },
+  { rank: 1, name: "Google — public /watch lesson page (hardwired on Dispatch)", status: "connected" },
+  { rank: 2, name: "Bing — IndexNow ping (hardwired on Dispatch)", status: "connected" },
+  { rank: 3, name: "YouTube Search — upload on Dispatch", status: "partial" },
 ];
 
 const FOOTER =
@@ -236,11 +205,14 @@ const currentTitle = document.querySelector(".current");
 const searchLabel = document.querySelector(".search label");
 const queueFilter = document.getElementById("queue-filter");
 
-let view = "publish";
+let view = "brain";
+let brainPack = null;
+let brainMedia = null;
 let queue = loadQueue();
-let selectedChannels = ["youtube", "facebook", "instagram", "tiktok"].filter((id) => !BLOCKED_CHANNEL_IDS.has(id));
+let selectedChannels = ["youtube", "reddit", "facebook"];
 let me = null;
 let treasure = [];
+let intelligence = null;
 
 async function loadMe() {
   try {
@@ -264,6 +236,14 @@ async function loadTreasure() {
     if (!Array.isArray(treasure)) treasure = [];
   } catch {
     treasure = [];
+  }
+}
+
+async function loadIntelligence() {
+  try {
+    intelligence = await api("/api/intelligence");
+  } catch {
+    intelligence = null;
   }
 }
 
@@ -535,7 +515,25 @@ async function addFromForm() {
     calm,
     educationOnly,
     status: "queued",
+    capabilities: [],
   };
+  try {
+    const matched = await api("/api/intelligence/match", {
+      method: "POST",
+      body: JSON.stringify({ title, caption }),
+    });
+    if (matched?.claims?.length) {
+      alert(
+        "ClaimRule blocked invented language:\n" +
+          matched.claims.map((c) => `${c.reason} (${c.snippet})`).join("\n") +
+          "\n\nEdit the caption, then queue again.",
+      );
+      return;
+    }
+    job.capabilities = (matched?.matched || []).slice(0, 5).map((c) => c.ID);
+  } catch {
+    /* classification is optional — queue still saves */
+  }
   queue.unshift(job);
   saveQueue();
   document.getElementById("f-title").value = "";
@@ -609,6 +607,10 @@ function renderQueue() {
                         ? ` · ClearPath file: ${escapeHtml(j.fileName || j.mediaId)}`
                         : j.videoUrl
                         ? " · link only"
+                        : ""
+                    }${
+                      Array.isArray(j.capabilities) && j.capabilities.length
+                        ? ` · ${j.capabilities.join(" · ")}`
                         : ""
                     }</p>
                 ${
@@ -831,7 +833,44 @@ const ALL_API_KEY_GUIDES = [
     ],
   },
 ];
-const API_KEY_GUIDES = ALL_API_KEY_GUIDES.filter((g) => !BLOCKED_CHANNEL_IDS.has(g.id));
+const API_KEY_GUIDES = [
+  {
+    priority: 1,
+    id: "youtube",
+    name: "YouTube",
+    difficulty: "OAuth already on this server",
+    env: "YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN",
+    steps: [
+      "Keys are already set on Cloud Run",
+      "Paste your YouTube channel URL so we confirm the right channel",
+      "Upload an MP4 in Brain or Publish, then Dispatch",
+    ],
+  },
+  {
+    priority: 2,
+    id: "reddit",
+    name: "Reddit",
+    difficulty: "Need the subreddit link + a script app",
+    env: "REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME, REDDIT_PASSWORD, REDDIT_SUBREDDIT",
+    steps: [
+      "Paste the subreddit URL (example: https://www.reddit.com/r/ClearMarketScience)",
+      "reddit.com/prefs/apps → create script app → paste client id + secret here in chat",
+      "Use the Reddit username that mods or can post in that sub",
+    ],
+  },
+  {
+    priority: 3,
+    id: "facebook",
+    name: "Facebook business page",
+    difficulty: "Need Page ID + Page token — a public link is not enough",
+    env: "META_PAGE_ID, META_PAGE_ACCESS_TOKEN",
+    steps: [
+      "Paste the Facebook Page URL",
+      "developers.facebook.com → app → Page access token (long-lived) with pages_manage_posts",
+      "Paste Page ID + token in chat — I will load them on Cloud Run",
+    ],
+  },
+];
 
 function renderApiKeys() {
   viewRoot.innerHTML = `
@@ -839,14 +878,11 @@ function renderApiKeys() {
       <div class="card">
         <header><span class="title">How to get APIs — founder order</span></header>
         <div class="content">
-          <p class="hint">Money channels = YouTube, Facebook, Instagram, TikTok. Wire their keys on Cloud Run, then Queue → Dispatch. Discord/Telegram are closed-circuit backups. MySpace has no posting API.</p>
+          <p class="hint">Launch targets: YouTube, Reddit, Facebook Page. Search engines (Google + Bing) are hardwired on every Dispatch via a public /watch page + IndexNow. No other networks.</p>
           <ol class="api-order">
-            <li>Telegram + Discord (minutes)</li>
-            <li>YouTube OAuth (optional — same ClearPath upload)</li>
-            <li>Reddit script app</li>
-            <li>Meta (Facebook + Instagram) App Review</li>
-            <li>LinkedIn / TikTok when approved</li>
-            <li>Skip MySpace until they relaunch a real API</li>
+            <li>YouTube — keys already on this server</li>
+            <li>Reddit — subreddit link + script app</li>
+            <li>Facebook Page — Page URL + long-lived Page token</li>
           </ol>
         </div>
       </div>
@@ -909,7 +945,7 @@ function renderSeo() {
   viewRoot.innerHTML = `
     <div class="cardcolumn span-all">
       <div class="card">
-        <header><span class="title">SEO automation — video release prompts</span></header>
+        <header><span class="title">SEO / VSO metadata drafts — not rankings</span></header>
         <div class="content composer">
           <label>Video topic
             <input id="seo-topic" type="text" placeholder="e.g. Reading support without flashing tickers" />
@@ -927,8 +963,8 @@ function renderSeo() {
           <label>Primary keyword
             <input id="seo-keyword" type="text" placeholder="e.g. accessible trading education" />
           </label>
-          <button type="button" class="btn btn-primary" id="btn-seo-gen">Generate ranking prompts</button>
-          <pre class="pkg" id="seo-output">Generate prompts for titles, descriptions, chapters, and channel-specific captions.</pre>
+          <button type="button" class="btn btn-primary" id="btn-seo-gen">Draft metadata (not rankings)</button>
+          <pre class="pkg" id="seo-output">Draft titles, descriptions, and captions from verified product language. This does not measure demand or rankings.</pre>
         </div>
       </div>
     </div>
@@ -937,10 +973,13 @@ function renderSeo() {
     const topic = document.getElementById("seo-topic").value.trim() || "Calm market education";
     const sector = document.getElementById("seo-sector").value;
     const keyword = document.getElementById("seo-keyword").value.trim() || topic.toLowerCase();
-    const output = `CLEARPATH SEO VIDEO PROMPT PACK
+    const output = `CLEARPATH SEO / VSO METADATA DRAFT
+Governance: drafts only — founder approval required before publishing or spending.
+Readiness scores are implementation quality, not demand.
 Topic: ${topic}
 Sector: ${sector}
 Primary keyword: ${keyword}
+Capabilities: SEO, VSO, HSO, AAO
 
 YOUTUBE TITLE OPTIONS
 1. ${topic}: a calm guide for ${sector}
@@ -971,11 +1010,11 @@ WhatsApp/WeChat: New ClearPath lesson — ${topic}. https://clearpathtrader.com
 HASHTAGS (see Hashtags view for full packs)
 ${generateHashtags(topic, sector, keyword).split("\n").slice(0, 12).join("\n")}
 
-RANKING RULES
-- Put primary keyword in first 50 characters of title
-- Repeat keyword once in first 2 description lines
+DRAFT RULES
+- Put the intended phrase in the first 50 characters of title
+- Repeat it once in the first 2 description lines
 - Link to encyclopedia / learn pages
-- No fake urgency, no broker CTAs`;
+- No fake urgency, no broker CTAs, no invented rankings or search volume`;
     document.getElementById("seo-output").textContent = output;
   });
 }
@@ -1257,7 +1296,7 @@ function renderDiscovery() {
             </div>`
           ).join("")}
         </div>
-        <p class="hint channel-foot">Next critical opens: Google Search Console, Bing + IndexNow, then podcasts.</p>
+        <p class="hint channel-foot">Google and Bing are pinged automatically. You still add fuckweasel.net in Google Search Console once (free).</p>
       </div>
     </div>
   `;
@@ -1360,6 +1399,138 @@ function renderTreasure() {
   });
 }
 
+function maturityClass(maturity) {
+  if (maturity === "Active") return "connected";
+  if (maturity === "Supporting" || maturity === "Umbrella") return "partial";
+  return "not_yet";
+}
+
+function renderIntelligence() {
+  const registry = intelligence;
+  if (!registry) {
+    viewRoot.innerHTML = `
+      <div class="cardcolumn span-all">
+        <div class="card">
+          <header><span class="title">Marketing Intelligence</span></header>
+          <div class="content"><p class="hint">Could not load the capability registry. Refresh after login.</p></div>
+        </div>
+      </div>`;
+    return;
+  }
+  const families = [...new Set(registry.Capabilities.map((c) => c.Family))];
+  viewRoot.innerHTML = `
+    <div class="cardcolumn span-all">
+      <div class="card">
+        <header><span class="title">${escapeHtml(registry.Name)}</span></header>
+        <div class="content">
+          <p class="hint">${escapeHtml(registry.MeasurementDisclaimer)}</p>
+          <p class="hint">${escapeHtml(registry.AutomationDisclaimer)}</p>
+          <div class="intel-rules">
+            ${Object.entries(registry.Governance)
+              .map(
+                ([k, v]) =>
+                  `<p class="intel-rule"><strong>${escapeHtml(k)}</strong>${escapeHtml(v)}</p>`,
+              )
+              .join("")}
+          </div>
+          <div class="quick-actions" style="margin-top:12px">
+            <a class="btn" href="/api/intelligence/export.json">Download JSON</a>
+            <a class="btn" href="/api/intelligence/export.csv">Download CSV</a>
+            <a class="btn" href="/api/intelligence/governance.json">Download governance</a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <header><span class="title">Classify a draft</span></header>
+        <div class="content composer">
+          <label>Title<input id="intel-title" type="text" placeholder="Lesson title" /></label>
+          <label>Caption<textarea id="intel-caption" rows="4" placeholder="Paste the draft. Matching does not publish."></textarea></label>
+          <button type="button" class="btn btn-primary" id="intel-match">Match capabilities</button>
+          <div id="intel-match-out"></div>
+        </div>
+      </div>
+      ${families
+        .map((family) => {
+          const caps = registry.Capabilities.filter((c) => c.Family === family);
+          return `
+        <div class="card">
+          <header><span class="title">${escapeHtml(family)}</span><span class="count-pill">${caps.length}</span></header>
+          <div class="content intel-grid">
+            ${caps
+              .map(
+                (c) => `
+              <article class="intel-card" data-cap="${escapeHtml(c.ID)}">
+                <span class="intel-id">${escapeHtml(c.ID)}</span>
+                <h3>${escapeHtml(c.Name)}</h3>
+                <span class="badge ${maturityClass(c.Maturity)}">${escapeHtml(c.Maturity)}</span>
+                <p class="hint">${escapeHtml(c.Purpose)}</p>
+                <div class="intel-bar" aria-hidden="true"><span style="width:${Number(c.Readiness) || 0}%"></span></div>
+                <p class="intel-score">Readiness ${Number(c.Readiness) || 0}/100 — implementation quality only</p>
+                <label>Score
+                  <input class="bar intel-ready" type="number" min="0" max="100" value="${Number(c.Readiness) || 0}" />
+                </label>
+                <label>Note
+                  <input class="bar intel-note" type="text" value="${escapeHtml(c.ReadinessNote || "")}" />
+                </label>
+                <button type="button" class="btn" data-save-cap="${escapeHtml(c.ID)}">Save score</button>
+              </article>`,
+              )
+              .join("")}
+          </div>
+        </div>`;
+        })
+        .join("")}
+    </div>
+  `;
+
+  document.getElementById("intel-match")?.addEventListener("click", async () => {
+    const out = document.getElementById("intel-match-out");
+    out.innerHTML = `<p class="hint">Matching…</p>`;
+    try {
+      const data = await api("/api/intelligence/match", {
+        method: "POST",
+        body: JSON.stringify({
+          title: document.getElementById("intel-title").value,
+          caption: document.getElementById("intel-caption").value,
+        }),
+      });
+      if (data.claims?.length) {
+        out.innerHTML = `<p class="intel-match">${data.claims
+          .map((c) => escapeHtml(`${c.reason}: ${c.snippet}`))
+          .join("<br>")}</p>`;
+        return;
+      }
+      if (!data.matched?.length) {
+        out.innerHTML = `<p class="hint">${escapeHtml(data.unmatchedNote || "No match.")}</p>`;
+        return;
+      }
+      out.innerHTML = `<p class="hint">${escapeHtml(data.unmatchedNote)}</p><p class="hint">${data.matched
+        .map((c) => `${escapeHtml(c.ID)} · ${escapeHtml(c.Name)}`)
+        .join("<br>")}</p>`;
+    } catch (err) {
+      out.innerHTML = `<p class="hint">${escapeHtml(err.message)}</p>`;
+    }
+  });
+
+  viewRoot.querySelectorAll("[data-save-cap]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const card = btn.closest(".intel-card");
+      const readiness = Number(card.querySelector(".intel-ready").value);
+      const note = card.querySelector(".intel-note").value;
+      try {
+        await api(`/api/intelligence/capabilities/${btn.dataset.saveCap}`, {
+          method: "PATCH",
+          body: JSON.stringify({ readiness, note }),
+        });
+        await loadIntelligence();
+        render();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;")
@@ -1368,8 +1539,190 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;");
 }
 
+function renderBrain() {
+  const pack = brainPack;
+  viewRoot.innerHTML = `
+    <div class="cardcolumn span-2">
+      <div class="card composer-card">
+        <header><span class="title">Marketing brain — one asset, organic everywhere</span></header>
+        <div class="content composer">
+          <p class="hint">Drop a Google Flow video or poster. This writes search-engine copy and in-app social packs. It does not buy ads. It does not post until you open Queue → Dispatch now.</p>
+          <p class="hint">Hashtags help YouTube / TikTok / Instagram search. Google needs the Search pack on clearpathtrader.com plus the YouTube listing.</p>
+          <label>What is this lesson about?
+            <input id="brain-topic" type="text" placeholder="e.g. Reading support without flashing tickers" />
+          </label>
+          <label>One or two sentences (your words)
+            <textarea id="brain-lesson" rows="4" placeholder="Plain-language takeaway. Education only. Not a brokerage."></textarea>
+          </label>
+          <label>Who is already looking
+            <select id="brain-intent">
+              <option value="market-analysis">Better way to analyze markets</option>
+              <option value="accessible-education">Calm charts — veterans / neurodivergent</option>
+              <option value="chart-reading">How to read charts / indicators</option>
+              <option value="not-a-broker">Education terminal, not a brokerage</option>
+            </select>
+          </label>
+          <label>Flow video or poster
+            <input id="brain-file" type="file" accept="video/*,image/*,.mp4,.mov,.webm,.jpg,.jpeg,.png,.webp" />
+          </label>
+          <p class="hint" id="brain-upload-status">${brainMedia ? `Ready: ${escapeHtml(brainMedia.fileName)}` : "File optional — you can still generate copy."}</p>
+          <button type="button" class="btn btn-primary" id="brain-run">Build packs</button>
+        </div>
+      </div>
+    </div>
+    <div class="cardcolumn">
+      <div class="card">
+        <header><span class="title">Free path (no ads)</span></header>
+        <div class="content howto">
+          <ol>
+            <li>YouTube listing — this is a search engine</li>
+            <li>Paste Search pack onto clearpathtrader.com</li>
+            <li>Organic TikTok / IG / Facebook / LinkedIn / Reddit / Pinterest</li>
+            <li>Queue → Dispatch now (your click)</li>
+          </ol>
+          <p class="hint">Do not target “buy/sell platform” language. You teach analysis.</p>
+        </div>
+      </div>
+    </div>
+    ${
+      pack
+        ? `
+    <div class="cardcolumn span-all">
+      <div class="card">
+        <header><span class="title">Search engines (Google, Bing, AI answers, YouTube search)</span></header>
+        <div class="content">
+          <p class="hint">${escapeHtml(pack.search.engineNote)}</p>
+          <p><strong>Title</strong> ${escapeHtml(pack.search.googleTitle)}</p>
+          <p class="hint">${escapeHtml(pack.search.metaDescription)}</p>
+          <h3>FAQ</h3>
+          ${pack.search.faq.map((item) => `<p class="intel-rule"><strong>${escapeHtml(item.q)}</strong>${escapeHtml(item.a)}</p>`).join("")}
+          <pre class="pkg" id="brain-search-json">${escapeHtml(JSON.stringify(pack.search.jsonLd, null, 2))}</pre>
+          <div class="quick-actions">
+            <button type="button" class="btn" id="brain-copy-search">Copy search pack</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <header><span class="title">Organic social packs</span></header>
+        <div class="content">
+          <p class="hint">${escapeHtml(pack.reminder)}</p>
+          ${pack.posts
+            .map(
+              (p) => `
+            <label class="intel-rule">
+              <input type="checkbox" class="brain-ch" value="${escapeHtml(p.channel)}" checked />
+              <strong>${escapeHtml(p.channel)}</strong>
+              <pre class="pkg">${escapeHtml(p.title + "\n\n" + p.caption)}</pre>
+            </label>`,
+            )
+            .join("")}
+          <button type="button" class="btn btn-primary" id="brain-queue">Queue selected packs</button>
+          <p class="hint" id="brain-queue-status"></p>
+        </div>
+      </div>
+    </div>`
+        : ""
+    }
+  `;
+
+  const fileInput = document.getElementById("brain-file");
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    const status = document.getElementById("brain-upload-status");
+    if (!file) return;
+    status.textContent = `Uploading ${file.name}…`;
+    try {
+      const uploaded = await uploadMedia(file);
+      brainMedia = {
+        mediaId: uploaded.mediaId,
+        fileName: uploaded.fileName,
+        videoUrl: uploaded.videoUrl,
+        mimeType: uploaded.mimeType,
+        size: uploaded.size,
+      };
+      status.textContent = `Ready: ${file.name}`;
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
+  document.getElementById("brain-run")?.addEventListener("click", async () => {
+    const topic = document.getElementById("brain-topic").value.trim();
+    const lesson = document.getElementById("brain-lesson").value.trim();
+    const intent = document.getElementById("brain-intent").value;
+    if (!topic) {
+      alert("Add a lesson topic first.");
+      return;
+    }
+    try {
+      brainPack = await api("/api/intelligence/brain", {
+        method: "POST",
+        body: JSON.stringify({
+          topic,
+          lesson,
+          intent,
+          mediaKind: brainMedia?.mimeType?.startsWith("image/") ? "image" : "video",
+        }),
+      });
+      render();
+    } catch (err) {
+      alert(err.message);
+    }
+  });
+
+  document.getElementById("brain-copy-search")?.addEventListener("click", async () => {
+    if (!brainPack) return;
+    const text = [
+      brainPack.search.googleTitle,
+      brainPack.search.metaDescription,
+      "",
+      ...brainPack.search.faq.flatMap((item) => [item.q, item.a, ""]),
+      JSON.stringify(brainPack.search.jsonLd, null, 2),
+    ].join("\n");
+    const ok = await copyText(text);
+    alert(ok ? "Search pack copied — paste onto the site / YouTube description." : "Clipboard blocked.");
+  });
+
+  document.getElementById("brain-queue")?.addEventListener("click", () => {
+    if (!brainPack) return;
+    const picked = [...viewRoot.querySelectorAll(".brain-ch:checked")].map((el) => el.value);
+    if (!picked.length) {
+      alert("Pick at least one channel.");
+      return;
+    }
+    let n = 0;
+    for (const post of brainPack.posts) {
+      if (!picked.includes(post.channel)) continue;
+      const job = {
+        id: uid(),
+        createdAt: new Date().toISOString(),
+        title: post.title,
+        caption: post.caption,
+        videoUrl: brainMedia?.videoUrl || "",
+        fileName: brainMedia?.fileName || "",
+        mediaId: brainMedia?.mediaId || null,
+        mimeType: brainMedia?.mimeType || null,
+        mediaSize: brainMedia?.size || null,
+        scheduledFor: null,
+        channels: [post.channel],
+        calm: true,
+        educationOnly: true,
+        status: "queued",
+        capabilities: post.capabilities || brainPack.capabilities,
+        brainIntent: brainPack.intent,
+      };
+      queue.unshift(job);
+      n += 1;
+    }
+    saveQueue();
+    const status = document.getElementById("brain-queue-status");
+    if (status) status.textContent = `${n} packs queued. Open Queue and Dispatch the ones that are live.`;
+  });
+}
+
 function render() {
   updateStats();
+  if (view === "brain") return renderBrain();
   if (view === "publish") {
     // fixed publish render without chip-driven full wipe loop
     viewRoot.innerHTML = `
@@ -1398,7 +1751,7 @@ function render() {
             </label>
             <div class="channel-picks" id="channel-picks"></div>
             <button type="button" class="btn btn-primary" id="btn-queue">Add to automation queue</button>
-            <p class="hint">Standalone ClearPath Publisher. Upload → Queue → Dispatch. Telegram/Discord send the file when API keys are set on Cloud Run.</p>
+            <p class="hint">Upload an MP4 → pick YouTube / Reddit / Facebook Page → Dispatch. Google and Bing get a public lesson page automatically.</p>
           </div>
         </div>
       </div>
@@ -1436,6 +1789,7 @@ function render() {
   if (view === "seo") return renderSeo();
   if (view === "hashtags") return renderHashtags();
   if (view === "discovery") return renderDiscovery();
+  if (view === "intelligence") return renderIntelligence();
 }
 
 updateClock();
@@ -1444,4 +1798,5 @@ render();
 initBackend();
 loadMe();
 loadTreasure();
+loadIntelligence();
 setInterval(initBackend, 60000);
