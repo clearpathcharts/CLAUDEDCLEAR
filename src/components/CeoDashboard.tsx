@@ -19,6 +19,7 @@ import ChooseYourPath from './ChooseYourPath';
 import CeoHiddenFeatures from './CeoHiddenFeatures';
 import MarketingCampaignDesk from './MarketingCampaignDesk';
 import MarketingDepartment from './marketing/MarketingDepartment';
+import CeoBrentOutreachBento from './ceo/CeoBrentOutreachBento';
 import { navigateToDesk, TRADER_DESK_STORAGE_KEY } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
@@ -931,6 +932,8 @@ export default function CeoDashboard() {
       <ChooseYourPath onChoosePath={navigateToDesk} />
 
       <MarketingCampaignDesk getHeaders={founderApiHeaders} />
+
+      <CeoBrentOutreachBento getHeaders={founderApiHeaders} />
 
       <CeoAlwaysOnMonitor />
             <DailyOpsDesk
