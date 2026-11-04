@@ -7,7 +7,6 @@ import {
   Home,
   Landmark,
   LogOut,
-  Network,
   MessageSquare,
   Newspaper,
   Shield,
@@ -23,8 +22,6 @@ import {
   navBrightVioletDesktopActive,
   navBrightVioletDesktopIdle,
 } from "./navAccentColors";
-import { TEMP_HIDE_AFFILIATE_SURFACE } from "../../config/founderUiToggles";
-
 interface ClearNavProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
@@ -128,15 +125,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Terminal,
       label: "PROFILE",
     },
-    ...(TEMP_HIDE_AFFILIATE_SURFACE
-      ? []
-      : [
-          {
-            id: "AffiliateNetwork",
-            icon: Network,
-            label: "AFFILIATE",
-          } as NavItem,
-        ]),
     {
       id: "ClearPathEducation",
       icon: BookOpen,
@@ -157,8 +145,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isPink =
       item.id === "Biography" ||
-      item.id === "CeoDashboard" ||
-      item.id === "AffiliateNetwork";
+      item.id === "CeoDashboard";
 
     const isCyan =
       item.id === "Encyclopedia" ||

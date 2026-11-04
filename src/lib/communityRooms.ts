@@ -28,13 +28,6 @@ export const COMMUNITY_ROOMS: readonly CommunityRoom[] = [
     blurb: 'Terms, structures, and what a page is actually saying.',
   },
   {
-    id: 'affiliate',
-    label: 'Affiliate',
-    feature: 'affiliate',
-    minTier: 'silver',
-    blurb: 'Share codes and how credit is counted. No spam.',
-  },
-  {
     id: 'gold-bar',
     label: 'Gold Bar',
     feature: 'goldBar',

@@ -10,11 +10,11 @@ import {
   sanitizeCommunityPost,
 } from '../src/lib/communityRooms.ts';
 
-assert.equal(COMMUNITY_ROOMS.length, 8);
+assert.equal(COMMUNITY_ROOMS.length, 7);
 assert.equal(canAccessCommunityRoom('basic', 'education'), false);
 assert.equal(canAccessCommunityRoom('silver', 'education'), true);
 assert.equal(canAccessCommunityRoom('silver', 'encyclopedia'), true);
-assert.equal(canAccessCommunityRoom('silver', 'affiliate'), true);
+assert.equal(canAccessCommunityRoom('silver', 'affiliate'), false);
 assert.equal(canAccessCommunityRoom('silver', 'gold-bar'), true);
 assert.equal(canAccessCommunityRoom('silver', 'patterns'), false);
 assert.equal(canAccessCommunityRoom('gold', 'patterns'), true);

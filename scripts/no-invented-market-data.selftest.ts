@@ -49,7 +49,6 @@ const RANDOM_ALLOWED: Array<{ file: string; line: RegExp; why: string }> = [
   { file: '*', line: /toString\(36\)/, why: 'opaque id generation' },
   { file: 'src/components/Auth.tsx', line: /drops\[i\]|dropColors\[i\]|tipChar/, why: 'login background animation' },
   { file: 'src/components/ReidsGamesWidget.tsx', line: /.*/, why: 'game particles' },
-  { file: 'src/components/profile/AffiliateDashboard.tsx', line: /setAudioBars|mediaPool/, why: 'audio meter animation / media pick' },
   { file: 'src/hooks/useChatRoom.ts', line: /Trader_/, why: 'guest display name' },
   { file: 'src/components/encyclopedia/OrderBookSimulator.tsx', line: /new(Bid|Ask)(Price|Size)/, why: 'DEMO-A practice book (banner required)' },
   { file: 'src/river/runtime/fixtures/sampleCandles.ts', line: /.*/, why: 'self-test fixture only' },

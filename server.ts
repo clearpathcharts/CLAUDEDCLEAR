@@ -148,13 +148,17 @@ import { requireMembershipFeature, resolveMembershipReportForRequest } from './s
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
 import {
-  AFFILIATE_PAYOUTS_DISABLED_MESSAGE,
-  AFFILIATE_PAYOUTS_ENABLED,
   CHECKOUT_DISABLED_MESSAGE,
   MEMBERSHIP_CHECKOUT_ENABLED,
   STRIPE_ACCOUNT_RECOVERY_ENABLED,
   STRIPE_RECOVERY_DISABLED_MESSAGE,
 } from './src/lib/paymentsEnabled';
+import {
+  AFFILIATE_DISABLED_MESSAGE,
+  AFFILIATE_PROGRAM_ENABLED,
+  inspectAffiliateDurableStore,
+  purgeAffiliateDurableStore,
+} from './src/server/affiliateService';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -336,25 +340,6 @@ import {
   revokeMembershipGrant,
   saveMembershipGrants,
 } from './src/server/membershipGrants';
-import {
-  AFFILIATE_COOKIE,
-  AFFILIATE_COOKIE_MAX_AGE_MS,
-  TIER_PRICE_CENTS,
-  adminListAffiliates,
-  attributeSignup,
-  ensureAffiliateMember,
-  getAffiliateDashboard,
-  activateAffiliate,
-  adminListPayouts,
-  adminResolvePayout,
-  getLeaderboard,
-  hydrateAffiliateFromDurableStore,
-  markReferredPaid,
-  recordClick,
-  requestAffiliatePayout,
-  resolveCode,
-} from './src/server/affiliateService';
-
 const parser = new RSSParser();
 
 TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
@@ -942,11 +927,6 @@ async function startServer() {
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
         await grantFreshSession(req, sessionUser);
-        try {
-          ensureAffiliateMember(result.user.uid);
-        } catch {
-          /* ignore */
-        }
         return res.json({ ok: true, identityStatus: 'ok', user: sessionUser });
       }
 
@@ -1044,16 +1024,7 @@ async function startServer() {
   app.get('/api/auth/private/identity/confirm', async (req, res) => {
     try {
       const token = typeof req.query.token === 'string' ? req.query.token : '';
-      const confirmed = await confirmIdentityByToken(token);
-      // Referral credit only counts once the new member has proven they own the inbox.
-      try {
-        ensureAffiliateMember(confirmed.uid);
-        const fromCookie =
-          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
-        attributeSignup({ newUid: confirmed.uid, referralCode: fromCookie });
-      } catch (affErr: any) {
-        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
-      }
+      await confirmIdentityByToken(token);
       const dest =
         (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
           /\/$/,
@@ -1324,7 +1295,6 @@ async function startServer() {
           });
         }
       }
-      if (user.uid) ensureAffiliateMember(user.uid);
     } catch {
       /* ignore */
     }
@@ -1548,130 +1518,60 @@ async function startServer() {
     }
   });
 
-  // ——— Affiliate / referral rewards ———
-  const siteOrigin = () =>
-    (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
-      /\/$/,
-      ''
-    );
-
-  /** Public share link — sets attribution cookie and redirects home. */
-  app.get('/r/:code', (req, res) => {
-    const code = String(req.params.code || '');
-    const hit = recordClick({
-      code,
-      ip: req.ip,
-      userAgent: req.get('user-agent') || undefined,
+  // ——— Affiliate / referral program removed (not part of business model) ———
+  // Legacy paths answer 410/redirect-home so old bookmarks and share links die cleanly.
+  void AFFILIATE_PROGRAM_ENABLED; // compile-time proof the flag is wired; always false
+  const affiliateGone = (_req: any, res: any) =>
+    res.status(410).json({
+      error: 'AFFILIATE_PROGRAM_REMOVED',
+      message: AFFILIATE_DISABLED_MESSAGE,
     });
-    if (hit.ok && hit.code) {
-      res.cookie(AFFILIATE_COOKIE, hit.code, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-        path: '/',
-      });
-    }
-    const dest = hit.ok ? `/?ref=${encodeURIComponent(hit.code || code)}` : '/';
-    return res.redirect(302, dest);
+
+  /** Former share link — no cookie, no ?ref=, no click ledger. */
+  app.get('/r/:code', (_req, res) => {
+    res.clearCookie('cp_affiliate_ref', { path: '/' });
+    return res.redirect(302, '/');
   });
 
-  app.get('/api/affiliate/me', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to view your affiliate desk.' });
-    }
-    try {
-      const desk = getAffiliateDashboard(sessionUser.uid, siteOrigin());
-      res.json({ ok: true, ...desk });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Affiliate desk failed' });
-    }
-  });
+  app.get('/api/affiliate/me', affiliateGone);
+  app.get('/api/affiliate/leaderboard', affiliateGone);
+  app.post('/api/affiliate/claim', affiliateGone);
+  app.post('/api/affiliate/activate', affiliateGone);
+  app.post('/api/affiliate/payout-request', affiliateGone);
+  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, affiliateGone);
+  app.get('/api/admin/affiliate/members', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, affiliateGone);
 
-  app.get('/api/affiliate/leaderboard', (_req, res) => {
-    try {
-      res.json({ ok: true, ...getLeaderboard(25) });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Leaderboard failed' });
+  /** Read-only: leftover Firestore/local affiliate durable state (not a live rewards desk). */
+  app.get(
+    '/api/admin/affiliate/durable-status',
+    requireFounderOrCatalogAdmin,
+    async (_req, res) => {
+      try {
+        const status = await inspectAffiliateDurableStore();
+        res.json({ ok: true, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...status });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable status failed' });
+      }
     }
-  });
+  );
 
-  app.post('/api/affiliate/claim', (req, res) => {
-    const code = typeof req.body?.code === 'string' ? req.body.code : '';
-    const member = resolveCode(code);
-    if (!member) return res.status(404).json({ error: 'Unknown referral code' });
-    recordClick({ code: member.code, ip: req.ip, userAgent: req.get('user-agent') || undefined });
-    res.cookie(AFFILIATE_COOKIE, member.code, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-      path: '/',
-    });
-    res.json({ ok: true, code: member.code });
-  });
-
-  /** Accept the Affiliate Agreement → referral link goes live. */
-  app.post('/api/affiliate/activate', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to activate your affiliate link.' });
+  /** Delete leftover `app_state/affiliate` + local data/affiliate. Does not touch Stripe or accounts. */
+  app.post(
+    '/api/admin/affiliate/purge-durable',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await purgeAffiliateDurableStore();
+        const status = result.ok ? 200 : 500;
+        res.status(status).json({ ok: result.ok, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...result });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable purge failed' });
+      }
     }
-    try {
-      const member = activateAffiliate(sessionUser.uid);
-      res.json({
-        ok: true,
-        activated: true,
-        activatedAt: member.activatedAt,
-        termsVersion: member.termsVersion,
-        code: member.code,
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Activation failed' });
-    }
-  });
-
-  /** Member requests a cash payout of accumulated affiliate credit. */
-  app.post('/api/affiliate/payout-request', (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to request a payout.' });
-    }
-    const result = requestAffiliatePayout({
-      uid: sessionUser.uid,
-      method: typeof req.body?.method === 'string' ? req.body.method : 'paypal',
-      destination: typeof req.body?.destination === 'string' ? req.body.destination : '',
-    });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
-
-  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    res.json({ ok: true, payouts: adminListPayouts() });
-  });
-
-  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
-    const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
-    if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
-    const result = adminResolvePayout({ payoutId, action });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
-
-  app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
-    res.json({ ok: true, members: adminListAffiliates() });
-  });
+  );
 
   /**
    * Founder Google unlock: verified founder Firebase token → Express private session.
@@ -2237,24 +2137,6 @@ async function startServer() {
         error: error?.message || 'Failed to send invite email',
       });
     }
-  });
-
-  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
-    const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
-    if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
-    if (!(tierRaw in TIER_PRICE_CENTS)) {
-      return res.status(400).json({ error: 'tier must be plus | premium | ultimate' });
-    }
-    const result = markReferredPaid({
-      referredUid,
-      tier: tierRaw as keyof typeof TIER_PRICE_CENTS,
-    });
-    if (!result.ok) return res.status(400).json({ error: result.error || 'Failed' });
-    res.json({ ok: true, ...result });
   });
 
   // The River — compiler manifest (controlled self-update channel)
@@ -4835,8 +4717,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       } catch (e: any) {
         console.warn('[STARTUP] Stripe private-account recovery skipped:', e?.message || e);
       }
-      // Hydrate redeploy-sensitive stores (profiles/memberships, affiliate, pending badges)
+      // Hydrate redeploy-sensitive stores (profiles/memberships, pending badges)
       // from Firestore BEFORE seeding, so a fresh container never starts blank.
+      // Affiliate durable store is NOT hydrated — program removed. Purge leftover
+      // Firestore `app_state/affiliate` / local data so historical records do not linger.
       try {
         const profiles = await hydrateProfilesFromDurableStore();
         console.log(
@@ -4846,10 +4730,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         console.warn('[STARTUP] Profiles hydrate skipped:', e?.message || e);
       }
       try {
-        const aff = await hydrateAffiliateFromDurableStore();
-        console.log(`[STARTUP] Affiliate durable store → source=${aff.source} members=${aff.members}`);
+        const purged = await purgeAffiliateDurableStore();
+        console.log(
+          `[STARTUP] Affiliate durable purge → ok=${purged.ok} firestore=${purged.firestore} localDeleted=${purged.localDeleted} beforeFirestore=${purged.before.firestore} beforeMembers≈${purged.before.approxMembers}${purged.error ? ` error=${purged.error}` : ''}`
+        );
       } catch (e: any) {
-        console.warn('[STARTUP] Affiliate hydrate skipped:', e?.message || e);
+        console.warn('[STARTUP] Affiliate durable purge skipped:', e?.message || e);
       }
       try {
         const pending = await hydratePendingGrantsFromDurableStore();
