@@ -401,6 +401,7 @@ async function startServer() {
             defaultSrc: ["'self'"],
             scriptSrc: [
               "'self'",
+              'https://tracker.metricool.com',
               (_req, res) => `'nonce-${String((res as express.Response).locals.cspNonce || '')}'`,
             ],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
@@ -409,6 +410,8 @@ async function startServer() {
             connectSrc: [
               "'self'",
               'https:',
+              'https://tracker.metricool.com',
+              'https://*.metricool.com',
               'wss:',
               'https://*.googleapis.com',
               'https://*.firebaseio.com',

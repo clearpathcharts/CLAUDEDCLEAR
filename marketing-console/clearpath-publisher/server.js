@@ -33,6 +33,16 @@ import {
   mediaLimits,
   saveUpload,
 } from "./lib/mediaStore.js";
+import {
+  getRegistry,
+  matchDraft,
+  patchCapability,
+  scanClaims,
+  toCsv,
+} from "./lib/marketingIntelligence.js";
+import { buildBrainPack, listIntents } from "./lib/marketingBrain.js";
+import { getLesson, renderLessonHtml } from "./lib/lessonPages.js";
+import { indexNowKey } from "./lib/indexNow.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,6 +118,10 @@ app.get("/login", (req, res) => {
   res.sendFile(LOGIN_FILE);
 });
 
+app.get("/login-art.jpg", (_req, res) => {
+  res.sendFile(path.join(__dirname, "views", "login-art.jpg"));
+});
+
 app.get("/api/auth/roster", (_req, res) => {
   res.json({ configured: teamAuthConfigured() });
 });
@@ -176,6 +190,8 @@ app.get("/api/secrets/status", (_req, res) => {
       META_IG_USER_ID: envPresent("META_IG_USER_ID", "INSTAGRAM_USER_ID"),
       TIKTOK_ACCESS_TOKEN: envPresent("TIKTOK_ACCESS_TOKEN", "TIKTOK_USER_ACCESS_TOKEN"),
       PUBLIC_BASE_URL: envPresent("PUBLIC_BASE_URL"),
+      REDDIT_CLIENT_ID: envPresent("REDDIT_CLIENT_ID"),
+      REDDIT_SUBREDDIT: envPresent("REDDIT_SUBREDDIT"),
       SESSION_SECRET: envPresent("SESSION_SECRET"),
       TEAM_USERS: envPresent("TEAM_USERS"),
     },
@@ -199,6 +215,16 @@ app.get("/media/:id", (req, res) => {
     `${inlineSafe ? "inline" : "attachment"}; filename="${encodeURIComponent(media.originalName || "media")}"`,
   );
   res.sendFile(media.filePath);
+});
+
+app.get(`/${indexNowKey()}.txt`, (_req, res) => {
+  res.type("text/plain").send(indexNowKey());
+});
+
+app.get("/watch/:id", (req, res) => {
+  const lesson = getLesson(req.params.id);
+  if (!lesson) return res.status(404).type("html").send("<p>Lesson not found.</p>");
+  res.type("html").send(renderLessonHtml(lesson));
 });
 
 app.use(requireAuth);
@@ -355,6 +381,59 @@ app.patch("/api/treasure/:id", (req, res) => {
 
 app.delete("/api/treasure/:id", (req, res) => {
   res.json({ deleted: deleteChestItem(req.params.id) });
+});
+
+app.get("/api/intelligence", (_req, res) => {
+  res.json(getRegistry());
+});
+
+app.patch("/api/intelligence/capabilities/:id", (req, res) => {
+  const row = patchCapability(req.params.id, req.body || {}, req.user.username);
+  if (!row) return res.status(404).json({ error: "unknown capability" });
+  res.json(row);
+});
+
+app.post("/api/intelligence/match", (req, res) => {
+  const title = String(req.body?.title || "");
+  const caption = String(req.body?.caption || "");
+  const claims = scanClaims(`${title}\n${caption}`);
+  res.json({ ...matchDraft(title, caption), claims });
+});
+
+app.get("/api/intelligence/export.json", (_req, res) => {
+  const registry = getRegistry();
+  res.setHeader("Content-Disposition", "attachment; filename=ClearPathTrader_Marketing_Capabilities.json");
+  res.json(registry);
+});
+
+app.get("/api/intelligence/export.csv", (_req, res) => {
+  const registry = getRegistry();
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", "attachment; filename=ClearPathTrader_Marketing_Capabilities.csv");
+  res.send(toCsv(registry.Capabilities));
+});
+
+app.get("/api/intelligence/governance.json", (_req, res) => {
+  const registry = getRegistry();
+  res.setHeader("Content-Disposition", "attachment; filename=ClearPathTrader_Marketing_Governance.json");
+  res.json(registry.Governance);
+});
+
+app.get("/api/intelligence/brain/intents", (_req, res) => {
+  res.json({ intents: listIntents() });
+});
+
+app.post("/api/intelligence/brain", (req, res) => {
+  const result = buildBrainPack({
+    topic: req.body?.topic,
+    lesson: req.body?.lesson,
+    intent: req.body?.intent,
+    mediaKind: req.body?.mediaKind,
+  });
+  if (!result.ok) {
+    return res.status(422).json({ error: "guardrails", claims: result.claims });
+  }
+  res.json(result.pack);
 });
 
 app.use(express.static(CONSOLE_DIR));

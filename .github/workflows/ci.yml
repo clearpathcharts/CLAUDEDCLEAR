@@ -102,6 +102,9 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: npm dependency audit (zero vulnerabilities)
+        run: npm run test:dependency-audit
+
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
 

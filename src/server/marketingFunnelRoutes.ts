@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import tierContentCatalog from '../../data/marketing/tier-content-catalog.json';
+import { chartPlatformCompetitorsByCategory, getChartPlatformCompetitorCatalog } from './chartPlatformCompetitors';
 import { marketingEventLimiter } from './routeRateLimit';
 import {
   encodeMarketingAttributionCookie,
@@ -112,6 +113,18 @@ export function createMarketingConnectorRouter(): Router {
 
 export function createPublicMarketingRouter(): Router {
   const router = Router();
+
+  router.get('/chart-competitors', (_req, res) => {
+    const catalog = getChartPlatformCompetitorCatalog();
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.json({
+      ok: true,
+      version: catalog.version,
+      updated: catalog.updated,
+      scope: catalog.scope,
+      byCategory: chartPlatformCompetitorsByCategory(),
+    });
+  });
 
   router.post('/event', marketingEventLimiter, async (req, res) => {
     const event = String(req.body?.event || '').trim();

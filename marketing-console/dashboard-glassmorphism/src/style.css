@@ -1213,3 +1213,72 @@ main .dashboard .cardcolumn.span-all .card {
   margin: 0.35rem 0 0;
 }
 
+.intel-rules {
+  display: grid;
+  gap: 0.65rem;
+}
+.intel-rule {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(0, 210, 255, 0.22);
+  background: rgba(5, 8, 16, 0.45);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(244, 251, 255, 0.88);
+}
+.intel-rule strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--cp-cyan);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.intel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.intel-card {
+  border: 1px solid rgba(0, 210, 255, 0.22);
+  background: rgba(5, 8, 16, 0.4);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.intel-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.intel-card .intel-id {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--cp-magenta);
+}
+.intel-bar {
+  height: 6px;
+  background: rgba(0, 210, 255, 0.12);
+  overflow: hidden;
+}
+.intel-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--cp-cyan);
+}
+.intel-score {
+  font-size: 0.72rem;
+  color: rgba(244, 251, 255, 0.7);
+}
+.intel-match {
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(255, 140, 0, 0.35);
+  background: rgba(255, 140, 0, 0.08);
+  font-size: 0.8rem;
+}
+.intel-rule input.brain-ch {
+  width: auto;
+  margin-right: 0.5rem;
+}
+

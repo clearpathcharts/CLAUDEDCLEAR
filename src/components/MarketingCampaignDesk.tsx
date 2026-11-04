@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import marketingMetadata from '../../data/marketing/clearpath-marketing-metadata.json';
+import chartPlatformCompetitors from '../../data/marketing/chart-platform-competitors.json';
 import searchIntelligence from '../../data/marketing/global-search-intelligence.json';
 import GlobalSearchIntelligencePanel from './GlobalSearchIntelligencePanel';
 import MarketingFunnelDashboard from './MarketingFunnelDashboard';
@@ -344,6 +345,65 @@ export default function MarketingCampaignDesk({
           <p className="mt-2 text-[11px] leading-relaxed text-zinc-600">
             Vendor features and prices change. Verify the linked official pages before approving a subscription or ad spend.
           </p>
+        </div>
+
+        <div className="rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/[0.04] p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 className="m-0 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-fuchsia-200">
+                <Globe2 size={17} aria-hidden="true" /> Metricool competitor catalog
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
+                {chartPlatformCompetitors.competitors.length} charting and terminal brands ClearPath tracks for SEO and
+                founder recon. Metricool itself tracks each brand&apos;s <strong className="font-bold text-zinc-100">public social accounts</strong>{' '}
+                (Facebook Page, Instagram pro, YouTube where supported) — not the desktop app name. Starter plan: up to{' '}
+                {chartPlatformCompetitors.metricool.paidPlanLimitPerNetwork} competitors per network; the five starters
+                below are a sensible first batch, not a hard cap.
+              </p>
+              <p className="mt-2 text-xs text-zinc-500">
+                Live site guide:{' '}
+                <a href="/guides/charting-platform-landscape" className="text-cyan-300 underline">
+                  /guides/charting-platform-landscape
+                </a>
+                · Public JSON:{' '}
+                <a href="/api/marketing/chart-competitors" className="text-cyan-300 underline">
+                  /api/marketing/chart-competitors
+                </a>
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => saveJson('clearpath-chart-platform-competitors.json', chartPlatformCompetitors)}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:border-fuchsia-400/40"
+              >
+                <Download size={14} /> Download JSON
+              </button>
+              <a
+                href={chartPlatformCompetitors.metricool.competitorsHelpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg bg-fuchsia-400 px-3 py-2 text-xs font-black uppercase tracking-wider text-black hover:bg-fuchsia-300"
+              >
+                Metricool help <ExternalLink size={13} />
+              </a>
+            </div>
+          </div>
+          <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-zinc-500">Free-plan starter set</p>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {chartPlatformCompetitors.metricool.freePlanStarterIds.map((id) => {
+              const row = chartPlatformCompetitors.competitors.find((c) => c.id === id);
+              if (!row) return null;
+              return (
+                <li key={id} className="rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-xs">
+                  <a href={row.website} target="_blank" rel="noopener noreferrer" className="font-bold text-white hover:text-cyan-300">
+                    {row.name}
+                  </a>
+                  <p className="m-0 mt-1 text-zinc-500">{row.focus}</p>
+                </li>
+              );
+            })}
+          </ul>
         </div>
 
         <footer className="rounded-xl border border-rose-400/20 bg-rose-500/[0.05] px-4 py-3 text-xs leading-relaxed text-rose-100/80">
