@@ -3,10 +3,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  AFFILIATE_PAYOUTS_ENABLED,
   MEMBERSHIP_CHECKOUT_ENABLED,
   STRIPE_ACCOUNT_RECOVERY_ENABLED,
 } from '../src/lib/paymentsEnabled';
+import { AFFILIATE_PROGRAM_ENABLED } from '../src/server/affiliateService';
 import { MEMBERSHIP_PLANS, membershipMonthlyCents } from '../src/content/membershipPricing';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,7 +19,7 @@ const gate = read('src/components/FeatureGate.tsx');
 const server = read('server.ts');
 
 assert.equal(MEMBERSHIP_CHECKOUT_ENABLED, true, 'package checkout is on');
-assert.equal(AFFILIATE_PAYOUTS_ENABLED, false, 'affiliate cash payouts stay off');
+assert.equal(AFFILIATE_PROGRAM_ENABLED, false, 'membership affiliate program stays removed');
 assert.equal(STRIPE_ACCOUNT_RECOVERY_ENABLED, false, 'Stripe account recovery stays off');
 
 assert.equal(MEMBERSHIP_PLANS.length, 4);

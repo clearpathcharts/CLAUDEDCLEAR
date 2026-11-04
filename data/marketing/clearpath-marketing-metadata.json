@@ -309,7 +309,10 @@
       {
         "name": "Metricool",
         "fit": "Cross-channel analytics, competitor tracking, and reporting",
-        "decision": "Best candidate when the immediate gap is measurement rather than content generation."
+        "decision": "Best candidate when the immediate gap is measurement rather than content generation.",
+        "competitorCatalog": "data/marketing/chart-platform-competitors.json",
+        "siteGuide": "/guides/charting-platform-landscape",
+        "metricoolPath": "Analytics → network → Competitors → Add (public social profiles per brand, not desktop app names)"
       },
       {
         "name": "Hootsuite with compliance tooling",

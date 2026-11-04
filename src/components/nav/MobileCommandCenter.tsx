@@ -7,7 +7,6 @@ import {
   Home,
   Landmark,
   LogOut,
-  Network,
   MessageSquare,
   Newspaper,
   Shield,
@@ -21,7 +20,6 @@ import {
   navBrightVioletMobileActive,
   navBrightVioletMobileIdle,
 } from "./navAccentColors";
-import { TEMP_HIDE_AFFILIATE_SURFACE } from "../../config/founderUiToggles";
 import { MemberInboxBell } from "../inbox/MemberInboxBell";
 
 /* ============================================================
@@ -114,18 +112,6 @@ const ACCOUNT_ITEMS: NavItem[] = [
     colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
     glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
   },
-  ...(TEMP_HIDE_AFFILIATE_SURFACE
-    ? []
-    : [
-        {
-          id: "AffiliateNetwork",
-          icon: Network,
-          label: "AFFILIATE",
-          colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-          glowClass:
-            "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
-        } as NavItem,
-      ]),
   // MEMBERSHIPS removed — "PLANS & PRICING" in PAGE_LINKS is the single way in.
 ];
 

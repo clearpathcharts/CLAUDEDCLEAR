@@ -86,7 +86,6 @@ const InteractiveChart = lazy(() =>
 const ProfileHub = lazy(() =>
   import('./ProfileHub').then((m) => ({ default: m.ProfileHub }))
 );
-const AffiliateDashboard = lazy(() => import('./profile/AffiliateDashboard'));
 const YoursPage = lazy(() => import('./yours/YoursPage'));
 import { redirectLegacyMembershipDashboardUrl } from '../lib/retiredMembershipDashboardUrl';
 const NewsPanel = lazy(() => import('./NewsPanel'));
@@ -374,11 +373,6 @@ const TabContent = ({
         </Suspense>
       );
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
-      case 'AffiliateNetwork': return gate(
-        'affiliate', 'silver', 'Affiliate Network',
-        ['Share codes', 'Silver sheet affiliate links', 'Honest residual credits'],
-        <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />
-      );
       case 'Yours': return <YoursPage />;
       case 'Workspace': return gate(
         'workspace', 'platinum', 'Workspace Desk',
@@ -736,7 +730,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'photos': 'Photos',
           'settings': 'Settings',
           'biography': 'Biography',
-          'affiliate': 'AffiliateNetwork',
           'strictlycharts': 'StrictlyCharts',
           'charts': 'StrictlyCharts'
         };
@@ -1228,7 +1221,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'Calendar' ||
           hash === 'Biography' || 
           hash === 'Yours' || 
-          hash === 'AffiliateNetwork' || 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
@@ -1411,7 +1403,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                     {isEducationFamilyTab(activeTab) && (
                       <EducationDeskBar activeTab={activeTab} onNavigate={handleTabChange} />
                     )}
-                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && !isEducationFamilyTab(activeTab) && (
+                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && !isEducationFamilyTab(activeTab) && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>

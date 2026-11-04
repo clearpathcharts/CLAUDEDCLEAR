@@ -159,7 +159,6 @@ export async function sendPrivateLoginInviteEmail(params: {
   firstName: string;
   activateUrl: string;
   tempPassword: string;
-  affiliateTermsUrl: string;
 }): Promise<boolean> {
   const subject = 'Your ClearPath Private Login is ready';
   const text = [
@@ -172,8 +171,6 @@ export async function sendPrivateLoginInviteEmail(params: {
     `Temporary password: ${params.tempPassword}`,
     '',
     'Please sign in, update your password in your profile, and keep this email private.',
-    '',
-    `Affiliate program (optional): ${params.affiliateTermsUrl}`,
     '',
     '— Rick Floyd',
     'ClearPath Trader',

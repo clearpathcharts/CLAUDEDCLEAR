@@ -1,5 +1,5 @@
 /**
- * Webhook idempotency — avoid double-crediting affiliates or flipping tiers on retries.
+ * Webhook idempotency — avoid flipping membership tiers twice on retries.
  * Prefers Firestore when admin is available; falls back to local file on dev.
  *
  * Claim is released if processing throws so Stripe retries can succeed.

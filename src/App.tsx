@@ -13,7 +13,6 @@ import {
   shouldStayOnPublicHome,
 } from './lib/traderDesks';
 import ExternalAboutPage from './components/ExternalAboutPage';
-import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
 import PitchIntroLanding from './components/pitch/PitchIntroLanding';
 import InvestorPitchDeck from './components/pitch/InvestorPitchDeck';
@@ -317,24 +316,6 @@ export default function App() {
     redirectLegacyMembershipDashboardUrl();
   }, []);
 
-  // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get('ref');
-      if (!ref || !/^[A-Za-z0-9]{4,16}$/.test(ref)) return;
-      void fetch('/api/affiliate/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ code: ref }),
-      });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleLocationChange = () => {
@@ -402,8 +383,6 @@ export default function App() {
     content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
-  } else if (currentPath === '/affiliate-terms') {
-    content = <AffiliateTermsPage />;
   } else if (currentPath === '/company') {
     content = <CompanyPage />;
   } else if (currentPath === '/meet-the-board') {
