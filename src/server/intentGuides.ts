@@ -590,4 +590,107 @@ ${footer}`,
       },
     ],
   },
+
+  'charting-platform-landscape': {
+    id: 'charting-platform-landscape',
+    title: 'Charting Platform Landscape: Major Tools Traders Compare in 2026',
+    summary:
+      'A neutral map of the charting terminals, broker workstations, scanners, and research tools traders name when shopping for software — grouped by job-to-be-done, with links and an honest note on where ClearPath Trader fits.',
+    keywords: [
+      'charting platform comparison',
+      'trading software list',
+      'best charting platforms',
+      'TradingView competitors',
+      'NinjaTrader alternative',
+      'MetaTrader alternative charting',
+      'thinkorswim vs web charts',
+      'order flow software comparison',
+    ],
+    publishDate: PUBLISHED,
+    updatedDate: PUBLISHED,
+    content: `### Why this list exists
+
+Traders rarely choose software in a vacuum. They compare the terminal they already know against a short list of names friends, forums, and ads repeat. This page is that short list — **33 charting, execution, and research products** ClearPath hears in support and search data — organized by what each tool is trying to do. It is not a ranked scoreboard. We do not have live engagement metrics for other companies inside ClearPath, and we will not invent them.
+
+If you want a focused TradingView comparison, read [Looking for a TradingView Alternative?](/guides/tradingview-alternative-for-beginners). If you want ClearPath pricing and features, see [plans](/plans).
+
+### Web charting, screeners, and trader social
+
+These tools open in a browser (or mobile app) and prioritize fast access to charts and community or scan lists.
+
+*   **[TradingView](https://www.tradingview.com/)** — Large web chart library, Pine Script, ideas feed, and many broker bridges.
+*   **[Investing.com charts](https://www.investing.com/charts/)** — Free charts sitting next to macro news and an economic calendar.
+*   **[StockCharts](https://stockcharts.com/)** — Long-running web charting with scan lists and commentary culture.
+*   **[Finviz](https://finviz.com/)** — Equity heatmaps and screeners with lightweight charts.
+*   **[Webull](https://www.webull.com/)** — Brokerage-first experience with integrated mobile charting.
+*   **[Stocktwits](https://stocktwits.com/)** — Ticker social stream adjacent to price action (not a full terminal).
+
+### Desktop and professional charting
+
+Installed platforms for multi-monitor traders, often futures or equities focused, with deeper customization and data feeds sold separately.
+
+*   **[NinjaTrader](https://ninjatrader.com/)**, **[Sierra Chart](https://www.sierrachart.com/)**, **[MultiCharts](https://www.multicharts.com/)**, **[TradeStation](https://www.tradestation.com/)**, **[eSignal](https://www.esignal.com/)**, **[TC2000](https://www.worden.com/)**, **[Optuma](https://www.optuma.com/)**, **[AmiBroker](https://www.amibroker.com/)** — Each targets active discretionary or systematic traders who want local performance, vendor-specific indicators, or broker-dealer bundles.
+
+### FX and CFD stacks
+
+Retail foreign exchange often ships inside MetaTrader or proprietary bank platforms.
+
+*   **[cTrader](https://ctrader.com/)**, **[MetaTrader 4](https://www.metatrader4.com/)**, **[MetaTrader 5](https://www.metatrader5.com/)**, **[FXCM](https://www.fxcm.com/)**, **[OANDA](https://www.oanda.com/)** — Charting is bundled with execution and account services from the broker.
+
+### Broker workstations and institutional execution
+
+These are licensed broker or prop interfaces — charts serve order entry, options analytics, or futures routing.
+
+*   **[thinkorswim (Schwab)](https://www.schwab.com/trading/thinkorswim)**, **[Interactive Brokers TWS](https://www.interactivebrokers.com/en/trading/tws.php)**, **[Tradovate](https://www.tradovate.com/)**, **[Trading Technologies (TT)](https://www.tradingtechnologies.com/)** — Depth varies from retail options tools to institutional futures stacks.
+
+### Automation, scanning, and order-flow specialty tools
+
+*   **[TrendSpider](https://trendspider.com/)** and **[Tickeron](https://tickeron.com/)** — Automated trendlines, scanners, and marketed AI pattern ideas (always verify claims against your own rules).
+*   **[Quantower](https://www.quantower.com/)**, **[Bookmap](https://bookmap.com/)**, **[ATAS](https://atas.net/)** — DOM, footprint, and liquidity visualization for traders who read microstructure.
+
+### Research terminals and crypto hubs
+
+*   **[Bloomberg Terminal](https://www.bloomberg.com/professional/products/bloomberg-terminal/)**, **[Barchart](https://www.barchart.com/)**, **[Koyfin](https://www.koyfin.com/)** — Macro, futures, and equity research adjacent to charting.
+*   **[Coinigy](https://www.coinigy.com/)** and **[Cryptowatch](https://cryptowatch.kraken.com/)** — Multi-exchange crypto charting.
+
+### How ClearPath Trader fits (honestly)
+
+ClearPath Trader is a **chart-first analytics and education site**, not a brokerage. It emphasizes calmer default layouts — including free [neurodivergent desks](/desk/neurodivergent) — built-in [education](/education), and optional [automatic pattern overlay](/guides/automatic-chart-pattern-recognition) on paid tiers. It does **not** replace Pine Script communities, MetaTrader expert advisors, institutional TT stacks, or Bloomberg-grade macro data. Where a vendor feed is missing, fields stay **DATA UNAVAILABLE** instead of being guessed.
+
+Pass-through broker OAuth (Alpaca-first) is designed for the same model chart platforms use with licensed brokers: you maintain the brokerage account; ClearPath remains the interface. The Platform Scope page (site footer) explains the compliance framing.
+
+### Tracking competitors in Metricool (founder ops)
+
+Social analytics tools such as [Metricool](https://metricool.com/) do **not** accept “NinjaTrader” as an abstract competitor. You add each brand’s **public Facebook Page, Instagram professional account, or YouTube channel** under Analytics → Competitors. ClearPath keeps the canonical product list in data/marketing/chart-platform-competitors.json and the CEO Marketing Department exports it for Metricool setup. Engagement numbers from Metricool are **not** shown inside ClearPath until an approved API connection exists — the site lists names and categories only.
+
+### Choosing among them
+
+Match software to the job:
+
+1. **Learning phase** — favor lower clutter and explainers ([neurodivergent layouts](/desk/neurodivergent), [glossary](/glossary)).
+2. **Automation phase** — favor platforms with a scripting language or backtest stack you already know (Pine, EasyLanguage, AFL, etc.).
+3. **Execution phase** — favor the broker workstation that actually holds your account, not a separate chart that cannot route orders.
+4. **Microstructure phase** — order-flow tools only pay off if you have the data feed quality and screen time to use them.
+
+Run trials side by side on the **same symbol and session** before paying annual licenses.
+
+${footer}`,
+    faqs: [
+      {
+        question: 'How many charting platforms are on this list?',
+        answer:
+          'Thirty-three products across web charting, desktop terminals, FX platforms, broker workstations, scanners, order-flow tools, research terminals, and crypto hubs. The list lives in ClearPath marketing data and updates when the founder adds or removes names.',
+      },
+      {
+        question: 'Does ClearPath Trader replace MetaTrader or thinkorswim?',
+        answer:
+          'No. MetaTrader and thinkorswim are broker-centric execution stacks with their own ecosystems. ClearPath Trader focuses on chart-first analytics and education and does not hold customer funds.',
+      },
+      {
+        question: 'Where do Metricool competitor metrics appear on ClearPath?',
+        answer:
+          'They do not appear in the product UI yet. Metricool tracks public social accounts you configure there. ClearPath publishes this landscape page and the JSON catalog for SEO and founder setup; live competitor engagement stays DATA UNAVAILABLE until an approved Metricool API export is connected.',
+      },
+    ],
+  },
 };
