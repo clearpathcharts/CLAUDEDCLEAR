@@ -30,6 +30,8 @@ export const TECH_OPP_NAV: TechOppNavItem[] = [
   { id: 'platform', label: 'The Technology Platform' },
   { id: 'business', label: 'An Independent Software Business' },
   { id: 'opportunity', label: 'The Opportunity' },
+  { id: 'valuation', label: 'Preliminary Valuation & SWOT' },
+  { id: 'capital', label: 'Capital Strategy' },
   { id: 'verification', label: 'Verified vs Still Verifying' },
   { id: 'close', label: 'Built Differently' },
 ];
@@ -245,6 +247,215 @@ export const TECH_OPP_WHY_INVEST = [
   },
 ];
 
+/**
+ * Preliminary valuation & SWOT — consultant framing, founder-stated commercial facts.
+ * Assessment date: 2026-11-04. Illustrative only — not an appraisal or offer.
+ */
+export const TECH_OPP_VALUATION = {
+  assessmentDate: 'November 4, 2026',
+  honestyLead:
+    'The value of the technology ClearPath has built is not necessarily the same as the current market value of the company. An investor pays for a combination of intellectual property, functioning software, commercial traction, recurring revenue, defensibility, and growth potential.',
+  pitchLead:
+    'ClearPath Trader has developed its own analytical methodology, its own geometric pattern-measurement technology, its own native chart-analysis tools, and an extensible software architecture designed to bring those capabilities together. The investment opportunity is to validate, commercialize, distribute, and scale technology that already exists — not to finance an undeveloped idea.',
+  financialPosition: {
+    title: 'Current commercial position (founder-stated)',
+    rows: [
+      { label: 'Paying subscribers', value: 'Currently zero paying subscribers' },
+      { label: 'Monthly recurring revenue', value: '$0 MRR' },
+      {
+        label: 'Customer accommodation',
+        value:
+          'Existing subscribers were upgraded to complimentary Gold membership after a security incident remediation decision',
+      },
+      {
+        label: 'Revenue impact of accommodation',
+        value: 'Approximately $8,500 (founder estimate)',
+      },
+      {
+        label: 'Membership tiers (live catalog)',
+        value: 'Basic (free), Silver, Gold, Platinum — paid Silver–Platinum roughly $5.98–$14.99 / month',
+      },
+      {
+        label: 'Capital sought',
+        value: '$250,000 / $500,000 / $1,000,000+ conversations with VCs and investment bankers',
+      },
+      { label: 'Business stage', value: 'Early-stage technology company' },
+    ],
+    note:
+      'Former subscribers may still be active under complimentary Gold. They are not necessarily lost users. Zero MRR today does not mean zero technology value — but it does mean a conventional SaaS revenue multiple is not currently available.',
+  },
+  principalAssets: [
+    { asset: 'Trading Anarchy', value: 'Founder-developed analytical methodology' },
+    { asset: 'Four Up, Three Down', value: 'Proprietary market-structure methodology' },
+    { asset: 'Live Pattern Scanner', value: 'Geometric pattern-recognition technology' },
+    { asset: 'Gold Bar', value: 'Native ATR-based analytical technology' },
+    { asset: 'ClearPath River', value: 'Compiler, scripting, and runtime architecture' },
+    { asset: 'Neuro-adaptive technology', value: 'Differentiated interface and accessibility infrastructure' },
+  ],
+  supportingAssets: [
+    'CPT Buddy',
+    'Financial Education Center',
+    'Encyclopedia of Finance',
+    'Market-data integration architecture',
+    'Charting infrastructure',
+    'Optional broker connectivity',
+    'Membership / subscription infrastructure',
+    'Application and backend architecture',
+  ],
+  commercialInterest: [
+    {
+      title: 'Proprietary analytical technology',
+      body: 'Trading Anarchy, Four Up, Three Down, and the pattern scanner form a combined analytical proposition — more interesting than selling a single indicator.',
+    },
+    {
+      title: 'Technology ownership and control',
+      body: 'Dedicated implementations in-repo rather than exclusive dependence on third-party chart plugins — ClearPath can keep developing its own analytical capabilities.',
+    },
+    {
+      title: 'Multiple potential audiences',
+      body: 'Independent traders, technical analysts, educators, experienced market participants, neurodivergent users, fintech companies, and potential institutional technology partners — potential markets, not yet proven segments.',
+    },
+    {
+      title: 'Expansion potential',
+      body: 'If ClearPath River matures, a scripting/runtime ecosystem could extend analytical tools beyond the original built-ins.',
+    },
+  ],
+  stageScenarios: [
+    {
+      stage: 'Technology / IP development, no meaningful revenue',
+      range: '$250,000–$750,000',
+    },
+    {
+      stage: 'Functional commercial product with early paying customers',
+      range: '$750,000–$2 million',
+    },
+    {
+      stage: 'Established subscription business with measurable traction',
+      range: '$2–$5 million',
+    },
+    {
+      stage: 'Growing software company with strong recurring revenue',
+      range: '$5–$10 million+',
+    },
+  ],
+  stageDisclaimer:
+    'Illustrative enterprise-value scenarios only — not appraisals, not observed comparable transactions, and not an offer. Lower stages lean on technology, replacement-cost, and execution-risk considerations. Upper stages require commercial evidence. ClearPath should not presently present the $5–$10M range as established value.',
+  revenueModelNote:
+    'A 4× ARR illustrative model is a teaching tool only. With $0 MRR it does not produce a revenue-based enterprise value. Published fintech revenue multiples for established B2B finance software must not be applied directly to an early-stage company.',
+  negotiationScenarios: [
+    { label: 'Conservative', value: '$500,000 pre-money (illustrative)' },
+    { label: 'Development-stage working target', value: '$1 million pre-money (illustrative)' },
+    { label: 'Strong technical validation', value: '$1.5–$2 million pre-money (illustrative)' },
+    { label: 'Validated product + commercial traction', value: '$3 million+ pre-money (illustrative)' },
+  ],
+  dilutionAt1mPre: [
+    { raise: '$250,000', post: '$1.25M', ownership: '20%' },
+    { raise: '$500,000', post: '$1.5M', ownership: '33.3%' },
+    { raise: '$1,000,000', post: '$2M', ownership: '50%' },
+  ],
+  dilutionNote:
+    'Simple equity examples before options, convertibles, fees, or other dilution. Giving away ~50% at this stage warrants caution — founder-built technology and control matter.',
+  scores: [
+    { category: 'Product differentiation', assessment: 'Strong potential' },
+    { category: 'Proprietary technology', assessment: 'Strong potential' },
+    { category: 'Technical breadth', assessment: 'Strong' },
+    { category: 'Founder vision', assessment: 'Strong' },
+    { category: 'Market opportunity', assessment: 'Significant' },
+    { category: 'Intellectual-property documentation', assessment: 'Needs strengthening' },
+    { category: 'Independent validation', assessment: 'Needs strengthening' },
+    { category: 'Commercial traction', assessment: 'Not yet established (MRR currently $0)' },
+    { category: 'Revenue scalability', assessment: 'Not yet established' },
+    { category: 'Operational resilience', assessment: 'Founder concentration risk' },
+  ],
+  overallOpinion:
+    'Early-stage proprietary financial technology company with a potentially differentiated analytical software ecosystem. Not yet valued like an established SaaS company — and not merely an unfinished trading website.',
+};
+
+export const TECH_OPP_SWOT = {
+  strengths: [
+    'Founder-developed technology and product connection',
+    'Proprietary analytical methodology (Trading Anarchy; Four Up, Three Down)',
+    'Native Gold Bar implementation integrated into charting',
+    'Dedicated geometric pattern-recognition architecture',
+    'Pattern transparency (counts, scanned window, geometric-fit confidence)',
+    'Neuro-adaptive design philosophy',
+    'Free Financial Education Center and Encyclopedia of Finance',
+    'Multi-provider market-data architecture',
+    'No broker-referral / introducing-broker kickback business model; membership affiliate residuals removed',
+  ],
+  weaknesses: [
+    'Founder concentration risk (sole primary coder)',
+    'Limited independent validation of pattern-recognition accuracy',
+    'Intellectual-property documentation needs formalization',
+    'Platform complexity across many subsystems',
+    'Commercial traction must be re-established after complimentary Gold accommodations',
+    'Third-party dependencies (data, cloud, AI, payments)',
+    'Regulatory complexity around education, commentary, and optional broker connectivity',
+  ],
+  opportunities: [
+    'Recognize pattern scanner and Gold Bar as named analytical products',
+    'Educational / fintech / distribution partnerships',
+    'Stronger market position in accessible / neuro-adaptive financial technology',
+    'ClearPath River as a scripting and analytical development ecosystem',
+    'Grow an educational audience through freely accessible resources',
+    'International expansion subject to licensing',
+    'Licensing or partnerships around the analytical technology itself',
+  ],
+  threats: [
+    'Established competitors (TradingView, TrendSpider, TC2000, MetaTrader, and others)',
+    'Market-data licensing costs as distribution grows',
+    'Regulatory interpretation of product behavior and marketing',
+    'AI commoditization of shallow chart explanations — defensibility must rest on measurement technology',
+    'Copycat methodologies and features',
+    'Customer acquisition costs exceeding lifetime value',
+  ],
+};
+
+export const TECH_OPP_CAPITAL = {
+  title: 'Recommended capital strategy (proposed uses — not an approved budget)',
+  stages: [
+    {
+      round: 'Initial',
+      capital: '$250,000',
+      objective: 'Security validation, product stabilization, IP documentation',
+    },
+    {
+      round: 'Growth',
+      capital: '$500,000',
+      objective: 'Commercial launch, marketing, customer acquisition',
+    },
+    {
+      round: 'Expansion',
+      capital: '$1,000,000+',
+      objective: 'Product development, distribution, strategic partnerships',
+    },
+  ],
+  valueIncreasePriorities: [
+    { priority: 1, action: 'Document Trading Anarchy', why: 'Establish underlying intellectual property' },
+    { priority: 2, action: 'Formalize Four Up, Three Down', why: 'Make the methodology independently understandable' },
+    { priority: 3, action: 'Validate pattern-scanner accuracy', why: 'Demonstrate technical credibility' },
+    { priority: 4, action: 'Document Gold Bar calculations', why: 'Establish reproducibility' },
+    { priority: 5, action: 'Complete ClearPath River documentation', why: 'Demonstrate extensibility' },
+    { priority: 6, action: 'Establish IP ownership records', why: 'Reduce investor diligence risk' },
+    { priority: 7, action: 'Rebuild recurring-revenue metrics', why: 'Establish commercial value after accommodations' },
+    { priority: 8, action: 'Document security and compliance', why: 'Reduce operational and regulatory uncertainty' },
+    { priority: 9, action: 'Reduce founder concentration risk', why: 'Improve operational resilience' },
+    { priority: 10, action: 'Establish customer retention', why: 'Demonstrate sustainable demand' },
+  ],
+  openDiligence: [
+    'Approximate number of subscribers who received complimentary Gold memberships',
+    'Years / hours of founder development investment in ClearPath (beyond ~20 years of Trading Anarchy research)',
+    'Confirmation that Clear Path Markets Science Corp. owns all ClearPath Trader software and IP',
+    'Whether security-incident remediation has been independently reviewed',
+    'Whether the founder seeks capital-only investors or strategic partners with distribution / institutional relationships',
+  ],
+  securityIncidentNote: {
+    title: 'Security incident & customer accommodation',
+    body:
+      'ClearPath made a business decision to absorb an approximately $8,500 revenue impact by placing affected paying members on complimentary Gold while addressing a serious security concern — rather than continue charging through remediation. That decision is relevant to customer trust and risk management. Serious investors may need a confidential incident record covering discovery timing, systems and information affected, whether customer information was accessed, remediation steps, independent testing status, why memberships were accommodated, and controls introduced afterward. Public materials on this page do not speculate about attack method or claim the incident was fully closed without independent security validation.',
+  },
+};
+
 export const TECH_OPP_VERIFICATION: Array<{ area: string; needed: string }> = [
   { area: 'Gold Bar', needed: 'Calculation accuracy and all-timeframe behavior' },
   { area: 'Pattern engine', needed: 'Geometric calculations and completion rules' },
@@ -267,5 +478,7 @@ export const TECH_OPP_SEC_NOTE = {
 export const TECH_OPP_CLOSING = {
   title: 'Built Differently. Designed for Independent Thinking.',
   body: `We believe the future of financial technology should offer more than another charting interface or recommendation engine. It should help people understand what they are looking at, how analytical conclusions are formed, and where the limitations of those conclusions exist. ${PRODUCT_NAME} is being developed around that vision.`,
-  legal: `${PRODUCT_NAME} provides analytical software and educational tools. It does not promise investment results or tell users what financial decisions to make. Not a brokerage. Not investment advice.`,
+  investmentClose:
+    'You have already built the technology. The investment opportunity is to validate, commercialize, distribute, and scale it — a more credible story than asking someone to finance an idea.',
+  legal: `${PRODUCT_NAME} provides analytical software and educational tools. It does not promise investment results or tell users what financial decisions to make. Not a brokerage. Not investment advice. Illustrative valuations on this page are not appraisals or offers.`,
 };

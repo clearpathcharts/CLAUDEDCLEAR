@@ -3,6 +3,7 @@ import SEO from '../SEO';
 import { BrandMark } from '../brand/BrandMark';
 import { PRODUCT_URL } from '../../content/productIdentity';
 import {
+  TECH_OPP_CAPITAL,
   TECH_OPP_CLOSING,
   TECH_OPP_DIFFERENTIATORS,
   TECH_OPP_ECOSYSTEM,
@@ -14,7 +15,9 @@ import {
   TECH_OPP_PLATFORM,
   TECH_OPP_POSITIONING,
   TECH_OPP_SEC_NOTE,
+  TECH_OPP_SWOT,
   TECH_OPP_VALUE_LAYERS,
+  TECH_OPP_VALUATION,
   TECH_OPP_VERIFICATION,
   TECH_OPP_WHY_INVEST,
 } from '../../content/investorTechnologyOpportunity';
@@ -273,6 +276,7 @@ export default function TechnologyInvestmentOpportunityPage() {
           </Section>
 
           <Section id="opportunity" eyebrow="Investment" title="Why Invest in ClearPath Trader?">
+            <p className="text-white font-medium">{TECH_OPP_VALUATION.pitchLead}</p>
             <ol className="space-y-5">
               {TECH_OPP_WHY_INVEST.map((item, i) => (
                 <li key={item.title}>
@@ -283,6 +287,203 @@ export default function TechnologyInvestmentOpportunityPage() {
                 </li>
               ))}
             </ol>
+          </Section>
+
+          <Section
+            id="valuation"
+            eyebrow={`Preliminary assessment · ${TECH_OPP_VALUATION.assessmentDate}`}
+            title="Company Valuation Framework & SWOT"
+          >
+            <p className="text-amber-100/90 border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-sm">
+              {TECH_OPP_VALUATION.honestyLead}
+            </p>
+
+            <h3 className="text-white font-bold pt-2">{TECH_OPP_VALUATION.financialPosition.title}</h3>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <tbody>
+                  {TECH_OPP_VALUATION.financialPosition.rows.map((row) => (
+                    <tr key={row.label} className="border-t border-white/10 first:border-t-0">
+                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap align-top">{row.label}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-zinc-400">{TECH_OPP_VALUATION.financialPosition.note}</p>
+
+            <h3 className="text-white font-bold pt-2">Principal technology assets</h3>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.04] text-left text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-3 py-2">Asset</th>
+                    <th className="px-3 py-2">Strategic value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TECH_OPP_VALUATION.principalAssets.map((row) => (
+                    <tr key={row.asset} className="border-t border-white/10">
+                      <td className="px-3 py-2 text-white font-medium">{row.asset}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-zinc-500">
+              Supporting assets: {TECH_OPP_VALUATION.supportingAssets.join('; ')}.
+            </p>
+
+            <h3 className="text-white font-bold pt-2">What makes it commercially interesting</h3>
+            {TECH_OPP_VALUATION.commercialInterest.map((item) => (
+              <div key={item.title}>
+                <p className="text-white font-semibold mb-1">{item.title}</p>
+                <p>{item.body}</p>
+              </div>
+            ))}
+
+            <h3 className="text-white font-bold pt-2">Illustrative stage scenarios</h3>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.04] text-left text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-3 py-2">Company stage</th>
+                    <th className="px-3 py-2">Illustrative valuation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TECH_OPP_VALUATION.stageScenarios.map((row) => (
+                    <tr key={row.stage} className="border-t border-white/10">
+                      <td className="px-3 py-2 text-zinc-300">{row.stage}</td>
+                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap">{row.range}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-zinc-500">{TECH_OPP_VALUATION.stageDisclaimer}</p>
+            <p className="text-sm text-zinc-500">{TECH_OPP_VALUATION.revenueModelNote}</p>
+
+            <h3 className="text-white font-bold pt-2">Negotiation scenarios (illustrative pre-money)</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              {TECH_OPP_VALUATION.negotiationScenarios.map((row) => (
+                <li key={row.label}>
+                  <span className="text-white font-medium">{row.label}:</span> {row.value}
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm text-zinc-400">
+              Working target used for dilution examples below: <span className="text-white">$1M pre-money</span>{' '}
+              (illustrative only).
+            </p>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.04] text-left text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-3 py-2">Investment</th>
+                    <th className="px-3 py-2">Post-money</th>
+                    <th className="px-3 py-2">Investor ownership</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TECH_OPP_VALUATION.dilutionAt1mPre.map((row) => (
+                    <tr key={row.raise} className="border-t border-white/10">
+                      <td className="px-3 py-2 text-white font-medium">{row.raise}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.post}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.ownership}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-zinc-500">{TECH_OPP_VALUATION.dilutionNote}</p>
+
+            <h3 className="text-white font-bold pt-2">SWOT</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {(
+                [
+                  ['Strengths', TECH_OPP_SWOT.strengths],
+                  ['Weaknesses', TECH_OPP_SWOT.weaknesses],
+                  ['Opportunities', TECH_OPP_SWOT.opportunities],
+                  ['Threats', TECH_OPP_SWOT.threats],
+                ] as const
+              ).map(([title, items]) => (
+                <div key={title} className="border border-white/10 bg-[#0c1118] p-4">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-[#00E5FF]/80 mb-2">{title}</p>
+                  <ul className="list-disc pl-4 space-y-1.5 text-sm text-zinc-300">
+                    {items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="text-white font-bold pt-2">Preliminary category assessment</h3>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.04] text-left text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Assessment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TECH_OPP_VALUATION.scores.map((row) => (
+                    <tr key={row.category} className="border-t border-white/10">
+                      <td className="px-3 py-2 text-white font-medium">{row.category}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.assessment}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-white font-medium">{TECH_OPP_VALUATION.overallOpinion}</p>
+          </Section>
+
+          <Section id="capital" eyebrow="Capital" title={TECH_OPP_CAPITAL.title}>
+            <div className="overflow-x-auto border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.04] text-left text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                  <tr>
+                    <th className="px-3 py-2">Round</th>
+                    <th className="px-3 py-2">Capital</th>
+                    <th className="px-3 py-2">Primary objective</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TECH_OPP_CAPITAL.stages.map((row) => (
+                    <tr key={row.round} className="border-t border-white/10">
+                      <td className="px-3 py-2 text-white font-medium">{row.round}</td>
+                      <td className="px-3 py-2 text-zinc-300 whitespace-nowrap">{row.capital}</td>
+                      <td className="px-3 py-2 text-zinc-300">{row.objective}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="text-white font-bold pt-2">What would increase value</h3>
+            <ol className="list-decimal pl-5 space-y-1.5">
+              {TECH_OPP_CAPITAL.valueIncreasePriorities.map((row) => (
+                <li key={row.priority}>
+                  <span className="text-white font-medium">{row.action}</span>
+                  <span className="text-zinc-500"> — {row.why}</span>
+                </li>
+              ))}
+            </ol>
+
+            <h3 className="text-white font-bold pt-2">{TECH_OPP_CAPITAL.securityIncidentNote.title}</h3>
+            <p>{TECH_OPP_CAPITAL.securityIncidentNote.body}</p>
+
+            <h3 className="text-white font-bold pt-2">Open diligence items</h3>
+            <ul className="list-disc pl-5 space-y-1.5">
+              {TECH_OPP_CAPITAL.openDiligence.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </Section>
 
           <Section id="verification" eyebrow="Credibility" title={TECH_OPP_SEC_NOTE.title}>
@@ -309,6 +510,7 @@ export default function TechnologyInvestmentOpportunityPage() {
 
           <Section id="close" title={TECH_OPP_CLOSING.title}>
             <p>{TECH_OPP_CLOSING.body}</p>
+            <p className="text-white font-medium">{TECH_OPP_CLOSING.investmentClose}</p>
             <p className="text-sm text-zinc-500">{TECH_OPP_CLOSING.legal}</p>
             <div className="pt-4 flex flex-wrap gap-3">
               <a

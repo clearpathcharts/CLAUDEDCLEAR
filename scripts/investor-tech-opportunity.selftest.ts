@@ -34,6 +34,16 @@ assert.equal(
   true,
   'must explicitly refuse the disproven-Elliott claim trap'
 );
+assert.match(content.TECH_OPP_VALUATION.financialPosition.rows.map((r) => r.value).join(' '), /\$0 MRR/);
+assert.match(content.TECH_OPP_VALUATION.honestyLead, /not necessarily the same as the current market value/i);
+assert.ok(content.TECH_OPP_SWOT.strengths.length >= 5);
+assert.ok(content.TECH_OPP_CAPITAL.stages.length === 3);
+assert.match(content.TECH_OPP_CAPITAL.securityIncidentNote.body, /\$8,500/);
+assert.doesNotMatch(
+  content.TECH_OPP_CAPITAL.securityIncidentNote.body + content.TECH_OPP_VALUATION.honestyLead,
+  /AI wormhole|guaranteed return|\$5–\$10 million range as ClearPath's established/i
+);
+assert.match(content.TECH_OPP_CLOSING.investmentClose, /already built the technology/i);
 
 const brent = await import('../src/content/brentOutreach.ts');
 assert.ok(brent.BRENT_OUTREACH_SCREENSHOTS.length >= 4);
