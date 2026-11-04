@@ -1,7 +1,11 @@
 /**
  * Brent (CCO) investor outreach — draft + optional SMTP send.
  * Separate from CEO Marketing Department. From-address uses BRENT_OUTREACH_EMAIL.
+ * Successful sends are logged for the CEO daily bento (who / what / when).
  */
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   BRENT_OUTREACH_SCREENSHOTS,
   TECHNOLOGY_OPPORTUNITY_URL,
@@ -16,7 +20,28 @@ import {
   buildInvestorDraftLetter,
   type InvestorSeed,
 } from './investorDesk';
+import { pacificDateKey } from './dailyOpsCatalog';
+import { getAdminFirestore } from './firebaseAdmin';
 import { esc, isSmtpConfigured, sendTransactionalEmail } from './registrationEmail';
+
+const SEND_LOG_DIR = path.join(process.cwd(), 'data', 'communications');
+const SEND_LOG_FILE = 'brent_outreach_sends.json';
+const SEND_LOG_COLLECTION = 'brent_outreach_sends';
+const MAX_LOG_ENTRIES = 2000;
+
+export type BrentOutreachSendRecord = {
+  id: string;
+  sentAt: string;
+  /** Pacific calendar day YYYY-MM-DD */
+  dayKey: string;
+  from: string;
+  to: string;
+  investorId: string;
+  investorName: string;
+  subject: string;
+  /** Plain-text body (what was said) */
+  bodyText: string;
+};
 
 export type BrentOutreachDraft = {
   investorId: string;
@@ -155,6 +180,111 @@ export function buildBrentOutreachDraft(investorId: string): BrentOutreachDraft 
   };
 }
 
+function ensureSendLogDir() {
+  if (!fs.existsSync(SEND_LOG_DIR)) fs.mkdirSync(SEND_LOG_DIR, { recursive: true });
+}
+
+function readLocalSendLog(): BrentOutreachSendRecord[] {
+  ensureSendLogDir();
+  const fp = path.join(SEND_LOG_DIR, SEND_LOG_FILE);
+  if (!fs.existsSync(fp)) return [];
+  try {
+    const parsed = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    return Array.isArray(parsed) ? (parsed as BrentOutreachSendRecord[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSendLog(rows: BrentOutreachSendRecord[]) {
+  ensureSendLogDir();
+  const trimmed = rows
+    .slice()
+    .sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)))
+    .slice(0, MAX_LOG_ENTRIES);
+  fs.writeFileSync(path.join(SEND_LOG_DIR, SEND_LOG_FILE), JSON.stringify(trimmed, null, 2), 'utf8');
+}
+
+async function persistSendRecord(entry: BrentOutreachSendRecord): Promise<void> {
+  const rows = readLocalSendLog().filter((r) => r.id !== entry.id);
+  rows.unshift(entry);
+  writeLocalSendLog(rows);
+  const db = getAdminFirestore();
+  if (!db) return;
+  try {
+    await db.collection(SEND_LOG_COLLECTION).doc(entry.id).set(entry, { merge: true });
+  } catch (err) {
+    console.warn('[brentOutreach] Firestore send-log write failed:', err);
+  }
+}
+
+async function loadSendLogMerged(): Promise<BrentOutreachSendRecord[]> {
+  const byId = new Map<string, BrentOutreachSendRecord>();
+  for (const row of readLocalSendLog()) {
+    if (row?.id) byId.set(row.id, row);
+  }
+  const db = getAdminFirestore();
+  if (db) {
+    try {
+      // No composite index required — sort in process after merge with local.
+      const snap = await db.collection(SEND_LOG_COLLECTION).limit(MAX_LOG_ENTRIES).get();
+      for (const doc of snap.docs) {
+        const d = doc.data() as Partial<BrentOutreachSendRecord>;
+        const id = String(d.id || doc.id);
+        byId.set(id, {
+          id,
+          sentAt: String(d.sentAt || ''),
+          dayKey: String(d.dayKey || ''),
+          from: String(d.from || ''),
+          to: String(d.to || ''),
+          investorId: String(d.investorId || ''),
+          investorName: String(d.investorName || ''),
+          subject: String(d.subject || ''),
+          bodyText: String(d.bodyText || ''),
+        });
+      }
+    } catch (err) {
+      // Missing index / ADC — keep local copy.
+      console.warn('[brentOutreach] Firestore send-log read failed:', err);
+    }
+  }
+  return [...byId.values()].sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+}
+
+/** CEO / founder view: sends grouped by Pacific day. */
+export async function listBrentOutreachSendLog(input?: {
+  dayKey?: string;
+  limitDays?: number;
+}): Promise<{
+  ok: true;
+  todayKey: string;
+  days: Array<{
+    dayKey: string;
+    count: number;
+    sends: BrentOutreachSendRecord[];
+  }>;
+  totalSends: number;
+}> {
+  const todayKey = pacificDateKey();
+  const all = await loadSendLogMerged();
+  const filterDay = input?.dayKey ? String(input.dayKey) : '';
+  const filtered = filterDay ? all.filter((r) => r.dayKey === filterDay) : all;
+  const byDay = new Map<string, BrentOutreachSendRecord[]>();
+  for (const row of filtered) {
+    const key = row.dayKey || row.sentAt.slice(0, 10) || 'unknown';
+    const list = byDay.get(key) || [];
+    list.push(row);
+    byDay.set(key, list);
+  }
+  const limitDays = Math.max(1, Math.min(Number(input?.limitDays) || 30, 90));
+  const dayKeys = [...byDay.keys()].sort((a, b) => b.localeCompare(a)).slice(0, limitDays);
+  const days = dayKeys.map((dayKey) => {
+    const sends = (byDay.get(dayKey) || []).sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+    return { dayKey, count: sends.length, sends };
+  });
+  return { ok: true, todayKey, days, totalSends: filtered.length };
+}
+
 export async function sendBrentOutreachEmail(input: {
   investorId: string;
   toOverride?: string;
@@ -164,6 +294,7 @@ export async function sendBrentOutreachEmail(input: {
   sent: boolean;
   reason?: string;
   draft: BrentOutreachDraft;
+  sendRecord?: BrentOutreachSendRecord;
 }> {
   const draft = buildBrentOutreachDraft(input.investorId);
   const to = String(input.toOverride || draft.to || '').trim().toLowerCase();
@@ -180,23 +311,47 @@ export async function sendBrentOutreachEmail(input: {
     return { ok: false, sent: false, reason: 'smtp_not_configured', draft: { ...draft, to } };
   }
 
+  const from = brentFromHeader();
   const sent = await sendTransactionalEmail({
     to,
     subject: draft.subject,
     text: draft.text,
     html: draft.html,
-    from: brentFromHeader(),
+    from,
   });
 
+  if (!sent) {
+    return { ok: false, sent: false, reason: 'smtp_send_failed', draft: { ...draft, to } };
+  }
+
+  const now = new Date();
+  const sendRecord: BrentOutreachSendRecord = {
+    id: `bos_${now.getTime()}_${crypto.randomBytes(4).toString('hex')}`,
+    sentAt: now.toISOString(),
+    dayKey: pacificDateKey(now),
+    from,
+    to,
+    investorId: draft.investorId,
+    investorName: draft.investorName,
+    subject: draft.subject,
+    bodyText: draft.text,
+  };
+  try {
+    await persistSendRecord(sendRecord);
+  } catch (err) {
+    console.warn('[brentOutreach] send logged to SMTP but durable log failed:', err);
+  }
+
   return {
-    ok: sent,
-    sent,
-    reason: sent ? undefined : 'smtp_send_failed',
+    ok: true,
+    sent: true,
     draft: { ...draft, to },
+    sendRecord,
   };
 }
 
 export function brentOutreachStatus() {
+  const localCount = readLocalSendLog().length;
   return {
     brentEmailConfigured: brentOutreachConfigured(),
     brentEmailPreview: brentOutreachConfigured() ? brentOutreachEmail().replace(/(.{2}).+(@.+)/, '$1***$2') : null,
@@ -206,5 +361,6 @@ export function brentOutreachStatus() {
     siteUrl: PRODUCT_URL,
     screenshotCount: BRENT_OUTREACH_SCREENSHOTS.length,
     investorCount: getInvestorCatalog().length,
+    recordedSendsLocal: localCount,
   };
 }
