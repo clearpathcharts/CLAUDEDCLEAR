@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-01",
+  "name": "ClearPath Marketing Intelligence Capability Registry",
+  "operatingModel": {
+    "principle": "One evidence system, many discovery surfaces.",
+    "approvalRule": "Every public change, campaign, advertisement, and generated draft requires founder approval.",
+    "measurementRule": "Readiness scores measure ClearPath implementation quality, not search demand, ranking probability, or revenue.",
+    "truthRule": "Only verified ClearPath product capabilities and measured first-party outcomes may be presented as facts."
+  },
+  "families": [
+    {
+      "id": "search",
+      "name": "Search discovery",
+      "description": "Findability in conventional, answer, generative, local, voice, video, social, and app-search surfaces."
+    },
+    {
+      "id": "knowledge",
+      "name": "Knowledge and authority",
+      "description": "Entity clarity, machine-readable relationships, citation readiness, and demonstrated trust."
+    },
+    {
+      "id": "experience",
+      "name": "Experience and conversion",
+      "description": "Accessible journeys that connect discovery to useful content and measurable conversion."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "SEO",
+      "name": "Search Engine Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Connect verified search intent to canonical, indexable ClearPath pages.",
+      "outputs": ["canonical route map", "metadata candidates", "internal-link opportunities"],
+      "evidenceRequired": ["index coverage", "search impressions", "qualified organic visits"]
+    },
+    {
+      "id": "GEO",
+      "name": "Generative Engine Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Make factual ClearPath explanations easy for generative engines to retrieve and cite.",
+      "outputs": ["citation-ready passages", "source-backed summaries", "entity references"],
+      "evidenceRequired": ["answer citations", "referred visits", "source accuracy review"]
+    },
+    {
+      "id": "AEO",
+      "name": "Answer Engine Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Answer real market-education and product questions clearly and directly.",
+      "outputs": ["question clusters", "concise answers", "FAQ schema candidates"],
+      "evidenceRequired": ["query impressions", "answer engagement", "qualified destination visits"]
+    },
+    {
+      "id": "LLMO",
+      "name": "Large Language Model Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Improve factual representation of ClearPath in language-model retrieval without manipulating models.",
+      "outputs": ["brand fact pack", "unambiguous product language", "citation source map"],
+      "evidenceRequired": ["model answer audits", "citation accuracy", "brand-description consistency"]
+    },
+    {
+      "id": "AIO",
+      "name": "AI Optimization",
+      "family": "search",
+      "maturity": "umbrella",
+      "purpose": "Coordinate AI-facing discovery work across AEO, GEO, LLMO, AISO, and GSO.",
+      "outputs": ["cross-engine brief", "factual coverage gaps", "AI discovery scorecard"],
+      "evidenceRequired": ["measured referral data", "answer audits", "source coverage"]
+    },
+    {
+      "id": "AISO",
+      "name": "AI Search Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Prepare pages for AI-assisted search experiences that combine links and generated answers.",
+      "outputs": ["hybrid-search briefs", "answer-first page sections", "supporting-source checklist"],
+      "evidenceRequired": ["AI-search referrals", "citation appearances", "landing engagement"]
+    },
+    {
+      "id": "GSO",
+      "name": "Generative Search Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Coordinate page structure for generative search result experiences.",
+      "outputs": ["extractable page sections", "source annotations", "follow-up question coverage"],
+      "evidenceRequired": ["generative-result observations", "referred visits", "answer accuracy"]
+    },
+    {
+      "id": "SMO",
+      "name": "Social Media Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Adapt approved ClearPath education and product demonstrations to each social network.",
+      "outputs": ["channel-native briefs", "creative variants", "tracked funnel URLs"],
+      "evidenceRequired": ["qualified reach", "saves", "watch time", "attributed visits"]
+    },
+    {
+      "id": "SSO",
+      "name": "Social Search Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Improve discovery inside social-network search while preserving platform-native language.",
+      "outputs": ["social query map", "profile-language recommendations", "caption search terms"],
+      "evidenceRequired": ["social-search impressions", "profile discovery", "attributed visits"]
+    },
+    {
+      "id": "VSO",
+      "name": "Video Search Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Make approved educational videos understandable and discoverable before and after playback.",
+      "outputs": ["video titles", "chapter plans", "transcript briefs", "thumbnail concepts"],
+      "evidenceRequired": ["search impressions", "watch time", "completion rate", "qualified clicks"]
+    },
+    {
+      "id": "HSO",
+      "name": "Hashtag Search Optimization",
+      "family": "search",
+      "maturity": "supporting",
+      "purpose": "Use a restrained, platform-specific hashtag vocabulary as supporting metadata rather than a growth claim.",
+      "outputs": ["approved hashtag sets", "brand-tag consistency", "spam-risk flags"],
+      "evidenceRequired": ["hashtag discovery", "qualified engagement", "platform policy review"]
+    },
+    {
+      "id": "ASO",
+      "name": "App Store Optimization",
+      "family": "search",
+      "maturity": "planned",
+      "purpose": "Prepare accurate store listing language and creative for released ClearPath applications.",
+      "outputs": ["store keyword brief", "listing copy", "screenshot narrative"],
+      "evidenceRequired": ["live store listing", "store impressions", "install conversion"]
+    },
+    {
+      "id": "LOCAL",
+      "name": "Local and Regional Search Optimization",
+      "family": "search",
+      "maturity": "active",
+      "purpose": "Match reviewed regional and translated content to appropriate geographic search contexts.",
+      "outputs": ["regional route map", "translation review queue", "locale metadata"],
+      "evidenceRequired": ["regional impressions", "reviewed translations", "regional engagement"]
+    },
+    {
+      "id": "VOICE",
+      "name": "Voice Search Optimization",
+      "family": "search",
+      "maturity": "planned",
+      "purpose": "Structure concise, speakable answers for verified educational and product questions.",
+      "outputs": ["spoken-answer briefs", "question variants", "pronunciation notes"],
+      "evidenceRequired": ["voice-query research", "answer testing", "destination engagement"]
+    },
+    {
+      "id": "ENTITY",
+      "name": "Entity Optimization",
+      "family": "knowledge",
+      "maturity": "active",
+      "purpose": "Keep ClearPath Trader, its company, founder, products, and public pages unambiguous.",
+      "outputs": ["entity fact pack", "identity consistency audit", "sameAs recommendations"],
+      "evidenceRequired": ["verified identity sources", "consistent organization facts", "entity-result audits"]
+    },
+    {
+      "id": "KGO",
+      "name": "Knowledge Graph Optimization",
+      "family": "knowledge",
+      "maturity": "active",
+      "purpose": "Express verified relationships among ClearPath entities, topics, products, and educational resources.",
+      "outputs": ["entity relationship map", "structured-data recommendations", "topic graph gaps"],
+      "evidenceRequired": ["valid structured data", "verified relationships", "knowledge-result observations"]
+    },
+    {
+      "id": "EEAT",
+      "name": "Experience, Expertise, Authoritativeness, and Trust",
+      "family": "knowledge",
+      "maturity": "active",
+      "purpose": "Expose first-hand experience, accountable authorship, sources, and product truth.",
+      "outputs": ["author and reviewer requirements", "source checklist", "trust-gap audit"],
+      "evidenceRequired": ["named authorship", "source quality", "correction history", "product evidence"]
+    },
+    {
+      "id": "CRO",
+      "name": "Conversion Rate Optimization",
+      "family": "experience",
+      "maturity": "active",
+      "purpose": "Improve measured progression from qualified visit to registration, trial, and paid membership.",
+      "outputs": ["funnel hypothesis", "CTA variants", "experiment brief"],
+      "evidenceRequired": ["first-party visits", "registrations", "trials", "paid conversions"]
+    },
+    {
+      "id": "SXO",
+      "name": "Search Experience Optimization",
+      "family": "experience",
+      "maturity": "active",
+      "purpose": "Ensure the destination satisfies the intent that produced the visit.",
+      "outputs": ["intent-to-page audit", "content hierarchy brief", "next-step recommendations"],
+      "evidenceRequired": ["landing engagement", "task completion", "qualified conversion"]
+    },
+    {
+      "id": "AAO",
+      "name": "Accessibility and Assistive Optimization",
+      "family": "experience",
+      "maturity": "active",
+      "purpose": "Make discovery content and conversion paths usable across assistive technologies and different cognitive needs.",
+      "outputs": ["accessible-content checklist", "sensory-risk review", "assistive journey audit"],
+      "evidenceRequired": ["accessibility tests", "keyboard and screen-reader checks", "user feedback"]
+    }
+  ]
+}

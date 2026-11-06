@@ -537,12 +537,28 @@
       "reason": "Research topic only; never describe ClearPath as a broker."
     },
     {
+      "term": "trading infrastructure",
+      "reason": "Research topic only; do not imply ClearPath provides execution infrastructure."
+    },
+    {
       "term": "hedge fund technology",
       "reason": "Do not imply institutional customer adoption without evidence."
     },
     {
       "term": "risk management systems",
       "reason": "Do not imply regulated risk controls or guarantees."
+    },
+    {
+      "term": "institutional market data",
+      "reason": "Do not imply a dedicated institutional feed without verified vendor coverage."
+    },
+    {
+      "term": "trading desk technology",
+      "reason": "Research topic only; use the factual four-desk product language instead."
+    },
+    {
+      "term": "investment management software",
+      "reason": "ClearPath is an educational market-analysis screen, not an investment manager."
     }
   ],
   "queryOnlyPatterns": [
