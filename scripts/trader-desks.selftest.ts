@@ -31,6 +31,7 @@ import { parseHeldIds } from '../src/components/desks/deskHeldPanels.ts';
 import {
   deskSectionOpen,
   NEURO_CHART_FIRST_HELD,
+  RETAIL_CHART_FIRST_HELD,
 } from '../src/components/desks/heldMeta.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
@@ -272,10 +273,18 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_retail_v4/);
+    assert.match(text, /clearpath_held_retail_v5/);
     assert.match(text, /defaultHeld=\{RETAIL_CHART_FIRST_HELD\}/);
     assert.match(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.doesNotMatch(text, /clearpath_held_retail_v4/);
     assert.doesNotMatch(text, /study desk/);
+  }
+  if (rel === 'src/components/desks/heldMeta.ts') {
+    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.match(text, /Pattern Scanner/);
+    for (const id of ['news', 'calendar', 'alerts', 'education', 'simulation'] as const) {
+      assert.match(text, new RegExp(`RETAIL_CHART_FIRST_HELD[\\s\\S]*?'${id}'`));
+    }
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
     assert.match(text, /data-retail-door/);
@@ -310,7 +319,7 @@ for (const rel of srcFiles) {
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /PassThroughTradePanel/);
-    assert.match(text, /useDedicatedPatternPanel=\{i === 0\}/);
+    assert.match(text, /useDedicatedPatternPanel=\{i === 0 && !scanHeld\}/);
     assert.match(text, /hidePatternOverlays=\{i !== 0\}/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
@@ -592,6 +601,13 @@ assert.equal(
   deskSectionOpen((id) => NEURO_CHART_FIRST_HELD.includes(id), ['news', 'calendar', 'alerts', 'education', 'simulation']),
   false,
 );
+
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('scanner' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('watchlist' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('snapshot' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+for (const id of ['news', 'calendar', 'alerts', 'education', 'simulation'] as const) {
+  assert.ok(RETAIL_CHART_FIRST_HELD.includes(id), `retail chart-first should park ${id}`);
+}
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.ok(r != null && Math.abs(r - 1) < 1e-9);
