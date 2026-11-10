@@ -141,3 +141,39 @@ export async function listMembershipGrants(): Promise<MembershipGrant[]> {
   }
   return Object.values(readLocal());
 }
+
+/**
+ * Board complimentary seats — lifetime Platinum for officers who are not the founder.
+ * Founder already bypasses gates via Google founder token. Upsert on boot so Cloud Run
+ * Firestore gets the grant without a manual CEO click after each revision.
+ */
+export const BOARD_COMPLIMENTARY_PLATINUM: ReadonlyArray<{
+  email: string;
+  reason: string;
+}> = [
+  {
+    email: 'clearpath.brent@gmail.com',
+    reason: 'Board CCO — lifetime ClearPath Platinum ($14.99 / AI Pattern Scanner seat)',
+  },
+];
+
+export async function ensureBoardComplimentaryGrants(): Promise<string[]> {
+  const touched: string[] = [];
+  for (const seat of BOARD_COMPLIMENTARY_PLATINUM) {
+    const email = normalizeEmail(seat.email);
+    if (!email) continue;
+    const existing = await getMembershipGrant(email);
+    const existingTier = existing && isLive(existing) ? canonicalizePlanId(existing.tier) : 'basic';
+    if (existing && isLive(existing) && tierRankOf(existingTier) >= tierRankOf('platinum') && !existing.expiresAt) {
+      continue;
+    }
+    await saveMembershipGrants([email], {
+      tier: 'platinum',
+      reason: seat.reason,
+      expiresAt: null,
+      grantedBy: 'board-seed',
+    });
+    touched.push(email);
+  }
+  return touched;
+}

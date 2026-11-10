@@ -337,6 +337,7 @@ import {
 import { MARKET_DATA_ROUTES, URL_PROXY_ROUTES, marketDataLimiter, memberInboxLimiter, urlProxyLimiter } from './src/server/routeRateLimit';
 import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
 import {
+  ensureBoardComplimentaryGrants,
   listMembershipGrants,
   revokeMembershipGrant,
   saveMembershipGrants,
@@ -4719,6 +4720,16 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
             await bootPersistFounderBackupSnapshot();
           } catch (backupErr: any) {
             console.warn('[STARTUP] Founder backup snapshot skipped:', backupErr?.message || backupErr);
+          }
+          try {
+            const boardGrants = await ensureBoardComplimentaryGrants();
+            console.log(
+              `[STARTUP] Board complimentary Platinum → upserted=${boardGrants.length}${
+                boardGrants.length ? ` (${boardGrants.join(', ')})` : ' (already current)'
+              }`,
+            );
+          } catch (boardGrantErr: any) {
+            console.warn('[STARTUP] Board complimentary grants skipped:', boardGrantErr?.message || boardGrantErr);
           }
         }
       } catch (e: any) {
