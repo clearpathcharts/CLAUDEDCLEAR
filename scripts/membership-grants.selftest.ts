@@ -49,8 +49,20 @@ assert.equal(await grants.grantReportForEmails(['gold@example.com']), null);
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(server, /app\.post\('\/api\/admin\/membership-grants', requireFounderOrCatalogAdmin, requireFounderActionHeader/);
 assert.match(server, /app\.delete\('\/api\/admin\/membership-grants\/:email', requireFounderOrCatalogAdmin, requireFounderActionHeader/);
+assert.match(server, /ensureBoardComplimentaryGrants/);
 const access = fs.readFileSync(path.join(root, 'src/server/membershipAccess.ts'), 'utf8');
 assert.match(access, /decoded\.email_verified === true\) emails\.add/, 'Google emails must be verified to claim a grant');
+
+assert.ok(
+  grants.BOARD_COMPLIMENTARY_PLATINUM.some((s) => s.email === 'clearpath.brent@gmail.com'),
+  'Brent CCO must have a board Platinum seat',
+);
+const boardUpsert = await grants.ensureBoardComplimentaryGrants();
+assert.ok(boardUpsert.includes('clearpath.brent@gmail.com'));
+const brent = await grants.grantReportForEmails(['clearpath.brent@gmail.com']);
+assert.deepEqual(brent, { active: true, tier: 'platinum', status: 'complimentary' });
+const boardAgain = await grants.ensureBoardComplimentaryGrants();
+assert.deepEqual(boardAgain, [], 'idempotent when lifetime Platinum already present');
 
 process.chdir(root);
 fs.rmSync(tmp, { recursive: true, force: true });
