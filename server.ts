@@ -18,7 +18,7 @@ import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
   import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
-  import { provenanceHeaders, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
+  import { provenanceHeaders, sanitizeInstrumentSymbol, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
@@ -3397,6 +3397,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
+    // Reject CR/LF/control chars before gateway cache — prevents shared-cache poison.
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
+    }
     const apiKey = getCleanTwelveDataApiKey();
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
@@ -3433,6 +3437,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const { symbol, interval, limit, startDate, endDate } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
+    }
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
     }
 
     const selectedInterval = resolveTwelveDataInterval(

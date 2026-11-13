@@ -9,8 +9,11 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { getEnabledAssets } from '../src/constants/assetRegistry.ts';
 import {
+  buildProvenance,
   forbiddenSubstitutionReason,
   isForbiddenPriceSubstitution,
+  provenanceHeaders,
+  sanitizeInstrumentSymbol,
 } from '../src/lib/instrumentIntegrity.ts';
 import { formatSymbolForTwelveData } from '../src/server/marketDataGateway.ts';
 import {
@@ -132,6 +135,26 @@ assert.equal(candles.values[0].datetime, '2026-09-01 10:05:00');
 assert.equal(candles.provenance.provider, 'fmp');
 assert.equal(candles.provenance.requestedSymbol, 'AAPL');
 
+// Control chars / CR-LF in the requested symbol must not survive into provenance
+// or headers (shared candle-cache poison → setHeader 500). See security review on #392.
+assert.equal(sanitizeInstrumentSymbol('AA\nPL'), 'AAPL');
+assert.equal(sanitizeInstrumentSymbol('AA\r\nPL'), 'AAPL');
+{
+  const poisoned = buildProvenance({
+    requestedSymbol: 'AA\nPL',
+    provider: 'fmp',
+    providerSymbol: 'AA\rPL',
+    isFallback: true,
+  });
+  assert.equal(poisoned.requestedSymbol, 'AAPL');
+  assert.equal(poisoned.providerSymbol, 'AAPL');
+  const headers = provenanceHeaders(poisoned);
+  for (const [k, v] of Object.entries(headers)) {
+    assert.doesNotMatch(v, /[\r\n\u0000-\u001F\u007F]/, `${k} must be header-safe`);
+  }
+  assert.equal(headers['X-ClearPath-Requested-Symbol'], 'AAPL');
+}
+
 // Spot gold may normalize against same-instrument XAUUSD — never GCUSD futures.
 const goldCandles = normalizeFmpCandles(
   [{ date: '2026-09-01', open: 1, high: 2, low: 0.5, close: 1.5 }],
@@ -151,6 +174,8 @@ assert.doesNotMatch(serverTs, /intelLimiter/);
 assert.doesNotMatch(serverTs, /quoteLimiter/);
 assert.match(serverTs, /fetchFmpQuote|getFmpApiKey\(\)/);
 assert.match(serverTs, /provenanceHeaders/);
+assert.match(serverTs, /sanitizeInstrumentSymbol/);
+assert.match(serverTs, /invalid symbol/);
 
 const gateway = fs.readFileSync(path.join(root, 'src/server/marketDataGateway.ts'), 'utf8');
 assert.match(gateway, /fetchFmpQuote/);

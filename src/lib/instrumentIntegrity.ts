@@ -65,7 +65,26 @@ export const FORBIDDEN_PRICE_SUBSTITUTIONS: Record<
 };
 
 function normKey(symbol: string): string {
-  return symbol.trim().toUpperCase().replace(/\s+/g, '');
+  return sanitizeInstrumentSymbol(symbol).toUpperCase();
+}
+
+/**
+ * Aligns with gateway cache keys (`formatSymbolForTwelveData`): strip control
+ * chars + all whitespace so `AA%0APL` and `AAPL` cannot diverge between the
+ * in-process candle cache and provenance / response headers.
+ * Node rejects CR/LF in `res.setHeader`; storing an unsanitized symbol would
+ * poison the shared cache then 500 every later consumer of that ticker.
+ */
+export function sanitizeInstrumentSymbol(raw: string): string {
+  return String(raw ?? '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .trim()
+    .replace(/\s+/g, '');
+}
+
+/** Strip control characters so values are always safe for HTTP header fields. */
+export function sanitizeHeaderValue(raw: string): string {
+  return String(raw ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
 }
 
 /** True when mapping requested → candidate would change the market exposure. */
@@ -131,39 +150,45 @@ export function buildProvenance(input: {
   proxyNote?: string | null;
   timestamp?: string;
 }): InstrumentProvenance {
-  const requestedSymbol = input.requestedSymbol.trim();
+  const requestedSymbol = sanitizeInstrumentSymbol(input.requestedSymbol);
+  const providerSymbol = sanitizeInstrumentSymbol(input.providerSymbol);
   return {
     requestedSymbol,
     instrumentType:
       input.instrumentType ||
       inferInstrumentType(requestedSymbol, input.category),
     provider: input.provider,
-    providerSymbol: input.providerSymbol,
-    exchange: input.exchange ?? null,
-    currency: input.currency ?? null,
-    priceSource: input.priceSource || `${input.provider}:${input.providerSymbol}`,
-    timestamp: input.timestamp || new Date().toISOString(),
+    providerSymbol,
+    exchange: input.exchange != null ? sanitizeHeaderValue(input.exchange) || null : null,
+    currency: input.currency != null ? sanitizeHeaderValue(input.currency) || null : null,
+    priceSource: sanitizeHeaderValue(
+      input.priceSource || `${input.provider}:${providerSymbol}`,
+    ),
+    timestamp: sanitizeHeaderValue(input.timestamp || new Date().toISOString()),
     delayed: input.delayed ?? null,
     isFallback: Boolean(input.isFallback),
     isProxy: Boolean(input.isProxy),
-    proxyNote: input.proxyNote ?? null,
+    proxyNote:
+      input.proxyNote != null ? sanitizeHeaderValue(input.proxyNote) || null : null,
   };
 }
 
 /** Response headers so array-shaped /api/market/history still carries provenance. */
 export function provenanceHeaders(p: InstrumentProvenance): Record<string, string> {
+  // Defensive second pass — never emit CR/LF or other controls into setHeader.
+  const h = (v: string) => sanitizeHeaderValue(v);
   return {
-    'X-ClearPath-Requested-Symbol': p.requestedSymbol,
-    'X-ClearPath-Instrument-Type': p.instrumentType,
-    'X-ClearPath-Provider': p.provider,
-    'X-ClearPath-Provider-Symbol': p.providerSymbol,
-    'X-ClearPath-Exchange': p.exchange || '',
-    'X-ClearPath-Currency': p.currency || '',
-    'X-ClearPath-Price-Source': p.priceSource,
-    'X-ClearPath-Timestamp': p.timestamp,
+    'X-ClearPath-Requested-Symbol': h(p.requestedSymbol),
+    'X-ClearPath-Instrument-Type': h(p.instrumentType),
+    'X-ClearPath-Provider': h(p.provider),
+    'X-ClearPath-Provider-Symbol': h(p.providerSymbol),
+    'X-ClearPath-Exchange': h(p.exchange || ''),
+    'X-ClearPath-Currency': h(p.currency || ''),
+    'X-ClearPath-Price-Source': h(p.priceSource),
+    'X-ClearPath-Timestamp': h(p.timestamp),
     'X-ClearPath-Delayed': p.delayed == null ? '' : p.delayed ? '1' : '0',
     'X-ClearPath-Fallback': p.isFallback ? '1' : '0',
     'X-ClearPath-Proxy': p.isProxy ? '1' : '0',
-    'X-ClearPath-Proxy-Note': p.proxyNote || '',
+    'X-ClearPath-Proxy-Note': h(p.proxyNote || ''),
   };
 }
