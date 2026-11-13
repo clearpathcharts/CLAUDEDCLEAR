@@ -144,12 +144,14 @@ export function normalizeFmpQuote(
   const prev = Number(row.previousClose ?? row.previous_close);
   const pct = Number(row.changesPercentage ?? row.changePercentage ?? row.percent_change);
   const exchange = row.exchange != null ? String(row.exchange) : null;
+  const asset = getRegistryAsset(deskSymbol) || getRegistryAsset(deskSymbol.replace(/\//g, ''));
   const provenance = buildProvenance({
     requestedSymbol: deskSymbol,
     provider: 'fmp',
     providerSymbol: mapped,
+    category: asset?.category,
     exchange,
-    currency: row.currency != null ? String(row.currency) : null,
+    currency: row.currency != null ? String(row.currency) : asset?.quote || null,
     priceSource: `fmp:${mapped}`,
     isFallback: true,
     isProxy: false,
@@ -211,6 +213,9 @@ export function normalizeFmpCandles(raw: unknown, deskSymbol: string, interval: 
       requestedSymbol: deskSymbol,
       provider: 'fmp',
       providerSymbol: mapped,
+      category: (
+        getRegistryAsset(deskSymbol) || getRegistryAsset(deskSymbol.replace(/\//g, ''))
+      )?.category,
       priceSource: `fmp:${mapped}`,
       isFallback: true,
       isProxy: false,

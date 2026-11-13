@@ -115,6 +115,7 @@ assert.equal(q.provenance.provider, 'fmp');
 assert.equal(q.provenance.providerSymbol, 'AAPL');
 assert.equal(q.provenance.isFallback, true);
 assert.equal(q.provenance.isProxy, false);
+assert.equal(q.provenance.instrumentType, 'equity'); // registry category must flow into FMP provenance
 assert.equal(normalizeFmpQuote({ price: 0 }, 'AAPL'), null);
 // Refuse to normalize a quote that would be a forbidden substitution.
 assert.equal(normalizeFmpQuote({ price: 2000 }, 'XAUUSD', 'GCUSD'), null);
