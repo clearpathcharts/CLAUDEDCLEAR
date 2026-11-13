@@ -17,7 +17,8 @@ import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
-import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { provenanceHeaders, sanitizeInstrumentSymbol, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
@@ -3396,6 +3397,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
+    // Reject CR/LF/control chars before gateway cache — prevents shared-cache poison.
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
+    }
     const apiKey = getCleanTwelveDataApiKey();
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
@@ -3412,6 +3417,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates candles — skip a second validateTick here.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
       res.json(data);
     } catch (error: any) {
@@ -3426,6 +3437,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const { symbol, interval, limit, startDate, endDate } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
+    }
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
     }
 
     const selectedInterval = resolveTwelveDataInterval(
@@ -3459,8 +3473,14 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates — skip a second validateTick on history.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
-                      const formatted = data.values.map((v: any) => [
+      const formatted = data.values.map((v: any) => [
         new Date(v.datetime).getTime(),
         parseFloat(v.open),
         parseFloat(v.high),
@@ -3468,7 +3488,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         parseFloat(v.close),
         v.volume != null && v.volume !== "" ? parseFloat(v.volume) : undefined,
       ]);
-      
+
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);

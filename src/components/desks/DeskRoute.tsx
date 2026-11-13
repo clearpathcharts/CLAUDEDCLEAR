@@ -17,7 +17,11 @@ import {
 import { parseDeskScreenPane } from '../../lib/deskMonitorTree';
 import DeskScreenWorkspace from './DeskScreenWorkspace';
 import { DESK_SEO } from '../../content/traderDesksCopy';
-import { PRODUCT_URL } from '../../content/productIdentity';
+import {
+  PRODUCT_PLATFORM_POSITION,
+  PRODUCT_URL,
+  withPlatformPositionTitle,
+} from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
 import DeskErrorBoundary from './DeskErrorBoundary';
@@ -144,17 +148,18 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
     <AppShellProvider>
     <DeskAppearanceProvider deskId={deskId}>
       <Helmet>
-        <title>{seo.title}</title>
+        <title>{withPlatformPositionTitle(seo.title)}</title>
         <meta name="description" content={seo.description} />
         <meta name="keywords" content={seo.keywords} />
+        <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
         <link rel="canonical" href={canonical} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={seo.title} />
+        <meta property="og:title" content={withPlatformPositionTitle(seo.title)} />
         <meta property="og:description" content={seo.description} />
         <meta property="og:url" content={canonical} />
         <meta property="og:image" content={`${PRODUCT_URL}/og-image.png`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:title" content={withPlatformPositionTitle(seo.title)} />
         <meta name="twitter:description" content={seo.description} />
         {satellitePane ? <meta name="robots" content="noindex, follow" /> : null}
       </Helmet>

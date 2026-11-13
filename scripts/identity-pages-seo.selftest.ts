@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { PRODUCT_PLATFORM_POSITION } from '../src/content/productIdentity.ts';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
 import { renderStaticIdentityPageForBots } from '../src/server/contentPages.ts';
 
@@ -26,6 +27,12 @@ for (const p of paths) {
   assert.match(bot!, /<h1[^>]*>/i, `${p} needs h1 for crawlers`);
   const enriched = enrichHtmlWithMetadata(bot!, p);
   assert.match(enriched, /<title>[^<]+<\/title>/, `${p} title`);
+  assert.match(
+    enriched,
+    new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `${p} lawyer platform-position title`,
+  );
+  assert.match(enriched, /name="clearpath-platform-position"/, `${p} platform-position meta`);
   assert.match(enriched, /<meta\s+name="description"\s+content="[^"]+"/, `${p} description`);
   assert.match(enriched, /<link\s+rel="canonical"\s+href="https:\/\/clearpathtrader\.com/, `${p} canonical`);
   assert.match(enriched, /"@type": "Organization"/, `${p} organization schema`);

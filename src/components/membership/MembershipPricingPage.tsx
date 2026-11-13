@@ -3,6 +3,10 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
+} from '../../content/productIdentity';
+import {
   MEMBERSHIP_PLANS,
   type MembershipPlanId,
   type MembershipPlanPrice,
@@ -57,11 +61,12 @@ export default function MembershipPricingPage() {
   return (
     <div className="membership-pricing">
       <Helmet>
-        <title>ClearPath Packages | Choose what you pay for</title>
+        <title>{withPlatformPositionTitle('ClearPath Packages | Choose what you pay for')}</title>
         <meta
           name="description"
           content="Choose Basic, Silver, Gold, or Platinum. You only see and unlock the features in the package you pay for."
         />
+        <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
         <link rel="canonical" href="https://clearpathtrader.com/pricing" />
       </Helmet>
 

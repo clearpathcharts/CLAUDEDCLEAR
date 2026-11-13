@@ -88,6 +88,37 @@ const blocked = await svc.sendBrentOutreachEmail({
 assert.equal(blocked.sent, false);
 assert.equal(blocked.reason, 'smtp_not_configured');
 
+// CEO daily bento reads durable send log (local file when Firestore Admin is off).
+const logDir = path.join(root, 'data', 'communications');
+fs.mkdirSync(logDir, { recursive: true });
+const sample = {
+  id: 'bos_test_ceo_bento',
+  sentAt: new Date().toISOString(),
+  dayKey: '2099-01-02',
+  from: 'Brent · ClearPath Trader <clearpath.brent@gmail.com>',
+  to: 'vc@example.com',
+  investorId: targets[0]!.id,
+  investorName: targets[0]!.name,
+  subject: 'ClearPath Trader — technology & investment opportunity (live product)',
+  bodyText: 'Subject: test\n\nHello investor — pattern measurement and River.',
+};
+fs.writeFileSync(path.join(logDir, 'brent_outreach_sends.json'), JSON.stringify([sample], null, 2), 'utf8');
+const log = await svc.listBrentOutreachSendLog({ dayKey: '2099-01-02', limitDays: 30 });
+assert.equal(log.days.length, 1);
+assert.equal(log.days[0]!.count, 1);
+assert.equal(log.days[0]!.sends[0]!.to, 'vc@example.com');
+assert.match(log.days[0]!.sends[0]!.bodyText, /pattern measurement/);
+fs.rmSync(path.join(logDir, 'brent_outreach_sends.json'), { force: true });
+
+assert.match(read('src/components/CeoDashboard.tsx'), /CeoBrentOutreachBento/);
+assert.match(read('src/server/brentOutreachRoutes.ts'), /\/sent-log/);
+assert.match(read('server.ts'), /createBrentOutreachRouter/);
+assert.match(
+  read('src/server/brentOutreachService.ts'),
+  /orderBy\(['"]sentAt['"],\s*['"]desc['"]\)/,
+  'Firestore send-log must orderBy sentAt desc so newest rows are not dropped by limit',
+);
+
 // Pitch deck must not advertise the removed affiliate program.
 assert.doesNotMatch(read('src/pitch/pitchDeckData.ts'), /Affiliate network with cookie attribution/);
 
