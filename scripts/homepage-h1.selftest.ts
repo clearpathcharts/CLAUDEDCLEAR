@@ -17,6 +17,8 @@ import {
   PRODUCT_HOME_H1,
   PRODUCT_HOME_TITLE,
   PRODUCT_META_DESCRIPTION,
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
 } from '../src/content/productIdentity.ts';
 import {
   DEFAULT_PUBLIC_INDEXNOW_KEY,
@@ -60,12 +62,24 @@ assert.ok(
   `home description ${PRODUCT_META_DESCRIPTION.length} not in 140–160`,
 );
 assert.equal(PRODUCT_FOUR_DESKS.length, 4);
-assert.match(indexHtml, /<title>ClearPath Trader \| One Chart Site, Four Desks<\/title>/);
+assert.match(
+  indexHtml,
+  new RegExp(
+    `<title>${withPlatformPositionTitle(PRODUCT_HOME_TITLE).replace(/[|]/g, '\\|')}<\\/title>`,
+  ),
+);
+assert.match(indexHtml, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 assert.match(indexHtml, new RegExp(PRODUCT_META_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
 const botHome = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
 assert.equal(countH1(botHome), 1, 'bot homepage must have exactly one <h1>');
-assert.match(botHome, new RegExp(`<title>${PRODUCT_HOME_TITLE.replace(/[|]/g, '\\|')}<\\/title>`));
+assert.match(
+  botHome,
+  new RegExp(`<title>${withPlatformPositionTitle(PRODUCT_HOME_TITLE).replace(/[|]/g, '\\|')}<\\/title>`),
+);
+assert.match(botHome, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+assert.match(botHome, /name="clearpath-platform-position"/);
+assert.match(botHome, /"slogan":\s*"ClearPath Trader is analysis-first, with optional execution connectivity"/);
 assert.match(botHome, new RegExp(PRODUCT_HOME_H1.replace(/[—]/g, '—')));
 assert.match(botHome, /One chart site, four desks/);
 assert.match(botHome, /no ads and no sales pitches/);

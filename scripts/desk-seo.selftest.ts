@@ -17,6 +17,8 @@ import {
   PRODUCT_FOUR_DESKS,
   PRODUCT_HOME_TITLE,
   PRODUCT_META_DESCRIPTION,
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
 } from '../src/content/productIdentity.ts';
 import {
   TRADER_DESK_IDS,
@@ -79,12 +81,13 @@ for (const id of TRADER_DESK_IDS) {
   const ogDesc = grab(html, /<meta\s+property="og:description"\s+content="([^"]*)"/i);
   const h1 = grab(html, /<h1[^>]*>([^<]*)<\/h1>/i);
 
-  assert.equal(title, seo.title);
+  assert.equal(title, withPlatformPositionTitle(seo.title));
   assert.equal(desc, seo.description);
   assert.doesNotMatch(desc, /…/);
   assert.equal(canonical, `https://clearpathtrader.com${href}`);
-  assert.equal(ogTitle, seo.title);
+  assert.equal(ogTitle, withPlatformPositionTitle(seo.title));
   assert.equal(ogDesc, seo.description);
+  assert.match(html, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.equal(h1, seo.h1);
   assert.match(html, /"@type": "WebApplication"/);
   assert.match(html, /"@type": "FAQPage"/);
@@ -95,8 +98,10 @@ for (const id of TRADER_DESK_IDS) {
 const indexPage = renderStaticContentPage('/desk');
 assert.ok(indexPage);
 const indexHtml = enrichHtmlWithMetadata(indexPage!, '/desk');
-assert.equal(grab(indexHtml, /<title>([^<]*)<\/title>/i), DESK_INDEX_SEO.title);
+assert.equal(grab(indexHtml, /<title>([^<]*)<\/title>/i), withPlatformPositionTitle(DESK_INDEX_SEO.title));
 assert.equal(grab(indexHtml, /<meta\s+name="description"\s+content="([^"]*)"/i), DESK_INDEX_SEO.description);
+assert.match(indexHtml, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+assert.match(indexHtml, /name="clearpath-platform-position"/);
 assert.match(indexHtml, /"@type": "CollectionPage"/);
 for (const id of TRADER_DESK_IDS) {
   assert.match(indexHtml, new RegExp(`href="${TRADER_DESKS[id].href}"`));
@@ -104,7 +109,7 @@ for (const id of TRADER_DESK_IDS) {
 
 const alias = enrichHtmlWithMetadata(renderStaticContentPage('/fundamental')!, '/fundamental');
 assert.equal(grab(alias, /<link\s+rel="canonical"\s+href="([^"]*)"/i), 'https://clearpathtrader.com/desk/fundamental');
-assert.equal(grab(alias, /<title>([^<]*)<\/title>/i), DESK_SEO.fundamental.title);
+assert.equal(grab(alias, /<title>([^<]*)<\/title>/i), withPlatformPositionTitle(DESK_SEO.fundamental.title));
 
 const satellite = enrichHtmlWithMetadata(
   fs.readFileSync(path.join(root, 'index.html'), 'utf8'),
@@ -112,7 +117,7 @@ const satellite = enrichHtmlWithMetadata(
 );
 assert.match(satellite, /<meta name="robots" content="noindex, follow"/);
 assert.equal(grab(satellite, /<link\s+rel="canonical"\s+href="([^"]*)"/i), 'https://clearpathtrader.com/desk/retail');
-assert.equal(grab(satellite, /<title>([^<]*)<\/title>/i), DESK_SEO.retail.title);
+assert.equal(grab(satellite, /<title>([^<]*)<\/title>/i), withPlatformPositionTitle(DESK_SEO.retail.title));
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(server, /app\.get\(\['\/fundamental', '\/fundamental\/:symbol'\]/);
@@ -122,7 +127,7 @@ assert.match(server, /cleanPath = `\/desk\$\{cleanPath\}`/);
 const deskRoute = fs.readFileSync(path.join(root, 'src/components/desks/DeskRoute.tsx'), 'utf8');
 assert.match(deskRoute, /from 'react-helmet-async'/);
 assert.match(deskRoute, /<Helmet>/);
-assert.match(deskRoute, /seo\.title/);
+assert.match(deskRoute, /withPlatformPositionTitle\(seo\.title\)/);
 assert.match(deskRoute, /FundamentalTraderDesk/);
 assert.doesNotMatch(deskRoute, /FundamentalResearchDesk/);
 
@@ -136,7 +141,7 @@ assert.equal(PRODUCT_FOUR_DESKS.length, 4);
 assert.ok(PRODUCT_HOME_TITLE.length <= 60);
 assert.ok(PRODUCT_META_DESCRIPTION.length >= 140 && PRODUCT_META_DESCRIPTION.length <= 160);
 const homeHtml = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
-assert.equal(grab(homeHtml, /<title>([^<]*)<\/title>/i), PRODUCT_HOME_TITLE);
+assert.equal(grab(homeHtml, /<title>([^<]*)<\/title>/i), withPlatformPositionTitle(PRODUCT_HOME_TITLE));
 assert.equal(grab(homeHtml, /<meta\s+name="description"\s+content="([^"]*)"/i), PRODUCT_META_DESCRIPTION);
 for (const desk of PRODUCT_FOUR_DESKS) {
   assert.match(homeHtml, new RegExp(desk));

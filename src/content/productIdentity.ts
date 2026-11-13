@@ -12,6 +12,22 @@ export const PRODUCT_URL = "https://clearpathtrader.com";
 /** Homepage <title> — keep under ~60 chars for SERP. */
 export const PRODUCT_HOME_TITLE = "ClearPath Trader | One Chart Site, Four Desks";
 
+/**
+ * Lawyer-required platform position. Must appear in crawlable <title> / OG title
+ * metadata (exact wording). Appended after the page title so SERP can still show
+ * the short head while the full tag carries this sentence.
+ */
+export const PRODUCT_PLATFORM_POSITION =
+  "ClearPath Trader is analysis-first, with optional execution connectivity";
+
+/** Append PRODUCT_PLATFORM_POSITION to a page title if it is not already there. */
+export function withPlatformPositionTitle(title: string): string {
+  const t = (title || "").trim();
+  if (!t) return PRODUCT_PLATFORM_POSITION;
+  if (t.includes(PRODUCT_PLATFORM_POSITION)) return t;
+  return `${t} | ${PRODUCT_PLATFORM_POSITION}`;
+}
+
 /** Visible / crawlable H1 (em dash, not pipe). */
 export const PRODUCT_HOME_H1 = "ClearPath Trader — One chart site with four desks";
 
