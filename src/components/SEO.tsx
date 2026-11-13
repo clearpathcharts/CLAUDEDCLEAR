@@ -1,5 +1,9 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import {
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
+} from '../content/productIdentity';
 
 interface SEOProps {
   title?: string;
@@ -19,13 +23,16 @@ const SEO: React.FC<SEOProps> = ({
     'ClearPath Trader — educational financial markets site with four trader desks, charts, and research. Not a brokerage or financial advice.';
   const defaultKeywords = "analysis, market data, market science, clear path markets science, financial terminal";
 
-  const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | Clear Insights Terminal`;
+  const fullTitle = withPlatformPositionTitle(
+    title ? `${title} | ${siteName}` : `${siteName} | Clear Insights Terminal`,
+  );
 
   return (
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description || defaultDescription} />
       <meta name="keywords" content={keywords || defaultKeywords} />
+      <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content="website" />

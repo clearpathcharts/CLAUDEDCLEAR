@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ABOUT_MANIFESTO_CLOSER, ABOUT_MANIFESTO_LEAD } from '../src/content/aboutManifesto.ts';
+import { withPlatformPositionTitle } from '../src/content/productIdentity.ts';
 import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
 import { renderStaticAboutForBots } from '../src/server/contentPages.ts';
 
@@ -39,7 +40,12 @@ assert.doesNotMatch(semantic, /Market Intelligence Terminal/);
 assert.doesNotMatch(semantic, /trading terminal/i);
 
 const botAbout = enrichHtmlWithMetadata(renderStaticAboutForBots(), '/about');
-assert.match(botAbout, /<title>About ClearPath Trader \| Educational Financial Markets Site<\/title>/);
+assert.match(
+  botAbout,
+  new RegExp(
+    `<title>${withPlatformPositionTitle('About ClearPath Trader | Educational Financial Markets Site').replace(/[|]/g, '\\|')}<\\/title>`,
+  ),
+);
 assert.match(botAbout, /educational financial markets site/i);
 assert.doesNotMatch(botAbout, /trading terminal/i);
 assert.doesNotMatch(botAbout, /Market Intelligence Terminal/i);
