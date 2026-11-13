@@ -226,8 +226,14 @@ async function loadSendLogMerged(): Promise<BrentOutreachSendRecord[]> {
   const db = getAdminFirestore();
   if (db) {
     try {
-      // No composite index required — sort in process after merge with local.
-      const snap = await db.collection(SEND_LOG_COLLECTION).limit(MAX_LOG_ENTRIES).get();
+      // Newest first — single-field orderBy (auto-indexed). Without orderBy,
+      // limit(N) returns arbitrary/oldest doc IDs and the CEO bento can hide
+      // recent Brent sends once the collection exceeds MAX_LOG_ENTRIES.
+      const snap = await db
+        .collection(SEND_LOG_COLLECTION)
+        .orderBy('sentAt', 'desc')
+        .limit(MAX_LOG_ENTRIES)
+        .get();
       for (const doc of snap.docs) {
         const d = doc.data() as Partial<BrentOutreachSendRecord>;
         const id = String(d.id || doc.id);

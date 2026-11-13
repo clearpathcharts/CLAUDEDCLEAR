@@ -113,6 +113,11 @@ fs.rmSync(path.join(logDir, 'brent_outreach_sends.json'), { force: true });
 assert.match(read('src/components/CeoDashboard.tsx'), /CeoBrentOutreachBento/);
 assert.match(read('src/server/brentOutreachRoutes.ts'), /\/sent-log/);
 assert.match(read('server.ts'), /createBrentOutreachRouter/);
+assert.match(
+  read('src/server/brentOutreachService.ts'),
+  /orderBy\(['"]sentAt['"],\s*['"]desc['"]\)/,
+  'Firestore send-log must orderBy sentAt desc so newest rows are not dropped by limit',
+);
 
 // Pitch deck must not advertise the removed affiliate program.
 assert.doesNotMatch(read('src/pitch/pitchDeckData.ts'), /Affiliate network with cookie attribution/);
