@@ -42,6 +42,7 @@ import {
 } from './crawlCatalog';
 import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
 import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
+import { mergeApprovedMarketingKeywords } from '../lib/marketingRouteRegistry';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
@@ -1449,7 +1450,7 @@ export function enrichHtmlWithMetadata(
   title = withPlatformPositionTitle(title);
   description = clampDescription(description, 160);
   // Keywords meta is low-weight for Google; keep a short phrase list (not hashtags — those belong on social posts)
-  keywords = keywords
+  keywords = mergeApprovedMarketingKeywords(canonicalPath, keywords)
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean)

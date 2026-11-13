@@ -1,0 +1,343 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-30",
+  "baseUrl": "https://clearpathtrader.com",
+  "allowedCanonicalPaths": [
+    "/",
+    "/about",
+    "/accessibility",
+    "/brokers",
+    "/commodities",
+    "/company",
+    "/crypto",
+    "/desk/fundamental",
+    "/desk/institutional",
+    "/desk/neurodivergent",
+    "/desk/retail",
+    "/education",
+    "/encyclopedia",
+    "/forex",
+    "/glossary",
+    "/guides",
+    "/indicators",
+    "/learn",
+    "/learn/correlations",
+    "/learn/liquidity",
+    "/learn/microstructure",
+    "/learn/valuation",
+    "/literacy",
+    "/macro",
+    "/plans",
+    "/regions/ru",
+    "/stocks",
+    "/tools"
+  ],
+  "groupDefaults": {
+    "Retail Trading": "/desk/retail",
+    "Fundamental Trading": "/desk/fundamental",
+    "Institutional Trading": "/desk/institutional",
+    "Quantitative and Algorithmic Trading": "/education",
+    "Financial Data": "/encyclopedia",
+    "Brokerage and Hedge Fund Technology": "/about",
+    "Beginner Trading and Education": "/education"
+  },
+  "routeRules": [
+    {
+      "canonicalPath": "/stocks",
+      "keywords": [
+        "stock trading",
+        "stock market analysis",
+        "stock market data",
+        "stock market for beginners",
+        "how to analyze stocks",
+        "stock market education",
+        "stock market learning",
+        "stock market research tools",
+        "stock chart education"
+      ]
+    },
+    {
+      "canonicalPath": "/forex",
+      "keywords": [
+        "forex trading",
+        "forex market data",
+        "forex for beginners",
+        "forex analysis",
+        "forex charting software",
+        "professional forex charts"
+      ]
+    },
+    {
+      "canonicalPath": "/crypto",
+      "keywords": [
+        "cryptocurrency trading",
+        "crypto trading",
+        "crypto charts"
+      ]
+    },
+    {
+      "canonicalPath": "/commodities",
+      "keywords": [
+        "commodity charts",
+        "commodities trading"
+      ]
+    },
+    {
+      "canonicalPath": "/desk/retail",
+      "keywords": [
+        "day trading",
+        "swing trading",
+        "trading psychology",
+        "retail trading",
+        "market analysis"
+      ]
+    },
+    {
+      "canonicalPath": "/indicators",
+      "keywords": [
+        "technical analysis",
+        "trading indicators",
+        "how to read stock charts",
+        "how to read candlestick charts",
+        "learn technical analysis",
+        "how to use trading indicators",
+        "chart pattern recognition",
+        "support and resistance",
+        "technical indicators",
+        "advanced trading indicators",
+        "advanced technical analysis tools",
+        "custom trading indicators",
+        "trading platform with multiple indicators",
+        "candlestick chart guide",
+        "technical indicator guide",
+        "chart pattern education",
+        "chart analysis",
+        "chart reading"
+      ]
+    },
+    {
+      "canonicalPath": "/education",
+      "keywords": [
+        "trading strategies",
+        "trading strategies for beginners",
+        "learn how to trade",
+        "trading for beginners",
+        "trading education",
+        "risk management for traders",
+        "trading courses",
+        "investment education",
+        "financial market education",
+        "technical analysis for beginners",
+        "trading education resources",
+        "market education",
+        "financial education",
+        "financial education technology",
+        "market structure learning",
+        "technical indicator education",
+        "open financial education"
+      ]
+    },
+    {
+      "canonicalPath": "/literacy",
+      "keywords": [
+        "financial literacy",
+        "understanding the stock market",
+        "financial literacy community",
+        "financial literacy infographic"
+      ]
+    },
+    {
+      "canonicalPath": "/encyclopedia",
+      "keywords": [
+        "options trading",
+        "futures trading",
+        "financial data analytics",
+        "market data analytics",
+        "historical market data",
+        "financial data intelligence",
+        "market research tools",
+        "financial market intelligence",
+        "financial data",
+        "financial encyclopedia"
+      ]
+    },
+    {
+      "canonicalPath": "/desk/fundamental",
+      "keywords": [
+        "fundamental analysis",
+        "financial statements analysis",
+        "earnings reports",
+        "dividend investing",
+        "institutional ownership",
+        "equity research",
+        "company fundamentals",
+        "financial market research",
+        "fundamental analysis research desk"
+      ]
+    },
+    {
+      "canonicalPath": "/learn/valuation",
+      "keywords": [
+        "company valuation",
+        "financial modeling",
+        "valuation analysis"
+      ]
+    },
+    {
+      "canonicalPath": "/macro",
+      "keywords": [
+        "economic indicators",
+        "macroeconomic analysis",
+        "economic news",
+        "macro analysis"
+      ]
+    },
+    {
+      "canonicalPath": "/desk/institutional",
+      "keywords": [
+        "institutional trading",
+        "institutional investors",
+        "hedge fund trading",
+        "portfolio management",
+        "asset management",
+        "professional trading software",
+        "quantitative trading",
+        "quantitative research",
+        "financial data visualization",
+        "portfolio analytics",
+        "multi asset trading",
+        "trading terminal",
+        "professional market analysis",
+        "institutional market analysis",
+        "advanced market analytics"
+      ]
+    },
+    {
+      "canonicalPath": "/learn/microstructure",
+      "keywords": [
+        "order flow analysis",
+        "market microstructure",
+        "market depth",
+        "market structure",
+        "market structure education"
+      ]
+    },
+    {
+      "canonicalPath": "/learn/liquidity",
+      "keywords": [
+        "liquidity analysis",
+        "liquidity"
+      ]
+    },
+    {
+      "canonicalPath": "/guides",
+      "keywords": [
+        "statistical arbitrage",
+        "backtesting strategies",
+        "systematic trading",
+        "mathematical finance",
+        "predictive analytics"
+      ]
+    },
+    {
+      "canonicalPath": "/glossary",
+      "keywords": [
+        "smart money concepts",
+        "trading glossary",
+        "financial terms"
+      ]
+    },
+    {
+      "canonicalPath": "/accessibility",
+      "keywords": [
+        "accessible trading software",
+        "cognitive accessibility",
+        "accessible financial technology",
+        "dyslexia friendly trading software",
+        "financial technology accessibility",
+        "accessible technology",
+        "accessible charts"
+      ]
+    },
+    {
+      "canonicalPath": "/desk/neurodivergent",
+      "keywords": [
+        "neurodivergent traders",
+        "ADHD traders",
+        "autistic traders",
+        "trading with ADHD",
+        "trading with autism",
+        "simplified trading charts",
+        "customizable trading interfaces",
+        "neurodiversity in finance",
+        "ADHD financial education",
+        "visual trading analysis",
+        "distraction free trading",
+        "focus based trading",
+        "trading for different learning styles",
+        "neurodivergent financial education",
+        "trading platform for neurodivergent traders",
+        "trading software for different learning styles",
+        "neurodivergent trading workspace",
+        "neurodivergent design"
+      ]
+    },
+    {
+      "canonicalPath": "/company",
+      "keywords": [
+        "financial technology",
+        "Clear Path Markets Science"
+      ]
+    },
+    {
+      "canonicalPath": "/plans",
+      "keywords": [
+        "trading software pricing",
+        "trading platform plans"
+      ]
+    },
+    {
+      "canonicalPath": "/",
+      "keywords": [
+        "trading charts",
+        "live market data",
+        "trading platforms",
+        "trading software",
+        "real time financial data",
+        "multi asset trading charts",
+        "advanced trading charts",
+        "multi chart trading platform",
+        "professional charting software",
+        "trading analysis platform",
+        "customizable trading dashboard",
+        "ClearPath Trader",
+        "ClearPathTrader",
+        "clearpathtrader.com"
+      ]
+    },
+    {
+      "canonicalPath": "/regions/ru",
+      "publicMeta": false,
+      "matchLanguage": "Russian",
+      "keywords": []
+    }
+  ],
+  "aliases": {
+    "/financial-encyclopedia": "/encyclopedia",
+    "/membership": "/plans",
+    "/pricing": "/plans",
+    "/fundamental": "/desk/fundamental",
+    "/encyclopedia-of-indicators": "/indicators",
+    "/clearpath-education": "/education",
+    "/literacy-os": "/literacy"
+  },
+  "forbiddenDestinationPrefixes": [
+    "/api",
+    "/ceo",
+    "/login",
+    "/r/",
+    "/reset-password"
+  ],
+  "publicMetaKeywordLimit": 12,
+  "registryKeywordLimitPerPath": 6
+}
