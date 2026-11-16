@@ -19,6 +19,7 @@ import InvestorPitchDeck from './components/pitch/InvestorPitchDeck';
 import { parsePitchPath } from './pitch/pitchDeckData';
 import TechnologyInvestmentOpportunityPage from './components/investor/TechnologyInvestmentOpportunityPage';
 import BrentMarketingDepartment from './components/investor/BrentMarketingDepartment';
+import CommunityOutreachPage from './components/community/CommunityOutreachPage';
 import PressKitPage from './components/PressKitPage';
 import CompanyPage from './components/CompanyPage';
 import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
@@ -199,6 +200,11 @@ function isTechnologyOpportunityPath(path: string): boolean {
 function isCommunicationsPath(path: string): boolean {
   const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
   return p === '/communications';
+}
+
+function isCommunityOutreachPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/community-outreach';
 }
 
 function PublicLearnShell({
@@ -442,6 +448,9 @@ export default function App() {
     content = <TechnologyInvestmentOpportunityPage />;
   } else if (isCommunicationsPath(currentPath)) {
     content = <BrentMarketingDepartment />;
+  } else if (isCommunityOutreachPath(currentPath)) {
+    // Public institutional portal — no trading desks, charts, or membership shell.
+    content = <CommunityOutreachPage />;
   } else if (isBrokerNetworkPath(currentPath)) {
     content = (
       <Suspense
