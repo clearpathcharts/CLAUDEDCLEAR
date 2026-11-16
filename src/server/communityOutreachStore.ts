@@ -184,8 +184,12 @@ async function loadState(): Promise<CommunityOutreachState> {
       if (snap.exists) {
         return normalizeState(snap.data() as Partial<CommunityOutreachState>);
       }
+      // Doc missing: seed from local if present, otherwise empty. Never treat a
+      // failed read as empty — that path is handled in the catch below.
+      return readLocalState();
     } catch (err) {
-      console.warn('[community-outreach] Firestore state read failed; using local file.', err);
+      console.error('[community-outreach] Firestore state read failed; refusing mutation fallback.', err);
+      throw new CommunityOutreachError('Community outreach state temporarily unavailable.', 503);
     }
   }
   return readLocalState();
@@ -203,8 +207,10 @@ async function loadInquiries(): Promise<InquiryStore> {
           updatedAt: data.updatedAt || new Date().toISOString(),
         };
       }
+      return readLocalInquiries();
     } catch (err) {
-      console.warn('[community-outreach] Firestore inquiries read failed; using local file.', err);
+      console.error('[community-outreach] Firestore inquiries read failed; refusing mutation fallback.', err);
+      throw new CommunityOutreachError('Community outreach inquiries temporarily unavailable.', 503);
     }
   }
   return readLocalInquiries();
@@ -413,8 +419,34 @@ export async function getAdminOutreachState() {
     loadInquiries(),
     getPublicOutreachSnapshot(),
   ]);
+  const resourceOverlay = new Map(state.resources.map((r) => [r.id, r]));
+  const documentOverlay = new Map(state.documents.map((d) => [d.id, d]));
+
+  // Admin forms must see ungated draft download URLs so a save cannot wipe them.
+  const resources = EDUCATIONAL_RESOURCES.map((seed) => {
+    const overlay = resourceOverlay.get(seed.id);
+    return {
+      ...seed,
+      publicationStatus: overlay?.publicationStatus || seed.publicationStatus,
+      revisionDate: overlay?.revisionDate || seed.revisionDate,
+      downloadUrl: overlay?.downloadUrl !== undefined ? overlay.downloadUrl : seed.downloadUrl,
+    };
+  });
+  const documents = DOCUMENT_CENTER.map((seed) => {
+    const overlay = documentOverlay.get(seed.id);
+    return {
+      ...seed,
+      approvalStatus: overlay?.approvalStatus || seed.approvalStatus,
+      version: overlay?.version || seed.version,
+      publicationDate: overlay?.publicationDate || seed.publicationDate,
+      downloadUrl: overlay?.downloadUrl !== undefined ? overlay.downloadUrl : seed.downloadUrl,
+    };
+  });
+
   return {
     ...publicSnap,
+    resources,
+    documents,
     institutions: publicSnap.institutions.map((inst) => {
       const overlay = state.institutions.find((i) => i.id === inst.id);
       return {

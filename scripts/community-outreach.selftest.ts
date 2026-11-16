@@ -17,6 +17,15 @@ assert.match(read('src/lib/publicIdentityRoutes.ts'), /community-outreach/);
 assert.match(read('server.ts'), /createPublicCommunityOutreachRouter/);
 assert.match(read('server.ts'), /\/api\/community-outreach/);
 assert.match(read('server.ts'), /\/api\/admin\/community-outreach/);
+assert.doesNotMatch(
+  read('server.ts'),
+  /app\.use\('\/api\/community-outreach',\s*communityOutreachInquiryLimiter/,
+  'inquiry limiter must not wrap GET /snapshot',
+);
+assert.match(
+  read('src/server/communityOutreachRoutes.ts'),
+  /router\.post\('\/inquiry',\s*communityOutreachInquiryLimiter/,
+);
 assert.match(read('src/server/siteRegistry.ts'), /\/community-outreach/);
 assert.match(read('src/components/CeoDashboard.tsx'), /CeoCommunityOutreachAdmin/);
 
@@ -46,6 +55,10 @@ assert.ok(counties.CALIFORNIA_COUNTY_DIRECTORY.every((c) => /^https:\/\//.test(c
 assert.ok(counties.CALIFORNIA_COUNTY_DIRECTORY.every((c) => /^https:\/\//.test(c.majorCommunityCenter.url)));
 assert.ok(counties.CALIFORNIA_COUNTY_DIRECTORY.some((c) => c.county === 'Riverside'));
 assert.match(counties.CALIFORNIA_COUNTY_DIRECTORY_BANNER, /APPROVAL NOT YET CONFIRMED/);
+
+// Fresh local durable store for deterministic assertions.
+const outreachDataDir = path.join(root, 'data/community-outreach');
+fs.rmSync(outreachDataDir, { recursive: true, force: true });
 
 const store = await import('../src/server/communityOutreachStore.ts');
 const snap = await store.getPublicOutreachSnapshot();
@@ -82,9 +95,32 @@ assert.equal(murrieta!.status, 'Submitted');
 assert.ok(!('approvalSource' in murrieta!));
 assert.ok(!('evidenceNote' in murrieta!));
 
+const draft = await store.updateResourceRecord({
+  id: 'understanding-money',
+  actor: 'test',
+  publicationStatus: 'Draft',
+  downloadUrl: 'https://example.com/draft-understanding-money.pdf',
+});
+assert.equal(draft.downloadUrl, 'https://example.com/draft-understanding-money.pdf');
+const publicDraft = await store.getPublicOutreachSnapshot();
+assert.equal(
+  publicDraft.resources.find((r) => r.id === 'understanding-money')?.downloadUrl,
+  null,
+  'draft download URLs must stay private',
+);
+
 const admin = await store.getAdminOutreachState();
 const adminMurrieta = admin.institutions.find((i: any) => i.id === 'city-of-murrieta');
 assert.match(String(adminMurrieta?.approvalSource || ''), /citymanager@example\.gov/);
+assert.equal(
+  admin.resources.find((r: any) => r.id === 'understanding-money')?.downloadUrl,
+  'https://example.com/draft-understanding-money.pdf',
+  'admin state must preserve draft download URLs so saves do not wipe them',
+);
+assert.match(
+  read('src/server/communityOutreachStore.ts'),
+  /refusing mutation fallback/,
+);
 
 const inquiry = await store.submitOutreachInquiry({
   name: 'Test Librarian',

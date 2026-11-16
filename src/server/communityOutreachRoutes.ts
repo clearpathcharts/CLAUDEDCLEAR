@@ -5,6 +5,7 @@
  */
 import { Router } from 'express';
 import { requireFounderActionHeader } from './authGuards';
+import { communityOutreachInquiryLimiter } from './routeRateLimit';
 import {
   CommunityOutreachError,
   getAdminOutreachState,
@@ -34,7 +35,7 @@ export function createPublicCommunityOutreachRouter(): Router {
     }
   });
 
-  router.post('/inquiry', async (req, res) => {
+  router.post('/inquiry', communityOutreachInquiryLimiter, async (req, res) => {
     try {
       const result = await submitOutreachInquiry({
         ...(req.body || {}),

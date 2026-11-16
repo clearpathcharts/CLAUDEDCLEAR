@@ -120,7 +120,6 @@ import {
   boardVerifyLimiter,
   chartPulseSubscribeLimiter,
   frontendErrorLimiter,
-  communityOutreachInquiryLimiter,
 } from './src/server/routeRateLimit';
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
 import { PayloadTooLargeError, assertSafePublicUrl, safePublicFetch } from './src/server/safePublicFetch';
@@ -887,7 +886,10 @@ async function startServer() {
 
   // Clear Path Community Outreach — public snapshot/inquiry + founder-only status admin.
   // Isolated from trading desks/charts; does not auto-approve institutional partnerships.
-  app.use('/api/community-outreach', communityOutreachInquiryLimiter, createPublicCommunityOutreachRouter());
+  // Snapshot is public/read-heavy for libraries & schools on shared NATs — do not
+  // put the tight inquiry limiter on the whole mount. Limiter is applied inside
+  // the router on POST /inquiry only.
+  app.use('/api/community-outreach', createPublicCommunityOutreachRouter());
   app.use(
     '/api/admin/community-outreach',
     requireFounderOrCatalogAdmin,
