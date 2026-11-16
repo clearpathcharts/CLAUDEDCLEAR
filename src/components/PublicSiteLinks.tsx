@@ -25,6 +25,9 @@ export default function PublicSiteLinks() {
       <a href="/press" className={linkClass}>
         Press kit
       </a>
+      <a href="/community-outreach" className={linkClass}>
+        Community Outreach
+      </a>
       <a href="/founder" className={linkClass}>
         Founder
       </a>

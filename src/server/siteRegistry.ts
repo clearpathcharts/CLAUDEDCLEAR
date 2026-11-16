@@ -50,6 +50,7 @@ const STATIC_PAGES: Array<[path: string, changefreq: string, priority: string]> 
   ['/founder', 'monthly', '0.87'],
   ['/ceo-statement', 'yearly', '0.86'],
   ['/press', 'monthly', '0.9'],
+  ['/community-outreach', 'weekly', '0.88'],
   ['/plans', 'weekly', '0.86'],
   ['/brokers', 'monthly', '0.75'],
   ['/encyclopedia', 'weekly', '0.85'],

@@ -92,6 +92,16 @@ export const aiChatLimiter = rateLimit({
   message: { error: 'Too many AI requests. Slow down for a minute.' },
 });
 
+/** Public institutional inquiry form on /community-outreach. */
+export const communityOutreachInquiryLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `community-outreach:${clientIp(req)}`,
+  message: { error: 'Too many inquiry submissions. Wait a minute and try again.' },
+});
+
 /** Routes that spend paid vendor quota (Twelve Data, FMP, FRED, NewsData, CFTC). */
 export const MARKET_DATA_ROUTES = [
   '/api/quote',

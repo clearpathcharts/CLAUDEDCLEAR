@@ -1827,6 +1827,16 @@ function renderIdentityBrokersBody(): string {
 <p><a href="/plans">Plans</a> · <a href="/desk">Trader desks</a></p>`;
 }
 
+function renderCommunityOutreachBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Community Outreach' }])}
+<h1>Clear Path Community Outreach</h1>
+<p class="lead">Education. Digital Inclusion. Financial Literacy. Community Resources.</p>
+<p>Clear Path Community Outreach is a proposed community education initiative associated with Clear Path Markets Science Corp. Its mission is to expand access to financial literacy, digital education, technology safety, consumer protection, and accessible educational resources.</p>
+<p><strong>Honesty:</strong> Institutional listings are potential contacts — not confirmed partners, endorsements, or government authorizations. A future community food shelf / food bank coordination initiative is proposed for Riverside County and is <strong>not yet operational</strong>.</p>
+<p>Need food today? Use <a href="https://www.cafoodbanks.org/find-food/">California Food Banks find-food / 2-1-1</a>, <a href="https://www.feedingamericaie.org/find-a-pantry">Feeding America Riverside | San Bernardino pantry finder</a>, and <a href="https://rivcodpss.org/calfresh-food-assistance">Riverside County DPSS CalFresh</a>.</p>
+<p><a href="/community-outreach">Open the full Community Outreach portal</a> · <a href="/company">Company</a> · <a href="/about">About</a></p>`;
+}
+
 const IDENTITY_BOT_PATHS: Record<string, () => string> = {
   '/company': renderIdentityCompanyBody,
   '/meet-the-board': renderIdentityMeetTheBoardBody,
@@ -1836,6 +1846,7 @@ const IDENTITY_BOT_PATHS: Record<string, () => string> = {
   '/press-kit': renderIdentityPressBody,
   '/plans': renderIdentityPlansBody,
   '/brokers': renderIdentityBrokersBody,
+  '/community-outreach': renderCommunityOutreachBody,
 };
 
 /** Crawlable identity & commerce pages for search bots (humans keep the React SPA). */
