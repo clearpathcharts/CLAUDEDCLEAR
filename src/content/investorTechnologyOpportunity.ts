@@ -32,6 +32,7 @@ export const TECH_OPP_NAV: TechOppNavItem[] = [
   { id: 'opportunity', label: 'The Opportunity' },
   { id: 'valuation', label: 'Preliminary Valuation & SWOT' },
   { id: 'capital', label: 'Capital Strategy' },
+  { id: 'non-broker-policy', label: 'Non-Broker Platform Letter' },
   { id: 'verification', label: 'Verified vs Still Verifying' },
   { id: 'close', label: 'Built Differently' },
 ];

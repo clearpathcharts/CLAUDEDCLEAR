@@ -44,6 +44,33 @@ assert.doesNotMatch(
   /AI wormhole|guaranteed return|\$5–\$10 million range as ClearPath's established/i
 );
 assert.match(content.TECH_OPP_CLOSING.investmentClose, /already built the technology/i);
+assert.ok(
+  content.TECH_OPP_NAV.some((item) => item.id === 'non-broker-policy'),
+  'nav must include non-broker policy letter'
+);
+
+const letter = await import('../src/content/nonBrokerPlatformLetter.ts');
+assert.equal(letter.NON_BROKER_LETTER.anchor, 'non-broker-policy');
+assert.match(letter.NON_BROKER_LETTER.finraNote, /not a FINRA member/i);
+assert.match(letter.NON_BROKER_LETTER.permanence.join(' '), /do not plan IB/i);
+assert.ok(
+  letter.NON_BROKER_LETTER.whatWeAreNot.some((line) => /introducing broker/i.test(line)),
+  'letter must permanently bar introducing-broker identity'
+);
+assert.match(read('docs/data-room/NON_BROKER_PLATFORM_LETTER.md'), /will \*\*not\*\* become one/i);
+assert.match(read('docs/data-room/NON_BROKER_PLATFORM_LETTER.md'), /introducing broker \(IB\)/i);
+assert.match(
+  read('docs/data-room/NON_BROKER_PLATFORM_LETTER.md'),
+  /will \*\*never\*\* adopt introducing-broker economics/i
+);
+assert.match(
+  read('src/components/investor/TechnologyInvestmentOpportunityPage.tsx'),
+  /NON_BROKER_LETTER/
+);
+assert.match(
+  read('src/components/AdditionalTermsOfService.tsx'),
+  /does not operate as an introducing broker/i
+);
 
 const brent = await import('../src/content/brentOutreach.ts');
 assert.equal(brent.BRENT_OUTREACH_EMAIL_DEFAULT, 'clearpath.brent@gmail.com');
