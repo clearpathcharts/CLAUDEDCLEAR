@@ -101,12 +101,13 @@ const SECONDARY_PILLARS = [
   { label: 'Supporting Families & Individuals', href: '#food-shelf' },
 ] as const;
 
+/** Visual pillars only — must stay clearly proposed, never read as live services. */
 const FOOD_HELP_LABELS = [
-  'Food Distribution',
-  'Family Support',
-  'Nutrition Education',
-  'Community Resources',
-  'Volunteer Opportunities',
+  'Proposed food distribution',
+  'Proposed family support',
+  'Proposed nutrition education',
+  'Proposed community resources',
+  'Proposed volunteer roles',
 ] as const;
 
 function Section({
@@ -708,7 +709,7 @@ export default function CommunityOutreachPage() {
             </p>
             <div className="co-program-grid" style={{ maxWidth: '100%' }}>
               {PROGRAM_DIVISIONS.map((prog) => (
-                <a key={prog.id} href={`#resources`} className="co-program-card">
+                <a key={prog.id} href={`#program-${prog.id}`} className="co-program-card">
                   <div className="co-icon-wrap">{PROGRAM_ICONS[prog.id]}</div>
                   <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: 'var(--co-cyan-soft)', fontFamily: 'var(--co-font-display)' }}>
                     {prog.number}
@@ -737,7 +738,7 @@ export default function CommunityOutreachPage() {
             </div>
             <div className="grid gap-4" style={{ maxWidth: '100%' }}>
               {PROGRAM_DIVISIONS.map((prog) => (
-                <article key={`detail-${prog.id}`} className="co-panel">
+                <article id={`program-${prog.id}`} key={`detail-${prog.id}`} className="co-panel scroll-mt-28">
                   <div className="flex flex-wrap items-baseline gap-3 mb-3">
                     <span style={{ fontFamily: 'var(--co-font-display)', color: 'var(--co-cyan-soft)', fontSize: 12, letterSpacing: '0.16em' }}>
                       {prog.number}
@@ -823,9 +824,9 @@ export default function CommunityOutreachPage() {
               className="uppercase tracking-[0.12em] text-sm text-white"
               style={{ fontFamily: 'var(--co-font-display)', textShadow: '0 0 12px rgba(34,240,255,0.35)' }}
             >
-              Nourishing people · Strengthening families · Building community
+              Proposed mission — not open for drop-off or pick-up yet
             </p>
-            <div className="co-help-row co-no-print">
+            <div className="co-help-row co-no-print" aria-label="Proposed future food-shelf focus areas">
               {FOOD_HELP_LABELS.map((label) => (
                 <div key={label} className="co-help-chip">
                   {label}
