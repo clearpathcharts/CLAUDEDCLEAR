@@ -14,6 +14,7 @@ export function isPublicIdentityPath(pathname: string): boolean {
     path.startsWith('/pitch/') ||
     path === '/technology-opportunity' ||
     path === '/invest' ||
-    path === '/communications'
+    path === '/communications' ||
+    path === '/community-outreach'
   );
 }

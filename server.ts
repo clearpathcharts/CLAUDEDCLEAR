@@ -55,6 +55,10 @@ import {
 import { ROBOTS_TXT } from './src/server/robotsTxt';
 import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
 import { createBrentOutreachRouter } from './src/server/brentOutreachRoutes';
+import {
+  createAdminCommunityOutreachRouter,
+  createPublicCommunityOutreachRouter,
+} from './src/server/communityOutreachRoutes';
 import { SITEMAP_SECTIONS, sectionXml, sitemapIndexXml, priorityIndexNowUrls } from './src/server/siteRegistry';
 import { recordSeoPing } from './src/server/seoPingLog';
 import { buildAppUpdateManifest } from './src/server/appUpdate';
@@ -879,6 +883,18 @@ async function startServer() {
 
   // Brent CCO communications desk — separate from CEO marketing. Send still needs founder-action header.
   app.use('/api/communications', requireFounderOrCatalogAdmin, createBrentOutreachRouter());
+
+  // Clear Path Community Outreach — public snapshot/inquiry + founder-only status admin.
+  // Isolated from trading desks/charts; does not auto-approve institutional partnerships.
+  // Snapshot is public/read-heavy for libraries & schools on shared NATs — do not
+  // put the tight inquiry limiter on the whole mount. Limiter is applied inside
+  // the router on POST /inquiry only.
+  app.use('/api/community-outreach', createPublicCommunityOutreachRouter());
+  app.use(
+    '/api/admin/community-outreach',
+    requireFounderOrCatalogAdmin,
+    createAdminCommunityOutreachRouter(),
+  );
 
   // Public read side: slot id -> playable URL, nothing else. Visitors need this
   // to play the explainer behind a play icon; it exposes no founder-only field.

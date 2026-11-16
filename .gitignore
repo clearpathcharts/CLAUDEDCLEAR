@@ -60,4 +60,5 @@ data/marketing-outbox/
 
 # Member inbox local fallback (contains member emails)
 data/member-inbox/
+data/community-outreach/
 data/membership-grants.json
