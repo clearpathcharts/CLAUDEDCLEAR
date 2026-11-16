@@ -21,6 +21,7 @@ import {
   TECH_OPP_VERIFICATION,
   TECH_OPP_WHY_INVEST,
 } from '../../content/investorTechnologyOpportunity';
+import { NON_BROKER_LETTER } from '../../content/nonBrokerPlatformLetter';
 
 function Section({
   id,
@@ -484,6 +485,67 @@ export default function TechnologyInvestmentOpportunityPage() {
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </Section>
+
+          <Section
+            id={NON_BROKER_LETTER.anchor}
+            eyebrow={NON_BROKER_LETTER.eyebrow}
+            title={NON_BROKER_LETTER.title}
+          >
+            <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+              Data room · {NON_BROKER_LETTER.dataRoomFolder} · {NON_BROKER_LETTER.dateLabel}
+            </p>
+            <p>
+              <span className="text-white font-medium">From:</span> {NON_BROKER_LETTER.from}
+              <br />
+              <span className="text-white font-medium">Re:</span> {NON_BROKER_LETTER.subject}
+            </p>
+            <p>{NON_BROKER_LETTER.purpose}</p>
+
+            <h3 className="text-white font-bold pt-2">What ClearPath is</h3>
+            <ul className="list-disc pl-5 space-y-1.5">
+              {NON_BROKER_LETTER.whatWeAre.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <h3 className="text-white font-bold pt-2">What ClearPath is not — and will not become</h3>
+            <ul className="list-disc pl-5 space-y-1.5">
+              {NON_BROKER_LETTER.whatWeAreNot.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <p>{NON_BROKER_LETTER.finraNote}</p>
+
+            <h3 className="text-white font-bold pt-2">{NON_BROKER_LETTER.passThrough.title}</h3>
+            <p>{NON_BROKER_LETTER.passThrough.body}</p>
+            <p className="text-white font-medium">Pass-through is not:</p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              {NON_BROKER_LETTER.passThrough.notList.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <h3 className="text-white font-bold pt-2">Permanence</h3>
+            <ul className="list-disc pl-5 space-y-1.5">
+              {NON_BROKER_LETTER.permanence.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+
+            <p className="pt-2">{NON_BROKER_LETTER.closing}</p>
+            <p className="text-white font-medium">
+              {NON_BROKER_LETTER.signatory}
+              <br />
+              <span className="text-zinc-400 font-normal">{NON_BROKER_LETTER.signatoryTitle}</span>
+              <br />
+              <span className="text-zinc-400 font-normal">{NON_BROKER_LETTER.company}</span>
+            </p>
+            <p className="text-sm text-zinc-500">
+              Diligence contact: {NON_BROKER_LETTER.contact}. Printable source:{' '}
+              <code className="text-zinc-400">{NON_BROKER_LETTER.markdownPath}</code>
+            </p>
+            <p className="text-sm text-zinc-500">{NON_BROKER_LETTER.disclaimer}</p>
           </Section>
 
           <Section id="verification" eyebrow="Credibility" title={TECH_OPP_SEC_NOTE.title}>
