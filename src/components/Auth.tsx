@@ -483,6 +483,7 @@ export default function Auth() {
             </a>
             <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
             <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+            <a href="/community-outreach" className="auth-nav-tab-label shrink-0 text-sky-300 hover:text-[#00FFFF] transition-colors border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 rounded-lg">Outreach</a>
             <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
             <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
             <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
@@ -539,6 +540,7 @@ export default function Auth() {
           </a>
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+          <a href="/community-outreach" className="auth-nav-tab-label shrink-0 text-sky-300 hover:text-[#00FFFF] transition-colors border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 rounded-lg">Outreach</a>
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
           <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
           <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
@@ -840,6 +842,9 @@ export default function Auth() {
             </a>
             <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors">
               Press kit
+            </a>
+            <a href="/community-outreach" className="text-sky-300 hover:text-[#00FFFF] transition-colors font-bold">
+              Community Outreach
             </a>
             <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Learn

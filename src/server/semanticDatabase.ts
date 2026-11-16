@@ -566,6 +566,26 @@ export function enrichHtmlWithMetadata(
       primaryImageOfPage: { '@type': 'ImageObject', url: `${baseUrl}${FOUNDER_LEADER.imageUrl}` },
       isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
     });
+  } else if (pathClean === '/community-outreach') {
+    title = 'Clear Path Community Outreach | Financial Literacy & Community Resources';
+    description =
+      'Clear Path Community Outreach — proposed community education for financial literacy, digital inclusion, consumer protection, California county library resources, and a future food-shelf initiative. Public verification portal. Not a brokerage. Does not issue SNAP/CalFresh benefits.';
+    keywords =
+      'Clear Path Community Outreach, financial literacy, digital inclusion, California counties libraries, Riverside County food assistance, future food shelf, SNAP CalFresh information, Clear Path Markets Science';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Community Outreach', url: '/community-outreach' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/community-outreach#webpage`,
+      url: `${baseUrl}/community-outreach`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+      about: { '@id': `${baseUrl}/#organization` },
+    });
   } else if (pathClean === '/accessibility') {
     title = "Accessibility Statement | ClearPath Trader";
     description = "How ClearPath Trader supports keyboard navigation, screen readers, contrast, reduced motion, and neurodivergent trading UI modes (WCAG-oriented).";
