@@ -51,6 +51,10 @@ const store = await import('../src/server/communityOutreachStore.ts');
 const snap = await store.getPublicOutreachSnapshot();
 assert.ok(snap.institutions.every((i) => i.status === 'Proposed'));
 assert.ok(snap.resources.every((r) => r.downloadUrl === null));
+assert.ok(
+  snap.institutions.every((i) => !('approvalSource' in i) && !('evidenceNote' in i)),
+  'public snapshot must not leak approvalSource / evidenceNote',
+);
 
 const blocked = await store
   .updateInstitutionStatus({
@@ -63,6 +67,25 @@ const blocked = await store
   .catch((e) => e);
 assert.ok(blocked instanceof store.CommunityOutreachError);
 
+const approved = await store.updateInstitutionStatus({
+  id: 'city-of-murrieta',
+  status: 'Submitted',
+  actor: 'test',
+  approvalSource: 'internal note must stay private: citymanager@example.gov letter',
+  evidenceNote: 'Confidential contact phone 555-0100',
+});
+assert.equal(approved.status, 'Submitted');
+const publicAfter = await store.getPublicOutreachSnapshot();
+const murrieta = publicAfter.institutions.find((i) => i.id === 'city-of-murrieta');
+assert.ok(murrieta);
+assert.equal(murrieta!.status, 'Submitted');
+assert.ok(!('approvalSource' in murrieta!));
+assert.ok(!('evidenceNote' in murrieta!));
+
+const admin = await store.getAdminOutreachState();
+const adminMurrieta = admin.institutions.find((i: any) => i.id === 'city-of-murrieta');
+assert.match(String(adminMurrieta?.approvalSource || ''), /citymanager@example\.gov/);
+
 const inquiry = await store.submitOutreachInquiry({
   name: 'Test Librarian',
   organization: 'Example Public Library',
@@ -71,6 +94,9 @@ const inquiry = await store.submitOutreachInquiry({
   message: 'Interested in future food shelf planning for Riverside County.',
 });
 assert.equal(inquiry.ok, true);
+assert.ok(fs.existsSync(path.join(root, 'data/community-outreach/inquiries.json')));
+const stateRaw = JSON.parse(fs.readFileSync(path.join(root, 'data/community-outreach/state.json'), 'utf8'));
+assert.ok(!Array.isArray(stateRaw.inquiries) || stateRaw.inquiries.length === 0, 'inquiries must not live in overlay state');
 
 const sensitive = await store
   .submitOutreachInquiry({

@@ -1,7 +1,13 @@
 /**
  * Durable overlays for Clear Path Community Outreach.
  * Seed content stays Proposed / In Development until an authorized admin updates records.
- * Local JSON fallback when Firestore Admin is unavailable (same pattern as other founder stores).
+ *
+ * Security:
+ * - Founder overlays (status, evidence notes, download URLs) live in `state.json` /
+ *   Firestore `app_state/community_outreach` and are never mixed with public inquiries.
+ * - Public inquiries live in a separate file / Firestore doc so spam cannot bloat the
+ *   founder overlay document past Firestore limits.
+ * - Public snapshot never returns approvalSource / evidenceNote.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -20,7 +26,13 @@ import { getAdminFirestore } from './firebaseAdmin';
 
 const DIR = path.join(process.cwd(), 'data', 'community-outreach');
 const STATE_FILE = path.join(DIR, 'state.json');
-const FIRESTORE_DOC = 'app_state/community_outreach';
+const INQUIRIES_FILE = path.join(DIR, 'inquiries.json');
+const FIRESTORE_STATE_DOC = 'app_state/community_outreach';
+const FIRESTORE_INQUIRIES_DOC = 'app_state/community_outreach_inquiries';
+
+const INQUIRY_LIMIT = 200;
+const INQUIRY_MESSAGE_MAX = 2000;
+const HISTORY_LIMIT = 200;
 
 export type InstitutionOverlay = {
   id: string;
@@ -69,12 +81,17 @@ export type OutreachChangeEvent = {
   detail: string;
 };
 
+/** Founder-only overlays + change history. Never stores public inquiry bodies. */
 export type CommunityOutreachState = {
   institutions: InstitutionOverlay[];
   resources: ResourceOverlay[];
   documents: DocumentOverlay[];
-  inquiries: OutreachInquiry[];
   history: OutreachChangeEvent[];
+  updatedAt: string;
+};
+
+type InquiryStore = {
+  inquiries: OutreachInquiry[];
   updatedAt: string;
 };
 
@@ -99,69 +116,133 @@ function emptyState(): CommunityOutreachState {
     institutions: [],
     resources: [],
     documents: [],
-    inquiries: [],
     history: [],
     updatedAt: new Date().toISOString(),
   };
 }
 
-function readLocal(): CommunityOutreachState {
+function emptyInquiries(): InquiryStore {
+  return { inquiries: [], updatedAt: new Date().toISOString() };
+}
+
+function readJsonFile<T>(file: string, fallback: T): T {
   try {
-    const raw = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) as CommunityOutreachState;
-    return {
-      ...emptyState(),
-      ...raw,
-      institutions: Array.isArray(raw.institutions) ? raw.institutions : [],
-      resources: Array.isArray(raw.resources) ? raw.resources : [],
-      documents: Array.isArray(raw.documents) ? raw.documents : [],
-      inquiries: Array.isArray(raw.inquiries) ? raw.inquiries : [],
-      history: Array.isArray(raw.history) ? raw.history : [],
-    };
+    return JSON.parse(fs.readFileSync(file, 'utf8')) as T;
   } catch {
-    return emptyState();
+    return fallback;
   }
 }
 
-function writeLocal(state: CommunityOutreachState): void {
+function writeJsonFile(file: string, value: unknown): void {
   fs.mkdirSync(DIR, { recursive: true });
-  const tmp = `${STATE_FILE}.${process.pid}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
-  fs.renameSync(tmp, STATE_FILE);
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf8');
+  fs.renameSync(tmp, file);
+}
+
+function normalizeState(raw: Partial<CommunityOutreachState> & { inquiries?: unknown }): CommunityOutreachState {
+  return {
+    ...emptyState(),
+    ...raw,
+    institutions: Array.isArray(raw.institutions) ? raw.institutions : [],
+    resources: Array.isArray(raw.resources) ? raw.resources : [],
+    documents: Array.isArray(raw.documents) ? raw.documents : [],
+    history: Array.isArray(raw.history) ? raw.history : [],
+    // Drop any legacy inquiries that were previously embedded in the overlay doc.
+  };
+}
+
+function readLocalState(): CommunityOutreachState {
+  const raw = readJsonFile<Partial<CommunityOutreachState> & { inquiries?: unknown }>(STATE_FILE, {});
+  return normalizeState(raw);
+}
+
+function readLocalInquiries(): InquiryStore {
+  const dedicated = readJsonFile<Partial<InquiryStore>>(INQUIRIES_FILE, {});
+  if (Array.isArray(dedicated.inquiries)) {
+    return {
+      inquiries: dedicated.inquiries.slice(0, INQUIRY_LIMIT),
+      updatedAt: dedicated.updatedAt || new Date().toISOString(),
+    };
+  }
+  // One-time migration: pull legacy inquiries out of the old combined state file.
+  const legacy = readJsonFile<{ inquiries?: OutreachInquiry[] }>(STATE_FILE, {});
+  if (Array.isArray(legacy.inquiries) && legacy.inquiries.length) {
+    return {
+      inquiries: legacy.inquiries.slice(0, INQUIRY_LIMIT),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  return emptyInquiries();
 }
 
 async function loadState(): Promise<CommunityOutreachState> {
   const db = getAdminFirestore();
   if (db) {
     try {
-      const snap = await db.doc(FIRESTORE_DOC).get();
+      const snap = await db.doc(FIRESTORE_STATE_DOC).get();
       if (snap.exists) {
-        const data = snap.data() as CommunityOutreachState;
+        return normalizeState(snap.data() as Partial<CommunityOutreachState>);
+      }
+    } catch (err) {
+      console.warn('[community-outreach] Firestore state read failed; using local file.', err);
+    }
+  }
+  return readLocalState();
+}
+
+async function loadInquiries(): Promise<InquiryStore> {
+  const db = getAdminFirestore();
+  if (db) {
+    try {
+      const snap = await db.doc(FIRESTORE_INQUIRIES_DOC).get();
+      if (snap.exists) {
+        const data = snap.data() as Partial<InquiryStore>;
         return {
-          ...emptyState(),
-          ...data,
-          institutions: Array.isArray(data.institutions) ? data.institutions : [],
-          resources: Array.isArray(data.resources) ? data.resources : [],
-          documents: Array.isArray(data.documents) ? data.documents : [],
-          inquiries: Array.isArray(data.inquiries) ? data.inquiries : [],
-          history: Array.isArray(data.history) ? data.history : [],
+          inquiries: Array.isArray(data.inquiries) ? data.inquiries.slice(0, INQUIRY_LIMIT) : [],
+          updatedAt: data.updatedAt || new Date().toISOString(),
         };
       }
     } catch (err) {
-      console.warn('[community-outreach] Firestore read failed; using local file.', err);
+      console.warn('[community-outreach] Firestore inquiries read failed; using local file.', err);
     }
   }
-  return readLocal();
+  return readLocalInquiries();
 }
 
 async function saveState(state: CommunityOutreachState): Promise<void> {
   state.updatedAt = new Date().toISOString();
-  writeLocal(state);
+  // Never persist inquiries on the founder overlay document.
+  const payload: CommunityOutreachState = {
+    institutions: state.institutions,
+    resources: state.resources,
+    documents: state.documents,
+    history: state.history.slice(0, HISTORY_LIMIT),
+    updatedAt: state.updatedAt,
+  };
+  writeJsonFile(STATE_FILE, payload);
   const db = getAdminFirestore();
   if (db) {
     try {
-      await db.doc(FIRESTORE_DOC).set(state, { merge: true });
+      await db.doc(FIRESTORE_STATE_DOC).set(payload, { merge: false });
     } catch (err) {
-      console.warn('[community-outreach] Firestore write failed; local file kept.', err);
+      console.error('[community-outreach] Firestore state write failed.', err);
+      throw new CommunityOutreachError('Could not persist outreach admin state.', 503);
+    }
+  }
+}
+
+async function saveInquiries(store: InquiryStore): Promise<void> {
+  store.updatedAt = new Date().toISOString();
+  store.inquiries = store.inquiries.slice(0, INQUIRY_LIMIT);
+  writeJsonFile(INQUIRIES_FILE, store);
+  const db = getAdminFirestore();
+  if (db) {
+    try {
+      await db.doc(FIRESTORE_INQUIRIES_DOC).set(store, { merge: false });
+    } catch (err) {
+      console.error('[community-outreach] Firestore inquiries write failed.', err);
+      throw new CommunityOutreachError('Could not persist inquiry.', 503);
     }
   }
 }
@@ -175,7 +256,7 @@ function pushHistory(
     at: new Date().toISOString(),
     ...event,
   });
-  state.history = state.history.slice(0, 500);
+  state.history = state.history.slice(0, HISTORY_LIMIT);
 }
 
 function isEmail(v: string): boolean {
@@ -218,8 +299,8 @@ export function validateInquiryInput(input: {
   if (!INQUIRY_CATEGORIES.includes(category)) {
     throw new CommunityOutreachError('Select a valid inquiry category.');
   }
-  if (!message || message.length > 4000) {
-    throw new CommunityOutreachError('Message is required (max 4000 characters).');
+  if (!message || message.length > INQUIRY_MESSAGE_MAX) {
+    throw new CommunityOutreachError(`Message is required (max ${INQUIRY_MESSAGE_MAX} characters).`);
   }
   const blob = `${name} ${organization} ${message}`;
   if (SENSITIVE_PATTERNS.some((re) => re.test(blob))) {
@@ -245,8 +326,7 @@ export async function getPublicOutreachSnapshot() {
       lastVerifiedDate: overlay?.lastVerifiedDate || seed.lastVerifiedDate,
       submittedAt: overlay?.submittedAt || null,
       approvedAt: overlay?.approvedAt || null,
-      approvalSource: overlay?.approvalSource || null,
-      evidenceNote: overlay?.evidenceNote || null,
+      // Intentionally omit approvalSource / evidenceNote from the public API.
     };
   });
 
@@ -300,15 +380,18 @@ export async function submitOutreachInquiry(input: {
   userAgent?: string;
 }): Promise<{ ok: true; id: string }> {
   const validated = validateInquiryInput(input);
-  const state = await loadState();
+  const store = await loadInquiries();
   const row: OutreachInquiry = {
     id: `inq_${crypto.randomBytes(8).toString('hex')}`,
     ...validated,
     createdAt: new Date().toISOString(),
     userAgent: input.userAgent?.slice(0, 300),
   };
-  state.inquiries.unshift(row);
-  state.inquiries = state.inquiries.slice(0, 1000);
+  store.inquiries.unshift(row);
+  await saveInquiries(store);
+
+  // Record a short, non-sensitive history line on the founder overlay only.
+  const state = await loadState();
   pushHistory(state, {
     actor: 'public',
     action: 'inquiry_submitted',
@@ -316,17 +399,32 @@ export async function submitOutreachInquiry(input: {
     targetId: row.id,
     detail: `${row.category} from ${row.organization}`,
   });
-  await saveState(state);
+  try {
+    await saveState(state);
+  } catch {
+    // Inquiry already persisted separately; history write is best-effort.
+  }
   return { ok: true, id: row.id };
 }
 
 export async function getAdminOutreachState() {
-  const state = await loadState();
-  const publicSnap = await getPublicOutreachSnapshot();
+  const [state, inquiryStore, publicSnap] = await Promise.all([
+    loadState(),
+    loadInquiries(),
+    getPublicOutreachSnapshot(),
+  ]);
   return {
     ...publicSnap,
-    inquiries: state.inquiries.slice(0, 200),
-    history: state.history.slice(0, 200),
+    institutions: publicSnap.institutions.map((inst) => {
+      const overlay = state.institutions.find((i) => i.id === inst.id);
+      return {
+        ...inst,
+        approvalSource: overlay?.approvalSource || null,
+        evidenceNote: overlay?.evidenceNote || null,
+      };
+    }),
+    inquiries: inquiryStore.inquiries.slice(0, INQUIRY_LIMIT),
+    history: state.history.slice(0, HISTORY_LIMIT),
     overlays: {
       institutions: state.institutions,
       resources: state.resources,
@@ -352,7 +450,6 @@ export async function updateInstitutionStatus(input: {
   if (!INSTITUTION_STATUSES.includes(input.status)) {
     throw new CommunityOutreachError('Invalid institution status.');
   }
-  // Never auto-approve: Approved/Active require an explicit approvalSource note.
   if (
     (input.status === 'Approved' || input.status === 'Active') &&
     !String(input.approvalSource || '').trim()
