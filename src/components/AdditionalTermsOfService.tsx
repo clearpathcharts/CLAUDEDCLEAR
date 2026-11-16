@@ -448,9 +448,9 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
                 Users are solely responsible for evaluating risks, verifying information, complying with laws and regulations, and determining suitability of any strategy or market activity. ClearPathTrader.com does not direct, control, supervise, or influence specific trades or investment activity.
               </p>
 
-              <h4 className="text-[#FF00C8] text-[10px] font-black uppercase tracking-widest pt-2">Third-Party Services & Affiliate Disclosure</h4>
+              <h4 className="text-[#FF00C8] text-[10px] font-black uppercase tracking-widest pt-2">Third-Party Services Disclosure</h4>
               <p>
-                The Services may contain links, integrations, advertisements, sponsored content, referral relationships, or affiliate relationships involving third-party companies. ClearPathTrader.com may receive compensation, referral fees, advertising revenue, or other financial benefits from third-party providers. Third-party services are operated independently and are governed by their own terms, policies, and practices.
+                The Services may contain links, integrations, advertisements, or sponsored content involving third-party companies. Third-party services are operated independently and are governed by their own terms, policies, and practices. ClearPathTrader.com does not operate as an introducing broker, does not use IB deep links or broker signup funnels for compensation, and does not take broker referral commissions or introducing-broker kickbacks. Membership affiliate / residual payout programs are not part of the business model.
               </p>
               <p className="font-bold text-red-400">
                 ClearPathTrader.com is not responsible for third-party services, trading losses, account issues, platform outages, regulatory compliance of third parties, actions or omissions of third-party providers. Users engage with third-party providers entirely at their own risk.
