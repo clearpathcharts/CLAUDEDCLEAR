@@ -395,21 +395,9 @@ export async function submitOutreachInquiry(input: {
   };
   store.inquiries.unshift(row);
   await saveInquiries(store);
-
-  // Record a short, non-sensitive history line on the founder overlay only.
-  const state = await loadState();
-  pushHistory(state, {
-    actor: 'public',
-    action: 'inquiry_submitted',
-    targetType: 'inquiry',
-    targetId: row.id,
-    detail: `${row.category} from ${row.organization}`,
-  });
-  try {
-    await saveState(state);
-  } catch {
-    // Inquiry already persisted separately; history write is best-effort.
-  }
+  // Do NOT load/save the founder overlay here. Public inquiry traffic must never
+  // rewrite institution statuses, approval notes, or draft download URLs
+  // (Cloud Run race: stale read + merge:false overwrite).
   return { ok: true, id: row.id };
 }
 

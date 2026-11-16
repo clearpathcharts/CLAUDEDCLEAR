@@ -131,8 +131,16 @@ const inquiry = await store.submitOutreachInquiry({
 });
 assert.equal(inquiry.ok, true);
 assert.ok(fs.existsSync(path.join(root, 'data/community-outreach/inquiries.json')));
-const stateRaw = JSON.parse(fs.readFileSync(path.join(root, 'data/community-outreach/state.json'), 'utf8'));
-assert.ok(!Array.isArray(stateRaw.inquiries) || stateRaw.inquiries.length === 0, 'inquiries must not live in overlay state');
+assert.ok(
+  !fs.existsSync(path.join(root, 'data/community-outreach/state.json')) ||
+    !Array.isArray(JSON.parse(fs.readFileSync(path.join(root, 'data/community-outreach/state.json'), 'utf8')).inquiries) ||
+    JSON.parse(fs.readFileSync(path.join(root, 'data/community-outreach/state.json'), 'utf8')).inquiries.length === 0,
+  'inquiries must not live in overlay state',
+);
+assert.match(
+  read('src/server/communityOutreachStore.ts'),
+  /Do NOT load\/save the founder overlay here/,
+);
 
 const sensitive = await store
   .submitOutreachInquiry({
