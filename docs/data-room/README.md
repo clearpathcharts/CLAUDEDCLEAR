@@ -1,9 +1,10 @@
 # Seed data-room documents (Clear Path Markets Science Corp.)
 
-Place these files in the investor data room folders indicated. They supplement the universal FTFC-style seed checklist; they do not replace certificates, cap table, or financials.
+Internal founder packs for investor diligence / email attachment. Not public website downloads.
 
 | Document | Folder | Notes |
 |----------|--------|--------|
-| `NON_BROKER_PLATFORM_LETTER.md` | Legal (copy also to Product) | Permanent non-broker / no-IB posture. Export to PDF for Docsend/Drive. Live mirror: `/technology-opportunity#non-broker-policy` |
+| `SEED_DILIGENCE_ANSWERS.md` | Business Information (also Legal) | Full ClearPath answers to the seed checklist + vertical addendums |
+| `NON_BROKER_PLATFORM_LETTER.md` | Legal (also Product) | Permanent non-broker / no-IB posture. Live mirror: `/technology-opportunity#non-broker-policy` |
 
-Export tip: open the markdown in any editor → Print → Save as PDF → name `ClearPath_Non_Broker_Platform_Letter.pdf`.
+Export tip: open the `.md` → Print → Save as PDF for email / Docsend / Drive.

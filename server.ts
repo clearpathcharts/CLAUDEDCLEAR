@@ -884,6 +884,7 @@ async function startServer() {
   // Brent CCO communications desk — separate from CEO marketing. Send still needs founder-action header.
   app.use('/api/communications', requireFounderOrCatalogAdmin, createBrentOutreachRouter());
 
+
   // Clear Path Community Outreach — public snapshot/inquiry + founder-only status admin.
   // Isolated from trading desks/charts; does not auto-approve institutional partnerships.
   // Snapshot is public/read-heavy for libraries & schools on shared NATs — do not

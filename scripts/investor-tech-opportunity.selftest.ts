@@ -72,6 +72,15 @@ assert.match(
   /does not operate as an introducing broker/i
 );
 
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /ClearPath does not have anything to do with FINRA/i);
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /SaaS & Enterprise Software/);
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /IP assignment/);
+assert.doesNotMatch(read('server.ts'), /mountDataRoomDownloadRoutes/);
+assert.doesNotMatch(
+  read('src/components/investor/TechnologyInvestmentOpportunityPage.tsx'),
+  /\/api\/data-room\//
+);
+
 const brent = await import('../src/content/brentOutreach.ts');
 assert.equal(brent.BRENT_OUTREACH_EMAIL_DEFAULT, 'clearpath.brent@gmail.com');
 assert.ok(brent.BRENT_OUTREACH_SCREENSHOTS.length >= 4);
