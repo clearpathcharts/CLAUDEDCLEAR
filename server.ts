@@ -55,7 +55,6 @@ import {
 import { ROBOTS_TXT } from './src/server/robotsTxt';
 import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
 import { createBrentOutreachRouter } from './src/server/brentOutreachRoutes';
-import { mountDataRoomDownloadRoutes } from './src/server/dataRoomDownloads';
 import {
   createAdminCommunityOutreachRouter,
   createPublicCommunityOutreachRouter,
@@ -885,8 +884,6 @@ async function startServer() {
   // Brent CCO communications desk — separate from CEO marketing. Send still needs founder-action header.
   app.use('/api/communications', requireFounderOrCatalogAdmin, createBrentOutreachRouter());
 
-  // Seed data-room markdown packs (allowlisted downloads for diligence).
-  mountDataRoomDownloadRoutes(app);
 
   // Clear Path Community Outreach — public snapshot/inquiry + founder-only status admin.
   // Isolated from trading desks/charts; does not auto-approve institutional partnerships.

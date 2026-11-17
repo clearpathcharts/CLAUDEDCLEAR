@@ -2,14 +2,13 @@
 
 **Data-room placement:** Business Information (copy also to Legal)  
 **Companion letter:** `NON_BROKER_PLATFORM_LETTER.md`  
-**Public download:** `/api/data-room/SEED_DILIGENCE_ANSWERS.md`  
 **Live product:** https://clearpathtrader.com  
 **Tech diligence page:** https://clearpathtrader.com/technology-opportunity  
 **Pitch:** https://clearpathtrader.com/pitch  
 **Prepared:** November 15–16, 2026 (America/Los_Angeles)  
 **Prepared for:** Richard Floyd / Clear Path Markets Science Corp. seed data room  
 
-This pack turns the FTFC-style *Seed Stage Data Room Checklist* (universal + vertical addendums) into ClearPath-specific answers: what applies, what we have, what is still open, and what we permanently refuse.
+This pack turns the FTFC-style *Seed Stage Data Room Checklist* (universal + vertical addendums) into ClearPath-specific answers: what applies, what we have, what is still open, and what we permanently refuse. Use this file as an email attachment for diligence counterparties — it is an internal founder pack, not a public website download.
 
 ---
 
@@ -217,11 +216,6 @@ From the technology opportunity page:
 | `SEED_DILIGENCE_ANSWERS.md` | Business Information (+ Legal) | This pack — checklist mapped to ClearPath answers |
 | `NON_BROKER_PLATFORM_LETTER.md` | Legal (+ Product) | Permanent non-broker / no-IB founder letter |
 | `README.md` | — | Operator index |
-
-**Download URLs (after deploy):**
-
-- `GET /api/data-room/SEED_DILIGENCE_ANSWERS.md`
-- `GET /api/data-room/NON_BROKER_PLATFORM_LETTER.md`
 
 ---
 
