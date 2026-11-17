@@ -33,8 +33,16 @@ const page = read('src/components/community/CommunityOutreachPage.tsx');
 assert.match(page, /FOOD_SHELF_FUTURE_INITIATIVE/);
 assert.match(page, /CALIFORNIA_COUNTY_DIRECTORY/);
 assert.match(page, /statusBanner/);
+assert.match(page, /Proposed food distribution/);
+assert.match(page, /href=\{`#program-\$\{prog\.id\}`\}/);
+assert.match(page, /id=\{`program-\$\{prog\.id\}`\}/);
 assert.doesNotMatch(page, /LiveChart|MarketTicker|DeskRoute|candlestick|membership upgrade/i);
 assert.doesNotMatch(page, /Approved partner|government authorized|official endorsement/i);
+assert.doesNotMatch(
+  page,
+  /href=\{`#resources`\} className="co-program-card"/,
+  'program cards must deep-link to their own detail anchors',
+);
 
 const content = await import('../src/content/communityOutreach.ts');
 assert.equal(content.COMMUNITY_OUTREACH_PATH, '/community-outreach');
