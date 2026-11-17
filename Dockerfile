@@ -24,8 +24,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/public ./public
-# Seed data-room diligence packs (served by GET /api/data-room/*)
-COPY --from=build /app/docs/data-room ./docs/data-room
 # Vendored disposable domain blocklist (https://github.com/disposable/disposable-email-domains)
 COPY --from=build /app/data/disposable-email-domains.txt ./data/disposable-email-domains.txt
 
