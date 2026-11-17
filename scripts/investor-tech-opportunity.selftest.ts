@@ -72,6 +72,29 @@ assert.match(
   /does not operate as an introducing broker/i
 );
 
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /ClearPath does not have anything to do with FINRA/i);
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /SaaS & Enterprise Software/);
+assert.match(read('docs/data-room/SEED_DILIGENCE_ANSWERS.md'), /IP assignment/);
+assert.match(read('Dockerfile'), /docs\/data-room/);
+assert.match(read('server.ts'), /mountDataRoomDownloadRoutes/);
+assert.match(
+  read('src/components/investor/TechnologyInvestmentOpportunityPage.tsx'),
+  /\/api\/data-room\/SEED_DILIGENCE_ANSWERS\.md/
+);
+
+const dataRoom = await import('../src/server/dataRoomDownloads.ts');
+const listed = dataRoom.listDataRoomDownloads();
+assert.ok(listed.some((d) => d.file === 'SEED_DILIGENCE_ANSWERS.md'));
+assert.ok(listed.some((d) => d.file === 'NON_BROKER_PLATFORM_LETTER.md'));
+const resolved = dataRoom.resolveDataRoomFile('SEED_DILIGENCE_ANSWERS.md');
+assert.equal(resolved.ok, true);
+assert.equal(
+  dataRoom.resolveDataRoomFile('../package.json').ok,
+  false,
+  'must reject path traversal'
+);
+assert.equal(dataRoom.resolveDataRoomFile('secret.md').ok, false);
+
 const brent = await import('../src/content/brentOutreach.ts');
 assert.equal(brent.BRENT_OUTREACH_EMAIL_DEFAULT, 'clearpath.brent@gmail.com');
 assert.ok(brent.BRENT_OUTREACH_SCREENSHOTS.length >= 4);
