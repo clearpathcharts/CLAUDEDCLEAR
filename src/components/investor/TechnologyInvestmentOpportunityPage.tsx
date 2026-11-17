@@ -546,6 +546,22 @@ export default function TechnologyInvestmentOpportunityPage() {
               <code className="text-zinc-400">{NON_BROKER_LETTER.markdownPath}</code>
             </p>
             <p className="text-sm text-zinc-500">{NON_BROKER_LETTER.disclaimer}</p>
+            <div className="pt-2 flex flex-wrap gap-3">
+              <a
+                href="/api/data-room/NON_BROKER_PLATFORM_LETTER.md"
+                download="ClearPath_Non_Broker_Platform_Letter.md"
+                className="inline-flex px-4 py-2 text-[10px] font-black uppercase tracking-widest border border-white/20 hover:border-[#00E5FF] hover:text-[#00E5FF]"
+              >
+                Download this letter
+              </a>
+              <a
+                href="/api/data-room/SEED_DILIGENCE_ANSWERS.md"
+                download="ClearPath_Seed_Diligence_Answers.md"
+                className="inline-flex px-4 py-2 text-[10px] font-black uppercase tracking-widest border border-white/20 hover:border-[#00E5FF] hover:text-[#00E5FF]"
+              >
+                Download full diligence answers pack
+              </a>
+            </div>
           </Section>
 
           <Section id="verification" eyebrow="Credibility" title={TECH_OPP_SEC_NOTE.title}>
@@ -586,6 +602,20 @@ export default function TechnologyInvestmentOpportunityPage() {
                 className="inline-flex px-5 py-2.5 text-xs font-black uppercase tracking-widest border border-white/20"
               >
                 Open pitch slides
+              </a>
+              <a
+                href="/api/data-room/SEED_DILIGENCE_ANSWERS.md"
+                download="ClearPath_Seed_Diligence_Answers.md"
+                className="inline-flex px-5 py-2.5 text-xs font-black uppercase tracking-widest border border-[#00E5FF]/40 text-[#00E5FF]"
+              >
+                Download diligence answers
+              </a>
+              <a
+                href="/api/data-room/NON_BROKER_PLATFORM_LETTER.md"
+                download="ClearPath_Non_Broker_Platform_Letter.md"
+                className="inline-flex px-5 py-2.5 text-xs font-black uppercase tracking-widest border border-white/20"
+              >
+                Download non-broker letter
               </a>
             </div>
           </Section>

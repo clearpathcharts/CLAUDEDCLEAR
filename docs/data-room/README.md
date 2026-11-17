@@ -4,6 +4,12 @@ Place these files in the investor data room folders indicated. They supplement t
 
 | Document | Folder | Notes |
 |----------|--------|--------|
-| `NON_BROKER_PLATFORM_LETTER.md` | Legal (copy also to Product) | Permanent non-broker / no-IB posture. Export to PDF for Docsend/Drive. Live mirror: `/technology-opportunity#non-broker-policy` |
+| `SEED_DILIGENCE_ANSWERS.md` | Business Information (also Legal) | Full ClearPath answers to the seed checklist + vertical addendums. Download: `/api/data-room/SEED_DILIGENCE_ANSWERS.md` |
+| `NON_BROKER_PLATFORM_LETTER.md` | Legal (also Product) | Permanent non-broker / no-IB posture. Live mirror: `/technology-opportunity#non-broker-policy`. Download: `/api/data-room/NON_BROKER_PLATFORM_LETTER.md` |
 
-Export tip: open the markdown in any editor → Print → Save as PDF → name `ClearPath_Non_Broker_Platform_Letter.pdf`.
+## Downloads
+
+- Index JSON: `GET /api/data-room`
+- Attachment: `GET /api/data-room/<filename>` (Content-Disposition: attachment)
+
+Export tip: open the downloaded `.md` → Print → Save as PDF for Docsend/Drive.
