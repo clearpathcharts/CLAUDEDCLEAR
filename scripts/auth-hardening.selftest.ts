@@ -111,12 +111,37 @@ for (const route of [
   "'/api/admin/daily-pattern-review/run'",
   "'/api/chart-pulse/test-fire'",
   "'/api/diagnostics/timeframe-verify/run'",
+  "'/api/seo/indexnow'",
+  "'/api/admin/profiles/contractor-badge'",
+  "'/api/admin/profiles/contractor-badge/seed'",
 ]) {
-  const start = serverSrc.indexOf(`app.post(${route}`);
-  assert.ok(start >= 0, `${route} route found`);
-  const head = serverSrc.slice(start, start + 220);
+  // Routes may be `app.post('/path'` or multiline `app.post(\n    '/path'`.
+  const re = new RegExp(`app\\.post\\(\\s*${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  const m = re.exec(serverSrc);
+  assert.ok(m && m.index != null, `${route} route found`);
+  const head = serverSrc.slice(m!.index, m!.index + 320);
   assert.match(head, /requireFounderActionHeader/, `${route} must require the founder action header`);
 }
+
+{
+  const start = serverSrc.indexOf("app.delete(\n    '/api/river/catalog/public/:id'");
+  const alt = serverSrc.indexOf("app.delete('/api/river/catalog/public/:id'");
+  const at = start >= 0 ? start : alt;
+  assert.ok(at >= 0, 'river public catalog delete route found');
+  const head = serverSrc.slice(at, at + 280);
+  assert.match(head, /requireFounderActionHeader/, 'river catalog delete must require founder action header');
+}
+
+{
+  const start = serverSrc.indexOf("app.get(\n    '/api/admin/members/invites'");
+  assert.ok(start >= 0, 'invites GET route found');
+  const head = serverSrc.slice(start, start + 420);
+  assert.match(head, /requireFounderActionHeader/, 'invites GET must always require founder action header');
+  assert.match(head, /includeSecrets/, 'invites secrets remain gated by includeSecrets');
+}
+
+assert.match(serverSrc, /clientSuppliedVendorKey/, 'FRED/FMP proxies must reject client-supplied API keys');
+assert.match(serverSrc, /\/data-room/, 'retired data-room paths must redirect away from SPA shell');
 
 const apiNotFound = serverSrc.indexOf("app.use('/api', (_req, res) => {");
 assert.ok(apiNotFound > 0 && apiNotFound < serverSrc.indexOf('// 4. Vite / Static Serving'), 'unknown /api paths must 404 before the SPA shell');

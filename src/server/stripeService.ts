@@ -135,19 +135,29 @@ export function stripeConfigured(): boolean {
   return Boolean(getStripeSecretKey());
 }
 
-/** Boolean-presence config for diagnostics + the membership UI. No key material. */
+/**
+ * Public Stripe readiness for the membership UI. No key material and no
+ * catalog dollar amounts (those live on /plans via the client catalog).
+ * `checkoutMode` clarifies that unset Dashboard Price IDs still check out via
+ * server `price_data` — not a broken payments signal.
+ */
 export function getStripeConfigReport() {
   return {
     configured: stripeConfigured(),
     webhookConfigured: Boolean(getStripeWebhookSecret()),
     planTrialDays: PLAN_TRIAL_DAYS,
     launchTrialDays: LAUNCH_TRIAL_DAYS,
-    tiers: (Object.keys(TIER_DEFS) as MembershipTierId[]).map((id) => ({
-      id,
-      name: TIER_DEFS[id].name,
-      monthlyCents: TIER_DEFS[id].monthlyCents,
-      dashboardPriceConfigured: Boolean((process.env[TIER_DEFS[id].priceEnvMonthly] || '').trim()),
-    })),
+    tiers: (Object.keys(TIER_DEFS) as MembershipTierId[]).map((id) => {
+      const dashboardPriceConfigured = Boolean(
+        (process.env[TIER_DEFS[id].priceEnvMonthly] || '').trim(),
+      );
+      return {
+        id,
+        name: TIER_DEFS[id].name,
+        dashboardPriceConfigured,
+        checkoutMode: dashboardPriceConfigured ? ('dashboard_price' as const) : ('price_data' as const),
+      };
+    }),
   };
 }
 
