@@ -40,6 +40,14 @@ assert.match(profileStore, /export async function writeProfileDurable/);
 assert.match(server, /create-portal-session/);
 assert.match(server, /requireMembershipFeature/);
 
+// Public /api/stripe/config must not leak catalog dollar amounts.
+assert.doesNotMatch(
+  stripeSrc.slice(stripeSrc.indexOf('export function getStripeConfigReport'), stripeSrc.indexOf('export async function validateConfiguredPrice')),
+  /monthlyCents:/,
+  'getStripeConfigReport must omit monthlyCents from the public payload',
+);
+assert.match(stripeSrc, /checkoutMode:/, 'public Stripe report must expose checkoutMode (price_data vs dashboard_price)');
+
 const membershipAccess = fs.readFileSync(path.join(root, 'src/server/membershipAccess.ts'), 'utf8');
 assert.match(membershipAccess, /resolveMembershipReportForRequest/);
 
