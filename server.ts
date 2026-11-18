@@ -522,6 +522,7 @@ async function startServer() {
   }
 
   // Retired dashboard deep link — canonical membership is /plans (301 for crawlers).
+  // Retired public data-room URLs — downloads removed; do not serve SPA shell (was 200).
   app.use((req, res, next) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
     const pathLower = req.path.toLowerCase();
@@ -530,6 +531,14 @@ async function startServer() {
       if (/^membership$/i.test(tab)) {
         return res.redirect(301, '/plans');
       }
+    }
+    if (
+      pathLower === '/data-room' ||
+      pathLower === '/investor-data-room' ||
+      pathLower.startsWith('/data-room/') ||
+      pathLower.startsWith('/investor-data-room/')
+    ) {
+      return res.redirect(301, '/technology-opportunity');
     }
     return next();
   });
@@ -2080,17 +2089,13 @@ async function startServer() {
 
   /**
    * Founder-only invite export (email + temp password + activation key).
-   * Query ?includeSecrets=1 required to include tempPassword — also needs founder action header.
+   * Always requires founder action header. Query ?includeSecrets=1 includes
+   * tempPassword + activationKey; without it those fields are omitted.
    */
   app.get(
     '/api/admin/members/invites',
     requireFounderOrCatalogAdmin,
-    (req, res, next) => {
-      if (String(req.query.includeSecrets || '') === '1') {
-        return requireFounderActionHeader(req, res, next);
-      }
-      next();
-    },
+    requireFounderActionHeader,
     async (req, res) => {
       try {
         const includeSecrets = String(req.query.includeSecrets || '') === '1';
@@ -2100,11 +2105,13 @@ async function startServer() {
             email: inv.email,
             displayName: inv.displayName,
             uid: inv.uid,
-            activationKey: inv.activationKey,
             createdAt: inv.createdAt,
           };
           if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
-          if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
+          if (includeSecrets) {
+            if (inv.activationKey) row.activationKey = inv.activationKey;
+            if (inv.tempPassword) row.tempPassword = inv.tempPassword;
+          }
           return row;
         });
         res.json({
@@ -2213,7 +2220,11 @@ async function startServer() {
     res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
   });
 
-  app.delete('/api/river/catalog/public/:id', requireCatalogAdmin, (req, res) => {
+  app.delete(
+    '/api/river/catalog/public/:id',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    (req, res) => {
     const ok = removePublicEntry(req.params.id);
     if (!ok) return res.status(404).json({ error: 'Not found.' });
     res.json({ ok: true });
@@ -3997,6 +4008,17 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
+  /** Reject client-supplied vendor keys on FRED/FMP proxies (server env only). */
+  function clientSuppliedVendorKey(query: Record<string, unknown> | undefined): boolean {
+    if (!query || typeof query !== 'object') return false;
+    for (const key of ['api_key', 'apikey', 'apiKey', 'API_KEY', 'key', 'token']) {
+      const v = query[key];
+      if (typeof v === 'string' && v.trim()) return true;
+      if (Array.isArray(v) && v.some((x) => typeof x === 'string' && x.trim())) return true;
+    }
+    return false;
+  }
+
   // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
   app.get('/api/cot/history', async (req, res) => {
     const symbol = String(req.query.symbol || '');
@@ -4020,6 +4042,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
   app.get('/api/fred/observations', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FRED_API_KEY on the server.' });
+    }
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -4049,6 +4074,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
   app.get('/api/fmp/lookup', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FMP_API_KEY on the server.' });
+    }
     const kind = String(req.query.kind || '');
     if (!FMP_LOOKUP_KINDS.has(kind)) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
@@ -4083,6 +4111,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
   app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FMP_API_KEY on the server.' });
+    }
     const { endpoint, symbol } = req.params;
     const { limit, period } = req.query;
     if (!symbol || !endpoint) {
@@ -4228,7 +4259,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json({ markets: REGIONAL_MARKETS });
   });
 
-  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+  app.post('/api/seo/indexnow', requireCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
     try {
       const result = await submitIndexNow(urls);
@@ -4238,7 +4269,11 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, async (req, res) => {
+  app.post(
+    '/api/admin/profiles/contractor-badge',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
       const result = await grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
@@ -4248,7 +4283,11 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, async (_req, res) => {
+  app.post(
+    '/api/admin/profiles/contractor-badge/seed',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
     try {
       const result = await seedIndependentContractorBadges();
       res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
