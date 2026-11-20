@@ -21,7 +21,8 @@ export function MemberDashboard() {
   async function refresh() {
     const res = await fetch("/api/me", { cache: "no-store" });
     const data = await res.json();
-    if (!res.ok && !data.viewer) {
+    // /api/me returns 200 with viewer: null when unsigned — not only non-OK statuses.
+    if (!res.ok || !data.viewer) {
       setState({
         name: "Signed out",
         email: "",
@@ -34,9 +35,9 @@ export function MemberDashboard() {
       return;
     }
     setState({
-      name: data.viewer?.name ?? "Member",
-      email: data.viewer?.email ?? "",
-      simulated: Boolean(data.viewer?.simulated),
+      name: data.viewer.name || "Member",
+      email: data.viewer.email ?? "",
+      simulated: Boolean(data.viewer.simulated),
       preferredDesk: isDeskId(data.preferredDesk) ? data.preferredDesk : "retail",
       watchlist: data.watchlist ?? [],
       storage: data.storage ?? "memory",

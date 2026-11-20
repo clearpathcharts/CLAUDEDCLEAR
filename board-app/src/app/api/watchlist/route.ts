@@ -1,5 +1,6 @@
 import { requireIdentity } from "../../../../cursor/identity";
 import { sql } from "@/lib/db";
+import { isKnownSymbol } from "@/lib/marketData";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,8 @@ export async function POST(request: Request) {
   }
 
   const symbol = (body.symbol ?? "").trim().toUpperCase();
-  if (!SYMBOL_RE.test(symbol)) {
-    return Response.json({ error: "invalid_symbol" }, { status: 400 });
+  if (!SYMBOL_RE.test(symbol) || !isKnownSymbol(symbol)) {
+    return Response.json({ error: "unknown_symbol" }, { status: 400 });
   }
   const label = String(body.label ?? symbol).slice(0, 80);
 

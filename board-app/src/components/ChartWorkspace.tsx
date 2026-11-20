@@ -130,12 +130,18 @@ export function ChartWorkspace() {
         <div className="chart-toolbar">
           <div className="quote-meta">
             <strong>{quote.symbol}</strong>
-            <span className="price">{format(quote.price)}</span>
-            <span className={changeClass}>
-              {quote.change >= 0 ? "+" : ""}
-              {format(quote.change)} ({quote.changePct.toFixed(2)}%)
-            </span>
-            <span className="status-chip">PAPER DATA</span>
+            {quote.unavailable ? (
+              <span className="status-chip">DATA UNAVAILABLE</span>
+            ) : (
+              <>
+                <span className="price">{format(quote.price)}</span>
+                <span className={changeClass}>
+                  {quote.change >= 0 ? "+" : ""}
+                  {format(quote.change)} ({quote.changePct.toFixed(2)}%)
+                </span>
+                <span className="status-chip">PAPER DATA</span>
+              </>
+            )}
           </div>
           <div className="search-box">
             <input

@@ -66,8 +66,9 @@ export function searchSymbols(query: string, limit = 8): SymbolInfo[] {
   ).slice(0, limit);
 }
 
-export function generateCandles(symbol: string, count = 80): Candle[] {
-  const info = findSymbol(symbol) ?? SYMBOLS[0];
+export function generateCandles(symbol: string, count = 80): Candle[] | null {
+  const info = findSymbol(symbol);
+  if (!info) return null;
   const rand = mulberry32(hashSeed(info.symbol));
   const candles: Candle[] = [];
   let price = info.basePrice;
@@ -102,18 +103,37 @@ export function generateCandles(symbol: string, count = 80): Candle[] {
 }
 
 export function lastQuote(symbol: string) {
+  const info = findSymbol(symbol);
   const candles = generateCandles(symbol, 40);
+  if (!info || !candles || candles.length < 2) {
+    return {
+      symbol,
+      name: "DATA UNAVAILABLE",
+      price: 0,
+      change: 0,
+      changePct: 0,
+      candles: [] as Candle[],
+      source: "board-demo-paper" as const,
+      unavailable: true as const,
+    };
+  }
   const last = candles[candles.length - 1];
   const prev = candles[candles.length - 2];
   const change = last.c - prev.c;
   const changePct = (change / prev.c) * 100;
   return {
-    symbol: findSymbol(symbol)?.symbol ?? symbol,
-    name: findSymbol(symbol)?.name ?? symbol,
+    symbol: info.symbol,
+    name: info.name,
     price: last.c,
     change,
     changePct,
     candles,
     source: "board-demo-paper" as const,
+    unavailable: false as const,
   };
+}
+
+/** Catalog-only check for watchlist / API writes. */
+export function isKnownSymbol(symbol: string): boolean {
+  return !!findSymbol(symbol);
 }
