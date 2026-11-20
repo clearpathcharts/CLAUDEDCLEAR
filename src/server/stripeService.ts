@@ -21,9 +21,12 @@
  *   membership page falls back to its Payment Link catalog.
  *
  * Prices: a recurring monthly Dashboard Price ID in STRIPE_PRICE_<TIER>_MONTHLY
- * wins. Otherwise inline price_data charges the /plans amount, attached to the
- * catalog product when one is found, so checkout works with zero env setup.
+ * wins (must match the current company pricing-year amount). Otherwise inline
+ * price_data charges the /plans ladder amount for the current year, attached to
+ * the catalog product when one is found, so checkout works with zero env setup.
  * Billing is monthly only — the Stripe catalog has no yearly prices.
+ * Checkout stamps pricingYear (1–5) on session + subscription metadata so
+ * continuous subscribers stay grandfathered on their join-year Stripe Price.
  */
 import Stripe from 'stripe';
 import { getStripeSecretKey, getStripeWebhookSecret } from './secrets';
@@ -33,7 +36,11 @@ import {
   completeStripeWebhookEvent,
   releaseStripeWebhookEvent,
 } from './stripeWebhookDedup';
-import { membershipMonthlyCents } from '../content/membershipPricing';
+import {
+  clampMembershipPricingYear,
+  currentMembershipPricingYear,
+  membershipMonthlyCents,
+} from '../content/membershipPricing';
 import { tierRankOf } from '../lib/entitlements';
 import { recordMarketingConversion, recordMarketingTrial } from './marketingFunnelService';
 
@@ -65,9 +72,18 @@ function tierDef(name: string, billsAs: PaidPackage): TierDef {
   return {
     name,
     billsAs,
+    /** Display / fallback — checkout recomputes from the live pricing year. */
     monthlyCents: membershipMonthlyCents(billsAs),
     priceEnvMonthly: `STRIPE_PRICE_${billsAs.toUpperCase()}_MONTHLY`,
   };
+}
+
+function pricingYearFromMetadata(meta: Stripe.Metadata | null | undefined): number | undefined {
+  const raw = String(meta?.pricingYear || '').trim();
+  if (!raw) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return undefined;
+  return clampMembershipPricingYear(n);
 }
 
 const TIER_DEFS: Record<MembershipTierId, TierDef> = {
@@ -290,9 +306,13 @@ export async function createMembershipCheckoutSession(input: {
   const customerId = await getOrCreateStripeCustomer(stripe, input.uid, input.email);
   await assertNoConflictingSubscription(stripe, input.uid, customerId);
 
+  const pricingYear = currentMembershipPricingYear();
+  const monthlyCents = membershipMonthlyCents(def.billsAs, pricingYear);
+  const pricingYearMeta = String(pricingYear);
+
   const dashboardPriceId = (process.env[def.priceEnvMonthly] || '').trim();
   if (dashboardPriceId) {
-    await validateConfiguredPrice(stripe, dashboardPriceId, def.monthlyCents);
+    await validateConfiguredPrice(stripe, dashboardPriceId, monthlyCents);
   }
   const catalogProductId = dashboardPriceId ? null : await findCatalogProductId(stripe, def.billsAs);
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = dashboardPriceId
@@ -301,7 +321,7 @@ export async function createMembershipCheckoutSession(input: {
       ? {
           price_data: {
             currency: 'usd',
-            unit_amount: def.monthlyCents,
+            unit_amount: monthlyCents,
             recurring: { interval: 'month' },
             product: catalogProductId,
           },
@@ -310,11 +330,11 @@ export async function createMembershipCheckoutSession(input: {
       : {
           price_data: {
             currency: 'usd',
-            unit_amount: def.monthlyCents,
+            unit_amount: monthlyCents,
             recurring: { interval: 'month' },
             product_data: {
               name: def.name,
-              description: `ClearPath Trader ${def.name} monthly membership`,
+              description: `ClearPath Trader ${def.name} monthly membership (pricing year ${pricingYear})`,
             },
           },
           quantity: 1,
@@ -325,11 +345,21 @@ export async function createMembershipCheckoutSession(input: {
     // Never pass payment_method_types — let Stripe pick eligible methods dynamically.
     line_items: [lineItem],
     client_reference_id: input.uid,
-    metadata: { uid: input.uid, tier: input.tier, interval: input.interval },
+    metadata: {
+      uid: input.uid,
+      tier: input.tier,
+      interval: input.interval,
+      pricingYear: pricingYearMeta,
+    },
     subscription_data: {
       // Chosen plan is free for 15 days; first charge lands after the trial.
       trial_period_days: PLAN_TRIAL_DAYS,
-      metadata: { uid: input.uid, tier: input.tier, interval: input.interval },
+      metadata: {
+        uid: input.uid,
+        tier: input.tier,
+        interval: input.interval,
+        pricingYear: pricingYearMeta,
+      },
     },
     allow_promotion_codes: true,
     billing_address_collection: 'required',
@@ -437,6 +467,7 @@ export type MembershipWrite = {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   currentPeriodEnd?: string;
+  pricingYear?: number;
 };
 
 /**
@@ -635,6 +666,7 @@ async function membershipFromSubscription(sub: Stripe.Subscription): Promise<{
   const stored = readProfile(uid)?.membership;
   const tier = rawTier || (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
   if (!tier) return null;
+  const pricingYear = pricingYearFromMetadata(sub.metadata) ?? stored?.pricingYear;
   return {
     uid,
     tier,
@@ -644,6 +676,7 @@ async function membershipFromSubscription(sub: Stripe.Subscription): Promise<{
       stripeCustomerId: typeof sub.customer === 'string' ? sub.customer : sub.customer?.id,
       stripeSubscriptionId: sub.id,
       currentPeriodEnd: subscriptionPeriodEnd(sub),
+      ...(pricingYear ? { pricingYear } : {}),
     },
   };
 }
@@ -677,6 +710,8 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
       }
       const subscribed = session.mode === 'subscription';
       const email = session.customer_details?.email || session.customer_email || null;
+      const pricingYear =
+        pricingYearFromMetadata(session.metadata) ?? readProfile(uid)?.membership?.pricingYear;
       const outcome = await saveMembershipFanout(
         uid,
         {
@@ -685,6 +720,7 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
           stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
           stripeSubscriptionId:
             typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
+          ...(pricingYear ? { pricingYear } : {}),
         },
         email,
       );
@@ -712,6 +748,7 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
                 String(sub.metadata?.tier || '').trim() ||
                 (stored?.stripeSubscriptionId === sub.id ? stored.tier : '');
               if (!tier) return null;
+              const pricingYear = pricingYearFromMetadata(sub.metadata) ?? stored?.pricingYear;
               return {
                 uid,
                 tier,
@@ -724,6 +761,7 @@ async function processStripeEvent(event: Stripe.Event): Promise<{ handled: boole
                   stripeCustomerId: sub.customer as string,
                   stripeSubscriptionId: sub.id,
                   currentPeriodEnd: subscriptionPeriodEnd(sub),
+                  ...(pricingYear ? { pricingYear } : {}),
                 },
               };
             })()

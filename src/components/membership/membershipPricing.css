@@ -779,6 +779,39 @@
   line-height: 1.65;
 }
 
+.membership-price-ladder {
+  width: 100%;
+  max-width: 520px;
+  margin: 18px 0 0;
+  border-collapse: collapse;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 15px;
+  color: #9bb0c6;
+}
+
+.membership-price-ladder caption {
+  caption-side: top;
+  text-align: left;
+  margin-bottom: 10px;
+  color: #71849b;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.membership-price-ladder th,
+.membership-price-ladder td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(113, 132, 155, 0.25);
+  text-align: left;
+}
+
+.membership-price-ladder tr[data-current='true'] th,
+.membership-price-ladder tr[data-current='true'] td {
+  color: var(--membership-cyan);
+  font-weight: 700;
+}
+
 .membership-pricing__footer {
   border-top: 1px solid var(--membership-line);
   color: #60738a;

@@ -112,7 +112,7 @@ async function main() {
   assert.match(String(copy.validateBody('Gold users hit a 70% win rate.', facts, voice)), /claim|number/);
   assert.match(String(copy.validateBody('Gold is only $4.99 this week.', facts, voice)), /price/);
   assert.match(String(copy.validateBody('Join 50000 traders on Gold today.', facts, voice)), /number/);
-  assert.equal(copy.validateBody('Gold is $9.93/mo and lets you study chart patterns.', facts, voice), null, 'real price from the plan sheet is allowed');
+  assert.equal(copy.validateBody('Gold is $9.99/mo and lets you study chart patterns.', facts, voice), null, 'real price from the plan sheet is allowed');
 
   // AI that makes claims or repeats itself is thrown out; clean unique AI copy is kept.
   const liar = async () => 'Guaranteed returns with our signals!';

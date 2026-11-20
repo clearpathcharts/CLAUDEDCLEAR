@@ -30,7 +30,7 @@ export const PLANS: Plan[] = [
   {
     id: "silver",
     name: "Silver",
-    priceLabel: "$5.98",
+    priceLabel: "$5.99",
     eyebrow: "Build your workspace",
     features: [
       "4 chart/window",
@@ -45,7 +45,7 @@ export const PLANS: Plan[] = [
   {
     id: "gold",
     name: "Gold",
-    priceLabel: "$9.93",
+    priceLabel: "$9.99",
     eyebrow: "Create and replay",
     features: [
       "10 chart/window",

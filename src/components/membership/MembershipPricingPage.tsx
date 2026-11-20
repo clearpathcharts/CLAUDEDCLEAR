@@ -8,6 +8,9 @@ import {
 } from '../../content/productIdentity';
 import {
   MEMBERSHIP_PLANS,
+  MEMBERSHIP_PRICE_YEAR_CAP,
+  currentMembershipPricingYear,
+  membershipPriceLadderRows,
   type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
@@ -227,6 +230,36 @@ export default function MembershipPricingPage() {
               Basic is free. Silver, Gold, and Platinum are monthly Stripe subscriptions. After checkout, the
               signed-in desk unlocks that package — not a higher tier.
             </p>
+            <p data-testid="price-ladder-note">
+              List prices step up by ClearPath company year and freeze after year {MEMBERSHIP_PRICE_YEAR_CAP}.
+              You are on year {currentMembershipPricingYear()} pricing now. Stay subscribed and you keep the
+              monthly rate from the year you joined; cancel and rejoin later and you pay the then-current year.
+            </p>
+            <table className="membership-price-ladder" data-testid="price-ladder">
+              <caption>Silver / Gold / Platinum monthly list by company year</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Year</th>
+                  <th scope="col">Silver</th>
+                  <th scope="col">Gold</th>
+                  <th scope="col">Platinum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {membershipPriceLadderRows().map((row) => (
+                  <tr key={row.year} data-current={row.isCurrent ? 'true' : undefined}>
+                    <th scope="row">
+                      {row.year}
+                      {row.isCurrent ? ' (now)' : ''}
+                      {row.isCap ? ' (cap)' : ''}
+                    </th>
+                    <td>{row.silverLabel}</td>
+                    <td>{row.goldLabel}</td>
+                    <td>{row.platinumLabel}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </main>
