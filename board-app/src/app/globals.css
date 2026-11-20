@@ -1,19 +1,30 @@
 :root {
-  --bg: #0a0d12;
-  --bg-elevated: #121820;
-  --bg-soft: #171e28;
-  --line: rgba(212, 184, 120, 0.18);
-  --line-strong: rgba(212, 184, 120, 0.35);
-  --text: #e8edf4;
-  --text-muted: #9aa8bc;
-  --text-dim: #6d7b8f;
-  --brand: #d4b878;
-  --brand-deep: #a8894a;
-  --accent: #3ecf8e;
-  --danger: #e85d4c;
-  --neuro-bg: #14181f;
-  --neuro-text: #d5dbe6;
-  --neuro-line: rgba(180, 190, 205, 0.16);
+  /* ClearPath Trader brand tokens (clearpathtrader.com) */
+  --cpt-purple: #5b00ff;
+  --cpt-pink: #ff007f;
+  --cpt-orange: #ff6a00;
+  --cpt-cyan: #00e5ff;
+  --cpt-black: #050505;
+  --cpt-indigo: #5d3bff;
+  --cpt-violet: #c44dff;
+  --cpt-fluorescent-pink: #ff2bd6;
+  --cpt-brand-gradient: linear-gradient(90deg, #5b00ff, #ff007f, #ff6a00);
+
+  --bg: var(--cpt-black);
+  --bg-elevated: #0c0c12;
+  --bg-soft: #12121a;
+  --line: rgba(0, 229, 255, 0.22);
+  --line-strong: rgba(255, 0, 127, 0.45);
+  --text: #f2f4f8;
+  --text-muted: #a8b0c0;
+  --text-dim: #6e7688;
+  --brand: var(--cpt-cyan);
+  --brand-deep: var(--cpt-indigo);
+  --accent: var(--cpt-cyan);
+  --danger: var(--cpt-fluorescent-pink);
+  --neuro-bg: #0a0a10;
+  --neuro-text: #e8ecf4;
+  --neuro-line: rgba(0, 229, 255, 0.16);
   --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
   --font-body: "Source Sans 3", "Source Sans Pro", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
@@ -40,9 +51,10 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(212, 184, 120, 0.12), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(62, 207, 142, 0.06), transparent 50%),
-    linear-gradient(180deg, #0c1118 0%, var(--bg) 40%, #080a0e 100%);
+    radial-gradient(1100px 560px at 8% -8%, rgba(91, 0, 255, 0.28), transparent 55%),
+    radial-gradient(900px 500px at 92% 0%, rgba(255, 0, 127, 0.16), transparent 50%),
+    radial-gradient(700px 420px at 70% 30%, rgba(0, 229, 255, 0.08), transparent 45%),
+    linear-gradient(180deg, #0a0614 0%, var(--cpt-black) 42%, #050508 100%);
   background-attachment: fixed;
 }
 
@@ -82,7 +94,7 @@ img {
   top: 0;
   z-index: 40;
   backdrop-filter: blur(12px);
-  background: rgba(10, 13, 18, 0.82);
+  background: rgba(5, 5, 5, 0.88);
   border-bottom: 1px solid var(--line);
 }
 
@@ -106,7 +118,10 @@ img {
   font-weight: 600;
   font-size: 1.15rem;
   letter-spacing: 0.02em;
-  color: var(--brand);
+  background: var(--cpt-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .brand-sub {
@@ -132,23 +147,23 @@ img {
 
 .nav-links a:hover,
 .nav-links a[aria-current="page"] {
-  color: var(--text);
+  color: var(--cpt-cyan);
 }
 
 .nav-cta {
   display: inline-flex;
   align-items: center;
   padding: 0.45rem 0.85rem;
-  border: 1px solid var(--line-strong);
-  background: linear-gradient(180deg, rgba(212, 184, 120, 0.18), rgba(212, 184, 120, 0.05));
-  color: var(--brand) !important;
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  background: linear-gradient(100deg, rgba(91, 0, 255, 0.25), rgba(255, 0, 127, 0.18), rgba(255, 106, 0, 0.12));
+  color: var(--cpt-cyan) !important;
   letter-spacing: 0.03em;
 }
 
 .demo-banner {
   border-bottom: 1px solid var(--line);
-  background: rgba(212, 184, 120, 0.08);
-  color: var(--brand);
+  background: rgba(91, 0, 255, 0.12);
+  color: var(--cpt-cyan);
   font-size: 0.85rem;
   padding: 0.55rem 0;
 }
@@ -173,23 +188,24 @@ img {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(115deg, rgba(8, 10, 14, 0.55) 0%, rgba(8, 10, 14, 0.2) 45%, rgba(8, 10, 14, 0.75) 100%),
+    linear-gradient(115deg, rgba(5, 5, 5, 0.65) 0%, rgba(5, 5, 5, 0.25) 45%, rgba(5, 5, 5, 0.8) 100%),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 48px,
-      rgba(212, 184, 120, 0.035) 48px,
-      rgba(212, 184, 120, 0.035) 49px
+      rgba(0, 229, 255, 0.04) 48px,
+      rgba(0, 229, 255, 0.04) 49px
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 36px,
-      rgba(100, 130, 160, 0.04) 36px,
-      rgba(100, 130, 160, 0.04) 37px
+      rgba(91, 0, 255, 0.05) 36px,
+      rgba(91, 0, 255, 0.05) 37px
     ),
-    radial-gradient(ellipse at 70% 40%, rgba(62, 207, 142, 0.12), transparent 45%),
-    linear-gradient(160deg, #152033 0%, #0a0d12 55%, #101820 100%);
+    radial-gradient(ellipse at 72% 38%, rgba(255, 0, 127, 0.18), transparent 48%),
+    radial-gradient(ellipse at 30% 60%, rgba(91, 0, 255, 0.22), transparent 50%),
+    linear-gradient(160deg, #12082a 0%, var(--cpt-black) 55%, #0a0618 100%);
   animation: planeShift 18s ease-in-out infinite alternate;
 }
 
@@ -206,7 +222,10 @@ img {
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.02em;
-  color: var(--brand);
+  background: var(--cpt-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin: 0 0 0.85rem;
   animation: riseIn 0.9s ease both;
 }
@@ -252,15 +271,15 @@ img {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #e0c78a, var(--brand-deep));
-  color: #14110a;
-  font-weight: 600;
+  background: linear-gradient(100deg, #00e5ff, #ff2ea6 55%, #ff6a00);
+  color: #050505;
+  font-weight: 700;
 }
 
 .btn-ghost {
-  border-color: var(--line-strong);
+  border-color: rgba(0, 229, 255, 0.45);
   background: rgba(255, 255, 255, 0.02);
-  color: var(--text);
+  color: var(--cpt-cyan);
 }
 
 .section {
@@ -297,7 +316,7 @@ img {
   display: block;
   padding: 1.15rem 1.2rem;
   border: 1px solid var(--line);
-  background: linear-gradient(160deg, rgba(23, 30, 40, 0.9), rgba(12, 16, 22, 0.7));
+  background: linear-gradient(160deg, rgba(91, 0, 255, 0.16), rgba(5, 5, 5, 0.85));
   transition: border-color 0.25s ease, transform 0.25s ease;
 }
 
@@ -405,8 +424,8 @@ img {
 }
 
 .desk-switch button[aria-pressed="true"] {
-  border-color: var(--line-strong);
-  background: rgba(212, 184, 120, 0.08);
+  border-color: rgba(0, 229, 255, 0.45);
+  background: rgba(91, 0, 255, 0.18);
   color: var(--text);
 }
 
@@ -495,7 +514,7 @@ img {
 }
 
 .search-results button:hover {
-  background: rgba(212, 184, 120, 0.08);
+  background: rgba(0, 229, 255, 0.08);
 }
 
 .search-results .sym {
@@ -547,20 +566,20 @@ img {
 }
 
 .workspace.neuro .chart-shell {
-  background: #161a21;
+  background: #08080f;
 }
 
 .workspace.neuro .desk-switch button[aria-pressed="true"] {
-  background: rgba(180, 190, 205, 0.1);
+  background: rgba(0, 229, 255, 0.1);
 }
 
-/* Neurodivergent candle / tape colors: cyan up, magenta down — not green/red */
+/* Neurodivergent tape: brand cyan / fluorescent pink */
 .workspace.neuro .quote-meta .up {
-  color: #00e5ff;
+  color: var(--cpt-cyan);
 }
 
 .workspace.neuro .quote-meta .down {
-  color: #ff2bd6;
+  color: var(--cpt-fluorescent-pink);
 }
 
 .plan-grid {
@@ -592,8 +611,8 @@ img {
 }
 
 .plan.featured {
-  border-color: var(--line-strong);
-  background: linear-gradient(180deg, rgba(212, 184, 120, 0.12), rgba(14, 18, 24, 0.9));
+  border-color: rgba(255, 0, 127, 0.45);
+  background: linear-gradient(160deg, rgba(91, 0, 255, 0.22), rgba(5, 5, 5, 0.92));
 }
 
 .plan .eyebrow {

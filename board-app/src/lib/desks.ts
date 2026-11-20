@@ -20,6 +20,7 @@ export type DeskMeta = {
   calm?: boolean;
 };
 
+/** Candle colors follow ClearPath Trader brand (clearpathtrader.com). */
 export const DESKS: Record<DeskId, DeskMeta> = {
   institutional: {
     id: "institutional",
@@ -27,10 +28,10 @@ export const DESKS: Record<DeskId, DeskMeta> = {
     short: "INST",
     tagline: "Give me the information",
     tone: "Dense intel panels. Positioning, flows, and levels first.",
-    chartBg: "#0a0e14",
-    candleUp: "#2dd4a8",
-    candleDown: "#f07178",
-    grid: "rgba(148, 163, 184, 0.12)",
+    chartBg: "#050505",
+    candleUp: "#00E5FF",
+    candleDown: "#FF007F",
+    grid: "rgba(91, 0, 255, 0.18)",
   },
   fundamental: {
     id: "fundamental",
@@ -38,10 +39,10 @@ export const DESKS: Record<DeskId, DeskMeta> = {
     short: "FUND",
     tagline: "What is this business doing financially?",
     tone: "Balance-sheet and macro context beside the tape.",
-    chartBg: "#0c1018",
-    candleUp: "#3ecf8e",
-    candleDown: "#e85d4c",
-    grid: "rgba(200, 150, 80, 0.14)",
+    chartBg: "#07050c",
+    candleUp: "#00E5FF",
+    candleDown: "#FF6A00",
+    grid: "rgba(255, 106, 0, 0.16)",
   },
   retail: {
     id: "retail",
@@ -49,10 +50,10 @@ export const DESKS: Record<DeskId, DeskMeta> = {
     short: "RETAIL",
     tagline: "Make trading understandable",
     tone: "Clear labels, guided tools, less jargon on the desk.",
-    chartBg: "#0b1220",
-    candleUp: "#34d399",
-    candleDown: "#fb7185",
-    grid: "rgba(100, 140, 180, 0.14)",
+    chartBg: "#050508",
+    candleUp: "#00E5FF",
+    candleDown: "#C44DFF",
+    grid: "rgba(0, 229, 255, 0.14)",
   },
   neurodivergent: {
     id: "neurodivergent",
@@ -60,10 +61,10 @@ export const DESKS: Record<DeskId, DeskMeta> = {
     short: "NEURO",
     tagline: "Built for different minds. Made for real traders.",
     tone: "Calmer contrast, wider spacing, reduced visual noise.",
-    chartBg: "#12161c",
+    chartBg: "#08080f",
     candleUp: "#00E5FF",
     candleDown: "#FF2BD6",
-    grid: "rgba(160, 160, 160, 0.08)",
+    grid: "rgba(0, 229, 255, 0.1)",
     calm: true,
   },
 };
