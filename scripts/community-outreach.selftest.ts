@@ -36,6 +36,10 @@ assert.match(page, /statusBanner/);
 assert.match(page, /Proposed food distribution/);
 assert.match(page, /href=\{`#program-\$\{prog\.id\}`\}/);
 assert.match(page, /id=\{`program-\$\{prog\.id\}`\}/);
+assert.match(page, /CommunityBrandMark/);
+assert.match(page, /hero-community-emerald\.jpg/);
+assert.match(page, /clearpath-mark-community-512\.png/);
+assert.match(page, /co-flame-live/);
 assert.doesNotMatch(page, /LiveChart|MarketTicker|DeskRoute|candlestick|membership upgrade/i);
 assert.doesNotMatch(page, /Approved partner|government authorized|official endorsement/i);
 assert.doesNotMatch(
@@ -43,6 +47,8 @@ assert.doesNotMatch(
   /href=\{`#resources`\} className="co-program-card"/,
   'program cards must deep-link to their own detail anchors',
 );
+assert.ok(fs.existsSync(path.join(root, 'public/brand/clearpath-mark-community-512.png')));
+assert.ok(fs.existsSync(path.join(root, 'public/images/community-outreach/hero-community-emerald.jpg')));
 
 const content = await import('../src/content/communityOutreach.ts');
 assert.equal(content.COMMUNITY_OUTREACH_PATH, '/community-outreach');
