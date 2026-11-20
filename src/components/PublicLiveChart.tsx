@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { ChartSymbolSearch } from './charts/ChartSymbolSearch';
 import { ChartBackgroundToggle } from './charts/ChartBackgroundToggle';
 import { LightweightCandles } from './charts/LightweightCandles';
-import { NeuroProfilePicker } from './charts/NeuroProfilePicker';
 import { resolveMarketAsset } from '../constants/marketAssets';
 import {
   DEFAULT_MARKET_SYMBOLS,
@@ -11,9 +10,8 @@ import {
 import { NARROW_CHART_MQ, isNarrowChartViewport } from '../lib/charts/chartOverlayPrefs';
 import { TimeframeMenu } from './charts/TimeframeMenu';
 import { themeProfiles, type ThemeProfileId } from '../lib/theme/profiles';
-import { applyNeuroProfile } from './desks/neuro/neuroProfile';
 
-/** Same key the desks and Auth use, so a choice made here survives sign-in. */
+/** Same key the desks and Auth use, so a signed-in /ui choice still paints here. */
 const PROFILE_STORAGE_KEY = 'clearpath_current_profile_id';
 
 function readStoredProfile(): ThemeProfileId {
@@ -31,22 +29,12 @@ export default function PublicLiveChart() {
   const [timeframe, setTimeframe] = useState<string>('1h');
   const [bodyHeight, setBodyHeight] = useState(720);
   const [narrow, setNarrow] = useState(() => isNarrowChartViewport());
-  // Was hardcoded to 'calm_focus', which is why none of the other twelve
-  // neuro-adaptive profiles could ever load on the public chart.
-  const [profileId, setProfileId] = useState<ThemeProfileId>(readStoredProfile);
+  // Front page no longer mounts the neuro profile grid — profile comes from
+  // storage (or calm_focus). Full picker lives on signed-in desks / UI Modes.
+  const [profileId] = useState<ThemeProfileId>(readStoredProfile);
 
   const asset = useMemo(() => resolveMarketAsset(symbol), [symbol]);
   const assetName = asset.label.toUpperCase() === symbol.toUpperCase() ? '' : asset.label;
-
-  const changeProfile = (id: ThemeProfileId) => {
-    setProfileId(id);
-    try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, id);
-    } catch {
-      /* storage blocked — the chart still repaints for this visit */
-    }
-    applyNeuroProfile(id);
-  };
 
   useEffect(() => {
     const measure = () => {
@@ -112,15 +100,6 @@ export default function PublicLiveChart() {
             height={bodyHeight}
             fillParent
             hideChartToolbar={narrow}
-          />
-        </div>
-
-        {/* Kept below the plot so the chart still owns the first screen. */}
-        <div className="px-2 sm:px-5 pb-3 pt-3 sm:pb-5 border-t border-white/10">
-          <NeuroProfilePicker
-            activeProfileId={profileId}
-            onProfileChange={changeProfile}
-            compact={narrow}
           />
         </div>
       </div>

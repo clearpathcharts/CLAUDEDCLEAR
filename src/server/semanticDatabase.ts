@@ -454,8 +454,8 @@ export function enrichHtmlWithMetadata(
   } else if (pathClean === '/meet-the-board' || pathClean === '/leadership') {
     title = 'Meet the Board | ClearPath Trader';
     description =
-      'Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), and Brian Weber (CFO Advisor). Public page — no login required.';
-    keywords = 'ClearPath Trader board, Meet the Board, Richard Floyd founder, Clear Path Markets Science';
+      'Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO Advisor), and Sarah Weber, LSCSW. Public page — no login required.';
+    keywords = 'ClearPath Trader board, Meet the Board, Richard Floyd founder, Sarah Weber LSCSW, Clear Path Markets Science';
     schemas.push(...leadershipPersonSchemas(baseUrl));
     schemas.push(makeBreadcrumb([
       { name: 'Home', url: '' },
