@@ -1,12 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { Database, Download } from 'lucide-react';
 import searchIntelligence from '../../data/marketing/global-search-intelligence.json';
+import {
+  getAllKeywordRouteAssignments,
+  resolveKeywordRoute,
+} from '../lib/marketingRouteRegistry';
 
 type SearchRecord = Record<string, string>;
 type SearchPlatform = (typeof searchIntelligence.platforms)[number];
 
 function saveCsv(filename: string, records: SearchRecord[]) {
-  const columns = ['Category', 'Keyword', 'Audience', 'Platform', 'Language', 'Intent', 'Priority', 'Status'];
+  const columns = [
+    'Category',
+    'Keyword',
+    'Audience',
+    'Platform',
+    'Language',
+    'Intent',
+    'Priority',
+    'Status',
+    'Canonical URL',
+    'Review note',
+  ];
   const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const csv = [
     columns.join(','),
@@ -24,73 +39,28 @@ function saveCsv(filename: string, records: SearchRecord[]) {
 }
 
 function buildIntelligenceRecords() {
-  const researchOnly = new Set(
-    searchIntelligence.researchOnlyTerms.map((item) => item.term.toLowerCase()),
-  );
   const highPriority = new Set(
     searchIntelligence.highPriorityTerms.map((term) => term.toLowerCase()),
   );
-  const statusFor = (keyword: string) =>
-    researchOnly.has(keyword.toLowerCase()) ? 'Research only' : 'Candidate';
   const priorityFor = (keyword: string) =>
     highPriority.has(keyword.toLowerCase()) ? 'High' : 'Medium';
-  const master = searchIntelligence.masterGroups.flatMap((group) =>
-    group.keywords.map((keyword) => ({
-      Category: group.category,
-      Keyword: keyword,
-      Audience: group.audience,
-      Platform: 'All',
-      Language: 'English',
-      Intent: 'Discovery',
-      Priority: priorityFor(keyword),
-      Status: statusFor(keyword),
-    })),
-  );
-  const platform = searchIntelligence.platforms.flatMap((channel) =>
-    channel.keywords.map((keyword) => ({
-      Category: channel.type,
-      Keyword: keyword,
-      Audience: 'Platform audience',
-      Platform: channel.platform,
-      Language: channel.language,
-      Intent: 'Platform discovery',
-      Priority: priorityFor(keyword),
-      Status: statusFor(keyword),
-    })),
-  );
-  const brand = [
-    ...searchIntelligence.brandAcquisitionTerms.map((keyword) => ({
-      Category: 'Product acquisition',
-      Keyword: keyword,
-      Audience: 'Prospective customers',
-      Platform: 'All',
-      Language: 'English',
-      Intent: 'Product discovery',
-      Priority: 'High',
-      Status: statusFor(keyword),
-    })),
-    ...searchIntelligence.officialBrandTerms.map((keyword) => ({
-      Category: 'Official brand term',
-      Keyword: keyword,
-      Audience: 'All audiences',
-      Platform: 'All',
-      Language: 'English',
-      Intent: 'Brand discovery',
-      Priority: 'High',
-      Status: statusFor(keyword),
-    })),
-  ];
-  const neurodivergent = searchIntelligence.neurodivergentTerms.map((keyword) => ({
-    Category: 'Neurodivergent trading',
-    Keyword: keyword,
-    Audience: 'Neurodivergent traders and learners',
-    Platform: 'All',
-    Language: 'English',
-    Intent: 'Audience discovery',
-    Priority: 'High',
-    Status: statusFor(keyword),
+  return getAllKeywordRouteAssignments().map((assignment) => ({
+    Category: assignment.sourceGroup,
+    Keyword: assignment.keyword,
+    Audience: assignment.audience,
+    Platform: assignment.platform || 'All',
+    Language: assignment.language,
+    Intent:
+      assignment.source === 'platform'
+        ? 'Platform discovery'
+        : assignment.source.includes('brand')
+          ? 'Brand discovery'
+          : 'Discovery',
+    Priority: priorityFor(assignment.keyword),
+    Status: assignment.status === 'approved' ? 'Linked' : 'Research only',
+    'Canonical URL': assignment.absoluteUrl || '',
+    'Review note': assignment.reason || '',
   }));
-  return [...master, ...platform, ...brand, ...neurodivergent];
 }
 
 function AudienceAllocation() {
@@ -175,7 +145,7 @@ function PlatformLanguageMap({
               <th className="px-4 py-3">Platform</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Language</th>
-              <th className="px-4 py-3">Discovery terms</th>
+              <th className="px-4 py-3">Linked discovery terms</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -185,7 +155,36 @@ function PlatformLanguageMap({
                 <td className="px-4 py-3 text-zinc-400">{platform.type}</td>
                 <td className="px-4 py-3 text-zinc-400">{platform.language}</td>
                 <td className="px-4 py-3 text-xs text-zinc-300">
-                  {platform.keywords.join(' · ')}
+                  <div className="flex flex-wrap gap-1.5">
+                    {platform.keywords.map((keyword) => {
+                      const assignment = resolveKeywordRoute({
+                        keyword,
+                        source: 'platform',
+                        sourceGroup: platform.type,
+                        audience: 'Platform audience',
+                        platform: platform.platform,
+                        language: platform.language,
+                      });
+                      return assignment.canonicalPath ? (
+                        <a
+                          key={keyword}
+                          href={assignment.canonicalPath}
+                          title={`${keyword} → ${assignment.canonicalPath}`}
+                          className="rounded-full border border-violet-300/20 bg-violet-400/[0.06] px-2 py-1 text-violet-100 hover:bg-violet-400/15"
+                        >
+                          {keyword}
+                        </a>
+                      ) : (
+                        <span
+                          key={keyword}
+                          title={assignment.reason}
+                          className="rounded-full border border-amber-400/20 bg-amber-400/[0.06] px-2 py-1 text-amber-100"
+                        >
+                          {keyword} · review
+                        </span>
+                      );
+                    })}
+                  </div>
                   {'note' in platform && platform.note ? (
                     <p className="mb-0 mt-2 text-[10px] leading-relaxed text-amber-200/70">
                       {platform.note}
@@ -209,6 +208,26 @@ function PlatformLanguageMap({
 export default function GlobalSearchIntelligencePanel() {
   const [query, setQuery] = useState('');
   const records = useMemo(() => buildIntelligenceRecords(), []);
+  const coverage = useMemo(() => {
+    const assignments = getAllKeywordRouteAssignments();
+    return {
+      linked: new Set(
+        assignments
+          .filter((assignment) => assignment.status === 'approved')
+          .map((assignment) => assignment.normalizedKeyword),
+      ).size,
+      review: new Set(
+        assignments
+          .filter((assignment) => assignment.status === 'research_only')
+          .map((assignment) => assignment.normalizedKeyword),
+      ).size,
+      routes: new Set(
+        assignments
+          .map((assignment) => assignment.canonicalPath)
+          .filter((path): path is string => Boolean(path)),
+      ).size,
+    };
+  }, []);
   const filteredPlatforms = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return searchIntelligence.platforms;
@@ -236,6 +255,10 @@ export default function GlobalSearchIntelligencePanel() {
           <p className="mt-2 text-sm leading-relaxed text-zinc-300">
             The class database is now a governed research layer. Search terms guide content and discovery,
             but they do not automatically become public product claims.
+          </p>
+          <p className="mt-2 text-xs font-bold text-violet-100">
+            {coverage.linked} unique terms linked to {coverage.routes} existing pages · {coverage.review}{' '}
+            unsupported terms held for review
           </p>
           <p className="mt-2 text-xs italic text-zinc-500">
             Positioning hypothesis: “{searchIntelligence.positioningHypothesis}”
