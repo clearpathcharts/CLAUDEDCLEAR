@@ -9,6 +9,7 @@ import {
   recordPublicMarketingEvent,
   sanitizeMarketingAttribution,
 } from './marketingFunnelService';
+import { createMarketingIntelligenceRouter } from './marketingIntelligenceRoutes';
 
 type FunnelTierId = 'basic' | 'silver' | 'gold' | 'platinum';
 
@@ -164,6 +165,8 @@ export function createPublicMarketingRouter(): Router {
 
 export function createAdminMarketingRouter(): Router {
   const router = Router();
+
+  router.use('/intelligence', createMarketingIntelligenceRouter());
 
   router.get('/catalog', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
