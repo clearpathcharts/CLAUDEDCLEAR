@@ -10,6 +10,9 @@ import React from 'react';
  */
 export const BRAND_MARK_SRC = '/brand/clearpath-mark-128.png';
 export const BRAND_LOCKUP_SRC = '/brand/clearpath-lockup-512.png';
+/** Community Outreach variant: cyan outer, emerald middle ring, purple core. */
+export const COMMUNITY_BRAND_MARK_SRC = '/brand/clearpath-mark-community-128.png';
+export const COMMUNITY_BRAND_MARK_512_SRC = '/brand/clearpath-mark-community-512.png';
 
 export function BrandMark({
   size = 32,
@@ -26,6 +29,31 @@ export function BrandMark({
       width={size}
       height={size}
       className={`shrink-0 select-none object-contain ${className}`}
+      style={{ width: size, height: size }}
+      draggable={false}
+    />
+  );
+}
+
+/** Community Outreach flame — emerald outline instead of magenta. */
+export function CommunityBrandMark({
+  size = 32,
+  className = '',
+  animated = false,
+}: {
+  size?: number;
+  className?: string;
+  animated?: boolean;
+}) {
+  const src = size >= 200 ? COMMUNITY_BRAND_MARK_512_SRC : COMMUNITY_BRAND_MARK_SRC;
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      width={size}
+      height={size}
+      className={`shrink-0 select-none object-contain ${animated ? 'co-flame-live' : ''} ${className}`}
       style={{ width: size, height: size }}
       draggable={false}
     />

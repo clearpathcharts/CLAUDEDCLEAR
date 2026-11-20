@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import SEO from '../SEO';
-import { BrandMark } from '../brand/BrandMark';
+import { CommunityBrandMark } from '../brand/BrandMark';
 import PublicSiteLinks from '../PublicSiteLinks';
 import {
   CALIFORNIA_COUNTY_COUNT,
@@ -43,8 +43,9 @@ type PubInstitution = (typeof DIRECTORY_INSTITUTIONS)[number] & {
 type PubResource = (typeof EDUCATIONAL_RESOURCES)[number];
 type PubDocument = (typeof DOCUMENT_CENTER)[number];
 
-const HERO_COMMUNITY = '/images/community-outreach/hero-community.jpg';
+const HERO_COMMUNITY = '/images/community-outreach/hero-community-emerald.jpg';
 const HERO_FOOD_BANK = '/images/community-outreach/hero-food-bank.jpg';
+const COMMUNITY_FLAME_512 = '/brand/clearpath-mark-community-512.png';
 
 const PROGRAM_ICONS: Record<string, React.ReactNode> = {
   libraries: (
@@ -454,23 +455,92 @@ export default function CommunityOutreachPage() {
           height: 100%;
           object-fit: cover;
           object-position: center top;
-          transform: scale(1.01);
-          animation: co-hero-drift 22s ease-in-out infinite alternate;
+          transform: scale(1.02);
+          animation: co-hero-drift 18s ease-in-out infinite alternate;
         }
         @keyframes co-hero-drift {
-          from { transform: scale(1.01) translate3d(0, 0, 0); }
-          to { transform: scale(1.04) translate3d(0, -0.8%, 0); }
+          from { transform: scale(1.02) translate3d(0, 0, 0); }
+          to { transform: scale(1.07) translate3d(0, -1.4%, 0); }
+        }
+        .co-hero-aurora {
+          position: absolute;
+          inset: -10%;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 45% 35% at 50% 12%, rgba(16, 185, 129, 0.22), transparent 55%),
+            radial-gradient(ellipse 55% 40% at 20% 30%, rgba(34, 240, 255, 0.14), transparent 50%),
+            radial-gradient(ellipse 50% 35% at 85% 20%, rgba(177, 76, 255, 0.16), transparent 55%);
+          mix-blend-mode: screen;
+          animation: co-aurora 10s ease-in-out infinite alternate;
+        }
+        @keyframes co-aurora {
+          from { opacity: 0.55; transform: translate3d(-1.5%, 0, 0) scale(1); }
+          to { opacity: 1; transform: translate3d(1.5%, 1%, 0) scale(1.05); }
+        }
+        .co-hero-stars {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image:
+            radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,0.85), transparent),
+            radial-gradient(1.5px 1.5px at 28% 8%, rgba(126,246,255,0.9), transparent),
+            radial-gradient(1px 1px at 46% 14%, rgba(255,255,255,0.7), transparent),
+            radial-gradient(1.5px 1.5px at 63% 6%, rgba(52,211,153,0.9), transparent),
+            radial-gradient(1px 1px at 78% 16%, rgba(255,255,255,0.75), transparent),
+            radial-gradient(1.5px 1.5px at 88% 10%, rgba(233,166,255,0.85), transparent),
+            radial-gradient(1px 1px at 18% 36%, rgba(255,255,255,0.55), transparent),
+            radial-gradient(1px 1px at 72% 28%, rgba(126,246,255,0.65), transparent);
+          animation: co-stars 6s ease-in-out infinite alternate;
+        }
+        @keyframes co-stars {
+          from { opacity: 0.45; }
+          to { opacity: 1; }
+        }
+        .co-hero-flame-stage {
+          position: absolute;
+          left: 50%;
+          top: clamp(4.5rem, 11vh, 7.5rem);
+          transform: translateX(-50%);
+          z-index: 2;
+          width: clamp(5.5rem, 14vw, 9.5rem);
+          height: clamp(5.5rem, 14vw, 9.5rem);
+          pointer-events: none;
+          display: grid;
+          place-items: center;
+        }
+        .co-hero-flame-glow {
+          position: absolute;
+          inset: -18%;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(16, 185, 129, 0.45) 0%, rgba(34, 240, 255, 0.18) 42%, transparent 70%);
+          filter: blur(10px);
+          animation: co-emerald-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes co-emerald-pulse {
+          0%, 100% { opacity: 0.55; transform: scale(0.92); }
+          50% { opacity: 1; transform: scale(1.08); }
+        }
+        .co-flame-live {
+          animation: co-flame-flicker 2.8s ease-in-out infinite;
+          filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.55)) drop-shadow(0 0 22px rgba(34, 240, 255, 0.35));
+          will-change: transform, filter;
+        }
+        @keyframes co-flame-flicker {
+          0%, 100% { transform: translateY(0) scale(1) rotate(-0.6deg); filter: drop-shadow(0 0 12px rgba(16,185,129,0.45)) drop-shadow(0 0 18px rgba(34,240,255,0.3)); }
+          35% { transform: translateY(-3px) scale(1.03) rotate(0.5deg); filter: drop-shadow(0 0 20px rgba(16,185,129,0.75)) drop-shadow(0 0 28px rgba(34,240,255,0.45)); }
+          70% { transform: translateY(-1px) scale(1.015) rotate(-0.3deg); filter: drop-shadow(0 0 16px rgba(52,211,153,0.65)) drop-shadow(0 0 24px rgba(34,240,255,0.4)); }
         }
         .co-hero-veil {
           position: absolute;
           inset: 0;
+          z-index: 1;
           background:
-            linear-gradient(180deg, rgba(5, 8, 20, 0.12) 0%, rgba(5, 8, 20, 0.08) 48%, rgba(5, 8, 20, 0.72) 78%, rgba(5, 8, 20, 0.96) 100%);
+            linear-gradient(180deg, rgba(5, 8, 20, 0.08) 0%, rgba(5, 8, 20, 0.05) 42%, rgba(5, 8, 20, 0.7) 78%, rgba(5, 8, 20, 0.96) 100%);
           pointer-events: none;
         }
         .co-hero-content {
           position: relative;
-          z-index: 1;
+          z-index: 3;
           width: 100%;
           max-width: 72rem;
           margin: 0 auto;
@@ -606,7 +676,10 @@ export default function CommunityOutreachPage() {
           box-shadow: 0 0 14px rgba(255, 60, 240, 0.18);
         }
         @media (prefers-reduced-motion: reduce) {
-          .co-hero-media, .co-cta-bar, .co-program-card, .co-btn, .co-pillar { animation: none !important; transition: none !important; }
+          .co-hero-media, .co-hero-aurora, .co-hero-stars, .co-hero-flame-glow, .co-flame-live, .co-cta-bar, .co-program-card, .co-btn, .co-pillar {
+            animation: none !important;
+            transition: none !important;
+          }
         }
         @media print {
           .co-outreach { background: #fff !important; color: #111 !important; }
@@ -624,7 +697,7 @@ export default function CommunityOutreachPage() {
       <header className="co-no-print sticky top-0 z-40 border-b border-cyan-400/20 bg-[#050814]/85 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <a href="/" className="flex items-center gap-3" aria-label="ClearPath home" style={{ color: '#fff', textDecoration: 'none' }}>
-            <BrandMark size={30} />
+            <CommunityBrandMark size={30} animated />
             <span className="flex flex-col leading-tight">
               <span className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--co-font-display)' }}>
                 ClearPathTrader
@@ -654,8 +727,21 @@ export default function CommunityOutreachPage() {
           height={1532}
           fetchPriority="high"
         />
+        <div className="co-hero-aurora co-no-print" aria-hidden />
+        <div className="co-hero-stars co-no-print" aria-hidden />
+        <div className="co-hero-flame-stage co-no-print" aria-hidden>
+          <div className="co-hero-flame-glow" />
+          <img
+            src={COMMUNITY_FLAME_512}
+            alt=""
+            width={160}
+            height={160}
+            className="co-flame-live relative z-[1] w-full h-full object-contain"
+            draggable={false}
+          />
+        </div>
         <div className="co-hero-veil" aria-hidden />
-        {/* Poster art already carries brand + COMMUNITY title; keep HTML overlay to CTAs only. */}
+        {/* Poster art carries brand + COMMUNITY title; HTML keeps CTAs + live emerald flame. */}
         <div className="co-hero-content">
           <h1 className="sr-only">{COMMUNITY_OUTREACH_INTRO.heading}</h1>
           <p className="sr-only">{COMMUNITY_OUTREACH_INTRO.subheading}</p>
