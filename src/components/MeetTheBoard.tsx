@@ -4,9 +4,10 @@ import BoardLoginTerminal from './BoardLoginTerminal';
 import BoardMemberPortal from './BoardMemberPortal';
 import { PUBLIC_LEADERS } from '../content/leadershipPublic';
 
-const boardMembers = PUBLIC_LEADERS.map((leader, index) => ({
+/** Portal auth cards only — public-only leaders (no boardLoginName) stay on /meet-the-board. */
+const boardMembers = PUBLIC_LEADERS.filter((leader) => leader.boardLoginName).map((leader, index) => ({
   id: index + 1,
-  name: leader.boardLoginName || leader.displayName,
+  name: leader.boardLoginName as string,
   position: leader.roleLine ? `${leader.jobTitle} · ${leader.roleLine}` : leader.jobTitle,
   image: leader.imageUrl,
 }));
