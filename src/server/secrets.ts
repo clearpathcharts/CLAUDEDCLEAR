@@ -246,6 +246,15 @@ export function isAlpacaOAuthConfigured(): boolean {
   return Boolean(getAlpacaClientId() && getAlpacaClientSecret());
 }
 
+/**
+ * Legal hold. Pass-throughs stay listed in the product and stay disconnected
+ * until this is explicitly turned on. Alpaca keys alone do not enable it.
+ */
+export function isBrokerPassThroughEnabled(): boolean {
+  const raw = String(process.env.BROKER_PASS_THROUGH_ENABLED ?? '').trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes';
+}
+
 /** Safe boolean presence flags for diagnostics — never include key material. */
 export function getSecretPresenceReport(): Record<string, boolean> {
   return {

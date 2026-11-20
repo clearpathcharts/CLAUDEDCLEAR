@@ -10,7 +10,13 @@ import {
   brokerOrderLimiter,
   brokerProxyLimiter,
 } from '../routeRateLimit';
-import { BROKER_STATUS_NOTE, PASS_THROUGH_MODEL_ID } from '../../lib/passThroughBrokerModel';
+import {
+  BROKER_PASS_THROUGH_DISABLED_CODE,
+  BROKER_PASS_THROUGH_DISABLED_MESSAGE,
+  BROKER_STATUS_NOTE,
+  PASS_THROUGH_MODEL_ID,
+} from '../../lib/passThroughBrokerModel';
+import { isBrokerPassThroughEnabled } from '../secrets';
 import {
   buildAlpacaAuthorizeUrl,
   createAlpacaOAuthState,
@@ -49,6 +55,15 @@ function hostFromReq(req: Request): string | undefined {
   return String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0]?.trim() || undefined;
 }
 
+function passThroughDisabled(res: Response) {
+  return res.status(403).json({
+    ok: false,
+    error: BROKER_PASS_THROUGH_DISABLED_MESSAGE,
+    code: BROKER_PASS_THROUGH_DISABLED_CODE,
+    connectionsEnabled: false,
+  });
+}
+
 export function createBrokerRouter(): Router {
   const router = Router();
 
@@ -60,6 +75,7 @@ export function createBrokerRouter(): Router {
         ok: true,
         model: PASS_THROUGH_MODEL_ID,
         note: BROKER_STATUS_NOTE,
+        connectionsEnabled: isBrokerPassThroughEnabled(),
         brokers,
       });
     } catch (err: unknown) {
@@ -68,6 +84,7 @@ export function createBrokerRouter(): Router {
   });
 
   router.get('/alpaca/authorize', requirePrivateSession, brokerOAuthStartLimiter, (req, res) => {
+    if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
 
@@ -90,6 +107,10 @@ export function createBrokerRouter(): Router {
   });
 
   router.get('/alpaca/callback', brokerOAuthCallbackLimiter, async (req, res) => {
+    if (!isBrokerPassThroughEnabled()) {
+      const base = safeBrokerReturnTo('/brokers');
+      return res.redirect(`${base}${base.includes('?') ? '&' : '?'}broker=disabled`);
+    }
     const code = String(req.query.code || '');
     const state = String(req.query.state || '');
     const oauthErr = String(req.query.error || '');
@@ -137,6 +158,7 @@ export function createBrokerRouter(): Router {
   });
 
   router.get('/alpaca/account', requirePrivateSession, brokerProxyLimiter, async (req, res) => {
+    if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
 
@@ -154,6 +176,7 @@ export function createBrokerRouter(): Router {
   });
 
   router.get('/alpaca/orders', requirePrivateSession, brokerProxyLimiter, async (req, res) => {
+    if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
 
@@ -171,6 +194,7 @@ export function createBrokerRouter(): Router {
   });
 
   router.post('/alpaca/orders', requirePrivateSession, brokerOrderLimiter, async (req, res) => {
+    if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
 
@@ -212,6 +236,7 @@ export function createBrokerRouter(): Router {
   });
 
   router.get('/alpaca/positions', requirePrivateSession, brokerProxyLimiter, async (req, res) => {
+    if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
 

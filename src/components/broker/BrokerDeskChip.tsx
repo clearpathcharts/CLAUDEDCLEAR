@@ -4,7 +4,7 @@ import { NEVER_BROKER_DEALER } from '../../lib/passThroughBrokerModel';
 
 /** TradingView-style broker status chip — pass-through only, never ClearPath as broker. */
 export default function BrokerDeskChip() {
-  const { loading, alpaca } = useBrokerConnection(false);
+  const { loading, connectionsEnabled, alpaca } = useBrokerConnection(false);
 
   if (loading) {
     return (
@@ -19,7 +19,7 @@ export default function BrokerDeskChip() {
 
   if (!alpaca) return null;
 
-  if (alpaca.connected) {
+  if (connectionsEnabled && alpaca.connected) {
     return (
       <a
         href="/brokers"

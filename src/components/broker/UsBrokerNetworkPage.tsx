@@ -34,7 +34,7 @@ function BrokerLogo({ broker }: { broker: UsBrokerCard }) {
 
 export default function UsBrokerNetworkPage() {
   const { user } = useAuth();
-  const { loading, alpaca, account, refresh } = useBrokerConnection(true);
+  const { loading, connectionsEnabled, alpaca, account, refresh } = useBrokerConnection(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -48,16 +48,19 @@ export default function UsBrokerNetworkPage() {
       setError('Broker authorization was cancelled. No account was connected.');
     } else if (result === 'error') {
       setError('The broker connection could not be completed. Try again or contact support.');
+    } else if (result === 'disabled') {
+      setMessage('Pass-throughs stay available to review. No brokerage was connected.');
     }
   }, [refresh]);
 
-  const connectedCount = alpaca?.connected ? 1 : 0;
+  const connectedCount = connectionsEnabled && alpaca?.connected ? 1 : 0;
   const availableCount = useMemo(
     () => US_BROKER_CATALOG.filter((broker) => broker.integration === 'available').length,
     [],
   );
 
   const connectAlpaca = () => {
+    if (!connectionsEnabled) return;
     setBusy(true);
     setError('');
     startAlpacaConnect(PAGE_PATH);
@@ -85,7 +88,7 @@ export default function UsBrokerNetworkPage() {
         <title>US Broker Connections | ClearPath Trader</title>
         <meta
           name="description"
-          content="Connect an existing United States brokerage account to ClearPath through secure broker-authorized pass-through integrations."
+          content="United States broker pass-throughs available to review on ClearPath. No brokerage account is connected, and no orders are sent."
         />
         <link rel="canonical" href="https://clearpathtrader.com/brokers" />
       </Helmet>
@@ -125,8 +128,8 @@ export default function UsBrokerNetworkPage() {
               One ClearPath interface.
             </h1>
             <p className="broker-hero__lede">
-              Link an account you already own at a licensed brokerage. ClearPath provides the chart and order
-              interface; your broker authorizes the connection, holds the assets, and executes every order.
+              Licensed US broker pass-throughs are available to review. No account is connected, and ClearPath
+              does not send orders or hold funds. A live link can be explored later, after it is explicitly enabled.
             </p>
             <div className="broker-hero__actions">
               <a href="#broker-grid" className="broker-primary-button">
@@ -174,15 +177,15 @@ export default function UsBrokerNetworkPage() {
           <div>
             <LockKeyhole size={18} aria-hidden="true" />
             <span>
-              <strong>OAuth authorization</strong>
-              No brokerage password stored
+              <strong>OAuth stays off</strong>
+              No authorization is requested
             </span>
           </div>
           <div>
             <ShieldCheck size={18} aria-hidden="true" />
             <span>
-              <strong>Licensed execution</strong>
-              Orders go to your broker
+              <strong>No orders sent</strong>
+              The trade path is disconnected
             </span>
           </div>
           <div>
@@ -223,17 +226,16 @@ export default function UsBrokerNetworkPage() {
           <div id="broker-grid" className="broker-grid">
             {US_BROKER_CATALOG.map((broker) => {
               const isAlpaca = broker.id === 'alpaca';
-              const connected = isAlpaca && Boolean(alpaca?.connected);
-              const configured = isAlpaca && Boolean(alpaca?.configured);
-              // A usable connection should look different from one that is only
-              // mapped, so the card carries its status rather than the badge alone.
-              const state = connected ? 'connected' : configured ? 'ready' : 'planned';
+              const listed = broker.integration === 'available';
+              const connected = connectionsEnabled && isAlpaca && Boolean(alpaca?.connected);
+              const configured = connectionsEnabled && isAlpaca && Boolean(alpaca?.configured);
+              const state = connected ? 'connected' : configured ? 'ready' : listed ? 'available' : 'planned';
               return (
                 <article className={`broker-card broker-card--${state}`} key={broker.id}>
                   <div className="broker-card__top">
                     <BrokerLogo broker={broker} />
                     <span className={`broker-state broker-state--${state}`}>
-                      {connected ? 'Connected' : configured ? 'Ready' : isAlpaca ? 'Setup required' : 'Planned'}
+                      {connected ? 'Connected' : configured ? 'Ready' : listed ? 'Available' : 'Planned'}
                     </span>
                   </div>
                   <div className="broker-card__body">
@@ -261,7 +263,7 @@ export default function UsBrokerNetworkPage() {
                         <Unplug size={15} aria-hidden="true" />
                         Disconnect
                       </button>
-                    ) : isAlpaca && configured && user ? (
+                    ) : connectionsEnabled && isAlpaca && configured && user ? (
                       <button
                         type="button"
                         className="broker-connect-button"
@@ -271,15 +273,15 @@ export default function UsBrokerNetworkPage() {
                         Connect securely
                         <ExternalLink size={15} aria-hidden="true" />
                       </button>
-                    ) : isAlpaca && !user ? (
+                    ) : connectionsEnabled && isAlpaca && !user ? (
                       <a href="/" className="broker-connect-button">
                         Sign in to connect
                         <ExternalLink size={15} aria-hidden="true" />
                       </a>
-                    ) : isAlpaca ? (
+                    ) : listed ? (
                       <span className="broker-planned-label">
                         <LockKeyhole size={14} aria-hidden="true" />
-                        Server keys required
+                        Not connected
                       </span>
                     ) : (
                       <span className="broker-planned-label">
@@ -311,15 +313,18 @@ export default function UsBrokerNetworkPage() {
                 <span aria-hidden="true" />
                 Controlled handoff
               </p>
-              <h2 id="broker-how-title">How pass-through works</h2>
+              <h2 id="broker-how-title">How pass-through would work</h2>
             </div>
           </div>
+          <p className="broker-card__note" style={{ margin: '0 0 18px' }}>
+            This is the later model. It is not live. No screen here can authorize a brokerage or place an order.
+          </p>
           <ol>
             <li>
               <span>01</span>
               <div>
                 <h3>Choose a supported broker</h3>
-                <p>ClearPath sends you to the brokerage’s authorization screen. We never ask for its password.</p>
+                <p>When a connection is enabled later, ClearPath would send you to the brokerage’s authorization screen. We never ask for its password.</p>
               </div>
             </li>
             <li>
@@ -362,7 +367,7 @@ export default function UsBrokerNetworkPage() {
 
       <footer className="broker-network__footer">
         <span>ClearPath Trader</span>
-        <span>Chart interface · broker-authorized execution · no custody</span>
+        <span>Chart interface · pass-throughs visible · nothing connected</span>
       </footer>
     </div>
   );

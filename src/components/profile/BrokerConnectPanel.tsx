@@ -18,6 +18,7 @@ import {
 export default function BrokerConnectPanel() {
   const [alpaca, setAlpaca] = useState<BrokerPublicStatus | null>(null);
   const [note, setNote] = useState('');
+  const [connectionsEnabled, setConnectionsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -28,6 +29,7 @@ export default function BrokerConnectPanel() {
     try {
       const data = await fetchBrokerStatus();
       setNote(data.note || '');
+      setConnectionsEnabled(data.connectionsEnabled === true);
       setAlpaca(data.brokers?.alpaca ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load broker status');
@@ -45,6 +47,7 @@ export default function BrokerConnectPanel() {
   }, [refresh]);
 
   const onConnect = () => {
+    if (!connectionsEnabled) return;
     setBusy(true);
     startAlpacaConnect('/?tab=Biography#Biography');
   };
@@ -80,7 +83,7 @@ export default function BrokerConnectPanel() {
             <div>
               <p className="text-sm font-black uppercase tracking-wider text-white">{alpaca.label}</p>
               <p className="text-[10px] font-mono uppercase text-zinc-500 mt-1">
-                Mode: {alpaca.mode === 'stub' ? 'STUB (ops keys not set)' : alpaca.environment || 'live'}
+                Mode: {connectionsEnabled ? (alpaca.mode === 'stub' ? 'STUB (ops keys not set)' : alpaca.environment || 'live') : 'Available · not connected'}
               </p>
             </div>
             <span
@@ -92,7 +95,7 @@ export default function BrokerConnectPanel() {
                     : 'border-amber-500/40 text-amber-200 bg-amber-500/10'
               }`}
             >
-              {alpaca.connected ? 'Connected' : alpaca.configured ? 'Ready to connect' : 'Not configured'}
+              {!connectionsEnabled ? 'Available' : alpaca.connected ? 'Connected' : alpaca.configured ? 'Ready to connect' : 'Not configured'}
             </span>
           </div>
 
@@ -104,14 +107,16 @@ export default function BrokerConnectPanel() {
             </ul>
           ) : (
             <p className="text-[11px] text-zinc-500 mb-4">
-              {!alpaca.configured
+              {!connectionsEnabled
+                ? 'Shown so the pass-through can be reviewed. No brokerage is linked, and this screen cannot start a connection.'
+                : !alpaca.configured
                 ? 'Founder: set ALPACA_CLIENT_ID, ALPACA_CLIENT_SECRET, ALPACA_REDIRECT_URI, and BROKER_TOKEN_ENCRYPTION_KEY on Cloud Run (Edit & deploy → Variables). Market data keys are separate.'
                 : 'Sign in, then connect to authorize ClearPath to route orders to your Alpaca account.'}
             </p>
           )}
 
           <div className="flex flex-wrap gap-2">
-            {!alpaca.connected && alpaca.configured ? (
+            {connectionsEnabled && !alpaca.connected && alpaca.configured ? (
               <button
                 type="button"
                 disabled={busy}
@@ -148,7 +153,7 @@ export default function BrokerConnectPanel() {
       {error ? <p className="mt-3 text-xs text-rose-400">{error}</p> : null}
 
       <p className="mt-4 text-[10px] text-zinc-600 leading-relaxed max-w-2xl">
-        {NEVER_BROKER_DEALER} Chart submissions pass through to your connected broker only after OAuth and disclaimer acknowledgment. Not investment advice.
+        {NEVER_BROKER_DEALER} {PASS_THROUGH_SUMMARY}
       </p>
     </div>
   );

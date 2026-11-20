@@ -28,7 +28,7 @@ export const US_BROKER_CATALOG: UsBrokerCard[] = [
     integration: 'available',
     sourceLabel: 'Alpaca newsroom',
     sourceUrl: 'https://alpaca.markets/newsroom',
-    note: 'OAuth pass-through foundation is implemented. Availability depends on production broker keys.',
+    note: 'Listed as an available pass-through. No brokerage connection is live, and no orders are sent.',
   },
   {
     id: 'schwab',

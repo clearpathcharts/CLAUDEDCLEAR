@@ -18,23 +18,59 @@ import { US_BROKER_CATALOG } from '../src/content/usBrokerCatalog';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function testStubModeWithoutEnv() {
+  delete process.env.BROKER_PASS_THROUGH_ENABLED;
   const summary = alpacaConfiguredSummary();
   assert.equal(summary.configured, false);
-  assert.equal(summary.mode, 'stub');
+  assert.equal(summary.connectionsEnabled, false);
+  assert.equal(summary.mode, 'preview');
   const status = await brokerPublicStatus(null);
-  assert.equal(status.alpaca.mode, 'stub');
+  assert.equal(status.alpaca.mode, 'preview');
   assert.equal(status.alpaca.connected, false);
+  assert.equal(status.alpaca.connectionsEnabled, false);
 }
 
-async function testAuthorizeUrlWhenConfigured() {
+async function testKeysDoNotConnectWhileHeld() {
   const prev = {
     id: process.env.ALPACA_CLIENT_ID,
     secret: process.env.ALPACA_CLIENT_SECRET,
     enc: process.env.BROKER_TOKEN_ENCRYPTION_KEY,
+    live: process.env.BROKER_PASS_THROUGH_ENABLED,
   };
   process.env.ALPACA_CLIENT_ID = 'test-client-id';
   process.env.ALPACA_CLIENT_SECRET = 'test-client-secret';
   process.env.BROKER_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+  delete process.env.BROKER_PASS_THROUGH_ENABLED;
+
+  try {
+    const state = createAlpacaOAuthState('uid_test', '/brokers');
+    const url = buildAlpacaAuthorizeUrl(state.state, 'http://localhost:3000/api/broker/alpaca/callback');
+    assert.equal(url, null);
+    const summary = alpacaConfiguredSummary();
+    assert.equal(summary.mode, 'preview');
+    assert.equal(summary.connectionsEnabled, false);
+    const status = await brokerPublicStatus('uid_test');
+    assert.equal(status.alpaca.connected, false);
+    assert.equal(status.alpaca.configured, false);
+  } finally {
+    process.env.ALPACA_CLIENT_ID = prev.id ?? '';
+    process.env.ALPACA_CLIENT_SECRET = prev.secret ?? '';
+    process.env.BROKER_TOKEN_ENCRYPTION_KEY = prev.enc ?? '';
+    if (prev.live == null) delete process.env.BROKER_PASS_THROUGH_ENABLED;
+    else process.env.BROKER_PASS_THROUGH_ENABLED = prev.live;
+  }
+}
+
+async function testAuthorizeUrlWhenExplicitlyEnabled() {
+  const prev = {
+    id: process.env.ALPACA_CLIENT_ID,
+    secret: process.env.ALPACA_CLIENT_SECRET,
+    enc: process.env.BROKER_TOKEN_ENCRYPTION_KEY,
+    live: process.env.BROKER_PASS_THROUGH_ENABLED,
+  };
+  process.env.ALPACA_CLIENT_ID = 'test-client-id';
+  process.env.ALPACA_CLIENT_SECRET = 'test-client-secret';
+  process.env.BROKER_TOKEN_ENCRYPTION_KEY = 'a'.repeat(64);
+  process.env.BROKER_PASS_THROUGH_ENABLED = '1';
 
   try {
     const state = createAlpacaOAuthState('uid_test', '/?tab=Biography#Biography');
@@ -47,6 +83,8 @@ async function testAuthorizeUrlWhenConfigured() {
     process.env.ALPACA_CLIENT_ID = prev.id ?? '';
     process.env.ALPACA_CLIENT_SECRET = prev.secret ?? '';
     process.env.BROKER_TOKEN_ENCRYPTION_KEY = prev.enc ?? '';
+    if (prev.live == null) delete process.env.BROKER_PASS_THROUGH_ENABLED;
+    else process.env.BROKER_PASS_THROUGH_ENABLED = prev.live;
   }
 }
 
@@ -95,7 +133,9 @@ function testUsBrokerNetworkPage() {
   const page = fs.readFileSync(path.join(root, 'src/components/broker/UsBrokerNetworkPage.tsx'), 'utf8');
   assert.match(page, /Your broker\./);
   assert.match(page, /useBrokerConnection\(true\)/);
-  assert.match(page, /startAlpacaConnect\(PAGE_PATH\)/);
+  assert.match(page, /if \(!connectionsEnabled\) return;/);
+  assert.match(page, /Not connected/);
+  assert.match(page, /No account is connected/);
   assert.match(page, /broker\.integration === 'available'/);
   assert.match(page, /Every logo shown is an unmodified file/);
   assert.doesNotMatch(page, /start(?:Schwab|Tradier|TradeStation|Ibkr|Tastytrade|Etrade|Webull|Tradovate)Connect/);
@@ -106,6 +146,8 @@ function testUsBrokerNetworkPage() {
 
   const routes = fs.readFileSync(path.join(root, 'src/server/broker/brokerRoutes.ts'), 'utf8');
   assert.match(routes, /\(\?:brokers\|broker-connect\)/);
+  assert.match(routes, /BROKER_PASS_THROUGH_DISABLED/);
+  assert.match(routes, /isBrokerPassThroughEnabled\(\)/);
 
   const chip = fs.readFileSync(path.join(root, 'src/components/broker/BrokerDeskChip.tsx'), 'utf8');
   assert.match(chip, /href="\/brokers"/);
@@ -116,7 +158,8 @@ async function main() {
   testCanonicalCopy();
   testUsBrokerNetworkPage();
   await testStubModeWithoutEnv();
-  await testAuthorizeUrlWhenConfigured();
+  await testKeysDoNotConnectWhileHeld();
+  await testAuthorizeUrlWhenExplicitlyEnabled();
   testTokenCryptoRoundTrip();
   console.log('broker-oauth.selftest: OK');
 }

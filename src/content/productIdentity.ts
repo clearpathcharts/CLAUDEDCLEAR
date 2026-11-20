@@ -34,7 +34,7 @@ export const PRODUCT_DISAMBIGUATION =
 
 export const PRODUCT_KIND = "educational financial markets site";
 
-export const PRODUCT_WHAT_IT_IS = `${PRODUCT_NAME} is one browser-based ${PRODUCT_KIND} with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. One website — four workstations for four kinds of traders, not four brokerages and not four ways to place trades. Live charts for stocks, forex, crypto, and commodities, unlimited technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, and a macro desk. The Neurodivergent desk uses the same market data with 13 accessibility / sensory chart profiles. In-app C.P.T. Buddy is a platonic mentor that explains the site and markets — not a lead-capture widget. Optional pass-through broker connect (OAuth to your own licensed partner such as Alpaca) lets the site route orders you authorize to that broker — ClearPath is the interface, not the broker-dealer. Without a connected broker, analytics and learning only. Not investment advice.`;
+export const PRODUCT_WHAT_IT_IS = `${PRODUCT_NAME} is one browser-based ${PRODUCT_KIND} with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. One website — four workstations for four kinds of traders, not four brokerages and not four ways to place trades. Live charts for stocks, forex, crypto, and commodities, unlimited technical indicators, automatic chart-pattern context, a financial encyclopedia, an indicator encyclopedia, a beginner-to-advanced education path, Literacy OS, and a macro desk. The Neurodivergent desk uses the same market data with 13 accessibility / sensory chart profiles. In-app C.P.T. Buddy is a platonic mentor that explains the site and markets — not a lead-capture widget. Licensed broker pass-throughs (such as Alpaca) are listed and available to review. No brokerage is connected, and the site does not send orders. ClearPath is the interface, not the broker-dealer. Analytics and learning only until a connection is explicitly enabled later. Not investment advice.`;
 
 export const PRODUCT_FEATURE_LIST = [
   `Four trader desks on one website: ${PRODUCT_FOUR_DESKS_PHRASE}`,
@@ -55,7 +55,7 @@ export const PRODUCT_FEATURE_LIST = [
 ];
 
 export const PRODUCT_NOT_LIST = [
-  "Not a broker-dealer or fund manager — no custody of your money; optional OAuth connects your existing licensed broker account for pass-through order routing when you authorize it",
+  "Not a broker-dealer or fund manager — no custody of your money. Broker pass-throughs are visible and not connected; no OAuth or order routing is live",
   "Not a website chatbot that greets visitors, answers business hours, captures leads, or books appointments",
   "Not ClearPath AI (aiclearpath.com) or any other unrelated ClearPath-branded automation vendor",
   "Not financial, tax, or legal advice",
@@ -84,7 +84,7 @@ export const IDENTITY_FAQS: Array<{ question: string; answer: string }> = [
   {
     question: "Will ClearPath ever become a broker-dealer?",
     answer:
-      "No — never. ClearPath Trader is a chart and intelligence interface only. Optional pass-through OAuth (same model as TradingView + Alpaca) lets you link your own account at a licensed broker; that broker holds funds, performs KYC/AML, and executes orders you authorize. ClearPath does not custody money or hold a broker-dealer license.",
+      "No — never. ClearPath Trader is a chart and intelligence interface only. Licensed broker pass-throughs are listed for later review and are not connected. ClearPath does not custody money, send orders, or hold a broker-dealer license.",
   },
   {
     question: "What is ClearPath Trader?",
