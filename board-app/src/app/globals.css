@@ -554,6 +554,15 @@ img {
   background: rgba(180, 190, 205, 0.1);
 }
 
+/* Neurodivergent candle / tape colors: cyan up, magenta down — not green/red */
+.workspace.neuro .quote-meta .up {
+  color: #00e5ff;
+}
+
+.workspace.neuro .quote-meta .down {
+  color: #ff2bd6;
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
