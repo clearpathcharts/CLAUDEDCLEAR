@@ -274,7 +274,7 @@ export const TECH_OPP_VALUATION = {
       },
       {
         label: 'Membership tiers (live catalog)',
-        value: 'Basic (free), Silver, Gold, Platinum — paid Silver–Platinum roughly $5.98–$14.99 / month',
+        value: 'Basic (free), Silver, Gold, Platinum — paid Silver–Platinum year-1 list $5.99–$14.99 / month (5-year ladder, freeze after year 5)',
       },
       {
         label: 'Capital sought',

@@ -47,6 +47,8 @@ assert.doesNotMatch(
   'getStripeConfigReport must omit monthlyCents from the public payload',
 );
 assert.match(stripeSrc, /checkoutMode:/, 'public Stripe report must expose checkoutMode (price_data vs dashboard_price)');
+assert.match(stripeSrc, /pricingYear: pricingYearMeta/, 'checkout stamps pricingYear for join-year grandfathering');
+assert.match(stripeSrc, /currentMembershipPricingYear/, 'checkout uses company pricing year');
 
 const membershipAccess = fs.readFileSync(path.join(root, 'src/server/membershipAccess.ts'), 'utf8');
 assert.match(membershipAccess, /resolveMembershipReportForRequest/);
