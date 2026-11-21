@@ -53,6 +53,17 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
     boardLoginName: 'Brian Weber',
     bio: `Brian Weber serves as CFO advisor to Clear Path Markets Science Corp., supporting budgeting, financial reporting, and operational finance guidance for ClearPath Trader’s education and analytics platform. He advises the company; he does not provide investment advice to users and is not a registered investment adviser.`,
   },
+  {
+    id: 'sarah-weber',
+    displayName: 'Sarah Weber, LSCSW',
+    jobTitle: 'Behavioral Therapist · Board Member',
+    roleLine: 'Board of Directors',
+    imageUrl: '/team/sarah-weber.jpg',
+    schemaKey: 'sarah-weber-board',
+    // Public board page only until a portal passcode is issued.
+    portraitObjectPosition: '50% 18%',
+    bio: `Sarah Weber, LSCSW, serves on the board of Clear Path Markets Science Corp. As a licensed clinical social worker and behavioral therapist, she advises ClearPath Trader on how adults learn, retain, and apply information — so the platform adapts to the trader rather than forcing traders to adapt to a single “norm.” She does not provide investment advice.`,
+  },
 ];
 
 export function leaderById(id: string): PublicLeader | undefined {

@@ -7,7 +7,12 @@ import {
   STRIPE_ACCOUNT_RECOVERY_ENABLED,
 } from '../src/lib/paymentsEnabled';
 import { AFFILIATE_PROGRAM_ENABLED } from '../src/server/affiliateService';
-import { MEMBERSHIP_PLANS, membershipMonthlyCents } from '../src/content/membershipPricing';
+import {
+  MEMBERSHIP_PLANS,
+  MEMBERSHIP_PRICE_YEAR_CAP,
+  membershipMonthlyCents,
+  membershipPriceLadderRows,
+} from '../src/content/membershipPricing';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(path.join(root, rel), 'utf8');
@@ -23,9 +28,13 @@ assert.equal(AFFILIATE_PROGRAM_ENABLED, false, 'membership affiliate program sta
 assert.equal(STRIPE_ACCOUNT_RECOVERY_ENABLED, false, 'Stripe account recovery stays off');
 
 assert.equal(MEMBERSHIP_PLANS.length, 4);
-assert.equal(membershipMonthlyCents('silver'), 598);
-assert.equal(membershipMonthlyCents('gold'), 993);
-assert.equal(membershipMonthlyCents('platinum'), 1499);
+assert.equal(membershipMonthlyCents('silver', 1), 599);
+assert.equal(membershipMonthlyCents('gold', 1), 999);
+assert.equal(membershipMonthlyCents('platinum', 1), 1499);
+assert.equal(membershipMonthlyCents('platinum', 2), 2499);
+assert.equal(membershipMonthlyCents('platinum', MEMBERSHIP_PRICE_YEAR_CAP), 5499);
+assert.equal(membershipMonthlyCents('platinum', 99), 5499, 'pricing year clamps at cap');
+assert.equal(membershipPriceLadderRows().length, MEMBERSHIP_PRICE_YEAR_CAP);
 
 assert.match(page, /PlanCheckoutButton/);
 assert.equal(page.includes('buy-button.js'), false, 'no shared Stripe Buy Button');
@@ -38,10 +47,13 @@ assert.match(page, /choosePlan/);
 assert.equal(page.includes('Review only'), false);
 assert.equal(page.includes('membership-plan-grid'), false);
 
-assert.match(stripeService, /membershipMonthlyCents\(billsAs\)/, 'checkout charges the /plans amount');
+assert.match(stripeService, /membershipMonthlyCents\(def\.billsAs, pricingYear\)/, 'checkout charges the live pricing-year amount');
+assert.match(stripeService, /pricingYear: pricingYearMeta/, 'checkout stamps pricingYear for grandfathering');
 assert.match(stripeService, /const tier = String\(session\.metadata\?\.tier \|\| ''\)\.trim\(\);/, 'tier only from server metadata');
 assert.equal(stripeService.includes('parseMembershipCheckoutRef'), false);
-assert.match(stripeService, /subscription_data: \{[\s\S]*?metadata: \{ uid: input\.uid, tier: input\.tier/);
+assert.match(stripeService, /subscription_data: \{[\s\S]*?pricingYear: pricingYearMeta/);
+assert.match(page, /data-testid="price-ladder"/);
+assert.match(page, /data-testid="price-ladder-note"/);
 
 assert.equal(hook.includes("tier: 'platinum'"), false);
 assert.equal(hook.includes('PAYMENTS_OFF'), false);

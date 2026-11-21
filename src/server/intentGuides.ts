@@ -3,12 +3,13 @@
 // scripts/intent-guides.selftest.ts enforces prohibited claims, prices, and length.
 
 import type { GuideRecord } from './contentData';
-import { MEMBERSHIP_PLANS } from '../content/membershipPricing';
+import { formatMembershipPrice, membershipMonthlyCents } from '../content/membershipPricing';
 
-const price = (id: string) => MEMBERSHIP_PLANS.find((p) => p.id === id)?.priceLabel ?? '';
-const SILVER = price('silver');
-const GOLD = price('gold');
-const PLATINUM = price('platinum');
+/** Live labels — do not bake at import so guides track the company pricing year. */
+const price = (id: 'silver' | 'gold' | 'platinum') => formatMembershipPrice(membershipMonthlyCents(id));
+const SILVER = () => price('silver');
+const GOLD = () => price('gold');
+const PLATINUM = () => price('platinum');
 
 export const INTENT_DISCLAIMER =
   'Educational content only. Not financial advice. ClearPath Trader is not a brokerage.';
@@ -176,9 +177,9 @@ People usually search for an alternative for one of three reasons: the screen fe
 
 *   **Chart-first desks.** Four desks — Institutional, Fundamental, Retail, and [Neurodivergent](/desk/neurodivergent) — open with the chart taking most of the screen and secondary panels parked until needed.
 *   **Free neurodivergent layouts.** Sensory profiles for ADHD, autism, dyslexia, and more are on the free Basic plan.
-*   **Automatic pattern overlay.** The Gold plan (${GOLD}/month) marks major chart patterns such as wedges, triangles, double tops and bottoms, and cup-and-handle, plus common candlestick patterns. See [automatic chart pattern recognition](/guides/automatic-chart-pattern-recognition).
+*   **Automatic pattern overlay.** The Gold plan (${GOLD()}/month) marks major chart patterns such as wedges, triangles, double tops and bottoms, and cup-and-handle, plus common candlestick patterns. See [automatic chart pattern recognition](/guides/automatic-chart-pattern-recognition).
 *   **Education built in.** An [encyclopedia](/encyclopedia), [glossary](/glossary), [indicator library](/indicators), and [education hub](/education) sit next to the charts.
-*   **Plain pricing.** Basic is free, Silver is ${SILVER}/month, Gold is ${GOLD}/month, and Platinum is ${PLATINUM}/month. Full details are on the [plans page](/plans).
+*   **Plain pricing.** Basic is free, Silver is ${SILVER()}/month, Gold is ${GOLD()}/month, and Platinum is ${PLATINUM()}/month. Full details are on the [plans page](/plans).
 
 ### What ClearPath Trader does not do
 
@@ -255,7 +256,7 @@ This is geometry, not prophecy. A scanner tells you *what shape price has made*.
 
 ### How it works on ClearPath Trader
 
-ClearPath Trader detects patterns natively from price geometry — it is not imported from another platform’s scripts, and it does not draw harmonic or Fibonacci patterns it cannot measure reliably. The **pattern overlay is part of the Gold plan (${GOLD}/month)**. An AI pattern scanner on the Platinum plan (${PLATINUM}/month) is in progress and not yet complete. Learn each pattern in plain language in the [indicator library](/indicators) and [encyclopedia](/encyclopedia).
+ClearPath Trader detects patterns natively from price geometry — it is not imported from another platform’s scripts, and it does not draw harmonic or Fibonacci patterns it cannot measure reliably. The **pattern overlay is part of the Gold plan (${GOLD()}/month)**. An AI pattern scanner on the Platinum plan (${PLATINUM()}/month) is in progress and not yet complete. Learn each pattern in plain language in the [indicator library](/indicators) and [encyclopedia](/encyclopedia).
 
 ${footer}`,
     faqs: [
@@ -271,7 +272,7 @@ ${footer}`,
       },
       {
         question: 'Which ClearPath plan includes pattern overlay?',
-        answer: `Pattern overlay is included on the Gold plan at ${GOLD} per month and on Platinum.`,
+        answer: `Pattern overlay is included on the Gold plan at ${GOLD()} per month and on Platinum.`,
       },
     ],
   },
@@ -308,15 +309,15 @@ Most new traders pay for features they do not use yet. Before choosing a plan, l
 
 One chart per window, five basic indicators, basic drawing tools, up to three alerts, up to five watchlists, seven years of historical data where the data provider supplies it, neurodivergent layouts, and paper trading.
 
-#### Silver — ${SILVER}/month
+#### Silver — ${SILVER()}/month
 
 Four charts per window, fifteen indicators, all drawing tools, unlimited alerts and watchlists, intraday charts, market replay, black-out mode, no ads, the education hub, and the [encyclopedia of finance](/encyclopedia).
 
-#### Gold — ${GOLD}/month
+#### Gold — ${GOLD()}/month
 
 Ten charts per window, all indicators, and the automatic [pattern overlay](/guides/automatic-chart-pattern-recognition).
 
-#### Platinum — ${PLATINUM}/month
+#### Platinum — ${PLATINUM()}/month
 
 Unlimited charts. An AI pattern scanner and bot support are in progress on this tier and are not yet complete.
 
@@ -342,7 +343,7 @@ ${footer}`,
     faqs: [
       {
         question: 'What is the cheapest charting software with good indicators?',
-        answer: `ClearPath Trader has a free Basic plan with five basic indicators, and Silver at ${SILVER} per month adds fifteen indicators, four charts per window, unlimited alerts, and intraday charts.`,
+        answer: `ClearPath Trader has a free Basic plan with five basic indicators, and Silver at ${SILVER()} per month adds fifteen indicators, four charts per window, unlimited alerts, and intraday charts.`,
       },
       {
         question: 'Is free charting software good enough for beginners?',
@@ -351,7 +352,7 @@ ${footer}`,
       },
       {
         question: 'How much does ClearPath Trader cost?',
-        answer: `Basic is free. Silver is ${SILVER}/month, Gold is ${GOLD}/month, and Platinum is ${PLATINUM}/month.`,
+        answer: `Basic is free. Silver is ${SILVER()}/month, Gold is ${GOLD()}/month, and Platinum is ${PLATINUM()}/month.`,
       },
     ],
   },

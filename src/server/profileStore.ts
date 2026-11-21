@@ -44,6 +44,11 @@ export type StoredProfile = {
     currentPeriodEnd?: string;
     activatedAt?: string;
     updatedAt?: string;
+    /**
+     * Company pricing-year (1–5) stamped at checkout. Continuous subscribers keep
+     * that year's Stripe price; cancel + rejoin pays the then-current year.
+     */
+    pricingYear?: number;
     /** Referrer credited on first real (post-trial) payment. */
     affiliateCredited?: boolean;
     /** Last successful pull from Stripe API (membership/me reconcile). */

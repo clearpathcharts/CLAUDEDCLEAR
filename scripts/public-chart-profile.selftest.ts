@@ -1,13 +1,10 @@
 /**
  * Public (signed-out) chart neuro-profile wiring.
  *
- * Guards the bug fixed in PR #304: PublicLiveChart passed
- * profileId="calm_focus" to <LightweightCandles> as a hardcoded string
- * literal, so the public chart was pinned to one palette, the other twelve
- * neuro-adaptive profiles were unreachable, the saved
- * clearpath_current_profile_id was ignored, and the White/Black/THEME control
- * looked like a dead button (THEME only means "background follows the active
- * profile", and that is already its default).
+ * Guards the bug fixed in PR #304: PublicLiveChart must never hardcode
+ * profileId="calm_focus" on LightweightCandles. The front-page NeuroProfilePicker
+ * was removed (profiles live on signed-in desks / UI Modes); the public chart
+ * still reads clearpath_current_profile_id so a prior choice paints correctly.
  *
  * Run: npx tsx scripts/public-chart-profile.selftest.ts
  */
@@ -22,6 +19,7 @@ const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8');
 const PROFILE_KEY = 'clearpath_current_profile_id';
 const publicChart = read('src/components/PublicLiveChart.tsx');
 const picker = read('src/components/charts/NeuroProfilePicker.tsx');
+const marketUi = read('src/components/markets/LightweightMarketUI.tsx');
 
 /** Spans of every `try { … }` block, so we can prove storage access is guarded. */
 function tryBlockRanges(source: string): Array<[number, number]> {
@@ -44,35 +42,31 @@ function tryBlockRanges(source: string): Array<[number, number]> {
   return ranges;
 }
 
-// 1. The profile must come from component state, never a literal. A quoted id
-//    on the profileId prop is exactly how the public chart got pinned before.
 assert.doesNotMatch(
   publicChart,
   /profileId\s*=\s*["']/,
-  'PublicLiveChart must not pass a quoted profileId literal to LightweightCandles (the PR #304 bug: profileId="calm_focus" pinned the public chart to one palette).',
+  'PublicLiveChart must not pass a quoted profileId literal to LightweightCandles.',
 );
 assert.doesNotMatch(
   publicChart,
   /profileId\s*=\s*\{\s*["']/,
-  'PublicLiveChart must not pass a quoted profileId literal wrapped in braces either — same pinned-palette bug.',
+  'PublicLiveChart must not pass a quoted profileId literal wrapped in braces either.',
 );
 assert.match(
   publicChart,
   /profileId=\{profileId\}/,
-  'LightweightCandles must receive the profileId state variable so every neuro profile can paint the public chart.',
+  'LightweightCandles must receive the profileId state variable.',
 );
 assert.match(
   publicChart,
   /useState<ThemeProfileId>/,
-  'The active profile must live in PublicLiveChart state so the picker can change it.',
+  'The active profile must live in PublicLiveChart state.',
 );
 
-// 2. Same storage key as the desks / Auth / literacy panels, so a choice made
-//    while signed out survives sign-in.
 assert.match(
   publicChart,
   new RegExp(`['"]${PROFILE_KEY}['"]`),
-  `PublicLiveChart must use the shared ${PROFILE_KEY} key so a signed-out profile choice survives sign-in.`,
+  `PublicLiveChart must use the shared ${PROFILE_KEY} key.`,
 );
 for (const rel of ['src/components/Auth.tsx', 'src/literacy/panels.tsx']) {
   assert.ok(
@@ -83,16 +77,9 @@ for (const rel of ['src/components/Auth.tsx', 'src/literacy/panels.tsx']) {
 assert.match(
   publicChart,
   /localStorage\.getItem\(PROFILE_STORAGE_KEY\)/,
-  'PublicLiveChart must READ the saved profile; ignoring it was part of the PR #304 bug.',
-);
-assert.match(
-  publicChart,
-  /localStorage\.setItem\(PROFILE_STORAGE_KEY,/,
-  'PublicLiveChart must PERSIST a picked profile so it survives a reload and sign-in.',
+  'PublicLiveChart must READ the saved profile.',
 );
 
-// 3. A stored value is untrusted input: validate against themeProfiles and fall
-//    back to calm_focus instead of handing an unknown id to the chart.
 assert.match(
   publicChart,
   /in themeProfiles/,
@@ -104,74 +91,47 @@ assert.match(
   'An unknown or missing stored profile must fall back to calm_focus.',
 );
 
-// 4. Blocked / private-mode storage must not throw the public chart off screen.
 const guarded = tryBlockRanges(publicChart);
 const storageHits = [...publicChart.matchAll(/localStorage\./g)].map((m) => m.index ?? -1);
-assert.ok(storageHits.length >= 2, 'expected both a localStorage read and write in PublicLiveChart');
+assert.ok(storageHits.length >= 1, 'expected a localStorage read in PublicLiveChart');
 for (const at of storageHits) {
   assert.ok(
     guarded.some(([start, end]) => at > start && at < end),
-    'Every localStorage access in PublicLiveChart must sit inside a try/catch — private-mode or blocked storage must never break the signed-out chart.',
+    'Every localStorage access in PublicLiveChart must sit inside a try/catch.',
   );
 }
 assert.match(publicChart, /catch\s*\{/, 'storage failures must be swallowed, not rethrown');
 
-// 5. The picker must actually be mounted on the public chart, otherwise the
-//    unlocked profiles are still unreachable for signed-out visitors.
-assert.match(
+assert.doesNotMatch(
   publicChart,
-  /import \{ NeuroProfilePicker \} from '\.\/charts\/NeuroProfilePicker'/,
-  'PublicLiveChart must import NeuroProfilePicker.',
+  /import\s*\{[^}]*NeuroProfilePicker/,
+  'PublicLiveChart must not import NeuroProfilePicker on the front page.',
 );
-assert.match(
+assert.doesNotMatch(
   publicChart,
   /<NeuroProfilePicker/,
-  'PublicLiveChart must render NeuroProfilePicker, or signed-out visitors cannot switch profiles.',
+  'PublicLiveChart must not render NeuroProfilePicker on the front page.',
 );
 assert.match(
-  publicChart,
-  /activeProfileId=\{profileId\}/,
-  'The picker must be told which profile is active.',
-);
-assert.match(
-  publicChart,
-  /onProfileChange=\{changeProfile\}/,
-  'Picking a profile must run the handler that updates state and persists the choice.',
+  marketUi,
+  /<NeuroProfilePicker/,
+  'NeuroProfilePicker must remain available on LightweightMarketUI (signed-in desks).',
 );
 
-// 6. Every profile in src/lib/theme/profiles.ts must be offered by the picker.
-//    Counts are derived from both real sources, never hardcoded twice.
 const orderBlock = picker.match(/PROFILE_ORDER:\s*ThemeProfileId\[\]\s*=\s*\[([\s\S]*?)\]/);
 assert.ok(orderBlock, 'NeuroProfilePicker must declare a PROFILE_ORDER array of ThemeProfileId.');
 const offered = [...orderBlock[1].matchAll(/['"]([a-z0-9_]+)['"]/g)].map((m) => m[1]);
 const known = Object.keys(themeProfiles) as ThemeProfileId[];
-assert.equal(
-  new Set(offered).size,
-  offered.length,
-  `PROFILE_ORDER has duplicate ids: ${offered.join(', ')}`,
-);
+assert.equal(new Set(offered).size, offered.length, `PROFILE_ORDER has duplicate ids: ${offered.join(', ')}`);
 assert.deepEqual(
   [...offered].sort(),
   [...known].sort(),
-  `NeuroProfilePicker must offer exactly the profiles defined in src/lib/theme/profiles.ts. Offered ${offered.length}, defined ${known.length}. A missing id is unreachable from the UI — that is the bug this test exists for.`,
+  `NeuroProfilePicker must offer exactly the profiles defined in src/lib/theme/profiles.ts.`,
 );
-assert.ok(
-  known.length >= 13,
-  `expected at least the 13 shipped neuro profiles, found ${known.length}`,
-);
-assert.match(
-  picker,
-  /PROFILE_ORDER\.map\(/,
-  'The picker must render a button per PROFILE_ORDER entry.',
-);
+assert.ok(known.length >= 13, `expected at least the 13 shipped neuro profiles, found ${known.length}`);
+assert.match(picker, /PROFILE_ORDER\.map\(/, 'The picker must render a button per PROFILE_ORDER entry.');
 
-// 7. Second founder-reported bug: the signed-out chart had no visible symbol.
-//    The big symbol + timeframe heading must stay.
-assert.match(
-  publicChart,
-  /data-public-chart-title/,
-  'The prominent symbol + timeframe title must stay on the public chart (founder-reported: visitors could not tell what they were looking at).',
-);
+assert.match(publicChart, /data-public-chart-title/, 'The prominent symbol + timeframe title must stay.');
 const titleAt = publicChart.indexOf('data-public-chart-title');
 const titleBlock = publicChart.slice(titleAt, titleAt + 700);
 assert.match(titleBlock, /\{symbol\}/, 'the public chart title must print the live symbol');

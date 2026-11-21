@@ -17,10 +17,19 @@ for (const leader of PUBLIC_LEADERS) {
   assert.doesNotMatch(leader.displayName, /Miller/i, 'public Brent must not expose surname');
 }
 
-for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg']) {
+for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg', 'sarah-weber.jpg']) {
   const p = path.join(root, 'public/team', img);
   assert.ok(fs.existsSync(p) && fs.statSync(p).size > 1000, `missing ${img}`);
 }
+assert.ok(
+  PUBLIC_LEADERS.some((l) => l.id === 'sarah-weber'),
+  'Sarah Weber must appear on the public board',
+);
+assert.equal(
+  PUBLIC_LEADERS.find((l) => l.id === 'sarah-weber')?.boardLoginName,
+  undefined,
+  'Sarah stays public-only until a board portal passcode is issued',
+);
 
 const app = fs.readFileSync(path.join(root, 'src/App.tsx'), 'utf8');
 assert.match(app, /currentPath === '\/company'/);
@@ -29,10 +38,10 @@ assert.ok(isPublicIdentityPath('/meet-the-board'));
 assert.ok(isPublicIdentityPath('/leadership'));
 assert.match(app, /currentPath === '\/founder'/);
 
-const sitemap = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
-assert.match(sitemap, /path: '\/company'/);
-assert.match(sitemap, /path: '\/meet-the-board'/);
-assert.match(sitemap, /path: '\/press'/);
+const sitemap = fs.readFileSync(path.join(root, 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(sitemap, /\/company/);
+assert.match(sitemap, /\/meet-the-board/);
+assert.match(sitemap, /\/press/);
 
 const html = '<html><head><title>x</title></head><body></body></html>';
 const enriched = enrichHtmlWithMetadata(html, '/company');
@@ -43,6 +52,7 @@ assert.match(enriched, /2026-05-12/);
 
 const leadershipHtml = enrichHtmlWithMetadata(html, '/meet-the-board');
 assert.match(leadershipHtml, /Brian Weber/);
+assert.match(leadershipHtml, /Sarah Weber/);
 assert.match(leadershipHtml, /Chief Communications Officer/);
 assert.match(leadershipHtml, /#brent-cco/);
 assert.doesNotMatch(leadershipHtml, /Brent Miller/);
