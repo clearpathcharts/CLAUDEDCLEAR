@@ -64,7 +64,8 @@ type TierDef = {
   name: string;
   /** Package whose /plans amount and Stripe catalog product this tier bills under. */
   billsAs: PaidPackage;
-  monthlyCents: number;
+  /** Live company-year list amount (getter — not frozen at import). */
+  readonly monthlyCents: number;
   priceEnvMonthly: string;
 };
 
@@ -72,8 +73,9 @@ function tierDef(name: string, billsAs: PaidPackage): TierDef {
   return {
     name,
     billsAs,
-    /** Display / fallback — checkout recomputes from the live pricing year. */
-    monthlyCents: membershipMonthlyCents(billsAs),
+    get monthlyCents() {
+      return membershipMonthlyCents(billsAs);
+    },
     priceEnvMonthly: `STRIPE_PRICE_${billsAs.toUpperCase()}_MONTHLY`,
   };
 }

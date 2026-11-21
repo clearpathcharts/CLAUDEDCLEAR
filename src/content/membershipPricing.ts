@@ -54,22 +54,43 @@ export function membershipMonthlyCents(
 export type MembershipPlanPrice = {
   id: MembershipPlanId;
   name: string;
-  priceCents: number;
-  priceLabel: string;
+  /** Always reads the live company pricing year (not frozen at import). */
+  readonly priceCents: number;
+  readonly priceLabel: string;
   eyebrow: string;
   featured?: boolean;
   features: string[];
 };
 
-const CURRENT_LIST_YEAR = currentMembershipPricingYear();
+type PlanSheetBase = {
+  id: MembershipPlanId;
+  name: string;
+  eyebrow: string;
+  featured?: boolean;
+  features: string[];
+};
 
-/** Public /plans sheet — amounts follow the current company pricing year. */
+function withLiveListPrice(base: PlanSheetBase): MembershipPlanPrice {
+  if (base.id === 'basic') {
+    return { ...base, priceCents: 0, priceLabel: 'Free' };
+  }
+  const paidId = base.id;
+  return {
+    ...base,
+    get priceCents() {
+      return membershipMonthlyCents(paidId);
+    },
+    get priceLabel() {
+      return formatMembershipPrice(membershipMonthlyCents(paidId));
+    },
+  };
+}
+
+/** Public /plans sheet — amounts follow the live company pricing year via getters. */
 export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
-  {
+  withLiveListPrice({
     id: 'basic',
     name: 'Basic',
-    priceCents: 0,
-    priceLabel: 'Free',
     eyebrow: 'Start here',
     features: [
       '1 chart/window',
@@ -84,12 +105,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'No Platform Manipulation',
       'Real Time News',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'silver',
     name: 'Silver',
-    priceCents: membershipMonthlyCents('silver', CURRENT_LIST_YEAR),
-    priceLabel: formatMembershipPrice(membershipMonthlyCents('silver', CURRENT_LIST_YEAR)),
     eyebrow: 'Build your workspace',
     features: [
       '4 chart/window',
@@ -115,12 +134,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'Affiliate Links/Codes',
       'Social Media Hub',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'gold',
     name: 'Gold',
-    priceCents: membershipMonthlyCents('gold', CURRENT_LIST_YEAR),
-    priceLabel: formatMembershipPrice(membershipMonthlyCents('gold', CURRENT_LIST_YEAR)),
     eyebrow: 'Create and replay',
     features: [
       '10 chart/window',
@@ -148,12 +165,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'Pattern Overlay',
       'IndaCreator',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'platinum',
     name: 'Platinum',
-    priceCents: membershipMonthlyCents('platinum', CURRENT_LIST_YEAR),
-    priceLabel: formatMembershipPrice(membershipMonthlyCents('platinum', CURRENT_LIST_YEAR)),
     eyebrow: 'Everything together',
     featured: true,
     features: [
@@ -184,7 +199,7 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'AI Pattern Scanner',
       'Addition of Bots',
     ],
-  },
+  }),
 ];
 
 export type MembershipAddon = {
@@ -204,10 +219,26 @@ export const SILVER_ADDONS: MembershipAddon[] = [
   { id: 'bots', name: 'Ability to add Bots', priceCents: 599, priceLabel: '$5.99' },
 ];
 
-export const SILVER_BASE_CENTS = membershipMonthlyCents('silver', CURRENT_LIST_YEAR);
 export const ALL_ADDONS_CENTS = SILVER_ADDONS.reduce((sum, addon) => sum + addon.priceCents, 0);
-export const SILVER_WITH_ALL_ADDONS_CENTS = SILVER_BASE_CENTS + ALL_ADDONS_CENTS;
-export const PLATINUM_CENTS = membershipMonthlyCents('platinum', CURRENT_LIST_YEAR);
+
+/** Live Silver list cents for the current company pricing year. */
+export function silverBaseCents(): number {
+  return membershipMonthlyCents('silver');
+}
+
+/** Live Platinum list cents for the current company pricing year. */
+export function platinumCents(): number {
+  return membershipMonthlyCents('platinum');
+}
+
+export function silverWithAllAddonsCents(): number {
+  return silverBaseCents() + ALL_ADDONS_CENTS;
+}
+
+/** Live aliases — prefer the function forms in new code. */
+export const SILVER_BASE_CENTS = silverBaseCents;
+export const PLATINUM_CENTS = platinumCents;
+export const SILVER_WITH_ALL_ADDONS_CENTS = silverWithAllAddonsCents;
 
 /** Public schedule rows for /plans (grandfather: continuous subscribers keep join-year rate). */
 export function membershipPriceLadderRows(): Array<{
