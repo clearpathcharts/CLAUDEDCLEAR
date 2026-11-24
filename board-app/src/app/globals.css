@@ -180,6 +180,153 @@ img {
   letter-spacing: 0.03em;
 }
 
+.nav-row-clean {
+  flex-wrap: nowrap;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.nav-cta-compact {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(255, 20, 147, 0.45);
+  background: rgba(255, 20, 147, 0.08);
+  color: #ff1493;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.menu-toggle-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 14px;
+}
+
+.menu-toggle-bars span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.app-menu-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.62);
+  cursor: pointer;
+}
+
+.app-menu-panel {
+  position: relative;
+  width: min(22rem, 92vw);
+  height: 100%;
+  overflow: auto;
+  padding: 1.25rem 1.1rem 2rem;
+  background: linear-gradient(180deg, #12082a 0%, #050505 55%);
+  border-left: 1px solid rgba(0, 229, 255, 0.28);
+  box-shadow: -12px 0 40px rgba(91, 0, 255, 0.25);
+  animation: menuSlide 0.28s ease both;
+}
+
+@keyframes menuSlide {
+  from {
+    transform: translateX(12%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.app-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.app-menu-close {
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: transparent;
+  color: var(--cpt-cyan);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.app-menu-section {
+  margin-bottom: 1.15rem;
+}
+
+.app-menu-section h2 {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.app-menu-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.app-menu-section a {
+  display: block;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.app-menu-section a:hover,
+.app-menu-section a[aria-current="page"] {
+  border-color: rgba(0, 229, 255, 0.55);
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--cpt-cyan);
+}
+
+.app-menu-external {
+  display: inline-flex;
+  margin-top: 0.5rem;
+  color: #ff1493;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .demo-banner {
   border-bottom: 1px solid var(--line);
   background: rgba(91, 0, 255, 0.12);
@@ -737,7 +884,7 @@ img {
 
 .site-footer {
   border-top: 1px solid var(--line);
-  padding: 2rem 0 2.5rem;
+  padding: 2rem 0 calc(2.5rem + env(safe-area-inset-bottom, 0px));
   color: var(--text-dim);
   font-size: 0.85rem;
 }
@@ -751,6 +898,41 @@ img {
   margin-top: 0.75rem;
   max-width: 48rem;
   line-height: 1.55;
+}
+
+.install-app {
+  margin: 0 0 1.15rem;
+}
+
+.install-app-btn {
+  width: 100%;
+  max-width: 28rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid rgba(255, 20, 147, 0.65);
+  background: linear-gradient(100deg, rgba(91, 0, 255, 0.35), rgba(255, 20, 147, 0.28), rgba(255, 106, 0, 0.18));
+  color: #ff1493;
+  font-weight: 800;
+  font-size: clamp(0.78rem, 2.8vw, 0.95rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-shadow: 0 0 12px rgba(255, 20, 147, 0.45);
+  box-shadow: 0 0 22px rgba(255, 20, 147, 0.22);
+}
+
+.install-app-btn:hover {
+  border-color: #ff1493;
+  background: linear-gradient(100deg, rgba(91, 0, 255, 0.45), rgba(255, 20, 147, 0.38), rgba(255, 106, 0, 0.25));
+}
+
+.install-app-hint,
+.install-app-status {
+  margin: 0.55rem 0 0;
+  color: var(--cpt-cyan);
+  font-size: 0.82rem;
 }
 
 .page-head {
