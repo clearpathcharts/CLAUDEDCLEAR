@@ -6,6 +6,7 @@
 
 export const PATTERN_HUD_OPEN_KEY = "cp_chart_pattern_hud_open_v2";
 export const FORMING_WATCH_OPEN_KEY = "cp_chart_forming_watch_open_v2";
+export const INDEPENDENT_DRAWER_KEY = "cp_independent_chart_drawer_v1";
 
 export const NARROW_CHART_MQ = "(max-width: 767px)";
 export const TOUCH_HINT_MQ = "(pointer: coarse), (hover: none)";

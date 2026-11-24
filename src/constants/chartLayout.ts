@@ -4,6 +4,8 @@ export type ChartLayoutSlot = {
   y: number;
   /** Candle interval for this chart. Older saved layouts omit it and stay on 1h. */
   timeframe?: string;
+  /** This chart's own pattern drawer. Missing means on. */
+  independentDrawer?: boolean;
 };
 
 /** Where a YWC mini-chart lives on the page — never viewport-fixed overlays. */
@@ -23,6 +25,8 @@ export type YwcChartSlot = {
   y: number;
   /** Candle interval for this slot. */
   timeframe: string;
+  /** This chart's own pattern drawer. Missing means on. */
+  independentDrawer?: boolean;
 };
 
 export const MARKET_CHART_SLOT_COUNT = 3;

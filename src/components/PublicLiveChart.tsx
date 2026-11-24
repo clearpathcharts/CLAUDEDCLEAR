@@ -9,6 +9,12 @@ import {
 } from '../constants/chartLayout';
 import { NARROW_CHART_MQ, isNarrowChartViewport } from '../lib/charts/chartOverlayPrefs';
 import { TimeframeMenu } from './charts/TimeframeMenu';
+import { IndependentChartDrawerBento } from './charts/IndependentChartDrawerBento';
+import {
+  INDEPENDENT_DRAWER_KEY,
+  readOverlayOpen,
+  writeOverlayOpen,
+} from '../lib/charts/chartOverlayPrefs';
 import { themeProfiles, type ThemeProfileId } from '../lib/theme/profiles';
 
 /** Same key the desks and Auth use, so a signed-in /ui choice still paints here. */
@@ -32,6 +38,7 @@ export default function PublicLiveChart() {
   // Front page no longer mounts the neuro profile grid — profile comes from
   // storage (or calm_focus). Full picker lives on signed-in desks / UI Modes.
   const [profileId] = useState<ThemeProfileId>(readStoredProfile);
+  const [drawerOn, setDrawerOn] = useState(() => readOverlayOpen(INDEPENDENT_DRAWER_KEY, true));
 
   const asset = useMemo(() => resolveMarketAsset(symbol), [symbol]);
   const assetName = asset.label.toUpperCase() === symbol.toUpperCase() ? '' : asset.label;
@@ -83,7 +90,16 @@ export default function PublicLiveChart() {
             onSubmit={(raw) => setSymbol(resolveMarketAsset(raw).value)}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <TimeframeMenu value={timeframe} onChange={setTimeframe} />
+            <div className="flex flex-wrap items-center gap-2">
+              <TimeframeMenu value={timeframe} onChange={setTimeframe} />
+              <IndependentChartDrawerBento
+                on={drawerOn}
+                onChange={(on) => {
+                  setDrawerOn(on);
+                  writeOverlayOpen(INDEPENDENT_DRAWER_KEY, on);
+                }}
+              />
+            </div>
             {narrow ? null : <ChartBackgroundToggle />}
           </div>
         </div>
@@ -100,6 +116,7 @@ export default function PublicLiveChart() {
             height={bodyHeight}
             fillParent
             hideChartToolbar={narrow}
+            hidePatternOverlays={!drawerOn}
           />
         </div>
       </div>

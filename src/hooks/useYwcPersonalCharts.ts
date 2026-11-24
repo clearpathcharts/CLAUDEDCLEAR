@@ -5,6 +5,8 @@ export type YwcChartSlot = {
   symbol: string;
   label: string;
   timeframe: string;
+  /** This chart's own pattern drawer. Missing means on. */
+  independentDrawer?: boolean;
 };
 
 const STORAGE_KEY = 'ywc_personal_chart_slots_v1';
@@ -26,6 +28,7 @@ function loadSlots(): YwcChartSlot[] {
         symbol: slot.symbol!.trim().toUpperCase(),
         label: typeof slot.label === 'string' && slot.label.trim() ? slot.label : slot.symbol!.trim().toUpperCase(),
         timeframe: typeof slot.timeframe === 'string' && slot.timeframe.trim() ? slot.timeframe : '1h',
+        independentDrawer: slot.independentDrawer !== false,
       }));
   } catch {
     return DEFAULT_SLOTS;
@@ -64,6 +67,10 @@ export function useYwcPersonalCharts(maxSlots = 4) {
     setSlots((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const setDrawer = useCallback((id: string, independentDrawer: boolean) => {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, independentDrawer } : s)));
+  }, []);
+
   const setTimeframe = useCallback((id: string, timeframe: string) => {
     const next = timeframe.trim();
     if (!next) return;
@@ -80,5 +87,5 @@ export function useYwcPersonalCharts(maxSlots = 4) {
     );
   }, []);
 
-  return { slots, addSlot, removeSlot, updateSlot, setTimeframe, maxSlots };
+  return { slots, addSlot, removeSlot, updateSlot, setTimeframe, setDrawer, maxSlots };
 }

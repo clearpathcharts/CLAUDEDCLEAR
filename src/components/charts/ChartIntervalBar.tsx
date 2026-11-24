@@ -1,4 +1,5 @@
 import { normalizeChartTimeframe } from "../../constants/chartTimeframes";
+import { IndependentChartDrawerBento } from "./IndependentChartDrawerBento";
 
 /** Native candle intervals. Each one is a different Twelve Data bar size. */
 export const CHART_INTERVALS = [
@@ -16,11 +17,16 @@ export function ChartIntervalBar({
   onChange,
   isLocked,
   lockReason = "Intraday charts start at Silver",
+  drawerOn,
+  onDrawerChange,
 }: {
   value: string;
   onChange: (timeframe: string) => void;
   isLocked?: (id: string) => boolean;
   lockReason?: string;
+  /** When set, a small bento sits immediately after the 1H chip. */
+  drawerOn?: boolean;
+  onDrawerChange?: (on: boolean) => void;
 }) {
   const current = normalizeChartTimeframe(value);
 
@@ -37,8 +43,8 @@ export function ChartIntervalBar({
         const active = current === opt.id;
         const locked = isLocked?.(opt.id) === true;
         return (
+          <span key={opt.id} className="contents">
           <button
-            key={opt.id}
             type="button"
             disabled={locked}
             aria-pressed={active}
@@ -57,6 +63,10 @@ export function ChartIntervalBar({
           >
             {opt.label}
           </button>
+          {opt.id === "1h" && onDrawerChange ? (
+            <IndependentChartDrawerBento on={drawerOn !== false} onChange={onDrawerChange} />
+          ) : null}
+          </span>
         );
       })}
     </div>

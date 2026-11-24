@@ -28,7 +28,7 @@ type YwcPersonalChartsProps = {
 };
 
 export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPersonalChartsProps) {
-  const { slots, addSlot, removeSlot, setTimeframe, maxSlots } = useYwcPersonalCharts();
+  const { slots, addSlot, removeSlot, setTimeframe, setDrawer, maxSlots } = useYwcPersonalCharts();
   const { limits } = useMembership();
   const [symbolInput, setSymbolInput] = useState('');
   const [addError, setAddError] = useState('');
@@ -117,6 +117,8 @@ export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPerso
                 value={normalizeChartTimeframe(slot.timeframe || '1h')}
                 onChange={(tf) => setTimeframe(slot.id, tf)}
                 isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+                drawerOn={slot.independentDrawer !== false}
+                onDrawerChange={(on) => setDrawer(slot.id, on)}
               />
             </div>
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
@@ -147,6 +149,7 @@ export function YwcPersonalCharts({ compact = false, onOpenChartsTab }: YwcPerso
                 height={compact ? 320 : 560}
                 timeframe={normalizeChartTimeframe(slot.timeframe || '1h')}
                 embedMode
+                hidePatternOverlays={slot.independentDrawer === false}
               />
             </div>
             </Suspense>
