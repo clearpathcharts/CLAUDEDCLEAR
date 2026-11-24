@@ -115,9 +115,10 @@ assert.equal(PLAN_CATALOG.silver.limits.historicalYearsClaim, null);
 assert.equal(FEATURE_ACCURACY.historicalYearsClaim, 'vendor_capped');
 assert.equal(getCandleLimit('basic'), 5000);
 assert.equal(getCandleLimit('silver'), 5000);
-assert.equal(getCandleLimit('platinum'), 5000);
+assert.equal(getCandleLimit('gold'), 5000);
+assert.equal(getCandleLimit('platinum'), 40000);
 assert.equal(getCandleLimit('BRONZE'), 5000);
-assert.equal(getCandleLimit('VIP'), 5000);
+assert.equal(getCandleLimit('VIP'), 40000);
 
 assert.equal(PLAN_CATALOG.basic.limits.intradayCharts, false);
 assert.equal(PLAN_CATALOG.silver.limits.intradayCharts, true);
