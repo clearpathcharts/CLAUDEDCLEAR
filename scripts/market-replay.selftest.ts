@@ -3,10 +3,14 @@
  * Run: npx tsx scripts/market-replay.selftest.ts
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ReplayEngine, findReplayStartIndex } from '../src/lib/replay/ReplayEngine.ts';
 import { ChartDataAdapter } from '../src/lib/replay/ChartDataAdapter.ts';
 import { TradingSimulationEngine, computeTradePnl } from '../src/lib/replay/TradingSimulationEngine.ts';
 import type { ReplayCandle } from '../src/lib/replay/types.ts';
+import { replayClipFileName } from '../src/lib/replay/replayGallery.ts';
 
 function makeCandles(n: number, start = 1_700_000_000): ReplayCandle[] {
   const out: ReplayCandle[] = [];
@@ -90,5 +94,17 @@ assert.equal(sim.getAccount().pendingOrders.length, 0);
 
 const pnl = computeTradePnl('long', 1.1, 1.2, 1, 'EURUSD');
 assert.ok(pnl > 0);
+
+const panel = readFileSync(
+  path.join(path.dirname(fileURLToPath(import.meta.url)), '../src/components/replay/DeskReplayPanel.tsx'),
+  'utf8',
+);
+assert.match(panel, /data-replay-gallery/);
+assert.match(panel, /data-replay-record/);
+assert.match(panel, /handReplayClipToDevice/);
+assert.doesNotMatch(panel, /Paper Account|Order Ticket|placeOrder|Trade Journal/);
+
+const name = replayClipFileName('USD/JPY', '1h', new Date('2026-09-13T12:00:00.000Z'));
+assert.match(name, /^clearpath-replay-USDJPY-1h-2026-09-13T12-00-00\.webm$/);
 
 console.log('market-replay.selftest: ok');
