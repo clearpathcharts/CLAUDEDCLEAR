@@ -9,6 +9,11 @@
   --cpt-violet: #c44dff;
   --cpt-fluorescent-pink: #ff2bd6;
   --cpt-brand-gradient: linear-gradient(90deg, #5b00ff, #ff007f, #ff6a00);
+  --scroll-thumb: #bf00ff;
+  --scroll-track: #0a0614;
+  --scroll-thumb-gradient: linear-gradient(180deg, #5d3bff 0%, #8b5cff 28%, #bf00ff 55%, #ff1493 100%);
+  --scroll-thumb-gradient-hover: linear-gradient(180deg, #7a5cff 0%, #d946ef 45%, #ff2bd6 100%);
+  --scroll-thumb-glow: inset 0 0 7px rgba(93, 59, 255, 0.95), 0 0 10px rgba(255, 20, 147, 0.4);
 
   --bg: var(--cpt-black);
   --bg-elevated: #0c0c12;
@@ -34,6 +39,8 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
 html,
@@ -47,6 +54,26 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb-gradient);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 20, 147, 0.45);
+  box-shadow: var(--scroll-thumb-glow);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-gradient-hover);
 }
 
 body {

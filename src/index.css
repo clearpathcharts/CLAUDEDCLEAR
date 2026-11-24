@@ -77,21 +77,30 @@ textarea {
 }
 
 :root {
-  --lava-supernova: #ff0000;
-  --lava-magma: #ff4500;
-  --lava-molten: #ff8c00;
-  --lava-track: rgba(0, 0, 0, 0.55);
-  --lava-thumb-gradient: linear-gradient(180deg, var(--lava-supernova) 0%, var(--lava-magma) 52%, var(--lava-molten) 100%);
-  --lava-inner-glow: inset 0 0 7px rgba(255, 0, 0, 0.9), inset 0 0 14px rgba(255, 69, 0, 0.5);
-  --lava-outer-glow: 0 0 8px rgba(255, 0, 0, 0.65), 0 0 16px rgba(255, 69, 0, 0.4);
+  /* All scroll thumbs: neon indigo → hot pink (Firefox uses solid --scroll-thumb). */
+  --scroll-indigo: #5d3bff;
+  --scroll-hot-pink: #ff1493;
+  --scroll-thumb: #bf00ff;
+  --scroll-thumb-gradient: linear-gradient(180deg, #5d3bff 0%, #8b5cff 28%, #bf00ff 55%, #ff1493 100%);
+  --scroll-thumb-gradient-hover: linear-gradient(180deg, #7a5cff 0%, #d946ef 45%, #ff2bd6 100%);
+  --scroll-thumb-glow: inset 0 0 7px rgba(93, 59, 255, 0.95), inset 0 0 12px rgba(255, 20, 147, 0.55), 0 0 10px rgba(93, 59, 255, 0.55), 0 0 18px rgba(255, 20, 147, 0.4);
+  --scroll-track: #0a0614;
 
-  /* Nested scrollbar map: page / large panel / inner list */
-  --scroll-page: #ff00ff;
-  --scroll-page-gradient: linear-gradient(180deg, #ff66ff 0%, #ff00ff 52%, #cc00cc 100%);
-  --scroll-page-glow: inset 0 0 7px rgba(255, 0, 255, 0.9), 0 0 8px rgba(255, 0, 255, 0.65), 0 0 16px rgba(255, 0, 200, 0.4);
-  --scroll-panel: #00ffff;
-  --scroll-panel-gradient: linear-gradient(180deg, #b8ffff 0%, #00ffff 52%, #00e5ff 100%);
-  --scroll-panel-glow: inset 0 0 7px rgba(0, 255, 255, 0.95), 0 0 8px rgba(0, 255, 255, 0.7), 0 0 16px rgba(0, 229, 255, 0.45);
+  --lava-supernova: #5d3bff;
+  --lava-magma: #bf00ff;
+  --lava-molten: #ff1493;
+  --lava-track: rgba(10, 6, 20, 0.85);
+  --lava-thumb-gradient: var(--scroll-thumb-gradient);
+  --lava-inner-glow: inset 0 0 7px rgba(93, 59, 255, 0.9), inset 0 0 14px rgba(255, 20, 147, 0.5);
+  --lava-outer-glow: 0 0 8px rgba(93, 59, 255, 0.65), 0 0 16px rgba(255, 20, 147, 0.4);
+
+  /* Page + panel + nested lists share the indigo→pink map */
+  --scroll-page: var(--scroll-thumb);
+  --scroll-page-gradient: var(--scroll-thumb-gradient);
+  --scroll-page-glow: var(--scroll-thumb-glow);
+  --scroll-panel: var(--scroll-thumb);
+  --scroll-panel-gradient: var(--scroll-thumb-gradient);
+  --scroll-panel-glow: var(--scroll-thumb-glow);
 
   /* Default chrome is neon on black. High Contrast / Reduced Sensory remap below. */
   --cpt-pink: #FF1493;
@@ -325,13 +334,14 @@ html:has(.desk-shell)::-webkit-scrollbar {
   width: 16px;
 }
 html:has(.desk-shell)::-webkit-scrollbar-track {
-  background: #14000a;
-  border-left: 1px solid rgba(255, 0, 255, 0.35);
+  background: var(--scroll-track);
+  border-left: 1px solid rgba(93, 59, 255, 0.4);
 }
 html:has(.desk-shell)::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ffaaff 0%, #ff00ff 50%, #ff00c8 100%);
+  background: var(--scroll-thumb-gradient);
   border-radius: 8px;
-  border: 1px solid rgba(255, 0, 255, 0.55);
+  border: 1px solid rgba(255, 20, 147, 0.55);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 /* Blackout is a fixed overlay. Without this, the page scrollbar still shows
@@ -409,21 +419,18 @@ canvas {
   }
 }
 
-/* Nested scrollbars — three colors so stacked tracks are readable:
-   MAGENTA  = page (html) — also the only track on Home / Charts / Yours (one-scrollbar rule)
-   CYAN     = large first-level panel (desks, encyclopedia, CEO, auth/public shells, overlays)
-   ORANGE   = inner list / held file / widget (keep lava; body * default) */
+/* Nested scrollbars — neon indigo → hot pink on every track (page, panel, lists). */
 .custom-scrollbar,
 .custom-scrollbar-lava,
 .custom-scrollbar-ice,
 body *:not(.no-scrollbar):not(.scrollbar-none) {
   scrollbar-width: thin;
-  scrollbar-color: var(--lava-magma) var(--lava-track);
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
 html {
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-page) var(--lava-track);
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
 /* :is() includes IDs so this beats body *:not(...) (0,2,1). Do not put
@@ -447,7 +454,7 @@ html:not(.no-scrollbar) :is(
   .fixed.inset-0.overflow-y-auto
 ) {
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-panel) var(--lava-track);
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
 .custom-scrollbar::-webkit-scrollbar,
@@ -468,40 +475,40 @@ html::-webkit-scrollbar {
 .custom-scrollbar-ice::-webkit-scrollbar-track,
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track,
 html::-webkit-scrollbar-track {
-  background: var(--lava-track);
+  background: var(--scroll-track);
   border-radius: 4px;
 }
 
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.12);
+  box-shadow: inset 0 0 10px rgba(93, 59, 255, 0.18);
 }
 
 html::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 10px rgba(255, 0, 255, 0.18);
+  box-shadow: inset 0 0 10px rgba(255, 20, 147, 0.16);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb,
 .custom-scrollbar-lava::-webkit-scrollbar-thumb,
 .custom-scrollbar-ice::-webkit-scrollbar-thumb,
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb {
-  background: var(--lava-magma);
-  background-image: var(--lava-thumb-gradient);
+  background: var(--scroll-thumb);
+  background-image: var(--scroll-thumb-gradient);
   border-radius: 4px;
-  border: 1px solid rgba(255, 0, 0, 0.35);
-  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
+  border: 1px solid rgba(255, 20, 147, 0.4);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar-lava::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar-ice::-webkit-scrollbar-thumb:hover,
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-thumb:hover {
-  background-image: linear-gradient(180deg, #ff3333 0%, #ff5722 50%, #ffa033 100%);
-  box-shadow: inset 0 0 9px rgba(255, 0, 0, 1), inset 0 0 16px rgba(255, 69, 0, 0.65), 0 0 12px rgba(255, 0, 0, 0.75), 0 0 20px rgba(255, 69, 0, 0.5);
+  background-image: var(--scroll-thumb-gradient-hover);
+  box-shadow: inset 0 0 9px rgba(93, 59, 255, 1), inset 0 0 16px rgba(255, 20, 147, 0.7), 0 0 14px rgba(191, 0, 255, 0.8);
 }
 
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar-button {
-  background-color: var(--lava-magma);
-  border: 1px solid rgba(255, 69, 0, 0.4);
+  background-color: var(--scroll-thumb);
+  border: 1px solid rgba(93, 59, 255, 0.45);
 }
 
 body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
@@ -509,21 +516,21 @@ body *:not(.no-scrollbar):not(.scrollbar-none)::-webkit-scrollbar:horizontal {
 }
 
 html::-webkit-scrollbar-thumb {
-  background: var(--scroll-page);
-  background-image: var(--scroll-page-gradient);
+  background: var(--scroll-thumb);
+  background-image: var(--scroll-thumb-gradient);
   border-radius: 4px;
-  border: 1px solid rgba(255, 0, 255, 0.45);
-  box-shadow: var(--scroll-page-glow);
+  border: 1px solid rgba(255, 20, 147, 0.45);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 html::-webkit-scrollbar-thumb:hover {
-  background-image: linear-gradient(180deg, #ffaaff 0%, #ff00ff 50%, #ff00c8 100%);
-  box-shadow: inset 0 0 9px rgba(255, 0, 255, 1), 0 0 14px rgba(255, 0, 255, 0.8);
+  background-image: var(--scroll-thumb-gradient-hover);
+  box-shadow: inset 0 0 9px rgba(93, 59, 255, 1), 0 0 14px rgba(255, 20, 147, 0.8);
 }
 
 html::-webkit-scrollbar-button {
-  background-color: var(--scroll-page);
-  border: 1px solid rgba(255, 0, 255, 0.45);
+  background-color: var(--scroll-thumb);
+  border: 1px solid rgba(93, 59, 255, 0.45);
 }
 
 html:not(.no-scrollbar) :is(
@@ -544,11 +551,11 @@ html:not(.no-scrollbar) :is(
   .min-h-full.overflow-y-auto,
   .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-thumb {
-  background: var(--scroll-panel);
-  background-image: var(--scroll-panel-gradient);
+  background: var(--scroll-thumb);
+  background-image: var(--scroll-thumb-gradient);
   border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.5);
-  box-shadow: var(--scroll-panel-glow);
+  border: 1px solid rgba(255, 20, 147, 0.5);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 html:not(.no-scrollbar) :is(
@@ -569,8 +576,8 @@ html:not(.no-scrollbar) :is(
   .min-h-full.overflow-y-auto,
   .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-thumb:hover {
-  background-image: linear-gradient(180deg, #ffffff 0%, #00ffff 50%, #00e5ff 100%);
-  box-shadow: inset 0 0 9px rgba(0, 255, 255, 1), 0 0 14px rgba(0, 255, 255, 0.85);
+  background-image: var(--scroll-thumb-gradient-hover);
+  box-shadow: inset 0 0 9px rgba(93, 59, 255, 1), 0 0 14px rgba(255, 20, 147, 0.85);
 }
 
 html:not(.no-scrollbar) :is(
@@ -591,8 +598,8 @@ html:not(.no-scrollbar) :is(
   .min-h-full.overflow-y-auto,
   .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-button {
-  background-color: var(--scroll-panel);
-  border: 1px solid rgba(0, 255, 255, 0.5);
+  background-color: var(--scroll-thumb);
+  border: 1px solid rgba(93, 59, 255, 0.5);
 }
 
 html:not(.no-scrollbar) :is(
@@ -613,28 +620,28 @@ html:not(.no-scrollbar) :is(
   .min-h-full.overflow-y-auto,
   .fixed.inset-0.overflow-y-auto
 )::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.16);
+  box-shadow: inset 0 0 10px rgba(93, 59, 255, 0.16);
 }
 
-/* Nested lists inside cyan panels stay lava orange */
+/* Nested lists / held files — same indigo→pink thumbs */
 html:not(.no-scrollbar) :is(
   .rt-held-file,
   .retail-bento-body,
   .retail-slide-body
 ) {
   scrollbar-width: thin;
-  scrollbar-color: var(--lava-magma) var(--lava-track);
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 html:not(.no-scrollbar) :is(
   .rt-held-file,
   .retail-bento-body,
   .retail-slide-body
 )::-webkit-scrollbar-thumb {
-  background: var(--lava-magma);
-  background-image: var(--lava-thumb-gradient);
+  background: var(--scroll-thumb);
+  background-image: var(--scroll-thumb-gradient);
   border-radius: 4px;
-  border: 1px solid rgba(255, 0, 0, 0.35);
-  box-shadow: var(--lava-inner-glow), var(--lava-outer-glow);
+  border: 1px solid rgba(255, 20, 147, 0.4);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 /* Intentionally hidden scrollbars (nav chips, tickers, etc.) */
@@ -654,20 +661,21 @@ html:not(.no-scrollbar) :is(
 /* Pattern Scanner: one always-visible vertical scrollbar (hits list). */
 .pattern-scanner-scroll {
   scrollbar-width: auto;
-  scrollbar-color: #ff1493 #14000a;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
   overscroll-behavior: contain;
 }
 .pattern-scanner-scroll::-webkit-scrollbar {
   width: 12px;
 }
 .pattern-scanner-scroll::-webkit-scrollbar-track {
-  background: #14000a;
-  border-left: 1px solid rgba(255, 20, 147, 0.35);
+  background: var(--scroll-track);
+  border-left: 1px solid rgba(93, 59, 255, 0.4);
 }
 .pattern-scanner-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ff1493 0%, #bf00ff 100%);
+  background: var(--scroll-thumb-gradient);
   border-radius: 6px;
   border: 1px solid rgba(255, 20, 147, 0.6);
+  box-shadow: var(--scroll-thumb-glow);
 }
 
 /* Mobile nav -- make sure bottom nav doesn't cover content */
