@@ -1,8 +1,8 @@
-# ClearPath Trader — Board Demo (Cursor Apps)
+# Clear Path Trader (app)
 
-Cursor-hosted board-meeting demo for **ClearPath Trader** (Clear Path Markets Science Corp.).
+Investor / mobile Progressive Web App for **Clear Path Trader** (Clear Path Markets Science Corp.).
 
-This is a focused, publishable app — not a lift of the full Cloud Run stack (Firebase / Twelve Data / Stripe / Ava).
+Live charts and ClearCloud APIs come from clearpathtrader.com.
 
 ## Run locally
 
