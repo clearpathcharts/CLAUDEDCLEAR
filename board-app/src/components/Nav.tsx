@@ -18,8 +18,17 @@ export function Nav() {
     <header className="site-header">
       <div className="container nav-row">
         <Link href="/" className="brand" aria-label="ClearPath Trader home">
-          <span className="brand-name">ClearPath Trader</span>
-          <span className="brand-sub">Clear Path Markets Science</span>
+          <img
+            src="/clearpath-flame.png"
+            alt=""
+            className="brand-flame"
+            width={36}
+            height={36}
+          />
+          <span className="brand-text">
+            <span className="brand-name">ClearPath Trader</span>
+            <span className="brand-sub">Clear Path Markets Science</span>
+          </span>
         </Link>
         <nav className="nav-links" aria-label="Primary">
           {LINKS.map((link) => (

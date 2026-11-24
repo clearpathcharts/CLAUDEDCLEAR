@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { DESKS, type DeskId } from "@/lib/desks";
+import { LiveHomeChart } from "@/components/LiveHomeChart";
 
 export default function HomePage() {
   return (
     <>
+      <LiveHomeChart />
+
       <section className="hero" aria-label="ClearPath Trader hero">
         <div className="hero-plane" aria-hidden="true" />
         <div className="container hero-content">
