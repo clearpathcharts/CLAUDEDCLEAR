@@ -195,6 +195,14 @@ export function CandleChart({
   return (
     <div className="chart-canvas-wrap">
       <canvas ref={canvasRef} aria-label="Market chart" />
+      <img
+        src="/clearpath-flame.png"
+        alt=""
+        className="chart-flame-mark"
+        width={88}
+        height={88}
+        aria-hidden="true"
+      />
     </div>
   );
 }

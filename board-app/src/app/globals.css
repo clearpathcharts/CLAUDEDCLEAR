@@ -108,6 +108,22 @@ img {
 
 .brand {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.brand-flame {
+  width: 2.05rem;
+  height: 2.05rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.35));
+}
+
+.brand-text {
+  display: flex;
   flex-direction: column;
   gap: 0.05rem;
   min-width: 0;
@@ -898,6 +914,24 @@ img {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.chart-flame-mark {
+  position: absolute;
+  left: 0.85rem;
+  bottom: 1.1rem;
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: contain;
+  opacity: 0.28;
+  pointer-events: none;
+  user-select: none;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.2));
+}
+
+.live-home-chart .chart-flame-mark {
+  opacity: 0.24;
 }
 
 .intel-list {
