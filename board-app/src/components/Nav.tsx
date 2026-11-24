@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/charts", label: "Charts" },
+  { href: "/ywc", label: "Your World Connected" },
   { href: "/education", label: "Education" },
   { href: "/pricing", label: "Memberships" },
   { href: "/about", label: "About" },
@@ -17,18 +18,18 @@ export function Nav() {
   return (
     <header className="site-header">
       <div className="container nav-row">
-        <Link href="/" className="brand" aria-label="ClearPath Trader home">
+        <Link href="/" className="brand" aria-label="Clear Path Trader home">
+          <span className="brand-text">
+            <span className="brand-name">Clear Path Trader</span>
+            <span className="brand-sub">Clear Path Markets Science</span>
+          </span>
           <img
             src="/clearpath-flame.png"
             alt=""
             className="brand-flame"
-            width={36}
-            height={36}
+            width={40}
+            height={40}
           />
-          <span className="brand-text">
-            <span className="brand-name">ClearPath Trader</span>
-            <span className="brand-sub">Clear Path Markets Science</span>
-          </span>
         </Link>
         <nav className="nav-links" aria-label="Primary">
           {LINKS.map((link) => (

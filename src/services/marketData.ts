@@ -5,6 +5,7 @@ import {
   YEAR_TIMEFRAME_IDS,
   normalizeChartTimeframe,
 } from "../constants/chartTimeframes";
+import { PLATINUM_CANDLE_OUTPUTSIZE } from "../lib/planCatalog";
 
 /**
  * Historical market data service.
@@ -427,14 +428,12 @@ export function aggregateCandles(
   return out;
 }
 
-const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
-
 export type HistoricalFetchOptions = {
   /** YYYY-MM-DD — optional Twelve Data start_date window. */
   startDate?: string;
   /** YYYY-MM-DD — optional Twelve Data end_date window. */
   endDate?: string;
-  /** Override tier candle cap (still clamped to 5000). */
+  /** Override tier candle cap (still clamped to Platinum max 40,000). */
   limit?: number;
 };
 
@@ -446,8 +445,8 @@ export const fetchTieredHistoricalData = async (
   userTier: string,
   options?: HistoricalFetchOptions,
 ): Promise<NormalizedCandle[]> => {
-  // Cache on the resolved candle cap, not the tier name. VIP and BRONZE both
-  // cap at 5000 today, so a desk hook and a chart must share one in-flight fetch.
+  // Cache on the resolved candle cap, not the tier name, so desks and charts
+  // with the same plan depth share one in-flight fetch.
   const cacheKey = [
     symbol,
     interval,
@@ -470,13 +469,13 @@ async function fetchTieredHistoricalDataUncached(
   const plan = resolveTimeframePlan(interval);
   const tierCap = Math.min(
     options?.limit ?? getCandleLimit(userTier),
-    TWELVEDATA_MAX_OUTPUTSIZE,
+    PLATINUM_CANDLE_OUTPUTSIZE,
   );
   const desiredFinal = plan.visibleBars
     ? Math.min(plan.visibleBars, tierCap)
     : tierCap;
   const fetchLimit = Math.min(
-    TWELVEDATA_MAX_OUTPUTSIZE,
+    PLATINUM_CANDLE_OUTPUTSIZE,
     Math.max(plan.aggregateBars, desiredFinal * plan.aggregateBars)
   );
 

@@ -106,7 +106,7 @@ export function LiveHomeChart() {
         <div className="live-home-head">
           <div>
             <p className="eyebrow">Live from clearpathtrader.com</p>
-            <h2>Search any market · Twelve Data / FMP</h2>
+            <h2>Search any market</h2>
             <p className="lede">
               Desk colors stay unique (Institutional / Fundamental / Retail / Neurodivergent).
               Switch to green/red, OHLC bars, or a line anytime — Pattern Scanner bento works on all four.

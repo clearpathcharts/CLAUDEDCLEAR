@@ -15,25 +15,25 @@ const ogImage = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "ClearPath Trader — Board Demo",
-    template: "%s · ClearPath Trader",
+    default: "Clear Path Trader",
+    template: "%s · Clear Path Trader",
   },
   description:
-    "Analysis-first educational financial markets platform. Four desks. Not a brokerage. Clear Path Markets Science Corp.",
+    "Analysis-first educational financial markets platform. Four desks. Your World Connected. Education. (NOT A BROKERAGE). Clear Path Markets Science Corp.",
   openGraph: {
     type: "website",
     url: siteUrl,
-    siteName: "ClearPath Trader",
-    title: "ClearPath Trader — Board Demo",
+    siteName: "Clear Path Trader",
+    title: "Clear Path Trader",
     description:
-      "One chart site with four desks. Analysis-first. Not a brokerage. Clear Path Markets Science Corp.",
+      "One chart site with desks, education, and Your World Connected. Live via clearpathtrader.com. (NOT A BROKERAGE).",
     images: [ogImage],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ClearPath Trader — Board Demo",
+    title: "Clear Path Trader",
     description:
-      "One chart site with four desks. Analysis-first. Not a brokerage. Clear Path Markets Science Corp.",
+      "One chart site with desks, education, and Your World Connected. Live via clearpathtrader.com. (NOT A BROKERAGE).",
     images: [ogImage.url],
   },
 };

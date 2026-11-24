@@ -22,6 +22,10 @@ import {
   type InstrumentProvenance,
 } from "../lib/instrumentIntegrity";
 import { historySymbol } from "../lib/institutional/vendorMaps";
+import {
+  PLATINUM_CANDLE_OUTPUTSIZE,
+  TWELVEDATA_PAGE_OUTPUTSIZE,
+} from "../lib/planCatalog";
 import { fetchFmpCandles, fetchFmpQuote, fetchFmpQuotes } from "./fmpMarketFallback";
 import { getTwelveDataApiKey, listTwelveDataApiKeyCandidates } from "./secrets";
 import { resolveQuotePrice, withTapePrice } from "../lib/resolveQuotePrice";
@@ -883,9 +887,12 @@ export async function getMarketCandles(
   apiKey: string,
   options?: MarketCandleFetchOptions,
 ) {
-  // Twelve Data only accepts outputsize in [1, 5000]; anything larger is
-  // rejected with HTTP 400, which would blank the chart entirely.
-  const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1), 5000);
+  // Plan caps go up to Platinum/founder 40,000. Each Twelve Data call still
+  // uses at most TWELVEDATA_PAGE_OUTPUTSIZE (5000); we page with end_date.
+  const limit = Math.min(
+    Math.max(Number.isFinite(requestedLimit) ? requestedLimit : 100, 1),
+    PLATINUM_CANDLE_OUTPUTSIZE,
+  );
   const canon = canonicalCacheSymbol(symbol)
   const windowKey = `${options?.startDate || ''}:${options?.endDate || ''}`
   const cacheKey = `candles:${canon}:${interval}:${limit}:${windowKey}`
@@ -918,10 +925,12 @@ export async function getMarketCandles(
       const activeKey = apiKey || getCleanApiKey();
       const symbols = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CAD', 'USD/SEK', 'USD/CHF'];
       console.log(`[Gateway] Computing DXY candles from live FX time_series via batch query.`);
+      // DXY is six live FX series per page — keep each vendor page ≤ 5000.
+      const dxyPage = Math.min(limit, TWELVEDATA_PAGE_OUTPUTSIZE);
       const batchParams = new URLSearchParams({
         symbol: symbols.join(','),
         interval,
-        outputsize: String(limit),
+        outputsize: String(dxyPage),
       });
       if (options?.startDate) batchParams.set('start_date', options.startDate);
       if (options?.endDate) batchParams.set('end_date', options.endDate);
@@ -1050,7 +1059,7 @@ export async function getMarketCandles(
     const alias = historySymbol(symbol.trim().toUpperCase().replace(/\s+/g, ''));
     const isProxy = Boolean(alias.note) && alias.symbol.toUpperCase() !== symbol.trim().toUpperCase().replace(/\//g, '');
     try {
-      const raw = await fetchCandlesFromAPI(formatted, interval, limit, apiKey, options);
+      const raw = await fetchCandlesPaged(formatted, interval, limit, apiKey, options);
       return attachCandleProvenance(symbol, formatted, raw, {
         provider: 'twelvedata',
         isFallback: false,
@@ -1116,6 +1125,81 @@ async function fetchQuoteFromAPI(symbol: string, apiKey: string) {
   return fetchAndTrack(url, 'quote', symbol, 5000, cleanKey);
 }
 
+function candleRowMs(row: { datetime?: string }): number {
+  const t = Date.parse(String(row?.datetime || ''));
+  return Number.isFinite(t) ? t : 0;
+}
+
+function ymdUtc(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+/**
+ * Page Twelve Data time_series when the plan asks for more than one vendor page.
+ * Values are newest-first; each next page uses end_date just before the oldest bar.
+ */
+async function fetchCandlesPaged(
+  symbol: string,
+  interval: string,
+  limit: number,
+  apiKey: string,
+  options?: MarketCandleFetchOptions,
+) {
+  const target = Math.min(Math.max(limit, 1), PLATINUM_CANDLE_OUTPUTSIZE);
+  if (target <= TWELVEDATA_PAGE_OUTPUTSIZE) {
+    return fetchCandlesFromAPI(symbol, interval, target, apiKey, options);
+  }
+
+  const byKey = new Map<string, any>();
+  let endDate = options?.endDate;
+  let meta: any = null;
+  let status = 'ok';
+  const maxPages = Math.ceil(target / TWELVEDATA_PAGE_OUTPUTSIZE);
+
+  for (let page = 0; page < maxPages && byKey.size < target; page++) {
+    const pageLimit = Math.min(TWELVEDATA_PAGE_OUTPUTSIZE, target - byKey.size);
+    const raw = await fetchCandlesFromAPI(symbol, interval, pageLimit, apiKey, {
+      startDate: options?.startDate,
+      endDate,
+    });
+    if (!meta && raw?.meta) meta = raw.meta;
+    if (raw?.status) status = raw.status;
+    const values = Array.isArray(raw?.values) ? raw.values : [];
+    if (values.length === 0) break;
+
+    let oldestMs = Infinity;
+    for (const row of values) {
+      const key = String(row?.datetime || '');
+      if (!key || byKey.has(key)) continue;
+      byKey.set(key, row);
+      const ms = candleRowMs(row);
+      if (ms > 0 && ms < oldestMs) oldestMs = ms;
+    }
+
+    if (values.length < pageLimit || !Number.isFinite(oldestMs) || oldestMs === Infinity) {
+      break;
+    }
+
+    const nextEnd = ymdUtc(oldestMs - 86_400_000);
+    if (options?.startDate && nextEnd < options.startDate) break;
+    if (endDate && nextEnd >= endDate) break;
+    endDate = nextEnd;
+    console.log(
+      `[Gateway] CANDLES PAGE ${page + 1}/${maxPages}: ${symbol} now ${byKey.size}/${target} (next end_date=${nextEnd})`,
+    );
+  }
+
+  const merged = [...byKey.values()]
+    .sort((a, b) => candleRowMs(b) - candleRowMs(a))
+    .slice(0, target);
+
+  return {
+    meta: meta || { symbol, interval },
+    values: merged,
+    status,
+  };
+}
+
 async function fetchCandlesFromAPI(
   symbol: string,
   interval: string,
@@ -1123,12 +1207,16 @@ async function fetchCandlesFromAPI(
   apiKey: string,
   options?: { startDate?: string; endDate?: string },
 ) {
-  console.log(`[Gateway] Live Fetch CANDLES: ${symbol} (${interval})`)
+  const pageLimit = Math.min(
+    Math.max(Number.isFinite(limit) ? limit : 100, 1),
+    TWELVEDATA_PAGE_OUTPUTSIZE,
+  );
+  console.log(`[Gateway] Live Fetch CANDLES: ${symbol} (${interval}) x${pageLimit}`)
   const cleanKey = apiKey ? apiKey.trim().replace(/^["']|["']$/g, '') : getCleanApiKey();
   const params = new URLSearchParams({
     symbol,
     interval,
-    outputsize: String(limit),
+    outputsize: String(pageLimit),
   });
   // Twelve Data historical window — enables Market Replay date picking.
   // Dates are YYYY-MM-DD (exchange calendar); never invent bars outside the response.

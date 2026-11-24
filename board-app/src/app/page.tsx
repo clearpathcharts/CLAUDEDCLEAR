@@ -10,15 +10,19 @@ export default function HomePage() {
       <section className="hero" aria-label="ClearPath Trader hero">
         <div className="hero-plane" aria-hidden="true" />
         <div className="container hero-content">
-          <p className="hero-brand">ClearPath Trader</p>
+          <p className="hero-brand">Clear Path Trader</p>
           <h1>One chart site. Four desks. Knowledge before execution.</h1>
           <p>
             Analysis-first educational markets platform from Clear Path Markets Science Corp. —
-            not a brokerage, does not hold customer funds.
+            desks, education, and Your World Connected after login.{" "}
+            <span className="not-brokerage">(NOT A BROKERAGE.)</span>
           </p>
           <div className="cta-row">
             <Link className="btn btn-primary" href="/charts">
               Enter the desks
+            </Link>
+            <Link className="btn btn-ghost" href="/ywc">
+              Your World Connected
             </Link>
             <Link className="btn btn-ghost" href="/about">
               Why not a broker
@@ -48,18 +52,20 @@ export default function HomePage() {
 
       <section className="section">
         <div className="container">
-          <h2>Built for the board question</h2>
+          <h2>Everything from ClearCloud</h2>
           <p className="lede">
-            This Cursor-hosted app is a faithful product demo: working charts, desk switcher,
-            education teaser, memberships comparison, and a member dashboard stub. Production live
-            feeds and Stripe checkout remain on clearpathtrader.com.
+            Live charts via clearpathtrader.com. Education, memberships, member dashboard, and
+            Your World Connected — the same product world after login.
           </p>
           <div className="cta-row">
             <Link className="btn btn-primary" href="/education">
-              Sample lessons
+              Education
+            </Link>
+            <Link className="btn btn-ghost" href="/ywc">
+              Your World Connected
             </Link>
             <Link className="btn btn-ghost" href="/pricing">
-              Membership sheet
+              Memberships
             </Link>
             <Link className="btn btn-ghost" href="/dashboard">
               Member dashboard
