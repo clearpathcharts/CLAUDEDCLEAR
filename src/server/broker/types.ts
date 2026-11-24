@@ -29,7 +29,9 @@ export type BrokerPublicStatus = {
   environment: BrokerEnvironment | null;
   accountId: string | null;
   connectedAt: string | null;
-  mode: 'live' | 'stub';
+  mode: 'live' | 'stub' | 'preview';
+  /** False while the legal hold is on. Keys alone do not turn this on. */
+  connectionsEnabled: boolean;
 };
 
 export type AlpacaOAuthPendingState = {

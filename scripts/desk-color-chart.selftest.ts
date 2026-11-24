@@ -189,6 +189,16 @@ assert.match(css, /data-desk-color-bg/);
 assert.match(css, /data-desk-color-bento/);
 assert.match(css, /\.fund-card/);
 assert.match(css, /--desk-user-bento-fill/);
+assert.match(
+  css,
+  /@media \(max-width: 640px\)[\s\S]*\.color-chart-presets[\s\S]*repeat\(7/,
+  'mobile preset colors must wrap into finger-sized rows instead of 13 tiny columns',
+);
+assert.match(
+  css,
+  /\.color-chart-presets \.color-chart-swatch[\s\S]*min-height: 2rem/,
+  'mobile preset swatches keep a usable tap height',
+);
 
 const ctx = fs.readFileSync(path.join(root, 'src/components/desks/DeskAppearanceContext.tsx'), 'utf8');
 assert.match(ctx, /applyColor/);

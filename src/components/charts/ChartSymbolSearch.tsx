@@ -76,9 +76,11 @@ export const ChartSymbolSearch = memo(function ChartSymbolSearch({
             className="absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-y-auto rounded-lg border border-white/15 bg-zinc-950/95 py-1 shadow-xl"
           >
             {suggestions.map((asset) => (
-              <li key={asset.symbol} role="option">
+              <li key={asset.symbol} role="presentation">
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={asset.symbol === activeSymbol}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => commit(asset.symbol)}
                   className="flex w-full items-baseline justify-between gap-2 px-3 py-1.5 text-left font-mono hover:bg-white/10"

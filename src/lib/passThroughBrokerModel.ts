@@ -9,13 +9,13 @@ export const NEVER_BROKER_DEALER =
   'ClearPath Trader is not a broker-dealer, introducing broker, or exchange — now or in the future. We will never hold customer funds or securities.';
 
 export const PASS_THROUGH_SUMMARY =
-  'Optional: link your brokerage account. You authorize the link at your licensed broker. Orders you submit from the chart are sent to that broker. That broker holds the money. ClearPath is only the screen.';
+  'Licensed broker pass-throughs are listed for a later connection. No brokerage account is connected, and ClearPath does not send orders.';
 
 export const PASS_THROUGH_ORDER_DISCLAIMER =
-  'Orders are executed by your connected licensed broker, not by ClearPath. You are responsible for every submission. Not investment advice.';
+  'No order is sent. Broker pass-throughs are not connected. Not investment advice.';
 
 export const DESK_PASS_THROUGH_FOOTER =
-  'Chart interface only — not a broker-dealer. Connected orders pass through to your licensed broker.';
+  'Chart interface only — not a broker-dealer. Broker pass-throughs are visible and not connected.';
 
 /** Alpaca's required OAuth authorization disclosure (OAuth DDQ v3). Shown before every connect. */
 export const OAUTH_APP_NAME = 'ClearPath Trader';
@@ -27,4 +27,9 @@ export const ALPACA_AUTHORIZE_DISCLOSURE = {
 } as const;
 
 export const BROKER_STATUS_NOTE =
-  'ClearPath is not a broker-dealer. When you connect, you authorize your existing licensed broker account; orders route to them.';
+  'Pass-throughs are available to review. No brokerage account is connected, and no orders are sent. ClearPath is not a broker-dealer.';
+
+export const BROKER_PASS_THROUGH_DISABLED_CODE = 'BROKER_PASS_THROUGH_DISABLED' as const;
+
+export const BROKER_PASS_THROUGH_DISABLED_MESSAGE =
+  'Broker pass-throughs are not connected. No authorization or order is sent.';

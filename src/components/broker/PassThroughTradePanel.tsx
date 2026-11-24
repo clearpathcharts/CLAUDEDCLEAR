@@ -17,7 +17,7 @@ type Props = {
  * ClearPath never executes; pass-through proxy only.
  */
 export default function PassThroughTradePanel({ symbol }: Props) {
-  const { loading, alpaca, account, refresh } = useBrokerConnection(true);
+  const { loading, connectionsEnabled, alpaca, account, refresh } = useBrokerConnection(true);
   const { requestConnect, disclosure } = useAlpacaConnectGate();
   const [qty, setQty] = useState('1');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
@@ -25,6 +25,16 @@ export default function PassThroughTradePanel({ symbol }: Props) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  if (!loading && !connectionsEnabled) {
+    return (
+      <div className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-[10px] text-[var(--desk-muted)] leading-relaxed">
+        <span className="font-black uppercase tracking-wider text-amber-200/90">Pass-through available · not connected</span>
+        {' — '}
+        {PASS_THROUGH_SUMMARY} {NEVER_BROKER_DEALER}
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -44,7 +54,7 @@ export default function PassThroughTradePanel({ symbol }: Props) {
     );
   }
 
-  if (!alpaca.connected) {
+  if (!connectionsEnabled || !alpaca.connected) {
     return (
       <div className="shrink-0 flex flex-wrap items-center gap-2 border-t border-[var(--desk-border)] px-3 py-2">
         {disclosure}

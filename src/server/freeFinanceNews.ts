@@ -136,24 +136,40 @@ function fromFmp(rows: DeskWireItem[]): FreeNewsItem[] {
     }));
 }
 
-export async function fetchFreeFinanceNews(): Promise<{
+/** Shape the public news ticker and economic wire already render. */
+export function freeNewsAsDeskWire(items: FreeNewsItem[]): DeskWireItem[] {
+  return items
+    .filter((item) => item.title.trim().length > 0)
+    .map((item) => ({
+      title: item.title.trim(),
+      source: (item.source || "WIRE").toUpperCase(),
+      category: "WIRE",
+      pubDate: item.pubDate,
+      link: item.link,
+    }));
+}
+
+export async function fetchFreeFinanceNews(opts?: { includeFmp?: boolean }): Promise<{
   items: FreeNewsItem[];
   sourcesTried: string[];
   sourcesOk: string[];
 }> {
+  const includeFmp = opts?.includeFmp !== false;
   const sourcesTried = FREE_FINANCE_NEWS_FEEDS.map((f) => f.name);
   const groups = await Promise.all(FREE_FINANCE_NEWS_FEEDS.map((f) => fetchOneFeed(f)));
   const sourcesOk = FREE_FINANCE_NEWS_FEEDS.filter((_, i) => groups[i].length > 0).map((f) => f.name);
 
   let fmp: FreeNewsItem[] = [];
-  try {
-    fmp = fromFmp(await fetchFmpDeskNews());
-    if (fmp.length) {
-      sourcesTried.push("FMP");
-      sourcesOk.push("FMP");
+  if (includeFmp) {
+    try {
+      fmp = fromFmp(await fetchFmpDeskNews());
+      if (fmp.length) {
+        sourcesTried.push("FMP");
+        sourcesOk.push("FMP");
+      }
+    } catch {
+      /* FMP optional */
     }
-  } catch {
-    /* FMP optional */
   }
 
   const seen = new Set<string>();

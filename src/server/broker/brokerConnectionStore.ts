@@ -5,6 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getAdminFirestore } from '../firebaseAdmin';
+import { isBrokerPassThroughEnabled } from '../secrets';
+import { BROKER_PASS_THROUGH_DISABLED_MESSAGE } from '../../lib/passThroughBrokerModel';
 import type { BrokerConnectionRecord, BrokerId } from './types';
 
 const DIR = path.join(process.cwd(), 'data', 'broker_connections');
@@ -45,6 +47,9 @@ function deleteLocal(uid: string, brokerId: BrokerId): void {
 }
 
 export async function saveBrokerConnection(record: BrokerConnectionRecord): Promise<void> {
+  if (!isBrokerPassThroughEnabled()) {
+    throw new Error(BROKER_PASS_THROUGH_DISABLED_MESSAGE);
+  }
   writeLocal(record);
   const db = getAdminFirestore();
   if (!db) return;
@@ -92,6 +97,10 @@ export async function deleteBrokerConnection(uid: string, brokerId: BrokerId): P
 
 /** Boot hydration — pull Firestore connections into local cache. */
 export async function hydrateBrokerConnectionsFromFirestore(): Promise<number> {
+  if (!isBrokerPassThroughEnabled()) {
+    console.log('[broker] Pass-through connections are disabled. No broker tokens loaded.');
+    return 0;
+  }
   const db = getAdminFirestore();
   if (!db) return 0;
   try {

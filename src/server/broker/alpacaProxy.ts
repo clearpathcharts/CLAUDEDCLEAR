@@ -5,12 +5,21 @@ import {
   getAlpacaApiBase,
   getAlpacaClientId,
   getAlpacaClientSecret,
+  isBrokerPassThroughEnabled,
 } from '../secrets';
+import { BROKER_PASS_THROUGH_DISABLED_MESSAGE } from '../../lib/passThroughBrokerModel';
 import { decryptBrokerSecret, encryptBrokerSecret } from './tokenCrypto';
 import { loadBrokerConnection, saveBrokerConnection } from './brokerConnectionStore';
 import type { BrokerConnectionRecord } from './types';
 
+function assertPassThroughLive(): void {
+  if (!isBrokerPassThroughEnabled()) {
+    throw new Error(BROKER_PASS_THROUGH_DISABLED_MESSAGE);
+  }
+}
+
 async function refreshAlpacaAccessToken(record: BrokerConnectionRecord): Promise<BrokerConnectionRecord> {
+  assertPassThroughLive();
   const refreshToken = decryptBrokerSecret(record.refreshTokenEnc);
   const clientId = getAlpacaClientId();
   const clientSecret = getAlpacaClientSecret();
@@ -64,6 +73,7 @@ async function connectionWithFreshToken(uid: string): Promise<BrokerConnectionRe
 }
 
 async function alpacaFetch(uid: string, path: string): Promise<unknown> {
+  assertPassThroughLive();
   const record = await connectionWithFreshToken(uid);
   const accessToken = decryptBrokerSecret(record.accessTokenEnc);
   const base = getAlpacaApiBase(record.environment);
@@ -130,6 +140,7 @@ function sanitizeOrder(raw: Record<string, unknown>) {
 
 /** Pass-through order — Alpaca executes; ClearPath is not counterparty. */
 export async function submitAlpacaOrder(uid: string, input: AlpacaOrderInput) {
+  assertPassThroughLive();
   const record = await connectionWithFreshToken(uid);
   const accessToken = decryptBrokerSecret(record.accessTokenEnc);
   const base = getAlpacaApiBase(record.environment);

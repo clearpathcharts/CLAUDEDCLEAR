@@ -84,6 +84,13 @@ assert.match(publicChart, /LightweightCandles/);
 assert.match(publicChart, /min-h-\[85vh\]/);
 assert.doesNotMatch(publicChart, /import\s*\{[^}]*NeuroProfilePicker/);
 assert.doesNotMatch(publicChart, /<NeuroProfilePicker/);
+const symbolSearch = fs.readFileSync(
+  path.join(root, 'src/components/charts/ChartSymbolSearch.tsx'),
+  'utf8',
+);
+assert.match(symbolSearch, /role="option"/);
+assert.match(symbolSearch, /aria-selected=\{asset\.symbol === activeSymbol\}/);
+assert.doesNotMatch(symbolSearch, /<li key=\{asset\.symbol\} role="option">/);
 
 for (const card of PATH_CARDS) {
   await assertNativeImage(card.png, card.width, card.height);

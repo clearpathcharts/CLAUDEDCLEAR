@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoldBarChartVideoTrigger } from "../explain/GoldBarChartVideoTrigger";
 import { usePageAutoUpdate } from "../../hooks/usePageAutoUpdate";
 import { membershipAuthHeaders } from "../../hooks/useMembership";
 
@@ -311,7 +310,6 @@ export function ChartLocalTimeAndPulse({
       className="flex flex-col gap-2 min-w-0 w-full"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <GoldBarChartVideoTrigger compact={compact} />
     <div
       className="flex items-center gap-1.5 min-w-0 w-full overflow-x-auto no-scrollbar flex-nowrap"
     >

@@ -591,6 +591,11 @@
   color: #7eeafb;
 }
 
+.broker-state--available {
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fcd34d;
+}
+
 .broker-card__body {
   flex: 1;
   padding: 20px 20px 16px;

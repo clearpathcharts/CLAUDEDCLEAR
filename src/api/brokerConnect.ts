@@ -6,13 +6,15 @@ export type BrokerPublicStatus = {
   environment: 'paper' | 'live' | null;
   accountId: string | null;
   connectedAt: string | null;
-  mode: 'live' | 'stub';
+  mode: 'live' | 'stub' | 'preview';
+  connectionsEnabled: boolean;
 };
 
 export type BrokerStatusResponse = {
   ok: boolean;
   model: string;
   note: string;
+  connectionsEnabled: boolean;
   brokers: Record<string, BrokerPublicStatus>;
 };
 

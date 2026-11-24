@@ -437,7 +437,7 @@ export default function AdditionalTermsOfService({ onBack, profile }: Additional
               </p>
 
               <p className="border-l-2 border-[#FF00C8] pl-3 text-zinc-300">
-                <strong className="text-white">Pass-through broker connect (optional):</strong> ClearPathTrader.com is not a broker-dealer and will never become one. If you choose to OAuth-link your existing account at a licensed broker (for example Alpaca), you authorize the platform to send instructions you submit to that broker. The licensed broker executes orders, holds funds, and performs KYC/AML — not ClearPath. Without a connected broker, the platform remains analytics and education only.
+                <strong className="text-white">Pass-through broker connect (optional):</strong> ClearPathTrader.com is not a broker-dealer and will never become one. Licensed broker pass-throughs may be shown as available. No brokerage account is connected, and the platform does not send orders or store broker authorization. The platform remains analytics and education only.
               </p>
 
               <h4 className="text-[#00D9FF] text-[10px] font-black uppercase tracking-widest pt-2">User Responsibility</h4>

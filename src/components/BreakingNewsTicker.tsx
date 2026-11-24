@@ -7,6 +7,7 @@ interface NewsItem {
   source: string;
   category: string;
   pubDate?: string;
+  link?: string;
 }
 
 /** Discrete headline step — not a continuous marquee. */
@@ -60,7 +61,17 @@ export default function BreakingNewsTicker() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          setNews(data);
+          setNews(
+            data
+              .map((item: Record<string, unknown>) => ({
+                title: String(item.title ?? '').trim(),
+                source: String(item.source ?? 'WIRE'),
+                category: String(item.category ?? 'WIRE'),
+                pubDate: item.pubDate ? String(item.pubDate) : undefined,
+                link: item.link ? String(item.link) : undefined,
+              }))
+              .filter((item: NewsItem) => item.title.length > 0)
+          );
           setError(null);
         } else {
           setNews([]);
@@ -139,7 +150,12 @@ export default function BreakingNewsTicker() {
                 </div>
               )}
             </div>
-          ) : null}
+          ) : (
+            <div className="flex items-center gap-2 pl-4 text-zinc-400">
+              <AlertCircle className="h-3 w-3 text-[#ff4500]" />
+              <span>NEWS WIRE UNAVAILABLE</span>
+            </div>
+          )}
         </div>
 
         {/* Sync Controls */}
@@ -175,9 +191,20 @@ export default function BreakingNewsTicker() {
               <h3 className="text-sm font-bold leading-relaxed text-white uppercase tracking-tight">
                 {selectedNews.title}
               </h3>
-              <p className="mt-3 text-xs text-zinc-400 leading-relaxed font-sans">
-                This high-fidelity alert outlines a critical real-time macro-intelligence event logged on ClearPath's digital routing infrastructure. Please consult current trading positions relative to this trigger.
-              </p>
+              {selectedNews.link ? (
+                <a
+                  href={selectedNews.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-block text-xs font-bold uppercase tracking-wider text-[#ff4500] underline"
+                >
+                  Open the source story
+                </a>
+              ) : (
+                <p className="mt-3 text-xs text-zinc-400 leading-relaxed font-sans">
+                  Headline only. The wire did not include a source link.
+                </p>
+              )}
             </div>
 
             <div className="mt-6 flex justify-between gap-3 border-t border-white/5 pt-4">

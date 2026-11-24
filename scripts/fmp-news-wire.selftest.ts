@@ -10,6 +10,7 @@ import {
   normalizeFmpCalendarEvent,
   normalizeFmpNewsArticle,
 } from '../src/server/fmpNewsWire.ts';
+import { freeNewsAsDeskWire } from '../src/server/freeFinanceNews.ts';
 
 const news = normalizeFmpNewsArticle(
   {
@@ -64,7 +65,19 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverTs = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 assert.match(serverTs, /fetchFmpDeskNews/);
 assert.match(serverTs, /fetchFmpEconomicWire/);
+assert.match(serverTs, /fetchPublicWireFallback/);
+assert.match(serverTs, /fetchFreeFinanceNews\(\{ includeFmp: false \}\)/);
 assert.match(serverTs, /\/api\/newsdata\/latest/);
 assert.match(serverTs, /\/api\/economic\/news/);
+
+const rss = freeNewsAsDeskWire([
+  { title: '  Bank rates hold  ', source: 'BBC Business', link: 'https://www.bbc.co.uk/news/example', pubDate: 'Tue, 20 Oct 2026 12:00:00 GMT' },
+  { title: '   ', source: 'BBC Business' },
+]);
+assert.equal(rss.length, 1);
+assert.equal(rss[0].title, 'Bank rates hold');
+assert.equal(rss[0].source, 'BBC BUSINESS');
+assert.equal(rss[0].category, 'WIRE');
+assert.equal(rss[0].link, 'https://www.bbc.co.uk/news/example');
 
 console.log('fmp-news-wire.selftest: ok');

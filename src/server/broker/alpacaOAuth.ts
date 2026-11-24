@@ -1,6 +1,6 @@
 /**
  * Alpaca OAuth — pass-through broker connect (TradingView-style).
- * Stub mode when ALPACA_CLIENT_ID / ALPACA_CLIENT_SECRET are unset.
+ * Disconnected unless BROKER_PASS_THROUGH_ENABLED=1. Keys alone do not connect.
  */
 import crypto from 'node:crypto';
 import {
@@ -9,7 +9,9 @@ import {
   getAlpacaOAuthScope,
   isAlpacaOAuthConfigured,
   isAlpacaPaperMode,
+  isBrokerPassThroughEnabled,
 } from '../secrets';
+import { BROKER_PASS_THROUGH_DISABLED_MESSAGE } from '../../lib/passThroughBrokerModel';
 import {
   encryptBrokerSecret,
   isBrokerTokenEncryptionConfigured,
@@ -53,6 +55,7 @@ export function isAlpacaOAuthStateValid(pending: AlpacaOAuthPendingState | undef
 }
 
 export function buildAlpacaAuthorizeUrl(state: string, redirectUri: string): string | null {
+  if (!isBrokerPassThroughEnabled()) return null;
   if (!isAlpacaOAuthConfigured()) return null;
   const clientId = getAlpacaClientId();
   if (!clientId) return null;
@@ -79,6 +82,9 @@ export async function exchangeAlpacaCode(
   code: string,
   redirectUri: string,
 ): Promise<{ accessToken: string; refreshToken: string; expiresIn: number | null; scope: string | null }> {
+  if (!isBrokerPassThroughEnabled()) {
+    throw new Error(BROKER_PASS_THROUGH_DISABLED_MESSAGE);
+  }
   const clientId = getAlpacaClientId();
   const clientSecret = getAlpacaClientSecret();
   if (!clientId || !clientSecret) {
@@ -124,6 +130,9 @@ export async function persistAlpacaConnection(input: {
   accountId?: string | null;
   disclosureAcceptedAt?: string | null;
 }): Promise<void> {
+  if (!isBrokerPassThroughEnabled()) {
+    throw new Error(BROKER_PASS_THROUGH_DISABLED_MESSAGE);
+  }
   const environment: BrokerEnvironment = isAlpacaPaperMode() ? 'paper' : 'live';
   const now = new Date().toISOString();
   const tokenExpiresAt =
@@ -147,10 +156,14 @@ export async function persistAlpacaConnection(input: {
 }
 
 export function alpacaConfiguredSummary() {
+  const keysPresent = isAlpacaOAuthConfigured();
+  const connectionsEnabled = isBrokerPassThroughEnabled();
+  const mode = !connectionsEnabled ? ('preview' as const) : keysPresent ? ('live' as const) : ('stub' as const);
   return {
-    configured: isAlpacaOAuthConfigured(),
+    configured: connectionsEnabled && keysPresent,
     encryptionConfigured: isBrokerTokenEncryptionConfigured(),
     paper: isAlpacaPaperMode(),
-    mode: isAlpacaOAuthConfigured() ? ('live' as const) : ('stub' as const),
+    connectionsEnabled,
+    mode,
   };
 }
