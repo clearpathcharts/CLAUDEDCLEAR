@@ -46,7 +46,9 @@ assert.equal(isFounderFirebaseUid('uid-other'), false);
 if (previousUid === undefined) delete process.env.FOUNDER_FIREBASE_UID;
 else process.env.FOUNDER_FIREBASE_UID = previousUid;
 
-assert.equal(getCandleLimit('VIP'), getCandleLimit('BRONZE'));
+assert.equal(getCandleLimit('VIP'), 40000);
+assert.equal(getCandleLimit('BRONZE'), 5000);
+assert.equal(getCandleLimit('platinum'), 40000);
 const marketData = read('src/services/marketData.ts');
 assert.match(marketData, /getCandleLimit\(userTier\)/, 'history cache key uses the candle cap, not the tier name');
 
