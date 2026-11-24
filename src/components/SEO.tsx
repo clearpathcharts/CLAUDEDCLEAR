@@ -39,13 +39,13 @@ const SEO: React.FC<SEOProps> = ({
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description || defaultDescription} />
       <meta property="og:site_name" content={siteName} />
-      <meta property="og:image" content="https://clearpathtrader.com/og-image.png" />
+      <meta property="og:image" content="https://clearpathtrader.com/og-image.png?v=paths" />
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description || defaultDescription} />
-      <meta name="twitter:image" content="https://clearpathtrader.com/og-image.png" />
+      <meta name="twitter:image" content="https://clearpathtrader.com/og-image.png?v=paths" />
 
       {canonical && <link rel="canonical" href={canonical} />}
       

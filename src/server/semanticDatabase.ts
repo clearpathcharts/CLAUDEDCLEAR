@@ -783,7 +783,7 @@ export function enrichHtmlWithMetadata(
         },
         "headline": record.title,
         "description": record.summary,
-        "image": `${baseUrl}/og-image.png`,
+        "image": `${baseUrl}/og-image.png?v=paths`,
         "datePublished": `${record.publishDate}T08:00:00Z`,
         "dateModified": `${record.updatedDate}T15:00:00Z`,
         "author": {
@@ -836,7 +836,7 @@ export function enrichHtmlWithMetadata(
         "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl },
         "headline": guide.title,
         "description": guide.summary,
-        "image": `${baseUrl}/og-image.png`,
+        "image": `${baseUrl}/og-image.png?v=paths`,
         "datePublished": `${guide.publishDate}T08:00:00Z`,
         "dateModified": `${guide.updatedDate}T15:00:00Z`,
         "author": { "@type": "Organization", "name": "ClearPathTrader Editorial", "url": baseUrl },
@@ -1538,7 +1538,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${escAttr(shareUrl)}" />
-    <meta property="og:image" content="${baseUrl}/og-image.png" />
+    <meta property="og:image" content="${baseUrl}/og-image.png?v=paths" />
     <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -1546,7 +1546,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escAttr(title)}" />
     <meta name="twitter:description" content="${escAttr(description)}" />
-    <meta name="twitter:image" content="${baseUrl}/og-image.png" />
+    <meta name="twitter:image" content="${baseUrl}/og-image.png?v=paths" />
     <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />

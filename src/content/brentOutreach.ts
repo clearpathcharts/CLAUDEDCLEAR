@@ -27,7 +27,7 @@ export function brentFromHeader(): string {
 /** Absolute image URLs embedded in outreach HTML (website screenshots / product stills). */
 export const BRENT_OUTREACH_SCREENSHOTS: Array<{ src: string; alt: string; caption: string }> = [
   {
-    src: `${PRODUCT_URL}/og-image.png`,
+    src: `${PRODUCT_URL}/og-image.png?v=paths`,
     alt: 'ClearPath Trader open graph preview',
     caption: 'Live product surface — clearpathtrader.com',
   },

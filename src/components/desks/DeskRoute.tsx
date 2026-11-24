@@ -157,7 +157,7 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
         <meta property="og:title" content={withPlatformPositionTitle(seo.title)} />
         <meta property="og:description" content={seo.description} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={`${PRODUCT_URL}/og-image.png`} />
+        <meta property="og:image" content={`${PRODUCT_URL}/og-image.png?v=paths`} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={withPlatformPositionTitle(seo.title)} />
         <meta name="twitter:description" content={seo.description} />
