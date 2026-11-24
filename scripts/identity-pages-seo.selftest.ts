@@ -52,7 +52,7 @@ assert.match(board, /"@type": "Person"/);
 assert.match(board, /Brian Weber/);
 
 const statement = renderStaticIdentityPageForBots('/ceo-statement');
-assert.match(statement!, /Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment/);
+assert.match(statement!, /One-Year Voluntary Salary Waiver &amp; Customer-First Commitment/);
 assert.match(statement!, /subject to applicable corporate approvals and accounting requirements/);
 assert.match(statement!, /does not independently verify identity or establish a cryptographic digital signature/);
 const statementMeta = enrichHtmlWithMetadata(shell, '/ceo-statement');

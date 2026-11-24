@@ -1782,7 +1782,7 @@ ${section.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join(
 
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: "CEO's Certified Statement" }])}
 <h1>CEO's Certified Statement</h1>
-<p class="lead">Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment</p>
+<p class="lead">One-Year Voluntary Salary Waiver &amp; Customer-First Commitment</p>
 <p><strong>Clear Path Markets Science Corp. · ClearPathTrader</strong></p>
 <ul>${details}</ul>
 <h2>Official Statement</h2>

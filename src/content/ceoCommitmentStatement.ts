@@ -1,9 +1,9 @@
 export const CEO_COMMITMENT_PATH = '/ceo-statement';
 
 export const CEO_COMMITMENT_META = {
-  title: "CEO's Certified Statement — Two-Year Voluntary Salary Waiver",
+  title: "CEO's Certified Statement — One-Year Voluntary Salary Waiver",
   description:
-    "Richard Floyd's certified statement of a two-year voluntary CEO salary waiver and customer-first commitment at ClearPath Trader.",
+    "Richard Floyd's certified statement of a one-year voluntary CEO salary waiver and customer-first commitment at ClearPath Trader.",
   canonical: `https://clearpathtrader.com${CEO_COMMITMENT_PATH}`,
 } as const;
 
@@ -11,11 +11,11 @@ export const CEO_COMMITMENT_DETAILS = [
   ['Founder and Chief Executive Officer', 'Richard Floyd'],
   ['Location', 'Murrieta, California'],
   ['Digital Signature Date', 'September 13, 2026'],
-  ['Commitment Period', 'Two (2) Years Forward'],
+  ['Commitment Period', 'One (1) Year Forward'],
 ] as const;
 
 export const CEO_COMMITMENT_INTRO = [
-  'I, Richard Floyd, Founder and Chief Executive Officer of Clear Path Markets Science Corp., operating as ClearPathTrader, hereby formally state my intention to forgo a salary for the next two (2) years, beginning September 13, 2026, subject to applicable corporate approvals and accounting requirements.',
+  'I, Richard Floyd, Founder and Chief Executive Officer of Clear Path Markets Science Corp., operating as ClearPathTrader, hereby formally state my intention to forgo a salary for the next one (1) year, beginning September 13, 2026, subject to applicable corporate approvals and accounting requirements.',
   'This commitment follows four years of developing and coding the ClearPathTrader platform from scratch. The time, effort, and technical work invested in building this platform reflect my commitment to creating an accessible, educational, and technology-driven resource for people seeking to understand the financial markets.',
 ] as const;
 
@@ -23,7 +23,7 @@ export const CEO_COMMITMENT_SECTIONS = [
   {
     title: 'Voluntary Compensation Commitment',
     paragraphs: [
-      "For the next two years, I intend to receive no salary for my services as CEO and founder. This is a voluntary commitment intended to prioritize the company's continued development, operational sustainability, and customer value during this period.",
+      "For the next one year, I intend to receive no salary for my services as CEO and founder. This is a voluntary commitment intended to prioritize the company's continued development, operational sustainability, and customer value during this period.",
     ],
   },
   {
@@ -42,10 +42,10 @@ export const CEO_COMMITMENT_SECTIONS = [
     ],
   },
   {
-    title: 'Four Years of Development. Two Years of Customer-First Leadership.',
+    title: 'Four Years of Development. One Year of Customer-First Leadership.',
     paragraphs: [
       'ClearPathTrader represents four years of coding, development, and work toward building a platform from the ground up.',
-      'My decision to forgo a salary for the following two years reflects my intention to continue putting the platform and its customers first as the business moves forward.',
+      'My decision to forgo a salary for the following one year reflects my intention to continue putting the platform and its customers first as the business moves forward.',
       'This is a statement of leadership, personal commitment, and the principles I intend to uphold as founder and CEO.',
     ],
   },
