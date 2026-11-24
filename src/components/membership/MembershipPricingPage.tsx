@@ -3,11 +3,22 @@ import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Check, ChevronDown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/FirebaseContext';
 import {
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
+} from '../../content/productIdentity';
+import {
   MEMBERSHIP_PLANS,
+  MEMBERSHIP_PRICE_YEAR_CAP,
+  currentMembershipPricingYear,
+  membershipPriceLadderRows,
   type MembershipPlanId,
   type MembershipPlanPrice,
 } from '../../content/membershipPricing';
 import { PlanCheckoutButton } from './PlanCheckoutButton';
+import { ManageBillingButton } from './ManageBillingButton';
+import { useMembership } from '../../hooks/useMembership';
+import { planOf } from '../../lib/planCatalog';
+import { trackMarketingCta } from '../../lib/marketingAttribution';
 import { tierAccentVars } from '../../lib/tierGradients';
 import './membershipPricing.css';
 
@@ -17,7 +28,8 @@ const planAccentVars = (id: MembershipPlanPrice['id']) => tierAccentVars(id);
 function readOfferedPlan(): MembershipPlanId {
   if (typeof window === 'undefined') return 'basic';
   try {
-    const q = new URLSearchParams(window.location.search).get('package');
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('package') || params.get('offer');
     if (q === 'basic' || q === 'silver' || q === 'gold' || q === 'platinum') return q;
   } catch {
     /* ignore */
@@ -27,6 +39,10 @@ function readOfferedPlan(): MembershipPlanId {
 
 export default function MembershipPricingPage() {
   const { user } = useAuth();
+  const { membership } = useMembership();
+  const complimentary = Boolean(user && membership?.active && membership.status === 'complimentary');
+  const compPlan = complimentary ? planOf(membership?.tier ?? 'basic') : null;
+  const coveredByComp = (id: MembershipPlanId) => Boolean(compPlan && planOf(id).rank <= compPlan.rank);
   const [offeredId, setOfferedId] = useState<MembershipPlanId>(readOfferedPlan);
   const offered = useMemo(
     () => MEMBERSHIP_PLANS.find((plan) => plan.id === offeredId) ?? MEMBERSHIP_PLANS[0],
@@ -35,6 +51,7 @@ export default function MembershipPricingPage() {
 
   const choosePlan = (id: MembershipPlanId) => {
     setOfferedId(id);
+    trackMarketingCta(id, `${id}_plan_selected`);
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('package', id);
@@ -47,11 +64,12 @@ export default function MembershipPricingPage() {
   return (
     <div className="membership-pricing">
       <Helmet>
-        <title>ClearPath Packages | Choose what you pay for</title>
+        <title>{withPlatformPositionTitle('ClearPath Packages | Choose what you pay for')}</title>
         <meta
           name="description"
           content="Choose Basic, Silver, Gold, or Platinum. You only see and unlock the features in the package you pay for."
         />
+        <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
         <link rel="canonical" href="https://clearpathtrader.com/pricing" />
       </Helmet>
 
@@ -94,7 +112,23 @@ export default function MembershipPricingPage() {
                 Choose a package
                 <ChevronDown size={17} aria-hidden="true" />
               </a>
+              {user && !complimentary ? <ManageBillingButton className="membership-hero__portal" /> : null}
             </div>
+            {compPlan ? (
+              <div className="membership-review-card" data-testid="complimentary-plan" style={planAccentVars(compPlan.id)}>
+                <p>Your plan</p>
+                <strong>{compPlan.label} membership · complimentary{membership?.currentPeriodEnd ? '' : ' for life'}</strong>
+                <span>
+                  Active at no cost to you. You will never be charged for {compPlan.label}.
+                  {compPlan.id !== 'platinum' ? ' You can upgrade to Platinum at any time.' : ''}
+                </span>
+                {compPlan.id !== 'platinum' ? (
+                  <button type="button" className="membership-primary-button" onClick={() => choosePlan('platinum')}>
+                    Upgrade to Platinum
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <aside className="membership-review-card" aria-label="Package checkout">
@@ -111,6 +145,7 @@ export default function MembershipPricingPage() {
               <ShieldCheck size={15} aria-hidden="true" />
               You only unlock what you pay for
             </div>
+            {user && !complimentary ? <ManageBillingButton className="membership-review-card__portal" /> : null}
           </aside>
         </section>
 
@@ -168,6 +203,10 @@ export default function MembershipPricingPage() {
               <a href={user ? '/desk/institutional' : '/'} className="membership-plan-card__button membership-plan-card__button--link">
                 Continue with Basic
               </a>
+            ) : coveredByComp(offered.id) ? (
+              <a href="/desk/institutional" className="membership-plan-card__button membership-plan-card__button--link">
+                Included in your complimentary {compPlan?.label}
+              </a>
             ) : user ? (
               <PlanCheckoutButton
                 key={offered.id}
@@ -191,6 +230,36 @@ export default function MembershipPricingPage() {
               Basic is free. Silver, Gold, and Platinum are monthly Stripe subscriptions. After checkout, the
               signed-in desk unlocks that package — not a higher tier.
             </p>
+            <p data-testid="price-ladder-note">
+              List prices step up by ClearPath company year and freeze after year {MEMBERSHIP_PRICE_YEAR_CAP}.
+              You are on year {currentMembershipPricingYear()} pricing now. Stay subscribed and you keep the
+              monthly rate from the year you joined; cancel and rejoin later and you pay the then-current year.
+            </p>
+            <table className="membership-price-ladder" data-testid="price-ladder">
+              <caption>Silver / Gold / Platinum monthly list by company year</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Year</th>
+                  <th scope="col">Silver</th>
+                  <th scope="col">Gold</th>
+                  <th scope="col">Platinum</th>
+                </tr>
+              </thead>
+              <tbody>
+                {membershipPriceLadderRows().map((row) => (
+                  <tr key={row.year} data-current={row.isCurrent ? 'true' : undefined}>
+                    <th scope="row">
+                      {row.year}
+                      {row.isCurrent ? ' (now)' : ''}
+                      {row.isCap ? ' (cap)' : ''}
+                    </th>
+                    <td>{row.silverLabel}</td>
+                    <td>{row.goldLabel}</td>
+                    <td>{row.platinumLabel}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </main>

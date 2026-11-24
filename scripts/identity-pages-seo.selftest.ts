@@ -1,0 +1,69 @@
+/**
+ * Identity + plans + brokers pages must ship SSR metadata and bot HTML.
+ * Run: npm run test:identity-pages-seo
+ */
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { PRODUCT_PLATFORM_POSITION } from '../src/content/productIdentity.ts';
+import { enrichHtmlWithMetadata } from '../src/server/semanticDatabase.ts';
+import { renderStaticIdentityPageForBots } from '../src/server/contentPages.ts';
+
+const shell = '<html><head><title>x</title></head><body></body></html>';
+
+const paths = [
+  '/company',
+  '/meet-the-board',
+  '/founder',
+  '/ceo-statement',
+  '/press',
+  '/plans',
+  '/brokers',
+] as const;
+
+for (const p of paths) {
+  const bot = renderStaticIdentityPageForBots(p);
+  assert.ok(bot, `missing bot HTML for ${p}`);
+  assert.match(bot!, /<h1[^>]*>/i, `${p} needs h1 for crawlers`);
+  const enriched = enrichHtmlWithMetadata(bot!, p);
+  assert.match(enriched, /<title>[^<]+<\/title>/, `${p} title`);
+  assert.match(
+    enriched,
+    new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `${p} lawyer platform-position title`,
+  );
+  assert.match(enriched, /name="clearpath-platform-position"/, `${p} platform-position meta`);
+  assert.match(enriched, /<meta\s+name="description"\s+content="[^"]+"/, `${p} description`);
+  assert.match(enriched, /<link\s+rel="canonical"\s+href="https:\/\/clearpathtrader\.com/, `${p} canonical`);
+  assert.match(enriched, /"@type": "Organization"/, `${p} organization schema`);
+  assert.match(enriched, /"@type": "WebSite"/, `${p} website schema`);
+  assert.doesNotMatch(enriched, /trading terminal/i, `${p} avoid stale terminal copy`);
+}
+
+const plansMeta = enrichHtmlWithMetadata(shell, '/plans');
+assert.match(plansMeta, /Membership Plans \| ClearPath Trader/);
+assert.match(plansMeta, /canonical"\s+href="https:\/\/clearpathtrader\.com\/plans"/);
+
+const membershipAlias = enrichHtmlWithMetadata(shell, '/membership');
+assert.match(membershipAlias, /canonical"\s+href="https:\/\/clearpathtrader\.com\/plans"/);
+
+const board = enrichHtmlWithMetadata(shell, '/meet-the-board');
+assert.match(board, /"@type": "Person"/);
+assert.match(board, /Brian Weber/);
+
+const statement = renderStaticIdentityPageForBots('/ceo-statement');
+assert.match(statement!, /Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment/);
+assert.match(statement!, /subject to applicable corporate approvals and accounting requirements/);
+assert.match(statement!, /does not independently verify identity or establish a cryptographic digital signature/);
+const statementMeta = enrichHtmlWithMetadata(shell, '/ceo-statement');
+assert.match(statementMeta, /CEO's Certified Statement/);
+assert.match(statementMeta, /datePublished": "2026-09-13"/);
+
+const server = fs.readFileSync(path.join(process.cwd(), 'server.ts'), 'utf8');
+const siteRegistry = fs.readFileSync(path.join(process.cwd(), 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(siteRegistry, /\['\/plans'/);
+assert.match(siteRegistry, /\['\/brokers'/);
+assert.match(siteRegistry, /\['\/ceo-statement'/);
+assert.match(server, /redirect\(301, `\/plans/);
+
+console.log('identity-pages-seo.selftest: ok');

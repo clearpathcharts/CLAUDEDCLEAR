@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Google Flow production bible for Explain Mode.
  *
  * EACH shot is its own Google Flow job. Hard cap: 8.00 seconds.
- * Do not let Flow fade out at 3 seconds — the prompt says HOLD THE FRAME.
+ * Do not let Flow fade out at 3 seconds â€” the prompt says HOLD THE FRAME.
  *
- * Twelve clips × 8s = 96s per tab. Teach one tiny idea per clip.
- * Fifth grade. Name the color. Point. Say “click.”
+ * Twelve clips Ã— 8s = 96s per tab. Teach one tiny idea per clip.
+ * Fifth grade. Name the color. Point. Say â€œclick.â€
  *
  * Drop the stitch at public/explain-videos/{id}.mp4 (16:9, H.264).
  */
@@ -13,10 +13,10 @@
 import type { ExplainFlowSlotId } from './explainMedia';
 
 export const EXPLAIN_FLOW_BRAND_LOOK =
-  'FIFTH-GRADE FIELD TRIP through ClearPath Trader, 16:9 landscape, exactly eight seconds, no early cutoff. VERY colorful candy-button pills on a dark night sky: electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a big white glove, large enough a child can track it. Huge easy words, one idea on screen. Saturated color wash of THIS clip’s color. Kids science-museum lighting. Soft glitter, not a casino. Slow enough to count “one-Mississippi” eight times.';
+  'FIFTH-GRADE FIELD TRIP through ClearPath Trader, 16:9 landscape, exactly eight seconds, no early cutoff. VERY colorful candy-button pills on a dark night sky: electric violet #4D00FF, hot pink #FF1493, lava orange #FF6A00, trophy gold #FFD700, electric cyan #00E5FF, stop-sign red #FF4D4D. Giant friendly cartoon mouse cursor with a big white glove, large enough a child can track it. Huge easy words, one idea on screen. Saturated color wash of THIS clipâ€™s color. Kids science-museum lighting. Soft glitter, not a casino. Slow enough to count â€œone-Mississippiâ€ eight times.';
 
 export const EXPLAIN_FLOW_NEGATIVE =
-  'No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no “last chance”, no influencer, no fake breaking-news siren, no invented prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut, no ending the clip before eight seconds.';
+  'No buy button, no sell button, no order ticket, no P&L fireworks, no countdown clock, no â€œlast chanceâ€, no influencer, no fake breaking-news siren, no invented prices as advice, no confetti checkout, no slot-machine spin, no 3-second jump-cut, no ending the clip before eight seconds.';
 
 export const EXPLAIN_FLOW_HOLD =
   'DURATION LOCK: this clip is EIGHT SECONDS, not three. Keep the camera moving slowly for the whole eight. Hold the last frame until 8.00. Do not fade at 3 seconds. If the model wants to fade early, ignore it and keep the same picture living.';
@@ -56,7 +56,7 @@ type ClipDraft = {
   visual: string;
   narration: string;
   super?: string;
-  /** Optional second-by-second picture. If omitted we still lock 0–2 / 2–4 / 4–6 / 6–8. */
+  /** Optional second-by-second picture. If omitted we still lock 0â€“2 / 2â€“4 / 4â€“6 / 6â€“8. */
   beats?: [string, string, string, string];
 };
 
@@ -70,26 +70,26 @@ function buildFloatingFlowPrompt(args: {
   const n = String(args.index + 1).padStart(2, '0');
   const superLine = args.draft.super ?? args.draft.title;
   const beats = args.draft.beats ?? [
-    `Establish ONLY this clip’s one idea. Dark night-sky ClearPath terminal. Saturated ${args.color} color wash. Huge rounded kid super “${superLine}” already on screen. Camera is already inside the scene — no logo card, no 3-second fade-in from black.`,
+    `Establish ONLY this clipâ€™s one idea. Dark night-sky ClearPath terminal. Saturated ${args.color} color wash. Huge rounded kid super â€œ${superLine}â€ already on screen. Camera is already inside the scene â€” no logo card, no 3-second fade-in from black.`,
     `Perform the action described in the full picture notes. Move as if a child is counting one-Mississippi, two-Mississippi. If a mouse is needed, it is a GIANT cartoon white-glove cursor, bigger than the button, crawling, never teleporting.`,
-    `Keep the SAME action going, twenty percent slower. Do not introduce a second lesson. Soft museum glitter only — not casino sparks, not slot-machine lights.`,
+    `Keep the SAME action going, twenty percent slower. Do not introduce a second lesson. Soft museum glitter only â€” not casino sparks, not slot-machine lights.`,
     `HOLD the clearest, most readable frame until 8.00. Super still huge. Do not fade to black. Do not smash-cut. If the model wants to end at three seconds, ignore it and keep this exact picture living through eight.`,
   ];
   return [
-    `GOOGLE FLOW — ONE FLOATING EIGHT-SECOND JOB.`,
-    `Tab: ${args.navLabel} (${args.tabId}). Clip ${n} of 12 — “${args.draft.title}”.`,
+    `GOOGLE FLOW â€” ONE FLOATING EIGHT-SECOND JOB.`,
+    `Tab: ${args.navLabel} (${args.tabId}). Clip ${n} of 12 â€” â€œ${args.draft.title}â€.`,
     `Paste this prompt ALONE. Do not paste the other eleven clips into the same job.`,
     `Aspect: 16:9 landscape. Duration slider: 8 seconds. If Flow offers 5s or 6s, pick 8 or regenerate until the clip holds to 8.00.`,
     EXPLAIN_FLOW_BRAND_LOOK,
     EXPLAIN_FLOW_HOLD,
     `ACCENT LOCK: every rim light, glow, and color wash is ${args.color}.`,
     `ONE IDEA ONLY: ${args.draft.title}. Tell them little. If a second idea appears, delete it.`,
-    `0.00–2.00s: ${beats[0]}`,
-    `2.00–4.00s: ${beats[1]}`,
-    `4.00–6.00s: ${beats[2]}`,
-    `6.00–8.00s: ${beats[3]}`,
+    `0.00â€“2.00s: ${beats[0]}`,
+    `2.00â€“4.00s: ${beats[1]}`,
+    `4.00â€“6.00s: ${beats[2]}`,
+    `6.00â€“8.00s: ${beats[3]}`,
     `FULL PICTURE NOTES (use for the whole eight seconds, not a 3-second postcard): ${args.draft.visual}`,
-    `ON-SCREEN SUPER (≤6 words, huge rounded letters, ${args.color} fill, white outline): ${superLine}`,
+    `ON-SCREEN SUPER (â‰¤6 words, huge rounded letters, ${args.color} fill, white outline): ${superLine}`,
     `SOUND: silent picture. Fifth-grade voiceover is recorded later over the stitch. Do not burn captions into the pixels.`,
     `Avoid: ${EXPLAIN_FLOW_NEGATIVE}`,
   ].join(' ');
@@ -133,7 +133,7 @@ function script(
     logline: partial.logline,
     narrationScript: shots.map((s) => s.narration.trim()).join(' '),
     masterFlowPrompt: [
-      `MASTER LOOK ONLY — do not generate one film from this. Generate twelve separate 8.00s Flow jobs.`,
+      `MASTER LOOK ONLY â€” do not generate one film from this. Generate twelve separate 8.00s Flow jobs.`,
       EXPLAIN_FLOW_BRAND_LOOK,
       partial.masterFlow,
       EXPLAIN_FLOW_HOLD,
@@ -253,12 +253,12 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'You will see big glowing cards. Some are orange. Some are gold. Some are cyan. Some are pink. They are pictures you can click later.',
         visual:
-          'Four giant cards drift into a 2×2 grid, each lighting its color over eight seconds: lava-orange Charts, electric-cyan Education, trophy-gold Memberships, lava-pink Y.W.C. Soft lava corners. No prices. Hold the finished grid.',
+          'Four giant cards drift into a 2Ã—2 grid, each lighting its color over eight seconds: lava-orange Charts, electric-cyan Education, trophy-gold Memberships, lava-pink Y.W.C. Soft lava corners. No prices. Hold the finished grid.',
         beats: [
           'First card drifts in and lights orange.',
           'Second card cyan.',
           'Third gold, fourth pink.',
-          'Hold the 2×2 grid.',
+          'Hold the 2Ã—2 grid.',
         ],
       },
       {
@@ -283,7 +283,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Then click only the card you want. You do not have to click every card. Skipping is allowed.',
         visual:
-          'Three cards stay perfectly still. Only the Charts card gets a gentle tap from the giant glove and a smile sticker. Eight seconds of “the others can wait.” Hold the smile on Charts and the still neighbors.',
+          'Three cards stay perfectly still. Only the Charts card gets a gentle tap from the giant glove and a smile sticker. Eight seconds of â€œthe others can wait.â€ Hold the smile on Charts and the still neighbors.',
         beats: [
           'Four cards. Three still. Glove approaches Charts.',
           'Gentle tap. Smile sticker lands.',
@@ -298,7 +298,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Nothing on this home page spends your money. Looking at cards is free. No credit card is used here.',
         visual:
-          'A friendly piggy bank sits in front of the glowing cards. Coins stay inside — we see them through a window and they do not jump out. A soft X rests on a credit card. Eight-second hold. Friendly, not scary. Hold the still piggy.',
+          'A friendly piggy bank sits in front of the glowing cards. Coins stay inside â€” we see them through a window and they do not jump out. A soft X rests on a credit card. Eight-second hold. Friendly, not scary. Hold the still piggy.',
         beats: [
           'Piggy arrives in front of cards.',
           'Coins visible inside, not leaving.',
@@ -342,7 +342,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
   ywc: script({
     id: 'ywc',
     navLabel: 'Y.W.C.',
-    title: 'Y.W.C. — Your World Connected',
+    title: 'Y.W.C. â€” Your World Connected',
     color: '#FF2E9A',
     logline: 'Twelve little 8s clips: the lava-pink story room.',
     masterFlow: 'Twelve eight-second lava-pink clips. Filter chips as crayons. One idea each.',
@@ -431,7 +431,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'See the colorful chips? Those are filters. A filter is a button that hides some stories and shows others.',
         visual:
-          'Huge chips like piano keys: Sports, Magazines, Relief, Finance — each a different neon. They light left to right over eight seconds. Hold the glowing row of chips.',
+          'Huge chips like piano keys: Sports, Magazines, Relief, Finance â€” each a different neon. They light left to right over eight seconds. Hold the glowing row of chips.',
         beats: [
           'Sports lights.',
           'Magazines lights.',
@@ -461,7 +461,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Then click a story to read it. It opens like a picture book. You can stop reading whenever you want.',
         visual:
-          'A story card unfolds like a picture book, pages turning slowly for eight seconds under a calm reading lamp. Huge type on the open page — never a real invented headline, just Sample story words. Hold the open page.',
+          'A story card unfolds like a picture book, pages turning slowly for eight seconds under a calm reading lamp. Huge type on the open page â€” never a real invented headline, just Sample story words. Hold the open page.',
         beats: [
           'Closed card on the desk.',
           'First page unfolds.',
@@ -506,7 +506,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'If the page feels loud or busy, that is okay. Your eyes can get tired. You are allowed to leave.',
         visual:
-          'The lava desk pulses once, then a pair of kid earmuffs appears and settles on the desk. Eight seconds of “you can leave.” Soft, not scary. Hold the earmuffs.',
+          'The lava desk pulses once, then a pair of kid earmuffs appears and settles on the desk. Eight seconds of â€œyou can leave.â€ Soft, not scary. Hold the earmuffs.',
         beats: [
           'Desk pulses once.',
           'Earmuffs appear.',
@@ -609,7 +609,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Then find the button that says Compile. Compile is one word. Rest your little arrow on it. Do not press yet.',
         visual:
-          'Huge friendly Compile button, cyan, like a school stamp. The giant glove approaches for eight seconds and hovers. Hold just before the click. That click is the next clip’s idea — this clip is only finding the word.',
+          'Huge friendly Compile button, cyan, like a school stamp. The giant glove approaches for eight seconds and hovers. Hold just before the click. That click is the next clipâ€™s idea â€” this clip is only finding the word.',
         beats: [
           'Compile button fills the frame.',
           'Glove crawls toward it.',
@@ -624,7 +624,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Now click Compile. Compile means please check this recipe. A recipe is a list of steps. The computer reads it.',
         visual:
-          'A recipe card using a kid cooking metaphor — bowls labeled like ingredients, not real trading advice — gets a magnifying-glass inspection for eight seconds. Caption CHECK THE RECIPE. Hold the glass over the card.',
+          'A recipe card using a kid cooking metaphor â€” bowls labeled like ingredients, not real trading advice â€” gets a magnifying-glass inspection for eight seconds. Caption CHECK THE RECIPE. Hold the glass over the card.',
         beats: [
           'Recipe card on the bench.',
           'Magnifying glass enters.',
@@ -637,7 +637,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Red error is okay',
         super: 'You did not break it',
         narration:
-          'If the recipe is broken, you will see a red error. That is okay. You did not break the website. Red here means “fix this line,” not “you are in trouble.”',
+          'If the recipe is broken, you will see a red error. That is okay. You did not break the website. Red here means â€œfix this line,â€ not â€œyou are in trouble.â€',
         visual:
           'A calm red underline on one line of a notebook. A hug sticker: YOU DID NOT BREAK IT. Eight-second hold. No crash fire, no skull, no explosion. Hold the hug sticker.',
         beats: [
@@ -787,7 +787,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Grown-ups call them candles. Each block is one chunk of time. A chunk might be one minute or one day. You do not need that word yet.',
         visual:
-          'A friendly analog clock melts into one block, then the next, eight seconds of “chunk of time.” Caption ONE BLOCK = ONE CHUNK. Hold the last melted block.',
+          'A friendly analog clock melts into one block, then the next, eight seconds of â€œchunk of time.â€ Caption ONE BLOCK = ONE CHUNK. Hold the last melted block.',
         beats: [
           'Clock visible.',
           'Clock melts into first block.',
@@ -832,7 +832,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'At the top, click the search box. Type a name if you want a different picture. Letters appear as you type. Then wait for the new picture.',
         visual:
-          'Giant search box. Cursor types slowly, letters appearing over eight seconds — a sample name like GOLD, not a trade call. Picture crossfades to another colorful chart. Hold the new picture.',
+          'Giant search box. Cursor types slowly, letters appearing over eight seconds â€” a sample name like GOLD, not a trade call. Picture crossfades to another colorful chart. Hold the new picture.',
         beats: [
           'Empty search box. Glove clicks it.',
           'Letters type slowly.',
@@ -965,7 +965,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'This page is a list of real headlines from the internet. A headline is the title of a story. We did not write those titles.',
         visual:
-          'Cards stack like mail for eight seconds. Header NEWS. No sirens. Cards show only Sample story labels — never a fake breaking headline. Hold the stack.',
+          'Cards stack like mail for eight seconds. Header NEWS. No sirens. Cards show only Sample story labels â€” never a fake breaking headline. Hold the stack.',
         beats: [
           'First cards drop like mail.',
           'Stack grows.',
@@ -991,7 +991,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
       {
         id: '05-empty',
         title: 'Empty is honest',
-        super: 'Empty ≠ fake stories',
+        super: 'Empty â‰  fake stories',
         narration:
           'If the list is empty, we did not make up fake stories. Empty means the wire is quiet. Blank is honest.',
         visual:
@@ -1000,7 +1000,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
           'Empty glass box.',
           'Liar-nose appears.',
           'Gentle X on the nose.',
-          'Hold. Super Empty ≠ fake stories.',
+          'Hold. Super Empty â‰  fake stories.',
         ],
       },
       {
@@ -1324,7 +1324,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
           'Extreme close-up of the cyan play-rectangle, eight-second breathe. Caption LITTLE TV. Hold the breathing square. No other idea.',
         beats: [
           'Square already huge in frame.',
-          'It breathes — scale up a little, down a little.',
+          'It breathes â€” scale up a little, down a little.',
           'Keep breathing. Super on.',
           'Hold. Super A little TV.',
         ],
@@ -1334,13 +1334,13 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Need extra understanding',
         super: 'Need extra understanding',
         narration:
-          'It says Need extra understanding. Read all four words. They mean “I want a slower movie about this website.”',
+          'It says Need extra understanding. Read all four words. They mean â€œI want a slower movie about this website.â€',
         visual:
           'The four words appear one by one, about two seconds each, filling eight seconds. Huge rounded type. Cyan fill. Hold on the completed sentence.',
         beats: [
           'Need',
           'extra',
-          'understanding — then the last beat holds all four',
+          'understanding â€” then the last beat holds all four',
           'Hold the full sentence.',
         ],
       },
@@ -1379,7 +1379,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Tiny TVs appear',
         super: 'Tiny TVs',
         narration:
-          'Little play badges appear next to every colorful button — like tiny TVs. Each color gets its own tiny TV.',
+          'Little play badges appear next to every colorful button â€” like tiny TVs. Each color gets its own tiny TV.',
         visual:
           'Badges pop in one every two-thirds of a second, matching each pill color, for eight seconds. Not a strobe. Hold on the full row of badges.',
         beats: [
@@ -1409,7 +1409,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Click the tiny play',
         super: 'Not the big word',
         narration:
-          'Click a tiny play badge — not the big word. The big word opens the room. The little play picture opens the help movie.',
+          'Click a tiny play badge â€” not the big word. The big word opens the room. The little play picture opens the help movie.',
         visual:
           'Two targets: big CHARTS word with a gentle X, and the tiny play with a star. Cursor picks the tiny play over eight seconds. Hold the chosen badge.',
         beats: [
@@ -1574,7 +1574,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Type the name you want people to see. Type means press letter keys. The letters appear in the box.',
         visual:
-          'Huge letters type themselves slowly: A N N A, across eight seconds. Hold on the finished name. Sample only — not a real member.',
+          'Huge letters type themselves slowly: A N N A, across eight seconds. Hold on the finished name. Sample only â€” not a real member.',
         beats: [
           'A',
           'N',
@@ -1602,7 +1602,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'A short bio',
         super: 'Two or three sentences',
         narration:
-          'You can write a short bio — two or three sentences about you. Bio means a tiny story. You can leave it blank.',
+          'You can write a short bio â€” two or three sentences about you. Bio means a tiny story. You can leave it blank.',
         visual:
           'Three short lines appear in a notebook over eight seconds. Hold the three lines. No real personal data.',
         beats: [
@@ -1645,7 +1645,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
       {
         id: '10-not-shop',
         title: 'Save is not shopping',
-        super: 'Save ≠ shopping',
+        super: 'Save â‰  shopping',
         narration:
           'Saving your name does not buy anything. It does not sell anything. Save is not a store. It only keeps the words.',
         visual:
@@ -1654,7 +1654,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
           'Nametag card.',
           'Cart card.',
           'X on the cart.',
-          'Hold. Super Save ≠ shopping.',
+          'Hold. Super Save â‰  shopping.',
         ],
       },
       {
@@ -1883,199 +1883,6 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
     ],
   }),
 
-  cinema: script({
-    id: 'cinema',
-    navLabel: 'CLEARPATH CINEMA',
-    title: 'ClearPath cinema',
-    color: '#00E5FF',
-    logline: 'Twelve little 8s clips: the cyan movie theater.',
-    masterFlow: 'Twelve eight-second theater clips. Shelves, player box, one movie.',
-    music: 'Theatre hush.',
-    captionsNote: 'No YouTube logo. No fake P&L.',
-    clips: [
-      {
-        id: '01-find',
-        title: 'Find CINEMA',
-        super: 'Cyan theater',
-        narration:
-          'Find the cyan button that says CLEARPATH CINEMA. Cinema means movie theater. Cyan is bright blue-green. It is a long label.',
-        visual:
-          'Cyan CINEMA pill, amber italic glow, TV icon. Eight-second push. Hold the close-up. No YouTube logo. No click yet.',
-        beats: [
-          'Row. Cyan pill singled out.',
-          'Push-in.',
-          'TV icon readable.',
-          'Hold. Super Cyan theater.',
-        ],
-      },
-      {
-        id: '02-click',
-        title: 'Click',
-        super: 'Click CINEMA',
-        narration:
-          'Click it. Click means press the left mouse button one time. The lights will get softer, like a theater.',
-        visual:
-          'Click. Theater lights dim over eight seconds. Hold the dimmed room. No slot chime.',
-        beats: [
-          'Hover. Click.',
-          'Lights begin to dim.',
-          'House lights low. Screen waits.',
-          'Hold. Super Click CINEMA.',
-        ],
-      },
-      {
-        id: '03-theater',
-        title: 'A theater inside',
-        super: 'Movie theater',
-        narration:
-          'This room is a movie theater inside the website. Seats are a picture. The glowing wall is the screen.',
-        visual:
-          'Rows of seats appear, screen glows. Eight seconds. Hold the theater. Kid museum, not a nightclub.',
-        beats: [
-          'Empty dark.',
-          'Seats fade in.',
-          'Screen glows.',
-          'Hold. Super Movie theater.',
-        ],
-      },
-      {
-        id: '04-shelves',
-        title: 'Shelves of pictures',
-        super: 'Rows of pictures',
-        narration:
-          'You will see rows of pictures, like shelves of movies. Each picture is one movie you can pick. You do not have to pick them all.',
-        visual:
-          'Poster shelves slide by for eight seconds. Hold a still shelf. No fake P&L posters.',
-        beats: [
-          'First shelf slides in.',
-          'Continue the slide.',
-          'Settle on a row.',
-          'Hold. Super Rows of pictures.',
-        ],
-      },
-      {
-        id: '05-click-picture',
-        title: 'Click one picture',
-        super: 'Pick one',
-        narration:
-          'Click one picture on the shelf. One means only one movie for now. Rest your little arrow on it, then press.',
-        visual:
-          'Cursor chooses one poster over eight seconds. Other posters dim. Hold on the chosen poster.',
-        beats: [
-          'Many posters.',
-          'Glove travels.',
-          'Click one. Others dim.',
-          'Hold. Super Pick one.',
-        ],
-      },
-      {
-        id: '06-player',
-        title: 'A player opens',
-        super: 'Player = movie box',
-        narration:
-          'A player opens. Player means a box that shows the movie. The box has a play triangle and a bottom bar.',
-        visual:
-          'A movie box grows for eight seconds. Caption PLAYER = BOX. Hold the grown box.',
-        beats: [
-          'Tiny box.',
-          'It grows.',
-          'Play triangle visible.',
-          'Hold. Super Player = movie box.',
-        ],
-      },
-      {
-        id: '07-bar',
-        title: 'The little bar',
-        super: 'Drag to skip',
-        narration:
-          'You can drag the little bar at the bottom to skip ahead. Drag means press, slide, let go. Skipping is allowed.',
-        visual:
-          'A crayon seek bar moves slowly for eight seconds. Hold the bar near the end. No scary jump-scare.',
-        beats: [
-          'Bar at the start.',
-          'Glove presses the crayon handle.',
-          'Slides slowly.',
-          'Hold. Super Drag to skip.',
-        ],
-      },
-      {
-        id: '08-full',
-        title: 'Full screen',
-        super: 'Make it big',
-        narration:
-          'You can make it full screen so the movie is big. Full screen means the movie fills the whole window.',
-        visual:
-          'Corners stretch to full frame over eight seconds. Hold the big picture.',
-        beats: [
-          'Small player.',
-          'Corners begin to stretch.',
-          'Almost full.',
-          'Hold full. Super Make it big.',
-        ],
-      },
-      {
-        id: '09-teach',
-        title: 'Movies that teach',
-        super: 'They teach',
-        narration:
-          'These movies teach. They do not tell you what to buy. Teaching is school. Buying is a store. This is school.',
-        visual:
-          'A lesson still. Cart with a gentle X. Eight-second hold. Cyan wash.',
-        beats: [
-          'Lesson still.',
-          'Cart appears.',
-          'X on cart.',
-          'Hold. Super They teach.',
-        ],
-      },
-      {
-        id: '10-broken',
-        title: 'If it is broken',
-        super: 'It will say so',
-        narration:
-          'If a live show is broken, the page will say so in plain words. Broken means it is not playing. We do not hide that.',
-        visual:
-          'Honest sign: this show is not working. Eight-second hold. No siren. No fake “live now” badge.',
-        beats: [
-          'Empty stage.',
-          'Honest sign unrolls.',
-          'Words readable.',
-          'Hold. Super It will say so.',
-        ],
-      },
-      {
-        id: '11-one',
-        title: 'Watch one',
-        super: 'One movie',
-        narration:
-          'Watch one movie. One is enough for this visit. You can come back for another later. Pausing is allowed.',
-        visual:
-          'One poster stays. Others dim. Eight seconds. Hold the one poster.',
-        beats: [
-          'Many posters.',
-          'Others dim.',
-          'One stays bright.',
-          'Hold. Super One movie.',
-        ],
-      },
-      {
-        id: '12-next',
-        title: 'Then school or pictures',
-        super: 'EDUCATION or CHARTS',
-        narration:
-          'Then click cyan EDUCATION or orange CHARTS if you want another room. School or pictures. Take your time choosing.',
-        visual:
-          'Both pills pulse. Eight seconds. Hold the two glowing pills.',
-        beats: [
-          'EDUCATION pulses.',
-          'CHARTS pulses.',
-          'Glove hovers.',
-          'Hold. Super EDUCATION or CHARTS.',
-        ],
-      },
-    ],
-  }),
-
   education: script({
     id: 'education',
     navLabel: 'CLEARPATH EDUCATION',
@@ -2084,7 +1891,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
     logline: 'Twelve little 8s clips: the cyan school.',
     masterFlow: 'Twelve eight-second school clips. Classroom doors. One lesson. Rest.',
     music: 'Classroom piano, very low.',
-    captionsNote: 'No “you are a trader now.”',
+    captionsNote: 'No â€œyou are a trader now.â€',
     clips: [
       {
         id: '01-find',
@@ -2093,7 +1900,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         narration:
           'Find the cyan button that says CLEARPATH EDUCATION. Education means school. Cyan is bright blue-green. It is a long label at the top.',
         visual:
-          'Cyan book-pill. Eight-second push. Hold the book icon. No “you are a trader now” text. No click yet.',
+          'Cyan book-pill. Eight-second push. Hold the book icon. No â€œyou are a trader nowâ€ text. No click yet.',
         beats: [
           'Row. Cyan pill singled out.',
           'Push-in.',
@@ -2136,7 +1943,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Subject cards',
         super: 'Classroom doors',
         narration:
-          'You will see subject cards — Crypto, Stocks, Forex — like classroom doors. Each door is one subject. You pick one.',
+          'You will see subject cards â€” Crypto, Stocks, Forex â€” like classroom doors. Each door is one subject. You pick one.',
         visual:
           'Doors light one by one over eight seconds. Hold on the hallway of doors.',
         beats: [
@@ -2166,7 +1973,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Unlocked means open',
         super: 'Unlocked = open',
         narration:
-          'Then click a lesson that is unlocked. Unlocked means the door is open. Locked means wait — try a different lesson.',
+          'Then click a lesson that is unlocked. Unlocked means the door is open. Locked means wait â€” try a different lesson.',
         visual:
           'A padlock turns teal and opens over eight seconds. Hold the open lock.',
         beats: [
@@ -2196,7 +2003,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'A tiny quiz',
         super: 'Did the words click?',
         narration:
-          'At the end there is a tiny quiz — just to see if the words made sense. A quiz here is practice. You cannot fail your account.',
+          'At the end there is a tiny quiz â€” just to see if the words made sense. A quiz here is practice. You cannot fail your account.',
         visual:
           'Three giant answers. Eight seconds. Hold the three buttons. No red F.',
         beats: [
@@ -2374,7 +2181,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Does not close a bank',
         super: 'Bank stays',
         narration:
-          'It does not close a bank. If you have a bank somewhere else, that bank stays open. EXIT is only this website’s hang-up.',
+          'It does not close a bank. If you have a bank somewhere else, that bank stays open. EXIT is only this websiteâ€™s hang-up.',
         visual:
           'A toy bank building stays open. Eight-second hold. Doors remain open.',
         beats: [
@@ -2700,7 +2507,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'The left list',
         super: 'Contents page',
         narration:
-          'The list on the left is the index — like the contents page in a book. Index means the list of topics. You pick from the list.',
+          'The list on the left is the index â€” like the contents page in a book. Index means the list of topics. You pick from the list.',
         visual:
           'A book contents page lines up with the sidebar over eight seconds. Hold the lined-up pages.',
         beats: [
@@ -2968,7 +2775,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Already happened',
         super: 'Yesterday',
         narration:
-          'A helper only talks about prices that already happened. Already happened means yesterday, or a minute ago — not a promise.',
+          'A helper only talks about prices that already happened. Already happened means yesterday, or a minute ago â€” not a promise.',
         visual:
           'A calendar circles yesterday over eight seconds. Hold the circled day.',
         beats: [
@@ -2996,7 +2803,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
       {
         id: '10-no-buy',
         title: 'Still not buying',
-        super: 'Sticker ≠ purchase',
+        super: 'Sticker â‰  purchase',
         narration:
           'Sticking a helper on a picture still does not buy or sell. The sticker is a crayon. The shop stays closed.',
         visual:
@@ -3005,7 +2812,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
           'Sticker on chart.',
           'Cart appears.',
           'X on cart.',
-          'Hold. Super Sticker ≠ purchase.',
+          'Hold. Super Sticker â‰  purchase.',
         ],
       },
       {
@@ -3013,7 +2820,7 @@ export const EXPLAIN_FLOW_SCRIPTS: Record<ExplainFlowSlotId, ExplainFlowScript> 
         title: 'Read what it cannot do',
         super: 'Read this part',
         narration:
-          'Read the “what it cannot do” part. That box is the honest part. Do not skip it even if it feels boring.',
+          'Read the â€œwhat it cannot doâ€ part. That box is the honest part. Do not skip it even if it feels boring.',
         visual:
           'Yellow CANNOT DO box. Eight-second hold. Hold the box.',
         beats: [
@@ -3052,7 +2859,6 @@ export const EXPLAIN_FLOW_NAV_ORDER: ExplainFlowSlotId[] = [
   'explain',
   'profile',
   'affiliate',
-  'cinema',
   'education',
   'exit',
 ];

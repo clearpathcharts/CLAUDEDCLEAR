@@ -19,6 +19,7 @@ secrets/
 /data/private_accounts/
 /data/profiles/
 /data/affiliate/
+/data/communications/
 /data/badges/
 /data/social-os/
 /data/timeframe-verify/
@@ -48,3 +49,16 @@ public/og-image.png
 .env
 .env.local
 
+
+# Member data / PII exports — never commit
+data/email-ops/
+data/marketing/funnel-local.json
+data/marketing-outbox/
+*service-account*.json
+*serviceAccount*.json
+
+
+# Member inbox local fallback (contains member emails)
+data/member-inbox/
+data/community-outreach/
+data/membership-grants.json

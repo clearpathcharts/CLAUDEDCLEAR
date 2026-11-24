@@ -3,6 +3,8 @@ import { ArrowLeft, Quote, Newspaper } from 'lucide-react';
 import SEO from './SEO';
 import { SurfBackground } from './SurfBackground';
 import { PRESS_KIT } from '../content/pressKit';
+import PublicSiteLinks from './PublicSiteLinks';
+import { FOUNDER_LEADER } from '../content/leadershipPublic';
 
 /**
  * Public press kit — no login required.
@@ -38,6 +40,15 @@ export default function PressKitPage() {
 
       <main className="relative z-10 max-w-3xl mx-auto px-4 py-12 md:py-16 space-y-14">
         <header className="space-y-5">
+          <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+            <img
+              src={FOUNDER_LEADER.imageUrl}
+              alt="Richard Floyd, Founder of ClearPath Trader"
+              width={200}
+              height={250}
+              className="w-40 md:w-48 rounded-2xl object-cover border-2 border-[#FF1493]/40 shadow-lg shrink-0"
+            />
+            <div className="space-y-5 text-center md:text-left">
           <p className="text-xs md:text-sm font-mono uppercase tracking-[0.25em] text-[#FF1493]">
             Media / founder bio
           </p>
@@ -47,6 +58,8 @@ export default function PressKitPage() {
           >
             {PRESS_KIT.subject}
           </h1>
+            </div>
+          </div>
           <p className="text-xl md:text-2xl text-[#00E5FF] font-semibold">{PRESS_KIT.role}</p>
           <p className="text-lg md:text-xl text-zinc-300 leading-relaxed border-l-2 border-[#FF1493]/60 pl-4">
             {PRESS_KIT.thesis}
@@ -157,17 +170,7 @@ export default function PressKitPage() {
         </section>
 
         <footer className="pt-6 border-t border-white/10 text-sm md:text-base text-zinc-500 space-y-3">
-          <nav className="flex flex-wrap gap-x-4 gap-y-2 text-xs uppercase tracking-widest font-mono" aria-label="Accessibility and site links">
-            <a href="/accessibility" className="text-[#00E5FF] hover:underline font-bold">
-              Accessibility · WCAG
-            </a>
-            <a href="/ui" className="text-[#00E5FF]/80 hover:underline">
-              Accessible UI Modes
-            </a>
-            <a href="/about" className="text-[#00E5FF] hover:underline">
-              About ClearPath Trader
-            </a>
-          </nav>
+          <PublicSiteLinks />
           <p>
             For interviews, quotes, or assets, contact{' '}
             <a href={`mailto:${PRESS_KIT.contactEmail}`} className="text-[#00E5FF] hover:underline">

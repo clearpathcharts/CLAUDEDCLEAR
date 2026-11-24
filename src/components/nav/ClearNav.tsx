@@ -7,7 +7,6 @@ import {
   Home,
   Landmark,
   LogOut,
-  Network,
   MessageSquare,
   Newspaper,
   Shield,
@@ -15,10 +14,14 @@ import {
   Users,
 } from "lucide-react";
 import { MobileCommandCenter } from "./MobileCommandCenter";
+import { MemberInboxBell } from "../inbox/MemberInboxBell";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
-import { RecommendedChartColorsBox } from "./RecommendedChartColorsBox";
-
+import {
+  NAV_BRIGHT_VIOLET_TAB_IDS,
+  navBrightVioletDesktopActive,
+  navBrightVioletDesktopIdle,
+} from "./navAccentColors";
 interface ClearNavProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
@@ -38,7 +41,15 @@ interface NavItem {
 }
 
 /** Standalone pages (not Dashboard tabs) — real links so they survive the tab router. */
-const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; classes: string; testId: string }[] = [
+const PAGE_LINKS: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  classes: string;
+  testId: string;
+  /** Explain Mode play badge + CEO slot `nav.*` (see videoSlots.ts). */
+  explainContentId?: string;
+}[] = [
   {
     href: "/brokers",
     icon: Landmark,
@@ -52,6 +63,7 @@ const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; classe
     label: "PLANS",
     classes: "text-[#FFD700] border border-[#FFD700]/65 hover:bg-[#FFD700]/20",
     testId: "nav-plans-link",
+    explainContentId: "Membership",
   },
 ];
 
@@ -113,19 +125,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       icon: Terminal,
       label: "PROFILE",
     },
-
-    {
-      id: "AffiliateNetwork",
-      icon: Network,
-      label: "AFFILIATE",
-    },
-
-    {
-      id: "CpmsApk",
-      icon: Cpu,
-      label: "CLEARPATH CINEMA",
-    },
-
     {
       id: "ClearPathEducation",
       icon: BookOpen,
@@ -146,21 +145,23 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
     const isPink =
       item.id === "Biography" ||
-      item.id === "CeoDashboard" ||
-      item.id === "AffiliateNetwork";
+      item.id === "CeoDashboard";
 
     const isCyan =
-      item.id === "CpmsApk" ||
       item.id === "Encyclopedia" ||
       item.id === "EncyclopediaOfIndicators" ||
       item.id === "ClearPathEducation" ||
       item.id === "LiteracyOS";
 
+    const isBrightViolet = NAV_BRIGHT_VIOLET_TAB_IDS.has(item.id);
+
     const isOrange =
-      isSecondaryGroup || index % 2 === 1;
+      !isBrightViolet && (isSecondaryGroup || index % 2 === 1);
 
     let classes =
       "text-[#4D00FF] border border-[#4D00FF]/55 hover:bg-[#4D00FF]/20";
+
+    if (isBrightViolet) classes = navBrightVioletDesktopIdle;
 
     if (isOrange)
       classes =
@@ -181,6 +182,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
       else if (isCyan)
         classes =
           "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]";
+      else if (isBrightViolet) classes = navBrightVioletDesktopActive;
       else if (isOrange)
         classes =
           "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]";
@@ -304,6 +306,7 @@ export const ClearNav: React.FC<ClearNavProps> = ({
               renderNavButton(item, index, false)
             )}
             <div className="flex items-center gap-1 shrink-0 snap-start">
+              <MemberInboxBell />
               <ExplainModeToggle />
               <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
             </div>
@@ -354,9 +357,8 @@ export const ClearNav: React.FC<ClearNavProps> = ({
 
             {PAGE_LINKS.map((link) => {
               const Icon = link.icon;
-              return (
+              const anchor = (
                 <a
-                  key={link.href}
                   href={link.href}
                   data-testid={link.testId}
                   className={`shrink-0 snap-start flex items-center gap-2 rounded-full px-3 py-2 md:px-4 whitespace-nowrap text-[10px] md:text-xs font-black tracking-wider transition-all duration-200 active:scale-95 ${link.classes}`}
@@ -365,6 +367,18 @@ export const ClearNav: React.FC<ClearNavProps> = ({
                   <Icon className="w-3 h-3 md:w-4 md:h-4 shrink-0" />
                   <span>{link.label}</span>
                 </a>
+              );
+              if (!link.explainContentId) {
+                return <React.Fragment key={link.href}>{anchor}</React.Fragment>;
+              }
+              return (
+                <div key={link.href} className="flex items-center gap-1 shrink-0 snap-start">
+                  {anchor}
+                  <ExplainTrigger
+                    contentId={link.explainContentId}
+                    color={explainColorForNavTab(link.explainContentId)}
+                  />
+                </div>
               );
             })}
 
@@ -418,8 +432,6 @@ export const ClearNav: React.FC<ClearNavProps> = ({
             )}
           </div>
         </div>
-
-        <RecommendedChartColorsBox />
       </div>
     </>
   );

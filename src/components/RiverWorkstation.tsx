@@ -613,14 +613,13 @@ function PastePanel({ onSubmit, onLoadExample }: { onSubmit: (source: string) =>
       </div>
       <div className="mt-4 rounded-lg border border-[#FFD700]/25 bg-[#FFD700]/5 p-4 text-left">
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#FFD700] mb-2">
-          What Gold Bar was for on TradingView
+          What the Gold Bar indicator does
         </p>
         <p className="text-xs text-white/70 leading-relaxed font-sans">
-          Gold Bar is the ATR trailing-stop overlay traders left on a TradingView chart.
+          Gold Bar is ClearPath's own ATR trailing-stop overlay. It draws on our charts.
           The stop rides Sensitivity × ATR away from the close. The usual start is sensitivity 1 and an ATR period of 10.
           While price stays on one side, the stop only trails. When the close crosses it, the script prints Buy or Sell, paints that candle gold, and fires the Long or Short alert.
-          On TradingView that was the job: see the trend flip on the candle and get the alert without watching every bar.
-          It draws on the chart. It does not send an order.
+          It is a chart drawing and an alert. It does not send an order, and it does not claim to match another platform's numbers.
         </p>
       </div>
     </div>

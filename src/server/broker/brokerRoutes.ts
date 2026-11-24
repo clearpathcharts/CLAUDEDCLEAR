@@ -4,6 +4,7 @@
  */
 import { Router, type Request, type Response } from 'express';
 import { getPrivateSessionUser, requirePrivateSession } from '../authGuards';
+import { isOwnHost } from '../siteOrigin';
 import {
   brokerOAuthCallbackLimiter,
   brokerOAuthStartLimiter,
@@ -52,7 +53,8 @@ function safeBrokerReturnTo(raw: unknown): string {
 }
 
 function hostFromReq(req: Request): string | undefined {
-  return String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0]?.trim() || undefined;
+  const host = String(req.get('host') || '').trim();
+  return host && isOwnHost(host) ? host : undefined;
 }
 
 function passThroughDisabled(res: Response) {
@@ -87,6 +89,12 @@ export function createBrokerRouter(): Router {
     if (!isBrokerPassThroughEnabled()) return passThroughDisabled(res);
     const uid = getPrivateSessionUser(req)?.uid;
     if (!uid) return res.status(401).json({ error: 'Sign in required.' });
+    if (req.query.disclosure !== 'accepted') {
+      return res.status(400).json({
+        error: 'Authorization disclosure not accepted',
+        message: 'Open the connection from ClearPath and press ALLOW on the authorization disclosure first.',
+      });
+    }
 
     const redirectUri = alpacaRedirectUri(hostFromReq(req));
     const returnTo = safeBrokerReturnTo(req.query.returnTo);
@@ -127,6 +135,7 @@ export function createBrokerRouter(): Router {
 
     const uid = pending!.uid;
     const returnTo = pending!.returnTo;
+    const disclosureAcceptedAt = pending!.disclosureAcceptedAt;
     delete (req.session as SessionWithBroker).brokerOAuth;
 
     if (!code) {
@@ -142,6 +151,7 @@ export function createBrokerRouter(): Router {
         refreshToken: tokens.refreshToken,
         expiresIn: tokens.expiresIn,
         scope: tokens.scope,
+        disclosureAcceptedAt,
       });
       return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}broker=alpaca_connected`);
     } catch (err: unknown) {

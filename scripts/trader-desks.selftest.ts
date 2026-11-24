@@ -21,6 +21,7 @@ import {
   isSessionOpen,
   isTraderDeskId,
   memberHomeDeskHref,
+  memberDashboardTabHref,
   parseDeskPath,
   shouldStayOnPublicHome,
 } from '../src/lib/traderDesks.ts';
@@ -30,6 +31,7 @@ import { parseHeldIds } from '../src/components/desks/deskHeldPanels.ts';
 import {
   deskSectionOpen,
   NEURO_CHART_FIRST_HELD,
+  RETAIL_CHART_FIRST_HELD,
 } from '../src/components/desks/heldMeta.ts';
 import { DESK_SEO } from '../src/content/traderDesksCopy.ts';
 import type { Candle } from '../src/types/indicators.ts';
@@ -87,6 +89,10 @@ assert.equal(
 assert.equal(
   memberHomeDeskHref({ search: '?profile=calm_focus', remembered: 'fundamental' }),
   '/desk/fundamental?profile=calm_focus',
+);
+assert.equal(
+  memberDashboardTabHref('Yours', '?profile=calm_focus'),
+  '/?profile=calm_focus&tab=Yours#Yours',
 );
 
 assert.equal(isSessionOpen(8, 7, 16), true);
@@ -267,10 +273,18 @@ for (const rel of srcFiles) {
   if (rel === 'src/components/desks/RetailTraderDesk.tsx') {
     assert.match(text, /RetailDashboard/);
     assert.match(text, /DeskHoldScope/);
-    assert.match(text, /clearpath_held_retail_v4/);
+    assert.match(text, /clearpath_held_retail_v5/);
     assert.match(text, /defaultHeld=\{RETAIL_CHART_FIRST_HELD\}/);
     assert.match(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.doesNotMatch(text, /clearpath_held_retail_v4/);
     assert.doesNotMatch(text, /study desk/);
+  }
+  if (rel === 'src/components/desks/heldMeta.ts') {
+    assert.match(text, /RETAIL_CHART_FIRST_HELD/);
+    assert.match(text, /Pattern Scanner/);
+    for (const id of ['news', 'calendar', 'alerts', 'education', 'simulation'] as const) {
+      assert.match(text, new RegExp(`RETAIL_CHART_FIRST_HELD[\\s\\S]*?'${id}'`));
+    }
   }
   if (rel === 'src/components/desks/retail/RetailDashboard.tsx') {
     assert.match(text, /data-retail-door/);
@@ -305,7 +319,7 @@ for (const rel of srcFiles) {
     assert.match(text, /Information & analytics only/);
     assert.match(text, /DATA UNAVAILABLE/);
     assert.match(text, /PassThroughTradePanel/);
-    assert.match(text, /useDedicatedPatternPanel=\{i === 0\}/);
+    assert.match(text, /useDedicatedPatternPanel=\{i === 0 && !scanHeld\}/);
     assert.match(text, /hidePatternOverlays=\{i !== 0\}/);
     assert.doesNotMatch(text, /You should buy|You should sell|Place order|broker routing/i);
     assert.doesNotMatch(text, /Market Flow|Time & Sales|Options Intelligence/);
@@ -437,10 +451,11 @@ for (const rel of srcFiles) {
     assert.match(text, /href=\{CEO_DASHBOARD_HREF\}/);
     assert.match(text, /useFounderAccess/);
     assert.match(text, /\{founder \? \(/);
-    assert.match(text, /sticky top-0 z-\[100\]/);
+    assert.match(text, /z-\[90\] shrink-0/);
     // Home = institutional desk, in-app. `/?choose=1` rendered the public
     // landing page for a signed-in member and read as a logout.
     assert.match(text, /data-desk-home/);
+    assert.match(text, /Desk home/);
     assert.match(text, /goHomeFromDesk\(\)/);
     assert.match(text, /href=\{homeHref\}/);
     assert.doesNotMatch(text, /\/\?choose=1/);
@@ -509,6 +524,16 @@ for (const rel of srcFiles) {
     assert.match(text, /DeferredDeskBuddy/);
     assert.match(text, /satellitePane \? null : <DeferredDeskBuddy/);
     assert.match(text, /DeskColorChartDock/);
+    assert.match(text, /MemberSiteChrome/);
+    assert.match(text, /AppShellProvider/);
+  }
+  if (rel === 'src/components/nav/MemberSiteChrome.tsx') {
+    assert.match(text, /BreakingNewsTicker/);
+    assert.match(text, /ClearNav/);
+    assert.match(text, /data-member-site-chrome/);
+    assert.match(text, /navigateMemberTab/);
+    assert.match(text, /isFounder=\{false\}/);
+    assert.doesNotMatch(text, /useFounderAccess/);
   }
   if (rel === 'src/components/desks/DeskColorChartDock.tsx') {
     assert.match(text, /ColorChartPicker/);
@@ -576,6 +601,13 @@ assert.equal(
   deskSectionOpen((id) => NEURO_CHART_FIRST_HELD.includes(id), ['news', 'calendar', 'alerts', 'education', 'simulation']),
   false,
 );
+
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('scanner' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('watchlist' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+assert.equal(RETAIL_CHART_FIRST_HELD.includes('snapshot' as (typeof RETAIL_CHART_FIRST_HELD)[number]), false);
+for (const id of ['news', 'calendar', 'alerts', 'education', 'simulation'] as const) {
+  assert.ok(RETAIL_CHART_FIRST_HELD.includes(id), `retail chart-first should park ${id}`);
+}
 
 const r = pearsonCorrelation([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 assert.ok(r != null && Math.abs(r - 1) < 1e-9);

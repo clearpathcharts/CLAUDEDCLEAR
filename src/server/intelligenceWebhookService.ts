@@ -36,6 +36,7 @@ function ensureDataDir(): void {
 }
 
 function recordPath(id: string): string {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Invalid briefing id');
   return path.join(DATA_DIR, `${id}.json`);
 }
 

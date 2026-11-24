@@ -11,6 +11,11 @@ FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Joins three ~10s Google Flow clips into one tab explainer.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg \
+  && rm -rf /var/lib/apt/lists/*
+
 # Non-root runtime user (Aikido / Docker CIS)
 RUN groupadd --system --gid 10001 clearpath \
   && useradd --system --uid 10001 --gid clearpath --home-dir /app --shell /usr/sbin/nologin clearpath

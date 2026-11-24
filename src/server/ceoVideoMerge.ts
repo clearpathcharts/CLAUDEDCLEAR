@@ -1,0 +1,279 @@
+/**
+ * Join three Google Flow clips (~10s each) into one tab explainer (~30s).
+ * Flow will not export a longer take, so the founder uploads the three pieces
+ * and this route concatenates them in the order chosen on the CEO page.
+ */
+import { spawn } from 'node:child_process';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {
+  CeoVideoStorageError,
+  CEO_VIDEO_PREFIX,
+  finalizeCeoVideo,
+  getCeoVideoStorageStatus,
+  listCeoVideos,
+  sanitizeVideoFilename,
+  type CeoVideo,
+} from './ceoVideoStorage';
+import { getStorage } from 'firebase-admin/storage';
+
+/** Flow tab explainers: join 2 (~20s) or 3 (~30s) short clips. */
+export const MERGE_CLIP_MIN = 2;
+export const MERGE_CLIP_MAX = 3;
+/** Section walkthroughs still use seven beats; merge allows 2–3 clips only. */
+export const TAB_EXPLAINER_CLIP_COUNT = 3;
+const ID_PATTERN = /^[a-f0-9]{16}$/;
+
+/** Accept every shape the CEO panel may POST after cache / proxy quirks. */
+export function extractMergeVideoIdsFromBody(body: unknown): unknown {
+  if (!body || typeof body !== 'object') return undefined;
+  const record = body as Record<string, unknown>;
+  const raw = record.videoIds ?? record.video_ids ?? record.clips;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        return JSON.parse(trimmed) as unknown;
+      } catch {
+        /* fall through */
+      }
+    }
+    const parts = trimmed
+      .split(/[,|\n]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (parts.length) return parts;
+  }
+  const c1 = record.clip1Id ?? record.clip1 ?? record.clip_1;
+  const c2 = record.clip2Id ?? record.clip2 ?? record.clip_2;
+  const c3 = record.clip3Id ?? record.clip3 ?? record.clip_3;
+  if (c1 != null && c2 != null) {
+    const fromFields = [c1, c2, c3]
+      .map((item) => (item == null ? '' : String(item).trim()))
+      .filter(Boolean);
+    if (fromFields.length >= MERGE_CLIP_MIN) {
+      return fromFields.slice(0, MERGE_CLIP_MAX);
+    }
+  }
+  return undefined;
+}
+
+export function normalizeMergeVideoIds(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    throw new CeoVideoStorageError(
+      'Merge needs two or three clip ids (videoIds array or clip1Id + clip2Id, optional clip3Id). Tap Refresh, re-pick clips, then merge again.',
+      400,
+      'need_clips'
+    );
+  }
+  const ids = value
+    .map((item) => String(item ?? '').trim().toLowerCase())
+    .filter((id) => id.length > 0);
+  if (ids.length < MERGE_CLIP_MIN || ids.length > MERGE_CLIP_MAX) {
+    throw new CeoVideoStorageError(
+      `Received ${ids.length} clip id(s). Pick two or three different clips, in play order.`,
+      400,
+      'need_clips'
+    );
+  }
+  if (ids.some((id) => !ID_PATTERN.test(id))) {
+    throw new CeoVideoStorageError(
+      `A clip id is not a valid library id (${ids.join(', ')}). Tap Refresh, then pick your clips again.`,
+      400,
+      'bad_id'
+    );
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new CeoVideoStorageError('Pick different clips — the same upload cannot be used twice.', 400, 'duplicate_clip');
+  }
+  return ids;
+}
+
+/**
+ * Concat video + audio. Each clip is scaled/padded to the same frame size first —
+ * Google Flow exports often disagree on resolution, which makes raw concat fail.
+ * Audio is resampled to stereo 48 kHz so clips with different codecs still join.
+ */
+export function ffmpegConcatArgs(inputs: string[], output: string): string[] {
+  const n = inputs.length;
+  const videoNorm = inputs
+    .map(
+      (_, index) =>
+        `[${index}:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p[v${index}]`
+    )
+    .join(';');
+  const audioNorm = inputs
+    .map(
+      (_, index) =>
+        `[${index}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,asetpts=PTS-STARTPTS[a${index}]`
+    )
+    .join(';');
+  const stacked = inputs.map((_, index) => `[v${index}][a${index}]`).join('');
+  const filter = `${videoNorm};${audioNorm};${stacked}concat=n=${n}:v=1:a=1[v][a]`;
+  return [
+    '-y',
+    ...inputs.flatMap((file) => ['-i', file]),
+    '-filter_complex',
+    filter,
+    '-map',
+    '[v]',
+    '-map',
+    '[a]',
+    '-c:v',
+    'libx264',
+    '-pix_fmt',
+    'yuv420p',
+    '-c:a',
+    'aac',
+    '-b:a',
+    '192k',
+    '-movflags',
+    '+faststart',
+    output,
+  ];
+}
+
+function ffmpegBin(): string {
+  const fromEnv = (process.env.FFMPEG_PATH || '').trim();
+  return fromEnv || 'ffmpeg';
+}
+
+function runFfmpeg(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegBin(), args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    child.stderr?.on('data', (chunk) => {
+      stderr = (stderr + String(chunk)).slice(-2000);
+    });
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(
+        new CeoVideoStorageError(
+          'Joining the clips took too long and was stopped.',
+          504,
+          'merge_timeout'
+        )
+      );
+    }, 300_000);
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      if (error.code === 'ENOENT') {
+        reject(
+          new CeoVideoStorageError(
+            'ffmpeg is not installed on this server, so clips cannot be joined yet.',
+            503,
+            'ffmpeg_missing'
+          )
+        );
+        return;
+      }
+      reject(new CeoVideoStorageError(error.message || 'ffmpeg failed to start.', 502, 'merge_failed'));
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(
+        new CeoVideoStorageError(
+          stderr.trim() || `ffmpeg stopped with code ${code}.`,
+          502,
+          'merge_failed'
+        )
+      );
+    });
+  });
+}
+
+export function normalizeMergeTitle(value: unknown, fallback: string): string {
+  const trimmed = String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, 200);
+  return trimmed || fallback;
+}
+
+export async function mergeCeoVideos(
+  bodyOrIds: unknown,
+  options?: { title?: unknown }
+): Promise<CeoVideo> {
+  const extracted =
+    extractMergeVideoIdsFromBody(bodyOrIds) ??
+    (Array.isArray(bodyOrIds) ? bodyOrIds : undefined);
+  const ids = normalizeMergeVideoIds(extracted);
+  const status = getCeoVideoStorageStatus();
+  if (!status.configured || !status.bucket) {
+    throw new CeoVideoStorageError(
+      status.reason || 'Video storage is not configured.',
+      503,
+      'storage_not_configured'
+    );
+  }
+  let clips: CeoVideo[] | null = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const library = await listCeoVideos();
+    const ordered = ids.map((id) => library.find((video) => video.id === id));
+    if (!ordered.some((video) => !video)) {
+      clips = ordered as CeoVideo[];
+      break;
+    }
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 750));
+    }
+  }
+  if (!clips) {
+    throw new CeoVideoStorageError(
+      'One of those clips is not in the library yet. Tap Refresh, then pick your clips again.',
+      404,
+      'not_found'
+    );
+  }
+
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cp-merge-'));
+  try {
+    const bucket = getStorage().bucket(status.bucket);
+    const locals: string[] = [];
+    for (const clip of clips) {
+      const dest = path.join(dir, `${clip.id}.mp4`);
+      await bucket.file(clip.objectPath).download({ destination: dest });
+      locals.push(dest);
+    }
+    const output = path.join(dir, 'merged.mp4');
+    await runFfmpeg(ffmpegConcatArgs(locals, output));
+    const stat = await fs.stat(output);
+    if (!stat.size) {
+      throw new CeoVideoStorageError('The joined video came out empty.', 502, 'merge_failed');
+    }
+
+    const id = crypto.randomBytes(8).toString('hex');
+    const filename = sanitizeVideoFilename(`tab-explainer-${clips.length}-clips.mp4`);
+    const objectPath = `${CEO_VIDEO_PREFIX}${id}/${filename}`;
+    const names = clips.map((clip) => clip.originalName || clip.filename).join(' + ');
+    const approxSeconds = clips.length * 10;
+    const displayName = normalizeMergeTitle(
+      options?.title,
+      `~${approxSeconds}s combined (${clips.length} clips: ${names})`.slice(0, 200)
+    );
+    await bucket.upload(output, {
+      destination: objectPath,
+      metadata: {
+        contentType: 'video/mp4',
+        cacheControl: 'public, max-age=31536000, immutable',
+        metadata: {
+          originalName: displayName.startsWith('★ ')
+            ? displayName
+            : `★ ${displayName}`,
+          uploadedBy: 'ceo-video-merge',
+          merged: 'yes',
+        },
+      },
+    });
+    return await finalizeCeoVideo(id);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+}

@@ -553,6 +553,14 @@
   object-fit: contain;
 }
 
+.broker-logo-wordmark {
+  color: #e2e8f0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
 .broker-logo-locker img[src$="schwab.svg"] {
   max-height: 74px;
 }

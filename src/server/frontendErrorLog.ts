@@ -12,8 +12,12 @@ function rotateIfNeeded() {
     if (!fs.existsSync(LOG_PATH)) return;
     const stat = fs.statSync(LOG_PATH);
     if (stat.size <= MAX_BYTES) return;
-    const rotated = `${LOG_PATH}.${Date.now()}.old`;
-    fs.renameSync(LOG_PATH, rotated);
+    const dir = path.dirname(LOG_PATH);
+    const base = path.basename(LOG_PATH);
+    for (const name of fs.readdirSync(dir)) {
+      if (name.startsWith(`${base}.`) && name.endsWith('.old')) fs.rmSync(path.join(dir, name), { force: true });
+    }
+    fs.renameSync(LOG_PATH, `${LOG_PATH}.${Date.now()}.old`);
   } catch {
     /* ignore */
   }

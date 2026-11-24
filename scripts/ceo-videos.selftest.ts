@@ -1,13 +1,21 @@
 /**
  * CEO explainer-video library:
  * - every route is founder-gated (401 unauthenticated, 403 without the action header)
- * - storage is durable-bucket only — no local-disk write path, in prod or anywhere
+ * - uploads go straight to the bucket; joining three clips uses a temp folder and ffmpeg only
  * - filename / MIME / size validation holds
  * - "storage not configured" is an honest state, never a fake success
  *
  * Run: npx tsx scripts/ceo-videos.selftest.ts
  */
 import assert from 'node:assert/strict';
+import {
+  normalizeMergeVideoIds,
+  normalizeMergeTitle,
+  extractMergeVideoIdsFromBody,
+  ffmpegConcatArgs,
+  TAB_EXPLAINER_CLIP_COUNT,
+} from '../src/server/ceoVideoMerge';
+import { CeoVideoStorageError } from '../src/server/ceoVideoStorage';
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
@@ -62,7 +70,51 @@ assert.doesNotMatch(envExample, /VITE_CEO_VIDEO/, 'bucket config is never a VITE
 
 // ----------------------------------------------------------- unit checks ----
 
+function assertMergeRules() {
+  const ids = ['a'.repeat(16), 'b'.repeat(16), 'c'.repeat(16)];
+  assert.equal(TAB_EXPLAINER_CLIP_COUNT, 3);
+  assert.deepEqual(normalizeMergeVideoIds(ids), ids);
+  const args = ffmpegConcatArgs(['one.mp4', 'two.mp4', 'three.mp4'], 'out.mp4');
+  assert.equal(args.some((arg) => arg.includes('concat=n=3:v=1:a=1[v][a]')), true);
+  assert.ok(args.includes('-c:a') && args.includes('aac'), 'merge output must encode AAC audio');
+  assert.equal(args.some((arg) => arg.includes('scale=1280:720')), true);
+  assert.equal(args[args.length - 1], 'out.mp4');
+  assert.equal(normalizeMergeTitle('  My title  ', 'fallback'), 'My title');
+  assert.equal(normalizeMergeTitle('   ', 'fallback'), 'fallback');
+  const hex = ['a'.repeat(16), 'b'.repeat(16), 'c'.repeat(16)];
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: hex[0], clip2Id: hex[1], clip3Id: hex[2] }),
+    hex
+  );
+  assert.deepEqual(extractMergeVideoIdsFromBody({ videoIds: hex }), hex);
+  assert.deepEqual(normalizeMergeVideoIds(hex.map((id) => id.toUpperCase())), hex);
+  const pair = [ids[0], ids[1]];
+  assert.deepEqual(normalizeMergeVideoIds(pair), pair);
+  assert.deepEqual(
+    extractMergeVideoIdsFromBody({ clip1Id: pair[0], clip2Id: pair[1] }),
+    pair
+  );
+  for (const bad of [[ids[0]], [...ids, ids[0]], [ids[0], ids[0], ids[1]], ['nope', ids[1], ids[2]]]) {
+    assert.throws(() => normalizeMergeVideoIds(bad), (error: unknown) => error instanceof CeoVideoStorageError);
+  }
+  const root = path.resolve('.');
+  const docker = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
+  assert.match(docker, /ffmpeg/);
+  const ui = fs.readFileSync(path.join(root, 'src/components/CeoVideoLibrary.tsx'), 'utf8');
+  assert.match(ui, /Merge 3 clips into one/);
+  assert.match(ui, /\/api\/ceo\/videos\/merge/);
+  assert.match(ui, /data-ceo-video-merge-title/);
+  assert.match(ui, /data-ceo-video-merge-slot/);
+  assert.match(ui, /data-ceo-video-merge-error/);
+  assert.match(ui, /data-ceo-video-merged/);
+  assert.match(ui, /data-ceo-video-merge-autofill/);
+  assert.match(ui, /data-ceo-video-merge-clip-count/);
+  assert.match(ui, /data-ceo-video-catalog/);
+  assert.match(ui, /data-ceo-video-catalog-remove/);
+}
+
 async function main() {
+  assertMergeRules();
   const storage = await import('../src/server/ceoVideoStorage.ts');
 
   assert.equal(storage.sanitizeVideoFilename('../../etc/passwd'), 'passwd');
@@ -123,6 +175,7 @@ async function main() {
     for (const [method, route] of [
       ['GET', '/api/ceo/videos'],
       ['POST', '/api/ceo/videos/upload-url'],
+      ['POST', '/api/ceo/videos/merge'],
       ['POST', '/api/ceo/videos/abc/finalize'],
       ['DELETE', '/api/ceo/videos/abc'],
     ] as const) {
@@ -150,10 +203,15 @@ async function main() {
     assert.deepEqual(body.videos, []);
     assert.ok(body.limits.maxBytes > 0);
     const navRows = body.slots.filter((s: any) => s.groupId === 'nav');
-    assert.equal(navRows.length, 16, 'the upload list has 16 nav play icons');
+    assert.equal(navRows.length, 15, 'the upload list has 15 nav play icons (Cinema tab retired)');
     assert.ok(
       navRows.some((s: any) => s.id === 'nav.gold-bar'),
       'the Gold Bar chart play icon is on the CEO upload list',
+    );
+    assert.equal(
+      navRows.some((s: any) => s.id === 'nav.cinema'),
+      false,
+      'ClearPath Cinema nav was removed — no nav.cinema upload row',
     );
     assert.equal(
       body.slots.some((s: any) => String(s.id).startsWith('nav.ceo')),
@@ -177,6 +235,15 @@ async function main() {
     const mintBody = (await mint.json()) as any;
     assert.equal(mintBody.error, 'storage_not_configured');
     assert.equal(mintBody.uploadUrl, undefined);
+
+    const shortMerge = await call('/api/ceo/videos/merge', {
+      method: 'POST',
+      headers: founder,
+      body: JSON.stringify({ videoIds: ['a'.repeat(16)] }),
+    });
+    assert.equal(shortMerge.status, 400, 'fewer than two clips must be refused before storage is touched');
+    const shortBody = (await shortMerge.json()) as { error?: string };
+    assert.equal(shortBody.error, 'need_clips');
   } finally {
     await new Promise<void>((resolve) => listener.close(() => resolve()));
   }

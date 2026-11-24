@@ -474,7 +474,7 @@ export function commodityEntries(): CrawlEntry[] {
   );
 }
 
-/** Indexable company pages — subsidiaries only. Public issuers live on /stocks/{ticker}. */
+/** Public issuers live on /stocks/{ticker}; /companies/{slug} only indexes non-issuer records (none today). */
 export function companyEntries(): CrawlEntry[] {
   return dedupeEntries(
     getCompanyCatalog()

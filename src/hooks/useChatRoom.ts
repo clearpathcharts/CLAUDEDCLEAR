@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { auth } from '../firebase';
 
 export interface ChatRoomMessage {
   id: string;
@@ -41,6 +42,7 @@ export function useChatRoom(roomId: string) {
   const [status, setStatus] = useState<ChatConnectionStatus>('CONNECTING');
   const [onlineCount, setOnlineCount] = useState(0);
   const [handle, setHandle] = useState(getChatHandle);
+  const [postError, setPostError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const roomRef = useRef(roomId);
   const joinedRef = useRef(false);
@@ -75,6 +77,14 @@ export function useChatRoom(roomId: string) {
           setStatus('ONLINE');
           joinedRef.current = false;
           joinRoom(socket!, roomId);
+          const opened = socket;
+          void Promise.resolve(auth.currentUser?.getIdToken?.())
+            .then((idToken) => {
+              if (idToken && opened?.readyState === WebSocket.OPEN) {
+                opened.send(JSON.stringify({ type: 'CHAT_AUTH', idToken }));
+              }
+            })
+            .catch(() => {});
         };
 
         socket.onmessage = (event) => {
@@ -88,6 +98,8 @@ export function useChatRoom(roomId: string) {
               if (typeof parsed.onlineCount === 'number') setOnlineCount(parsed.onlineCount);
             } else if (parsed.type === 'CHAT_ROOM_PRESENCE' && parsed.roomId === roomRef.current) {
               if (typeof parsed.onlineCount === 'number') setOnlineCount(parsed.onlineCount);
+            } else if (parsed.type === 'CHAT_ERROR') {
+              setPostError(typeof parsed.error === 'string' ? parsed.error : 'Message not sent.');
             }
           } catch {
             // ignore malformed packets
@@ -129,6 +141,7 @@ export function useChatRoom(roomId: string) {
   const sendMessage = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return false;
+    setPostError(null);
 
     wsRef.current.send(JSON.stringify({
       type: 'CHAT_ROOM_MESSAGE',
@@ -152,6 +165,7 @@ export function useChatRoom(roomId: string) {
     status,
     onlineCount,
     handle,
+    postError,
     sendMessage,
     updateHandle,
     isOwnMessage: (author: string) => author === handle,

@@ -126,9 +126,9 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
   {
     id: 'nav.memberships',
     groupId: NAV_VIDEO_SLOT_GROUP_ID,
-    label: 'Nav play icon — PLANS / Memberships',
-    where: `${NAV_BADGE} PLANS link and the Memberships page`,
-    explains: 'how the membership tiers compare',
+    label: 'Nav play icon — PLANS (gold link)',
+    where: `${NAV_BADGE} gold PLANS button in the secondary nav (and mobile menu → PLANS & PRICING)`,
+    explains: 'how the membership tiers compare on /plans',
   },
   {
     id: 'nav.education',
@@ -157,13 +157,6 @@ export const NAV_VIDEO_SLOTS: VideoSlot[] = [
     label: 'Nav play icon — INDICATOR ENCYCLOPEDIA',
     where: `${NAV_BADGE} Encyclopedia of Indicators entry`,
     explains: 'what an indicator is in plain language',
-  },
-  {
-    id: 'nav.cinema',
-    groupId: NAV_VIDEO_SLOT_GROUP_ID,
-    label: 'Nav play icon — CLEARPATH CINEMA',
-    where: `${NAV_BADGE} CLEARPATH CINEMA button`,
-    explains: 'how to find and play a title in Cinema',
   },
   {
     id: 'nav.profile',

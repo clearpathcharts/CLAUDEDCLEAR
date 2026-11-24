@@ -44,8 +44,15 @@ export type StoredProfile = {
     currentPeriodEnd?: string;
     activatedAt?: string;
     updatedAt?: string;
+    /**
+     * Company pricing-year (1–5) stamped at checkout. Continuous subscribers keep
+     * that year's Stripe price; cancel + rejoin pays the then-current year.
+     */
+    pricingYear?: number;
     /** Referrer credited on first real (post-trial) payment. */
     affiliateCredited?: boolean;
+    /** Last successful pull from Stripe API (membership/me reconcile). */
+    stripeSyncedAt?: string;
   };
   /**
    * Other uids that share this Stripe membership (private account + Firebase).
@@ -122,6 +129,21 @@ export function writeProfile(uid: string, patch: Partial<StoredProfile>): Stored
   void pushProfileToFirestore(JSON.parse(serialized) as StoredProfile).catch((err) => {
     console.warn('[profileStore] Firestore write-through rejected (local copy saved):', err);
   });
+  return next;
+}
+
+/**
+ * Stripe webhooks must not ACK until Firestore has the membership row — otherwise
+ * a redeploy can drop paid access on ephemeral disk.
+ */
+export async function writeProfileDurable(uid: string, patch: Partial<StoredProfile>): Promise<StoredProfile> {
+  const next = writeProfile(uid, patch);
+  const db = getAdminFirestore();
+  if (!db) return next;
+  const pushed = await pushProfileToFirestore(next);
+  if (!pushed) {
+    throw new Error(`Durable profile write failed for uid=${uid}`);
+  }
   return next;
 }
 

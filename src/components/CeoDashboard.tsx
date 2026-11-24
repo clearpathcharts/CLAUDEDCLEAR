@@ -10,11 +10,17 @@ import DailyOpsDesk from './DailyOpsDesk';
 import DailyPatternReviewDesk from './DailyPatternReviewDesk';
 import CeoAlwaysOnMonitor from './CeoAlwaysOnMonitor';
 import CeoVideoLibrary from './CeoVideoLibrary';
+import { MemberMessagesDesk } from './inbox/MemberMessagesDesk';
 import { FOUNDER_EMAILS, isFounderAuthUser } from '../lib/founder';
 import { useFounderAccess } from '../hooks/useFounderAccess';
 import { logoutPrivateAccount } from '../api/privateAuth';
 import { GITHUB_SOURCE_ZIP_URL } from '../lib/sourceRepo';
 import ChooseYourPath from './ChooseYourPath';
+import CeoHiddenFeatures from './CeoHiddenFeatures';
+import MarketingCampaignDesk from './MarketingCampaignDesk';
+import MarketingDepartment from './marketing/MarketingDepartment';
+import CeoBrentOutreachBento from './ceo/CeoBrentOutreachBento';
+import CeoCommunityOutreachAdmin from './ceo/CeoCommunityOutreachAdmin';
 import { navigateToDesk, TRADER_DESK_STORAGE_KEY } from '../lib/traderDesks';
 
 type SafePrivateMemberRow = {
@@ -118,8 +124,9 @@ function formatJoined(value?: string | null): string {
 
 export default function CeoDashboard() {
   const db = getDb();
-  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'videos'>(() => {
+  const [ceoTab, setCeoTab] = useState<'system' | 'members' | 'videos' | 'messages' | 'marketing'>(() => {
     try {
+      if (window.location.hash === '#marketing') return 'marketing';
       return window.location.hash === '#videos' ? 'videos' : 'system';
     } catch {
       return 'system';
@@ -128,7 +135,7 @@ export default function CeoDashboard() {
   const ceoTabsRef = useRef<HTMLDivElement | null>(null);
   const [scrollToTabs, setScrollToTabs] = useState(() => {
     try {
-      return window.location.hash === '#videos';
+      return window.location.hash === '#videos' || window.location.hash === '#marketing';
     } catch {
       return false;
     }
@@ -139,6 +146,17 @@ export default function CeoDashboard() {
     try {
       if (window.location.hash !== '#videos') {
         window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#videos`);
+      }
+    } catch {
+      /* hash is a convenience only */
+    }
+  };
+  const openMarketingDepartment = () => {
+    setCeoTab('marketing');
+    setScrollToTabs(true);
+    try {
+      if (window.location.hash !== '#marketing') {
+        window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#marketing`);
       }
     } catch {
       /* hash is a convenience only */
@@ -172,16 +190,17 @@ export default function CeoDashboard() {
   const [inviteMailMsg, setInviteMailMsg] = useState<string | null>(null);
   const [importText, setImportText] = useState('');
   const [importOpen, setImportOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('itsahmadsaad@gmail.com');
+  const [resetEmail, setResetEmail] = useState('');
   const [apiUnlocked, setApiUnlocked] = useState(false);
   const [unlockBusy, setUnlockBusy] = useState(false);
-  const [catalogSecretInput, setCatalogSecretInput] = useState(() => {
+  const [catalogSecretInput, setCatalogSecretInput] = useState('');
+  useEffect(() => {
     try {
-      return sessionStorage.getItem('cp_catalog_admin_secret') || '';
+      sessionStorage.removeItem('cp_catalog_admin_secret');
     } catch {
-      return '';
+      /* ignore */
     }
-  });
+  }, []);
   const [siteDoctor, setSiteDoctor] = useState<SiteDoctorReport | null>(null);
   const [siteDoctorLoading, setSiteDoctorLoading] = useState(false);
   const [siteDoctorError, setSiteDoctorError] = useState<string | null>(null);
@@ -230,12 +249,8 @@ export default function CeoDashboard() {
       const token = await current.getIdToken(true);
       headers.Authorization = `Bearer ${token}`;
     }
-    try {
-      const secret = (sessionStorage.getItem('cp_catalog_admin_secret') || catalogSecretInput || '').trim();
-      if (secret) headers['x-catalog-admin-secret'] = secret;
-    } catch {
-      /* ignore */
-    }
+    const secret = catalogSecretInput.trim();
+    if (secret) headers['x-catalog-admin-secret'] = secret;
     return headers;
   };
 
@@ -285,11 +300,6 @@ export default function CeoDashboard() {
     if (!secret) {
       setConvertMsg('Paste your catalog admin secret first (from your server env CATALOG_ADMIN_SECRET).');
       return;
-    }
-    try {
-      sessionStorage.setItem('cp_catalog_admin_secret', secret);
-    } catch {
-      /* ignore */
     }
     setUnlockBusy(true);
     setConvertMsg(null);
@@ -459,7 +469,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Emergency dry run: ${body.created} would be created, ${body.reset} would get new passwords (${body.members?.length || 0} known survivors).`
-          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Open “Show invite passwords” — send Dawn’s credentials privately.`
+          : `Emergency restore: ${body.created} created, ${body.reset} passwords reset, ${body.invitesCreated} invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) {
         await loadAdminMembers();
@@ -605,7 +615,7 @@ export default function CeoDashboard() {
       setConvertMsg(
         dryRun
           ? `Import dry run: ${body.created} would be created, ${body.already} already exist (${body.candidates} rows).`
-          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Open “Show invite passwords” if passwords were auto-generated.`
+          : `Import: ${body.created} created, ${body.already} already existed, ${body.invitesCreated} temp invites. Use Invite emails → SEND EMAIL to give each member a fresh password by email.`
       );
       if (!dryRun) await loadAdminMembers();
     } catch (err: any) {
@@ -764,6 +774,9 @@ export default function CeoDashboard() {
       if (window.location.hash === '#videos') {
         setCeoTab('videos');
         setScrollToTabs(true);
+      } else if (window.location.hash === '#marketing') {
+        setCeoTab('marketing');
+        setScrollToTabs(true);
       }
     };
     window.addEventListener('hashchange', onHash);
@@ -870,6 +883,28 @@ export default function CeoDashboard() {
       </div>
 
       <div
+        data-ceo-marketing-shortcut
+        className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border-2 border-fuchsia-400/60 bg-fuchsia-500/10 px-5 py-4"
+      >
+        <div className="min-w-[240px] flex-1 space-y-1">
+          <p className="m-0 flex items-center gap-2 text-base font-black uppercase tracking-widest text-fuchsia-200">
+            <Upload size={20} aria-hidden="true" /> Marketing Department
+          </p>
+          <p className="m-0 text-sm leading-relaxed text-zinc-200">
+            Load posters and videos, approve ready-made posts for every platform, and see every page search engines can find.
+          </p>
+        </div>
+        <button
+          type="button"
+          data-ceo-marketing-open
+          onClick={openMarketingDepartment}
+          className="inline-flex min-h-[64px] items-center justify-center gap-3 rounded-xl bg-fuchsia-400 px-8 text-sm font-black uppercase tracking-widest text-black hover:bg-fuchsia-300"
+        >
+          Open Marketing Department
+        </button>
+      </div>
+
+      <div
         data-ceo-kick-bar
         className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3"
       >
@@ -893,7 +928,15 @@ export default function CeoDashboard() {
         </p>
       ) : null}
 
+      <CeoHiddenFeatures />
+
       <ChooseYourPath onChoosePath={navigateToDesk} />
+
+      <MarketingCampaignDesk getHeaders={founderApiHeaders} />
+
+      <CeoBrentOutreachBento getHeaders={founderApiHeaders} />
+
+      <CeoCommunityOutreachAdmin getHeaders={founderApiHeaders} />
 
       <CeoAlwaysOnMonitor />
             <DailyOpsDesk
@@ -929,6 +972,16 @@ export default function CeoDashboard() {
           MEMBERS / ALL USERS
         </button>
         <button
+          onClick={() => setCeoTab('messages')}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'messages'
+              ? 'text-[#00FFFF] border-[#00FFFF] bg-[#00FFFF]/5 shadow-[0_12px_24px_-12px_rgba(0,255,255,0.4)]'
+              : 'text-zinc-500 border-transparent hover:text-zinc-350 hover:bg-white/5'
+          }`}
+        >
+          ✉️ MEMBER MESSAGES
+        </button>
+        <button
           data-ceo-videos-tab
           onClick={openVideoLibrary}
           className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
@@ -939,10 +992,25 @@ export default function CeoDashboard() {
         >
           🎬 EXPLAINER VIDEOS
         </button>
+        <button
+          data-ceo-marketing-tab
+          onClick={openMarketingDepartment}
+          className={`px-5 py-3 font-mono text-xs uppercase tracking-widest font-black transition-all duration-250 border-b-2 ${
+            ceoTab === 'marketing'
+              ? 'text-fuchsia-200 border-fuchsia-300 bg-fuchsia-400/10'
+              : 'text-fuchsia-200/80 border-fuchsia-300/30 hover:text-fuchsia-100 hover:bg-fuchsia-400/5'
+          }`}
+        >
+          📣 MARKETING DEPARTMENT
+        </button>
       </div>
 
-      {ceoTab === 'videos' ? (
+      {ceoTab === 'marketing' ? (
+        <MarketingDepartment getHeaders={founderApiHeaders} />
+      ) : ceoTab === 'videos' ? (
         <CeoVideoLibrary getHeaders={founderApiHeaders} />
+      ) : ceoTab === 'messages' ? (
+        <MemberMessagesDesk getHeaders={founderApiHeaders} />
       ) : ceoTab === 'members' ? (
         <div className="space-y-8">
           {showsUnauthorized && (

@@ -72,6 +72,7 @@ import BreakingNewsTicker from './BreakingNewsTicker';
 import SystemIntelligencePanel from './SystemIntelligencePanel';
 import FeatureGate from './FeatureGate';
 import SectionGuideOffer from './sectionGuides/SectionGuideOffer';
+import { SECTION_GUIDE_OFFER_EXCLUDED_TABS } from '../config/founderUiToggles';
 import { useMembership } from '../hooks/useMembership';
 import { useAppShell } from '../contexts/AppShellContext';
 import { isAppShell as detectAppShell } from '../lib/appShell';
@@ -82,13 +83,11 @@ import { isEducationFamilyTab } from '../education/educationDesks';
 const InteractiveChart = lazy(() =>
   import('./charts/InteractiveChart').then((m) => ({ default: m.InteractiveChart }))
 );
-const MeetTheBoard = lazy(() => import('./MeetTheBoard'));
 const ProfileHub = lazy(() =>
   import('./ProfileHub').then((m) => ({ default: m.ProfileHub }))
 );
-const AffiliateDashboard = lazy(() => import('./profile/AffiliateDashboard'));
 const YoursPage = lazy(() => import('./yours/YoursPage'));
-const MembershipTab = lazy(() => import('./MembershipTab'));
+import { redirectLegacyMembershipDashboardUrl } from '../lib/retiredMembershipDashboardUrl';
 const NewsPanel = lazy(() => import('./NewsPanel'));
 const DiscoveryFeed = lazy(() => import('./DiscoveryFeed'));
 const ClearPathChatroom = lazy(() => import('./chat/ClearPathChatroom'));
@@ -111,7 +110,6 @@ const GeographicMap = lazy(() => import('./GeographicMap'));
 const AlertsCenter = lazy(() => import('./AlertsCenter'));
 const PortfolioTracker = lazy(() => import('./PortfolioTracker'));
 const StrategyMarket = lazy(() => import('./StrategyMarket'));
-const CpmsApk = lazy(() => import('./CpmsApk'));
 const EncyclopediaOfIndicators = lazy(() => import('./EncyclopediaOfIndicators'));
 const EncyclopediaLayout = lazy(() => import('./encyclopedia/EncyclopediaLayout'));
 const RiverWorkstation = lazy(() => import('./RiverWorkstation'));
@@ -140,8 +138,10 @@ const RETIRED_TABS: Record<string, string> = {
   Intelligence: 'News',
   Leaderboard: 'News',
   ReferralDesk: 'Yours',
-  // Broken PIN gate removed from the site — old links land on Memberships.
-  Founders: 'Membership',
+  // In-dashboard membership tab retired — use /plans.
+  Membership: 'StrictlyCharts',
+  Founders: 'StrictlyCharts',
+  CpmsApk: 'ClearPathEducation',
 };
 
 function normalizeTabId(tabId: string): string {
@@ -326,7 +326,7 @@ const TabContent = ({
       requiredTier={requiredTier}
       featureTitle={featureTitle}
       perks={perks}
-      onUpgrade={() => setActiveTab('Membership')}
+      onUpgrade={() => { window.location.assign('/plans'); }}
     >
       {node}
     </FeatureGate>
@@ -369,17 +369,11 @@ const TabContent = ({
       case 'News': return <NewsPanel />;
       case 'Communities': return (
         <Suspense fallback={<TabLoading />}>
-          <CommunityHub onUpgrade={() => setActiveTab('Membership')} />
+          <CommunityHub onUpgrade={() => { window.location.assign('/plans'); }} />
         </Suspense>
       );
       case 'Biography': return <ProfileHub user={profile} onNavigate={setActiveTab} />;
-      case 'AffiliateNetwork': return gate(
-        'affiliate', 'silver', 'Affiliate Network',
-        ['Share codes', 'Silver sheet affiliate links', 'Honest residual credits'],
-        <AffiliateDashboard profile={profile} onBack={() => setActiveTab('Biography')} />
-      );
       case 'Yours': return <YoursPage />;
-      case 'Membership': return <MembershipTab onNavigate={setActiveTab} />;
       case 'Workspace': return gate(
         'workspace', 'platinum', 'Workspace Desk',
         ['Bots / automation desk', 'Platinum sheet tools', 'Future features first'],
@@ -394,8 +388,7 @@ const TabContent = ({
           <RiverWorkstation />
         </Suspense>
       );
-      case 'CpmsApk': return <CpmsApk />;
-      // Sentinel removed from nav; #Sentinel hash redirects to Discovery. Component kept for future re-enable.
+      // CpmsApk (ClearPath Cinema) removed from nav; #CpmsApk hash maps to ClearPathEducation via RETIRED_TABS.
 
       case 'EncyclopediaOfIndicators': return gate(
         'encyclopedia', 'silver', 'Encyclopedia of Indicators',
@@ -432,7 +425,6 @@ const TabContent = ({
       case 'GetVerified': return <GetVerified profile={profile} onBack={onBack} />;
       case 'ShareQR': return <ShareQRCode />;
       case 'CeoDashboard': return <CeoDashboard />;
-      case 'MeetTheBoard': return <MeetTheBoard />;
       case 'GlobalSessions': return gate(
         'institutional', 'gold', 'Global Trading Sessions',
         ['Session kill zones', 'Institutional timing windows', 'Liquidity maps'],
@@ -623,6 +615,29 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    redirectLegacyMembershipDashboardUrl();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get('tab') || window.location.hash.replace('#', '');
+    if (/^membership$/i.test(fromUrl)) {
+      redirectLegacyMembershipDashboardUrl();
+      return;
+    }
+    let fromStorage = '';
+    try {
+      fromStorage = localStorage.getItem('clearpath_active_tab') || '';
+    } catch {
+      /* ignore */
+    }
+    if (fromUrl === 'MeetTheBoard' || fromStorage === 'MeetTheBoard' || activeTab === 'MeetTheBoard') {
+      window.location.assign('/meet-the-board');
+    }
+  }, [activeTab]);
   
   const defaultAvatars = [
     { id: 'lion', url: 'https://images.unsplash.com/photo-1614027164847-1b28cfe1df60?w=400&q=80', label: 'Lion' },
@@ -715,7 +730,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           'photos': 'Photos',
           'settings': 'Settings',
           'biography': 'Biography',
-          'affiliate': 'AffiliateNetwork',
           'strictlycharts': 'StrictlyCharts',
           'charts': 'StrictlyCharts'
         };
@@ -926,7 +940,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
     const allMenuItems = [
       { id: 'Yours', icon: User, label: 'YOURS' },
       { id: 'TheRiver', icon: Cpu, label: 'INDACREATOR' },
-      { id: 'Membership', icon: Crown, label: 'MEMBERSHIP' },
+      { id: 'Plans', icon: Crown, label: 'PLANS', href: '/plans' },
       { id: 'StrictlyCharts', icon: BarChart3, label: 'MARKETS' },
       { id: 'ClearPathEducation', icon: Book, label: 'CLEARPATH EDUCATION' },
       { id: 'Encyclopedia', icon: Book, label: 'FINANCIAL ENCYCLOPEDIA' },
@@ -935,7 +949,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
       { id: 'Communities', icon: MessageSquare, label: 'COMMUNITIES' },
       { id: 'Calendar', icon: Calendar, label: 'ECONOMIC NEWS' },
       { id: 'ThemeTerminal', icon: Terminal, label: 'THEMES / PROFILES' },
-      { id: 'MeetTheBoard', icon: Shield, label: 'MEET THE BOARD' },
       { id: 'CeoDashboard', icon: Shield, label: 'CEO DASHBOARD' }, 
       { id: 'Logout', icon: LogOut, label: 'LOGOUT' },
     ];
@@ -989,6 +1002,14 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
   const seoData = getSeoData();
 
   const handleTabChange = (tabId: string) => {
+    if (tabId === 'Plans' || tabId === 'Membership' || /^membership$/i.test(tabId)) {
+      window.location.assign('/plans');
+      return;
+    }
+    if (tabId === 'MeetTheBoard' || normalizeTabId(tabId) === 'MeetTheBoard') {
+      window.location.assign('/meet-the-board');
+      return;
+    }
     const nextTab = normalizeTabId(tabId);
     // CEO Dashboard is founder-only (Diagnostics removed — it probed vendor APIs)
     if (nextTab === 'CeoDashboard' && (authLoading || founderResolving)) {
@@ -1180,7 +1201,11 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
         setActiveTab(normalizeTabId(urlTab));
       } else {
         const hash = window.location.hash.replace('#', '');
-        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders']);
+        const retiredTabs = new Set(['Screener', 'Journal', 'Sentinel', 'CapitalFlow', 'Scanner', 'Intelligence', 'Leaderboard', 'ReferralDesk', 'Founders', 'Membership']);
+        if (hash === 'Membership' || /^membership$/i.test(hash)) {
+          redirectLegacyMembershipDashboardUrl();
+          return;
+        }
         if (retiredTabs.has(hash)) {
           setActiveTab(normalizeTabId(hash) === hash ? 'News' : normalizeTabId(hash));
         } else {
@@ -1195,10 +1220,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
           hash === 'News' || 
           hash === 'Calendar' ||
           hash === 'Biography' || 
-          hash === 'MeetTheBoard' || 
           hash === 'Yours' || 
-          hash === 'CpmsApk' || 
-          hash === 'AffiliateNetwork' || 
           hash === 'Encyclopedia' || 
           hash === 'EncyclopediaOfIndicators' || 
           hash === 'ClearPathEducation' ||
@@ -1371,7 +1393,9 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                       ? 'p-0 min-h-0'
                       : activeTab === 'CeoDashboard' ? 'min-w-0 px-0 sm:px-6 lg:px-12 pb-16 pt-4 sm:pt-8 min-h-[50vh]' : 'px-6 lg:px-12 pb-16 pt-8 min-h-[50vh]'
                   }`}>
-                    {activeTab !== 'CeoDashboard' && activeTab !== 'Fundamentals' && (
+                    {activeTab !== 'CeoDashboard' &&
+                      activeTab !== 'Fundamentals' &&
+                      !SECTION_GUIDE_OFFER_EXCLUDED_TABS.has(activeTab) && (
                       <div className={activeTab === 'StrictlyCharts' ? 'px-3 pt-2 shrink-0' : undefined}>
                         <SectionGuideOffer tabId={activeTab} disabled={isAppShell} />
                       </div>
@@ -1379,7 +1403,7 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
                     {isEducationFamilyTab(activeTab) && (
                       <EducationDeskBar activeTab={activeTab} onNavigate={handleTabChange} />
                     )}
-                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && activeTab !== 'AffiliateNetwork' && !isEducationFamilyTab(activeTab) && (
+                    {activeTab !== 'StrictlyCharts' && activeTab !== 'Fundamentals' && activeTab !== 'CeoDashboard' && !isEducationFamilyTab(activeTab) && (
                       <div className="mb-6">
                         <BackToDashboard onBack={() => handleTabChange(isFounder() ? 'CeoDashboard' : 'StrictlyCharts')} color={profile.text} />
                       </div>
@@ -1406,7 +1430,6 @@ export default function Dashboard({ profile: initialProfile, onProfileChange }: 
 
           <div className="w-full mt-auto mb-0 bg-transparent flex flex-col">
             <LegalFooter profile={profile} onShowTerms={() => setShowAdditionalTerms(true)} />
-            {!isAppShell && <BreakingNewsTicker />}
           </div>
         </div>
       </div>

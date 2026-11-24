@@ -80,6 +80,10 @@ assert.equal(isBriefingDay(mondayClose), true);
 assert.equal(isBriefingDay(new Date("2026-09-05T12:00:00-04:00")), false);
 assert.equal(isSlotDue("market_close", new Date("2026-09-08T16:00:00-04:00")), true);
 assert.equal(isSlotDue("overnight", new Date("2026-09-08T01:00:00-04:00")), true);
+// Whole-hour window: a scaled-to-zero instance woken at :37 must still run the slot.
+assert.equal(isSlotDue("market_close", new Date("2026-09-08T16:37:00-04:00")), true);
+assert.equal(isSlotDue("market_close", new Date("2026-09-08T17:00:00-04:00")), false);
+assert.equal(isSlotDue("overnight", new Date("2026-09-08T00:59:00-04:00")), false);
 assert.match(slotLabel("market_close"), /close/i);
 
 const values = [

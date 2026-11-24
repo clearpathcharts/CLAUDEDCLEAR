@@ -45,6 +45,8 @@ jobs:
           packages: platform-tools platforms;android-36
 
       - name: Install dependencies and sync Capacitor
+        env:
+          CAPACITOR_SERVER_URL: https://clearpathtrader.com
         run: npm ci && npm run cap:sync
 
       - name: Build debug APK

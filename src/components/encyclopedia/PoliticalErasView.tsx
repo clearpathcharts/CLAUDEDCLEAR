@@ -37,8 +37,7 @@ const HISTORICAL_ERA_SERIES = [
   { year: 2017, label: 'Trump 1', spReturn: 2280, dxy: 96.2, party: 'Republican', m2Billions: 13200 },
   { year: 2020, label: 'Trump (COVID helicopter)', spReturn: 3230, dxy: 97.4, party: 'Republican', m2Billions: 18405 },
   { year: 2021, label: 'Biden 1', spReturn: 3804, dxy: 95.8, party: 'Democrat', m2Billions: 21100 },
-  { year: 2024, label: 'Biden Rates Peak', spReturn: 5400, dxy: 103.5, party: 'Democrat', m2Billions: 20850 },
-  { year: 2026, label: 'Modern Frontier', spReturn: 6150, dxy: 103.8, party: 'Democrat', m2Billions: 21150 }
+  { year: 2024, label: 'Biden Rates Peak', spReturn: 5400, dxy: 103.5, party: 'Democrat', m2Billions: 20850 }
 ];
 
 // Chronology detail cards on "Does the dollar ever benefit?"
@@ -178,7 +177,7 @@ export default function PoliticalErasView({ selectFileNode, pedagogyMode = 'coll
     const annualM2Expansion = (deficitSpending * 0.85) + (fedBalanceSheet > 0 ? fedBalanceSheet : 0);
     const m2Multipler = 1 + (annualM2Expansion * 10) / 21150; // compared to modern M2 base
     
-    // S&P Nominal Projected level
+    // Simulator starting point (illustrative, not a live print)
     const baselineSP = 6150;
     // Lower corporate tax / rates boost S&P marginally, higher deficit boosts it nominally through liquidity expansion
     const interestRatesImpact = 1 - (interestRatesRate - 4.5) * 0.04;
@@ -389,7 +388,7 @@ export default function PoliticalErasView({ selectFileNode, pedagogyMode = 'coll
             <div className="flex justify-between items-start flex-wrap gap-4 border-b border-white/5 pb-3">
               <div className="space-y-1 text-left">
                 <span className="font-mono text-[9px] text-[#00D9FF] font-black uppercase tracking-wider block">THE CLEAR PATH CONTRARIAN GRAPH</span>
-                <h3 className="text-white font-black text-xl uppercase tracking-tight">S&P 500 Cumulative returns vs. Partisan control (1969 - 2026)</h3>
+                <h3 className="text-white font-black text-xl uppercase tracking-tight">S&P 500 Cumulative returns vs. Partisan control (1969 - 2024)</h3>
                 <p className="text-zinc-400 text-xs font-semibold font-sans leading-relaxed">
                   Compare S&P 500 index trajectory mapped against who sat in the office. Observe note: stock returns scale proportionally with the constant expansion of M2 Money supply, independent of republican or democrat party labels.
                 </p>

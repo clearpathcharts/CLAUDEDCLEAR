@@ -56,7 +56,7 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
   ywc: {
     id: 'ywc',
     title: 'Y.W.C. — Your World Connected',
-    color: '#FF2E9A',
+    color: '#BF00FF',
     text: vo('ywc'),
     quiz: [
       {
@@ -96,7 +96,7 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
   charts: {
     id: 'charts',
     title: 'Charts',
-    color: '#FF7B00',
+    color: '#BF00FF',
     text: vo('charts'),
     quiz: [
       {
@@ -189,26 +189,6 @@ export const explainContentLibrary: Record<string, ExplainContent> = {
         ],
         correctOptionId: 'a',
         explanation: 'Sharing is optional. Copy means the computer remembers the words. Not a market game.',
-      },
-    ],
-  },
-
-  cinema: {
-    id: 'cinema',
-    title: 'ClearPath cinema',
-    color: '#00E5FF',
-    text: vo('cinema'),
-    quiz: [
-      {
-        id: 'q1',
-        prompt: 'What is the cyan CINEMA room?',
-        options: [
-          { id: 'a', text: 'A movie theater inside the website' },
-          { id: 'b', text: 'A chat that buys things for you' },
-          { id: 'c', text: 'A button that deletes school' },
-        ],
-        correctOptionId: 'a',
-        explanation: 'Click a picture. A player is a box that shows the movie. Movies teach. They do not tell you what to buy.',
       },
     ],
   },
@@ -366,7 +346,6 @@ export const NAV_TAB_EXPLAIN_IDS: Record<string, string> = {
   Membership: 'memberships',
   Biography: 'profile',
   AffiliateNetwork: 'affiliate',
-  CpmsApk: 'cinema',
   ClearPathEducation: 'education',
   LiteracyOS: 'literacy',
   Encyclopedia: 'encyclopedia',
@@ -393,6 +372,12 @@ export function getExplainContent(id: string): ExplainContent | undefined {
   return explainContentLibrary[key];
 }
 
+const NAV_TAB_BADGE_COLORS: Record<string, string> = {
+  Yours: '#BF00FF',
+  StrictlyCharts: '#BF00FF',
+  Communities: '#BF00FF',
+};
+
 export function explainColorForNavTab(tabId: string): string {
-  return getExplainContent(tabId)?.color || '#00E5FF';
+  return NAV_TAB_BADGE_COLORS[tabId] ?? getExplainContent(tabId)?.color ?? '#00E5FF';
 }

@@ -16,10 +16,13 @@ import {
   PRODUCT_HOME_TITLE,
   PRODUCT_KNOWS_ABOUT,
   PRODUCT_META_DESCRIPTION,
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
   PRODUCT_WHAT_IT_IS,
 } from '../content/productIdentity';
 import { GUIDE_RECORDS } from './contentData';
 import { injectFirebaseClientConfig } from './firebaseClientConfig';
+import { injectMetricoolWebTracker } from './metricoolWebTracker';
 import { applyCspNonceToScripts, injectBuildStamp, jsonForInlineScript } from './htmlCacheHeaders';
 import {
   lookupStock,
@@ -39,10 +42,15 @@ import {
 } from './crawlCatalog';
 import { knowledgeItemForPath } from '../lib/knowledgeBaseRoutes';
 import { glossaryCatalogCounts, fitMetaDescription } from '../lib/glossaryCatalog';
+import { mergeApprovedMarketingKeywords } from '../lib/marketingRouteRegistry';
 import { getSchool, getUnit } from '../education/curriculumData';
 import { regionalOgLocaleAlternates, regionalHreflangHints, getRegionalMarket, getRegionalFxEnrichment } from './regionalSeo';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { deskCanonicalPath, isTraderDeskId, TRADER_DESK_IDS, TRADER_DESKS } from '../lib/traderDesks';
+import { organizationSchema, leadershipPersonSchemas, personSchema } from './organizationSchema';
+import { FOUNDER_LEADER } from '../content/leadershipPublic';
+import { COMPANY_META_DESCRIPTION, ORG_LEGAL_NAME } from '../content/organizationPublic';
+import { CEO_COMMITMENT_META } from '../content/ceoCommitmentStatement';
 
 // ==========================================
 // 5. AI-READABLE CONTENT DATABASE (EEAT COMPLIANT)
@@ -274,7 +282,7 @@ export const GENERAL_FAQS = [
   },
   {
     question: "What does ClearPathTrader do?",
-    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts, unlimited indicators, automatic pattern context, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
+    answer: `ClearPathTrader is one free educational financial markets site with four trader desks: ${PRODUCT_FOUR_DESKS_PHRASE}. You get live charts with 5 free indicators (the full library on paid plans), automatic chart-pattern overlay on Gold, a financial encyclopedia, and a beginner-to-advanced learning path — without depositing trading capital. Not a brokerage.`
   },
   {
     question: "Is ClearPathTrader a brokerage?",
@@ -327,6 +335,10 @@ const CANONICAL_ALIASES: Record<string, string> = {
   '/encyclopedia-of-indicators': '/indicators',
   '/clearpath-education': '/education',
   '/literacy-os': '/literacy',
+  '/press-kit': '/press',
+  '/membership': '/plans',
+  '/pricing': '/plans',
+  '/leadership': '/meet-the-board',
 };
 
 export function enrichHtmlWithMetadata(
@@ -346,27 +358,13 @@ export function enrichHtmlWithMetadata(
     deskCanonicalPath(pathClean) ?? CANONICAL_ALIASES[pathClean] ?? pathClean;
   const canonicalUrl = `${baseUrl}${canonicalPath === '/' ? '' : canonicalPath}`;
 
-  // Organization + WebSite schema (brand trust — no personal founder attribution)
-  const orgSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "@id": `${baseUrl}/#organization`,
-    "name": "ClearPathTrader",
-    "legalName": "Clear Path Markets Science",
-    "alternateName": ["Clear Path Markets Science", "ClearPath Trader", "ClearPathTrader.com"],
-    "url": baseUrl,
-    "logo": `${baseUrl}/logo.png`,
-    "description": PRODUCT_WHAT_IT_IS,
-    "disambiguatingDescription": PRODUCT_DISAMBIGUATION,
-    "knowsAbout": PRODUCT_KNOWS_ABOUT,
-    "sameAs": [] as string[],
-  };
+  const orgSchema = organizationSchema(baseUrl);
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "ClearPathTrader",
-    "alternateName": "Clear Path Markets Science",
+    "alternateName": "Clear Path Markets Science Corp.",
     "url": baseUrl,
     "inLanguage": "en-US",
     "publisher": { "@id": `${baseUrl}/#organization` },
@@ -434,6 +432,160 @@ export function enrichHtmlWithMetadata(
       "name": "About ClearPath Trader",
       "description": description,
       "isPartOf": { "@type": "WebSite", "url": baseUrl, "name": "ClearPathTrader" }
+    });
+  } else if (pathClean === '/company') {
+    title = 'Company | Clear Path Markets Science Corp.';
+    description = COMPANY_META_DESCRIPTION;
+    keywords = 'Clear Path Markets Science Corp, ClearPath Trader, Delaware corporation, trading education, fintech education';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Company', url: '/company' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      about: { '@id': `${baseUrl}/#organization` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/meet-the-board' || pathClean === '/leadership') {
+    title = 'Meet the Board | ClearPath Trader';
+    description =
+      'Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd (Founder & CEO), Brent (CCO), Brian Weber (CFO Advisor), and Sarah Weber, LSCSW. Public page — no login required.';
+    keywords = 'ClearPath Trader board, Meet the Board, Richard Floyd founder, Sarah Weber LSCSW, Clear Path Markets Science';
+    schemas.push(...leadershipPersonSchemas(baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Meet the Board', url: '/meet-the-board' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/founder') {
+    title = 'Founder | Richard Floyd — ClearPath Trader';
+    description = `Richard Anthony Floyd, founder and CEO of ClearPath Trader (${ORG_LEGAL_NAME}).`;
+    keywords = 'Richard Floyd, ClearPath Trader founder, Clear Path Markets Science';
+    schemas.push(personSchema(FOUNDER_LEADER, baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Founder', url: '/founder' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'ProfilePage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      mainEntity: { '@id': `${baseUrl}/#${FOUNDER_LEADER.schemaKey}` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/ceo-statement') {
+    title = CEO_COMMITMENT_META.title;
+    description = CEO_COMMITMENT_META.description;
+    keywords =
+      'Richard Floyd salary waiver, ClearPath Trader CEO statement, customer-first commitment, Clear Path Markets Science';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: "CEO's Certified Statement", url: '/ceo-statement' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${canonicalUrl}#webpage`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      datePublished: '2026-09-13',
+      author: { '@id': `${baseUrl}/#${FOUNDER_LEADER.schemaKey}` },
+      about: { '@id': `${baseUrl}/#organization` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/plans' || pathClean === '/membership' || pathClean === '/pricing') {
+    title = 'Membership Plans | ClearPath Trader';
+    description =
+      'ClearPath Trader membership tiers: Basic (free), Silver, Gold, and Platinum. Feature comparison for the educational financial markets platform — not a brokerage.';
+    keywords =
+      'ClearPath Trader plans, membership, Silver Gold Platinum, trading education platform, not a broker';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Plans', url: '/plans' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/plans#webpage`,
+      url: `${baseUrl}/plans`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/brokers') {
+    title = 'US Broker Connections | ClearPath Trader';
+    description =
+      'Connect an existing United States brokerage account to ClearPath through secure broker-authorized pass-through integrations. ClearPath is not a broker-dealer.';
+    keywords = 'ClearPath Trader brokers, Alpaca OAuth, pass-through broker connection, not a broker-dealer';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Brokers', url: '/brokers' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/brokers#webpage`,
+      url: `${baseUrl}/brokers`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/press' || pathClean === '/press-kit') {
+    title = 'Press Kit | Richard Floyd, Founder of ClearPath Trader';
+    description =
+      'Official press kit for Richard Floyd, founder of ClearPathTrader.com — bio, facts, and media contact.';
+    keywords = 'Richard Floyd press, ClearPath Trader founder, Clear Path Markets Science media';
+    schemas.push(personSchema(FOUNDER_LEADER, baseUrl));
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Press', url: '/press' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/press#webpage`,
+      url: `${baseUrl}/press`,
+      name: title,
+      description,
+      primaryImageOfPage: { '@type': 'ImageObject', url: `${baseUrl}${FOUNDER_LEADER.imageUrl}` },
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+    });
+  } else if (pathClean === '/community-outreach') {
+    title = 'Clear Path Community Outreach | Financial Literacy & Community Resources';
+    description =
+      'Clear Path Community Outreach — proposed community education for financial literacy, digital inclusion, consumer protection, California county library resources, and a future food-shelf initiative. Public verification portal. Not a brokerage. Does not issue SNAP/CalFresh benefits.';
+    keywords =
+      'Clear Path Community Outreach, financial literacy, digital inclusion, California counties libraries, Riverside County food assistance, future food shelf, SNAP CalFresh information, Clear Path Markets Science';
+    schemas.push(makeBreadcrumb([
+      { name: 'Home', url: '' },
+      { name: 'Community Outreach', url: '/community-outreach' },
+    ]));
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${baseUrl}/community-outreach#webpage`,
+      url: `${baseUrl}/community-outreach`,
+      name: title,
+      description,
+      isPartOf: { '@type': 'WebSite', url: baseUrl, name: 'ClearPathTrader' },
+      about: { '@id': `${baseUrl}/#organization` },
     });
   } else if (pathClean === '/accessibility') {
     title = "Accessibility Statement | ClearPath Trader";
@@ -531,7 +683,7 @@ export function enrichHtmlWithMetadata(
   } else if (pathClean === '/glossary') {
     const gCounts = glossaryCatalogCounts();
     title = "Financial Glossary: Trading Terms Defined | ClearPathTrader";
-    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus unique vocabulary-study nodes. Not a live data feed.`;
+    description = `${gCounts.total.toLocaleString()} educational glossary terms: core practitioner definitions plus authored dictionary terms. Not a live data feed.`;
     keywords = "financial glossary, trading terms, leverage, liquidity, margin, volatility, order book";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
@@ -631,7 +783,7 @@ export function enrichHtmlWithMetadata(
         },
         "headline": record.title,
         "description": record.summary,
-        "image": `${baseUrl}/og-image.png`,
+        "image": `${baseUrl}/og-image.png?v=paths`,
         "datePublished": `${record.publishDate}T08:00:00Z`,
         "dateModified": `${record.updatedDate}T15:00:00Z`,
         "author": {
@@ -684,7 +836,7 @@ export function enrichHtmlWithMetadata(
         "mainEntityOfPage": { "@type": "WebPage", "@id": canonicalUrl },
         "headline": guide.title,
         "description": guide.summary,
-        "image": `${baseUrl}/og-image.png`,
+        "image": `${baseUrl}/og-image.png?v=paths`,
         "datePublished": `${guide.publishDate}T08:00:00Z`,
         "dateModified": `${guide.updatedDate}T15:00:00Z`,
         "author": { "@type": "Organization", "name": "ClearPathTrader Editorial", "url": baseUrl },
@@ -708,8 +860,8 @@ export function enrichHtmlWithMetadata(
       }
     }
   } else if (canonicalPath === '/encyclopedia') {
-    title = "Financial Encyclopedia: Stocks, Crypto, Forex & Commodities | ClearPathTrader";
-    description = "Explore the ClearPath financial encyclopedia — company profiles, crypto assets, forex pairs, commodities, and economic concepts in one knowledge base.";
+    title = "Free Student Finance Encyclopedia | ClearPathTrader";
+    description = "A free student encyclopedia of stocks, crypto, forex, commodities, and economics. No ads and no sales pitches. Study pages, not investment advice.";
     schemas.push(makeBreadcrumb([
       { name: "Home", url: "" },
       { name: "Encyclopedia", url: "/encyclopedia" }
@@ -887,7 +1039,7 @@ export function enrichHtmlWithMetadata(
       '/companies': {
         title: 'Company Directory | ClearPathTrader Encyclopedia',
         description:
-          'Educational company directory: public issuers on stock profiles plus subsidiary study pages. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
+          'Educational directory of real public issuers on stock profiles. Not a live filing database — missing cells stay DATA UNAVAILABLE.',
         crumb: 'Companies',
       },
     };
@@ -1314,9 +1466,11 @@ export function enrichHtmlWithMetadata(
 
   // Normalize length for SERP/social previews (entity pages may still be long; clamp soft)
   title = clampTitle(title, 70);
+  // Lawyer-required platform position must remain in the crawlable <title> / OG title.
+  title = withPlatformPositionTitle(title);
   description = clampDescription(description, 160);
   // Keywords meta is low-weight for Google; keep a short phrase list (not hashtags — those belong on social posts)
-  keywords = keywords
+  keywords = mergeApprovedMarketingKeywords(canonicalPath, keywords)
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean)
@@ -1377,13 +1531,14 @@ export function enrichHtmlWithMetadata(
   const primaryLocale = regionalMarket?.ogLocale || 'en_US';
   const shareUrl = unknownRegionHub ? `${baseUrl}/regions` : canonicalUrl;
   const ogTags = `
+    <meta name="clearpath-platform-position" content="${escAttr(PRODUCT_PLATFORM_POSITION)}" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="${primaryLocale}" />
 ${noindexPage ? '' : localeAlternates}
     <meta property="og:title" content="${escAttr(title)}" />
     <meta property="og:description" content="${escAttr(description)}" />
     <meta property="og:url" content="${escAttr(shareUrl)}" />
-    <meta property="og:image" content="${baseUrl}/og-image.png" />
+    <meta property="og:image" content="${baseUrl}/og-image.png?v=paths" />
     <meta property="og:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -1391,7 +1546,7 @@ ${noindexPage ? '' : localeAlternates}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escAttr(title)}" />
     <meta name="twitter:description" content="${escAttr(description)}" />
-    <meta name="twitter:image" content="${baseUrl}/og-image.png" />
+    <meta name="twitter:image" content="${baseUrl}/og-image.png?v=paths" />
     <meta name="twitter:image:alt" content="ClearPath Trader — four trader desks on one site" />
     <meta name="robots" content="${robotsMeta}" />
     <meta name="theme-color" content="#0b0e11" />
@@ -1424,7 +1579,7 @@ ${hreflangTags}
         <p><strong>${escAttr(PRODUCT_HOME_H1)}</strong></p>
         <p>${safeHomeDesc}</p>
         <p>Four trader desks: ${escAttr(PRODUCT_FOUR_DESKS_PHRASE)}. One educational financial markets site — not four brokerages. Not a website chatbot. Not aiclearpath.com. C.P.T. Buddy is an in-app mentor — it does not greet visitors, capture leads, or book appointments.</p>
-        <p><a href="/desk">Four trader desks</a> · <a href="/encyclopedia">Financial Encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
+        <p><a href="/desk">One chart site, four desks</a> · <a href="/encyclopedia">Free student encyclopedia</a> · <a href="/education">Education</a> · <a href="/indicators">Indicators</a> · <a href="/about">About</a></p>
       </article>
     </noscript>`;
     // Always replace any existing noscript so an older deploy's <h1> inside noscript cannot linger.
@@ -1458,7 +1613,7 @@ ${hreflangTags}
         <h2>Customization</h2>
         <p>Your platform: colors, layouts, windows, social links, and news without leaving your charts.</p>
         <h2>Indicators</h2>
-        <p>Unlimited indicators, automatic chart pattern marking, and an indicator encyclopedia.</p>
+        <p>5 indicators free and the full library on paid plans, automatic chart pattern marking on Gold, and an indicator encyclopedia.</p>
         <h2>Education</h2>
         <p>Beginner to advanced path in plain language.</p>
       </article>
@@ -1487,7 +1642,10 @@ ${hreflangTags}
 
   // Runtime Firebase web config (Cloud Run service env) — avoids empty Vite-baked keys.
   // Production CSP is nonce-only, so inline boot + inject scripts must carry the request nonce.
-  let stamped = injectBuildStamp(injectFirebaseClientConfig(html));
+  let stamped = injectMetricoolWebTracker(
+    injectBuildStamp(injectFirebaseClientConfig(html)),
+    options?.cspNonce,
+  );
   if (options?.cspNonce) {
     stamped = applyCspNonceToScripts(stamped, options.cspNonce);
   }

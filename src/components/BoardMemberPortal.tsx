@@ -26,7 +26,7 @@ export default function BoardMemberPortal({ member, onClose }: { member: BoardMe
   const [activeModule, setActiveModule] = useState('Overview');
 
   // Variations based on member Role
-  const isRick = member.name.includes('Rick');
+  const isRick = /Richard|Floyd|Rick/i.test(member.name);
   const isBrent = member.name.includes('Brent');
 
   const modules = [

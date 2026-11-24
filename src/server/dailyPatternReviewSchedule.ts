@@ -64,12 +64,15 @@ export function configuredOvernightHourEt(): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(23, n)) : 1;
 }
 
-/** True when `at` is within the one-minute window for this slot on a briefing day. */
+/**
+ * True for the whole target hour on a briefing day. Cloud Run may be idle or busy at :00,
+ * so the scheduler keeps retrying until the slot's report exists.
+ */
 export function isSlotDue(slot: BriefingSlot, at: Date = new Date()): boolean {
   if (!isBriefingDay(at)) return false;
-  const { hour, minute } = easternHourMinute(at);
+  const { hour } = easternHourMinute(at);
   const targetHour = slot === "market_close" ? configuredCloseHourEt() : configuredOvernightHourEt();
-  return hour === targetHour && minute === 0;
+  return hour === targetHour;
 }
 
 export function activeSlots(at: Date = new Date()): BriefingSlot[] {

@@ -36,6 +36,7 @@ type HomeCard = {
   title: string;
   blurb: string;
   tabId?: string;
+  href?: string;
   onClick?: () => void;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   accent: string;
@@ -92,10 +93,10 @@ const CARDS: HomeCard[] = [
   },
   {
     id: 'board',
-    title: 'Board',
+    title: 'Meet the Board',
     blurb:
-      'Meet the ClearPath board and leadership context before you dig into memberships or the terminal.',
-    tabId: 'MeetTheBoard',
+      'Public board bios for Clear Path Markets Science Corp. — no login required.',
+    href: '/meet-the-board',
     icon: Shield,
     accent: '#FFD700',
     glow: 'rgba(255,215,0,0.4)',
@@ -147,6 +148,10 @@ function HomeNavCard({
 }) {
   const Icon = card.icon;
   const handleClick = () => {
+    if (card.href) {
+      window.location.assign(card.href);
+      return;
+    }
     if (card.onClick) card.onClick();
     else if (card.tabId) onTabChange(card.tabId);
   };

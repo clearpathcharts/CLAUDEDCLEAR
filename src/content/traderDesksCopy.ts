@@ -79,7 +79,7 @@ export const DESK_SEO: Record<TraderDeskId, DeskSeoCopy> = {
       {
         question: 'What is the ClearPath Retail Trader desk?',
         answer:
-          'A chart-first educational workstation at /desk/retail: large chart, watchlist, snapshot, news, economic wire, alerts, and education. News and calendar start in the Held file so candles stay readable.',
+          'A chart-first educational workstation at /desk/retail: large chart, Pattern Scanner, watchlist, and snapshot stay on the desk. News, economic wire, alerts, education, and simulation start in the Held file so candles stay readable.',
       },
       {
         question: 'Can I place trades from the Retail Trader desk?',

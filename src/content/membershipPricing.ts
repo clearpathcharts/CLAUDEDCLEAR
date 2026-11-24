@@ -4,23 +4,93 @@ export const FIRST_FREE_DAYS = 30;
 export const LAUNCH_ACCESS_DAYS = 15;
 export const PLAN_TRIAL_DAYS = 15;
 
+/** Calendar year that maps to pricing year 1 on the locked ladder. */
+export const MEMBERSHIP_PRICE_EPOCH_YEAR = 2026;
+/** Mature list year — no automatic increases after this step. */
+export const MEMBERSHIP_PRICE_YEAR_CAP = 5;
+
+export type PaidMembershipPlanId = Exclude<MembershipPlanId, 'basic'>;
+
+/**
+ * Locked monthly list (cents) by company pricing year.
+ * Year 1 uses .99 branding near the prior sheet; Platinum steps ~+$10 / year.
+ * Silver / Gold stay ~40% / ~66% of Platinum so tiers never cross.
+ */
+export const MEMBERSHIP_PRICE_LADDER_CENTS: Record<PaidMembershipPlanId, readonly number[]> = {
+  silver: [599, 999, 1399, 1799, 2199],
+  gold: [999, 1649, 2299, 2999, 3649],
+  platinum: [1499, 2499, 3499, 4499, 5499],
+};
+
+export function clampMembershipPricingYear(year: number): number {
+  if (!Number.isFinite(year)) return 1;
+  return Math.min(MEMBERSHIP_PRICE_YEAR_CAP, Math.max(1, Math.floor(year)));
+}
+
+export function membershipPricingYearForCalendarYear(calendarYear: number): number {
+  return clampMembershipPricingYear(calendarYear - MEMBERSHIP_PRICE_EPOCH_YEAR + 1);
+}
+
+/** Company pricing year for new checkouts (UTC calendar year). Caps at year 5. */
+export function currentMembershipPricingYear(now: Date = new Date()): number {
+  return membershipPricingYearForCalendarYear(now.getUTCFullYear());
+}
+
+export function formatMembershipPrice(cents: number): string {
+  return cents === 0 ? 'Free' : `$${(cents / 100).toFixed(2)}`;
+}
+
+/** Monthly amount Stripe checkout charges for a paid package at a pricing year. */
+export function membershipMonthlyCents(
+  planId: PaidMembershipPlanId,
+  pricingYear: number = currentMembershipPricingYear(),
+): number {
+  const year = clampMembershipPricingYear(pricingYear);
+  const ladder = MEMBERSHIP_PRICE_LADDER_CENTS[planId];
+  if (!ladder) throw new Error(`Unknown package ${planId}`);
+  return ladder[year - 1]!;
+}
+
 export type MembershipPlanPrice = {
   id: MembershipPlanId;
   name: string;
-  priceCents: number;
-  priceLabel: string;
+  /** Always reads the live company pricing year (not frozen at import). */
+  readonly priceCents: number;
+  readonly priceLabel: string;
   eyebrow: string;
   featured?: boolean;
   features: string[];
 };
 
-/** Founder-provided package sheet, uploaded 2026-09-16. */
+type PlanSheetBase = {
+  id: MembershipPlanId;
+  name: string;
+  eyebrow: string;
+  featured?: boolean;
+  features: string[];
+};
+
+function withLiveListPrice(base: PlanSheetBase): MembershipPlanPrice {
+  if (base.id === 'basic') {
+    return { ...base, priceCents: 0, priceLabel: 'Free' };
+  }
+  const paidId = base.id;
+  return {
+    ...base,
+    get priceCents() {
+      return membershipMonthlyCents(paidId);
+    },
+    get priceLabel() {
+      return formatMembershipPrice(membershipMonthlyCents(paidId));
+    },
+  };
+}
+
+/** Public /plans sheet — amounts follow the live company pricing year via getters. */
 export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
-  {
+  withLiveListPrice({
     id: 'basic',
     name: 'Basic',
-    priceCents: 0,
-    priceLabel: 'Free',
     eyebrow: 'Start here',
     features: [
       '1 chart/window',
@@ -35,12 +105,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'No Platform Manipulation',
       'Real Time News',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'silver',
     name: 'Silver',
-    priceCents: 598,
-    priceLabel: '$5.98',
     eyebrow: 'Build your workspace',
     features: [
       '4 chart/window',
@@ -66,12 +134,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'Affiliate Links/Codes',
       'Social Media Hub',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'gold',
     name: 'Gold',
-    priceCents: 993,
-    priceLabel: '$9.93',
     eyebrow: 'Create and replay',
     features: [
       '10 chart/window',
@@ -99,12 +165,10 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'Pattern Overlay',
       'IndaCreator',
     ],
-  },
-  {
+  }),
+  withLiveListPrice({
     id: 'platinum',
     name: 'Platinum',
-    priceCents: 1499,
-    priceLabel: '$14.99',
     eyebrow: 'Everything together',
     featured: true,
     features: [
@@ -135,7 +199,7 @@ export const MEMBERSHIP_PLANS: MembershipPlanPrice[] = [
       'AI Pattern Scanner',
       'Addition of Bots',
     ],
-  },
+  }),
 ];
 
 export type MembershipAddon = {
@@ -155,19 +219,46 @@ export const SILVER_ADDONS: MembershipAddon[] = [
   { id: 'bots', name: 'Ability to add Bots', priceCents: 599, priceLabel: '$5.99' },
 ];
 
-export const SILVER_BASE_CENTS = 598;
 export const ALL_ADDONS_CENTS = SILVER_ADDONS.reduce((sum, addon) => sum + addon.priceCents, 0);
-export const SILVER_WITH_ALL_ADDONS_CENTS = SILVER_BASE_CENTS + ALL_ADDONS_CENTS;
-export const PLATINUM_CENTS = 1499;
 
-export function formatMembershipPrice(cents: number): string {
-  return cents === 0 ? 'Free' : `$${(cents / 100).toFixed(2)}`;
+/** Live Silver list cents for the current company pricing year. */
+export function silverBaseCents(): number {
+  return membershipMonthlyCents('silver');
 }
 
-/** Monthly amount Stripe checkout charges for a paid package. Must match the Stripe product catalog. */
-export function membershipMonthlyCents(planId: Exclude<MembershipPlanId, 'basic'>): number {
-  const plan = MEMBERSHIP_PLANS.find((p) => p.id === planId);
-  if (!plan) throw new Error(`Unknown package ${planId}`);
-  return plan.priceCents;
+/** Live Platinum list cents for the current company pricing year. */
+export function platinumCents(): number {
+  return membershipMonthlyCents('platinum');
 }
 
+export function silverWithAllAddonsCents(): number {
+  return silverBaseCents() + ALL_ADDONS_CENTS;
+}
+
+/** Live aliases — prefer the function forms in new code. */
+export const SILVER_BASE_CENTS = silverBaseCents;
+export const PLATINUM_CENTS = platinumCents;
+export const SILVER_WITH_ALL_ADDONS_CENTS = silverWithAllAddonsCents;
+
+/** Public schedule rows for /plans (grandfather: continuous subscribers keep join-year rate). */
+export function membershipPriceLadderRows(): Array<{
+  year: number;
+  silverLabel: string;
+  goldLabel: string;
+  platinumLabel: string;
+  isCurrent: boolean;
+  isCap: boolean;
+}> {
+  const current = currentMembershipPricingYear();
+  return Array.from({ length: MEMBERSHIP_PRICE_YEAR_CAP }, (_, idx) => {
+    const year = idx + 1;
+    return {
+      year,
+      silverLabel: formatMembershipPrice(membershipMonthlyCents('silver', year)),
+      goldLabel: formatMembershipPrice(membershipMonthlyCents('gold', year)),
+      platinumLabel: formatMembershipPrice(membershipMonthlyCents('platinum', year)),
+      isCurrent: year === current,
+      isCap: year === MEMBERSHIP_PRICE_YEAR_CAP,
+    };
+  });
+}

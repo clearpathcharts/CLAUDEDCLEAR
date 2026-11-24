@@ -849,7 +849,7 @@ export default function RetailDashboard() {
                   height={layout === 1 ? 640 : layout === 2 ? 280 : 220}
                   activeIndicators={i === 0 ? activeIndicators : []}
                   priceSeriesType={chartType}
-                  useDedicatedPatternPanel={i === 0}
+                  useDedicatedPatternPanel={i === 0 && !scanHeld}
                   hidePatternOverlays={i !== 0}
                   publishDrawingSession={layout === 1 && i === 0}
                 />
@@ -857,7 +857,10 @@ export default function RetailDashboard() {
             ))}
           </div>
           {layout === 1 ? <PassThroughTradePanel symbol={symbol} /> : null}
-          <p className="shrink-0 border-t border-[var(--desk-border)] px-3 py-2 text-sm font-bold uppercase tracking-wider text-[var(--desk-muted)]">
+          <p
+            className="shrink-0 border-t border-[#ff4500]/80 bg-black px-3 py-2 text-sm font-black uppercase tracking-wider text-[#ff6a00]"
+            style={{ textShadow: '0 0 10px rgba(255, 69, 0, 0.95), 0 0 18px rgba(255, 140, 0, 0.55)' }}
+          >
             Chart tools: use the chart toolbar for crosshair, zoom, pan, reset, drawings, and fullscreen.
             Default chart stays clean — indicators are opt-in.
           </p>

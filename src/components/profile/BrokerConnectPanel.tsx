@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   disconnectAlpaca,
   fetchBrokerStatus,
-  startAlpacaConnect,
   type BrokerPublicStatus,
 } from '../../api/brokerConnect';
 import {
@@ -10,6 +9,7 @@ import {
   PASS_THROUGH_SUMMARY,
   BROKER_STATUS_NOTE,
 } from '../../lib/passThroughBrokerModel';
+import { useAlpacaConnectGate } from '../broker/AlpacaAuthorizeDisclosure';
 
 /**
  * Optional pass-through broker connect — user OAuth's their own Alpaca account.
@@ -46,10 +46,11 @@ export default function BrokerConnectPanel() {
     }
   }, [refresh]);
 
+  const { requestConnect, disclosure } = useAlpacaConnectGate();
   const onConnect = () => {
     if (!connectionsEnabled) return;
     setBusy(true);
-    startAlpacaConnect('/?tab=Biography#Biography');
+    requestConnect('/?tab=Biography#Biography');
   };
 
   const onDisconnect = async () => {
@@ -67,8 +68,9 @@ export default function BrokerConnectPanel() {
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-[28px] p-6 md:p-8 backdrop-blur-xl">
+      {disclosure}
       <div className="text-[20px] md:text-[24px] mb-2 font-orbitron font-bold bg-gradient-to-r from-[#00e5ff] to-[#818cf8] text-transparent bg-clip-text w-fit">
-        Licensed broker connect (TradingView-style)
+        Licensed broker connect
       </div>
       <p className="text-[12px] md:text-[13px] text-zinc-400 leading-relaxed mb-2 max-w-2xl">
         {note || BROKER_STATUS_NOTE || PASS_THROUGH_SUMMARY}

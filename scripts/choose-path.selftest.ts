@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import { NEURODIVERGENT_BANNER, PATH_CARDS } from '../src/content/chooseYourPath.ts';
+import { LEARNING_PHILOSOPHY, PATH_CARDS } from '../src/content/chooseYourPath.ts';
 
 const root = path.resolve('.');
 
@@ -56,13 +56,23 @@ const ui = fs.readFileSync(path.join(root, 'src/components/ChooseYourPath.tsx'),
 assert.match(ui, /Welcome to ClearPath Trader Please choose your path/);
 assert.match(ui, /onChoosePath/);
 assert.match(ui, /Private Login to open/);
+assert.match(ui, /data-learning-philosophy/);
+assert.match(ui, /LEARNING_PHILOSOPHY/);
+assert.match(ui, /data-board-quote="sarah-weber"/);
+assert.match(ui, /onChoosePath\('neurodivergent'\)/);
+assert.doesNotMatch(ui, /neurodivergent-traders\.(png|webp)/);
 assert.doesNotMatch(ui, />\s*Enter\s*</);
 assert.doesNotMatch(ui, /PathEnter/);
 assert.doesNotMatch(ui, />\s*Login\s*</);
 assert.match(ui, /grid-cols-3/);
-assert.match(ui, /justify-center/);
 assert.doesNotMatch(ui, /hover:scale/);
 assert.match(ui, /maxWidth/);
+
+const pathContent = fs.readFileSync(path.join(root, 'src/content/chooseYourPath.ts'), 'utf8');
+assert.match(pathContent, /sarah-weber\.jpg/);
+assert.match(pathContent, /LEARNING_PHILOSOPHY/);
+assert.match(pathContent, /adapt to the trader instead of the trader adapting/);
+assert.doesNotMatch(pathContent, /neurodivergent-traders\.(png|webp)/);
 
 const about = fs.readFileSync(path.join(root, 'src/components/ExternalAboutPage.tsx'), 'utf8');
 assert.match(about, /ABOUT_MANIFESTO_LEAD/);
@@ -72,6 +82,8 @@ assert.match(publicChart, /id=["']public-chart["']/);
 assert.match(publicChart, /ChartSymbolSearch/);
 assert.match(publicChart, /LightweightCandles/);
 assert.match(publicChart, /min-h-\[85vh\]/);
+assert.doesNotMatch(publicChart, /import\s*\{[^}]*NeuroProfilePicker/);
+assert.doesNotMatch(publicChart, /<NeuroProfilePicker/);
 const symbolSearch = fs.readFileSync(
   path.join(root, 'src/components/charts/ChartSymbolSearch.tsx'),
   'utf8',
@@ -84,7 +96,10 @@ for (const card of PATH_CARDS) {
   await assertNativeImage(card.png, card.width, card.height);
   await assertNativeImage(card.webp, card.width, card.height);
 }
-await assertNativeImage(NEURODIVERGENT_BANNER.png, NEURODIVERGENT_BANNER.width, NEURODIVERGENT_BANNER.height);
-await assertNativeImage(NEURODIVERGENT_BANNER.webp, NEURODIVERGENT_BANNER.width, NEURODIVERGENT_BANNER.height);
+await assertNativeImage(
+  LEARNING_PHILOSOPHY.photo,
+  LEARNING_PHILOSOPHY.photoWidth,
+  LEARNING_PHILOSOPHY.photoHeight,
+);
 
 console.log('choose-path.selftest: ok');

@@ -10,8 +10,8 @@ export interface HealthEvent {
 export interface TwelveDataHealthClient {
   status: 'HEALTHY' | 'RATE_LIMITED' | 'TIMEOUT' | 'ERROR' | 'OFFLINE' | 'MOCK_FALLBACK';
   apiKeyPresent: boolean;
-  rateLimitLimit: string;
-  rateLimitRemaining: string;
+  rateLimitLimit: string | null;
+  rateLimitRemaining: string | null;
   rateLimitReset: string | number;
   lastError: string | null;
   latencyMs: number;
@@ -39,8 +39,8 @@ export class DataStreamService {
   private static currentHealth: TwelveDataHealthClient = {
     status: 'HEALTHY',
     apiKeyPresent: false,
-    rateLimitLimit: '8',
-    rateLimitRemaining: '8',
+    rateLimitLimit: null,
+    rateLimitRemaining: null,
     rateLimitReset: '0',
     lastError: null,
     latencyMs: 0,
@@ -76,8 +76,7 @@ export class DataStreamService {
       this.messageListeners.forEach(listener => listener(data));
 
       if (data.type === 'HEARTBEAT') {
-        const parsedLatency = parseFloat(data.latency || "0");
-        this.currentHealth.latencyMs = parsedLatency || this.currentHealth.latencyMs;
+        this.currentHealth.websocketConnected = true;
         this.notifyHealthUpdated();
       }
     };
@@ -114,8 +113,8 @@ export class DataStreamService {
           ...this.currentHealth,
           status: data.status,
           apiKeyPresent: data.apiKeyPresent,
-          rateLimitLimit: data.rateLimitLimit || '8',
-          rateLimitRemaining: data.rateLimitRemaining || '8',
+          rateLimitLimit: data.rateLimitLimit ?? null,
+          rateLimitRemaining: data.rateLimitRemaining ?? null,
           rateLimitReset: data.rateLimitReset || '0',
           lastError: data.lastError,
           totalRequests: data.totalRequests || 0,

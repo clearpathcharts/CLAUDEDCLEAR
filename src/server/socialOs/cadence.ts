@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { ALL_PLATFORMS, isSocialPlatform } from './platforms';
 import type { SocialPlatform } from './types';
+import { getAdminFirestore } from '../firebaseAdmin';
 
 const DATA_DIR = path.join(process.cwd(), 'data', 'social-os');
 const CADENCE_FILE = path.join(DATA_DIR, 'cadence.json');
@@ -145,6 +146,33 @@ function prevDateKey(dateKey: string): string {
   const dt = new Date(Date.UTC(y, m - 1, d));
   dt.setUTCDate(dt.getUTCDate() - 1);
   return dt.toISOString().slice(0, 10);
+}
+
+/**
+ * Claim a slot before publishing so two instances (or a redeploy that wiped the local file)
+ * cannot both post it. Firestore `create()` is atomic; on any Firestore error we skip the
+ * slot rather than risk a duplicate public post.
+ */
+export async function claimSlot(key: string): Promise<boolean> {
+  const db = getAdminFirestore();
+  if (db) {
+    try {
+      await db
+        .collection('social_cadence_claims')
+        .doc(key.replace(/[^\w:-]/g, '_'))
+        .create({ claimedAt: new Date().toISOString(), revision: process.env.K_REVISION || 'local' });
+      return true;
+    } catch (err) {
+      const e = err as { code?: number; message?: string };
+      if (e?.code !== 6 && !/already exists/i.test(String(e?.message))) {
+        console.warn(`[Social OS] Slot claim ${key} failed; skipping to avoid duplicate posts:`, e?.message || err);
+      }
+      return false;
+    }
+  }
+  if (readCadenceState().firedSlots.includes(key)) return false;
+  markSlotFired(key, 'claimed');
+  return true;
 }
 
 export function markSlotFired(key: string, result: string): CadenceState {

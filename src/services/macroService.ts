@@ -1,6 +1,9 @@
 /// <reference types="vite/client" />
 /**
  * MACRO ANALYTICS SERVICE (Files 59, 61)
+ *
+ * FRED via the server proxy only. On any failure these return empty / null so the
+ * UI shows DATA UNAVAILABLE — never substitute simulated macro values.
  */
 
 export interface YieldData {
@@ -14,58 +17,77 @@ export interface MacroObservation {
   value: number;
 }
 
+export interface MacroHeadline {
+  fedFunds: MacroObservation | null;
+  coreInflationYoY: MacroObservation | null;
+  unemployment: MacroObservation | null;
+}
+
+/** Newest-first numeric observations (FRED marks missing days with "."). */
+async function fetchFredSeries(seriesId: string, limit: number): Promise<MacroObservation[]> {
+  const res = await fetch(`/api/fred/observations?series_id=${encodeURIComponent(seriesId)}&limit=${limit}`);
+  if (!res.ok) throw new Error(`FRED proxy ${seriesId} returned status: ${res.status}`);
+  const data = await res.json();
+  const rows: unknown[] = Array.isArray(data?.observations) ? data.observations : [];
+  return rows
+    .map((obs: any) => ({ date: String(obs?.date || ''), value: parseFloat(obs?.value) }))
+    .filter((obs) => obs.date && Number.isFinite(obs.value));
+}
+
 export async function fetchGDP(): Promise<MacroObservation[]> {
   try {
-    // We query our secure server-side proxy
-    const res = await fetch(`/api/fred/observations?series_id=GDP&limit=10`);
-    if (!res.ok) {
-      throw new Error(`FRED proxy GDP returned status: ${res.status}`);
-    }
-    const data = await res.json();
-    return data.observations.map((obs: any) => ({
-      date: obs.date,
-      value: parseFloat(obs.value)
-    }));
+    return await fetchFredSeries('GDP', 10);
   } catch (error) {
-    console.warn("GDP Fetch from FRED failed - returning simulated macro observations:", error);
-    return Array.from({ length: 10 }, (_, i) => ({
-      date: `202${3 + Math.floor(i / 4)}-Q${(i % 4) + 1}`,
-      value: 26000 + (i * 200)
-    }));
+    console.warn('GDP fetch from FRED failed — DATA UNAVAILABLE:', error);
+    return [];
   }
 }
 
 export async function fetchYieldCurve(): Promise<YieldData[]> {
   const series = [
-    { id: "DGS2", label: "2 Year" },
-    { id: "DGS5", label: "5 Year" },
-    { id: "DGS10", label: "10 Year" },
-    { id: "DGS30", label: "30 Year" }
+    { id: 'DGS2', label: '2 Year' },
+    { id: 'DGS5', label: '5 Year' },
+    { id: 'DGS10', label: '10 Year' },
+    { id: 'DGS30', label: '30 Year' },
   ];
 
   try {
-    const results = await Promise.all(
-      series.map(s => 
-        fetch(`/api/fred/observations?series_id=${s.id}&limit=1`)
-          .then(res => {
-            if (!res.ok) throw new Error("Proxy error");
-            return res.json();
-          })
-      )
-    );
-
-    return results.map((res, i) => ({
+    const results = await Promise.all(series.map((s) => fetchFredSeries(s.id, 5)));
+    if (results.some((rows) => rows.length === 0)) return [];
+    return results.map((rows, i) => ({
       maturity: series[i].id.replace('DGS', '') + 'Y',
-      value: parseFloat(res.observations[0].value),
-      label: series[i].label
+      value: rows[0].value,
+      label: series[i].label,
     }));
   } catch (error) {
-    console.warn("Yield Curve Fetch from FRED failed - returning simulated macro data:", error);
-    return [
-      { maturity: "2Y", value: 4.54, label: "2 Year" },
-      { maturity: "5Y", value: 4.12, label: "5 Year" },
-      { maturity: "10Y", value: 4.15, label: "10 Year" },
-      { maturity: "30Y", value: 4.28, label: "30 Year" }
-    ];
+    console.warn('Yield curve fetch from FRED failed — DATA UNAVAILABLE:', error);
+    return [];
   }
+}
+
+export async function fetchMacroHeadline(): Promise<MacroHeadline> {
+  const settle = async <T,>(task: Promise<T>): Promise<T | null> => {
+    try {
+      return await task;
+    } catch {
+      return null;
+    }
+  };
+  const [fedFunds, coreCpi, unemployment] = await Promise.all([
+    settle(fetchFredSeries('FEDFUNDS', 1)),
+    settle(fetchFredSeries('CPILFESL', 13)),
+    settle(fetchFredSeries('UNRATE', 1)),
+  ]);
+  let coreInflationYoY: MacroObservation | null = null;
+  if (coreCpi && coreCpi.length >= 13 && coreCpi[12].value > 0) {
+    coreInflationYoY = {
+      date: coreCpi[0].date,
+      value: ((coreCpi[0].value / coreCpi[12].value) - 1) * 100,
+    };
+  }
+  return {
+    fedFunds: fedFunds?.[0] ?? null,
+    coreInflationYoY,
+    unemployment: unemployment?.[0] ?? null,
+  };
 }

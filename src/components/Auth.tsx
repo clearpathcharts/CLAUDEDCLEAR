@@ -279,8 +279,8 @@ export default function Auth() {
   // Floating live alerts for cinematic immersive feel
   const [announcements] = useState<string[]>([
     "Private Login open — create your account with email + password.",
-    "Quantitative nodes linked for real-time market data ingestion.",
-    "Macroeconomic intelligence data clusters verified."
+    "Prices come from licensed data vendors; missing values show DATA UNAVAILABLE.",
+    "COT positioning is sourced from official CFTC.gov reports."
   ]);
   const [curAnnIdx, setCurAnnIdx] = useState(0);
 
@@ -348,7 +348,7 @@ export default function Auth() {
   const faqs = [
     {
       q: "What is ClearPath Trader?",
-      a: "ClearPath Trader is an educational financial markets site — live charts, unlimited indicators, automatic pattern context, financial and indicator encyclopedias, Literacy OS, a macro desk, and accessibility / neurodivergent UI profiles. The in-app C.P.T. Buddy is a mentor inside that site, not a website chatbot that greets visitors or books appointments. Not a brokerage.",
+      a: "ClearPath Trader is an educational financial markets site — live charts (5 indicators free, the full library on paid plans), automatic chart-pattern overlay on Gold, financial and indicator encyclopedias, Literacy OS, a macro desk, and accessibility / neurodivergent UI profiles. The in-app C.P.T. Buddy is a mentor inside that site, not a website chatbot that greets visitors or books appointments. Not a brokerage.",
     },
     {
       q: "How do I get access?",
@@ -513,12 +513,18 @@ export default function Auth() {
             >
               Trading × AI
             </a>
+            <a
+              href="/ceo-statement"
+              className="auth-nav-tab-label shrink-0 border border-[#FFD700]/35 bg-[#FFD700]/10 px-2.5 py-1 rounded-lg text-[#FFD700] hover:text-white transition-colors"
+            >
+              CEO Commitment
+            </a>
             <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
             <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+            <a href="/community-outreach" className="auth-nav-tab-label shrink-0 text-sky-300 hover:text-[#00FFFF] transition-colors border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 rounded-lg">Outreach</a>
             <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
             <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
             <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
-            <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
             <a
               href="/encyclopedia"
               onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
@@ -564,12 +570,18 @@ export default function Auth() {
           >
             Trading × AI
           </a>
+          <a
+            href="/ceo-statement"
+            className="auth-nav-tab-label shrink-0 border border-[#FFD700]/35 bg-[#FFD700]/10 px-2.5 py-1 rounded-lg text-[#FFD700] hover:text-white transition-colors"
+          >
+            CEO Commitment
+          </a>
           <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">About</a>
           <a href="/press" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Press</a>
+          <a href="/community-outreach" className="auth-nav-tab-label shrink-0 text-sky-300 hover:text-[#00FFFF] transition-colors border border-sky-400/30 bg-sky-500/10 px-2.5 py-1 rounded-lg">Outreach</a>
           <a href="#home" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Home</a>
           <a href="#choose-path" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Choose Path</a>
           <a href="#public-chart" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Live Chart</a>
-          <a href="/about" className="auth-nav-tab-label auth-nav-lava-text shrink-0">Why ClearPath</a>
           <a
             href="/encyclopedia"
             onClick={(e) => { e.preventDefault(); window.location.assign('/encyclopedia'); }}
@@ -864,6 +876,21 @@ export default function Auth() {
             </a>
             <a href="/about" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               About ClearPath
+            </a>
+            <a href="/company" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
+              Company
+            </a>
+            <a href="/meet-the-board" className="text-[#FFD700] hover:text-[#00FFFF] transition-colors font-bold">
+              Meet the Board
+            </a>
+            <a href="/ceo-statement" className="text-[#FFD700] hover:text-white transition-colors font-bold">
+              CEO Commitment
+            </a>
+            <a href="/press" className="text-zinc-400 hover:text-[#FF1493] transition-colors">
+              Press kit
+            </a>
+            <a href="/community-outreach" className="text-sky-300 hover:text-[#00FFFF] transition-colors font-bold">
+              Community Outreach
             </a>
             <a href="/learn" className="text-zinc-400 hover:text-[#00FFFF] transition-colors">
               Learn

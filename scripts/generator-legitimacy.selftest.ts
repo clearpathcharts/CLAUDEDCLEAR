@@ -27,7 +27,8 @@ import { renderStaticContentPage } from '../src/server/contentPages.ts';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const gCounts = glossaryCatalogCounts();
-assert.ok(gCounts.total >= 1_500, `glossary too small: ${gCounts.total}`);
+assert.ok(gCounts.total >= 500, `glossary too small: ${gCounts.total}`);
+assert.equal(gCounts.procedural, 0, 'glossary must not contain generated prefix+core phrases');
 assert.ok(gCounts.core >= 40, `core terms ${gCounts.core}`);
 assert.ok(gCounts.seed >= 500, `seed terms ${gCounts.seed}`);
 
@@ -109,16 +110,17 @@ assert.ok(counts.companyIndexPages + counts.companyPages <= 50_000);
 
 const idx = renderStaticContentPage('/companies/page/1');
 assert.ok(idx);
-assert.match(idx!, /Company study pages/);
+assert.match(idx!, /Public issuers/);
 
 const stocksHub = renderStaticContentPage('/stocks');
 assert.ok(stocksHub);
 assert.match(stocksHub!, /What Is |equity|Stock/i);
 
 const server = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
-assert.match(server, /sitemap-glossary\.xml/);
-assert.match(server, /sitemap-literacy\.xml/);
-assert.match(server, /sitemap-knowledge\.xml/);
+const siteRegistry = fs.readFileSync(path.join(root, 'src/server/siteRegistry.ts'), 'utf8');
+assert.match(siteRegistry, /sitemap-glossary\.xml/);
+assert.match(siteRegistry, /sitemap-literacy\.xml/);
+assert.match(siteRegistry, /sitemap-knowledge\.xml/);
 assert.match(server, /sendEncyclopedia404/);
 
 const dir = fs.readFileSync(

@@ -17,6 +17,8 @@ import {
   PRODUCT_HOME_H1,
   PRODUCT_HOME_TITLE,
   PRODUCT_META_DESCRIPTION,
+  PRODUCT_PLATFORM_POSITION,
+  withPlatformPositionTitle,
 } from '../src/content/productIdentity.ts';
 import {
   DEFAULT_PUBLIC_INDEXNOW_KEY,
@@ -38,7 +40,7 @@ const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf8');
 assert.equal(countH1(indexHtml), 1, 'index.html must contain exactly one <h1>');
 assert.match(
   indexHtml,
-  /<h1 id="seo-document-h1"[^>]*>ClearPath Trader — Four Trader Desks on One Site<\/h1>/,
+  /<h1 id="seo-document-h1"[^>]*>ClearPath Trader — One chart site with four desks<\/h1>/,
 );
 
 const keyFile = path.resolve('public', `${DEFAULT_PUBLIC_INDEXNOW_KEY}.txt`);
@@ -60,14 +62,27 @@ assert.ok(
   `home description ${PRODUCT_META_DESCRIPTION.length} not in 140–160`,
 );
 assert.equal(PRODUCT_FOUR_DESKS.length, 4);
-assert.match(indexHtml, /<title>ClearPath Trader \| Four Trader Desks on One Site<\/title>/);
+assert.match(
+  indexHtml,
+  new RegExp(
+    `<title>${withPlatformPositionTitle(PRODUCT_HOME_TITLE).replace(/[|]/g, '\\|')}<\\/title>`,
+  ),
+);
+assert.match(indexHtml, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 assert.match(indexHtml, new RegExp(PRODUCT_META_DESCRIPTION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
 const botHome = enrichHtmlWithMetadata(renderStaticHomeForBots(), '/');
 assert.equal(countH1(botHome), 1, 'bot homepage must have exactly one <h1>');
-assert.match(botHome, new RegExp(`<title>${PRODUCT_HOME_TITLE.replace(/[|]/g, '\\|')}<\\/title>`));
+assert.match(
+  botHome,
+  new RegExp(`<title>${withPlatformPositionTitle(PRODUCT_HOME_TITLE).replace(/[|]/g, '\\|')}<\\/title>`),
+);
+assert.match(botHome, new RegExp(PRODUCT_PLATFORM_POSITION.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+assert.match(botHome, /name="clearpath-platform-position"/);
+assert.match(botHome, /"slogan":\s*"ClearPath Trader is analysis-first, with optional execution connectivity"/);
 assert.match(botHome, new RegExp(PRODUCT_HOME_H1.replace(/[—]/g, '—')));
-assert.match(botHome, /Four trader desks on one website/);
+assert.match(botHome, /One chart site, four desks/);
+assert.match(botHome, /no ads and no sales pitches/);
 assert.match(botHome, /href="\/desk\/institutional"/);
 assert.match(botHome, /href="\/desk\/fundamental"/);
 assert.match(botHome, /href="\/desk\/retail"/);
@@ -82,6 +97,13 @@ const shell = fs.readFileSync(path.resolve('index.html'), 'utf8');
 const home = enrichHtmlWithMetadata(shell, '/');
 assert.equal(countH1(home), 1, 'enriched homepage SPA shell must keep exactly one <h1>');
 assert.doesNotMatch(home, /<noscript>[\s\S]*<h1/i, 'noscript must not add a second <h1>');
+
+const publicHomepage = fs.readFileSync(path.resolve('src', 'components', 'Auth.tsx'), 'utf8');
+assert.ok(
+  (publicHomepage.match(/href="\/ceo-statement"/g) || []).length >= 3,
+  'public homepage must link CEO Commitment from desktop nav, mobile menu, and footer',
+);
+assert.match(publicHomepage, />\s*CEO Commitment\s*</);
 
 // Simulate stale deploy that still had an H1 inside noscript — enrich must demote it.
 const stale = shell.replace(

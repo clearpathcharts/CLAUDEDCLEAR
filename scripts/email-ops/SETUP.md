@@ -41,7 +41,7 @@ Opens/creates: `data/email-ops/clearpath-mailmerge-YYYY-MM-DD.csv`
 
 > For rows where tempPassword is not empty, rewrite column `body` in Rick Floyd's calm founder voice. Keep activateUrl and tempPassword exact. No financial advice. Under 180 words.
 
-3. Or ask Gemini to rewrite only `subject` for a maintenance notice / thank-you / affiliate pitch.
+3. Or ask Gemini to rewrite only `subject` for a maintenance notice / thank-you.
 
 ### D) Send with Gmail mail merge
 
@@ -70,4 +70,4 @@ Opens/creates: `data/email-ops/clearpath-mailmerge-YYYY-MM-DD.csv`
 
 **Private Login restore** — export already builds subject/body for anyone with a `tempPassword`.
 
-After that: maintenance notice, thank-you + affiliate pitch, using Gemini to rewrite `subject`/`body` columns only.
+After that: maintenance notice / thank-you, using Gemini to rewrite `subject`/`body` columns only.

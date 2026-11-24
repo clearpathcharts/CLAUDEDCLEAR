@@ -11,6 +11,9 @@ const API_BASE =
 
 let backendOnline = false;
 let backendChannels = [];
+let outboundEnabled = false;
+const OUTBOUND_OFF_MSG = "Outbound messaging is off. Upload and queue only.";
+const BLOCKED_CHANNEL_IDS = new Set(["telegram", "discord", "slack"]);
 
 async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -50,11 +53,14 @@ async function initBackend() {
   const statusEl = document.getElementById("backend-status");
   try {
     const health = await api("/api/health");
+    outboundEnabled = health.outboundEnabled === true;
     backendOnline = true;
     backendChannels = health.channels || [];
     const direct = backendChannels.filter((c) => c.mode === "direct" && c.ready).map((c) => c.name);
     if (statusEl) {
-      statusEl.textContent = direct.length
+      statusEl.textContent = !outboundEnabled
+        ? `Backend: ONLINE — ${OUTBOUND_OFF_MSG}`
+        : direct.length
         ? `Backend: ONLINE — direct send ready: ${direct.join(", ")}`
         : "Backend: ONLINE — add credentials in clearpath-publisher/.env to enable direct sends";
     }
@@ -85,6 +91,10 @@ function syncToBackend() {
 }
 
 async function dispatchNow(jobId) {
+  if (!outboundEnabled) {
+    alert(OUTBOUND_OFF_MSG);
+    return;
+  }
   const job = queue.find((j) => j.id === jobId);
   if (!job) return;
   const directTargets = job.channels.filter((id) =>
@@ -120,7 +130,7 @@ async function dispatchNow(jobId) {
   }
 }
 
-const CHANNELS = [
+const ALL_CHANNELS = [
   // Social / video (15)
   { id: "facebook", name: "Facebook", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Meta Graph Page post" },
   { id: "instagram", name: "Instagram", group: "social", engine: "ClearPath Publisher", status: "not_yet", note: "Business Content Publishing API" },
@@ -153,6 +163,7 @@ const CHANNELS = [
   { id: "gust", name: "Gust", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
   { id: "researchgate", name: "ResearchGate", group: "networking", engine: "ClearPath Publisher", status: "not_yet", note: "Webhook / package" },
 ];
+const CHANNELS = ALL_CHANNELS.filter((ch) => !BLOCKED_CHANNEL_IDS.has(ch.id));
 
 const DISCOVERY = [
   { rank: 1, name: "Google Search Console", status: "not_yet" },
@@ -175,7 +186,7 @@ const queueFilter = document.getElementById("queue-filter");
 
 let view = "publish";
 let queue = loadQueue();
-let selectedChannels = ["facebook", "youtube", "instagram", "linkedin", "reddit"];
+let selectedChannels = ["facebook", "youtube", "instagram", "linkedin", "reddit"].filter((id) => !BLOCKED_CHANNEL_IDS.has(id));
 let me = null;
 let treasure = [];
 
@@ -504,8 +515,8 @@ function renderLatest() {
   const j = queue[0];
   box.innerHTML = `
     <p><strong>${escapeHtml(j.title)}</strong></p>
-    <p class="hint">${j.channels.join(" · ")} · ${j.status}</p>
-    <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
+    <p class="hint">${escapeHtml((j.channels || []).join(" · "))} · ${escapeHtml(j.status)}</p>
+    <button type="button" class="btn" data-copy="${escapeHtml(j.id)}">Copy package</button>
   `;
   box.querySelector("[data-copy]").addEventListener("click", async () => {
     const ok = await copyText(buildPackage(j));
@@ -535,7 +546,7 @@ function renderQueue() {
             <article class="queue-item">
               <div>
                 <h3>${escapeHtml(j.title)}</h3>
-                <p class="hint">${j.channels.join(" · ")} · ${j.status}${
+                <p class="hint">${escapeHtml((j.channels || []).join(" · "))} · ${escapeHtml(j.status)}${
                       j.scheduledFor ? " · " + new Date(j.scheduledFor).toLocaleString() : ""
                     }${
                       j.mediaId
@@ -560,12 +571,12 @@ function renderQueue() {
               </div>
               <div class="queue-actions">
                 ${
-                  backendOnline
-                    ? `<button type="button" class="btn btn-primary" data-dispatch="${j.id}">Dispatch now</button>`
-                    : ""
+                  backendOnline && outboundEnabled
+        ? `<button type="button" class="btn btn-primary" data-dispatch="${escapeHtml(j.id)}">Dispatch now</button>`
+        : `<p class="hint">${OUTBOUND_OFF_MSG}</p>`
                 }
-                <button type="button" class="btn" data-copy="${j.id}">Copy package</button>
-                <button type="button" class="btn btn-danger" data-del="${j.id}">Remove</button>
+                <button type="button" class="btn" data-copy="${escapeHtml(j.id)}">Copy package</button>
+                <button type="button" class="btn btn-danger" data-del="${escapeHtml(j.id)}">Remove</button>
               </div>
               <pre class="pkg">${escapeHtml(buildPackage(j))}</pre>
             </article>`

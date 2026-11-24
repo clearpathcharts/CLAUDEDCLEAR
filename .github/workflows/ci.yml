@@ -47,6 +47,18 @@ jobs:
 
       - name: Affiliate rewards self-test
         run: npm run test:affiliate
+      - name: Member inbox self-test
+        run: npm run test:member-inbox
+      - name: Membership grants self-test
+        run: npm run test:membership-grants
+      - name: Auth hardening self-test
+        run: npm run test:auth-hardening
+      - name: Email verification self-test
+        run: npm run test:email-verification
+      - name: Search-intent guides self-test
+        run: npm run test:intent-guides
+      - name: SSRF guard self-test
+        run: npm run test:ssrf-guard
 
       - name: Private accounts durable-store self-test
         run: npm run test:private-durable
@@ -65,6 +77,9 @@ jobs:
 
       - name: CEO explainer-video library (founder gate + durable storage only)
         run: npm run test:ceo-videos
+
+      - name: CEO Marketing Department (founder gate + sitemap parity + honest metrics)
+        run: npm run test:marketing-department
 
       - name: Explainer-video slots (founder gate + safe public read)
         run: npm run test:video-slots
@@ -87,8 +102,17 @@ jobs:
       - name: Founder-sheet plan catalog self-test
         run: npm run test:plan-catalog
 
+      - name: npm dependency audit (zero vulnerabilities)
+        run: npm run test:dependency-audit
+
       - name: Package offer + Stripe checkout self-test
         run: npm run test:membership-offer
+
+      - name: Identity public pages SEO self-test
+        run: npm run test:identity-pages-seo
+
+      - name: Stripe billing hardening self-test
+        run: npm run test:stripe-billing
 
       - name: Glitch audit regressions (founder inboxes, ribbon, membership cliffs)
         run: npm run test:glitch-audit
@@ -101,6 +125,15 @@ jobs:
 
       - name: Site Doctor sweep (fails closed with no vendor key)
         run: npm run test:site-doctor
+
+      - name: Diagnostics Firestore mirror (Site Doctor + TF verify)
+        run: npm run test:diagnostics-store
+
+      - name: Investor pitch deck routes
+        run: npm run test:pitch-deck
+
+      - name: Technology opportunity page + Brent communications
+        run: npm run test:investor-tech-opportunity
 
       - name: Third-party automation vendors absent from tree
         run: npm run test:no-third-party-automation
@@ -158,6 +191,9 @@ jobs:
 
       - name: Generator domain legitimacy
         run: npm run test:generator-legitimacy
+
+      - name: No invented market data
+        run: npm run test:no-invented-market-data
 
       - name: Build
         env:

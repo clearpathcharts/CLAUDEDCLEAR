@@ -107,8 +107,8 @@ export const SHIPPED_AS_OF_2026_08_18: Array<{ id: string; title: string; eviden
   },
   {
     id: "affiliate_os",
-    title: "Affiliate Operating System desk",
-    evidence: "affiliate routes + share links",
+    title: "Affiliate / referral program removed (unauthorized)",
+    evidence: "legacy /r + /api/affiliate answer gone; no residuals or payouts",
   },
   {
     id: "mobile_charts",
@@ -496,7 +496,7 @@ export const CATALOG: CatalogItem[] = [
   },
   {
     id: "human_board",
-    title: "Check in with one board member (Brian, Dustin, or Brent)",
+    title: "Check in with one board member (Brian or Brent)",
     why: "Weekly, not daily nagging",
     kind: "human",
     cadence: "weekly",

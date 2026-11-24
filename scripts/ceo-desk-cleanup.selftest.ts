@@ -20,6 +20,8 @@ assert.doesNotMatch(ticker, /animate-\[marquee_50s/);
 assert.doesNotMatch(ticker, /@keyframes marquee/);
 
 const dashboard = read('src/components/Dashboard.tsx');
+assert.match(dashboard, /SECTION_GUIDE_OFFER_EXCLUDED_TABS/);
+assert.match(dashboard, /'Biography'/);
 assert.doesNotMatch(dashboard, /No contacts yet/);
 assert.doesNotMatch(dashboard, />Contacts</);
 assert.doesNotMatch(dashboard, /Open live chat/);

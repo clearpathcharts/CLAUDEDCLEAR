@@ -91,7 +91,7 @@ export default function ClearPathChatroom({
   const isLava = className.includes('cp-chatroom-lava') || accentColor.toUpperCase() === '#FF4500';
   const roomAccent = isLava ? '#FF4500' : (activeRoom?.accent || accentColor);
 
-  const { messages, status, onlineCount, handle, sendMessage, updateHandle, isOwnMessage } =
+  const { messages, status, onlineCount, handle, postError, sendMessage, updateHandle, isOwnMessage } =
     useChatRoom(activeRoomId);
 
   useEffect(() => {
@@ -400,6 +400,11 @@ export default function ClearPathChatroom({
                 <Send size={16} />
               </button>
             </div>
+            {postError ? (
+              <p role="alert" className="mt-2 text-center text-[11px] font-mono text-amber-300">
+                {postError}
+              </p>
+            ) : null}
             <p className="mt-2 text-center text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
               Live WebSocket room • Empty until real traders speak
             </p>

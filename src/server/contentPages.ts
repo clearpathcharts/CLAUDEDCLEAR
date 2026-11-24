@@ -56,6 +56,31 @@ import { LITERACY_TRACKS } from '../literacy/data/literacyCurriculum';
 import { SEED_WIKI } from '../literacy/data/conceptSeed';
 import { DESK_INDEX_SEO, DESK_SEO } from '../content/traderDesksCopy';
 import { TRADER_DESK_IDS, TRADER_DESKS, isTraderDeskId } from '../lib/traderDesks';
+import { PUBLIC_LEADERS, FOUNDER_LEADER } from '../content/leadershipPublic';
+import {
+  COMPANY_META_DESCRIPTION,
+  ORG_FOUNDING_DATE,
+  ORG_JURISDICTION_LABEL,
+  ORG_LEGAL_NAME,
+  ORG_PRODUCT_HISTORY_YEARS,
+} from '../content/organizationPublic';
+import { MEMBERSHIP_PLANS } from '../content/membershipPricing';
+import { NEVER_BROKER_DEALER } from '../lib/passThroughBrokerModel';
+import {
+  CEO_COMMITMENT_DETAILS,
+  CEO_COMMITMENT_INTRO,
+  CEO_COMMITMENT_SECTIONS,
+  CEO_COMMITMENT_SIGNATURE,
+} from '../content/ceoCommitmentStatement';
+import {
+  LANGUAGE_MOCK_PAGE_CSS,
+  isUnknownLanguageMockPath,
+  languageMockHtmlLang,
+  renderLanguageMockLocale,
+  renderLanguageWorldMockIndex,
+  renderUnknownLanguageBody,
+} from './languageWorldMock';
+import { LANGUAGE_MOCK_INDEX_PATH } from '../i18n/top25WorldLanguages';
 
 // ==========================================
 // STATIC CONTENT PAGE RENDERER (SERVER-SIDE)
@@ -73,9 +98,11 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Inline markdown: **bold** only (the corpus uses nothing else inline). */
+/** Inline markdown: **bold** and same-site links `[text](/path)` (no external or scheme URLs). */
 function inlineMd(text: string): string {
-  return escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  return escapeHtml(text)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((\/[A-Za-z0-9_\-/]*)\)/g, '<a href="$2">$1</a>');
 }
 
 /**
@@ -174,6 +201,9 @@ const NAV_LINKS = [
 
 const PAGE_CSS = `
   :root { color-scheme: dark; }
+  /* Founder readability floor: every rem on these reference pages scales 1.5x. */
+  html { font-size: 150%; }
+  @media (max-width: 760px) { header.site { position: static; } }
   * { box-sizing: border-box; }
   body { margin: 0; background: #050505; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; }
   header.site { position: sticky; top: 0; z-index: 50; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -245,6 +275,7 @@ const PAGE_CSS = `
     .card-list a.card { transition: none; }
     .card-list a.card:hover { transform: none; }
   }
+${LANGUAGE_MOCK_PAGE_CSS}
 `;
 
 function renderShell(
@@ -265,12 +296,12 @@ function renderShell(
       : cta || {
           chartTitle: 'Put this knowledge on a live chart',
           chartBody:
-            'ClearPath Trader is a free educational financial markets site: live charts, unlimited indicators, automatic pattern detection, and a beginner-to-advanced education path.',
+            'ClearPath Trader is an educational financial markets site with a free plan: live charts, 5 indicators free (the full library on paid plans), automatic chart-pattern overlay on Gold, and a beginner-to-advanced education path.',
           launchLabel: 'Open the site',
           educationLabel: 'Start education',
           waitlistTitle: 'Private Login is your real access',
           waitlistBody:
-            'There is no waitlist. Create an account with email + password on the site. That email lives in Firestore and survives Cloud Run redeploys.',
+            'There is no waitlist. Create a free account with your email and a password, confirm your email, then sign in.',
           firstNameLabel: 'First name',
           emailLabel: 'Email (updates only)',
           countryLabel: 'Country',
@@ -426,7 +457,7 @@ function renderGlossary(): string {
     .join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Glossary' }])}
 <h1>Financial Glossary</h1>
-<p class="lead">${counts.total.toLocaleString()} educational terms: ${counts.core} core practitioner definitions, ${counts.seed.toLocaleString()} dictionary seeds, and ${counts.procedural.toLocaleString()} unique vocabulary-study nodes. ${GLOSSARY_DISCLAIMER}</p>
+<p class="lead">${counts.total.toLocaleString()} educational terms: ${counts.core} core practitioner definitions and ${counts.seed.toLocaleString()} dictionary terms. ${GLOSSARY_DISCLAIMER}</p>
 <article>
 <h2>Browse A–Z</h2>
 <ul class="card-list">${letters}</ul>
@@ -693,7 +724,7 @@ function renderEncyclopediaHub(): string {
   ).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Encyclopedia' }])}
 <h1>Financial Encyclopedia</h1>
-<p class="lead">A crawlable knowledge base of equities, crypto, forex, commodities, and macro concepts — ${counts.stocks.toLocaleString()} stock profiles, ${counts.crypto.toLocaleString()} crypto assets, ${counts.forex.toLocaleString()} FX pairs, and more.</p>
+<p class="lead">A free student encyclopedia of stocks, crypto, forex, commodities, and economics. No ads and no sales pitches. ${counts.stocks.toLocaleString()} stock study pages, ${counts.crypto.toLocaleString()} crypto pages, ${counts.forex.toLocaleString()} FX pairs, and more. These are study notes, not investment advice, and not a claim that no other finance reference exists.</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
 <h2>Browse by market</h2>
@@ -702,7 +733,7 @@ ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <li><a class="card" href="/crypto"><h2>Crypto</h2><p>${counts.crypto.toLocaleString()} coins and protocols explained for literacy, not hype.</p></a></li>
 <li><a class="card" href="/forex"><h2>Forex</h2><p>${counts.forex.toLocaleString()} currency pairs with macro drivers.</p></a></li>
 <li><a class="card" href="/commodities"><h2>Commodities</h2><p>${counts.commodities} metals, energy, and agriculture profiles.</p></a></li>
-<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} educational listings — ${counts.companyPages.toLocaleString()} crawlable subsidiary study pages plus public issuers on stock profiles.</p></a></li>
+<li><a class="card" href="/companies"><h2>Companies</h2><p>${counts.companies.toLocaleString()} real public issuers, each with a stock profile.</p></a></li>
 <li><a class="card" href="/markets/bonds"><h2>Bonds</h2><p>Authored knowledge article on fixed income — education, not a live yield feed.</p></a></li>
 </ul>
 <h2>Sectors</h2>
@@ -846,12 +877,12 @@ function renderCompaniesHub(): string {
     { name: 'Companies' },
   ])}
 <h1>Company Directory</h1>
-<p class="lead">${counts.companies.toLocaleString()} educational listings: ${counts.stocks.toLocaleString()} public issuers (canonical on stock profiles) and ${counts.companyPages.toLocaleString()} subsidiary study pages. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
+<p class="lead">${counts.companies.toLocaleString()} real public issuers, each canonical on its stock profile. ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 ${liveDeskCta('/encyclopedia', 'Open interactive encyclopedia')}
 <article>
 <h2>Featured public issuers</h2>
 <ul class="card-list">${cards}</ul>
-<p>Every subsidiary study page has its own URL under <code>/companies/{slug}</code> and is listed in <a href="/sitemap-companies.xml">sitemap-companies.xml</a>. Browse the crawlable index at <a href="/companies/page/1">/companies/page/1</a>. Public tickers 301 to <code>/stocks/{ticker}</code>.</p>
+<p>Browse every issuer at <a href="/companies/page/1">/companies/page/1</a>. Company tickers 301 to <code>/stocks/{ticker}</code>.</p>
 <p><a href="/stocks">Stock encyclopedia</a> · <a href="/learn/valuation">Valuation</a> · <a href="/desk/fundamental">Fundamental trader desk</a></p>
 </article>`;
 }
@@ -1116,7 +1147,7 @@ function renderCompaniesIndexPage(pageRaw: string): string | null {
   const cards = rows
     .map(
       (c) =>
-        `<li><a class="card" href="/companies/${c.slug}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.status)} · ${escapeHtml(c.unitLabel || '')} · ${escapeHtml(c.parentTicker || '')}</p></a></li>`
+        `<li><a class="card" href="/stocks/${escapeHtml(String(c.ticker || '').toLowerCase())}"><h2>${escapeHtml(c.name)}</h2><p>${escapeHtml(c.ticker || '')} · ${escapeHtml(c.sector)}</p></a></li>`
     )
     .join('\n');
   const prev = page > 1 ? `<a href="/companies/page/${page - 1}">← Previous</a>` : '';
@@ -1127,8 +1158,8 @@ function renderCompaniesIndexPage(pageRaw: string): string | null {
     { name: 'Companies', url: '/companies' },
     { name: `Page ${page}` },
   ])}
-<h1>Company study pages · ${page} / ${pages}</h1>
-<p class="lead">Crawlable index of subsidiary study nodes (${companyIndexPageCount().toLocaleString()} pages). ${COMPANY_DIRECTORY_DISCLAIMER}</p>
+<h1>Public issuers · ${page} / ${pages}</h1>
+<p class="lead">Index of real public issuers (${companyIndexPageCount().toLocaleString()} pages). ${COMPANY_DIRECTORY_DISCLAIMER}</p>
 <article>
 <ul class="card-list">${cards}</ul>
 <p>${prev} ${next}</p>
@@ -1470,6 +1501,16 @@ ${hub ? '' : '<p><a href="/forex">← All forex pairs</a></p>'}
 </article>`;
 }
 
+export function isUnknownLanguagePath(reqPath: string): boolean {
+  return isUnknownLanguageMockPath(reqPath);
+}
+
+/** Crawlable 404 for unknown /languages/:code (noindex). */
+export function renderUnknownLanguageNotFound(reqPath: string): string {
+  const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  return renderShell(pathClean, renderUnknownLanguageBody(pathClean), 'en', null, 'noindex, follow');
+}
+
 /** True when path is /regions/:id and :id is not a known hub (should 404, not SPA). */
 export function isUnknownRegionPath(reqPath: string): boolean {
   const pathClean = reqPath.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
@@ -1662,8 +1703,8 @@ function renderHomeForBots(): string {
   return `${breadcrumbHtml([{ name: 'Home' }])}
 <h1>${escapeHtml(PRODUCT_HOME_H1)}</h1>
 <p class="lead">${escapeHtml(PRODUCT_WHAT_IT_IS)}</p>
-<h2>Four trader desks on one website</h2>
-<p>One educational terminal. Four workstations for four kinds of traders — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four brokerages and not four ways to place trades.</p>
+<h2>One chart site, four desks</h2>
+<p>One chart website. Four workspaces — ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}. Not four companies and not four brokers.</p>
 <ul>
 <li><a href="/desk/institutional">Institutional Trader</a> — flow, liquidity, options, macro, and news around a multi-chart workspace.</li>
 <li><a href="/desk/fundamental">Fundamental Trader</a> — statements, earnings, valuation, peers, filings, and FRED macro.</li>
@@ -1695,6 +1736,128 @@ function renderAboutPage(): string {
 <p><a href="/?live=1">Open the terminal</a> · <a href="/faq">FAQ</a> · <a href="/platform-scope.html">Platform scope</a></p>`;
 }
 
+function renderIdentityCompanyBody(): string {
+  const incYear = new Date(`${ORG_FOUNDING_DATE}T12:00:00`).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Company' }])}
+<h1>${escapeHtml(ORG_LEGAL_NAME)}</h1>
+<p class="lead">${escapeHtml(COMPANY_META_DESCRIPTION)}</p>
+<p><strong>Form:</strong> ${escapeHtml(ORG_JURISDICTION_LABEL)} · <strong>Incorporated:</strong> ${escapeHtml(incYear)} · Platform history ~${ORG_PRODUCT_HISTORY_YEARS} years.</p>
+<p>${escapeHtml(PRODUCT_WHAT_IT_IS)} Four trader desks: ${escapeHtml(PRODUCT_FOUR_DESKS_PHRASE)}.</p>
+<p><a href="/meet-the-board">Meet the Board</a> · <a href="/press">Press kit</a> · <a href="/about">About</a></p>`;
+}
+
+function renderIdentityMeetTheBoardBody(): string {
+  const cards = PUBLIC_LEADERS.map(
+    (l) => `<section id="${escapeHtml(l.id)}"><h2>${escapeHtml(l.displayName)}</h2>
+<p><strong>${escapeHtml(l.jobTitle)}</strong>${l.roleLine ? ` · ${escapeHtml(l.roleLine)}` : ''}</p>
+<p>${escapeHtml(l.bio)}</p></section>`,
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Meet the Board' }])}
+<h1>Meet the Board</h1>
+<p class="lead">Leadership of ${escapeHtml(ORG_LEGAL_NAME)} (ClearPath Trader). Public page — no login required.</p>
+${cards}
+<p><a href="/company">Company</a> · <a href="/founder">Founder</a> · <a href="/press">Press</a></p>`;
+}
+
+function renderIdentityFounderBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Founder' }])}
+<h1>${escapeHtml(FOUNDER_LEADER.displayName)}</h1>
+<p><strong>${escapeHtml(FOUNDER_LEADER.jobTitle)}</strong> · ${escapeHtml(ORG_LEGAL_NAME)}</p>
+<p>${escapeHtml(FOUNDER_LEADER.bio)}</p>
+<p><a href="/press">Full press kit</a> · <a href="/meet-the-board">Meet the Board</a></p>`;
+}
+
+function renderCeoCommitmentStatementBody(): string {
+  const details = CEO_COMMITMENT_DETAILS.map(
+    ([label, value]) => `<li><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</li>`,
+  ).join('\n');
+  const intro = CEO_COMMITMENT_INTRO.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n');
+  const sections = CEO_COMMITMENT_SECTIONS.map(
+    (section, index) => `<section><h2>${index + 1}. ${escapeHtml(section.title)}</h2>
+${section.paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('\n')}</section>`,
+  ).join('\n');
+
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: "CEO's Certified Statement" }])}
+<h1>CEO's Certified Statement</h1>
+<p class="lead">Two-Year Voluntary Salary Waiver &amp; Customer-First Commitment</p>
+<p><strong>Clear Path Markets Science Corp. · ClearPathTrader</strong></p>
+<ul>${details}</ul>
+<h2>Official Statement</h2>
+${intro}
+${sections}
+<section><h2>Digital Signature</h2>
+<p><em>${escapeHtml(CEO_COMMITMENT_SIGNATURE.notation)}</em></p>
+<p><strong>${escapeHtml(CEO_COMMITMENT_SIGNATURE.name)}</strong><br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.title)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.company)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.product)}<br>
+${escapeHtml(CEO_COMMITMENT_SIGNATURE.location)}</p>
+<p><strong>Date:</strong> ${escapeHtml(CEO_COMMITMENT_SIGNATURE.date)}</p>
+<p>${escapeHtml(CEO_COMMITMENT_SIGNATURE.disclaimer)}</p></section>
+<p><a href="/company">Company</a> · <a href="/founder">Founder</a> · <a href="/meet-the-board">Meet the Board</a></p>`;
+}
+
+function renderIdentityPressBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Press' }])}
+<h1>Press Kit — ${escapeHtml(FOUNDER_LEADER.displayName)}</h1>
+<p class="lead">Official media page for the founder of ClearPath Trader (${escapeHtml(ORG_LEGAL_NAME)}).</p>
+<p>${escapeHtml(FOUNDER_LEADER.bio)}</p>
+<p><a href="/company">Company facts</a> · <a href="/meet-the-board">Board</a></p>`;
+}
+
+function renderIdentityPlansBody(): string {
+  const rows = MEMBERSHIP_PLANS.map(
+    (p) => `<li><strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(p.priceLabel)}/month (feature sheet; sign in to subscribe on this site)</li>`,
+  ).join('\n');
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Plans' }])}
+<h1>Membership plans</h1>
+<p class="lead">Educational platform tiers for ClearPath Trader. Not a brokerage. Not investment advice.</p>
+<ul>${rows}</ul>
+<p><a href="/?live=1">Open the terminal</a> to compare features when signed in.</p>`;
+}
+
+function renderIdentityBrokersBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Brokers' }])}
+<h1>US broker connections</h1>
+<p class="lead">Connect an existing United States brokerage account through broker-authorized pass-through integrations.</p>
+<p>${escapeHtml(NEVER_BROKER_DEALER)}</p>
+<p><a href="/plans">Plans</a> · <a href="/desk">Trader desks</a></p>`;
+}
+
+function renderCommunityOutreachBody(): string {
+  return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Community Outreach' }])}
+<h1>Clear Path Community Outreach</h1>
+<p class="lead">Education. Digital Inclusion. Financial Literacy. Community Resources.</p>
+<p>Clear Path Community Outreach is a proposed community education initiative associated with Clear Path Markets Science Corp. Its mission is to expand access to financial literacy, digital education, technology safety, consumer protection, and accessible educational resources.</p>
+<p><strong>Honesty:</strong> Institutional listings are potential contacts — not confirmed partners, endorsements, or government authorizations. A future community food shelf / food bank coordination initiative is proposed for Riverside County and is <strong>not yet operational</strong>.</p>
+<p>Need food today? Use <a href="https://www.cafoodbanks.org/find-food/">California Food Banks find-food / 2-1-1</a>, <a href="https://www.feedingamericaie.org/find-a-pantry">Feeding America Riverside | San Bernardino pantry finder</a>, and <a href="https://rivcodpss.org/calfresh-food-assistance">Riverside County DPSS CalFresh</a>.</p>
+<p><a href="/community-outreach">Open the full Community Outreach portal</a> · <a href="/company">Company</a> · <a href="/about">About</a></p>`;
+}
+
+const IDENTITY_BOT_PATHS: Record<string, () => string> = {
+  '/company': renderIdentityCompanyBody,
+  '/meet-the-board': renderIdentityMeetTheBoardBody,
+  '/founder': renderIdentityFounderBody,
+  '/ceo-statement': renderCeoCommitmentStatementBody,
+  '/press': renderIdentityPressBody,
+  '/press-kit': renderIdentityPressBody,
+  '/plans': renderIdentityPlansBody,
+  '/brokers': renderIdentityBrokersBody,
+  '/community-outreach': renderCommunityOutreachBody,
+};
+
+/** Crawlable identity & commerce pages for search bots (humans keep the React SPA). */
+export function renderStaticIdentityPageForBots(pathClean: string): string | null {
+  const key = pathClean.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const render = IDENTITY_BOT_PATHS[key];
+  if (!render) return null;
+  const canonical = key === '/press-kit' ? '/press' : key;
+  return renderShell(canonical, render(), 'en');
+}
+
 /** Crawlable homepage HTML for search bots (humans still get the SPA shell). */
 export function renderStaticHomeForBots(): string {
   return renderShell('/', renderHomeForBots(), 'en');
@@ -1721,6 +1884,8 @@ export function renderStaticContentPage(reqPath: string): string | null {
   else if (pathClean === '/accessibility') body = renderAccessibilityPage();
   else if (pathClean === '/regions') body = renderRegionsIndex();
   else if (parts[0] === 'regions' && parts.length === 2) body = renderRegionalHub(parts[1]);
+  else if (pathClean === LANGUAGE_MOCK_INDEX_PATH) body = renderLanguageWorldMockIndex();
+  else if (parts[0] === 'languages' && parts.length === 2) body = renderLanguageMockLocale(parts[1]);
   else if (pathClean === '/encyclopedia' || pathClean === '/financial-encyclopedia') body = renderEncyclopediaHub();
   else if (pathClean === '/stocks') body = renderStocksHub();
   else if (pathClean === '/crypto') body = renderCryptoHub();
@@ -1760,6 +1925,17 @@ export function renderStaticContentPage(reqPath: string): string | null {
   if (body === null) return null;
   const market =
     parts[0] === 'regions' && parts.length === 2 ? getRegionalMarket(parts[1]) : null;
-  const htmlLang = market?.lang?.split('-')[0] || 'en';
-  return renderShell(pathClean, body, htmlLang, market?.cta);
+  const htmlLang =
+    parts[0] === 'languages'
+      ? languageMockHtmlLang(pathClean)
+      : market?.lang?.split('-')[0] || 'en';
+  const robots =
+    parts[0] === 'languages' ? 'noindex, follow' : undefined;
+  return renderShell(
+    pathClean,
+    body,
+    htmlLang,
+    market?.cta,
+    robots ?? 'index, follow, max-image-preview:large',
+  );
 }

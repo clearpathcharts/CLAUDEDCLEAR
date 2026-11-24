@@ -24,7 +24,6 @@ type Row = {
   hasPrivateAccount: string;
   inviteCreatedAt: string;
   activateUrl: string;
-  affiliateTermsUrl: string;
   subject: string;
   body: string;
   sendStatus: string;
@@ -124,8 +123,6 @@ async function main() {
           '',
           'Please sign in, update your password in your profile, and keep this email private.',
           '',
-          'Affiliate program (optional): https://clearpathtrader.com/affiliate-terms',
-          '',
           '— Rick Floyd',
           'ClearPath Trader',
         ].join('\n')
@@ -152,7 +149,6 @@ async function main() {
       hasPrivateAccount: acct ? 'yes' : 'no',
       inviteCreatedAt: inv?.createdAt || '',
       activateUrl,
-      affiliateTermsUrl: 'https://clearpathtrader.com/affiliate-terms',
       subject: defaultSubject,
       body: defaultBody,
       sendStatus: '',
@@ -169,7 +165,6 @@ async function main() {
     'hasPrivateAccount',
     'inviteCreatedAt',
     'activateUrl',
-    'affiliateTermsUrl',
     'subject',
     'body',
     'sendStatus',

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
-import { setupWebSockets } from './websockets';
+import { setupWebSockets, wsDisplayName } from './websockets';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
@@ -17,7 +17,8 @@ import passport from 'passport';
 import session from 'express-session';
 import { db, schema } from "./src/db";
 import { eq, and } from "drizzle-orm";
-import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
+  import { provenanceHeaders, sanitizeInstrumentSymbol, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
 import { IndicatorRegistry } from "./src/core/registry/IndicatorRegistry";
 import { FundamentalRegistry } from "./src/core/registry/FundamentalRegistry";
@@ -35,8 +36,7 @@ import {
   enrichHtmlWithMetadata, 
   ensureSeoAssetsExist 
 } from './src/server/semanticDatabase';
-import { GUIDE_RECORDS } from './src/server/contentData';
-import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, isSearchEngineBot, isUnknownRegionPath, renderUnknownRegionNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
+import { renderStaticContentPage, renderStaticHomeForBots, renderStaticAboutForBots, renderStaticIdentityPageForBots, isSearchEngineBot, isUnknownRegionPath, isUnknownLanguagePath, renderUnknownRegionNotFound, renderUnknownLanguageNotFound, renderUnknownCompanyNotFound, renderUnknownEncyclopediaNotFound } from './src/server/contentPages';
 import { firebaseWebClientConfigured } from './src/server/firebaseClientConfig';
 import { applyHtmlNoStore, readLiveBuildIdentity, sendUncachedHtml } from './src/server/htmlCacheHeaders';
 import {
@@ -44,7 +44,7 @@ import {
   submitIndexNow,
   indexNowKeyLocation,
 } from './src/server/indexNow';
-import { REGIONAL_MARKETS, regionalHubEntries, regionalIndexNowUrls } from './src/server/regionalSeo';
+import { REGIONAL_MARKETS } from './src/server/regionalSeo';
 import {
   grantContractorBadgeByEmail,
   seedIndependentContractorBadges,
@@ -53,24 +53,17 @@ import {
   IC_BADGE_SEED_EMAILS,
 } from './src/server/contractorBadges';
 import { ROBOTS_TXT } from './src/server/robotsTxt';
+import { createMarketingDepartmentRouter } from './src/server/marketingDepartmentRoutes';
+import { createBrentOutreachRouter } from './src/server/brentOutreachRoutes';
+import {
+  createAdminCommunityOutreachRouter,
+  createPublicCommunityOutreachRouter,
+} from './src/server/communityOutreachRoutes';
+import { SITEMAP_SECTIONS, sectionXml, sitemapIndexXml, priorityIndexNowUrls } from './src/server/siteRegistry';
+import { recordSeoPing } from './src/server/seoPingLog';
 import { buildAppUpdateManifest } from './src/server/appUpdate';
 import {
-  stockEntries,
-  cryptoEntries,
-  forexEntries,
-  commodityEntries,
-  companyEntries,
-  companyIndexEntries,
-  economyEntries,
-  indicatorEntries,
-  educationEntries,
-  uiProfileEntries,
-  encyclopediaHubEntries,
-  glossaryEntries,
-  literacyEntries,
-  knowledgeBaseEntries,
   catalogCounts,
-  sitemapLastmod,
   lookupStock,
   lookupCrypto,
   lookupForex,
@@ -108,12 +101,13 @@ import {
   hydratePasswordResetsFromFirestore,
   mintPasswordResetToken,
 } from './src/server/passwordResetStore';
-import { createSessionStore } from './src/server/firestoreSessionStore';
+import { createSessionStore, purgeSessionsForEmail } from './src/server/firestoreSessionStore';
 import {
   applyGrantedSession,
   dropStaleAuthSession,
   getAuthKickStatus,
   getAuthSessionGeneration,
+  grantFreshSession,
   kickAllMemberSessions,
   loadDurableAuthGeneration,
 } from './src/server/authSessionGeneration';
@@ -121,7 +115,6 @@ import {
   aiChatLimiter,
   authForgotPasswordLimiter,
   authLoginLimiter,
-  authLookupLimiter,
   authRegisterLimiter,
   authResetPasswordLimiter,
   boardVerifyLimiter,
@@ -129,16 +122,26 @@ import {
   frontendErrorLimiter,
 } from './src/server/routeRateLimit';
 import { fetchPublicTextNoRedirect } from './src/server/safeFeedFetch';
+import { PayloadTooLargeError, assertSafePublicUrl, safePublicFetch } from './src/server/safePublicFetch';
 import { appendFrontendError } from './src/server/frontendErrorLog';
+
+const SEMANTIC_LINK_MAX_CHARS = 5000;
+const INDICATOR_MAX_CANDLES = 5000;
+const INDICATOR_MAX_SETTING = 1000;
 import { createBrokerRouter } from './src/server/broker/brokerRoutes';
 import { createCommunityRouter } from './src/server/communityRoutes';
 import { createCeoVideoRouter } from './src/server/ceoVideoRoutes';
 import { createPublicVideoSlotRouter } from './src/server/videoSlotRoutes';
+import {
+  createAdminMarketingRouter,
+  createMarketingConnectorRouter,
+  createPublicMarketingRouter,
+} from './src/server/marketingFunnelRoutes';
+import { MARKETING_ATTRIBUTION_COOKIE, recordMarketingSignup } from './src/server/marketingFunnelService';
 import { hydrateBrokerConnectionsFromFirestore } from './src/server/broker/brokerConnectionStore';
 import {
   createMembershipCheckoutSession,
-  getMembershipStatus,
-  pickRicherMembershipReport,
+  createMembershipPortalSession,
   getStripeConfigReport,
   handleStripeEvent,
   isBillingInterval,
@@ -147,16 +150,21 @@ import {
   StripeServiceError,
   verifyStripeWebhook,
 } from './src/server/stripeService';
+import { requireMembershipFeature, resolveMembershipReportForRequest } from './src/server/membershipAccess';
 import { tierRankOf, entitlementsFor } from './src/lib/entitlements';
 import { CANONICAL_PLANS, PLAN_CATALOG, FEATURE_ACCURACY, jsonSafeLimits } from './src/lib/planCatalog';
 import {
-  AFFILIATE_PAYOUTS_DISABLED_MESSAGE,
-  AFFILIATE_PAYOUTS_ENABLED,
   CHECKOUT_DISABLED_MESSAGE,
   MEMBERSHIP_CHECKOUT_ENABLED,
   STRIPE_ACCOUNT_RECOVERY_ENABLED,
   STRIPE_RECOVERY_DISABLED_MESSAGE,
 } from './src/lib/paymentsEnabled';
+import {
+  AFFILIATE_DISABLED_MESSAGE,
+  AFFILIATE_PROGRAM_ENABLED,
+  inspectAffiliateDurableStore,
+  purgeAffiliateDurableStore,
+} from './src/server/affiliateService';
 import { CPT_SITE_GUIDE, offlineSiteGuideAnswer } from './src/server/cptSiteGuide';
 import { CPT_COMPANION_GUIDE } from './src/server/buddyCompanionGuide';
 import {
@@ -185,11 +193,14 @@ import {
 } from './src/server/intelligenceWebhookService';
 import {
   getLatestTimeframeVerifyReport,
+  hydrateTimeframeVerifyReportFromStore,
   runTimeframeAccuracyVerify,
   startTimeframeAccuracyScheduler,
+  verifyTimeframeVerifyCronSecret,
 } from './src/server/timeframeAccuracyVerifier';
 import {
   getLatestSiteDoctorReport,
+  hydrateSiteDoctorReportFromStore,
   runSiteDoctorSweep,
   startSiteDoctorScheduler,
 } from './src/server/siteDoctor';
@@ -207,6 +218,7 @@ import {
   markDailyPatternReviewed,
   publishDailyPatternReview,
   startDailyPatternReviewScheduler,
+  dailyPatternSchedulerTick,
 } from './src/server/dailyPatternReviewService';
 import {
   fireDueSubscriptions,
@@ -239,7 +251,6 @@ import {
   getPrivateStorageMeta,
   hasDurablePrivateStore,
   listPrivateMembersSafe,
-  lookupPrivateUser,
   findPrivateUserByEmail,
   loginPrivateUser,
   migratePrivateAccountsToDurableStore,
@@ -274,7 +285,7 @@ import {
   listFounderInvites,
   listWaitlistConversionCandidates,
 } from './src/server/waitlistConvertService';
-import { sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
+import { sendAccountExistsEmail, sendIdentityConfirmEmail, sendPasswordResetEmail } from './src/server/registrationEmail';
 import {
   listInviteMailRows,
   sendInviteMailToEmail,
@@ -319,26 +330,24 @@ import {
   requireIntelligenceAdmin,
   requirePrivateSession,
   getPrivateSessionUser,
+  resolveAuthenticatedMemberEmail,
 } from './src/server/authGuards';
 import {
-  AFFILIATE_COOKIE,
-  AFFILIATE_COOKIE_MAX_AGE_MS,
-  TIER_PRICE_CENTS,
-  adminListAffiliates,
-  attributeSignup,
-  ensureAffiliateMember,
-  getAffiliateDashboard,
-  activateAffiliate,
-  adminListPayouts,
-  adminResolvePayout,
-  getLeaderboard,
-  hydrateAffiliateFromDurableStore,
-  markReferredPaid,
-  recordClick,
-  requestAffiliatePayout,
-  resolveCode,
-} from './src/server/affiliateService';
-
+  InboxError,
+  createInboxMessage,
+  deleteInboxMessage,
+  getMemberInbox,
+  listSentMessages,
+  markMemberMessagesRead,
+} from './src/server/memberInboxService';
+import { MARKET_DATA_ROUTES, URL_PROXY_ROUTES, marketDataLimiter, memberInboxLimiter, urlProxyLimiter } from './src/server/routeRateLimit';
+import { isOwnHost, siteOrigin as linkOrigin } from './src/server/siteOrigin';
+import {
+  ensureBoardComplimentaryGrants,
+  listMembershipGrants,
+  revokeMembershipGrant,
+  saveMembershipGrants,
+} from './src/server/membershipGrants';
 const parser = new RSSParser();
 
 TruthEnforcementEngine.registerServerFilesystemBackup(writeTruthAuditRecoveryFile);
@@ -373,71 +382,7 @@ function safeReadTextFile(filePath: string, allowedRoots: string[] = [process.cw
   return fs.readFileSync(real, 'utf8');
 }
 
-// SSRF PROTECTION
-// The stream and RSS proxies fetch caller-supplied URLs. Without validation they
-// can be abused to reach internal-only targets (cloud metadata at 169.254.169.254,
-// loopback services, RFC1918 hosts, etc.). We only allow http(s) and reject any URL
-// whose resolved address falls inside a private/reserved range.
-function isPrivateIp(ip: string): boolean {
-  // Normalise IPv4-mapped IPv6 addresses (e.g. ::ffff:169.254.169.254)
-  const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
-  const addr = mapped ? mapped[1] : ip;
-
-  if (net.isIPv4(addr)) {
-    const [a, b] = addr.split('.').map(Number);
-    if (a === 10) return true;                       // 10.0.0.0/8
-    if (a === 127) return true;                      // loopback
-    if (a === 0) return true;                         // "this" network
-    if (a === 169 && b === 254) return true;         // link-local / cloud metadata
-    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a === 192 && b === 168) return true;         // 192.168.0.0/16
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
-    if (a >= 224) return true;                        // multicast / reserved
-    return false;
-  }
-
-  const lower = addr.toLowerCase();
-  if (lower === '::1' || lower === '::') return true; // loopback / unspecified
-  if (lower.startsWith('fe80')) return true;          // link-local
-  if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique-local fc00::/7
-  return false;
-}
-
-async function assertSafePublicUrl(rawUrl: string): Promise<URL> {
-  let parsed: URL;
-  try {
-    parsed = new URL(rawUrl);
-  } catch {
-    throw new Error('Invalid URL');
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('Only http(s) URLs are permitted');
-  }
-  const hostname = parsed.hostname.replace(/^\[|\]$/g, '');
-  if (!hostname) {
-    throw new Error('Missing host');
-  }
-  // Block obvious loopback aliases before any DNS work
-  if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
-    throw new Error('Blocked host');
-  }
-  // If the host is already a literal IP, validate it directly
-  if (net.isIP(hostname)) {
-    if (isPrivateIp(hostname)) throw new Error('Blocked private address');
-    return parsed;
-  }
-  // Otherwise resolve every A/AAAA record and reject if any points inside a private range
-  const resolved = await dnsPromises.lookup(hostname, { all: true });
-  if (!resolved.length) {
-    throw new Error('Host did not resolve');
-  }
-  for (const { address } of resolved) {
-    if (isPrivateIp(address)) {
-      throw new Error('Blocked private address');
-    }
-  }
-  return parsed;
-}
+// SSRF PROTECTION lives in src/server/safePublicFetch.ts (connect-time IP checks, no redirects, byte cap).
 
 async function startServer() {
   const app = express();
@@ -464,6 +409,7 @@ async function startServer() {
             defaultSrc: ["'self'"],
             scriptSrc: [
               "'self'",
+              'https://tracker.metricool.com',
               (_req, res) => `'nonce-${String((res as express.Response).locals.cspNonce || '')}'`,
             ],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
@@ -472,6 +418,8 @@ async function startServer() {
             connectSrc: [
               "'self'",
               'https:',
+              'https://tracker.metricool.com',
+              'https://*.metricool.com',
               'wss:',
               'https://*.googleapis.com',
               'https://*.firebaseio.com',
@@ -558,6 +506,44 @@ async function startServer() {
     return next(err);
   });
 
+  // Internal exception text (paths, vendor errors, stack fragments) must never reach visitors.
+  if (process.env.NODE_ENV === 'production') {
+    app.use('/api', (req, res, next) => {
+      const sendJson = res.json.bind(res);
+      res.json = (body?: any) => {
+        if (res.statusCode === 500 && body && typeof body === 'object' && !Array.isArray(body)) {
+          console.error('[api 500]', req.method, req.path, body.error || body.message || '');
+          const { stack: _stack, details: _details, message: _message, ...rest } = body;
+          return sendJson({ ...rest, error: 'Server error. Please try again.' });
+        }
+        return sendJson(body);
+      };
+      next();
+    });
+  }
+
+  // Retired dashboard deep link — canonical membership is /plans (301 for crawlers).
+  // Retired public data-room URLs — downloads removed; do not serve SPA shell (was 200).
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const pathLower = req.path.toLowerCase();
+    if (pathLower === '/' || pathLower === '/index.html') {
+      const tab = typeof req.query.tab === 'string' ? req.query.tab : '';
+      if (/^membership$/i.test(tab)) {
+        return res.redirect(301, '/plans');
+      }
+    }
+    if (
+      pathLower === '/data-room' ||
+      pathLower === '/investor-data-room' ||
+      pathLower.startsWith('/data-room/') ||
+      pathLower.startsWith('/investor-data-room/')
+    ) {
+      return res.redirect(301, '/technology-opportunity');
+    }
+    return next();
+  });
+
   // 1.5 SCANNER & VULNERABILITY PROBE FILTER
   // Stops malicious probes and scanner bots (e.g., .php, wp-content, .env) before they trigger router fallbacks or session overhead.
   app.use((req, res, next) => {
@@ -626,8 +612,21 @@ async function startServer() {
   // Express rate-limit 429s were blanking desks (yellow DATA UNAVAILABLE) while
   // the Venture 610 dashboard still had credits.
 
-  // Initialize WebSockets
-  setupWebSockets(server);
+  // Initialize WebSockets — chat posting requires the same login cookie as the REST API.
+  let sessionMiddleware: express.RequestHandler | null = null;
+  setupWebSockets(server, {
+    resolveSessionUid: (upgradeReq) =>
+      new Promise((resolve) => {
+        if (!sessionMiddleware) return resolve(null);
+        const req = upgradeReq as unknown as express.Request;
+        sessionMiddleware(req, {} as express.Response, () => {
+          const sess = req.session as Parameters<typeof dropStaleAuthSession>[0] | undefined;
+          if (!sess || dropStaleAuthSession(sess) === 'dropped') return resolve(null);
+          const member = getPrivateSessionUser(req);
+          resolve(member ? { uid: member.uid, name: wsDisplayName(member.displayName) } : null);
+        });
+      }),
+  });
 
   // Passport & Auth Middleware
   // Never use a guessable/hardcoded signing key — forged cookies = account takeover.
@@ -656,7 +655,7 @@ async function startServer() {
       sessionSecret = crypto.randomBytes(48).toString('hex');
     }
   }
-  app.use(session({
+  sessionMiddleware = session({
     secret: sessionSecret,
     store: createSessionStore(),
     resave: false,
@@ -670,7 +669,8 @@ async function startServer() {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     },
-  }));
+  });
+  app.use(sessionMiddleware);
 
   app.use(passport.initialize());
   app.use(passport.session());
@@ -817,16 +817,6 @@ async function startServer() {
   });
 
   // Private member accounts (email + password, per-user login desk)
-  app.post('/api/auth/private/lookup', authLookupLimiter, async (req, res) => {
-    try {
-      const result = await lookupPrivateUser(req.body?.email || '');
-      res.json(result);
-    } catch (error: any) {
-      const status = error instanceof PrivateAuthError ? error.status : 500;
-      res.status(status).json({ error: error.message || 'Lookup failed.' });
-    }
-  });
-
   app.post('/api/auth/private/register', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerPrivateUser({
@@ -834,52 +824,42 @@ async function startServer() {
         password: req.body?.password || '',
         displayName: req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
 
-      if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
-        const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
-        const emailSent = await sendIdentityConfirmEmail({
-          to: result.user.email,
-          displayName: result.user.displayName,
-          confirmUrl,
+      const origin = linkOrigin(req);
+      const displayName = String(req.body?.displayName || '').trim().slice(0, 80);
+      let emailSent: boolean;
+      let email: string;
+      if (result.kind === 'already_registered') {
+        email = result.email;
+        emailSent = await sendAccountExistsEmail({ to: email, loginUrl: `${origin}/login` });
+      } else {
+        const user = result.user;
+        email = user.email;
+        emailSent = await sendIdentityConfirmEmail({
+          to: user.email,
+          displayName: user.displayName,
+          confirmUrl: buildIdentityConfirmUrl(origin, result.rawChallengeToken),
         });
-        // Do NOT grant dashboard session while quarantined.
-        return res.status(202).json({
-          ok: true,
-          quarantined: true,
-          identityStatus: 'pending_confirm',
-          emailSent,
-          reasons: result.reasons,
-          user: {
-            uid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            identityStatus: 'pending_confirm',
-          },
-        });
+        try {
+          await recordMarketingSignup(user.uid, req.cookies?.[MARKETING_ATTRIBUTION_COOKIE]);
+        } catch (marketingError: any) {
+          console.warn('[Marketing] signup attribution skipped:', marketingError?.message || marketingError);
+        }
       }
-
-      const user = result.user;
-      // Affiliate: ensure code for new member + attribute from cookie/body
-      try {
-        ensureAffiliateMember(user.uid);
-        const fromBody =
-          typeof req.body?.referralCode === 'string' ? req.body.referralCode : '';
-        const fromCookie =
-          typeof req.cookies?.[AFFILIATE_COOKIE] === 'string' ? req.cookies[AFFILIATE_COOKIE] : '';
-        attributeSignup({ newUid: user.uid, referralCode: fromBody || fromCookie });
-      } catch (affErr: any) {
-        console.warn('[Affiliate] signup attribution skipped:', affErr?.message || affErr);
-      }
-      const sessionUser = buildClientSessionUser(user);
-      applyGrantedSession(req.session as any, sessionUser);
-      res.json({ ok: true, user: sessionUser });
+      // Identical answer for new and existing emails; no session until the inbox link is clicked.
+      res.status(202).json({
+        ok: true,
+        quarantined: true,
+        emailVerificationRequired: true,
+        identityStatus: 'pending_confirm',
+        emailSent,
+        reasons: ['email_unverified'],
+        user: { email, displayName, identityStatus: 'pending_confirm' },
+      });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
       res.status(status).json({
@@ -891,6 +871,9 @@ async function startServer() {
 
   app.use('/api/broker', createBrokerRouter());
   app.use('/api/communities', createCommunityRouter());
+  app.use('/go', createMarketingConnectorRouter());
+  app.use('/api/marketing', createPublicMarketingRouter());
+  app.use('/api/admin/marketing', requireFounderOrCatalogAdmin, createAdminMarketingRouter());
 
   // Founder-only explainer-video library. Same gate as the disaster backup:
   // founder session / Bearer / catalog secret, plus the CEO Dashboard action header.
@@ -899,6 +882,29 @@ async function startServer() {
     requireFounderOrCatalogAdmin,
     requireFounderActionHeader,
     createCeoVideoRouter()
+  );
+
+  app.use(
+    '/api/ceo/marketing',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    createMarketingDepartmentRouter()
+  );
+
+  // Brent CCO communications desk — separate from CEO marketing. Send still needs founder-action header.
+  app.use('/api/communications', requireFounderOrCatalogAdmin, createBrentOutreachRouter());
+
+
+  // Clear Path Community Outreach — public snapshot/inquiry + founder-only status admin.
+  // Isolated from trading desks/charts; does not auto-approve institutional partnerships.
+  // Snapshot is public/read-heavy for libraries & schools on shared NATs — do not
+  // put the tight inquiry limiter on the whole mount. Limiter is applied inside
+  // the router on POST /inquiry only.
+  app.use('/api/community-outreach', createPublicCommunityOutreachRouter());
+  app.use(
+    '/api/admin/community-outreach',
+    requireFounderOrCatalogAdmin,
+    createAdminCommunityOutreachRouter(),
   );
 
   // Public read side: slot id -> playable URL, nothing else. Visitors need this
@@ -929,7 +935,7 @@ async function startServer() {
       }
 
       const sessionUser = buildClientSessionUser(result.user);
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({ ok: true, user: sessionUser });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -941,7 +947,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resubmit', async (req, res) => {
+  app.post('/api/auth/private/identity/resubmit', authLoginLimiter, async (req, res) => {
     try {
       const result = await resubmitIdentity({
         currentEmail: req.body?.currentEmail || req.body?.email || '',
@@ -949,26 +955,19 @@ async function startServer() {
         newEmail: req.body?.newEmail || req.body?.email || '',
         newDisplayName: req.body?.newDisplayName || req.body?.displayName || '',
         meta: {
-          ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0]?.trim(),
+          ip: req.ip || req.socket.remoteAddress || '',
           userAgent: String(req.headers['user-agent'] || ''),
         },
       });
 
       if (result.kind === 'unlocked') {
         const sessionUser = buildClientSessionUser(result.user);
-        applyGrantedSession(req.session as any, sessionUser);
-        try {
-          ensureAffiliateMember(result.user.uid);
-        } catch {
-          /* ignore */
-        }
+        await grantFreshSession(req, sessionUser);
         return res.json({ ok: true, identityStatus: 'ok', user: sessionUser });
       }
 
       if (result.kind === 'pending_confirm') {
-        const origin =
-          (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-          `${req.protocol}://${req.get('host')}`;
+        const origin = linkOrigin(req);
         const confirmUrl = buildIdentityConfirmUrl(origin, result.rawChallengeToken);
         const emailSent = await sendIdentityConfirmEmail({
           to: result.user.email,
@@ -1013,7 +1012,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/decline', async (req, res) => {
+  app.post('/api/auth/private/identity/decline', authLoginLimiter, async (req, res) => {
     try {
       await declineIdentity({
         email: req.body?.email || '',
@@ -1034,15 +1033,13 @@ async function startServer() {
     }
   });
 
-  app.post('/api/auth/private/identity/resend', async (req, res) => {
+  app.post('/api/auth/private/identity/resend', authLoginLimiter, async (req, res) => {
     try {
       const reminted = await remintIdentityChallenge({
         email: req.body?.email || '',
         password: req.body?.password || '',
       });
-      const origin =
-        (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '') ||
-        `${req.protocol}://${req.get('host')}`;
+      const origin = linkOrigin(req);
       const confirmUrl = buildIdentityConfirmUrl(origin, reminted.rawChallengeToken);
       const emailSent = await sendIdentityConfirmEmail({
         to: reminted.user.email,
@@ -1103,7 +1100,7 @@ async function startServer() {
   });
 
   // Board / Founders code — verified server-side only (timing-safe). No default code.
-  app.post('/api/auth/board/verify', boardVerifyLimiter, (req, res) => {
+  app.post('/api/auth/board/verify', boardVerifyLimiter, async (req, res) => {
     const expected = getBoardAccessCode();
     const provided = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
     if (!expected || expected.length < 6) {
@@ -1128,8 +1125,7 @@ async function startServer() {
       privateAccount: false,
       boardAccess: true,
     };
-    (req.session as any).boardAccess = true;
-    applyGrantedSession(req.session as any, sessionUser);
+    await grantFreshSession(req, sessionUser, { boardAccess: true });
     res.json({ ok: true, user: sessionUser });
   });
 
@@ -1163,16 +1159,7 @@ async function startServer() {
     }
   });
 
-  const publicSiteOrigin = (req: express.Request) => {
-    const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    if (fromEnv) return fromEnv;
-    const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
-    if (host && !isProd) {
-      const proto = String(req.get('x-forwarded-proto') || req.protocol || 'http').split(',')[0].trim();
-      return `${proto}://${host}`;
-    }
-    return 'https://clearpathtrader.com';
-  };
+  const publicSiteOrigin = (req: express.Request) => linkOrigin(req);
 
   app.post('/api/profile/me', (req, res) => {
     const sessionUser = (req.session as any)?.privateUser;
@@ -1252,6 +1239,9 @@ async function startServer() {
     } catch {
       /* ignore */
     }
+    await purgeSessionsForEmail(sessionUser.email).catch((err) =>
+      console.error('[change-password] Could not sign member out of other sessions:', err),
+    );
     req.session.destroy((err) => {
       res.clearCookie('cpt.sid', {
         path: '/',
@@ -1301,6 +1291,9 @@ async function startServer() {
     }
     try {
       await resetPrivateUserPassword({ email: record.email, password: newPassword });
+      await purgeSessionsForEmail(record.email).catch((err) =>
+        console.error('[reset-password] Could not sign member out of old sessions:', err),
+      );
       return res.json({ ok: true });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 400;
@@ -1338,7 +1331,6 @@ async function startServer() {
           });
         }
       }
-      if (user.uid) ensureAffiliateMember(user.uid);
     } catch {
       /* ignore */
     }
@@ -1351,32 +1343,39 @@ async function startServer() {
     res.json({ founder: Boolean(sessionUser && isFounderEmail(sessionUser.email)) });
   });
 
-  const chartPulseOwnerKey = (req: express.Request): string => {
-    const user = getPrivateSessionUser(req);
-    if (user?.uid) return `uid:${user.uid}`;
-    const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
-    return `anon:${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`;
-  };
-
-  app.get('/api/chart-pulse/status', (req, res) => {
-    const user = getPrivateSessionUser(req);
+  app.get('/api/chart-pulse/status', async (req, res) => {
+    const member = await chartPulseMember(req);
     res.json({
       ...getChartPulseDeliveryStatus(),
-      sessionEmail: user?.email || null,
-      subscriptions: listSubscriptionsForOwner(chartPulseOwnerKey(req)),
+      sessionEmail: member?.email || null,
+      subscriptions: member ? listSubscriptionsForOwner(member.ownerKey) : [],
     });
   });
 
-  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, (req, res) => {
+  /** Member-owned pulse key + the account email deliveries go to; null when signed out. */
+  const chartPulseMember = async (req: express.Request): Promise<{ ownerKey: string; email: string } | null> => {
+    const user = getPrivateSessionUser(req);
+    if (user?.uid && user.email) return { ownerKey: `uid:${user.uid}`, email: user.email };
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return null;
+    return { ownerKey: `member:${crypto.createHash('sha256').update(email).digest('hex').slice(0, 24)}`, email };
+  };
+
+  app.post('/api/chart-pulse/subscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     const channel: ChartPulseChannel = body.channel === 'sms' ? 'sms' : 'email';
-    const sessionEmail = getPrivateSessionUser(req)?.email;
-    const email = typeof body.email === 'string' && body.email.trim() ? body.email : sessionEmail;
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) {
+      return res.status(401).json({
+        error: 'Sign in to get pulse emails or texts. Browser alerts still work while this tab is open.',
+      });
+    }
+    const email = member.email;
     const result = upsertSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       symbol: String(body.symbol || ''),
       intervalMinutes: body.intervalMinutes,
@@ -1401,15 +1400,17 @@ async function startServer() {
     });
   });
 
-  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, (req, res) => {
+  app.post('/api/chart-pulse/unsubscribe', chartPulseSubscribeLimiter, async (req, res) => {
     const body = req.body || {};
     if (!isPulseInterval(body.intervalMinutes)) {
       return res.status(400).json({ error: 'Interval must be 5, 10, 15, or 30 minutes.' });
     }
+    const member = await chartPulseMember(req);
+    if (!member) return res.json({ ok: true, removed: 0 });
     const channel: ChartPulseChannel | undefined =
       body.channel === 'sms' || body.channel === 'email' ? body.channel : undefined;
     const result = removeSubscription({
-      ownerKey: chartPulseOwnerKey(req),
+      ownerKey: member.ownerKey,
       slotId: String(body.slotId || ''),
       intervalMinutes: body.intervalMinutes,
       channel,
@@ -1417,7 +1418,7 @@ async function startServer() {
     res.json({ ok: true, removed: result.removed });
   });
 
-  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/chart-pulse/test-fire', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     const result = await fireDueSubscriptions();
     res.json({ ok: true, ...result });
   });
@@ -1439,48 +1440,10 @@ async function startServer() {
 
   /** Server-trusted membership status + entitlements for the signed-in member. */
   app.get('/api/membership/me', async (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    const uids = new Set<string>();
-    if (sessionUser?.uid) uids.add(sessionUser.uid);
-
-    const header = req.get('authorization') || '';
-    const bearer = header.match(/^Bearer\s+(.+)$/i);
-    if (bearer?.[1] && ensureAdminApp()) {
-      try {
-        const decoded = await getAuth().verifyIdToken(bearer[1].trim());
-        const bearerEmail = String(decoded.email || '').trim().toLowerCase();
-        const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
-        const sameInbox = Boolean(bearerEmail && sessionEmail && bearerEmail === sessionEmail);
-        // Google-only members, or the same inbox as the private session.
-        // A different Google account in the same browser must not inherit this plan.
-        if (decoded.uid && (!sessionUser?.uid || sameInbox)) uids.add(decoded.uid);
-      } catch {
-        /* private cookie can still authorize */
-      }
-    }
-
+    const { uids, status } = await resolveMembershipReportForRequest(req, { syncStripe: true });
     if (uids.size === 0) {
       return res.status(401).json({ error: 'Sign in to view membership status.' });
     }
-
-    // Sync from Firestore first so Stripe webhooks processed on other
-    // instances (or before a redeploy) are always reflected here.
-    for (const uid of uids) await refreshProfileFromDurable(uid);
-    for (const uid of [...uids]) {
-      for (const extra of readProfile(uid)?.membershipLinkedUids || []) {
-        if (extra) uids.add(extra);
-      }
-    }
-    for (const uid of uids) await refreshProfileFromDurable(uid);
-    if (uids.size > 1) {
-      for (const id of uids) {
-        const others = [...uids].filter((uid) => uid !== id);
-        const prev = readProfile(id)?.membershipLinkedUids || [];
-        const merged = [...new Set([...prev, ...others])];
-        if (merged.length > prev.length) writeProfile(id, { membershipLinkedUids: merged });
-      }
-    }
-    const status = pickRicherMembershipReport([...uids].map((uid) => getMembershipStatus(uid)));
     const effectiveTier = status.active ? status.tier : 'basic';
     const pack = entitlementsFor(effectiveTier);
     res.json({
@@ -1543,8 +1506,7 @@ async function startServer() {
       return res.status(400).json({ error: 'Invalid membership tier. Use silver, gold, or platinum (legacy: pro, proplus, premium, ultimate).' });
     }
     const interval = isBillingInterval(req.body?.interval) ? req.body.interval : 'month';
-    const configuredOrigin = (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/$/, '');
-    const origin = configuredOrigin || `${req.protocol}://${req.get('host')}`;
+    const origin = linkOrigin(req);
     try {
       const { url } = await createMembershipCheckoutSession({
         uid,
@@ -1561,130 +1523,91 @@ async function startServer() {
     }
   });
 
-  // ——— Affiliate / referral rewards ———
-  const siteOrigin = () =>
-    (process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://clearpathtrader.com').replace(
-      /\/$/,
-      ''
-    );
-
-  /** Public share link — sets attribution cookie and redirects home. */
-  app.get('/r/:code', (req, res) => {
-    const code = String(req.params.code || '');
-    const hit = recordClick({
-      code,
-      ip: req.ip,
-      userAgent: req.get('user-agent') || undefined,
-    });
-    if (hit.ok && hit.code) {
-      res.cookie(AFFILIATE_COOKIE, hit.code, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-        path: '/',
-      });
+  /** Stripe Customer Portal — update card, cancel, change plan (Dashboard-configured). */
+  app.post('/api/stripe/create-portal-session', async (req, res) => {
+    if (!MEMBERSHIP_CHECKOUT_ENABLED) {
+      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: CHECKOUT_DISABLED_MESSAGE });
     }
-    const dest = hit.ok ? `/?ref=${encodeURIComponent(hit.code || code)}` : '/';
-    return res.redirect(302, dest);
-  });
-
-  app.get('/api/affiliate/me', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to view your affiliate desk.' });
+    let uid = getPrivateSessionUser(req)?.uid || '';
+    if (!uid) {
+      const bearer = (req.get('authorization') || '').match(/^Bearer\s+(.+)$/i);
+      if (bearer?.[1] && ensureAdminApp()) {
+        try {
+          const decoded = await getAuth().verifyIdToken(bearer[1].trim());
+          if (decoded.uid) uid = decoded.uid;
+        } catch {
+          /* fall through */
+        }
+      }
     }
+    if (!uid) {
+      return res.status(401).json({ error: 'Sign in to manage billing.' });
+    }
+    const origin = linkOrigin(req);
     try {
-      const desk = getAffiliateDashboard(sessionUser.uid, siteOrigin());
-      res.json({ ok: true, ...desk });
+      const { url } = await createMembershipPortalSession({ uid, origin });
+      res.json({ ok: true, url });
     } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Affiliate desk failed' });
+      const status = err instanceof StripeServiceError ? err.status : 500;
+      if (status >= 500) console.error('[Stripe] portal session failed:', err);
+      res.status(status).json({ error: err?.message || 'Could not open billing portal.' });
     }
   });
 
-  app.get('/api/affiliate/leaderboard', (_req, res) => {
-    try {
-      res.json({ ok: true, ...getLeaderboard(25) });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Leaderboard failed' });
-    }
-  });
-
-  app.post('/api/affiliate/claim', (req, res) => {
-    const code = typeof req.body?.code === 'string' ? req.body.code : '';
-    const member = resolveCode(code);
-    if (!member) return res.status(404).json({ error: 'Unknown referral code' });
-    recordClick({ code: member.code, ip: req.ip, userAgent: req.get('user-agent') || undefined });
-    res.cookie(AFFILIATE_COOKIE, member.code, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: AFFILIATE_COOKIE_MAX_AGE_MS,
-      path: '/',
+  // ——— Affiliate / referral program removed (not part of business model) ———
+  // Legacy paths answer 410/redirect-home so old bookmarks and share links die cleanly.
+  void AFFILIATE_PROGRAM_ENABLED; // compile-time proof the flag is wired; always false
+  const affiliateGone = (_req: any, res: any) =>
+    res.status(410).json({
+      error: 'AFFILIATE_PROGRAM_REMOVED',
+      message: AFFILIATE_DISABLED_MESSAGE,
     });
-    res.json({ ok: true, code: member.code });
+
+  /** Former share link — no cookie, no ?ref=, no click ledger. */
+  app.get('/r/:code', (_req, res) => {
+    res.clearCookie('cp_affiliate_ref', { path: '/' });
+    return res.redirect(302, '/');
   });
 
-  /** Accept the Affiliate Agreement → referral link goes live. */
-  app.post('/api/affiliate/activate', (req, res) => {
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to activate your affiliate link.' });
-    }
-    try {
-      const member = activateAffiliate(sessionUser.uid);
-      res.json({
-        ok: true,
-        activated: true,
-        activatedAt: member.activatedAt,
-        termsVersion: member.termsVersion,
-        code: member.code,
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || 'Activation failed' });
-    }
-  });
+  app.get('/api/affiliate/me', affiliateGone);
+  app.get('/api/affiliate/leaderboard', affiliateGone);
+  app.post('/api/affiliate/claim', affiliateGone);
+  app.post('/api/affiliate/activate', affiliateGone);
+  app.post('/api/affiliate/payout-request', affiliateGone);
+  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, affiliateGone);
+  app.get('/api/admin/affiliate/members', requireCatalogAdmin, affiliateGone);
+  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, affiliateGone);
 
-  /** Member requests a cash payout of accumulated affiliate credit. */
-  app.post('/api/affiliate/payout-request', (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
+  /** Read-only: leftover Firestore/local affiliate durable state (not a live rewards desk). */
+  app.get(
+    '/api/admin/affiliate/durable-status',
+    requireFounderOrCatalogAdmin,
+    async (_req, res) => {
+      try {
+        const status = await inspectAffiliateDurableStore();
+        res.json({ ok: true, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...status });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable status failed' });
+      }
     }
-    const sessionUser = getPrivateSessionUser(req);
-    if (!sessionUser?.uid) {
-      return res.status(401).json({ error: 'Sign in to request a payout.' });
-    }
-    const result = requestAffiliatePayout({
-      uid: sessionUser.uid,
-      method: typeof req.body?.method === 'string' ? req.body.method : 'paypal',
-      destination: typeof req.body?.destination === 'string' ? req.body.destination : '',
-    });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
+  );
 
-  app.get('/api/admin/affiliate/payouts', requireCatalogAdmin, (_req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
+  /** Delete leftover `app_state/affiliate` + local data/affiliate. Does not touch Stripe or accounts. */
+  app.post(
+    '/api/admin/affiliate/purge-durable',
+    requireFounderOrCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
+      try {
+        const result = await purgeAffiliateDurableStore();
+        const status = result.ok ? 200 : 500;
+        res.status(status).json({ ok: result.ok, programEnabled: AFFILIATE_PROGRAM_ENABLED, ...result });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'Durable purge failed' });
+      }
     }
-    res.json({ ok: true, payouts: adminListPayouts() });
-  });
-
-  app.post('/api/admin/affiliate/payouts/resolve', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const payoutId = typeof req.body?.payoutId === 'string' ? req.body.payoutId : '';
-    const action = req.body?.action === 'rejected' ? 'rejected' : 'paid';
-    if (!payoutId) return res.status(400).json({ error: 'payoutId required' });
-    const result = adminResolvePayout({ payoutId, action });
-    if (!result.ok) return res.status(400).json(result);
-    res.json(result);
-  });
-
-  app.get('/api/admin/affiliate/members', requireCatalogAdmin, (_req, res) => {
-    res.json({ ok: true, members: adminListAffiliates() });
-  });
+  );
 
   /**
    * Founder Google unlock: verified founder Firebase token → Express private session.
@@ -1707,13 +1630,13 @@ async function startServer() {
           message: 'Firebase Admin cannot verify Google login right now.',
         });
       }
-      const decoded = await getAuth().verifyIdToken(match[1].trim());
+      const decoded = await getAuth().verifyIdToken(match[1].trim(), true);
       const founderEmail = String(decoded.email || '').trim().toLowerCase();
       const founderUid = String(decoded.uid || '');
       // Same gate as requireFounderOrCatalogAdmin: founder email AND (when
       // FOUNDER_FIREBASE_UID is set) the founder uid — email alone can be
       // spoofed via federated providers that skip email verification.
-      if (!isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
+      if (decoded.email_verified !== true || !isFounderEmail(founderEmail) || !isFounderFirebaseUid(founderUid)) {
         return res.status(403).json({
           error: 'Forbidden',
           code: 'WRONG_GOOGLE_ACCOUNT',
@@ -1728,7 +1651,7 @@ async function startServer() {
         emailVerified: true,
         privateAccount: true,
       };
-      applyGrantedSession(req.session as any, sessionUser);
+      await grantFreshSession(req, sessionUser);
       res.json({
         ok: true,
         user: sessionUser,
@@ -1796,7 +1719,7 @@ async function startServer() {
    * Founder-only: convert real waitlist emails → durable Private Login accounts.
    * Body: { dryRun?: boolean }. Never returns temp passwords (use /invites).
    */
-  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/convert-waitlist', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const dryRun = Boolean(req.body?.dryRun);
       const result = await convertWaitlistToPrivateAccounts({
@@ -1812,7 +1735,7 @@ async function startServer() {
   });
 
   /** One-click: hide waitlist rows that already have Private Login (mark converted). */
-  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/members/waitlist/clear-released', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const result = await clearWaitlistAlreadyInPrivateLogin();
       res.json({
@@ -1826,12 +1749,117 @@ async function startServer() {
     }
   });
 
+  // ---- Member inbox: founder notices (security, site updates) shown in-app ----
+  app.get('/api/member/inbox', memberInboxLimiter, async (req, res) => {
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    try {
+      res.json(await getMemberInbox(email));
+    } catch (e: any) {
+      console.warn('[MemberInbox] list failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/member/inbox/read', memberInboxLimiter, async (req, res) => {
+    const email = await resolveAuthenticatedMemberEmail(req);
+    if (!email) return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
+    const ids =
+      req.body?.all === true
+        ? ('all' as const)
+        : Array.isArray(req.body?.ids)
+          ? req.body.ids.map(String).filter((s: string) => /^[a-z0-9-]{1,64}$/.test(s)).slice(0, 100)
+          : [];
+    try {
+      res.json({ marked: await markMemberMessagesRead(email, ids) });
+    } catch (e: any) {
+      console.warn('[MemberInbox] mark read failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.get('/api/admin/member-messages', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      res.json({ messages: await listSentMessages() });
+    } catch (e: any) {
+      console.warn('[MemberInbox] admin list failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/admin/member-messages', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    try {
+      const sender = getPrivateSessionUser(req)?.email || 'founder';
+      const msg = await createInboxMessage(req.body || {}, sender);
+      res.status(201).json({
+        id: msg.id,
+        audience: msg.audience,
+        recipientCount: msg.recipients?.length ?? null,
+        createdAt: msg.createdAt,
+      });
+    } catch (e: any) {
+      if (e instanceof InboxError) return res.status(e.status).json({ error: e.message });
+      console.warn('[MemberInbox] send failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  app.delete('/api/admin/member-messages/:id', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    const id = String(req.params.id || '');
+    if (!/^[a-z0-9-]{1,64}$/.test(id)) return res.status(400).json({ error: 'Invalid id' });
+    try {
+      const removed = await deleteInboxMessage(id);
+      res.status(removed ? 200 : 404).json({ removed });
+    } catch (e: any) {
+      console.warn('[MemberInbox] delete failed', e?.message || e);
+      res.status(500).json({ error: 'INBOX_UNAVAILABLE' });
+    }
+  });
+
+  /** Complimentary (founder-granted) memberships, keyed by email. */
+  app.get('/api/admin/membership-grants', requireFounderOrCatalogAdmin, async (_req, res) => {
+    try {
+      res.json({ grants: await listMembershipGrants() });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] list failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
+    }
+  });
+
+  app.post('/api/admin/membership-grants', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    const body = req.body || {};
+    const emails = Array.isArray(body.emails) ? body.emails.slice(0, 1000) : [];
+    if (emails.length === 0) return res.status(400).json({ error: 'emails[] required' });
+    const expiresAt = body.expiresAt ? new Date(String(body.expiresAt)) : null;
+    if (expiresAt && Number.isNaN(expiresAt.getTime())) return res.status(400).json({ error: 'Invalid expiresAt' });
+    try {
+      const granted = await saveMembershipGrants(emails, {
+        tier: String(body.tier || ''),
+        reason: String(body.reason || ''),
+        expiresAt: expiresAt ? expiresAt.toISOString() : null,
+        grantedBy: getPrivateSessionUser(req)?.email || 'founder',
+      });
+      res.status(201).json({ granted: granted.length });
+    } catch (e: any) {
+      res.status(400).json({ error: e?.message || 'Grant failed' });
+    }
+  });
+
+  app.delete('/api/admin/membership-grants/:email', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
+    try {
+      res.json({ removed: await revokeMembershipGrant(req.params.email) });
+    } catch (e: any) {
+      console.warn('[MembershipGrants] revoke failed', e?.message || e);
+      res.status(500).json({ error: 'GRANTS_UNAVAILABLE' });
+    }
+  });
+
   /**
    * Founder-only: bulk-import private members into durable Firestore.
    * Body: { members: [{ email, displayName?, password? }], dryRun?: boolean }
    * Omitting password generates a temp password stored in founder invites.
    */
-  app.post('/api/admin/members/import', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/import', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const members = Array.isArray(req.body?.members) ? req.body.members : [];
       if (!members.length) {
@@ -1853,7 +1881,7 @@ async function startServer() {
    * Founder-only: rebuild missing private accounts from Stripe customer emails.
    * Body: { dryRun?: boolean }. Temp passwords → /api/admin/members/invites.
    */
-  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/recover-from-stripe', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     if (!STRIPE_ACCOUNT_RECOVERY_ENABLED) {
       return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: STRIPE_RECOVERY_DISABLED_MESSAGE });
     }
@@ -1874,7 +1902,7 @@ async function startServer() {
    * fresh temp passwords into founder invites. Does not invent the wiped ~4000.
    * Body: { dryRun?: boolean, resetExisting?: boolean } (resetExisting defaults true).
    */
-  app.post('/api/admin/members/emergency-seed', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/emergency-seed', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const result = await seedEmergencyKnownMembers({
         dryRun: Boolean(req.body?.dryRun),
@@ -1883,7 +1911,7 @@ async function startServer() {
       res.json({
         ...result,
         howToSend:
-          'Open “Show invite passwords”, copy email + tempPassword for Dawn and the other known members, and send privately. They log in via Private Login.',
+          'Temporary passwords are never stored. Use CEO Dashboard → Invite emails → SEND EMAIL for each member: it issues a fresh password and emails it directly.',
       });
     } catch (error: any) {
       const status = error instanceof PrivateAuthError ? error.status : 500;
@@ -1898,12 +1926,13 @@ async function startServer() {
    * - No password → emergency path (defaults email to Dawn); returns tempPassword + invite
    * - With password → set that password on durable store (Stripe/Firestore)
    */
-  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/reset-password', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const email = String(req.body?.email || DAWN_HOBSON_EMAIL).trim();
       const explicitPassword = String(req.body?.newPassword || req.body?.password || '').trim();
       if (!explicitPassword) {
         const result = await emergencyResetMemberPassword(email);
+        await purgeSessionsForEmail(result.email).catch(() => {});
         return res.json({
           ok: true,
           email: result.email,
@@ -1912,7 +1941,7 @@ async function startServer() {
           tempPassword: result.tempPassword,
           user: { email: result.email, displayName: result.displayName },
           howToSend:
-            'Send this email + tempPassword to the member privately. They log in via Private Login, then should change password after first login. Also available under Show invite passwords.',
+            'Send this email + tempPassword to the member privately now — it is shown only once and is not stored. They log in via Private Login, then should change password.',
         });
       }
       const user = await resetPrivateUserPassword({
@@ -1920,6 +1949,7 @@ async function startServer() {
         newPassword: explicitPassword,
         tempPassword: explicitPassword,
       });
+      await purgeSessionsForEmail(user.email).catch(() => {});
       res.json({
         ok: true,
         email: user.email,
@@ -2070,17 +2100,13 @@ async function startServer() {
 
   /**
    * Founder-only invite export (email + temp password + activation key).
-   * Query ?includeSecrets=1 required to include tempPassword — also needs founder action header.
+   * Always requires founder action header. Query ?includeSecrets=1 includes
+   * tempPassword + activationKey; without it those fields are omitted.
    */
   app.get(
     '/api/admin/members/invites',
     requireFounderOrCatalogAdmin,
-    (req, res, next) => {
-      if (String(req.query.includeSecrets || '') === '1') {
-        return requireFounderActionHeader(req, res, next);
-      }
-      next();
-    },
+    requireFounderActionHeader,
     async (req, res) => {
       try {
         const includeSecrets = String(req.query.includeSecrets || '') === '1';
@@ -2090,11 +2116,13 @@ async function startServer() {
             email: inv.email,
             displayName: inv.displayName,
             uid: inv.uid,
-            activationKey: inv.activationKey,
             createdAt: inv.createdAt,
           };
           if (inv.waitlistSource) row.waitlistSource = inv.waitlistSource;
-          if (includeSecrets && inv.tempPassword) row.tempPassword = inv.tempPassword;
+          if (includeSecrets) {
+            if (inv.activationKey) row.activationKey = inv.activationKey;
+            if (inv.tempPassword) row.tempPassword = inv.tempPassword;
+          }
           return row;
         });
         res.json({
@@ -2136,7 +2164,7 @@ async function startServer() {
    * One-click: send Private Login invite email to one person.
    * If no temp password exists, issues a fresh one, then SMTP-sends.
    */
-  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/members/invite-mail/send', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
       if (!email.trim()) {
@@ -2153,24 +2181,6 @@ async function startServer() {
         error: error?.message || 'Failed to send invite email',
       });
     }
-  });
-
-  app.post('/api/admin/affiliate/mark-paid', requireCatalogAdmin, (req, res) => {
-    if (!AFFILIATE_PAYOUTS_ENABLED) {
-      return res.status(410).json({ error: 'PAYMENTS_DISABLED', message: AFFILIATE_PAYOUTS_DISABLED_MESSAGE });
-    }
-    const referredUid = typeof req.body?.referredUid === 'string' ? req.body.referredUid : '';
-    const tierRaw = String(req.body?.tier || 'plus').toLowerCase();
-    if (!referredUid) return res.status(400).json({ error: 'referredUid required' });
-    if (!(tierRaw in TIER_PRICE_CENTS)) {
-      return res.status(400).json({ error: 'tier must be plus | premium | ultimate' });
-    }
-    const result = markReferredPaid({
-      referredUid,
-      tier: tierRaw as keyof typeof TIER_PRICE_CENTS,
-    });
-    if (!result.ok) return res.status(400).json({ error: result.error || 'Failed' });
-    res.json({ ok: true, ...result });
   });
 
   // The River — compiler manifest (controlled self-update channel)
@@ -2195,14 +2205,14 @@ async function startServer() {
   });
 
   app.post('/api/river/catalog/public', requirePrivateSession, moderateBodyFields('pineSource', 'description'), (req, res) => {
-    const { name, author, description, pineSource, pineVersion, tags } = req.body || {};
+    const { name, description, pineSource, pineVersion, tags } = req.body || {};
     if (!pineSource || typeof pineSource !== 'string' || pineSource.trim().length < 8) {
       return res.status(400).json({ error: 'pineSource is required.' });
     }
     try {
       const entry = savePublicEntry({
         name: name || 'Untitled Indicator',
-        author: author || 'Community',
+        author: wsDisplayName((req.session as any)?.privateUser?.displayName),
         description: description || '',
         pineSource,
         pineVersion: typeof pineVersion === 'number' ? pineVersion : null,
@@ -2221,7 +2231,11 @@ async function startServer() {
     res.json({ ok: true, entry: { id: entry.id, name: entry.name, pineSource: entry.pineSource } });
   });
 
-  app.delete('/api/river/catalog/public/:id', requireCatalogAdmin, (req, res) => {
+  app.delete(
+    '/api/river/catalog/public/:id',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    (req, res) => {
     const ok = removePublicEntry(req.params.id);
     if (!ok) return res.status(404).json({ error: 'Not found.' });
     res.json({ ok: true });
@@ -2284,6 +2298,10 @@ async function startServer() {
     }
     try {
       const uid = await resolveAuthenticatedUid(req);
+      if (uid) {
+        const gate = await requireMembershipFeature(req, res, 'indaCreator');
+        if (!gate.ok) return;
+      }
       const payload = {
         question,
         userName: req.body?.userName,
@@ -2312,7 +2330,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/waitlist', async (req, res) => {
+  app.post('/api/registrations/waitlist', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerWaitlist(req.body || {});
       res.json(result);
@@ -2322,7 +2340,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/registrations/identity', async (req, res) => {
+  app.post('/api/registrations/identity', authRegisterLimiter, async (req, res) => {
     try {
       const result = await registerIdentity(req.body || {});
       res.json(result);
@@ -2334,6 +2352,8 @@ async function startServer() {
 
   // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
   app.get('/api/workspace/assets', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
@@ -2354,6 +2374,8 @@ async function startServer() {
   });
 
   app.post('/api/workspace/assets', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
@@ -2398,6 +2420,8 @@ async function startServer() {
   });
 
   app.delete('/api/workspace/assets/:id', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2437,6 +2461,8 @@ async function startServer() {
   });
 
   app.get('/api/workspace/notes', async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2457,6 +2483,8 @@ async function startServer() {
   });
 
   app.post('/api/workspace/notes', moderateBodyFields('content'), async (req, res) => {
+    const gate = await requireMembershipFeature(req, res, 'workspace');
+    if (!gate.ok) return;
     const uid = await resolveAuthenticatedUid(req);
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
@@ -2589,11 +2617,19 @@ async function startServer() {
     res.json(IndicatorRegistry);
   });
 
-  app.post('/api/indicators', (req, res) => {
+  app.post('/api/indicators', marketDataLimiter, (req, res) => {
     try {
       const { indicator, candles, settings } = req.body;
       if (!indicator || !candles) {
         return res.status(400).json({ error: "Missing required properties: 'indicator' and 'candles' are required." });
+      }
+      if (!Array.isArray(candles) || candles.length > INDICATOR_MAX_CANDLES) {
+        return res.status(400).json({ error: `candles must be an array of at most ${INDICATOR_MAX_CANDLES} bars` });
+      }
+      const oversized = settings && typeof settings === 'object'
+        && Object.values(settings).some((v) => typeof v === 'number' && Math.abs(v) > INDICATOR_MAX_SETTING);
+      if (oversized) {
+        return res.status(400).json({ error: `indicator settings must be at most ${INDICATOR_MAX_SETTING}` });
       }
       const result = IndicatorEngine.calculate(indicator, candles, settings);
       res.json(result);
@@ -2609,6 +2645,8 @@ async function startServer() {
 
   app.post('/api/fundamentals', async (req, res) => {
     try {
+      const gate = await requireMembershipFeature(req, res, 'premiumResearch');
+      if (!gate.ok) return;
       const { id, country } = req.body;
       if (!id) {
         return res.status(400).json({ error: "Missing required property: 'id' is required." });
@@ -2664,6 +2702,8 @@ async function startServer() {
 
   app.post('/api/institutional', async (req, res) => {
     try {
+      const gate = await requireMembershipFeature(req, res, 'institutional');
+      if (!gate.ok) return;
       const { id, candles, params } = req.body;
       if (!id || !candles) {
         return res.status(400).json({ error: "Missing required properties: 'id' and 'candles' are required." });
@@ -2735,6 +2775,8 @@ async function startServer() {
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
+    const gate = await requireMembershipFeature(req, res, 'encyclopedia');
+    if (!gate.ok) return;
 
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
@@ -2785,6 +2827,8 @@ Frame your explanation with advanced professional rigor, making it scannable, st
     if (!question || typeof question !== 'string') {
       return res.status(400).json({ error: 'question required' });
     }
+    const gate = await requireMembershipFeature(req, res, 'expandedAi');
+    if (!gate.ok) return;
 
     const displayName = userName && typeof userName === 'string' ? userName.trim().slice(0, 40) : 'friend';
     const level = skillLevel && typeof skillLevel === 'string' ? skillLevel : 'beginner';
@@ -2991,6 +3035,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
+  app.use([...MARKET_DATA_ROUTES], marketDataLimiter);
+  app.use([...URL_PROXY_ROUTES], urlProxyLimiter);
+
   // Twelve Data Integration Bridge (SECURE SERVER-SIDE)
   app.get('/api/twelvedata/config', (req, res) => {
     const presence = getTwelveDataKeyPresence();
@@ -3053,7 +3100,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
   });
 
   // Manual trigger (rate-limited) — same suite the swap-hour scheduler runs
-  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/diagnostics/timeframe-verify/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runTimeframeAccuracyVerify({ force: true });
       res.json(report);
@@ -3062,6 +3109,44 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         error: 'VERIFY_FAILED',
         message: e?.message || 'Timeframe verify failed',
       });
+    }
+  });
+
+  // Cloud Scheduler: warm instance + run swap-hour suite (set TIMEFRAME_VERIFY_CRON_SECRET on Cloud Run)
+  app.post('/api/cron/timeframe-verify', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const report = await runTimeframeAccuracyVerify({ force: true });
+      res.json({
+        ok: report.summary.ok,
+        passed: report.summary.passed,
+        failed: report.summary.failed,
+        total: report.summary.total,
+        ranAt: report.ranAt,
+      });
+    } catch (e: any) {
+      res.status(500).json({
+        error: 'VERIFY_FAILED',
+        message: e?.message || 'Timeframe verify failed',
+      });
+    }
+  });
+
+  // Cloud Scheduler (every 10 min): wakes a scaled-to-zero instance and runs due briefing slots
+  // inside the request so Cloud Run keeps CPU allocated. Same secret header as timeframe-verify.
+  app.post('/api/cron/scheduler-tick', async (req, res) => {
+    const secretHeader = req.get('x-timeframe-verify-cron-secret') || undefined;
+    if (!verifyTimeframeVerifyCronSecret(secretHeader)) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid cron secret.' });
+    }
+    try {
+      const fired = await dailyPatternSchedulerTick();
+      res.json({ ok: true, dailyPatternReview: fired });
+    } catch (e: any) {
+      res.status(500).json({ error: 'TICK_FAILED', message: e?.message || 'Scheduler tick failed' });
     }
   });
 
@@ -3077,7 +3162,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, async (_req, res) => {
+  app.post('/api/admin/site-doctor/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (_req, res) => {
     try {
       const report = await runSiteDoctorSweep();
       res.json(report);
@@ -3100,7 +3185,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json(report);
   });
 
-  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-ops/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const investorId =
         typeof req.body?.investorId === 'string' ? req.body.investorId.trim() : '';
@@ -3176,7 +3261,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
-  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, async (req, res) => {
+  app.post('/api/admin/daily-pattern-review/run', requireFounderOrCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     try {
       const slot =
         req.body?.slot === 'overnight' || req.body?.slot === 'market_close' ? req.body.slot : 'market_close';
@@ -3351,6 +3436,10 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
+    // Reject CR/LF/control chars before gateway cache — prevents shared-cache poison.
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
+    }
     const apiKey = getCleanTwelveDataApiKey();
     const resolvedInterval = resolveTwelveDataInterval(
       typeof interval === 'string' ? interval : '5min'
@@ -3367,6 +3456,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates candles — skip a second validateTick here.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
       res.json(data);
     } catch (error: any) {
@@ -3381,6 +3476,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     const { symbol, interval, limit, startDate, endDate } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
+    }
+    if (!sanitizeInstrumentSymbol(symbol) || /[\u0000-\u001F\u007F]/.test(symbol)) {
+      return res.status(400).json({ error: 'invalid symbol' });
     }
 
     const selectedInterval = resolveTwelveDataInterval(
@@ -3414,8 +3512,14 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       }
 
       // Gateway already validates — skip a second validateTick on history.
+      const provenance = (data as { provenance?: InstrumentProvenance })?.provenance;
+      if (provenance) {
+        for (const [k, v] of Object.entries(provenanceHeaders(provenance))) {
+          if (v) res.setHeader(k, v);
+        }
+      }
 
-                      const formatted = data.values.map((v: any) => [
+      const formatted = data.values.map((v: any) => [
         new Date(v.datetime).getTime(),
         parseFloat(v.open),
         parseFloat(v.high),
@@ -3423,7 +3527,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         parseFloat(v.close),
         v.volume != null && v.volume !== "" ? parseFloat(v.volume) : undefined,
       ]);
-      
+
       res.json(formatted);
     } catch (error: any) {
       console.error('[TwelveData History Error]', error);
@@ -3583,30 +3687,21 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
     const STREAM_PROXY_TIMEOUT_MS = 15_000;
     const STREAM_PROXY_MAX_BYTES = 8 * 1024 * 1024;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), STREAM_PROXY_TIMEOUT_MS);
     try {
-      const response = await fetch(url, { redirect: 'error', signal: controller.signal });
-      if (!response.ok) {
+      const response = await safePublicFetch(url, { timeoutMs: STREAM_PROXY_TIMEOUT_MS, maxBytes: STREAM_PROXY_MAX_BYTES });
+      if (response.status < 200 || response.status >= 300) {
         throw new Error(`Failed to fetch target URL: ${response.status}`);
       }
 
-      const contentLength = Number(response.headers.get('content-length') || 0);
-      if (contentLength > STREAM_PROXY_MAX_BYTES) {
-        return res.status(413).json({ error: 'Upstream payload too large' });
-      }
+      // Proxied bytes come from arbitrary hosts: never let them render as a page on this origin.
+      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
 
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = response.contentType;
       const isM3u8 = url.includes('.m3u8') || url.includes('.m3u') || contentType.includes('mpegurl') || contentType.includes('application/x-mpegURL');
 
       if (isM3u8) {
-        const text = await response.text();
-        if (text.length > STREAM_PROXY_MAX_BYTES) {
-          return res.status(413).json({ error: 'Upstream playlist too large' });
-        }
+        const text = response.body.toString('utf8');
         const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
         const parentUrlObj = new URL(url);
         const originUrl = parentUrlObj.origin;
@@ -3641,20 +3736,19 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         return res.send(rewrittenLines.join('\n'));
       } else {
-        // Transparent binary segment forwarding for TS chunks loaded through the proxy
-        res.setHeader('Content-Type', contentType || 'video/MP2T');
-        const buffer = Buffer.from(await response.arrayBuffer());
-        if (buffer.length > STREAM_PROXY_MAX_BYTES) {
-          return res.status(413).json({ error: 'Upstream segment too large' });
+        const mediaType = (contentType || 'video/MP2T').split(';')[0].trim().toLowerCase();
+        if (!/^(video|audio)\//.test(mediaType) && mediaType !== 'application/octet-stream') {
+          return res.status(415).json({ error: 'Only stream playlists and media segments can be proxied' });
         }
-        return res.send(buffer);
+        res.setHeader('Content-Type', mediaType);
+        res.setHeader('Content-Disposition', 'attachment');
+        return res.send(response.body);
       }
     } catch (error: any) {
-      console.error('[Stream Proxy Error]', error);
+      console.error('[Stream Proxy Error]', error?.message || error);
+      if (error instanceof PayloadTooLargeError) return res.status(413).json({ error: 'Upstream payload too large' });
       const status = error?.name === 'AbortError' ? 504 : 502;
-      res.status(status).json({ error: 'Failed to proxy stream details', message: error.message });
-    } finally {
-      clearTimeout(timeout);
+      res.status(status).json({ error: 'Failed to proxy stream details' });
     }
   });
 
@@ -3855,6 +3949,17 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
   });
 
+  /** Reject client-supplied vendor keys on FRED/FMP proxies (server env only). */
+  function clientSuppliedVendorKey(query: Record<string, unknown> | undefined): boolean {
+    if (!query || typeof query !== 'object') return false;
+    for (const key of ['api_key', 'apikey', 'apiKey', 'API_KEY', 'key', 'token']) {
+      const v = query[key];
+      if (typeof v === 'string' && v.trim()) return true;
+      if (Array.isArray(v) && v.some((x) => typeof x === 'string' && x.trim())) return true;
+    }
+    return false;
+  }
+
   // CFTC.gov → ClearPath COT Data Engine (raw archive + normalized cache + analytics)
   app.get('/api/cot/history', async (req, res) => {
     const symbol = String(req.query.symbol || '');
@@ -3878,6 +3983,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FRED API Proxy Bridge — server-side FRED_API_KEY only (never accept client keys)
   app.get('/api/fred/observations', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FRED_API_KEY on the server.' });
+    }
     const { series_id, limit } = req.query;
     if (!series_id || typeof series_id !== 'string') {
       return res.status(400).json({ error: 'series_id required' });
@@ -3907,6 +4015,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FMP lookup (search / news / insider / peers) — register before /:endpoint/:symbol
   app.get('/api/fmp/lookup', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FMP_API_KEY on the server.' });
+    }
     const kind = String(req.query.kind || '');
     if (!FMP_LOOKUP_KINDS.has(kind)) {
       return res.status(400).json({ error: 'Lookup kind not allowed' });
@@ -3941,6 +4052,9 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // FMP API Proxy Bridge — server-side FMP_API_KEY only; allowlisted endpoints
   app.get('/api/fmp/:endpoint/:symbol', async (req, res) => {
+    if (clientSuppliedVendorKey(req.query)) {
+      return res.status(400).json({ error: 'Client API keys are not accepted. Configure FMP_API_KEY on the server.' });
+    }
     const { endpoint, symbol } = req.params;
     const { limit, period } = req.query;
     if (!symbol || !endpoint) {
@@ -3986,143 +4100,6 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     res.json([]);
   });
 
-  // Google Grounded Search News & Sentiment API Route
-  app.get('/api/news/search', requirePrivateSession, async (req, res) => {
-    const { q } = req.query;
-    if (!q || typeof q !== 'string') {
-      return res.status(400).json({ error: 'Search query is required' });
-    }
-
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) {
-      return res.json({ 
-        error: 'API key missing', 
-        message: 'The GEMINI_API_KEY environment variable is not defined. Please configure it in your Settings > Secrets panel.',
-        demo: true,
-        summary: `Simulated results for "${q}": The platform's GEMINI_API_KEY is not defined. Set it in Secrets to turn on live Google Search.`,
-        overallSentiment: "Bullish",
-        sentimentScore: 78,
-        headlines: [
-          {
-            id: "demo-1",
-            title: `Federal Reserve Signals Growth Alignment for ${q}`,
-            description: "Institutional desks report a substantial surge in interest rate stabilization and volume parameters.",
-            sentiment: "Bullish",
-            sentimentScore: 82,
-            date: "1 hour ago",
-            sourceName: "Institutional Research (Demo)"
-          },
-          {
-            id: "demo-2",
-            title: `Global Capital Flow Drift Anchored on ${q}`,
-            description: "Secondary market makers increased liquid inventory indices by 13.5% over the weekend.",
-            sentiment: "Neutral",
-            sentimentScore: 50,
-            date: "3 hours ago",
-            sourceName: "System Wire (Demo)"
-          }
-        ],
-        citations: [
-          { title: "Clear Path Markets Reference Desk", uri: "https://ai.studio/build" }
-        ]
-      });
-    }
-
-    try {
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
-
-      const prompt = `You are an elite institutional financial analyst. Perform a live Google Search query to pull recent news headlines, sentiment, and market discussions for: "${q}".
-Analyze the latest news, blogs, and public discussions. Return a structured briefing.
-The output MUST be a valid JSON object matching the following structure exactly:
-{
-  "summary": "A 2-3 sentence overview of the current sentiment, institutional backing, and recent developments regarding this topic.",
-  "overallSentiment": "Bullish" | "Bearish" | "Neutral",
-  "sentimentScore": 75,
-  "headlines": [
-    {
-      "id": "search-item-1",
-      "title": "Clear concise 1-line news headline",
-      "description": "A 1-2 sentence detailed summary of what occurred, why it matters, and the market impact.",
-      "sentiment": "Bullish" | "Bearish" | "Neutral",
-      "sentimentScore": 85,
-      "date": "e.g., 2 hours ago or Today",
-      "sourceName": "e.g., Bloomberg, AP, or Yahoo Finance"
-    }
-  ]
-}
-Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do not output anything other than the exact JSON structure.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
-      });
-
-      let text = response.text || '';
-      // Clean up markdown block wraps if model ignores instructions
-      if (text.startsWith('```')) {
-        text = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      }
-
-      let parsedData;
-      try {
-        parsedData = JSON.parse(text);
-      } catch (e) {
-        console.warn('[Gemini News Search Parse Failure]', text, e);
-        // Fallback placeholder structure if JSON parsing failed
-        parsedData = {
-          summary: "Live news pulled successfully, but could not structure all news into JSON. Raw parsing overview: " + text.slice(0, 300),
-          overallSentiment: "Neutral",
-          sentimentScore: 50,
-          headlines: [
-            {
-              id: "fallback-1",
-              title: `Live news updates for ${q}`,
-              description: text.slice(0, 500) || "Recent news analysis completed with active search grounding.",
-              sentiment: "Neutral",
-              sentimentScore: 50,
-              date: "Recent",
-              sourceName: "Google Search Grounding"
-            }
-          ]
-        };
-      }
-
-      // Extract real grounding citations to display to the user
-      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-      const citations = chunks
-        .filter((chunk: any) => chunk.web?.uri)
-        .map((chunk: any) => ({
-          title: chunk.web.title || 'Web Resource',
-          uri: chunk.web.uri
-        }));
-
-      res.json({
-        ...parsedData,
-        citations: citations.length > 0 ? citations : [
-          { title: "Grounded Google Search Reference", uri: "https://www.google.com" }
-        ]
-      });
-
-    } catch (err: any) {
-      console.error('[Gemini Grounded Search News Error]', err);
-      res.status(500).json({ 
-        error: 'Failed search grounding', 
-        message: err.message || 'The Google Search Grounding query failed or is currently ratelimited.' 
-      });
-    }
-  });
-
   // Programmatic local binaries initialization for SEO branding
   ensureSeoAssetsExist();
 
@@ -4148,7 +4125,8 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
 
     // Normalizes paths: forces lowercase, removes www, strips trailing slashes
     if (isWww || hasTrailingSlash || isCapitalized) {
-      const canonicalHost = isWww ? host.slice(4) : host;
+      const bareHost = isWww ? host.slice(4) : host;
+      const canonicalHost = isProd && !isOwnHost(bareHost) ? 'clearpathtrader.com' : bareHost;
       let cleanPath = req.path;
       if (hasTrailingSlash) {
         cleanPath = cleanPath.slice(0, -1);
@@ -4178,59 +4156,10 @@ Return ONLY raw text. Do not wrap code in markdown formatting block syntax. Do n
   // Only URLs that serve real content to logged-out visitors (and crawlers)
   // belong here — sitemap URLs that render a login wall get dropped by
   // Google and drag down crawl trust for the rest of the site.
-  const SITEMAP_BASE = 'https://clearpathtrader.com';
 
-  interface SitemapEntry { path: string; lastmod: string; changefreq: string; priority: string; }
-
-  const buildUrlset = (entries: SitemapEntry[]) =>
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries.map(e => `  <url>
-    <loc>${SITEMAP_BASE}${e.path}</loc>
-    <lastmod>${e.lastmod}</lastmod>
-    <changefreq>${e.changefreq}</changefreq>
-    <priority>${e.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`;
-
-  // Cache generated urlsets — procedural catalogs are large (~30k URLs).
-  type CrawlEntryLike = { path: string; lastmod: string; changefreq: string; priority: string };
-  const sitemapCache = new Map<string, string>();
-  const cachedUrlset = (key: string, factory: () => CrawlEntryLike[]) => {
-    let xml = sitemapCache.get(key);
-    if (!xml) {
-      xml = buildUrlset(factory());
-      sitemapCache.set(key, xml);
-    }
-    return xml;
-  };
-
-  const SITEMAP_CHILDREN = [
-    'sitemap-pages.xml',
-    'sitemap-learn.xml',
-    'sitemap-guides.xml',
-    'sitemap-stocks.xml',
-    'sitemap-crypto.xml',
-    'sitemap-forex.xml',
-    'sitemap-commodities.xml',
-    'sitemap-companies.xml',
-    'sitemap-glossary.xml',
-    'sitemap-literacy.xml',
-    'sitemap-knowledge.xml',
-    'sitemap-economy.xml',
-    'sitemap-indicators.xml',
-    'sitemap-education.xml',
-    'sitemap-ui.xml',
-  ];
-
-  app.get('/sitemap.xml', (req, res) => {
+  app.get('/sitemap.xml', (_req, res) => {
     res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${SITEMAP_CHILDREN.map((name) => `  <sitemap>
-    <loc>${SITEMAP_BASE}/${name}</loc>
-  </sitemap>`).join('\n')}
-</sitemapindex>`);
+    res.send(sitemapIndexXml());
   });
 
   app.get('/api/seo/catalog-counts', (_req, res) => {
@@ -4261,7 +4190,7 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     res.json({ markets: REGIONAL_MARKETS });
   });
 
-  app.post('/api/seo/indexnow', requireCatalogAdmin, async (req, res) => {
+  app.post('/api/seo/indexnow', requireCatalogAdmin, requireFounderActionHeader, async (req, res) => {
     const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
     try {
       const result = await submitIndexNow(urls);
@@ -4271,7 +4200,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge', requireCatalogAdmin, async (req, res) => {
+  app.post(
+    '/api/admin/profiles/contractor-badge',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    async (req, res) => {
     try {
       const email = typeof req.body?.email === 'string' ? req.body.email : '';
       const result = await grantContractorBadgeByEmail(email, { grantedBy: 'admin-api' });
@@ -4281,7 +4214,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.post('/api/admin/profiles/contractor-badge/seed', requireCatalogAdmin, async (_req, res) => {
+  app.post(
+    '/api/admin/profiles/contractor-badge/seed',
+    requireCatalogAdmin,
+    requireFounderActionHeader,
+    async (_req, res) => {
     try {
       const result = await seedIndependentContractorBadges();
       res.json({ ok: true, seedEmails: IC_BADGE_SEED_EMAILS, ...result });
@@ -4290,117 +4227,25 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     }
   });
 
-  app.get('/sitemap-pages.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    const lastmod = sitemapLastmod();
-    res.send(buildUrlset([
-      { path: '/', lastmod, changefreq: 'daily', priority: '1.0' },
-      // NOTE: /trading-ai is a canonical alias — omit from sitemaps.
-      { path: '/if-trading-and-chatgpt-had-a-baby', lastmod, changefreq: 'weekly', priority: '0.95' },
-      { path: '/about', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/encyclopedia', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/indicators', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/education', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/literacy', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/learn', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/guides', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/glossary', lastmod, changefreq: 'weekly', priority: '0.75' },
-      { path: '/faq', lastmod, changefreq: 'monthly', priority: '0.7' },
-      { path: '/tools', lastmod, changefreq: 'monthly', priority: '0.8' },
-      { path: '/tools/position-size', lastmod, changefreq: 'monthly', priority: '0.85' },
-      { path: '/accessibility', lastmod, changefreq: 'yearly', priority: '0.55' },
-      { path: '/desk', lastmod, changefreq: 'weekly', priority: '0.85' },
-      { path: '/desk/institutional', lastmod, changefreq: 'weekly', priority: '0.9' },
-      { path: '/desk/fundamental', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/retail', lastmod, changefreq: 'weekly', priority: '0.8' },
-      { path: '/desk/neurodivergent', lastmod, changefreq: 'weekly', priority: '0.8' },
-      ...encyclopediaHubEntries(),
-      ...regionalHubEntries(),
-    ]));
-  });
-
-  app.get('/sitemap-learn.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(SEMANTIC_RECORDS).map(record => ({
-        path: `/learn/${record.id}`,
-        lastmod: record.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.9',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-guides.xml', (req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(buildUrlset(
-      Object.values(GUIDE_RECORDS).map(guide => ({
-        path: `/guides/${guide.id}`,
-        lastmod: guide.updatedDate,
-        changefreq: 'weekly',
-        priority: '0.85',
-      }))
-    ));
-  });
-
-  app.get('/sitemap-stocks.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('stocks', stockEntries));
-  });
-  app.get('/sitemap-crypto.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('crypto', cryptoEntries));
-  });
-  app.get('/sitemap-forex.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('forex', forexEntries));
-  });
-  app.get('/sitemap-commodities.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('commodities', commodityEntries));
-  });
-  app.get('/sitemap-companies.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('companies', () => [...companyEntries(), ...companyIndexEntries()]));
-  });
-  app.get('/sitemap-glossary.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('glossary', glossaryEntries));
-  });
-  app.get('/sitemap-literacy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('literacy', literacyEntries));
-  });
-  app.get('/sitemap-knowledge.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('knowledge', knowledgeBaseEntries));
-  });
-  app.get('/sitemap-economy.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('economy', economyEntries));
-  });
-  app.get('/sitemap-indicators.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('indicators', indicatorEntries));
-  });
-  app.get('/sitemap-education.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('education', educationEntries));
-  });
-  app.get('/sitemap-ui.xml', (_req, res) => {
-    res.header('Content-Type', 'application/xml');
-    res.send(cachedUrlset('ui', uiProfileEntries));
-  });
+  for (const section of SITEMAP_SECTIONS) {
+    app.get(`/${section.file}`, (_req, res) => {
+      res.header('Content-Type', 'application/xml');
+      res.send(sectionXml(section));
+    });
+  }
 
   // 5. AI-READABLE CONTENT ENDPOINTS
   app.get('/api/semantic/content', (req, res) => {
     res.json(SEMANTIC_RECORDS);
   });
 
-  app.post('/api/semantic/link', (req, res) => {
+  app.post('/api/semantic/link', marketDataLimiter, (req, res) => {
     const { text } = req.body;
     if (typeof text !== 'string') {
       return res.status(400).json({ error: 'text is required and must be a string' });
+    }
+    if (text.length > SEMANTIC_LINK_MAX_CHARS) {
+      return res.status(413).json({ error: `text must be at most ${SEMANTIC_LINK_MAX_CHARS} characters` });
     }
     res.json({ linkedText: semanticLinkContent(text) });
   });
@@ -4481,9 +4326,20 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         const enriched = enrichHtml(renderStaticAboutForBots(), '/about', res);
         return sendUncachedHtml(res, enriched);
       }
+      if (!wantLiveSpa && isSearchEngineBot(req.get('user-agent'))) {
+        const identityHtml = renderStaticIdentityPageForBots(pathClean);
+        if (identityHtml) {
+          const enriched = enrichHtml(identityHtml, req.path, res);
+          return sendUncachedHtml(res, enriched);
+        }
+      }
       // Unknown /regions/:id must 404 — do not fall through to the SPA shell (was 200).
       if (!wantLiveSpa && isUnknownRegionPath(req.path)) {
         const enriched = enrichHtml(renderUnknownRegionNotFound(req.path), req.path, res);
+        return sendUncachedHtml(res, enriched, 404);
+      }
+      if (!wantLiveSpa && isUnknownLanguagePath(req.path)) {
+        const enriched = enrichHtml(renderUnknownLanguageNotFound(req.path), req.path, res);
         return sendUncachedHtml(res, enriched, 404);
       }
       const isDeskRoute =
@@ -4543,8 +4399,14 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   const SEO_PAGES = [
     '/',
     '/about',
+    '/company',
+    '/meet-the-board',
+    '/founder',
+    '/ceo-statement',
     '/press',
     '/press-kit',
+    '/plans',
+    '/brokers',
     '/if-trading-and-chatgpt-had-a-baby',
     '/trading-ai',
     '/macro',
@@ -4559,6 +4421,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
     '/accessibility',
     '/regions',
     '/regions/:id',
+    '/languages',
+    '/languages/:code',
     '/research',
     '/encyclopedia',
     '/financial-encyclopedia',
@@ -4612,6 +4476,20 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       return sendUncachedHtml(res, enriched, 404);
     }
     return next();
+  });
+
+  app.get(['/membership', '/pricing'], (req, res) => {
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    return res.redirect(301, `/plans${query}`);
+  });
+
+  // Canonical public board page — /leadership is a legacy alias.
+  app.get('/leadership', (req, res) => {
+    const qIndex = req.originalUrl.indexOf('?');
+    const query = qIndex >= 0 ? req.originalUrl.slice(qIndex) : '';
+    const hash = typeof req.url === 'string' && req.url.includes('#') ? req.url.slice(req.url.indexOf('#')) : '';
+    return res.redirect(301, `/meet-the-board${query}${hash}`);
   });
 
   // Alias /fundamental → canonical /desk/fundamental (same live door; one indexable URL).
@@ -4684,6 +4562,11 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
   // TikTok modal asks for file under the Terms URL prefix
   app.get(`/terms.html/${tiktokVerifyName}`, sendTiktokVerify);
 
+  // Unknown API paths answer JSON 404 instead of falling through to the SPA shell.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+
   // 4. Vite / Static Serving
   if (isDev) {
     vite = await createViteServer({
@@ -4735,17 +4618,31 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
 
     console.log('[STARTUP] Social OS disconnected from this host (use npm run dev:social-os / Dockerfile.social-os)');
 
-    try {
-      startTimeframeAccuracyScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
-    }
+    void (async () => {
+      try {
+        await Promise.all([
+          hydrateSiteDoctorReportFromStore(),
+          hydrateTimeframeVerifyReportFromStore(),
+        ]);
+      } catch (e: any) {
+        console.warn(
+          '[STARTUP] Diagnostics Firestore hydrate failed:',
+          e?.message || e
+        );
+      }
 
-    try {
-      startSiteDoctorScheduler();
-    } catch (e: any) {
-      console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
-    }
+      try {
+        startTimeframeAccuracyScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Timeframe accuracy scheduler failed to start:', e?.message || e);
+      }
+
+      try {
+        startSiteDoctorScheduler();
+      } catch (e: any) {
+        console.warn('[STARTUP] Site Doctor scheduler failed to start:', e?.message || e);
+      }
+    })();
 
     try {
       startDailyOpsScheduler();
@@ -4831,12 +4728,24 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
           } catch (backupErr: any) {
             console.warn('[STARTUP] Founder backup snapshot skipped:', backupErr?.message || backupErr);
           }
+          try {
+            const boardGrants = await ensureBoardComplimentaryGrants();
+            console.log(
+              `[STARTUP] Board complimentary Platinum → upserted=${boardGrants.length}${
+                boardGrants.length ? ` (${boardGrants.join(', ')})` : ' (already current)'
+              }`,
+            );
+          } catch (boardGrantErr: any) {
+            console.warn('[STARTUP] Board complimentary grants skipped:', boardGrantErr?.message || boardGrantErr);
+          }
         }
       } catch (e: any) {
         console.warn('[STARTUP] Stripe private-account recovery skipped:', e?.message || e);
       }
-      // Hydrate redeploy-sensitive stores (profiles/memberships, affiliate, pending badges)
+      // Hydrate redeploy-sensitive stores (profiles/memberships, pending badges)
       // from Firestore BEFORE seeding, so a fresh container never starts blank.
+      // Affiliate durable store is NOT hydrated — program removed. Purge leftover
+      // Firestore `app_state/affiliate` / local data so historical records do not linger.
       try {
         const profiles = await hydrateProfilesFromDurableStore();
         console.log(
@@ -4846,10 +4755,12 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
         console.warn('[STARTUP] Profiles hydrate skipped:', e?.message || e);
       }
       try {
-        const aff = await hydrateAffiliateFromDurableStore();
-        console.log(`[STARTUP] Affiliate durable store → source=${aff.source} members=${aff.members}`);
+        const purged = await purgeAffiliateDurableStore();
+        console.log(
+          `[STARTUP] Affiliate durable purge → ok=${purged.ok} firestore=${purged.firestore} localDeleted=${purged.localDeleted} beforeFirestore=${purged.before.firestore} beforeMembers≈${purged.before.approxMembers}${purged.error ? ` error=${purged.error}` : ''}`
+        );
       } catch (e: any) {
-        console.warn('[STARTUP] Affiliate hydrate skipped:', e?.message || e);
+        console.warn('[STARTUP] Affiliate durable purge skipped:', e?.message || e);
       }
       try {
         const pending = await hydratePendingGrantsFromDurableStore();
@@ -4902,16 +4813,8 @@ ${SITEMAP_CHILDREN.map((name) => `  <sitemap>
       }
 
       // Notify Bing/Yandex ecosystem (homepage + regional hubs + market pairs).
-      void submitIndexNow([
-        'https://clearpathtrader.com/',
-        'https://clearpathtrader.com/about',
-        'https://clearpathtrader.com/glossary',
-        'https://clearpathtrader.com/literacy',
-        'https://clearpathtrader.com/markets/bonds',
-        'https://clearpathtrader.com/companies',
-        'https://clearpathtrader.com/encyclopedia',
-        ...regionalIndexNowUrls(),
-      ]).then((r) => {
+      void submitIndexNow(priorityIndexNowUrls()).then((r) => {
+        void recordSeoPing('startup', r);
         if (r.skipped) {
           console.log(`[STARTUP] IndexNow skipped: ${r.skipped}`);
         } else {

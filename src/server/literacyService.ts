@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { safePublicFetch } from "./safePublicFetch";
 
 const MAX_BYTES = 1_500_000;
 const FETCH_TIMEOUT_MS = 10_000;
@@ -29,39 +30,30 @@ export async function fetchPageFingerprint(url: string): Promise<{
   byteLength: number;
   fetchedAt: number;
 }> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "ClearPathLiteracyOS/1.0 (+https://clearpathtrader.com; education research)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      redirect: "error",
-    });
-    if (!res.ok) {
-      throw new Error(`Upstream returned ${res.status}`);
-    }
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.byteLength > MAX_BYTES) {
-      throw new Error("Page exceeds size limit");
-    }
-    const html = buf.toString("utf8");
-    const text = stripHtml(html);
-    const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
-    const hash = crypto.createHash("sha256").update(normalized).digest("hex");
-    return {
-      url,
-      hash,
-      title: extractTitle(html),
-      excerpt: text.slice(0, 480),
-      byteLength: buf.byteLength,
-      fetchedAt: Date.now(),
-    };
-  } finally {
-    clearTimeout(timer);
+  const res = await safePublicFetch(url, {
+    timeoutMs: FETCH_TIMEOUT_MS,
+    maxBytes: MAX_BYTES,
+    headers: {
+      "User-Agent": "ClearPathLiteracyOS/1.0 (+https://clearpathtrader.com; education research)",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+  });
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`Upstream returned ${res.status}`);
   }
+  const buf = res.body;
+  const html = buf.toString("utf8");
+  const text = stripHtml(html);
+  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const hash = crypto.createHash("sha256").update(normalized).digest("hex");
+  return {
+    url,
+    hash,
+    title: extractTitle(html),
+    excerpt: text.slice(0, 480),
+    byteLength: buf.byteLength,
+    fetchedAt: Date.now(),
+  };
 }
 
 function tokenize(s: string): string[] {

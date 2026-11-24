@@ -151,7 +151,7 @@ const SILVER_FLAGS: PlanFlags = {
   education: true,
   goldBar: true,
   encyclopedia: true,
-  affiliate: true,
+  affiliate: false,
   socialHub: true,
 };
 
@@ -309,7 +309,7 @@ export const FEATURE_ACCURACY: Record<keyof PlanFlags | keyof PlanLimits, Featur
   education: 'enforced',
   goldBar: 'enforced',
   encyclopedia: 'enforced',
-  affiliate: 'enforced',
+  affiliate: 'planned',
   socialHub: 'partial',
   patternOverlay: 'enforced',
   indaCreator: 'enforced',

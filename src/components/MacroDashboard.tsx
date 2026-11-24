@@ -1,28 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Globe, TrendingUp, TrendingDown, Activity, Info, BarChart3, Database } from 'lucide-react';
-import { fetchYieldCurve, fetchGDP, YieldData, MacroObservation } from '../services/macroService';
+import { fetchYieldCurve, fetchGDP, fetchMacroHeadline, YieldData, MacroObservation, MacroHeadline } from '../services/macroService';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+
+const UNAVAILABLE = 'DATA UNAVAILABLE';
+
+function UnavailablePanel({ loading }: { loading: boolean }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center text-[10px] font-mono font-bold uppercase tracking-widest text-gray-500">
+      {loading ? 'Loading FRED…' : UNAVAILABLE}
+    </div>
+  );
+}
 
 export default function MacroDashboard() {
   const [yieldData, setYieldData] = useState<YieldData[]>([]);
   const [gdpData, setGdpData] = useState<MacroObservation[]>([]);
+  const [headline, setHeadline] = useState<MacroHeadline>({ fedFunds: null, coreInflationYoY: null, unemployment: null });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
-      const [yData, gData] = await Promise.all([
+      const [yData, gData, hData] = await Promise.all([
         fetchYieldCurve(),
-        fetchGDP()
+        fetchGDP(),
+        fetchMacroHeadline(),
       ]);
+      if (cancelled) return;
       setYieldData(yData);
       setGdpData(gData);
+      setHeadline(hData);
       setLoading(false);
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const isInverted = yieldData.length > 2 && yieldData[0].value > yieldData[2].value;
+  const hasCurve = yieldData.length > 2;
+  const isInverted = hasCurve && yieldData[0].value > yieldData[2].value;
 
   return (
     <div className="p-6 bg-black/40 backdrop-blur-xl rounded-3xl border border-white/5 h-full flex flex-col overflow-hidden">
@@ -38,9 +57,9 @@ export default function MacroDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isInverted ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-green-500/30 bg-green-500/10 text-green-400'}`}>
+          <div className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${!hasCurve ? 'border-white/10 bg-white/5 text-gray-500' : isInverted ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-green-500/30 bg-green-500/10 text-green-400'}`}>
             <Activity className="w-3 h-3" />
-            Curve Status: {isInverted ? 'Inverted' : 'Normal'}
+            Curve Status: {!hasCurve ? UNAVAILABLE : isInverted ? 'Inverted' : 'Normal'}
           </div>
         </div>
       </div>
@@ -60,6 +79,7 @@ export default function MacroDashboard() {
           </div>
           
           <div className="h-[250px] w-full">
+            {!hasCurve ? <UnavailablePanel loading={loading} /> : (
             <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <AreaChart data={yieldData}>
                 <defs>
@@ -98,6 +118,7 @@ export default function MacroDashboard() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -108,7 +129,7 @@ export default function MacroDashboard() {
                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Yield Spread (10Y-2Y)</h4>
              </div>
              <div className="text-3xl font-black italic tracking-tighter text-white">
-               {(yieldData.length > 2 ? (yieldData[2].value - yieldData[0].value).toFixed(2) : '0.00')}%
+               {hasCurve ? `${(yieldData[2].value - yieldData[0].value).toFixed(2)}%` : <span className="text-sm text-gray-500 not-italic">{UNAVAILABLE}</span>}
              </div>
              <p className="text-[10px] text-gray-500 font-mono mt-2 uppercase">Critical recession signal indicator</p>
            </div>
@@ -117,15 +138,11 @@ export default function MacroDashboard() {
              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                <BarChart3 className="w-16 h-16" />
              </div>
-             <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Macro Sentiment</h4>
-             <div className="text-xl font-bold text-white mb-4 italic uppercase">Contractionary Skew</div>
-             <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-               <div className="w-2/3 h-full bg-indigo-500" />
-             </div>
-             <div className="flex justify-between mt-2 text-[8px] font-mono uppercase text-gray-500">
-               <span>Deflation</span>
-               <span>Inflation</span>
-             </div>
+             <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Data Source</h4>
+             <div className="text-xl font-bold text-white mb-2 italic uppercase">FRED · St. Louis Fed</div>
+             <p className="text-[10px] font-mono uppercase text-gray-500">
+               Official series only. Blank cells mean FRED did not answer — no estimates are shown.
+             </p>
            </div>
         </div>
       </div>
@@ -136,10 +153,13 @@ export default function MacroDashboard() {
               <Database className="w-4 h-4 text-emerald-400" />
               <h3 className="text-[10px] font-black uppercase tracking-widest text-white">US Real GDP Trends</h3>
             </div>
-            <div className="text-[10px] font-mono text-gray-500">Latest: ${gdpData[0]?.value.toLocaleString()}B</div>
+            <div className="text-[10px] font-mono text-gray-500">
+              Latest: {gdpData[0] ? `$${gdpData[0].value.toLocaleString()}B` : UNAVAILABLE}
+            </div>
          </div>
          
          <div className="flex-1 min-h-[200px]">
+           {gdpData.length === 0 ? <UnavailablePanel loading={loading} /> : (
            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
              <BarChart data={gdpData.slice().reverse()}>
                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
@@ -171,14 +191,19 @@ export default function MacroDashboard() {
                />
              </BarChart>
            </ResponsiveContainer>
+           )}
          </div>
 
          <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
             {[
-              { label: 'Fed Funds Rate', value: '5.25 - 5.50%', status: 'Stable' },
-              { label: 'Core Inflation (YoY)', value: '3.8%', status: 'Decreasing' },
-              { label: 'Unemployment', value: '3.9%', status: 'Rising' }
-            ].map(item => (
+              { label: 'Fed Funds Rate (effective)', obs: headline.fedFunds },
+              { label: 'Core Inflation (YoY, CPI)', obs: headline.coreInflationYoY },
+              { label: 'Unemployment', obs: headline.unemployment },
+            ].map(({ label, obs }) => ({
+              label,
+              value: obs ? `${obs.value.toFixed(2)}%` : UNAVAILABLE,
+              status: obs ? `FRED · ${obs.date}` : '',
+            })).map(item => (
               <div key={item.label} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded-lg transition-colors">
                  <span className="text-xs font-bold text-gray-400">{item.label}</span>
                  <div className="text-right">

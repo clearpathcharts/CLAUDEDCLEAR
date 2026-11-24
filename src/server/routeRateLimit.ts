@@ -2,14 +2,22 @@
  * Route-scoped rate limits — auth + AI only (never quote/candle routes).
  * Uses express-rate-limit with in-memory store per instance; still blocks abuse bursts.
  */
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
 function clientIp(req: Request): string {
-  const fwd = req.headers['x-forwarded-for'];
-  if (typeof fwd === 'string' && fwd.trim()) return fwd.split(',')[0].trim();
-  return req.ip || 'unknown';
+  // trust proxy = 1: req.ip is the address Google's front end saw; the left of X-Forwarded-For is client-supplied.
+  return req.ip ? ipKeyGenerator(req.ip) : 'unknown';
 }
+
+export const memberInboxLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `inbox:${clientIp(req)}`,
+  message: { error: 'Too many inbox requests. Wait a minute and try again.' },
+});
 
 export const authLoginLimiter = rateLimit({
   windowMs: 60_000,
@@ -49,15 +57,6 @@ export const boardVerifyLimiter = rateLimit({
 });
 
 /** Private-account email lookup — throttle account enumeration sweeps. */
-export const authLookupLimiter = rateLimit({
-  windowMs: 60_000,
-  max: 15,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => `lookup:${clientIp(req)}`,
-  message: { error: 'Too many lookups. Wait a minute and try again.' },
-});
-
 /** Password-reset token consumption — tokens are 192-bit, throttle anyway. */
 export const authResetPasswordLimiter = rateLimit({
   windowMs: 60_000,
@@ -93,6 +92,50 @@ export const aiChatLimiter = rateLimit({
   message: { error: 'Too many AI requests. Slow down for a minute.' },
 });
 
+/** Public institutional inquiry form on /community-outreach. */
+export const communityOutreachInquiryLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `community-outreach:${clientIp(req)}`,
+  message: { error: 'Too many inquiry submissions. Wait a minute and try again.' },
+});
+
+/** Routes that spend paid vendor quota (Twelve Data, FMP, FRED, NewsData, CFTC). */
+export const MARKET_DATA_ROUTES = [
+  '/api/quote',
+  '/api/quotes',
+  '/api/candles',
+  '/api/market/history',
+  '/api/newsdata/latest',
+  '/api/economic/news',
+  '/api/fred/observations',
+  '/api/fmp',
+  '/api/cot/history',
+] as const;
+
+/** Routes that fetch a caller-supplied URL on the server's bandwidth. */
+export const URL_PROXY_ROUTES = ['/api/stream-proxy', '/api/rss', '/api/podcast', '/api/literacy/watch-check'] as const;
+
+export const urlProxyLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `proxy:${clientIp(req)}`,
+  message: { error: 'Too many requests. Wait a minute and try again.' },
+});
+
+export const marketDataLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `mkt:${clientIp(req)}`,
+  message: { error: 'Too many market data requests. Wait a minute and try again.' },
+});
+
 export const frontendErrorLimiter = rateLimit({
   windowMs: 60_000,
   max: 30,
@@ -100,6 +143,16 @@ export const frontendErrorLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => `logerr:${clientIp(req)}`,
   message: { error: 'Too many error reports.' },
+});
+
+/** Anonymous first-party marketing beacons — burst guard, not an analytics counter. */
+export const marketingEventLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `marketing:${clientIp(req)}`,
+  message: { error: 'Too many marketing events.' },
 });
 
 export const brokerOAuthStartLimiter = rateLimit({

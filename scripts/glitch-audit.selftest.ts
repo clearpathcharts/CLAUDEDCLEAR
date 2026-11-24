@@ -64,7 +64,7 @@ assert.match(neuro, /deskSectionOpen\(hold\?\.isHeld, \['news'\]\)/);
 const retailDesk = read('src/components/desks/retail/RetailDashboard.tsx');
 assert.match(retailDesk, /data=\{intel\.candlesByKey\[/);
 
-assert.equal(membershipGrantsAccess('past_due'), true);
+assert.equal(membershipGrantsAccess('past_due'), false, 'past_due must not grant paid access');
 assert.equal(membershipGrantsAccess('canceled'), false);
 
 const kept = resolveSubscriptionMembershipWrite(

@@ -75,8 +75,6 @@ function recordFromCustomer(customer: {
   };
   const lastLogin = metaGet(customer.metadata, META.lastLogin);
   if (lastLogin) record.lastLoginAt = lastLogin;
-  const temp = metaGet(customer.metadata, META.tempPassword);
-  if (temp) record.tempPassword = temp;
   const identityRaw = metaGet(customer.metadata, META.identity);
   if (identityRaw) {
     try {
@@ -144,10 +142,8 @@ export async function upsertStripePrivateUser(
       [META.created]: user.createdAt || new Date().toISOString(),
     };
     if (user.lastLoginAt) metadata[META.lastLogin] = user.lastLoginAt;
-    if (user.tempPassword) metadata[META.tempPassword] = user.tempPassword.slice(0, 64);
-    else if (customer?.metadata?.[META.tempPassword]) {
-      // Clear temp password once replaced by a real login path if explicitly empty string passed — keep otherwise.
-    }
+    // Plaintext passwords are never stored at rest; an empty value deletes any legacy copy.
+    if (customer?.metadata?.[META.tempPassword]) metadata[META.tempPassword] = '';
     if (user.identityStatus) {
       const blob = JSON.stringify({
         status: user.identityStatus,

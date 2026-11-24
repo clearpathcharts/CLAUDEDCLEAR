@@ -147,8 +147,22 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       return firebaseUser || null;
     };
 
+    const finishAuthBoot = () => {
+      if (!cancelled) setLoading(false);
+    };
+
+    const bootSafetyTimer =
+      typeof window !== 'undefined'
+        ? window.setTimeout(finishAuthBoot, 4000)
+        : undefined;
+
     (async () => {
-      const privateSession = await fetchPrivateSession();
+      let privateSession: Awaited<ReturnType<typeof fetchPrivateSession>> = null;
+      try {
+        privateSession = await fetchPrivateSession();
+      } catch {
+        privateSession = null;
+      }
       if (cancelled) return;
 
       const authInstance = getAuth();
@@ -157,7 +171,7 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
           setUser(privateSession as unknown as User);
           applyPrivateProfile(privateSession, null);
         }
-        setLoading(false);
+        finishAuthBoot();
         return;
       }
 
@@ -166,33 +180,38 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
       if (privateSession) {
         setUser(pickAuthUser(privateSession, authInstance.currentUser));
         applyPrivateProfile(privateSession, authInstance.currentUser);
-        setLoading(false);
+        finishAuthBoot();
       }
 
       unsubscribe = authInstance.onAuthStateChanged((firebaseUser: any) => {
         if (cancelled) return;
-        void fetchPrivateSession().then((latestPrivate) => {
-          if (cancelled) return;
-          const next = pickAuthUser(latestPrivate, firebaseUser);
-          setUser(next);
-          if (latestPrivate) applyPrivateProfile(latestPrivate, firebaseUser);
-          else if (firebaseUser) {
-            const email = founderEmailOf(firebaseUser) || firebaseUser.email || '';
-            if (email) {
-              setUserProfile((prev) => ({
-                ...(prev || defaultUserProfile),
-                uid: firebaseUser.uid,
-                email,
-                displayName: firebaseUser.displayName || prev?.displayName || '',
-              }));
+        void fetchPrivateSession()
+          .then((latestPrivate) => {
+            if (cancelled) return;
+            const next = pickAuthUser(latestPrivate, firebaseUser);
+            setUser(next);
+            if (latestPrivate) applyPrivateProfile(latestPrivate, firebaseUser);
+            else if (firebaseUser) {
+              const email = founderEmailOf(firebaseUser) || firebaseUser.email || '';
+              if (email) {
+                setUserProfile((prev) => ({
+                  ...(prev || defaultUserProfile),
+                  uid: firebaseUser.uid,
+                  email,
+                  displayName: firebaseUser.displayName || prev?.displayName || '',
+                }));
+              }
             }
-          }
-          setLoading(false);
-        });
+          })
+          .catch(() => {
+            /* session probe failed — still unblock the app shell */
+          })
+          .finally(finishAuthBoot);
       });
     })();
     return () => {
       cancelled = true;
+      if (bootSafetyTimer !== undefined) window.clearTimeout(bootSafetyTimer);
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, []);

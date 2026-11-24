@@ -454,10 +454,31 @@ function mintChallenge(user: PrivateUserRecord): { rawToken: string; expiresAt: 
   return { rawToken, expiresAt: user.identityChallengeExpiresAt };
 }
 
+export const EMAIL_UNVERIFIED_REASON = 'email_unverified';
+
+function isAwaitingEmailVerification(user: PrivateUserRecord): boolean {
+  return user.identityStatus === 'pending_confirm' && (user.identityRiskReasons || []).includes(EMAIL_UNVERIFIED_REASON);
+}
+
+function challengeExpired(user: PrivateUserRecord): boolean {
+  const exp = user.identityChallengeExpiresAt ? Date.parse(user.identityChallengeExpiresAt) : NaN;
+  return Number.isFinite(exp) && Date.now() > exp;
+}
+
+/** Proof of inbox ownership (confirm link or emailed password-reset link) clears the unverified gate. */
+function markEmailVerified(user: PrivateUserRecord): void {
+  user.identityStatus = 'ok';
+  user.identityConfirmedAt = new Date().toISOString();
+  user.identityChallengeTokenHash = undefined;
+  user.identityChallengeExpiresAt = undefined;
+  user.identityRiskReasons = [];
+}
+
 function expireIfNeeded(user: PrivateUserRecord): PrivateUserRecord {
   if (user.identityStatus !== 'pending_confirm') return user;
-  const exp = user.identityChallengeExpiresAt ? Date.parse(user.identityChallengeExpiresAt) : NaN;
-  if (Number.isFinite(exp) && Date.now() > exp) {
+  // An unconfirmed signup whose link lapsed just needs a fresh link, not a permanent lock.
+  if (isAwaitingEmailVerification(user)) return user;
+  if (challengeExpired(user)) {
     user.identityStatus = 'expired';
     user.identityChallengeTokenHash = undefined;
   }
@@ -585,33 +606,6 @@ export function getPrivateStorageMeta(): {
 }
 
 /** Existence check only — never leak displayName (email enumeration hardening). */
-export async function lookupPrivateUser(email: string): Promise<{
-  exists: boolean;
-  identityStatus?: IdentityStatus;
-}> {
-  const normalized = normalizeEmail(email);
-  if (!normalized || !normalized.includes('@')) {
-    throw new PrivateAuthError('Enter a valid email address.');
-  }
-  if (isProdEnv() && !hasDurablePrivateStore()) {
-    throw new PrivateAuthError(
-      'Private account lookup unavailable: durable store is offline in production.',
-      503
-    );
-  }
-  let found = await findUserRecordByEmail(normalized);
-  if (!found) return { exists: false };
-  found = expireIfNeeded(found);
-  if (found.identityStatus === 'expired') {
-    await persistUser(found);
-  }
-  const out: { exists: boolean; identityStatus?: IdentityStatus } = { exists: true };
-  if (found.identityStatus && found.identityStatus !== 'ok') {
-    out.identityStatus = found.identityStatus;
-  }
-  return out;
-}
-
 /** Admin-only: resolve uid for grant/badge tooling. Prefer durable store. */
 export async function findPrivateUserByEmail(email: string): Promise<PublicPrivateUser | null> {
   const normalized = normalizeEmail(email);
@@ -786,6 +780,10 @@ export type RegisterPrivateResult =
       emailWasSuspect: boolean;
     };
 
+export type PublicRegisterResult =
+  | Extract<RegisterPrivateResult, { kind: 'pending_confirm' }>
+  | { kind: 'already_registered'; email: string };
+
 export async function provisionPrivateUser(input: {
   email: string;
   password: string;
@@ -794,6 +792,8 @@ export async function provisionPrivateUser(input: {
   tempPassword?: string;
   /** When true (founder convert / seed / recovery), skip identity risk quarantine. */
   skipIdentityRisk?: boolean;
+  /** Public self-signup: account stays locked until the emailed confirm link is clicked. */
+  requireEmailVerification?: boolean;
   meta?: { ip?: string; userAgent?: string };
 }): Promise<RegisterPrivateResult> {
   assertDurablePrivateWritesAllowed();
@@ -826,7 +826,7 @@ export async function provisionPrivateUser(input: {
   const existingRemote = await findDurableUserByEmail(email);
   const existingLocal = isProdEnv() ? null : readLocalUsers().find((u) => u.email === email);
   if (existingRemote || existingLocal) {
-    throw new PrivateAuthError('An account with this email already exists. Use Private Login.', 409);
+    throw new PrivateAuthError('An account with this email already exists. Use Private Login.', 409, 'ACCOUNT_EXISTS');
   }
 
   // Hard no-entry already ran above. Soft "suspect" quarantine used to lock people out
@@ -854,6 +854,16 @@ export async function provisionPrivateUser(input: {
     createdAt: new Date().toISOString(),
     identityStatus: 'ok',
   };
+  let rawChallengeToken: string | null = null;
+  if (input.requireEmailVerification) {
+    record.identityStatus = 'pending_confirm';
+    record.identityRiskReasons = [EMAIL_UNVERIFIED_REASON];
+    rawChallengeToken = mintChallenge(record).rawToken;
+  }
+  const result = (): RegisterPrivateResult =>
+    rawChallengeToken
+      ? { kind: 'pending_confirm', user: toPublic(record), reasons: [EMAIL_UNVERIFIED_REASON], rawChallengeToken, emailWasSuspect: false }
+      : { kind: 'ok', user: toPublic(record) };
 
   const writeOpts = { tempPassword: input.tempPassword || undefined };
 
@@ -866,12 +876,12 @@ export async function provisionPrivateUser(input: {
       );
     }
     upsertLocalUser(record);
-    return { kind: 'ok', user: toPublic(record) };
+    return result();
   }
 
   // Non-production offline fallback only.
   upsertLocalUser(record);
-  return { kind: 'ok', user: toPublic(record) };
+  return result();
 }
 
 export async function registerPrivateUser(input: {
@@ -879,8 +889,19 @@ export async function registerPrivateUser(input: {
   password: string;
   displayName: string;
   meta?: { ip?: string; userAgent?: string };
-}): Promise<RegisterPrivateResult> {
-  return provisionPrivateUser(input);
+}): Promise<PublicRegisterResult> {
+  try {
+    const result = await provisionPrivateUser({ ...input, requireEmailVerification: true });
+    if (result.kind !== 'pending_confirm') throw new PrivateAuthError('Registration failed.', 500);
+    return result;
+  } catch (err) {
+    if (err instanceof PrivateAuthError && err.code === 'ACCOUNT_EXISTS') {
+      // Same work and same answer as a new signup so the form cannot be used to test who is a member.
+      await hashPassword(input.password || 'x'.repeat(8));
+      return { kind: 'already_registered', email: normalizeEmail(input.email) };
+    }
+    throw err;
+  }
 }
 
 /**
@@ -914,6 +935,7 @@ export async function resetPrivateUserPassword(input: {
     passwordHash: hash,
     passwordSalt: salt,
   };
+  if (isAwaitingEmailVerification(updated)) markEmailVerified(updated);
 
   if (hasDurablePrivateStore()) {
     const ok = await upsertDurableUser(updated, {
@@ -962,6 +984,43 @@ export type LoginPrivateResult =
       reasons: string[];
     };
 
+const LOGIN_FAIL_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_FAIL_MAX = 8;
+const loginFailures = new Map<string, { count: number; first: number }>();
+const DUMMY_SALT = crypto.randomBytes(16).toString('hex');
+
+function assertNotLockedOut(email: string): void {
+  const row = loginFailures.get(email);
+  if (!row) return;
+  if (Date.now() - row.first > LOGIN_FAIL_WINDOW_MS) {
+    loginFailures.delete(email);
+    return;
+  }
+  if (row.count >= LOGIN_FAIL_MAX) {
+    throw new PrivateAuthError('Too many sign-in attempts for this account. Try again in 15 minutes or reset your password.', 429, 'LOGIN_LOCKED');
+  }
+}
+
+function noteLoginFailure(email: string): void {
+  const row = loginFailures.get(email);
+  if (!row || Date.now() - row.first > LOGIN_FAIL_WINDOW_MS) loginFailures.set(email, { count: 1, first: Date.now() });
+  else row.count += 1;
+}
+
+/** Same scrypt cost whether or not the account exists, so response time does not reveal membership. */
+async function verifyPasswordOrFail(email: string, password: string, found: PrivateUserRecord | null): Promise<PrivateUserRecord> {
+  assertNotLockedOut(email);
+  const { hash } = await hashPassword(password, found?.passwordSalt || DUMMY_SALT);
+  const a = Buffer.from(hash, 'hex');
+  const b = Buffer.from(found?.passwordHash || '', 'hex');
+  if (!found || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    noteLoginFailure(email);
+    throw new PrivateAuthError('Invalid email or password.', 401);
+  }
+  loginFailures.delete(email);
+  return found;
+}
+
 export async function loginPrivateUser(input: {
   email: string;
   password: string;
@@ -984,18 +1043,11 @@ export async function loginPrivateUser(input: {
     (isProdEnv() ? null : readLocalUsers().find((u) => u.email === email) || null) ||
     null;
   // Generic messages — avoid confirming whether the email is registered.
-  if (!found) throw new PrivateAuthError('Invalid email or password.', 401);
+  found = await verifyPasswordOrFail(email, password, found);
 
   found = expireIfNeeded(found);
   if (found.identityStatus === 'expired') {
     await persistUser(found);
-  }
-
-  const { hash } = await hashPassword(password, found.passwordSalt);
-  const a = Buffer.from(hash, 'hex');
-  const b = Buffer.from(found.passwordHash, 'hex');
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    throw new PrivateAuthError('Invalid email or password.', 401);
   }
 
   if (found.identityStatus === 'declined' || found.identityStatus === 'expired') {
@@ -1008,6 +1060,9 @@ export async function loginPrivateUser(input: {
   // Correct password wins. Clear leftover soft quarantine so real members are not stuck
   // on "enter real information" after we already hard-block fakes at register time.
   // Still refuse login if the email itself is on the hard no-entry list.
+  if (isAwaitingEmailVerification(found)) {
+    return { kind: 'pending_confirm', user: toPublic(found), reasons: [EMAIL_UNVERIFIED_REASON] };
+  }
   if (found.identityStatus === 'pending_confirm') {
     const hard = getRegistrationEmailBlock(found.email);
     if (hard.blocked) {
@@ -1057,8 +1112,7 @@ export async function resubmitIdentity(input: {
 }): Promise<IdentityResubmitResult> {
   assertDurablePrivateWritesAllowed();
   const currentEmail = normalizeEmail(input.currentEmail);
-  let found = await findUserRecordByEmail(currentEmail);
-  if (!found) throw new PrivateAuthError('Account not found.', 404);
+  let found = await verifyPasswordOrFail(currentEmail, input.password || '', await findUserRecordByEmail(currentEmail));
 
   found = expireIfNeeded(found);
   if (found.identityStatus === 'expired') {
@@ -1074,13 +1128,6 @@ export async function resubmitIdentity(input: {
   }
   if (found.identityStatus !== 'pending_confirm') {
     throw new PrivateAuthError('Identity is already confirmed.', 400);
-  }
-
-  const { hash } = await hashPassword(input.password || '', found.passwordSalt);
-  const a = Buffer.from(hash, 'hex');
-  const b = Buffer.from(found.passwordHash, 'hex');
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    throw new PrivateAuthError('Invalid email or password.', 401);
   }
 
   const newEmail = normalizeEmail(input.newEmail);
@@ -1117,10 +1164,11 @@ export async function resubmitIdentity(input: {
   });
 
   const oldEmail = found.email;
-  const emailWasSuspectAlready = Boolean(found.identityEmailWasSuspect);
+  const awaitingEmail = isAwaitingEmailVerification(found);
+  const emailWasSuspectAlready = Boolean(found.identityEmailWasSuspect) || awaitingEmail;
   found.displayName = newDisplayName;
   found.email = newEmail;
-  found.identityRiskReasons = risk.reasons;
+  found.identityRiskReasons = awaitingEmail ? [...risk.reasons, EMAIL_UNVERIFIED_REASON] : risk.reasons;
 
   if (risk.risk === 'suspect') {
     found.identityStatus = 'pending_confirm';
@@ -1136,7 +1184,7 @@ export async function resubmitIdentity(input: {
 
   if (emailWasSuspectAlready) {
     found.identityStatus = 'pending_confirm';
-    found.identityRiskReasons = [];
+    found.identityRiskReasons = [EMAIL_UNVERIFIED_REASON];
     const { rawToken } = mintChallenge(found);
     await rewriteEmailAndPersist(found, oldEmail);
     return {
@@ -1187,18 +1235,12 @@ export async function declineIdentity(input: {
 }): Promise<void> {
   assertDurablePrivateWritesAllowed();
   const email = normalizeEmail(input.email);
-  let found = await findUserRecordByEmail(email);
-  if (!found) throw new PrivateAuthError('Account not found.', 404);
-  found = expireIfNeeded(found);
-
-  if (input.password) {
-    const { hash } = await hashPassword(input.password, found.passwordSalt);
-    const a = Buffer.from(hash, 'hex');
-    const b = Buffer.from(found.passwordHash, 'hex');
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      throw new PrivateAuthError('Invalid email or password.', 401);
-    }
+  // Declining locks the account, so it must prove ownership — an email alone is not enough.
+  if (!input.password) {
+    throw new PrivateAuthError('Invalid email or password.', 401);
   }
+  let found = await verifyPasswordOrFail(email, input.password, await findUserRecordByEmail(email));
+  found = expireIfNeeded(found);
 
   found.identityStatus = 'declined';
   found.identityDeclinedAt = new Date().toISOString();
@@ -1222,6 +1264,9 @@ export async function confirmIdentityByToken(rawToken: string): Promise<PublicPr
     null;
 
   if (!found) throw new PrivateAuthError('Invalid or expired confirmation link.', 400);
+  if (isAwaitingEmailVerification(found) && challengeExpired(found)) {
+    throw new PrivateAuthError('Invalid or expired confirmation link.', 400);
+  }
 
   found = expireIfNeeded(found);
   if (found.identityStatus === 'expired') {
@@ -1231,11 +1276,7 @@ export async function confirmIdentityByToken(rawToken: string): Promise<PublicPr
     });
   }
 
-  found.identityStatus = 'ok';
-  found.identityConfirmedAt = new Date().toISOString();
-  found.identityChallengeTokenHash = undefined;
-  found.identityChallengeExpiresAt = undefined;
-  found.identityRiskReasons = [];
+  markEmailVerified(found);
   await persistUser(found);
   return toPublic(found);
 }
@@ -1247,8 +1288,7 @@ export async function remintIdentityChallenge(input: {
 }): Promise<{ user: PublicPrivateUser; rawChallengeToken: string }> {
   assertDurablePrivateWritesAllowed();
   const email = normalizeEmail(input.email);
-  let found = await findUserRecordByEmail(email);
-  if (!found) throw new PrivateAuthError('Account not found.', 404);
+  let found = await verifyPasswordOrFail(email, input.password || '', await findUserRecordByEmail(email));
   found = expireIfNeeded(found);
   if (found.identityStatus === 'expired' || found.identityStatus === 'declined') {
     throw new PrivateAuthError('Have a good one.', 403, 'IDENTITY_DECLINED', {
@@ -1257,12 +1297,6 @@ export async function remintIdentityChallenge(input: {
   }
   if (found.identityStatus !== 'pending_confirm') {
     throw new PrivateAuthError('Identity is already confirmed.', 400);
-  }
-  const { hash } = await hashPassword(input.password, found.passwordSalt);
-  const a = Buffer.from(hash, 'hex');
-  const b = Buffer.from(found.passwordHash, 'hex');
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    throw new PrivateAuthError('Invalid email or password.', 401);
   }
   const { rawToken } = mintChallenge(found);
   await persistUser(found);
@@ -1308,6 +1342,9 @@ export async function assertSessionIdentityAllowed(input: {
 
   // Soft quarantine must not keep a valid cookie session locked out.
   // Hard-blocked emails still cannot use the desk.
+  if (isAwaitingEmailVerification(found)) {
+    return { allowed: false, identityStatus: 'pending_confirm', reasons: [EMAIL_UNVERIFIED_REASON], user: toPublic(found) };
+  }
   if (found.identityStatus === 'pending_confirm') {
     const hard = getRegistrationEmailBlock(found.email);
     if (hard.blocked) {

@@ -20,7 +20,13 @@ import firebaseConfig from '../../firebase-applet-config.json';
 export const CEO_VIDEO_PREFIX = 'ceo-videos/';
 
 /** Upload ids are server-minted hex so no caller-supplied path ever reaches GCS. */
-const ID_PATTERN = /^[a-f0-9]{16}$/;
+export const CEO_VIDEO_ID_PATTERN = /^[a-f0-9]{16}$/;
+
+const ID_PATTERN = CEO_VIDEO_ID_PATTERN;
+
+export function isCeoVideoLibraryId(value: unknown): boolean {
+  return CEO_VIDEO_ID_PATTERN.test(String(value ?? '').trim().toLowerCase());
+}
 
 export const CEO_VIDEO_CONTENT_TYPES = [
   'video/mp4',
@@ -145,6 +151,8 @@ export type CeoVideo = {
   uploadedAt: string;
   url: string;
   publicRead: boolean | null;
+  /** True when joined from three Flow clips on the CEO merge panel. */
+  merged: boolean;
 };
 
 function publicUrlFor(bucket: string, objectPath: string): string {
@@ -165,6 +173,9 @@ function toVideo(bucketName: string, objectPath: string, meta: Record<string, an
   const id = objectPath.slice(CEO_VIDEO_PREFIX.length).split('/')[0] || '';
   const filename = objectPath.split('/').pop() || 'video';
   const custom = (meta?.metadata || {}) as Record<string, string>;
+  const uploadedBy = String(custom.uploadedBy || '');
+  const merged =
+    uploadedBy === 'ceo-video-merge' || custom.merged === 'yes' || custom.merged === 'true';
   return {
     id,
     objectPath,
@@ -175,6 +186,7 @@ function toVideo(bucketName: string, objectPath: string, meta: Record<string, an
     uploadedAt: String(meta?.timeCreated || new Date().toISOString()),
     url: publicUrlFor(bucketName, objectPath),
     publicRead: parsePublicFlag(custom.publicRead),
+    merged,
   };
 }
 

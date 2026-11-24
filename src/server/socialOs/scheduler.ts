@@ -2,6 +2,7 @@ import { createPost, getPost, listDueQueuedPosts, listPosts, updatePost } from '
 import { defaultPublishMode, getSocialOsConfig, publishPost } from './publisher';
 import {
   cadenceStatus,
+  claimSlot,
   detectDueSlot,
   getCadencePlatforms,
   markSlotFired,
@@ -210,6 +211,17 @@ export async function tickSocialOsScheduler(): Promise<CadenceTickResult> {
       };
     }
 
+    if (!(await claimSlot(due.key))) {
+      markSlotFired(due.key, 'claimed by another instance');
+      return {
+        processed: manual.published + manual.failed + manual.dryRun + manual.packaged,
+        published: manual.published,
+        failed: manual.failed,
+        dryRun: manual.dryRun,
+        packaged: manual.packaged,
+        details: [...manual.details, `${due.key}: already claimed`],
+      };
+    }
     console.log(`[Social OS] Cadence slot due: ${due.key} (${due.timeZone})`);
     const cadence = await runCadenceSlot(due.slot, due.key);
     return {

@@ -28,6 +28,7 @@ import {
   setVideoSlotAssignment,
   type VideoSlotAssignmentMap,
 } from './videoSlotStore';
+import { mergeCeoVideos } from './ceoVideoMerge';
 
 /** Bind the resumable session to the calling site, not to an arbitrary page. */
 function callerOrigin(req: Request): string | undefined {
@@ -141,6 +142,35 @@ export function createCeoVideoRouter(): Router {
     }
     try {
       res.json({ ok: true, cleared: await clearVideoSlotAssignment(slot.id) });
+    } catch (error) {
+      fail(res, error);
+    }
+  });
+
+  /** Join two or three library clips, in order, into one MP4. */
+  router.post('/merge', async (req, res) => {
+    try {
+      const video = await mergeCeoVideos(req.body, { title: req.body?.title });
+      const slotId = String(req.body?.slotId || '').trim();
+      let assignment = null;
+      if (slotId) {
+        const slot = getVideoSlot(slotId);
+        if (!slot) {
+          res.status(201).json({
+            ok: true,
+            video,
+            assignment: null,
+            slotWarning: 'Joined video saved, but that play icon id was not recognized — assign it manually below.',
+          });
+          return;
+        }
+        assignment = await setVideoSlotAssignment({
+          slotId: slot.id,
+          videoId: video.id,
+          url: video.url,
+        });
+      }
+      res.status(201).json({ ok: true, video, assignment });
     } catch (error) {
       fail(res, error);
     }

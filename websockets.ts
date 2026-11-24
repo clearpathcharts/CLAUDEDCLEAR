@@ -1,11 +1,47 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { Server } from 'http';
+import type { IncomingMessage, Server } from 'http';
+import { getAuth } from 'firebase-admin/auth';
 import { getFinnhubApiKey } from './src/server/secrets';
+import { ensureAdminApp } from './src/server/firebaseAdmin';
+import { assertCleanText } from './src/server/contentModeration';
 import {
   appendChatRoomMessage,
   loadChatRoomHistory,
   type ChatRoomMessage,
 } from './src/server/chatRoomStore';
+
+/** Signed-in identity from the server session or a verified ID token — never from the client message. */
+export type WsIdentity = { uid: string; name: string };
+
+/** Resolves the signed-in identity from the upgrade request's session cookie, or null. */
+export type WsSessionUidResolver = (req: IncomingMessage) => Promise<WsIdentity | null>;
+
+export function wsDisplayName(raw: unknown): string {
+  const name = String(raw || '').trim().slice(0, 64);
+  return name || 'Member';
+}
+
+async function verifyFirebaseIdToken(token: unknown): Promise<WsIdentity | null> {
+  if (typeof token !== 'string' || !token.trim()) return null;
+  try {
+    if (!ensureAdminApp()) return null;
+    const decoded = await getAuth().verifyIdToken(token.trim());
+    return decoded.uid ? { uid: decoded.uid, name: wsDisplayName(decoded.name) } : null;
+  } catch {
+    return null;
+  }
+}
+
+function sendSignInRequired(ws: WebSocket, action: string) {
+  if (ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({
+    type: 'CHAT_ERROR',
+    code: 'SIGN_IN_REQUIRED',
+    action,
+    error: 'Sign in to post.',
+    timestamp: Date.now(),
+  }));
+}
 
 let wssInstance: WebSocketServer | null = null;
 
@@ -82,11 +118,22 @@ function broadcastChatRoom(roomId: string, payload: Record<string, unknown>) {
  * WebSocket Server for Institutional Data Streams.
  * Handles real-time pushes for prices, news, and system alerts.
  */
-export function setupWebSockets(server: Server) {
-  const wss = new WebSocketServer({ server });
+export function setupWebSockets(server: Server, options: { resolveSessionUid?: WsSessionUidResolver } = {}) {
+  const wss = new WebSocketServer({ server, maxPayload: 16 * 1024 });
   wssInstance = wss;
 
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    let uid: string | null = null;
+    let authorName = 'Member';
+    const sessionUidReady: Promise<void> = (options.resolveSessionUid?.(req) ?? Promise.resolve(null))
+      .then((resolved) => {
+        if (resolved && !uid) {
+          uid = resolved.uid;
+          authorName = resolved.name;
+        }
+      })
+      .catch(() => {});
+
     // Send initial welcome message
     ws.send(JSON.stringify({
       type: 'SYSTEM',
@@ -107,13 +154,12 @@ export function setupWebSockets(server: Server) {
         ws.send(JSON.stringify({
           type: 'HEARTBEAT',
           status: 'HEALTHY',
-          latency: '0.8ms',
           timestamp: Date.now()
         }));
       }
     }, 5000);
 
-    ws.on('message', (message: string) => {
+    ws.on('message', async (message: string) => {
       try {
         if (!allowWsMessage(ws)) {
           ws.send(JSON.stringify({
@@ -125,22 +171,38 @@ export function setupWebSockets(server: Server) {
         }
 
         const parsed = JSON.parse(message);
+        await sessionUidReady;
+
+        if (parsed.type === 'CHAT_AUTH') {
+          const verified = await verifyFirebaseIdToken(parsed.idToken);
+          if (verified) {
+            uid = verified.uid;
+            authorName = verified.name;
+          }
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'CHAT_AUTH_RESULT', signedIn: Boolean(uid), timestamp: Date.now() }));
+          }
+          return;
+        }
 
         if (parsed.type === 'SOCIAL_CONNECT') {
+          if (!uid) return sendSignInRequired(ws, parsed.type);
           // Broadcast that user connected to gateway
           broadcastToAll({
             type: 'SOCIAL_CONNECT_BROADCAST',
-            platform: parsed.platform,
-            handle: parsed.handle,
+            platform: String(parsed.platform || '').slice(0, 32) as SocialPost['platform'],
+            handle: authorName,
             timestamp: Date.now()
           });
         } else if (parsed.type === 'SOCIAL_POST') {
+          if (!uid) return sendSignInRequired(ws, parsed.type);
           const text = String(parsed.text || '').trim().slice(0, 2000);
           if (!text) return;
+          if (!assertCleanText(text, { actorKey: uid }).ok) return;
           const newPost: SocialPost = {
             id: 'post_' + Math.random().toString(36).slice(2, 11),
-            platform: parsed.platform,
-            handle: String(parsed.handle || 'Guest').slice(0, 64),
+            platform: String(parsed.platform || '').slice(0, 32) as SocialPost['platform'],
+            handle: authorName,
             text,
             timestamp: Date.now()
           };
@@ -187,9 +249,22 @@ export function setupWebSockets(server: Server) {
           });
         } else if (parsed.type === 'CHAT_ROOM_MESSAGE') {
           const roomId = String(parsed.roomId || 'lobby').slice(0, 64);
+          if (!CHAT_ROOM_IDS.includes(roomId as (typeof CHAT_ROOM_IDS)[number])) return;
+          if (!uid) return sendSignInRequired(ws, parsed.type);
           const text = String(parsed.text || '').trim().slice(0, 2000);
-          const author = String(parsed.author || 'Guest').trim().slice(0, 64);
+          const author = authorName;
           if (!text) return;
+          const moderation = assertCleanText(`${author}\n${text}`, { actorKey: uid });
+          if (moderation.ok === false) {
+            ws.send(JSON.stringify({
+              type: 'CHAT_ERROR',
+              code: String(moderation.body.error || 'content_blocked'),
+              action: parsed.type,
+              error: String(moderation.body.message || 'Message blocked.'),
+              timestamp: Date.now(),
+            }));
+            return;
+          }
 
           joinChatRoom(ws, roomId);
           const newMessage: ChatRoomMessage = {

@@ -1,41 +1,125 @@
 // /src/utils/searchEngine.ts
 import { REAL_GLOSSARY_TERMS } from "../components/encyclopedia/RealGlossaryData";
 
-// Deterministic Pseudo-Random Generator based on seed (Linear Congruential Generator)
-function seededRandom(seed: number) {
-  const x = Math.sin(seed++) * 10000;
-  return x - Math.floor(x);
-}
+// [ticker, company, exchange, sector, industry] — well-known U.S. listings.
+const REAL_LARGE_CAPS: Array<[string, string, string, string, string]> = [
+  ["ORCL", "Oracle Corporation", "NYSE", "Technology", "Enterprise Software"],
+  ["CRM", "Salesforce, Inc.", "NYSE", "Technology", "Enterprise Software"],
+  ["ADBE", "Adobe Inc.", "NASDAQ", "Technology", "Software"],
+  ["INTU", "Intuit Inc.", "NASDAQ", "Technology", "Software"],
+  ["NOW", "ServiceNow, Inc.", "NYSE", "Technology", "Enterprise Software"],
+  ["IBM", "International Business Machines Corporation", "NYSE", "Technology", "IT Services"],
+  ["CSCO", "Cisco Systems, Inc.", "NASDAQ", "Technology", "Networking Equipment"],
+  ["INTC", "Intel Corporation", "NASDAQ", "Technology", "Semiconductors"],
+  ["AMD", "Advanced Micro Devices, Inc.", "NASDAQ", "Technology", "Semiconductors"],
+  ["AVGO", "Broadcom Inc.", "NASDAQ", "Technology", "Semiconductors"],
+  ["QCOM", "QUALCOMM Incorporated", "NASDAQ", "Technology", "Semiconductors"],
+  ["TXN", "Texas Instruments Incorporated", "NASDAQ", "Technology", "Semiconductors"],
+  ["MU", "Micron Technology, Inc.", "NASDAQ", "Technology", "Semiconductors"],
+  ["AMAT", "Applied Materials, Inc.", "NASDAQ", "Technology", "Semiconductor Equipment"],
+  ["BAC", "Bank of America Corporation", "NYSE", "Financials", "Banking"],
+  ["WFC", "Wells Fargo & Company", "NYSE", "Financials", "Banking"],
+  ["C", "Citigroup Inc.", "NYSE", "Financials", "Banking"],
+  ["GS", "The Goldman Sachs Group, Inc.", "NYSE", "Financials", "Investment Banking"],
+  ["MS", "Morgan Stanley", "NYSE", "Financials", "Investment Banking"],
+  ["BLK", "BlackRock, Inc.", "NYSE", "Financials", "Asset Management"],
+  ["SCHW", "The Charles Schwab Corporation", "NYSE", "Financials", "Brokerage"],
+  ["AXP", "American Express Company", "NYSE", "Financials", "Consumer Finance"],
+  ["V", "Visa Inc.", "NYSE", "Financials", "Payment Networks"],
+  ["MA", "Mastercard Incorporated", "NYSE", "Financials", "Payment Networks"],
+  ["JNJ", "Johnson & Johnson", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["LLY", "Eli Lilly and Company", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["PFE", "Pfizer Inc.", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["MRK", "Merck & Co., Inc.", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["ABBV", "AbbVie Inc.", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["BMY", "Bristol-Myers Squibb Company", "NYSE", "Healthcare", "Pharmaceuticals"],
+  ["AMGN", "Amgen Inc.", "NASDAQ", "Healthcare", "Biotechnology"],
+  ["GILD", "Gilead Sciences, Inc.", "NASDAQ", "Healthcare", "Biotechnology"],
+  ["UNH", "UnitedHealth Group Incorporated", "NYSE", "Healthcare", "Health Insurance"],
+  ["TMO", "Thermo Fisher Scientific Inc.", "NYSE", "Healthcare", "Life Sciences Tools"],
+  ["ABT", "Abbott Laboratories", "NYSE", "Healthcare", "Medical Devices"],
+  ["MDT", "Medtronic plc", "NYSE", "Healthcare", "Medical Devices"],
+  ["ISRG", "Intuitive Surgical, Inc.", "NASDAQ", "Healthcare", "Medical Devices"],
+  ["HD", "The Home Depot, Inc.", "NYSE", "Consumer Discretionary", "Home Improvement Retail"],
+  ["MCD", "McDonald's Corporation", "NYSE", "Consumer Discretionary", "Restaurants"],
+  ["NKE", "NIKE, Inc.", "NYSE", "Consumer Discretionary", "Apparel"],
+  ["SBUX", "Starbucks Corporation", "NASDAQ", "Consumer Discretionary", "Restaurants"],
+  ["KO", "The Coca-Cola Company", "NYSE", "Consumer Staples", "Beverages"],
+  ["PEP", "PepsiCo, Inc.", "NASDAQ", "Consumer Staples", "Beverages"],
+  ["PG", "The Procter & Gamble Company", "NYSE", "Consumer Staples", "Household Products"],
+  ["COST", "Costco Wholesale Corporation", "NASDAQ", "Consumer Staples", "Retail"],
+  ["NFLX", "Netflix, Inc.", "NASDAQ", "Communication Services", "Streaming Entertainment"],
+  ["DIS", "The Walt Disney Company", "NYSE", "Communication Services", "Entertainment"],
+  ["CMCSA", "Comcast Corporation", "NASDAQ", "Communication Services", "Cable & Media"],
+  ["T", "AT&T Inc.", "NYSE", "Communication Services", "Telecommunications"],
+  ["VZ", "Verizon Communications Inc.", "NYSE", "Communication Services", "Telecommunications"],
+  ["XOM", "Exxon Mobil Corporation", "NYSE", "Energy", "Integrated Oil & Gas"],
+  ["CVX", "Chevron Corporation", "NYSE", "Energy", "Integrated Oil & Gas"],
+  ["COP", "ConocoPhillips", "NYSE", "Energy", "Oil & Gas Exploration"],
+  ["SLB", "SLB", "NYSE", "Energy", "Oilfield Services"],
+  ["NEE", "NextEra Energy, Inc.", "NYSE", "Utilities", "Electric Utilities"],
+  ["BA", "The Boeing Company", "NYSE", "Industrials", "Aerospace & Defense"],
+  ["LMT", "Lockheed Martin Corporation", "NYSE", "Industrials", "Aerospace & Defense"],
+  ["RTX", "RTX Corporation", "NYSE", "Industrials", "Aerospace & Defense"],
+  ["CAT", "Caterpillar Inc.", "NYSE", "Industrials", "Machinery"],
+  ["DE", "Deere & Company", "NYSE", "Industrials", "Machinery"],
+  ["UPS", "United Parcel Service, Inc.", "NYSE", "Industrials", "Logistics"],
+  ["UNP", "Union Pacific Corporation", "NYSE", "Industrials", "Railroads"],
+  ["FCX", "Freeport-McMoRan Inc.", "NYSE", "Materials", "Copper Mining"],
+  ["NEM", "Newmont Corporation", "NYSE", "Materials", "Gold Mining"],
+];
 
-// Procedural Scale Generators
-// 1. STOCKS & COMPANIES (10k stocks and 60k companies total)
+const SECTOR_DRIVERS: Record<string, string[]> = {
+  Technology: ["Earnings reports", "Enterprise IT spending", "Interest Rates"],
+  Financials: ["Fed policy", "Credit quality", "Yield curve"],
+  Healthcare: ["Drug approvals and trials", "Drug pricing policy", "Earnings reports"],
+  "Consumer Discretionary": ["Consumer spending", "Interest Rates", "Earnings reports"],
+  "Consumer Staples": ["Input costs", "Consumer demand", "USD strength"],
+  "Communication Services": ["Subscriber growth", "Advertising spend", "Regulation"],
+  Energy: ["Crude oil prices", "OPEC decisions", "Global demand"],
+  Utilities: ["Interest Rates", "Regulated rate cases", "Power demand"],
+  Industrials: ["Order backlogs", "Business investment", "Supply chains"],
+  Materials: ["Commodity prices", "Global growth", "USD strength"],
+};
+
+// [root symbol, name, category, exchange] — listed futures contracts.
+const REAL_COMMODITY_FUTURES: Array<[string, string, string, string]> = [
+  ["NG", "Natural Gas (Henry Hub)", "Energy", "NYMEX"],
+  ["HO", "Heating Oil (ULSD)", "Energy", "NYMEX"],
+  ["RB", "RBOB Gasoline", "Energy", "NYMEX"],
+  ["SI", "Silver", "Metals", "COMEX"],
+  ["HG", "Copper", "Metals", "COMEX"],
+  ["PL", "Platinum", "Metals", "NYMEX"],
+  ["PA", "Palladium", "Metals", "NYMEX"],
+  ["ZW", "Wheat (Chicago SRW)", "Agriculture", "CBOT"],
+  ["ZC", "Corn", "Agriculture", "CBOT"],
+  ["ZS", "Soybeans", "Agriculture", "CBOT"],
+  ["ZO", "Oats", "Agriculture", "CBOT"],
+  ["ZR", "Rough Rice", "Agriculture", "CBOT"],
+  ["SB", "Sugar No. 11", "Agriculture", "ICE Futures U.S."],
+  ["KC", "Coffee \"C\" (Arabica)", "Agriculture", "ICE Futures U.S."],
+  ["CC", "Cocoa", "Agriculture", "ICE Futures U.S."],
+  ["CT", "Cotton No. 2", "Agriculture", "ICE Futures U.S."],
+  ["LE", "Live Cattle", "Livestock", "CME"],
+  ["GF", "Feeder Cattle", "Livestock", "CME"],
+  ["HE", "Lean Hogs", "Livestock", "CME"],
+];
+
+const COMMODITY_DRIVERS: Record<string, string[]> = {
+  Energy: ["Inventories", "Weather", "OPEC and production", "Refinery demand"],
+  Metals: ["Industrial demand", "USD strength", "Mine supply", "Interest Rates"],
+  Agriculture: ["Weather and crop reports", "USDA WASDE", "Export demand", "USD strength"],
+  Livestock: ["Feed costs", "USDA cattle and hog reports", "Consumer demand"],
+};
+
+// Real listed issuers only. Never generate tickers, company names, coins, or glossary phrases:
+// every symbol on the site must exist in a real market.
 let cachedStocks: any[] = [];
 export function getProceduralStocks(): any[] {
   if (cachedStocks.length > 0) return cachedStocks;
 
-  const sectors = ["Technology", "Financials", "Healthcare", "Consumer Discretionary", "Industrials", "Energy", "Communication Services", "Materials"];
-  const industries: Record<string, string[]> = {
-    "Technology": ["Semiconductors", "Software Infrastructure", "Consumer Electronics", "AI Systems", "Cloud Networks"],
-    "Financials": ["Investment Banking", "Asset Management", "Sovereign Credit", "Fintech Payment Pipelines"],
-    "Healthcare": ["Biotechnology", "Pharmaceuticals", "Surgical Automation", "Medical Devices"],
-    "Consumer Discretionary": ["Electric Vehicles", "E-Commerce", "Luxury Goods", "Entertainment Platforms"],
-    "Industrials": ["Aerospace & Defense", "Robotic Warehousing", "Precision Engineering", "Clean Infrastructure"],
-    "Energy": ["Solar Power Systems", "Grid Storage Meta", "Lithium Battery Meta", "Uranium Refining"],
-    "Communication Services": ["Social Media Nets", "Satellite Communications", "Quantum Telephony"],
-    "Materials": ["Rare Earth Extraction", "Advanced Graphene", "Specialty Semiconductor Chemicals"]
-  };
-
-  const prefixes = ["Alpha", "Global", "NextGen", "Quantum", "Cyber", "Vortex", "Apex", "Peak", "Prime", "United", "Sovereign", "Omni", "Lumina", "Zephyr", "Aether", "Helix", "Nova", "Titan", "Spectral", "Neural", "Horizon", "Stratus", "Solar", "Core", "Atlas", "Vector", "Matrix", "Krypton", "Centaur", "Trilogy"];
-  const suffixes = ["Tech", "Energy", "Labs", "Motors", "Holdings", "Capital", "Corp", "Systems", "Bio", "Dynamics", "Logistics", "Science", "Networks", "Foundries", "Robotics", "Analytics", "Solutions", "Silicon", "Futures", "Ventures", "Ecosystems", "Lithium", "Graphene", "Micros", "Aerospace"];
-
-  const exchangeList = ["NASDAQ", "NYSE", "AMEX", "Sovereign Board"];
-
-  const tagSeed = ["AI", "Cloud", "SaaS", "Automation", "Grid", "NextGen", "DeepTech", "Sub-Silicon", "Nuclear", "Space", "E-Commerce", "Hardware", "Bio-Nano"];
-  const macroMoves = ["Interest Rates", "Sovereign Liquidity", "China Factory Yields", "Battery Spot Overheads", "Consumer Discretionary Assets", "EUV Lithography Orders", "Fed Rate Hikes", "War Risks"];
-
-  // Generate 10,000+ stocks
   const list: any[] = [];
-  
+
   // Real majors first so hub pages never show a procedural name on a live ticker.
   const realMajors: any[] = [
     {
@@ -44,7 +128,6 @@ export function getProceduralStocks(): any[] {
       sector: "Technology",
       industry: "Consumer Electronics",
       exchange: "NASDAQ",
-      marketCap: "3.2T",
       description: "Apple designs consumer electronics, software, and AI ecosystems.",
       founded: 1976,
       headquarters: "Cupertino, California",
@@ -58,7 +141,6 @@ export function getProceduralStocks(): any[] {
       sector: "Automotive",
       industry: "Electric Vehicles",
       exchange: "NASDAQ",
-      marketCap: "950B",
       description: "Tesla develops electric vehicles, robotics, batteries, and AI systems.",
       founded: 2003,
       headquarters: "Austin, Texas",
@@ -147,62 +229,19 @@ export function getProceduralStocks(): any[] {
   ];
   list.push(...realMajors);
   const reservedTickers = new Set(realMajors.map((s) => s.ticker));
-
-  // Procedural stocks up to 10050
-  for (let i = 1; i <= 10050; i++) {
-    const seed = i * 13;
-    const r1 = seededRandom(seed);
-    const r2 = seededRandom(seed + 1);
-    const r3 = seededRandom(seed + 2);
-    const r4 = seededRandom(seed + 3);
-
-    // Letter combos for ticker (3-4 characters)
-    const char1 = String.fromCharCode(65 + Math.floor(r1 * 26)); // A-Z
-    const char2 = String.fromCharCode(65 + Math.floor(r2 * 26));
-    const char3 = String.fromCharCode(65 + Math.floor(r3 * 26));
-    const char4 = r4 > 0.4 ? String.fromCharCode(65 + Math.floor(r4 * 26)) : "";
-    const ticker = `${char1}${char2}${char3}${char4}`;
-
-    if (reservedTickers.has(ticker)) {
-      continue; // Skip duplicates of the reserved real majors
-    }
-
-    const pName = prefixes[Math.floor(seededRandom(seed + 4) * prefixes.length)];
-    const sName = suffixes[Math.floor(seededRandom(seed + 5) * suffixes.length)];
-    const company = `${pName} ${sName} Inc.`;
-
-    const sector = sectors[Math.floor(seededRandom(seed + 6) * sectors.length)];
-    const indList = industries[sector];
-    const industry = indList[Math.floor(seededRandom(seed + 7) * indList.length)];
-
-    const mcVal = seededRandom(seed + 8) * 100;
-    const marketCap = mcVal > 40 ? `${(mcVal * 4.5).toFixed(1)}B` : `${(mcVal * 12).toFixed(1)}M`;
-
-    const founded = 1950 + Math.floor(seededRandom(seed + 9) * 75);
-    const exchange = exchangeList[Math.floor(seededRandom(seed + 10) * exchangeList.length)];
-
-    const tags = [
-      tagSeed[Math.floor(seededRandom(seed + 11) * tagSeed.length)],
-      tagSeed[Math.floor(seededRandom(seed + 12) * tagSeed.length)]
-    ];
-    const whatMoves = [
-      macroMoves[Math.floor(seededRandom(seed + 13) * macroMoves.length)],
-      macroMoves[Math.floor(seededRandom(seed + 14) * macroMoves.length)]
-    ];
-
+  for (const [ticker, company, exchange, sector, industry] of REAL_LARGE_CAPS) {
+    if (reservedTickers.has(ticker)) continue;
+    reservedTickers.add(ticker);
     list.push({
       ticker,
       company,
       sector,
       industry,
       exchange,
-      marketCap,
-      description: `${company} is a leading designer and operator in the ${industry} micro market, founded in ${founded}.`,
-      founded,
-      headquarters: `${prefixes[Math.floor(seededRandom(seed + 15) * prefixes.length)]} City, Texas`,
-      tags,
+      description: `${company} (${ticker}) is a U.S.-listed ${sector.toLowerCase()} company (${industry}).`,
+      tags: [sector, industry],
       relatedMarkets: [sector, industry],
-      whatMoves
+      whatMoves: SECTOR_DRIVERS[sector] || ["Earnings reports", "Interest Rates"],
     });
   }
 
@@ -210,44 +249,20 @@ export function getProceduralStocks(): any[] {
   return list;
 }
 
-// 2. 60,000+ COMPANIES
+// 2. COMPANIES — public issuers only (no invented subsidiaries)
 let cachedCompanies: any[] = [];
 export function getProceduralCompanies(): any[] {
   if (cachedCompanies.length > 0) return cachedCompanies;
-
-  // Let's create an expanded corporate listing mapping subsidiaries, private entities and clients of our 10k stocks
-  const proceduralStocks = getProceduralStocks();
-  const list: any[] = [];
-
-  for (const st of proceduralStocks) {
-    list.push({
-      name: st.company,
-      ticker: st.ticker,
-      status: "Public",
-      marketCap: st.marketCap,
-      sector: st.sector
-    });
-
-    // Add 5 matching private/subsidiary entities per stock to rich 60,000+ list
-    const parentName = st.company.replace(" Inc.", "");
-    const subs = ["Logistics System", "Digital Engine", "European Ventures", "Asian Foundry Group", "Real Estate Capital", "Global Trading Node"];
-    for (let k = 0; k < 5; k++) {
-      const subName = `${parentName} ${subs[k]}`;
-      list.push({
-        name: subName,
-        parentCompany: st.company,
-        status: "Subsidiary",
-        capitalTier: "Tier " + (k + 1),
-        sector: st.sector
-      });
-    }
-  }
-
-  cachedCompanies = list;
-  return list;
+  cachedCompanies = getProceduralStocks().map((st) => ({
+    name: st.company,
+    ticker: st.ticker,
+    status: "Public",
+    sector: st.sector,
+  }));
+  return cachedCompanies;
 }
 
-// 3. 20,000+ CRYPTO ASSETS WITH HISTORICAL AND ALPHABETICAL GLOSSARY TIES
+// 3. CRYPTO — real coins and historical digital-cash projects only
 let cachedCrypto: any[] = [];
 export function getProceduralCrypto(): any[] {
   if (cachedCrypto.length > 0) return cachedCrypto;
@@ -744,37 +759,6 @@ export function getProceduralCrypto(): any[] {
   // Add the high-fidelity real coins to our master list
   list.push(...realCoins);
 
-  const coinPrefixes = ["Sol", "Card", "Av", "Polk", "Cos", "Chain", "Optim", "Synt", "Decent", "Synthet", "Ape", "Mon", "Fantom", "Near", "Alg", "Hed", "Vetch", "File", "Ther", "Quant", "Sui", "Apt", "Oas", "Thor", "Core", "Flux", "Zeta", "Meta", "Giga", "Turbo"];
-  const coinSuffixes = ["ana", "ano", "ax", "adot", "mos", "link", "ism", "hetix", "land", "coin", "token", "ero", "om", "near", "orand", "era", "hain", "file", "graph", "net", "network", "defi", "swap", "pad", "node"];
-
-  // Generate the remaining scale database entries
-  for (let i = 1; list.length < 20112; i++) {
-    const seed = i * 29;
-    const r1 = seededRandom(seed);
-    const r2 = seededRandom(seed + 1);
-    
-    // symbol
-    const sym1 = String.fromCharCode(65 + Math.floor(r1 * 26));
-    const sym2 = String.fromCharCode(65 + Math.floor(seededRandom(seed + 3) * 26));
-    const sym3 = String.fromCharCode(65 + Math.floor(seededRandom(seed + 4) * 26));
-    const sym4 = String.fromCharCode(48 + Math.floor(seededRandom(seed + 5) * 10)); // Number suffix
-    const symbol = `${sym1}${sym2}${sym3}${sym4}`;
-
-    if (realSymbols.has(symbol.toLowerCase())) continue;
-
-    const p = coinPrefixes[Math.floor(r2 * coinPrefixes.length)];
-    const s = coinSuffixes[Math.floor(seededRandom(seed + 6) * coinSuffixes.length)];
-    const name = `${p}${s}`;
-
-    list.push({
-      symbol,
-      name,
-      category: i % 4 === 0 ? "DeFi Protocol" : i % 4 === 1 ? "Layer 1 Ledger" : i % 4 === 2 ? "Metaverse Asset" : "Utility Engine Token",
-      description: `${name} (${symbol}) is a cryptographic decentralized clearing ledger optimized for ultra-performance, carrying custom node validation setups.`,
-      whatMoves: ["Liquidity Waves", "Sovereign Web3 Guidelines", "Venture Pools"]
-    });
-  }
-
   // ALPHABETIZE absolute database by name!
   list.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -782,7 +766,7 @@ export function getProceduralCrypto(): any[] {
   return list;
 }
 
-// 4. 1,000+ FOREX PAIRS
+// 4. FOREX — crosses of real ISO currencies
 let cachedForex: any[] = [];
 export function getProceduralForex(): any[] {
   if (cachedForex.length > 0) return cachedForex;
@@ -825,8 +809,8 @@ export function getProceduralForex(): any[] {
       list.push({
         pair,
         type: (c1 === "USD" || c1 === "EUR" || c2 === "USD" || c2 === "EUR") ? "Cross" : "Exotic",
-        description: `${c1} versus ${c2} algorithmic trading exchange yield rate balance.`,
-        affectedBy: [`Central Bank of ${c1}`, `Reserve Board of ${c2}`, "Local Liquidity Spikes"]
+        description: `${c1} versus ${c2} exchange rate.`,
+        affectedBy: [`${c1} central bank policy`, `${c2} central bank policy`, "Interest-rate differentials"]
       });
       if (list.length >= 1200) break;
     }
@@ -837,7 +821,7 @@ export function getProceduralForex(): any[] {
   return list;
 }
 
-// 5. 100+ COMMODITIES
+// 5. COMMODITIES — real exchange-traded futures only
 let cachedCommodities: any[] = [];
 export function getProceduralCommodities(): any[] {
   if (cachedCommodities.length > 0) return cachedCommodities;
@@ -859,22 +843,13 @@ export function getProceduralCommodities(): any[] {
     "affectedBy": ["OPEC", "Wars", "Supply Chains", "Demand"]
   });
 
-  const energy = ["Natural Gas", "Heating Oil", "Gasoline", "Coal", "Bunker Fuel", "Propane", "Butane", "Ethanol"];
-  const metals = ["Silver", "Platinum", "Palladium", "Copper", "Lithium Spot", "Aluminum", "Cobalt Ore", "Zinc", "Lead", "Nickel", "Uranium Hexafluoride", "Iron Ore", "Steel Rebar", "Magnisium", "Silicon Raw", "Graphene Block"];
-  const agriculture = ["Wheat", "Corn", "Soybeans", "Sugar #11", "Coffee Arabica", "Cotton", "Cocoa Beans", "Oats", "Rough Rice", "Canola", "Palm Oil", "Lumber Logs", "Hardwood Sheets"];
-  const livestock = ["Live Cattle", "Feeder Cattle", "Lean Hogs", "Pork Bellies", "Frozen Broilers"];
-
-  // Merge them to have exactly 100+ commodities
-  let id = 1;
-  const pool = [...energy, ...metals, ...agriculture, ...livestock];
-  for (const item of pool) {
-    const symbol = item.replace(" ", "").toUpperCase().substring(0, 4);
+  for (const [symbol, name, category, exchange] of REAL_COMMODITY_FUTURES) {
     list.push({
       symbol,
-      name: item,
-      category: energy.includes(item) ? "Energy" : metals.includes(item) ? "Metals" : agriculture.includes(item) ? "Agriculture" : "Livestock",
-      description: `${item} globally traded commodity logistics line in standard barrels/ounces/bushels metrics.`,
-      affectedBy: ["Commercial Backlogs", "Global Logistics Shipping", "Currency Strength"]
+      name,
+      category,
+      description: `${name} futures (root symbol ${symbol}) trade on ${exchange}.`,
+      affectedBy: COMMODITY_DRIVERS[category] || ["Supply", "Demand", "USD strength"],
     });
   }
 
@@ -882,7 +857,7 @@ export function getProceduralCommodities(): any[] {
   return list;
 }
 
-// 6. 12,000+ GLOSSARY TERMS
+// 6. GLOSSARY — authored terms only (no generated prefix+core phrases)
 let cachedGlossary: any[] = [];
 export function getProceduralGlossary(): any[] {
   if (cachedGlossary.length > 0) return cachedGlossary;
@@ -916,34 +891,6 @@ export function getProceduralGlossary(): any[] {
       list.push(item);
       existingTermsSet.add(item.term.toLowerCase());
     }
-  }
-
-  const categories = ["Macroeconomics", "Corporate Finance", "Forex Mechanisms", "Algorithmic Arbitrage", "Options Derivatives", "Bond Physics", "Crypto Mathematics", "Venture Portfolios", "Ecosystem Strategy"];
-  
-  const vocabPrefix = ["Bilateral", "Leveraged", "Sovereign", "Quantitative", "Systemic", "Dynamic", "Structural", "Asymmetric", "Macro", "Micro", "Algorithmic", "Consolidated", "Amortized", "Stochastic", "Arbitrage", "Deleveraged", "High-Velocity", "Collateralized", "Hedging", "Liquidity", "Inverted", "Disinflationary", "Yield-Weighted", "Baseload", "Frictionless", "Bespoke", "Locked", "EUV-Wiped", "Synthetic", "Annuity", "Hyper", "Implied", "Realized", "Overnight", "Intraday", "Cross-Asset", "Idiosyncratic", "Seasonal", "Unsecured", "Callable", "Convertible", "Contingent", "Net", "Gross"];
-  const vocabCore = ["Easing", "Tightening", "Cap Rate", "Indexation", "Velocity", "Spread", "Bond Duration", "Glow-Weight", "Collateral", "Options Delta", "Gamma Squeeze", "Carry Trade", "BPS Interval", "Refinement Layer", "Asset Exposure", "Toll Capture", "Hedge Ratio", "Market Ingress", "Premium Lock", "Mining Halving", "Gas Burn Rate", "Spot Premium", "Volatility Skew", "Black-Scholes Wave", "Yield Curve Flip", "Credit Facility", "Liquidation Threshold", "Margin Sweep", "T-Bill Bidding", "Repo Auction", "Convexity", "Open Interest", "Free Float", "Sharpe Ratio", "Max Drawdown", "Contango", "Backwardation", "Basis Point", "Rollover", "Settlement"];
-
-  // Generate 12,020 items
-  for (let i = 1; i <= 12050; i++) {
-    const seed = i * 47;
-    const p = vocabPrefix[Math.floor(seededRandom(seed) * vocabPrefix.length)];
-    const c = vocabCore[Math.floor(seededRandom(seed + 1) * vocabCore.length)];
-    const term = `${p} ${c}`;
-
-    if (existingTermsSet.has(term.toLowerCase())) continue;
-    existingTermsSet.add(term.toLowerCase());
-
-    const cat = categories[Math.floor(seededRandom(seed + 2) * categories.length)];
-
-    list.push({
-      term,
-      definition: `${term} is an educational ${cat} vocabulary node combining “${p}” with “${c}”. Practice the phrase on ClearPath — it is not a live vendor print. Missing quotes stay DATA UNAVAILABLE.`,
-      category: cat,
-      related: [
-        vocabCore[Math.floor(seededRandom(seed + 3) * vocabCore.length)],
-        vocabCore[Math.floor(seededRandom(seed + 4) * vocabCore.length)]
-      ]
-    });
   }
 
   cachedGlossary = list;

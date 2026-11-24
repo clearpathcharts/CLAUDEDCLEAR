@@ -7,7 +7,6 @@ import {
   Home,
   Landmark,
   LogOut,
-  Network,
   MessageSquare,
   Newspaper,
   Shield,
@@ -17,7 +16,11 @@ import {
 } from "lucide-react";
 import { ExplainModeToggle, ExplainTrigger, explainColorForNavTab } from "../explain";
 import { isEducationFamilyTab } from "../../education/educationDesks";
-import { RecommendedChartColorsBox } from "./RecommendedChartColorsBox";
+import {
+  navBrightVioletMobileActive,
+  navBrightVioletMobileIdle,
+} from "./navAccentColors";
+import { MemberInboxBell } from "../inbox/MemberInboxBell";
 
 /* ============================================================
    CLEARPATH TRADER — MOBILE COMMAND CENTER
@@ -53,8 +56,8 @@ const WORK_ITEMS: NavItem[] = [
     id: "Yours",
     icon: Users,
     label: "Y.W.C. HUB",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
+    colorClass: navBrightVioletMobileIdle,
+    glowClass: navBrightVioletMobileActive,
   },
   {
     id: "News",
@@ -67,8 +70,8 @@ const WORK_ITEMS: NavItem[] = [
     id: "Communities",
     icon: MessageSquare,
     label: "COMMUNITIES",
-    colorClass: "text-[#FF1493] border-[#FF1493]/25 hover:bg-[#FF1493]/10",
-    glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
+    colorClass: navBrightVioletMobileIdle,
+    glowClass: navBrightVioletMobileActive,
   },
 ];
 
@@ -90,13 +93,6 @@ const TOOLS_ITEMS: NavItem[] = [
     colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
     glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
   },
-  {
-    id: "CpmsApk",
-    icon: Cpu,
-    label: "CLEARPATH CINEMA",
-    colorClass: "text-[#00E5FF] border-[#00E5FF]/30 hover:bg-[#00E5FF]/10",
-    glowClass: "bg-[#00E5FF]/25 text-[#00E5FF] border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]",
-  },
 ];
 
 // Founder-only tools — gated at render time via isFounder
@@ -116,18 +112,17 @@ const ACCOUNT_ITEMS: NavItem[] = [
     colorClass: "text-[#FF1493] border-[#FF1493]/30 hover:bg-[#FF1493]/10",
     glowClass: "bg-[#FF1493]/25 text-[#FF1493] border-[#FF1493] shadow-[0_0_18px_rgba(255,20,147,.8)]",
   },
-  {
-    id: "AffiliateNetwork",
-    icon: Network,
-    label: "AFFILIATE",
-    colorClass: "text-[#FF6A00] border-[#FF6A00]/25 hover:bg-[#FF6A00]/10",
-    glowClass: "bg-[#FF6A00]/25 text-[#FF6A00] border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]",
-  },
   // MEMBERSHIPS removed — "PLANS & PRICING" in PAGE_LINKS is the single way in.
 ];
 
 /** Standalone pages — full navigation, not Dashboard tabs. */
-const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; colorClass: string }[] = [
+const PAGE_LINKS: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  colorClass: string;
+  explainContentId?: string;
+}[] = [
   {
     href: "/brokers",
     icon: Landmark,
@@ -139,6 +134,7 @@ const PAGE_LINKS: { href: string; icon: React.ElementType; label: string; colorC
     icon: Crown,
     label: "PLANS & PRICING",
     colorClass: "text-[#FFD700] border-[#FFD700]/35 hover:bg-[#FFD700]/10",
+    explainContentId: "Membership",
   },
 ];
 
@@ -176,7 +172,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         {
           title: "ACCOUNT",
           items: ACCOUNT_ITEMS.filter((i) =>
-            ["Biography", "Membership"].includes(i.id),
+            i.id === "Biography",
           ),
         },
       ]
@@ -199,6 +195,7 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         "
       >
         <div className="flex items-center justify-around gap-1">
+        <MemberInboxBell />
         {isFounder ? (
           <div className="flex items-center gap-1">
             <button
@@ -229,8 +226,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
             text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
             ${
               activeTab === "StrictlyCharts"
-                ? "bg-[#FF6A00]/25 text-[#FF6A00] border border-[#FF6A00] shadow-[0_0_18px_rgba(255,106,0,.8)]"
-                : "text-[#FF6A00] border border-[#FF6A00]/25 hover:bg-[#FF6A00]/10"
+                ? `${navBrightVioletMobileActive} border`
+                : `${navBrightVioletMobileIdle} border`
             }
           `}
           style={{ fontFamily: "'Cinzel', serif" }}
@@ -294,8 +291,8 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
                 text-[10px] font-black tracking-wider transition-all duration-200 active:scale-95
                 ${
                   isOpen
-                    ? "bg-[#00E5FF]/25 text-[#00E5FF] border border-[#00E5FF] shadow-[0_0_18px_rgba(0,229,255,.8)]"
-                    : "text-[#00E5FF] border border-[#00E5FF]/30 hover:bg-[#00E5FF]/10"
+                    ? `${navBrightVioletMobileActive} border`
+                    : `${navBrightVioletMobileIdle} border`
                 }
               `}
               style={{ fontFamily: "'Cinzel', serif" }}
@@ -331,9 +328,6 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
         <div className="flex justify-center items-center gap-1 pt-2">
           <ExplainModeToggle compact />
           <ExplainTrigger contentId="ExplainMode" color={explainColorForNavTab("ExplainMode")} />
-        </div>
-        <div className="pt-2">
-          <RecommendedChartColorsBox compact />
         </div>
       </div>
 
@@ -394,15 +388,22 @@ export const MobileCommandCenter: React.FC<MobileCommandCenterProps> = ({
               {PAGE_LINKS.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center w-full min-h-[52px] rounded-xl border px-4 mb-2 transition-all duration-200 active:scale-[0.98] bg-white/[0.03] ${link.colorClass}`}
-                    style={{ fontFamily: "'Cinzel', serif" }}
-                  >
-                    <Icon className="w-4 h-4 mr-3 shrink-0" />
-                    <span className="flex-1 text-left text-xs font-black tracking-wider">{link.label}</span>
-                  </a>
+                  <div key={link.href} className="flex items-center gap-1 mb-2">
+                    <a
+                      href={link.href}
+                      className={`flex flex-1 items-center min-h-[52px] rounded-xl border px-4 transition-all duration-200 active:scale-[0.98] bg-white/[0.03] ${link.colorClass}`}
+                      style={{ fontFamily: "'Cinzel', serif" }}
+                    >
+                      <Icon className="w-4 h-4 mr-3 shrink-0" />
+                      <span className="flex-1 text-left text-xs font-black tracking-wider">{link.label}</span>
+                    </a>
+                    {link.explainContentId ? (
+                      <ExplainTrigger
+                        contentId={link.explainContentId}
+                        color={explainColorForNavTab(link.explainContentId)}
+                      />
+                    ) : null}
+                  </div>
                 );
               })}
             </div>

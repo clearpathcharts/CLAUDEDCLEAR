@@ -39,11 +39,14 @@ import {
   FIRST_FREE_DAYS,
   LAUNCH_ACCESS_DAYS,
   MEMBERSHIP_PLANS,
+  MEMBERSHIP_PRICE_LADDER_CENTS,
+  MEMBERSHIP_PRICE_YEAR_CAP,
   PLAN_TRIAL_DAYS,
-  PLATINUM_CENTS,
   SILVER_ADDONS,
-  SILVER_BASE_CENTS,
-  SILVER_WITH_ALL_ADDONS_CENTS,
+  membershipMonthlyCents,
+  platinumCents,
+  silverBaseCents,
+  silverWithAllAddonsCents,
 } from '../src/content/membershipPricing.ts';
 import {
   LAUNCH_TRIAL_DAYS as STRIPE_LAUNCH_TRIAL_DAYS,
@@ -51,12 +54,33 @@ import {
 } from '../src/server/stripeService.ts';
 
 assert.deepEqual([...CANONICAL_PLANS], ['basic', 'silver', 'gold', 'platinum']);
-assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [0, 598, 993, 1499]);
+// Year-1 sheet stays fixed; live list always matches currentMembershipPricingYear().
+assert.deepEqual(
+  [membershipMonthlyCents('silver', 1), membershipMonthlyCents('gold', 1), membershipMonthlyCents('platinum', 1)],
+  [599, 999, 1499],
+);
+assert.deepEqual(MEMBERSHIP_PLANS.map((plan) => plan.priceCents), [
+  0,
+  membershipMonthlyCents('silver'),
+  membershipMonthlyCents('gold'),
+  membershipMonthlyCents('platinum'),
+]);
 assert.equal(SILVER_ADDONS.length, 7);
 assert.equal(ALL_ADDONS_CENTS, 4493);
-assert.equal(SILVER_BASE_CENTS, 598);
-assert.equal(SILVER_WITH_ALL_ADDONS_CENTS, 5091);
-assert.equal(PLATINUM_CENTS, 1499);
+assert.equal(silverBaseCents(), membershipMonthlyCents('silver'));
+assert.equal(silverWithAllAddonsCents(), silverBaseCents() + ALL_ADDONS_CENTS);
+assert.equal(platinumCents(), membershipMonthlyCents('platinum'));
+assert.equal(MEMBERSHIP_PRICE_LADDER_CENTS.platinum.length, MEMBERSHIP_PRICE_YEAR_CAP);
+assert.equal(membershipMonthlyCents('silver', 5), 2199);
+assert.equal(membershipMonthlyCents('gold', 5), 3649);
+assert.ok(
+  MEMBERSHIP_PRICE_LADDER_CENTS.silver.every(
+    (cents, i) =>
+      cents < MEMBERSHIP_PRICE_LADDER_CENTS.gold[i]! &&
+      MEMBERSHIP_PRICE_LADDER_CENTS.gold[i]! < MEMBERSHIP_PRICE_LADDER_CENTS.platinum[i]!,
+  ),
+  'Silver < Gold < Platinum on every ladder year',
+);
 assert.equal(FIRST_FREE_DAYS, 30);
 assert.equal(LAUNCH_ACCESS_DAYS, STRIPE_LAUNCH_TRIAL_DAYS);
 assert.equal(PLAN_TRIAL_DAYS, STRIPE_PLAN_TRIAL_DAYS);

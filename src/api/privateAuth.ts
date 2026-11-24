@@ -118,19 +118,6 @@ export async function fetchPrivateSession(): Promise<PrivateSessionUser | null> 
   }
 }
 
-export async function lookupPrivateAccount(email: string): Promise<{
-  exists: boolean;
-  identityStatus?: string;
-}> {
-  const res = await fetch('/api/auth/private/lookup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ email }),
-  });
-  return parseJson(res);
-}
-
 export type RegisterPrivateResult =
   | { quarantined: false; user: PrivateSessionUser }
   | {

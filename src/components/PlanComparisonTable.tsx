@@ -31,7 +31,6 @@ const ROWS: { label: string; accuracy: FeatureAccuracy; value: (id: CanonicalPla
   { label: 'Education', accuracy: FEATURE_ACCURACY.education, value: (id) => PLAN_CATALOG[id].flags.education ? 'Yes' : '—' },
   { label: 'Gold Bar', accuracy: FEATURE_ACCURACY.goldBar, value: (id) => PLAN_CATALOG[id].flags.goldBar ? 'Yes' : '—' },
   { label: 'Encyclopedia', accuracy: FEATURE_ACCURACY.encyclopedia, value: (id) => PLAN_CATALOG[id].flags.encyclopedia ? 'Yes' : '—' },
-  { label: 'Affiliate', accuracy: FEATURE_ACCURACY.affiliate, value: (id) => PLAN_CATALOG[id].flags.affiliate ? 'Yes' : '—' },
   { label: 'Social hub', accuracy: FEATURE_ACCURACY.socialHub, value: (id) => PLAN_CATALOG[id].flags.socialHub ? 'Partial' : '—' },
   { label: 'Pattern overlay', accuracy: FEATURE_ACCURACY.patternOverlay, value: (id) => PLAN_CATALOG[id].flags.patternOverlay ? 'Yes' : '—' },
   { label: 'IndaCreator', accuracy: FEATURE_ACCURACY.indaCreator, value: (id) => PLAN_CATALOG[id].flags.indaCreator ? 'Yes' : '—' },

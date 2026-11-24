@@ -67,10 +67,30 @@ export const NEURO_HELD_META: Record<string, HeldMeta> = {
   simulation: { title: 'Simulation Lab', blurb: 'Hypothetical practice only' },
 };
 
-/** First visit parks below-chart intel in the Held file so the plot can use ~70vh. Bump the storage key when changing this list. */
+/**
+ * First visit parks below-chart intel in the Held file so the plot can use ~70vh.
+ * Bump the desk storage key when changing these lists.
+ *
+ * Retail must keep Pattern Scanner (+ watchlist / snapshot) on the desk.
+ * Chart-first is for news / wire / alerts / education / simulation noise — not the scanner.
+ * Parking `scanner` while `useDedicatedPatternPanel` suppresses the on-chart HUD left desktop
+ * with neither the panel nor the pattern information box.
+ */
 export const INSTITUTIONAL_CHART_FIRST_HELD = Object.keys(INSTITUTIONAL_HELD_META).filter((id) => id !== 'ribbon');
 
-export const RETAIL_CHART_FIRST_HELD = Object.keys(RETAIL_HELD_META).filter((id) => id !== 'ribbon');
+/** News / wire / alerts / education / simulation (+ matching slide intel). Never seed-hold `scanner`. */
+export const RETAIL_CHART_FIRST_HELD = [
+  'news',
+  'calendar',
+  'alerts',
+  'changed',
+  'education',
+  'fundamental',
+  'simulation',
+  'context',
+  'volume',
+  'movers',
+] as const;
 
 export const NEURO_CHART_FIRST_HELD = Object.keys(NEURO_HELD_META);
 

@@ -1,19 +1,31 @@
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 
 type EmailPayload = {
   to: string;
   subject: string;
   html: string;
   text: string;
+  /** Optional From override (e.g. Brent CCO outreach). Falls back to SMTP_FROM. */
+  from?: string;
 };
 
-let transporter: nodemailer.Transporter | null = null;
+let transporter: Transporter | null = null;
+
+/** Member-supplied names, emails and links must never become markup inside our emails. */
+export function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export function isSmtpConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
-function getTransporter(): nodemailer.Transporter | null {
+function getTransporter(): Transporter | null {
   if (transporter) return transporter;
 
   const host = process.env.SMTP_HOST;
@@ -41,7 +53,10 @@ export async function sendTransactionalEmail(payload: EmailPayload): Promise<boo
 
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const mailer = getTransporter();
-  const from = process.env.SMTP_FROM || 'ClearPath Trader <noreply@clearpathtrader.com>';
+  const from =
+    (payload.from && payload.from.trim()) ||
+    process.env.SMTP_FROM ||
+    'ClearPath Trader <noreply@clearpathtrader.com>';
 
   if (!mailer) {
     // Never log activation keys / PII when SMTP is unset
@@ -50,7 +65,8 @@ async function sendEmail(payload: EmailPayload): Promise<boolean> {
   }
 
   try {
-    await mailer.sendMail({ from, ...payload });
+    const { from: _ignored, ...rest } = payload;
+    await mailer.sendMail({ ...rest, from });
     return true;
   } catch (error) {
     console.error('[Registration Email] Send failed:', error);
@@ -80,8 +96,8 @@ export async function sendWaitlistConfirmationEmail(params: {
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
       <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Private Login</h1>
-      <p>Hi ${params.firstName},</p>
-      <p>There is no waitlist. Your email is now a Private Login account in Firestore for <strong>${params.country}</strong>.</p>
+      <p>Hi ${esc(params.firstName)},</p>
+      <p>There is no waitlist. Your email is now a Private Login account in Firestore for <strong>${esc(params.country)}</strong>.</p>
       <p><a href="https://clearpathtrader.com/?login=1" style="color:#00FFFF">Open Private Login</a> and sign in with this email. If you did not set a password yet, use Forgot password on that screen.</p>
       <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
     </div>
@@ -113,11 +129,11 @@ export async function sendIdentityPreregistrationEmail(params: {
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
       <h1 style="color:#6366f1; text-transform:uppercase; letter-spacing:2px;">Identity Pre-Registered</h1>
-      <p>${greeting},</p>
-      <p>Your <strong>${params.tierName}</strong> verification tier has been reserved.</p>
+      <p>${esc(greeting)},</p>
+      <p>Your <strong>${esc(params.tierName)}</strong> verification tier has been reserved.</p>
       <div style="margin:24px 0; padding:20px; border:1px solid #6366f1; border-radius:12px; background:#0a0a0a;">
         <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:2px;">Pre-Registration Reference</div>
-        <div style="font-size:22px; font-weight:bold; color:#00FFFF; margin-top:8px; font-family:monospace;">${params.activationKey}</div>
+        <div style="font-size:22px; font-weight:bold; color:#00FFFF; margin-top:8px; font-family:monospace;">${esc(params.activationKey)}</div>
       </div>
       <p style="color:#aaa;">Payment gateway integration will be fully active within 90 days. We will email you when billing goes live.</p>
       <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
@@ -139,7 +155,7 @@ export async function notifyAdminNewRegistration(params: {
     to: adminEmail,
     subject: `[ClearPath] New ${params.type} pre-registration`,
     text: `New ${params.type} registration\nEmail: ${params.email}\n${params.details}`,
-    html: `<p>New <strong>${params.type}</strong> registration</p><p>Email: ${params.email}</p><pre>${params.details}</pre>`,
+    html: `<p>New <strong>${esc(params.type)}</strong> registration</p><p>Email: ${esc(params.email)}</p><pre>${esc(params.details)}</pre>`,
   });
 }
 
@@ -149,7 +165,6 @@ export async function sendPrivateLoginInviteEmail(params: {
   firstName: string;
   activateUrl: string;
   tempPassword: string;
-  affiliateTermsUrl: string;
 }): Promise<boolean> {
   const subject = 'Your ClearPath Private Login is ready';
   const text = [
@@ -163,8 +178,6 @@ export async function sendPrivateLoginInviteEmail(params: {
     '',
     'Please sign in, update your password in your profile, and keep this email private.',
     '',
-    `Affiliate program (optional): ${params.affiliateTermsUrl}`,
-    '',
     '— Rick Floyd',
     'ClearPath Trader',
   ].join('\n');
@@ -172,12 +185,12 @@ export async function sendPrivateLoginInviteEmail(params: {
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
       <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Private Login Ready</h1>
-      <p>Hi ${params.firstName},</p>
+      <p>Hi ${esc(params.firstName)},</p>
       <p>Your ClearPath Private Login is ready.</p>
       <div style="margin:24px 0; padding:20px; border:1px solid #00FFFF; border-radius:12px; background:#0a0a0a;">
-        <p style="margin:0 0 8px;"><a href="${params.activateUrl}" style="color:#00FFFF;">Open login desk</a></p>
-        <p style="margin:0; font-family:monospace; color:#FF1493;">Email: ${params.to}</p>
-        <p style="margin:8px 0 0; font-family:monospace; color:#FFD700;">Temp password: ${params.tempPassword}</p>
+        <p style="margin:0 0 8px;"><a href="${esc(params.activateUrl)}" style="color:#00FFFF;">Open login desk</a></p>
+        <p style="margin:0; font-family:monospace; color:#FF1493;">Email: ${esc(params.to)}</p>
+        <p style="margin:8px 0 0; font-family:monospace; color:#FFD700;">Temp password: ${esc(params.tempPassword)}</p>
       </div>
       <p style="color:#aaa;">Please sign in, update your password in your profile, and keep this email private.</p>
       <p style="color:#666; font-size:12px;">— Rick Floyd · ClearPath Trader</p>
@@ -187,18 +200,18 @@ export async function sendPrivateLoginInviteEmail(params: {
   return sendEmail({ to: params.to, subject, text, html });
 }
 
-/** Ask a quarantined registrant to confirm a real email / identity. */
+/** Confirm-your-email link for new signups (and legacy quarantined registrants). */
 export async function sendIdentityConfirmEmail(params: {
   to: string;
   displayName?: string;
   confirmUrl: string;
 }): Promise<boolean> {
   const greeting = params.displayName ? `Hi ${params.displayName}` : 'Hello';
-  const subject = 'Confirm your ClearPath identity';
+  const subject = 'Confirm your email to activate ClearPath';
   const text = [
     greeting + ',',
     '',
-    'We need you to confirm a real email and name before your private desk unlocks.',
+    'Confirm this email address to activate your ClearPath private desk.',
     '',
     `Confirm here (link expires in 48 hours): ${params.confirmUrl}`,
     '',
@@ -209,12 +222,12 @@ export async function sendIdentityConfirmEmail(params: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
-      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Confirm Your Identity</h1>
-      <p>${greeting},</p>
-      <p>We need a real email and name before your private ClearPath desk unlocks.</p>
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Confirm Your Email</h1>
+      <p>${esc(greeting)},</p>
+      <p>Confirm this email address to activate your private ClearPath desk.</p>
       <p style="margin:28px 0;">
-        <a href="${params.confirmUrl}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
-          Confirm my identity
+        <a href="${esc(params.confirmUrl)}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+          Confirm my email
         </a>
       </p>
       <p style="color:#aaa;font-size:13px;">This link expires in 48 hours. If you did not sign up, ignore this email.</p>
@@ -246,14 +259,44 @@ export async function sendPasswordResetEmail(params: {
   const html = `
     <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
       <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">Reset Password</h1>
-      <p>${greeting},</p>
+      <p>${esc(greeting)},</p>
       <p>Use this link to choose a new Private Login password. It expires in 2 hours.</p>
       <p style="margin:28px 0;">
-        <a href="${params.resetUrl}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+        <a href="${esc(params.resetUrl)}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
           Choose a new password
         </a>
       </p>
       <p style="color:#aaa;font-size:13px;">If you did not request this, ignore the email. Your current password still works.</p>
+      <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
+    </div>
+  `;
+  return sendEmail({ to: params.to, subject, text, html });
+}
+
+/** Someone tried to sign up with an email that already has an account. */
+export async function sendAccountExistsEmail(params: { to: string; loginUrl: string }): Promise<boolean> {
+  const subject = 'You already have a ClearPath account';
+  const text = [
+    'Hello,',
+    '',
+    'Someone (hopefully you) tried to create a ClearPath account with this email, but it already has one.',
+    '',
+    `Sign in here, or use "Forgot password" if you need a new one: ${params.loginUrl}`,
+    '',
+    'If this was not you, ignore this email. No new account was created and your password was not changed.',
+    '',
+    '— ClearPath Trader',
+  ].join('\n');
+  const html = `
+    <div style="font-family: Arial, sans-serif; background:#050505; color:#fff; padding:32px;">
+      <h1 style="color:#00FFFF; text-transform:uppercase; letter-spacing:2px;">You Already Have An Account</h1>
+      <p>Someone (hopefully you) tried to create a ClearPath account with this email, but it already has one.</p>
+      <p style="margin:28px 0;">
+        <a href="${esc(params.loginUrl)}" style="display:inline-block;padding:14px 22px;background:#00E5FF;color:#000;font-weight:bold;text-decoration:none;border-radius:10px;">
+          Sign in
+        </a>
+      </p>
+      <p style="color:#aaa;font-size:13px;">Use "Forgot password" on the sign-in screen if you need a new password. If this was not you, ignore this email — nothing was changed.</p>
       <p style="color:#666; font-size:12px;">— ClearPath Trader</p>
     </div>
   `;

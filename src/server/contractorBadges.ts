@@ -15,8 +15,9 @@ export const IC_BADGE_IMAGE_FULL = '/badges/independent-contractor.png';
 
 /**
  * Certified Affiliate badge — earned automatically, never admin-granted.
- * Every member is an affiliate from day one; the badge unlocks at
- * AFFILIATE_BADGE_THRESHOLD successful referred signups (lifetime).
+ * Legacy Certified Affiliate badge constants. Membership referral rewards
+ * were removed; new grants no longer run. Kept so existing profile badge
+ * records still render if already present.
  */
 export const AFFILIATE_BADGE_ID = 'certified-affiliate';
 export const AFFILIATE_BADGE_LABEL = 'ClearPath Certified Affiliate';

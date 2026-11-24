@@ -17,6 +17,15 @@ export const PASS_THROUGH_ORDER_DISCLAIMER =
 export const DESK_PASS_THROUGH_FOOTER =
   'Chart interface only — not a broker-dealer. Broker pass-throughs are visible and not connected.';
 
+/** Alpaca's required OAuth authorization disclosure (OAuth DDQ v3). Shown before every connect. */
+export const OAUTH_APP_NAME = 'ClearPath Trader';
+export const ALPACA_AUTHORIZE_DISCLOSURE = {
+  title: `Authorize ${OAUTH_APP_NAME}`,
+  grant: `By allowing ${OAUTH_APP_NAME} to access your Alpaca account, you are granting ${OAUTH_APP_NAME} access to your account information and authorization to place transactions at your direction.`,
+  warranty: `Alpaca does not warrant or guarantee that ${OAUTH_APP_NAME} will work as advertised or expected. Before authorizing, learn more about ${OAUTH_APP_NAME}.`,
+  learnMoreHref: '/brokers#how-it-works',
+} as const;
+
 export const BROKER_STATUS_NOTE =
   'Pass-throughs are available to review. No brokerage account is connected, and no orders are sent. ClearPath is not a broker-dealer.';
 

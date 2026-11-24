@@ -96,6 +96,22 @@ async function main() {
   assert.ok(fs.existsSync(packed.packagePath!));
   deletePost(packPost.id);
 
+  // Outbound kill switch: configured chat channels must not send while ALLOW_OUTBOUND_DISPATCH is off
+  delete process.env.ALLOW_OUTBOUND_DISPATCH;
+  process.env.SOCIAL_DISCORD_WEBHOOK_URL = 'http://127.0.0.1:9/should-never-be-called';
+  const chatPost = createPost({
+    platform: 'discord',
+    body: 'Outbound kill switch self-test',
+    status: 'draft',
+    publishMode: 'direct',
+    source: 'api',
+  });
+  const blocked = await publishPost(chatPost);
+  assert.equal(blocked.mode, 'package');
+  assert.ok(blocked.packagePath && fs.existsSync(blocked.packagePath));
+  deletePost(chatPost.id);
+  delete process.env.SOCIAL_DISCORD_WEBHOOK_URL;
+
   process.env.SOCIAL_OS_DRY_RUN = '1';
 
   const cfg = getSocialOsConfig();

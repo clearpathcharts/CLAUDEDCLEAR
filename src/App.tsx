@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard';
 import Auth from './components/Auth';
 import DeskRoute from './components/desks/DeskRoute';
 import { BrandMark } from './components/brand/BrandMark';
+import { redirectLegacyMembershipDashboardUrl } from './lib/retiredMembershipDashboardUrl';
 import {
   hasDashboardTabIntent,
   isDeskPath,
@@ -12,9 +13,18 @@ import {
   shouldStayOnPublicHome,
 } from './lib/traderDesks';
 import ExternalAboutPage from './components/ExternalAboutPage';
-import AffiliateTermsPage from './components/AffiliateTermsPage';
 import TradingReimaginedLanding from './components/TradingReimaginedLanding';
+import PitchIntroLanding from './components/pitch/PitchIntroLanding';
+import InvestorPitchDeck from './components/pitch/InvestorPitchDeck';
+import { parsePitchPath } from './pitch/pitchDeckData';
+import TechnologyInvestmentOpportunityPage from './components/investor/TechnologyInvestmentOpportunityPage';
+import BrentMarketingDepartment from './components/investor/BrentMarketingDepartment';
+import CommunityOutreachPage from './components/community/CommunityOutreachPage';
 import PressKitPage from './components/PressKitPage';
+import CompanyPage from './components/CompanyPage';
+import LeadershipPage, { LeadershipLegacyRedirect } from './components/LeadershipPage';
+import FounderPage from './components/FounderPage';
+import CeoCommitmentStatementPage from './components/CeoCommitmentStatementPage';
 import SocialOsMovedPage from './components/SocialOsMovedPage';
 import PublicMemberProfile from './components/PublicMemberProfile';
 import ResetPasswordPage from './components/ResetPasswordPage';
@@ -26,9 +36,11 @@ import { useFounderAccess } from './hooks/useFounderAccess';
 import { advancedProfiles } from './lib/advanced/profiles';
 import { CptBuddyWidget } from './components/CptBuddyWidget';
 import AppUpdateBanner from './components/AppUpdateBanner';
+import MarketingAttributionTracker from './components/MarketingAttributionTracker';
 import { AppShellProvider } from './contexts/AppShellContext';
 import { ExplainOverlay, getExplainContent } from './components/explain';
 import { SessionLogoutButton } from './components/session/SessionLogoutButton';
+import { isPublicIdentityPath } from './lib/publicIdentityRoutes';
 
 const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/EncyclopediaLayout'));
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
@@ -38,6 +50,7 @@ const FundamentalResearchDesk = lazy(() => import('./components/fundamental/Fund
 const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
 const CommunityHub = lazy(() => import('./components/community/CommunityHub'));
+const BoardPortal = lazy(() => import('./components/MeetTheBoard'));
 
 function AuthenticatedShell({
   profile,
@@ -174,6 +187,26 @@ function isBrokerNetworkPath(path: string): boolean {
   return p === '/brokers' || p === '/broker-connect';
 }
 
+function isPitchPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/pitch' || p.startsWith('/pitch/');
+}
+
+function isTechnologyOpportunityPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/technology-opportunity' || p === '/invest';
+}
+
+function isCommunicationsPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/communications';
+}
+
+function isCommunityOutreachPath(path: string): boolean {
+  const p = path.toLowerCase().trim().replace(/\/$/, '') || '/';
+  return p === '/community-outreach';
+}
+
 function PublicLearnShell({
   children,
   deskTab = EDUCATION_TAB_ID,
@@ -297,22 +330,8 @@ export default function App() {
     return () => window.removeEventListener('clearpath-set-profile', onSetProfile as EventListener);
   }, []);
 
-  // Capture ?ref=CODE into httpOnly affiliate cookie for signup attribution
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const ref = params.get('ref');
-      if (!ref || !/^[A-Za-z0-9]{4,16}$/.test(ref)) return;
-      void fetch('/api/affiliate/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ code: ref }),
-      });
-    } catch {
-      /* ignore */
-    }
+    redirectLegacyMembershipDashboardUrl();
   }, []);
 
   useEffect(() => {
@@ -356,7 +375,8 @@ export default function App() {
     }
   }, [currentProfileId]);
   let content: React.ReactNode;
-  if (loading) {
+  const blockOnAuthBoot = loading && !isPublicIdentityPath(currentPath);
+  if (blockOnAuthBoot) {
     content = (
       <div className="min-h-screen w-full bg-[#050505] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-dashed border-[#FF1493]/20 border-t-[#00FFFF] rounded-full animate-spin shadow-[0_0_30px_rgba(0,255,255,0.15)]" />
@@ -381,8 +401,30 @@ export default function App() {
     content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
-  } else if (currentPath === '/affiliate-terms') {
-    content = <AffiliateTermsPage />;
+  } else if (currentPath === '/company') {
+    content = <CompanyPage />;
+  } else if (currentPath === '/meet-the-board') {
+    content = <LeadershipPage />;
+  } else if (currentPath === '/leadership') {
+    content = <LeadershipLegacyRedirect />;
+  } else if (currentPath === '/board-portal') {
+    content = user ? (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[#050505] flex items-center justify-center text-cyan-200 font-mono text-xs uppercase tracking-widest">
+            Board portal…
+          </div>
+        }
+      >
+        <BoardPortal />
+      </Suspense>
+    ) : (
+      <Auth />
+    );
+  } else if (currentPath === '/founder') {
+    content = <FounderPage />;
+  } else if (currentPath === '/ceo-statement') {
+    content = <CeoCommitmentStatementPage />;
   } else if (currentPath === '/press' || currentPath === '/press-kit') {
     content = <PressKitPage />;
   } else if (currentPath === '/ops/social' || currentPath === '/social-os') {
@@ -394,6 +436,21 @@ export default function App() {
     content = <PublicMemberProfile />;
   } else if (currentPath === TRADING_REIMAGINED_PATH || currentPath === TRADING_REIMAGINED_SHORT_PATH) {
     content = <TradingReimaginedLanding />;
+  } else if (isPitchPath(currentPath)) {
+    const pitch = parsePitchPath(currentPath);
+    content =
+      pitch.mode === 'deck' ? (
+        <InvestorPitchDeck slideId={pitch.slideId} />
+      ) : (
+        <PitchIntroLanding />
+      );
+  } else if (isTechnologyOpportunityPath(currentPath)) {
+    content = <TechnologyInvestmentOpportunityPage />;
+  } else if (isCommunicationsPath(currentPath)) {
+    content = <BrentMarketingDepartment />;
+  } else if (isCommunityOutreachPath(currentPath)) {
+    // Public institutional portal — no trading desks, charts, or membership shell.
+    content = <CommunityOutreachPage />;
   } else if (isBrokerNetworkPath(currentPath)) {
     content = (
       <Suspense
@@ -529,6 +586,7 @@ export default function App() {
 
   return (
     <>
+      <MarketingAttributionTracker key={`${currentPath}${currentSearch}`} />
       {content}
       {user ? <SessionLogoutButton variant="fixed" /> : null}
       <ExplainDeepLink />

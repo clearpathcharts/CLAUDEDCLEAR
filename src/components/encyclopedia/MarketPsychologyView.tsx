@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Brain, Smile, AlertTriangle, Lightbulb, Compass, Award, ShieldClose, ShieldAlert, Sparkles, AlertCircle, Eye } from 'lucide-react';
+import { PRACTICE_BANNER } from '../../lib/practiceSimulation';
 
 interface PsychologyStage {
   label: string;
@@ -123,8 +124,9 @@ export default function MarketPsychologyView({ selectFileNode }: { selectFileNod
         {/* Needle Gauge Dial */}
         <div className="lg:col-span-4 p-6 bg-black/60 border border-white/5 rounded-3xl flex flex-col items-center justify-between min-h-[380px] hover:border-[#FF00C8]/20 transition-all">
           <div className="text-center">
-            <span className="text-[9px] font-mono font-black text-zinc-500 uppercase tracking-widest">FEAR & GREED OBSERVATORY</span>
+            <span className="text-[9px] font-mono font-black text-zinc-500 uppercase tracking-widest">FEAR & GREED PRACTICE DIAL</span>
             <h3 className="text-sm font-black text-white uppercase tracking-wider mt-1">{getDialLabel(fearGreedValue)}</h3>
+            <span className="text-[9px] font-mono font-black text-amber-400 uppercase tracking-wider block mt-1">{PRACTICE_BANNER}</span>
           </div>
 
           <div className="relative w-full max-w-[240px] aspect-square flex items-center justify-center">
@@ -176,7 +178,7 @@ export default function MarketPsychologyView({ selectFileNode }: { selectFileNod
             {/* Numeric display overlay */}
             <div className="absolute bottom-5 text-center select-text">
               <span className="text-3xl font-black font-mono tracking-tighter text-white">{fearGreedValue}</span>
-              <span className="text-zinc-500 text-[10px] block font-mono font-bold leading-none mt-1">SENTIMENT INDEX SCORE</span>
+              <span className="text-zinc-500 text-[10px] block font-mono font-bold leading-none mt-1">PRACTICE SCORE</span>
             </div>
           </div>
 
@@ -196,12 +198,11 @@ export default function MarketPsychologyView({ selectFileNode }: { selectFileNod
             />
             <button
               onClick={() => {
-                // Set random score
-                setFearGreedValue(Math.floor(Math.random() * 101));
+                setFearGreedValue((v) => (v >= 50 ? 10 : 90));
               }}
               className="mt-2 text-[8px] font-mono p-1 border border-white/5 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg uppercase tracking-wider font-extrabold w-fit mx-auto cursor-pointer"
             >
-              Trigger Market Shock
+              Practice: Flip To Opposite Extreme
             </button>
           </div>
         </div>

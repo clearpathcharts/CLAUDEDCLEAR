@@ -1,0 +1,31 @@
+# Only ignore junk — NEVER ignore clearpath-publisher/server.js or package.json
+**/node_modules
+**/npm-debug.log
+**/.git
+**/.gitignore
+**/data/uploads/**
+**/.env
+**/.env.*
+**/.DS_Store
+**/dist
+**/coverage
+
+# Root SPA leftovers (not used by Cloud Run social console image)
+/src
+/assets
+/docs
+/auth.js
+/login.html
+/dashboard.html
+/channels.html
+/publish.html
+/queue.html
+/settings.html
+/styles.css
+/index.html
+/metadata.json
+/cloudbuild.yaml
+/bun.lock
+/vite.config.ts
+/tsconfig.json
+/*.md

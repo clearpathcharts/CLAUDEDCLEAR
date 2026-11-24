@@ -17,10 +17,16 @@ import {
 import { parseDeskScreenPane } from '../../lib/deskMonitorTree';
 import DeskScreenWorkspace from './DeskScreenWorkspace';
 import { DESK_SEO } from '../../content/traderDesksCopy';
-import { PRODUCT_URL } from '../../content/productIdentity';
+import {
+  PRODUCT_PLATFORM_POSITION,
+  PRODUCT_URL,
+  withPlatformPositionTitle,
+} from '../../content/productIdentity';
 import { TRADER_DESKS } from '../../lib/traderDesks';
 import { CptBuddyWidget } from '../CptBuddyWidget';
 import DeskErrorBoundary from './DeskErrorBoundary';
+import { activeTabForDesk, MemberSiteChrome } from '../nav/MemberSiteChrome';
+import { AppShellProvider } from '../../contexts/AppShellContext';
 import './deskTheme.css';
 import './colorChart.css';
 import './heldFile.css';
@@ -104,6 +110,7 @@ function DeskShell({
       <a href="#desk-main" className="cp-skip-link">
         Skip to desk
       </a>
+      <MemberSiteChrome activeTab={activeTabForDesk(deskId)} />
       <TraderDeskChrome active={deskId} satellitePane={satellitePane} />
       <main
         id="desk-main"
@@ -138,24 +145,27 @@ export default function DeskRoute({ pathname }: { pathname: string }) {
   }, [deskId]);
 
   return (
+    <AppShellProvider>
     <DeskAppearanceProvider deskId={deskId}>
       <Helmet>
-        <title>{seo.title}</title>
+        <title>{withPlatformPositionTitle(seo.title)}</title>
         <meta name="description" content={seo.description} />
         <meta name="keywords" content={seo.keywords} />
+        <meta name="clearpath-platform-position" content={PRODUCT_PLATFORM_POSITION} />
         <link rel="canonical" href={canonical} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content={seo.title} />
+        <meta property="og:title" content={withPlatformPositionTitle(seo.title)} />
         <meta property="og:description" content={seo.description} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={`${PRODUCT_URL}/og-image.png`} />
+        <meta property="og:image" content={`${PRODUCT_URL}/og-image.png?v=paths`} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:title" content={withPlatformPositionTitle(seo.title)} />
         <meta name="twitter:description" content={seo.description} />
         {satellitePane ? <meta name="robots" content="noindex, follow" /> : null}
       </Helmet>
       <DeskShell pathname={pathname} deskId={deskId} seoH1={seo.h1} satellitePane={satellitePane} />
       {satellitePane ? null : <DeferredDeskBuddy deskId={deskId} />}
     </DeskAppearanceProvider>
+    </AppShellProvider>
   );
 }
