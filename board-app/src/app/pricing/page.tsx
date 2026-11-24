@@ -10,16 +10,8 @@ export default function PricingPage() {
       <div className="page-head">
         <h1>Memberships</h1>
         <p>
-          Founder package comparison for board review. Checkout is intentionally disabled in this
-          Cursor board demo — Stripe lives on production clearpathtrader.com.
+          Founder package comparison. Stripe checkout lives on production clearpathtrader.com.
         </p>
-      </div>
-
-      <div className="demo-banner" style={{ border: "1px solid var(--line)", marginBottom: "1.25rem" }}>
-        <div className="container" style={{ width: "100%", margin: 0, maxWidth: "none" }}>
-          Board demo note: membership buttons do not charge. Use this sheet to discuss packaging —
-          not to sell in-room.
-        </div>
       </div>
 
       <div className="plan-grid" style={{ paddingBottom: "2.5rem" }}>
@@ -36,9 +28,9 @@ export default function PricingPage() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <button type="button" className="btn btn-ghost" disabled aria-disabled="true">
-              Checkout disabled (board demo)
-            </button>
+            <a className="btn btn-ghost" href="https://clearpathtrader.com/" rel="noopener noreferrer">
+              Open plans on ClearCloud
+            </a>
           </article>
         ))}
       </div>

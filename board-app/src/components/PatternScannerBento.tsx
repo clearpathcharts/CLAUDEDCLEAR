@@ -65,7 +65,7 @@ export function PatternScannerBento({
         </ul>
       )}
       <p className="bento-note">
-        Educational overlay for board demos. Full River / HUD engine stays on clearpathtrader.com.
+        Educational overlay. Full River / HUD engine stays on clearpathtrader.com.
       </p>
     </section>
   );

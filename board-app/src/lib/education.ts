@@ -34,7 +34,7 @@ export const LESSONS: Lesson[] = [
     summary: "Why ClearPath separates analysis from brokerage — and what that means for learners.",
     body: [
       "ClearPath Trader is an educational analysis platform. It does not hold customer funds and is not a broker-dealer.",
-      "Optional broker connect is a future product path; this board demo does not execute orders or move money.",
+      "Optional broker connect is a future product path; this app does not execute orders or move money.",
       "The safer habit: understand the instrument, the desk framing, and the risk framing before any live venue.",
       "Use paper market data here to practice navigation. Production clearpathtrader.com wires live vendor feeds when keys are present.",
     ],
@@ -61,7 +61,7 @@ export const LESSONS: Lesson[] = [
     body: [
       "COT is published by the CFTC. ClearPath maps common FX/metal symbols to futures codes (example: XAUUSD → GC).",
       "In production, Positioning reads CFTC via server routes — never invent timed COT cells when data is unavailable.",
-      "This board demo shows the concept in Education only; live COT tables stay on the production Cloud Run stack.",
+      "Education shows the concept here; live COT tables stay on the production Cloud Run stack.",
     ],
   },
 ];

@@ -42,8 +42,7 @@ Knowledge before execution. Understanding before risk. Clarity before decisions.
         <details>
           <summary>Will you connect to brokers?</summary>
           <p>
-            Optional broker connect is a future product path. It is not available in this board
-            demo and is not claimed as live.
+            Optional broker connect is a future product path. It is not claimed as live here.
           </p>
         </details>
         <details>
@@ -54,19 +53,19 @@ Knowledge before execution. Understanding before risk. Clarity before decisions.
           </p>
         </details>
         <details>
-          <summary>What is live vs demo in this Cursor app?</summary>
+          <summary>What is live on this app?</summary>
           <p>
-            Navigation, desks, paper candles, education teasers, membership comparison, and
-            per-viewer watchlist/desk preference (Postgres when provisioned) are working. Live
-            Twelve Data / FMP / Stripe / Ava voice are out of scope here and stay on production
-            Cloud Run / clearpathtrader.com.
+            Navigation, desks, live charts via clearpathtrader.com, education, memberships,
+            Your World Connected, and member dashboard. Full ClearCloud (Stripe / Ava voice)
+            remains on clearpathtrader.com.
           </p>
         </details>
         <details>
-          <summary>Who is this demo for?</summary>
+          <summary>Who is this for?</summary>
           <p>
-            Founder board meeting: a shareable hosted link to ask “What do you want to do with
-            this?” Android/Capacitor wrap of clearpathtrader.com is a separate later vote.
+            Traders and learners using Clear Path Trader — analysis-first desks, education, and
+            Your World Connected. {" "}
+            <span className="not-brokerage">(NOT A BROKERAGE.)</span>
           </p>
         </details>
       </section>
