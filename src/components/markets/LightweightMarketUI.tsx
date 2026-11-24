@@ -66,6 +66,7 @@ function loadMarketSlots(): ChartLayoutSlot[] {
         const slots = parsed.map((slot: ChartLayoutSlot, i: number) => ({
           symbol: slot.symbol ?? null,
           timeframe: normalizeChartTimeframe(slot.timeframe || '1h'),
+          independentDrawer: slot.independentDrawer !== false,
           // Horizontal drag offsets shoved charts into the right third of the page —
           // always dock full-width; only vertical stacking uses y.
           x: 0,
@@ -552,6 +553,11 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                             updateSlot(idx, { timeframe: tf });
                           }}
                           isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+                          drawerOn={slot.independentDrawer !== false}
+                          onDrawerChange={(on) => {
+                            setActiveSlot(idx);
+                            updateSlot(idx, { independentDrawer: on });
+                          }}
                         />
                         <ChartLocalTimeAndPulse
                           slotId={`market-${idx}`}
@@ -620,6 +626,7 @@ export const LightweightMarketUI: React.FC<LightweightMarketUIProps> = ({
                           symbol={slot.symbol}
                           theme={chartTheme}
                           useDedicatedPatternPanel
+                          hidePatternOverlays={slot.independentDrawer === false}
                           publishDrawingSession={slot.symbol === patternPanelSymbol}
                           activeIndicators={activeIndicators}
                           priceSeriesType={chartSeriesStyle}

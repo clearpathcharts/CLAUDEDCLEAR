@@ -52,6 +52,7 @@ function normalizeSlots(raw: unknown): YwcChartSlot[] {
     x: 0,
     y: 0,
     timeframe: normalizeChartTimeframe(slot?.timeframe || "1h"),
+    independentDrawer: slot?.independentDrawer !== false,
   }));
 }
 
@@ -150,7 +151,14 @@ function YwcChartSlotPanel({
 
   const body = slot.symbol ? (
     <div className="relative" style={{ height: chartHeight }}>
-      <LightweightCandles profileId="calm_focus" symbol={slot.symbol} timeframe={timeframe} height={chartHeight} embedMode />
+      <LightweightCandles
+        profileId="calm_focus"
+        symbol={slot.symbol}
+        timeframe={timeframe}
+        height={chartHeight}
+        embedMode
+        hidePatternOverlays={slot.independentDrawer === false}
+      />
     </div>
   ) : (
     <div
@@ -179,6 +187,8 @@ function YwcChartSlotPanel({
             value={timeframe}
             onChange={(tf) => updateSlot(slotIndex, { timeframe: tf })}
             isLocked={(tf) => isIntradayTimeframe(tf) && !limits.intradayCharts}
+            drawerOn={slot.independentDrawer !== false}
+            onDrawerChange={(on) => updateSlot(slotIndex, { independentDrawer: on })}
           />
           <ChartLocalTimeAndPulse
             compact
