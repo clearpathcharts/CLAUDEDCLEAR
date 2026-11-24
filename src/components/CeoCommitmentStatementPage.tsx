@@ -73,7 +73,7 @@ export default function CeoCommitmentStatementPage() {
                   className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl md:text-5xl print:text-slate-950"
                   style={{ fontFamily: "'Cinzel', serif" }}
                 >
-                  Two-Year Voluntary Salary Waiver
+                  One-Year Voluntary Salary Waiver
                   <span className="mt-2 block text-xl text-zinc-400 sm:text-2xl md:text-3xl print:text-slate-600">
                     &amp; Customer-First Commitment
                   </span>
