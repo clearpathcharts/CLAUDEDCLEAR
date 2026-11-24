@@ -1,24 +1,29 @@
 /**
- * Candle history caps. The founder sheet claims "7 year" (Basic) and
- * "unlimited" (Silver+). Twelve Data time_series outputsize max is 5000 —
- * higher values only produce HTTP 400 and blank charts.
+ * Candle history caps by membership plan.
+ * Basic/Silver/Gold: one Twelve Data page (5,000).
+ * Platinum / founder (Richard Anthony Floyd): up to 40,000 via paged fetches.
  */
-import { canonicalizePlanId, planOf } from '../lib/planCatalog';
+import {
+  canonicalizePlanId,
+  planOf,
+  PLATINUM_CANDLE_OUTPUTSIZE,
+  TWELVEDATA_PAGE_OUTPUTSIZE,
+} from '../lib/planCatalog';
 
-const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
+export { TWELVEDATA_PAGE_OUTPUTSIZE, PLATINUM_CANDLE_OUTPUTSIZE };
 
 /** @deprecated use planOf(tier).limits.candleOutputsize */
 export const TIER_LIMITS = {
-  BASIC: TWELVEDATA_MAX_OUTPUTSIZE,
-  BRONZE: TWELVEDATA_MAX_OUTPUTSIZE,
-  SILVER: TWELVEDATA_MAX_OUTPUTSIZE,
-  GOLD: TWELVEDATA_MAX_OUTPUTSIZE,
-  PLATINUM: TWELVEDATA_MAX_OUTPUTSIZE,
-  VIP: TWELVEDATA_MAX_OUTPUTSIZE,
+  BASIC: TWELVEDATA_PAGE_OUTPUTSIZE,
+  BRONZE: TWELVEDATA_PAGE_OUTPUTSIZE,
+  SILVER: TWELVEDATA_PAGE_OUTPUTSIZE,
+  GOLD: TWELVEDATA_PAGE_OUTPUTSIZE,
+  PLATINUM: PLATINUM_CANDLE_OUTPUTSIZE,
+  VIP: PLATINUM_CANDLE_OUTPUTSIZE,
 };
 
 export const getCandleLimit = (userTier?: string): number => {
-  if (!userTier) return TWELVEDATA_MAX_OUTPUTSIZE;
+  if (!userTier) return TWELVEDATA_PAGE_OUTPUTSIZE;
   const plan = planOf(canonicalizePlanId(userTier));
-  return Math.min(plan.limits.candleOutputsize, TWELVEDATA_MAX_OUTPUTSIZE);
+  return Math.max(1, Math.floor(plan.limits.candleOutputsize));
 };

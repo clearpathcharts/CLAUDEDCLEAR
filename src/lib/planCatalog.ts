@@ -6,8 +6,9 @@
  * Pricing is intentionally omitted — list prices are not part of this catalog.
  * `accuracy` says whether we can enforce a feature today, or only advertise it.
  *
- * Twelve Data `time_series` outputsize max is 5000. "7 year" and "unlimited"
- * history are sheet claims — candles are still vendor-capped.
+ * Twelve Data `time_series` outputsize max is 5000 per request. The app may
+ * page multiple vendor fetches to honor higher plan caps (Platinum / founder
+ * = 40,000). "7 year" / "unlimited" remain sheet claims beyond vendor depth.
  */
 
 import { SUPPORTED_CHART_INDICATORS } from '../config/tradingViewIndicators';
@@ -106,7 +107,14 @@ export type PlanDefinition = {
   sheetLines: string[];
 };
 
-const TWELVEDATA_MAX_OUTPUTSIZE = 5000;
+/** Max candles Twelve Data accepts in a single time_series call. */
+export const TWELVEDATA_PAGE_OUTPUTSIZE = 5000;
+
+/** Platinum / founder entitlement — app pages vendor fetches up to this cap. */
+export const PLATINUM_CANDLE_OUTPUTSIZE = 40_000;
+
+/** @deprecated use TWELVEDATA_PAGE_OUTPUTSIZE */
+const TWELVEDATA_MAX_OUTPUTSIZE = TWELVEDATA_PAGE_OUTPUTSIZE;
 
 const ALL_FLAGS_OFF: PlanFlags = {
   highSpeedCharting: false,
@@ -180,7 +188,7 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
       alerts: 3,
       watchlists: 5,
       historicalYearsClaim: 7,
-      candleOutputsize: TWELVEDATA_MAX_OUTPUTSIZE,
+      candleOutputsize: TWELVEDATA_PAGE_OUTPUTSIZE,
       intradayCharts: false,
     },
     flags: BASIC_FLAGS,
@@ -211,7 +219,7 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
       alerts: UNLIMITED,
       watchlists: UNLIMITED,
       historicalYearsClaim: null,
-      candleOutputsize: TWELVEDATA_MAX_OUTPUTSIZE,
+      candleOutputsize: TWELVEDATA_PAGE_OUTPUTSIZE,
       intradayCharts: true,
     },
     flags: SILVER_FLAGS,
@@ -248,7 +256,7 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
       alerts: UNLIMITED,
       watchlists: UNLIMITED,
       historicalYearsClaim: null,
-      candleOutputsize: TWELVEDATA_MAX_OUTPUTSIZE,
+      candleOutputsize: TWELVEDATA_PAGE_OUTPUTSIZE,
       intradayCharts: true,
     },
     flags: GOLD_FLAGS,
@@ -272,7 +280,7 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
       alerts: UNLIMITED,
       watchlists: UNLIMITED,
       historicalYearsClaim: null,
-      candleOutputsize: TWELVEDATA_MAX_OUTPUTSIZE,
+      candleOutputsize: PLATINUM_CANDLE_OUTPUTSIZE,
       intradayCharts: true,
     },
     flags: PLATINUM_FLAGS,
@@ -281,6 +289,7 @@ export const PLAN_CATALOG: Record<CanonicalPlanId, PlanDefinition> = {
       'Watchlist Unlimited',
       'AI Pattern Scanner',
       'Addition of Bots',
+      'Up to 40,000 candles (paged vendor history)',
     ],
   },
 };

@@ -1468,7 +1468,7 @@ async function startServer() {
         return { ...p, limits: jsonSafeLimits(p.limits) };
       }),
       accuracy: FEATURE_ACCURACY,
-      note: 'Feature catalog only — no list prices. Historical year claims are vendor-capped at Twelve Data outputsize 5000.',
+      note: 'Feature catalog only — no list prices. Candle history: Basic/Silver/Gold 5,000; Platinum/founder up to 40,000 via paged Twelve Data fetches.',
     });
   });
 
@@ -3432,7 +3432,7 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
 
   // Twelve Data Proxy for Candles
   app.get('/api/candles', async (req, res) => {
-    const { symbol, interval } = req.query;
+    const { symbol, interval, limit } = req.query;
     if (!symbol || typeof symbol !== 'string') {
       return res.status(400).json({ error: 'symbol required' });
     }
@@ -3449,7 +3449,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     }
 
     try {
-      const data = await getMarketCandles(symbol, resolvedInterval, 100, apiKey);
+      const requested = limit != null ? Number(limit) : 100;
+      const outputsize = Math.min(
+        Math.max(Number.isFinite(requested) ? requested : 100, 1),
+        40_000,
+      );
+      const data = await getMarketCandles(symbol, resolvedInterval, outputsize, apiKey);
       if (data && (data.status === 'error' || data.code === 401 || data.code === 429 || !data.values)) {
         logHealthEvent('WARNING', `Twelve Data Candles upstream error/warning: ${data.message || 'Error occurred'}.`, data.code || 502);
         throw new Error(data.message || 'Twelve Data Candles failed or returned error');
@@ -3497,10 +3502,12 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
     };
 
     try {
-      // Twelve Data rejects outputsize outside [1, 5000] with HTTP 400, which
-      // used to blank every chart for tiers whose candle limit exceeds 5000.
+      // Plan caps up to Platinum/founder 40,000; gateway pages vendor calls at 5,000.
       const requested = limit ? Number(limit) : 100;
-      const outputsize = Math.min(Math.max(Number.isFinite(requested) ? requested : 100, 100), 5000);
+      const outputsize = Math.min(
+        Math.max(Number.isFinite(requested) ? requested : 100, 1),
+        40_000,
+      );
       const data = await getMarketCandles(symbol, selectedInterval, outputsize, apiKey, {
         startDate: dateOpt(startDate),
         endDate: dateOpt(endDate),
