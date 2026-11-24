@@ -1,24 +1,23 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChartSymbolSearch } from '../charts/ChartSymbolSearch';
 import { LightweightCandles } from '../charts/LightweightCandles';
 import { useMarketReplay } from '../../hooks/useMarketReplay';
-import {
-  DEFAULT_STARTING_BALANCE,
-  REPLAY_STEP_PRESETS,
-  type OrderSide,
-  type OrderType,
-  type ReplaySpeed,
-} from '../../lib/replay/types';
+import { REPLAY_STEP_PRESETS, type ReplaySpeed } from '../../lib/replay/types';
 import { resolveMarketAsset } from '../../constants/marketAssets';
+import {
+  deleteReplayClip,
+  handReplayClipToDevice,
+  listReplayClips,
+  replayClipFileName,
+  saveReplayClip,
+  startReplayCapture,
+  type ReplayCapture,
+  type ReplayClipRecord,
+} from '../../lib/replay/replayGallery';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'] as const;
-
-function money(n: number): string {
-  const sign = n < 0 ? '-' : '';
-  return `${sign}$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-}
 
 export function DeskReplayPanel({
   initialSymbol = 'USDJPY',
@@ -40,39 +39,112 @@ export function DeskReplayPanel({
     return d.toISOString().slice(0, 10);
   });
   const [customStep, setCustomStep] = useState(5);
-  const [orderSide, setOrderSide] = useState<OrderSide>('long');
-  const [orderType, setOrderType] = useState<OrderType>('market');
-  const [orderSize, setOrderSize] = useState(0.1);
-  const [limitPrice, setLimitPrice] = useState('');
-  const [stopLoss, setStopLoss] = useState('');
-  const [takeProfit, setTakeProfit] = useState('');
+  const [clips, setClips] = useState<ReplayClipRecord[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [recordNote, setRecordNote] = useState('');
+  const chartRef = useRef<HTMLDivElement>(null);
+  const captureRef = useRef<ReplayCapture | null>(null);
 
   const startUnix = useMemo(() => {
     const t = Date.parse(`${dateStr}T00:00:00Z`);
     return Number.isFinite(t) ? Math.floor(t / 1000) : undefined;
   }, [dateStr]);
 
+  const previewUrls = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const clip of clips) map.set(clip.id, URL.createObjectURL(clip.blob));
+    return map;
+  }, [clips]);
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  useEffect(() => {
+    void listReplayClips().then(setClips).catch(() => setClips([]));
+  }, []);
+
+  const refreshClips = async () => {
+    setClips(await listReplayClips());
+  };
+
   const onLoad = () => {
     void replay.load({
       symbol,
       timeframe,
       startUnix,
-      // Pass the picker date as Twelve Data startDate so the 5k-bar window
-      // is anchored near the chosen session (not only “last N bars to now”).
       startDate: dateStr,
       endDate: new Date().toISOString().slice(0, 10),
     });
   };
 
-  const submitOrder = () => {
-    replay.placeOrder({
-      side: orderSide,
-      type: orderType,
-      size: orderSize,
-      price: limitPrice ? Number(limitPrice) : undefined,
-      stopLoss: stopLoss ? Number(stopLoss) : undefined,
-      takeProfit: takeProfit ? Number(takeProfit) : undefined,
-    });
+  const finishRecording = async () => {
+    const cap = captureRef.current;
+    captureRef.current = null;
+    setRecording(false);
+    if (!cap) return;
+    setRecordNote('Saving recording…');
+    try {
+      const blob = await cap.stop();
+      const mime = blob.type || 'video/webm';
+      const clip = await saveReplayClip({
+        symbol: replay.engineState.symbol || symbol,
+        timeframe: replay.engineState.timeframe || timeframe,
+        mime,
+        name: replayClipFileName(replay.engineState.symbol || symbol, replay.engineState.timeframe || timeframe),
+        blob,
+      });
+      await refreshClips();
+      const handed = await handReplayClipToDevice(clip);
+      setRecordNote(
+        handed === 'shared'
+          ? 'Saved in your gallery. The share sheet is open so you can post it or keep it in Photos.'
+          : handed === 'downloaded'
+            ? 'Saved in your gallery and downloaded so you can post it.'
+            : 'Saved in your gallery. Share it whenever you want.',
+      );
+    } catch (err) {
+      setRecordNote((err as Error)?.message || 'Could not save the recording.');
+    }
+  };
+
+  const startRecording = () => {
+    const root = chartRef.current;
+    if (!root) return;
+    try {
+      captureRef.current = startReplayCapture(root);
+      setRecording(true);
+      setRecordNote('Recording the chart. Stop when the clip is ready.');
+    } catch (err) {
+      setRecordNote((err as Error)?.message || 'Could not start recording.');
+    }
+  };
+
+  const exitReplay = () => {
+    if (captureRef.current) void finishRecording();
+    replay.exitReplay();
+  };
+
+  const shareClip = async (clip: ReplayClipRecord) => {
+    try {
+      const handed = await handReplayClipToDevice(clip);
+      setRecordNote(
+        handed === 'cancelled'
+          ? 'Share cancelled. The clip is still in your gallery.'
+          : handed === 'shared'
+            ? 'Share sheet opened.'
+            : 'Download started.',
+      );
+    } catch (err) {
+      setRecordNote((err as Error)?.message || 'Could not share that clip.');
+    }
+  };
+
+  const removeClip = async (id: string) => {
+    await deleteReplayClip(id);
+    await refreshClips();
   };
 
   return (
@@ -84,13 +156,13 @@ export function DeskReplayPanel({
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">Market Replay</p>
           <p className="text-xs text-zinc-500">
-            Real Twelve Data history · no look-ahead · paper account isolated from live
+            Real history · no look-ahead · record a clip into your gallery
           </p>
         </div>
         {replay.active && (
           <button
             type="button"
-            onClick={replay.exitReplay}
+            onClick={exitReplay}
             className="rounded-lg border border-zinc-700 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:border-rose-500/50 hover:text-rose-300"
           >
             Exit Replay
@@ -98,7 +170,6 @@ export function DeskReplayPanel({
         )}
       </header>
 
-      {/* Setup row */}
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-[160px] flex-1">
           <label className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-600">Symbol</label>
@@ -151,7 +222,6 @@ export function DeskReplayPanel({
 
       {replay.active && (
         <>
-          {/* Status strip */}
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-zinc-950/80 px-3 py-2">
             <span className="rounded bg-rose-600/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-rose-300">
               Replay Mode
@@ -161,7 +231,6 @@ export function DeskReplayPanel({
             <span className="font-mono text-sm text-white">{replay.currentTimeLabel}</span>
           </div>
 
-          {/* Transport */}
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => replay.step(-1)} className="replay-btn">◀ 1</button>
             {replay.engineState.isPlaying ? (
@@ -194,9 +263,20 @@ export function DeskReplayPanel({
                 ))}
               </select>
             </label>
+            <button
+              type="button"
+              onClick={() => (recording ? void finishRecording() : startRecording())}
+              className="replay-btn"
+              data-replay-record
+              aria-pressed={recording}
+            >
+              {recording ? 'Stop recording' : 'Record'}
+            </button>
           </div>
+          {recordNote && (
+            <p className="font-mono text-[10px] text-zinc-400" role="status">{recordNote}</p>
+          )}
 
-          {/* Timeline */}
           <div className="space-y-1">
             <input
               type="range"
@@ -215,8 +295,7 @@ export function DeskReplayPanel({
             </div>
           </div>
 
-          {/* Chart — ONLY visible (revealed) candles */}
-          <div className="min-h-[360px] overflow-hidden rounded-xl border border-white/10 bg-black">
+          <div ref={chartRef} data-replay-stage className="min-h-[360px] overflow-hidden rounded-xl border border-white/10 bg-black">
             <LightweightCandles
               key={`replay-${replay.engineState.symbol}-${replay.engineState.timeframe}-${replay.engineState.replayStartIndex}`}
               data={replay.visibleCandles}
@@ -230,79 +309,41 @@ export function DeskReplayPanel({
               replayMode
             />
           </div>
-
-          {/* Account + ticket */}
-          <div className="grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">Paper Account</p>
-              <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-                <KV label="Starting" value={money(DEFAULT_STARTING_BALANCE)} />
-                <KV label="Equity" value={money(replay.accountSnap.equity)} />
-                <KV label="Available" value={money(replay.accountSnap.availableBalance)} />
-                <KV label="Open P&L" value={money(replay.accountSnap.openPnl)} accent={replay.accountSnap.openPnl} />
-                <KV label="Realized" value={money(replay.accountSnap.realizedPnl)} accent={replay.accountSnap.realizedPnl} />
-                <KV label="Trades" value={String(replay.accountSnap.tradeCount)} />
-                <KV label="Win rate" value={`${(replay.accountSnap.winRate * 100).toFixed(0)}%`} />
-                <KV label="Max DD" value={`${(replay.accountSnap.maxDrawdown * 100).toFixed(1)}%`} />
-                <KV label="Profit factor" value={Number.isFinite(replay.accountSnap.profitFactor) ? replay.accountSnap.profitFactor.toFixed(2) : '—'} />
-                <KV label="Avg win" value={money(replay.accountSnap.avgWin)} />
-                <KV label="Avg loss" value={money(replay.accountSnap.avgLoss)} />
-                <KV label="Largest win" value={money(replay.accountSnap.largestWin)} />
-              </div>
-              {replay.openPosition && (
-                <p className="mt-2 font-mono text-[10px] text-amber-300">
-                  Open {replay.openPosition.side.toUpperCase()} {replay.openPosition.size} @ {replay.openPosition.entryPrice}
-                </p>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-              <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">Order Ticket</p>
-              <div className="flex flex-wrap gap-2">
-                <select value={orderSide} onChange={(e) => setOrderSide(e.target.value as OrderSide)} className="replay-input">
-                  <option value="long">BUY / LONG</option>
-                  <option value="short">SELL / SHORT</option>
-                </select>
-                <select value={orderType} onChange={(e) => setOrderType(e.target.value as OrderType)} className="replay-input">
-                  <option value="market">Market</option>
-                  <option value="limit">Limit</option>
-                  <option value="stop">Stop</option>
-                </select>
-                <input type="number" step="0.01" min="0.01" value={orderSize} onChange={(e) => setOrderSize(Number(e.target.value) || 0.01)} className="replay-input w-20" title="Size (lots)" />
-                {(orderType === 'limit' || orderType === 'stop') && (
-                  <input placeholder="Price" value={limitPrice} onChange={(e) => setLimitPrice(e.target.value)} className="replay-input w-24" />
-                )}
-                <input placeholder="SL" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} className="replay-input w-24" />
-                <input placeholder="TP" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} className="replay-input w-24" />
-                <button type="button" onClick={submitOrder} className="replay-btn replay-btn-primary">Submit</button>
-                <button type="button" onClick={replay.closePosition} className="replay-btn">Close</button>
-              </div>
-            </div>
-          </div>
-
-          {/* Journal */}
-          <div className="max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/70 p-3">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">Trade Journal</p>
-            {replay.trades.length === 0 ? (
-              <p className="text-xs text-zinc-600">No closed trades yet — place orders as candles reveal.</p>
-            ) : (
-              <ul className="space-y-1 font-mono text-[10px]">
-                {[...replay.trades].reverse().map((t, i) => (
-                  <li key={t.id} className="flex flex-wrap gap-2 border-b border-white/5 py-1 text-zinc-300">
-                    <span className="text-zinc-500">#{replay.trades.length - i}</span>
-                    <span>{t.symbol}</span>
-                    <span className={t.side === 'long' ? 'text-cyan-400' : 'text-pink-400'}>{t.side.toUpperCase()}</span>
-                    <span>{t.entryPrice} → {t.exitPrice}</span>
-                    <span className={t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{money(t.pnl)}</span>
-                    <span className="text-zinc-600">{t.exitReason}</span>
-                    {t.riskReward != null && <span className="text-zinc-500">R:R {t.riskReward.toFixed(2)}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </>
       )}
+
+      <div data-replay-gallery className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
+        <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-zinc-500">Your gallery</p>
+        <p className="mb-3 text-[11px] leading-relaxed text-zinc-500">
+          Clips stay on this device. Share opens your phone or computer share sheet so you can post the video or save it to Photos.
+        </p>
+        {clips.length === 0 ? (
+          <p className="text-xs text-zinc-600">No recordings yet. Load a replay, press Record, then Stop.</p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {clips.map((clip) => (
+              <li key={clip.id} className="overflow-hidden rounded-lg border border-white/10 bg-black">
+                <video
+                  src={previewUrls.get(clip.id)}
+                  controls
+                  playsInline
+                  className="aspect-video w-full bg-black"
+                  aria-label={`${clip.symbol} ${clip.timeframe} replay recording`}
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-2">
+                  <span className="font-mono text-[10px] text-zinc-400">
+                    {clip.symbol} {clip.timeframe} · {new Date(clip.createdAt).toLocaleString()}
+                  </span>
+                  <span className="flex gap-2">
+                    <button type="button" className="replay-btn" onClick={() => void shareClip(clip)}>Share</button>
+                    <button type="button" className="replay-btn" onClick={() => void removeClip(clip.id)}>Remove</button>
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <style>{`
         .replay-btn {
@@ -322,27 +363,7 @@ export function DeskReplayPanel({
           background: rgba(0,229,255,0.12);
           color: #67e8f9;
         }
-        .replay-input {
-          border-radius: 0.5rem;
-          border: 1px solid rgba(255,255,255,0.12);
-          background: #000;
-          padding: 0.35rem 0.5rem;
-          font-family: ui-monospace, monospace;
-          font-size: 11px;
-          color: #e4e4e7;
-        }
       `}</style>
     </section>
-  );
-}
-
-function KV({ label, value, accent }: { label: string; value: string; accent?: number }) {
-  const color =
-    accent == null ? 'text-zinc-200' : accent >= 0 ? 'text-emerald-400' : 'text-rose-400';
-  return (
-    <div>
-      <div className="text-[9px] uppercase tracking-wider text-zinc-600">{label}</div>
-      <div className={`tabular-nums ${color}`}>{value}</div>
-    </div>
   );
 }
