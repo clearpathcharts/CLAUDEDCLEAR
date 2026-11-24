@@ -4,13 +4,38 @@ import { Footer } from "@/components/Footer";
 import { DemoBanner } from "@/components/DemoBanner";
 import "./globals.css";
 
+const siteUrl = "https://clearpath-trader-board.vercel.app";
+const ogImage = {
+  url: "/og-desks.png",
+  width: 1024,
+  height: 534,
+  alt: "ClearPath Trader desks — Institutional, Fundamental, and Retail",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "ClearPath Trader — Board Demo",
     template: "%s · ClearPath Trader",
   },
   description:
     "Analysis-first educational financial markets platform. Four desks. Not a brokerage. Clear Path Markets Science Corp.",
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "ClearPath Trader",
+    title: "ClearPath Trader — Board Demo",
+    description:
+      "One chart site with four desks. Analysis-first. Not a brokerage. Clear Path Markets Science Corp.",
+    images: [ogImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ClearPath Trader — Board Demo",
+    description:
+      "One chart site with four desks. Analysis-first. Not a brokerage. Clear Path Markets Science Corp.",
+    images: [ogImage.url],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
