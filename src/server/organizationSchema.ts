@@ -47,7 +47,7 @@ export function personSchema(leader: (typeof PUBLIC_LEADERS)[number], baseUrl: s
     image: `${baseUrl}${leader.imageUrl}`,
     url: `${baseUrl}${leader.id === 'richard-floyd' ? '/press' : `/meet-the-board#${leader.id}`}`,
     worksFor: { '@id': `${baseUrl}/#organization` },
-    ...(leader.roleLine ? { description: leader.roleLine } : {}),
+    description: leader.bio.replace(/\s+/g, ' ').trim(),
   };
 }
 

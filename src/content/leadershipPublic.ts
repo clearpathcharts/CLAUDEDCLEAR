@@ -1,6 +1,6 @@
 /**
  * Public leadership copy — single source for /meet-the-board, schema, and board portal display.
- * Brent: first name only (clearance). No personal social URLs.
+ * Brent Miller: public CTO biography supplied by the founder. No personal social URLs.
  */
 
 export type PublicLeader = {
@@ -34,15 +34,25 @@ export const PUBLIC_LEADERS: PublicLeader[] = [
   },
   {
     id: 'brent',
-    displayName: 'Brent',
-    jobTitle: 'Chief Communications Officer',
-    roleLine: 'Board of Directors',
+    displayName: 'Brent Miller',
+    jobTitle: 'Chief Technology Officer',
     imageUrl: '/team/brent.jpg',
-    portraitObjectPosition: '50% 18%',
-    portraitZoom: 1.55,
-    schemaKey: 'brent-cco',
-    boardLoginName: 'Brent',
-    bio: `Brent serves on the board of directors and leads communications as Chief Communications Officer. His focus is clear, permission-based outreach to members — explaining the platform honestly, without hype — and keeping public messaging aligned with ClearPath’s educational mission.`,
+    portraitObjectPosition: '50% 20%',
+    schemaKey: 'brent-miller',
+    boardLoginName: 'Brent Miller',
+    bio: `Brent Miller is the Chief Technology Officer of ClearPath Markets Science, doing business as ClearPath Trader. With 27 years of experience in aerospace and defense engineering, he brings a practical, people-focused approach to technology, product development, and leadership.
+
+Brent began his career as an entry-level engineer, learning to design, build, integrate, and test complex defense systems. Today, he serves as a senior principal engineer and has held roles as a chief engineer, team lead, and manager. Throughout his career, he has led design teams working on missile components and complete missile systems, translating ambitious goals into clear requirements and actionable plans.
+
+His experience also includes program management, cost accounting, and project execution on programs ranging from a few million dollars to $20–50 million. Known for his approachable leadership style, Brent helps teams work through challenges, communicate clearly, and stay focused on their goals. He values recognizing each person's strengths and bringing the right people together to move a project forward.
+
+Brent's connection to ClearPath Trader began with CEO Rick Floyd, whom he met in 2020. As Rick introduced him to trading, Brent recognized a familiar way of thinking: breaking down complex information to find a clearer path forward. After the two reconnected, Brent became intrigued by what Rick was building and offered to help, drawing on his experience testing software to identify website issues and support improvements.
+
+Brent understands how intimidating trading platforms can feel. Having experienced the noise and complexity himself, he is passionate about helping build a platform that users can customize to their needs—one that makes it easier to monitor markets, explore trends, and learn from historical patterns.
+
+As CTO, Brent supports the company's current technology needs while shaping its long-term strategy. His focus includes defining the infrastructure, systems, and team that can support ClearPath Trader as its user base grows.
+
+Brent earned a bachelor's degree in electrical engineering, with minors in mathematics and computer science, from Embry-Riddle Aeronautical University in 1999. He completed his MBA at the University of Phoenix in 2006.`,
   },
   {
     id: 'brian-weber',

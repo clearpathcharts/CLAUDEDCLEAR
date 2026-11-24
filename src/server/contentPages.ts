@@ -1749,11 +1749,18 @@ function renderIdentityCompanyBody(): string {
 <p><a href="/meet-the-board">Meet the Board</a> · <a href="/press">Press kit</a> · <a href="/about">About</a></p>`;
 }
 
+function leaderBioParagraphs(bio: string): string {
+  return bio
+    .split(/\n\n+/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph.trim())}</p>`)
+    .join('\n');
+}
+
 function renderIdentityMeetTheBoardBody(): string {
   const cards = PUBLIC_LEADERS.map(
     (l) => `<section id="${escapeHtml(l.id)}"><h2>${escapeHtml(l.displayName)}</h2>
 <p><strong>${escapeHtml(l.jobTitle)}</strong>${l.roleLine ? ` · ${escapeHtml(l.roleLine)}` : ''}</p>
-<p>${escapeHtml(l.bio)}</p></section>`,
+${leaderBioParagraphs(l.bio)}</section>`,
   ).join('\n');
   return `${breadcrumbHtml([{ name: 'Home', url: '/' }, { name: 'Meet the Board' }])}
 <h1>Meet the Board</h1>

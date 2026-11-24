@@ -14,7 +14,6 @@ const root = process.cwd();
 
 for (const leader of PUBLIC_LEADERS) {
   assert.ok(leader.imageUrl.startsWith('/team/'), `${leader.id} image must be under /team/`);
-  assert.doesNotMatch(leader.displayName, /Miller/i, 'public Brent must not expose surname');
 }
 
 for (const img of ['richard-floyd.jpg', 'brent.jpg', 'brian-weber.jpg', 'sarah-weber.jpg']) {
@@ -53,9 +52,11 @@ assert.match(enriched, /2026-05-12/);
 const leadershipHtml = enrichHtmlWithMetadata(html, '/meet-the-board');
 assert.match(leadershipHtml, /Brian Weber/);
 assert.match(leadershipHtml, /Sarah Weber/);
-assert.match(leadershipHtml, /Chief Communications Officer/);
-assert.match(leadershipHtml, /#brent-cco/);
-assert.doesNotMatch(leadershipHtml, /Brent Miller/);
+assert.match(leadershipHtml, /Brent Miller/);
+assert.match(leadershipHtml, /Chief Technology Officer/);
+assert.match(leadershipHtml, /Embry-Riddle Aeronautical University/);
+assert.match(leadershipHtml, /#brent-miller/);
+assert.doesNotMatch(leadershipHtml, /Chief Communications Officer/);
 assert.doesNotMatch(leadershipHtml, /Dustin/);
 
 console.log('leadership-identity.selftest.ts: OK');

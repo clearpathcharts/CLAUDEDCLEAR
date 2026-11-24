@@ -21,7 +21,7 @@ export default function LeadershipPage() {
     <div className="min-h-[100dvh] w-full bg-[#050505] text-[#ccc8db] font-sans overflow-x-hidden relative">
       <SEO
         title="Meet the Board — ClearPath Trader"
-        description="Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd, Brent (CCO), Brian Weber (CFO Advisor), and Sarah Weber, LSCSW. No login required."
+        description="Meet the board of Clear Path Markets Science Corp.: Richard Anthony Floyd, Brent Miller (CTO), Brian Weber (CFO Advisor), and Sarah Weber, LSCSW. No login required."
         canonical={MEET_THE_BOARD_CANONICAL}
       />
       <SurfBackground />
@@ -87,7 +87,13 @@ export default function LeadershipPage() {
                 {leader.roleLine ? (
                   <p className="text-[#FFD700] text-xs font-mono uppercase tracking-widest">{leader.roleLine}</p>
                 ) : null}
-                <p className="text-zinc-300 leading-relaxed pt-2">{leader.bio}</p>
+                <div className="space-y-3 pt-2">
+                  {leader.bio.split(/\n\n+/).map((paragraph) => (
+                    <p key={paragraph.slice(0, 48)} className="text-zinc-300 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
                 {leader.id === 'richard-floyd' ? (
                   <p className="pt-2">
                     <a href="/press" className="text-sm text-[#FF1493] hover:underline font-semibold uppercase tracking-wider">
