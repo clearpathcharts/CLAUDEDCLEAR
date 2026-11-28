@@ -21,6 +21,8 @@
     "test:firebase-mock": "tsx scripts/firebase-mock.selftest.ts",
     "test:homepage-h1": "tsx scripts/homepage-h1.selftest.ts",
     "test:ui-fonts": "tsx scripts/ui-fonts.selftest.ts",
+    "test:document-h1": "tsx scripts/document-h1.selftest.ts",
+    "test:workspace-store": "tsx scripts/workspace-store.selftest.ts",
     "test:choose-path": "tsx scripts/choose-path.selftest.ts",
     "test:private-login-scifi": "tsx scripts/private-login-scifi.selftest.ts",
     "test:trader-desks": "tsx scripts/trader-desks.selftest.ts",

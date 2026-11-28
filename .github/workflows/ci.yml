@@ -186,6 +186,15 @@ jobs:
       - name: Homepage H1 and four-desk SERP copy
         run: npm run test:homepage-h1
 
+      - name: UI fonts (Inter / IBM Plex Mono)
+        run: npm run test:ui-fonts
+
+      - name: Single document H1 on SPA subpages
+        run: npm run test:document-h1
+
+      - name: Workspace persistence without Cloud SQL
+        run: npm run test:workspace-store
+
       - name: Company directory catalog
         run: npm run test:company-catalog
 

@@ -187,7 +187,12 @@ for (const rel of srcFiles) {
   if (rel === 'src/App.tsx') {
     assert.match(text, /DeskRoute/);
     assert.match(text, /isDeskPath/);
-    assert.match(text, /user \? <DeskRoute pathname=\{currentPath\} \/> : <Auth \/>/);
+    assert.match(
+      text,
+      /if \(user\) \{\s*content = <DeskRoute pathname=\{currentPath\} \/>;\s*\} else if \(isFundamentalDeskPath\(currentPath\)\) \{[\s\S]*?<FundamentalLandingPage \/>[\s\S]*?\} else \{\s*content = <Auth \/>;/,
+      'signed-in desks go through DeskRoute; logged-out /desk/fundamental gets the public landing page; other desks keep Auth',
+    );
+    assert.doesNotMatch(text, /<FundamentalResearchDesk/, 'App.tsx must not mount FundamentalResearchDesk');
     assert.match(text, /MemberDeskRedirect/);
     assert.match(text, /isMemberHomePath/);
     assert.match(text, /shouldStayOnPublicHome/);

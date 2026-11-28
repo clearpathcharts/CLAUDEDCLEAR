@@ -7,6 +7,7 @@ import { ExplainModeProvider } from './components/explain';
 import { BootErrorBoundary, BootReadySignal } from './components/BootErrorBoundary';
 import { markBootFailed } from './lib/bootWatchdog';
 import { scheduleForceFreshBuild } from './lib/forceFreshBuild';
+import { installDocumentH1Guard } from './lib/documentH1';
 import App from './App.tsx';
 import './index.css';
 
@@ -36,6 +37,7 @@ try {
       </BootErrorBoundary>
     </StrictMode>
   );
+  installDocumentH1Guard();
   // Do not mark boot OK here — BootReadySignal / BootErrorBoundary own that flag
   // so the HTML watchdog only fires when nothing rendered at all.
 } catch (err) {
