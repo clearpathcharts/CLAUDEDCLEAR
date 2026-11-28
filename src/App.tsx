@@ -46,7 +46,7 @@ const EncyclopediaLayout = lazy(() => import('./components/encyclopedia/Encyclop
 const EncyclopediaOfIndicators = lazy(() => import('./components/EncyclopediaOfIndicators'));
 const ClearPathEducation = lazy(() => import('./education/ClearPathEducation'));
 const LiteracyOSPage = lazy(() => import('./literacy/LiteracyOSPage'));
-const FundamentalResearchDesk = lazy(() => import('./components/fundamental/FundamentalResearchDesk'));
+const FundamentalLandingPage = lazy(() => import('./components/desks/FundamentalLandingPage'));
 const UsBrokerNetworkPage = lazy(() => import('./components/broker/UsBrokerNetworkPage'));
 const MembershipPricingPage = lazy(() => import('./components/membership/MembershipPricingPage'));
 const CommunityHub = lazy(() => import('./components/community/CommunityHub'));
@@ -398,7 +398,23 @@ export default function App() {
       content = <Auth />;
     }
   } else if (isDeskPath(currentPath)) {
-    content = user ? <DeskRoute pathname={currentPath} /> : <Auth />;
+    if (user) {
+      content = <DeskRoute pathname={currentPath} />;
+    } else if (isFundamentalDeskPath(currentPath)) {
+      content = (
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-[#0c0b0a] flex items-center justify-center text-[#9a9186] font-mono text-xs uppercase tracking-widest">
+              Opening Fundamental desk…
+            </div>
+          }
+        >
+          <FundamentalLandingPage />
+        </Suspense>
+      );
+    } else {
+      content = <Auth />;
+    }
   } else if (currentPath === '/about') {
     content = <ExternalAboutPage />;
   } else if (currentPath === '/company') {
@@ -548,29 +564,6 @@ export default function App() {
             }}
           />
         </PublicLearnShell>
-      );
-    } else if (isFundamentalDeskPath(currentPath)) {
-      content = (
-        <div className="min-h-screen w-full bg-[#0c0b0a] text-[#f3ece2]">
-          <a href="#learn-main" className="cp-skip-link">Skip to research</a>
-          <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/90 px-4 py-3">
-            <a href="/" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#c4a574] hover:text-white">
-              <BrandMark size={22} />
-              ← ClearPath Home
-            </a>
-          </header>
-          <main id="learn-main" tabIndex={-1} className="outline-none">
-            <Suspense
-              fallback={
-                <div className="min-h-[50vh] flex items-center justify-center text-[#9a9186] font-mono text-xs uppercase tracking-widest">
-                  Opening research desk...
-                </div>
-              }
-            >
-              <FundamentalResearchDesk />
-            </Suspense>
-          </main>
-        </div>
       );
     } else {
       content = <Auth />;

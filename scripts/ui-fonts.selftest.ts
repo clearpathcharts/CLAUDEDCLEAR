@@ -92,11 +92,19 @@ assert.match(
   /fontFamily:\s*'"IBM Plex Mono"/,
   'public LiveChart axis text must use IBM Plex Mono',
 );
+const authTsx = fs.readFileSync(path.resolve('src/components/Auth.tsx'), 'utf8');
 assert.match(
-  fs.readFileSync(path.resolve('src/components/Auth.tsx'), 'utf8'),
-  /font-mono text-zinc-500 text-\[9px\][\s\S]*DXY INDEX/,
-  'public header tickers (DXY / BTC / USDJPY) must use IBM Plex Mono',
+  authTsx,
+  /<div className="[^"]*\bfont-mono\b[^"]*text-\[9px\][^"]*">\s*\{BROADCAST_QUOTES\.map\(/,
+  'public header ticker strip (BROADCAST_QUOTES) must render inside a font-mono (IBM Plex Mono) wrapper',
 );
+for (const label of ['DXY INDEX', 'BTC/USD', 'USD/JPY']) {
+  assert.match(
+    authTsx,
+    new RegExp(`BROADCAST_QUOTES[\\s\\S]{0,400}label:\\s*'${label.replace('/', '\\/')}'`),
+    `BROADCAST_QUOTES must still include ${label}`,
+  );
+}
 assert.match(
   indexCss,
   /\[data-chart-build\][\s\S]{0,80}font-family:\s*var\(--font-mono\)/,

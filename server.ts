@@ -15,8 +15,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import session from 'express-session';
-import { db, schema } from "./src/db";
-import { eq, and } from "drizzle-orm";
+import { getWorkspaceStore, validateAssetInput, validateNoteInput, WorkspaceInputError } from "./src/server/workspaceStore";
   import { getMarketQuote, getMarketQuotes, getMarketCandles, twelvedataHealth, twelvedataEvents, logHealthEvent } from "./src/server/marketDataGateway";
   import { provenanceHeaders, sanitizeInstrumentSymbol, type InstrumentProvenance } from "./src/lib/instrumentIntegrity";
 import { getLiveApiHealth } from "./src/server/apiHealthService";
@@ -2350,7 +2349,26 @@ async function startServer() {
     }
   });
 
-  // GOOGLE WORKSPACE CLOUD SQL PERSISTENCE API
+  // GOOGLE WORKSPACE PERSISTENCE API (Cloud SQL -> Firestore -> local file; see src/server/workspaceStore.ts)
+  const workspaceStoreOr503 = (res: express.Response) => {
+    const store = getWorkspaceStore();
+    if (!store) {
+      res.status(503).json({
+        error: 'WORKSPACE_STORAGE_UNAVAILABLE',
+        message: 'Workspace storage is not configured on this server.',
+      });
+      return null;
+    }
+    return store;
+  };
+  const workspaceFailure = (res: express.Response, label: string, error: unknown, publicError: string) => {
+    if (error instanceof WorkspaceInputError) {
+      return res.status(400).json({ error: error.message });
+    }
+    console.error(`${label} failed:`, error);
+    return res.status(500).json({ error: publicError });
+  };
+
   app.get('/api/workspace/assets', async (req, res) => {
     const gate = await requireMembershipFeature(req, res, 'workspace');
     if (!gate.ok) return;
@@ -2358,18 +2376,12 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
     }
+    const store = workspaceStoreOr503(res);
+    if (!store) return;
     try {
-      const userRecord = await db.query.users.findFirst({
-        where: eq(schema.users.uid, uid),
-      });
-      if (!userRecord) {
-        return res.json({ assets: [] });
-      }
-      const assets = await db.select().from(schema.googleAssets).where(eq(schema.googleAssets.userId, userRecord.id));
-      res.json({ assets });
-    } catch (error: any) {
-      console.error('SQL Assets GET failed:', error);
-      res.status(500).json({ error: 'Failed to access SQL database', message: error.message });
+      res.json({ assets: await store.listAssets(uid) });
+    } catch (error) {
+      workspaceFailure(res, 'Workspace assets GET', error, 'Failed to load workspace assets');
     }
   });
 
@@ -2380,42 +2392,16 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in with Google or Private Login required.' });
     }
-    const { email, assetId, title, type } = req.body;
-    if (!assetId || !title || !type) {
-      return res.status(400).json({ error: 'Missing required field in request body' });
-    }
+    const store = workspaceStoreOr503(res);
+    if (!store) return;
     try {
-      let userRecord = await db.query.users.findFirst({
-        where: eq(schema.users.uid, uid),
-      });
-      if (!userRecord) {
-        const [inserted] = await db.insert(schema.users).values({
-          uid,
-          email: email || 'anonymous@gmail.com',
-        }).returning();
-        userRecord = inserted;
+      const result = await store.addAsset(uid, validateAssetInput(req.body));
+      if (result === 'exists') {
+        return res.status(409).json({ error: 'Asset already saved in workspace storage' });
       }
-      
-      const exists = await db.select().from(schema.googleAssets).where(
-        and(
-          eq(schema.googleAssets.userId, userRecord.id),
-          eq(schema.googleAssets.assetId, assetId)
-        )
-      );
-      if (exists.length > 0) {
-        return res.status(409).json({ error: 'Asset already saved in Cloud SQL' });
-      }
-
-      await db.insert(schema.googleAssets).values({
-        userId: userRecord.id,
-        assetId,
-        title,
-        type
-      });
       res.json({ success: true });
-    } catch (error: any) {
-      console.error('SQL Assets POST failed:', error);
-      res.status(500).json({ error: 'Failed to save asset to SQL', message: error.message });
+    } catch (error) {
+      workspaceFailure(res, 'Workspace assets POST', error, 'Failed to save workspace asset');
     }
   });
 
@@ -2426,37 +2412,19 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
     }
-    const { id } = req.params;
-    const numericId = Number(id);
-    if (!Number.isFinite(numericId)) {
+    const numericId = Number(req.params.id);
+    if (!Number.isSafeInteger(numericId)) {
       return res.status(400).json({ error: 'Invalid asset id' });
     }
+    const store = workspaceStoreOr503(res);
+    if (!store) return;
     try {
-      const userRecord = await db.query.users.findFirst({
-        where: eq(schema.users.uid, uid),
-      });
-      if (!userRecord) {
+      if (!(await store.deleteAsset(uid, numericId))) {
         return res.status(404).json({ error: 'Asset not found' });
       }
-      const owned = await db.select().from(schema.googleAssets).where(
-        and(
-          eq(schema.googleAssets.id, numericId),
-          eq(schema.googleAssets.userId, userRecord.id)
-        )
-      );
-      if (!owned.length) {
-        return res.status(404).json({ error: 'Asset not found' });
-      }
-      await db.delete(schema.googleAssets).where(
-        and(
-          eq(schema.googleAssets.id, numericId),
-          eq(schema.googleAssets.userId, userRecord.id)
-        )
-      );
       res.json({ success: true });
-    } catch (error: any) {
-      console.error('SQL Assets DELETE failed:', error);
-      res.status(500).json({ error: 'Failed to delete asset' });
+    } catch (error) {
+      workspaceFailure(res, 'Workspace assets DELETE', error, 'Failed to delete asset');
     }
   });
 
@@ -2467,18 +2435,12 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
     }
+    const store = workspaceStoreOr503(res);
+    if (!store) return;
     try {
-      const userRecord = await db.query.users.findFirst({
-        where: eq(schema.users.uid, uid),
-      });
-      if (!userRecord) {
-        return res.json({ notes: [] });
-      }
-      const notes = await db.select().from(schema.workspaceNotes).where(eq(schema.workspaceNotes.userId, userRecord.id));
-      res.json({ notes });
-    } catch (error: any) {
-      console.error('SQL Notes GET failed:', error);
-      res.status(500).json({ error: 'Failed to fetch SQL notes', message: error.message });
+      res.json({ notes: await store.listNotes(uid) });
+    } catch (error) {
+      workspaceFailure(res, 'Workspace notes GET', error, 'Failed to fetch workspace notes');
     }
   });
 
@@ -2489,49 +2451,14 @@ async function startServer() {
     if (!uid) {
       return res.status(401).json({ error: 'Unauthorized', message: 'Sign in required.' });
     }
-    const { associatedId, content } = req.body;
-    if (!associatedId) {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
+    const store = workspaceStoreOr503(res);
+    if (!store) return;
     try {
-      let userRecord = await db.query.users.findFirst({
-        where: eq(schema.users.uid, uid),
-      });
-      if (!userRecord) {
-        const [inserted] = await db.insert(schema.users).values({
-          uid,
-          email: 'anonymous@gmail.com',
-        }).returning();
-        userRecord = inserted;
-      }
-
-      const existing = await db.select().from(schema.workspaceNotes).where(
-        and(
-          eq(schema.workspaceNotes.userId, userRecord.id),
-          eq(schema.workspaceNotes.associatedId, associatedId)
-        )
-      );
-
-      if (existing.length > 0) {
-        await db.update(schema.workspaceNotes)
-          .set({ content })
-          .where(
-            and(
-              eq(schema.workspaceNotes.userId, userRecord.id),
-              eq(schema.workspaceNotes.associatedId, associatedId)
-            )
-          );
-      } else {
-        await db.insert(schema.workspaceNotes).values({
-          userId: userRecord.id,
-          associatedId,
-          content
-        });
-      }
+      const { associatedId, content } = validateNoteInput(req.body);
+      await store.upsertNote(uid, associatedId, content);
       res.json({ success: true });
-    } catch (error: any) {
-      console.error('SQL Notes POST failed:', error);
-      res.status(500).json({ error: 'Failed to write note to Postgres', message: error.message });
+    } catch (error) {
+      workspaceFailure(res, 'Workspace notes POST', error, 'Failed to write workspace note');
     }
   });
 
