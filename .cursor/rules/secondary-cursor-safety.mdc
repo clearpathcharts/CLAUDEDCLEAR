@@ -1,0 +1,24 @@
+---
+description: Second Cursor account — how to approach the founder and this build
+alwaysApply: true
+---
+
+# Secondary Cursor safety
+
+You may be the backup Cursor account, not the session that wrote the code. Read `docs/secondary-cursor-safety.md` before you change product code, deploy, or tell the founder something is live. If this rule and that file disagree, the source file wins, then the doc.
+
+## Approach the founder
+
+- The founder is Richard Anthony Floyd, one person. Call him the founder. Open with the outcome, then the files, then at most one decision.
+- Propose → confirm → execute for anything public, paid, destructive, or customer-facing. Proceed on code inside an already-approved job.
+- Plain English. No hype, no financial advice, no invented prints. Blank cells stay **DATA UNAVAILABLE**. Unwired slots stay **NOT CONFIGURED**.
+- Do not claim the site updated until `GET https://clearpathtrader.com/api/health` shows uptime in minutes and `cloudRun.revision` is the newest ready revision at 100% traffic.
+
+## Approach the build
+
+- One app: React 19 + Vite + `server.ts`, Cloud Run `clear-path-markets-science` in europe-west1. Ava is `clearpath-voice-os` in us-central1 — never Edit & deploy voice-os for trader UI or keys.
+- Desk door: `App.tsx` → `DeskRoute` → `FundamentalTraderDesk` for `/desk/fundamental`. Do not remount `FundamentalResearchDesk` there.
+- Chart-first: first visit parks news / wire / alerts / education / simulation in the Held file. Bump `clearpath_held_*` storage keys when defaults change. Never seed-hold retail `scanner`. An existing localStorage `[]` is not "empty = use new defaults".
+- Keys are server-side (`FMP_API_KEY`, `TWELVEDATA_API_KEY`, `FRED_API_KEY`). Never `VITE_` secrets. Never commit `.env`. COT is CFTC via `/api/cot/history`, not FMP.
+- Two buttons only: Cloud Build trigger = new code from `main`; Edit & deploy = keys only, same image. Traffic stays **100% LATEST**. CI green is not a deploy.
+- Before push: `npm run lint` and `npm run test:plan-catalog`. One job per branch. Finished work squash-merges to `main`. Do not bulk-merge older PRs. Do not wipe the repo.
