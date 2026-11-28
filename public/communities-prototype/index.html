@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050505">
+    <title>ClearPath Trader Communities</title>
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/widget.css">
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
+        <symbol id="i-video" viewBox="0 0 24 24"><path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+        <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+        <symbol id="i-phone-off" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><path d="m2 2 20 20"/></symbol>
+        <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></symbol>
+        <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+        <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M20 20h.01M17 17v4"/></symbol>
+        <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></symbol>
+        <symbol id="i-clip" viewBox="0 0 24 24"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></symbol>
+        <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></symbol>
+        <symbol id="i-updates" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3.2 2.6"/><circle cx="12" cy="12" r="3.5"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></symbol>
+        <symbol id="i-call-in" viewBox="0 0 24 24"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></symbol>
+        <symbol id="i-call-out" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></symbol>
+        <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/></symbol>
+    </defs>
+</svg>
+
+<div class="clearpath-container">
+
+    <div class="main-panel">
+        <div class="main-header">
+            <span class="app-name">ClearPath <small>Communities</small></span>
+            <div class="header-icons">
+                <button type="button" class="icon-btn" aria-label="Scan QR code"><svg class="ic"><use href="#i-qr"/></svg></button>
+                <button type="button" class="icon-btn" aria-label="Camera"><svg class="ic"><use href="#i-camera"/></svg></button>
+                <button type="button" class="icon-btn menu-btn" aria-label="Menu"><svg class="ic"><use href="#i-more"/></svg></button>
+            </div>
+        </div>
+
+        <div class="top-header">
+            <div class="search-bar-container">
+                <svg class="ic search-icon"><use href="#i-search"/></svg>
+                <input type="text" placeholder="Search communities, traders or channels" class="search-input" aria-label="Search">
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="section-content" id="chats">
+                <div class="chat-list"></div>
+            </div>
+            <div class="section-content hidden" id="updates">
+                <div class="status-list"></div>
+            </div>
+            <div class="section-content hidden" id="communities">
+                <div class="community-header">
+                    <svg class="ic"><use href="#i-users"/></svg>
+                    <div class="community-info">
+                        <h4>New Community</h4>
+                        <p>Bring your trading crew together in one place.</p>
+                    </div>
+                </div>
+                <div class="start-community">
+                    <svg class="ic"><use href="#i-plus"/></svg>
+                    <span>Start your community</span>
+                </div>
+                <div class="community-list"></div>
+            </div>
+            <div class="section-content hidden" id="calls">
+                <div class="call-list"></div>
+            </div>
+        </div>
+
+        <button class="new-chat-btn" aria-label="New chat"><svg class="ic"><use href="#i-plus"/></svg></button>
+
+        <div class="popup-menu" id="three-dot-menu">
+            <ul>
+                <li><a href="#">New group</a></li>
+                <li><a href="#">New broadcast</a></li>
+                <li><a href="#">Linked devices</a></li>
+                <li><a href="#">Starred messages</a></li>
+                <li><a href="#">Settings</a></li>
+                <li><a href="#" class="ai-option" id="show-widget-link">Show group widget</a></li>
+                <li><a href="widget.html" class="ai-option">Widget-only page</a></li>
+            </ul>
+        </div>
+
+        <div class="popup-menu" id="new-chat-menu">
+            <div class="new-chat-header">
+                <h4>New Chat</h4>
+            </div>
+            <ul>
+                <li><a href="#"><svg class="ic"><use href="#i-user-plus"/></svg> New Contact</a></li>
+                <li><a href="#"><svg class="ic"><use href="#i-users"/></svg> New Group</a></li>
+                <li><a href="#"><svg class="ic"><use href="#i-spark"/></svg> New Chat with ClearPath Assistant</a></li>
+            </ul>
+        </div>
+
+        <nav class="bottom-nav" aria-label="Sections">
+            <a href="#" class="nav-item active" data-section="chats">
+                <svg class="ic"><use href="#i-chat"/></svg>
+                <span>Chats</span>
+            </a>
+            <a href="#" class="nav-item" data-section="updates">
+                <svg class="ic"><use href="#i-updates"/></svg>
+                <span>Updates</span>
+            </a>
+            <a href="#" class="nav-item" data-section="communities">
+                <svg class="ic"><use href="#i-users"/></svg>
+                <span>Communities</span>
+            </a>
+            <a href="#" class="nav-item" data-section="calls">
+                <svg class="ic"><use href="#i-phone"/></svg>
+                <span>Calls</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="chat-window-panel">
+        <div class="chat-empty">
+            <div class="chat-empty-mark"><svg class="ic"><use href="#i-users"/></svg></div>
+            <h3>Pick a community</h3>
+            <p>Open a chat from the list, or tap the magma widget to preview WHATEVER GROUP THERE IN.</p>
+        </div>
+
+        <div class="chat-window-header">
+            <div class="header-left">
+                <button type="button" class="icon-btn back-arrow" aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button>
+                <div class="avatar contact-avatar" aria-hidden="true"></div>
+                <div class="contact-info">
+                    <h3 class="contact-name"></h3>
+                    <p class="last-seen">online</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button type="button" class="icon-btn" aria-label="Video call"><svg class="ic"><use href="#i-video"/></svg></button>
+                <button type="button" class="icon-btn" aria-label="Voice call"><svg class="ic"><use href="#i-phone"/></svg></button>
+                <button type="button" class="icon-btn" aria-label="More"><svg class="ic"><use href="#i-more"/></svg></button>
+            </div>
+        </div>
+
+        <div class="chat-messages"></div>
+
+        <form class="chat-input-area" autocomplete="off">
+            <div class="input-actions-left">
+                <button type="button" class="icon-btn" aria-label="Emoji"><svg class="ic"><use href="#i-smile"/></svg></button>
+                <button type="button" class="icon-btn" aria-label="Attach"><svg class="ic"><use href="#i-clip"/></svg></button>
+            </div>
+            <input type="text" placeholder="Message" class="message-input" aria-label="Message">
+            <div class="input-actions-right">
+                <button type="submit" class="icon-btn send-btn" aria-label="Send"><svg class="ic"><use href="#i-send"/></svg></button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<div class="wgti" data-wgti>
+    <button type="button" class="wgti-pill" aria-haspopup="dialog" aria-expanded="false">
+        <span class="wgti-orb" aria-hidden="true"><svg class="ic"><use href="#i-chat"/></svg></span>
+        <span class="wgti-label"><b>WHATEVER GROUP</b><b>THERE IN</b></span>
+    </button>
+
+    <section class="wgti-panel" role="dialog" aria-label="WHATEVER GROUP THERE IN">
+        <header class="wgti-panel-head">
+            <span class="wgti-panel-title">WHATEVER GROUP THERE IN</span>
+            <span class="wgti-live"><i></i> 128 online</span>
+        </header>
+        <p class="wgti-panel-sub">ClearPath trader community. Share setups, swap ideas, stay accountable.</p>
+        <ul class="wgti-feed">
+            <li><span class="wgti-who">Maya</span> BTC reclaimed the 4h level, watching the retest.</li>
+            <li><span class="wgti-who">Dev</span> Stops are in. Sizing at 0.5R today.</li>
+            <li><span class="wgti-who">Luis</span> Journal template posted in pinned.</li>
+        </ul>
+        <button type="button" class="wgti-cta" data-wgti-open-chat>Open group chat</button>
+    </section>
+</div>
+
+<button type="button" class="wgti-closer" aria-label="Hide group widget"><svg class="ic"><use href="#i-plus"/></svg></button>
+
+<script src="js/chat.js"></script>
+<script src="js/widget.js"></script>
+</body>
+</html>

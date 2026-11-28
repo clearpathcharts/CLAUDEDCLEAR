@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#050505">
+    <title>WHATEVER GROUP THERE IN - Draggable Widget</title>
+    <link rel="stylesheet" href="css/widget.css">
+</head>
+<body class="wgti-page">
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    </defs>
+</svg>
+
+<main class="wgti-hero">
+    <p class="wgti-eyebrow">ClearPath Trader Communities</p>
+    <h1>WHATEVER GROUP THERE IN</h1>
+    <p class="subtitle">Drag the magma oval anywhere. Tap it to preview the group. Drop it on the close zone at the bottom to hide it.</p>
+    <a class="wgti-link" href="index.html">Open the full communities chat</a>
+</main>
+
+<div class="wgti" data-wgti data-chat-href="index.html#open=wgti">
+    <button type="button" class="wgti-pill" aria-haspopup="dialog" aria-expanded="false">
+        <span class="wgti-orb" aria-hidden="true"><svg class="ic"><use href="#i-chat"/></svg></span>
+        <span class="wgti-label"><b>WHATEVER GROUP</b><b>THERE IN</b></span>
+    </button>
+
+    <section class="wgti-panel" role="dialog" aria-label="WHATEVER GROUP THERE IN">
+        <header class="wgti-panel-head">
+            <span class="wgti-panel-title">WHATEVER GROUP THERE IN</span>
+            <span class="wgti-live"><i></i> 128 online</span>
+        </header>
+        <p class="wgti-panel-sub">ClearPath trader community. Share setups, swap ideas, stay accountable.</p>
+        <ul class="wgti-feed">
+            <li><span class="wgti-who">Maya</span> BTC reclaimed the 4h level, watching the retest.</li>
+            <li><span class="wgti-who">Dev</span> Stops are in. Sizing at 0.5R today.</li>
+            <li><span class="wgti-who">Luis</span> Journal template posted in pinned.</li>
+        </ul>
+        <button type="button" class="wgti-cta" data-wgti-open-chat>Open group chat</button>
+    </section>
+</div>
+
+<button type="button" class="wgti-closer" aria-label="Hide group widget"><svg class="ic"><use href="#i-plus"/></svg></button>
+
+<script src="js/widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+/*
+ * WHATEVER GROUP THERE IN - draggable magma widget.
+ * Concept and behavior derived from "Facebook Share (Messenger draggable)" by zagzter
+ * (https://codepen.io/zagzter/pen/ggWmBE), MIT. See licenses/.
+ */
+:root {
+    --magma-1: #ff4a1a;
+    --magma-2: #ff2a00;
+    --magma-3: #e8230a;
+    --magma-deep: #b01500;
+    --magma-glow: rgba(255, 42, 0, 0.75);
+}
+
+.wgti {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: left 0.45s cubic-bezier(.2, .9, .3, 1.2), top 0.3s ease, transform 0.25s ease, opacity 0.25s ease;
+}
+.wgti.is-dragging { transition: none; }
+.wgti.removed { transform: scale(0); opacity: 0; pointer-events: none; }
+.wgti .ic {
+    width: 1.25em;
+    height: 1.25em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The draggable oval */
+.wgti-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 62px;
+    padding: 0 22px 0 10px;
+    border: 1px solid rgba(255, 190, 160, 0.55);
+    border-radius: 999px;
+    color: #fff;
+    cursor: grab;
+    font-family: inherit;
+    background:
+        radial-gradient(120% 140% at 30% 0%, rgba(255, 255, 255, 0.28), transparent 45%),
+        linear-gradient(135deg, var(--magma-2) 0%, var(--magma-3) 55%, #c91d05 100%);
+    box-shadow:
+        inset 0 -6px 14px rgba(120, 10, 0, 0.45),
+        0 0 0 6px rgba(255, 42, 0, 0.12),
+        0 0 26px var(--magma-glow),
+        0 0 70px rgba(255, 42, 0, 0.4),
+        0 16px 34px rgba(0, 0, 0, 0.6);
+    animation: magma-pulse 2.8s ease-in-out infinite;
+    transition: transform 0.25s ease;
+}
+.wgti-pill:hover { transform: translateY(-2px) scale(1.03); }
+.wgti-pill:active, .wgti.is-dragging .wgti-pill { cursor: grabbing; transform: scale(0.97); }
+.wgti-pill:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+@keyframes magma-pulse {
+    0%, 100% { box-shadow: inset 0 -6px 14px rgba(120, 10, 0, 0.45), 0 0 0 6px rgba(255, 42, 0, 0.12), 0 0 26px var(--magma-glow), 0 0 70px rgba(255, 42, 0, 0.4), 0 16px 34px rgba(0, 0, 0, 0.6); }
+    50% { box-shadow: inset 0 -6px 14px rgba(120, 10, 0, 0.45), 0 0 0 10px rgba(255, 42, 0, 0.07), 0 0 38px var(--magma-glow), 0 0 95px rgba(255, 42, 0, 0.55), 0 16px 34px rgba(0, 0, 0, 0.6); }
+}
+
+.wgti-orb {
+    width: 46px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    font-size: 1.15rem;
+    color: var(--magma-1);
+    background: #0b0302;
+    box-shadow: inset 0 0 10px rgba(255, 42, 0, 0.55), 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+}
+.wgti-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.12;
+    text-align: left;
+    text-shadow: 0 1px 3px rgba(80, 6, 0, 0.7);
+}
+.wgti-label b {
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+/* Popup panel */
+.wgti-panel {
+    position: absolute;
+    bottom: calc(100% + 16px);
+    width: min(340px, calc(100vw - 32px));
+    padding: 18px 20px 20px;
+    border-radius: 30px;
+    color: #fff4ef;
+    background:
+        radial-gradient(90% 60% at 20% 0%, rgba(255, 42, 0, 0.22), transparent 70%),
+        #0d0504;
+    border: 1.5px solid var(--magma-2);
+    box-shadow: 0 0 30px rgba(255, 42, 0, 0.5), 0 0 80px rgba(255, 42, 0, 0.2), 0 24px 60px rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.96);
+    transform-origin: bottom left;
+    transition: opacity 0.25s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+    user-select: text;
+    -webkit-user-select: text;
+}
+.wgti.side-left .wgti-panel { left: 0; }
+.wgti.side-right .wgti-panel { right: 0; transform-origin: bottom right; }
+.wgti.panel-below .wgti-panel { bottom: auto; top: calc(100% + 16px); transform-origin: top left; }
+.wgti.panel-below.side-right .wgti-panel { transform-origin: top right; }
+.wgti.is-open .wgti-panel { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.wgti.is-dragging .wgti-panel { opacity: 0; visibility: hidden; }
+
+.wgti-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.wgti-panel-title {
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    color: #fff;
+    text-shadow: 0 0 14px rgba(255, 42, 0, 0.9);
+}
+.wgti-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 90, 50, 0.6);
+    font-size: 0.75rem;
+    color: #ffd2c4;
+}
+.wgti-live i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--magma-1);
+    box-shadow: 0 0 8px var(--magma-2);
+}
+.wgti-panel-sub { margin: 10px 0 12px; font-size: 0.88rem; line-height: 1.4; color: #e6c3b8; }
+.wgti-feed { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+.wgti-feed li {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 42, 0, 0.1);
+    border: 1px solid rgba(255, 42, 0, 0.28);
+    font-size: 0.82rem;
+    color: #fff4ef;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.wgti-who { font-weight: 700; color: #ff8a66; margin-right: 6px; }
+.wgti-cta {
+    width: 100%;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: linear-gradient(135deg, var(--magma-2), #c91d05);
+    box-shadow: 0 0 20px rgba(255, 42, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    text-shadow: 0 1px 2px rgba(80, 6, 0, 0.7);
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+.wgti-cta:hover { filter: brightness(1.12); }
+.wgti-cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* Close zone (oval, appears while dragging) */
+.wgti-closer {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 900;
+    translate: -50% 0;
+    width: 112px;
+    height: 64px;
+    padding: 0;
+    border-radius: 999px;
+    border: 2px solid var(--magma-2);
+    background: rgba(13, 5, 4, 0.9);
+    color: var(--magma-1);
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    visibility: hidden;
+    box-shadow: 0 0 24px rgba(255, 42, 0, 0.45);
+    backdrop-filter: blur(10px);
+    transition: 0.25s ease;
+}
+.wgti-closer .ic { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; transform: rotate(45deg); }
+.wgti-closer.is-visible { opacity: 1; visibility: visible; }
+.wgti-closer.is-hover {
+    width: 136px;
+    height: 76px;
+    background: var(--magma-2);
+    color: #fff;
+    box-shadow: 0 0 50px var(--magma-glow);
+}
+
+/* Widget-only page */
+.wgti-page {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #fff;
+    background:
+        radial-gradient(55% 45% at 20% 15%, rgba(255, 42, 0, 0.16), transparent 70%),
+        radial-gradient(50% 45% at 85% 90%, rgba(157, 0, 255, 0.14), transparent 70%),
+        #050505;
+}
+.wgti-hero { text-align: center; padding: 32px; max-width: 760px; }
+.wgti-eyebrow {
+    margin: 0 0 14px;
+    color: #ff8a66;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+}
+.wgti-hero h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 8vw, 6rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    text-shadow: 0 0 40px rgba(255, 42, 0, 0.55);
+}
+.wgti-hero .subtitle { margin: 22px auto 0; max-width: 520px; color: #c9bdb8; font-size: 1.05rem; line-height: 1.5; }
+.wgti-link {
+    display: inline-block;
+    margin-top: 26px;
+    padding: 11px 24px;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    background: linear-gradient(#050505, #050505) padding-box, linear-gradient(90deg, #00e5ff, #9d00ff, #ff1493) border-box;
+    color: #00e5ff;
+    text-decoration: none;
+    font-weight: 700;
+}
+.wgti-link:hover { box-shadow: 0 0 24px rgba(157, 0, 255, 0.5); }
+.wgti-link:focus-visible { outline: 2px solid #00e5ff; outline-offset: 3px; }
+
+@media (max-width: 767px) {
+    .wgti-pill { height: 56px; padding-right: 18px; gap: 8px; }
+    .wgti-orb { width: 40px; height: 32px; }
+    .wgti-label b { font-size: 0.7rem; letter-spacing: 0.04em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wgti-pill { animation: none; }
+    .wgti, .wgti-panel, .wgti-closer { transition: none; }
+}

@@ -4046,7 +4046,8 @@ ${BUDDY_LIVE_TOOLS_PROMPT}`;
       req.path.startsWith('/@') || 
       req.path.startsWith('/node_modules/') || 
       req.path.startsWith('/api/') || 
-      req.path.startsWith('/auth/');
+      req.path.startsWith('/auth/') ||
+      req.path.startsWith('/communities-prototype/');
 
     if (isDevOrAsset) {
       return next();
